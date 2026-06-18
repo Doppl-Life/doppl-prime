@@ -1,0 +1,49 @@
+{
+  "dimension": "D7 Inconsistent / unlocked decisions",
+  "summary": "The four artifacts are broadly aligned on the locked baseline, but four concrete contradictions exist between the DRAFT and its companion specs, and two load-bearing-but-still-open items remain. The most serious are: (1) the \u00a74A subsystem DAG in ARCHITECTURE_DRAFT is a strictly linear chain that drops the model-gateway cross-edges present in ARCHITECTURE_OUTLINE, which silently mis-states the real dependency graph and would mislead parallel build planning; (2) check-runners is described as a first-class subsystem in DRAFT \u00a74/\u00a76 but is entirely absent from both DAGs (DRAFT and OUTLINE), which fold it into verifier-council \u2014 leaving its build ownership and import edges undefined; (3) the RunEventEnvelope.actor field is a typed union in DATA_MODEL but a bare string in DRAFT \u00a77, weakening a load-bearing event-log contract; and (4) the agenome spawn_budget trait and the runtime spawn/depth/energy caps are never reconciled, which touches a load-bearing safety invariant (caps must dominate). None of these contradicts a LOCKED decision; they are internal spec drift that finalization must collapse. Two open items (package structure, in-process vs queue) are load-bearing for the \u00a74A parallel-track plan but acceptably bucketed as questions for the human.",
+  "findings": [
+    {
+      "severity": "important",
+      "finding": "The \u00a74A subsystem dependency DAG in ARCHITECTURE_DRAFT is a strictly linear chain (shared-contracts -> persistence -> model-gateway -> runtime-kernel -> verifier-council -> selection-scoring -> ...) and OMITS the cross-edges that ARCHITECTURE_OUTLINE explicitly draws: model-gateway -> verifier-council, model-gateway -> selection-scoring, and model-gateway -> runtime-kernel. The two DAGs are supposed to be the same artifact but describe different graphs. The OUTLINE version is the correct one (verifier-council and selection-scoring both make model calls per DRAFT \u00a76 and \u00a79), so the DRAFT linear chain is wrong and would mislead parallel-build sequencing and import-rule enforcement.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a74A (lines 107-129, linear chain only) vs ARCHITECTURE_OUTLINE.md 'Subsystem Dependency DAG' (lines 45-74, adds model-gateway -> verifier-council / selection-scoring / runtime-kernel)",
+      "proposed_fix": "Replace the DRAFT \u00a74A DAG with the richer OUTLINE DAG (add the three model-gateway cross-edges) so both artifacts agree. The finalized ARCHITECTURE.md must carry one canonical DAG; have the parallel-tracks table (DRAFT \u00a74A 'Parallel Tracks' / OUTLINE 'Parallel Build Tracks') derive from it."
+    },
+    {
+      "severity": "important",
+      "finding": "check-runners is presented as a first-class subsystem in DRAFT \u00a74 System Overview ('Verifier Council' and 'Check Runners' as sibling boxes) and as its own module in DRAFT \u00a76 ('check-runners' owns subtype-specific check adapters), but it appears in NEITHER dependency DAG. Both the DRAFT \u00a74A DAG and the OUTLINE DAG contain only 'verifier-council' with no check-runners node, and both parallel-track lists fold it into a combined 'Verifier/checks' track. Whether check-runners is a separate buildable/importable subsystem or a sub-module of verifier-council is therefore undefined, and the actor enum 'check_runner' (DATA_MODEL) implies it is a distinct authoritative actor.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a74 (lines 95-96, separate boxes), \u00a76 'check-runners' (lines 233-235) vs \u00a74A DAG (lines 107-129, no node) and OUTLINE.md DAG (lines 45-74, no node) + DATA_MODEL.md actor 'check_runner' (line 25)",
+      "proposed_fix": "Decide and state one model. Recommended default: keep check-runners as a distinct subsystem (it emits its own actor 'check_runner' and its own 'check.completed' events), add a 'check-runners' node to the canonical DAG with edges shared-contracts -> check-runners, model-gateway -> check-runners (checks may call models), and check-runners -> selection-scoring; OR if it stays inside verifier-council, drop the separate \u00a76 module and the standalone System Overview box. Do not leave both descriptions live."
+    },
+    {
+      "severity": "important",
+      "finding": "RunEventEnvelope.actor is a typed union in DATA_MODEL ('operator' | 'runtime' | 'agenome' | 'critic' | 'check_runner' | 'selection_controller' | 'system') but is declared as a bare 'string' in DRAFT \u00a77. This is the authoritative, load-bearing event-log contract that the OUTLINE marks as the first schema to freeze ('RunEvent envelope ... to freeze first'). A string-typed actor loses the validation guarantee the typed union provides and would let unconstrained actor values into the append-only source of truth.",
+      "evidence": "DATA_MODEL.md 'Event Envelope' actor union (line 25) vs ARCHITECTURE_DRAFT.md \u00a77 RunEventEnvelope 'actor: string' (line 266); OUTLINE.md 'Shared Contracts To Freeze First' (line 104)",
+      "proposed_fix": "Adopt the DATA_MODEL typed union as canonical and update DRAFT \u00a77 to match. In the finalized ARCHITECTURE.md, define the actor union once in the contracts package and reference it from both \u00a77 and the data model so the envelope cannot drift."
+    },
+    {
+      "severity": "important",
+      "finding": "The agenome carries a 'spawn budget' as one of its serialized traits (DRAFT \u00a75; persisted in agenome.spawned trait payload per DATA_MODEL), while the runtime enforces hard depth/population/spawn/energy caps as a load-bearing invariant ('Recursive spawning cannot exceed depth/population caps'). The relationship between an agenome-owned spawn_budget and runtime-owned caps is never reconciled: it is unspecified whether the per-agenome budget is bounded by, derived from, or independent of the global caps, and which one wins on conflict. Because spawn/energy caps are a non-negotiable safety invariant, an agenome trait that could grant spawn capacity is a latent hole.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a75 Agenome '...spawn budget...' (line 158) and invariants (lines 170-171); DATA_MODEL.md 'agenome.spawned' must-persist 'agenome traits' (line 46)",
+      "proposed_fix": "State explicitly in the finalized ARCHITECTURE.md that runtime caps are the dominating ceiling and an agenome's spawn_budget is only an allocation HINT clamped to remaining run/depth/population/energy budget at enforcement time in the kernel \u2014 never able to raise a cap. Recommended: the kernel computes effective_spawns = min(agenome.spawn_budget, remaining global caps) and emits the clamp decision as an event."
+    },
+    {
+      "severity": "question-for-human",
+      "finding": "The package/repo structure is still tagged [open question] in OUTLINE while DRAFT \u00a713/\u00a720 already proposes a concrete monorepo (apps/api, apps/web, packages/contracts...). This is load-bearing because the \u00a74A parallel-track plan and import rules assume package boundaries; an unresolved structure leaves the parallelization seams ungrounded.",
+      "evidence": "ARCHITECTURE_OUTLINE.md 'Open Section-Planning Questions' (line 132) vs ARCHITECTURE_DRAFT.md \u00a713 (lines 429-443) and \u00a720 (lines 583-602)",
+      "proposed_fix": "Decision needed: monorepo-with-packages vs single-app. Recommended default: adopt the DRAFT \u00a720 monorepo with import-rule-enforced boundaries (no separate publishable packages) for a 3-4 engineer team, and mark the OUTLINE open question resolved so it stops reading as unlocked."
+    },
+    {
+      "severity": "question-for-human",
+      "finding": "Job execution model (in-process worker first vs queue library from the start) is still tagged [open question] in OUTLINE; DRAFT \u00a710 leans 'in-process workers first, queue if needed' but does not lock it. This is load-bearing for the \u00a710 idempotency/at-least-once guarantees that protect the append-only log against duplicate/missing events.",
+      "evidence": "ARCHITECTURE_OUTLINE.md 'Open Section-Planning Questions' (line 134) vs ARCHITECTURE_DRAFT.md \u00a710 (lines 365-378)",
+      "proposed_fix": "Decision needed: in-process vs queue. Recommended default for MVP: lock in-process workers with mandatory idempotency keys / event-sequence guards (as DRAFT \u00a710 already requires), with a queue as a deferred fallback \u2014 and resolve the OUTLINE open question to that."
+    },
+    {
+      "severity": "nice-to-have",
+      "finding": "The required-projection / table lists differ slightly across artifacts: DRAFT \u00a77 lists projections including 'embeddings if pgvector is used' and 'lineage_edges' but omits 'dashboard_snapshots', while DATA_MODEL 'Core Tables' adds 'dashboard_snapshots' (optional) and DRAFT \u00a76 projection-builders mention 'replay summaries'. Not a hard contradiction, but the projection set is not a single canonical list.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a77 'Required projections' (lines 274-284) vs DATA_MODEL.md 'Core Tables' (lines 62-74)",
+      "proposed_fix": "Consolidate one canonical projection/table list in the finalized ARCHITECTURE.md, marking pgvector-dependent (embeddings) and optional (dashboard_snapshots) tables explicitly so the three lists no longer drift."
+    }
+  ],
+  "_key": "inconsistent-decisions"
+}

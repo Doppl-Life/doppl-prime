@@ -1,0 +1,43 @@
+{
+  "dimension": "D13 Task-planning anchors",
+  "summary": "The draft's anchor scheme is unstable for downstream tasks-gen in three concrete ways. (a) There is NO REQ->\u00a7 Spec Anchor Index: the draft's \u00a722 \"Spec Anchor Index\" is merely an anchor->topic table of contents (it lists \u00a71..\u00a723 with one-word topics) and contains zero REQ-* references, while REQUIREMENTS.md defines 73 REQ-* IDs (REQ-F/NF/D/S/UX/I/T/E-*) that are mapped only to a \"Related Flow\" column, never to an implementing architecture section. tasks-gen needs every must-ship REQ-* bound to an implementing \u00a7 or it cannot trace tasks to spec. (b) The draft numbering (\u00a71, \u00a71A, \u00a74A, \u00a72..\u00a723) must be remapped to the canonical final template (\u00a71, \u00a72, \u00a72.5 for the DAG/parallelization seam, \u00a73..\u00a7N); \u00a74A->\u00a72.5 is the load-bearing remap and \u00a71A also has no canonical home. (c) DECISIONS.md \"Related Architecture Anchors\" (10 occurrences citing \u00a71,\u00a73,\u00a74,\u00a75,\u00a76,\u00a77,\u00a78,\u00a79,\u00a710,\u00a711,\u00a712,\u00a713,\u00a714,\u00a715) and DIAGRAM_PLAN.md \"Spec anchors\" (which explicitly names \"ARCHITECTURE_DRAFT.md Sections 1, 3, 4, 4A, 6, 7, 9, 11, 12, 15, 16, 17, 18, and 20\") both point at DRAFT section numbers and will dangle once the binding ARCHITECTURE.md renumbers and \u00a74A becomes \u00a72.5. None of these contradict a LOCKED decision; they are anchor-stability gaps that the finalize/tasks-gen step must close.",
+  "findings": [
+    {
+      "severity": "critical",
+      "finding": "There is no REQ->\u00a7 Spec Anchor Index. The draft's \u00a722 'Spec Anchor Index' is an anchor->topic table of contents (each row is a section number + a one-word topic) and contains zero REQ-* references; the draft as a whole has 0 occurrences of the string 'REQ-'. Meanwhile REQUIREMENTS.md defines 73 REQ-* IDs whose only cross-link is a 'Related Flow' column, not an implementing architecture section. Without a requirement-to-section index, tasks-gen cannot bind each must-ship REQ-* to the \u00a7 it implements, so generated tasks cannot be spec-anchored or coverage-checked.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a722 (lines 608-636, anchor->topic table only); REQUIREMENTS.md Phase 6 tables (REQ-F/NF/D/S/UX/I/T/E-*, 73 IDs, columns end at 'Related Flow', no anchor column)",
+      "proposed_fix": "In the finalized ARCHITECTURE.md, replace the TOC-style \u00a722 with a true Spec Anchor Index: a table with columns REQ-ID | implementing \u00a7 | note, covering every must-ship REQ-* (deferred/research-required REQ-* may map to \u00a718 Deferred Work). Generate it during /arch-finalize so /tasks-gen can consume it."
+    },
+    {
+      "severity": "critical",
+      "finding": "Draft section numbers must be remapped to the canonical final template, and \u00a74A->\u00a72.5 is the load-bearing remap. The draft puts the Subsystem Dependency DAG / parallelization seams at \u00a74A; the canonical template expects this seam at \u00a72.5. The draft also has a \u00a71A (Goals And Non-Goals) with no canonical slot. If the final ARCHITECTURE.md keeps draft numbering, every downstream anchor reference points at the wrong section; if it renumbers without a documented remap table, existing references silently dangle.",
+      "evidence": "ARCHITECTURE_DRAFT.md headers: \u00a71A (line 19), \u00a74A 'Subsystem Dependency DAG And Parallelization Seams' (line 105); ARCHITECTURE_OUTLINE.md line 22 lists '\u00a74A Subsystem Dependency DAG'; canonical template wants \u00a72.5 for the DAG seam",
+      "proposed_fix": "During /arch-finalize, renumber to the canonical scheme (\u00a71, \u00a72, \u00a72.5 = DAG/parallelization seam from draft \u00a74A, \u00a73..\u00a7N), and record a draft->final remap table (e.g. \u00a74A->\u00a72.5, \u00a71A->folded into \u00a71/\u00a72 Goals/Non-Goals) so the references in step-3 artifacts can be rewritten deterministically."
+    },
+    {
+      "severity": "important",
+      "finding": "DECISIONS.md 'Related Architecture Anchors' point at DRAFT section numbers and will dangle after renumbering. Ten decision blocks cite raw \u00a7 numbers (\u00a71,\u00a715 / \u00a73,\u00a74,\u00a76 / \u00a75,\u00a77,\u00a711 / \u00a78,\u00a79,\u00a710 / \u00a710,\u00a713 / \u00a79 / \u00a77,\u00a712 / \u00a712 / \u00a714 / \u00a78,\u00a711,\u00a712). These reference the draft's layout; once the binding ARCHITECTURE.md renumbers (esp. \u00a74A->\u00a72.5) and becomes the source of truth instead of the draft, these anchors point at the wrong or nonexistent sections.",
+      "evidence": "DECISIONS.md 'Related Architecture Anchors' at lines 95-97, 145-147, 198-200, 253-255, 304-306, 355-357, 407-409, 455-457, 505-507, 555-557",
+      "proposed_fix": "After the renumber/remap table exists, rewrite each DECISIONS.md 'Related Architecture Anchors' list to final ARCHITECTURE.md section numbers (and ideally retarget them at ARCHITECTURE.md, not ARCHITECTURE_DRAFT.md). Add a note that these anchors are normative against the finalized doc."
+    },
+    {
+      "severity": "important",
+      "finding": "DIAGRAM_PLAN.md 'Spec anchors' explicitly pins draft section numbers including \u00a74A and names the DRAFT file, so it will dangle on both counts after finalize. One line reads 'ARCHITECTURE_DRAFT.md Sections 1, 3, 4, 4A, 6, 7, 9, 11, 12, 15, 16, 17, 18, and 20'; '4A' is exactly the section slated to become \u00a72.5, and the reference targets the draft rather than the binding ARCHITECTURE.md.",
+      "evidence": "DIAGRAM_PLAN.md line 29 ('ARCHITECTURE_DRAFT.md Sections 1, 3, 4, 4A, 6, 7, 9, 11, 12, 15, 16, 17, 18, and 20'); 12 'Spec anchors:' blocks total (lines 27, 67, 97, 130, 160, 192, 228, 263, 295, 329, 364)",
+      "proposed_fix": "Rewrite every DIAGRAM_PLAN.md 'Spec anchors' block to reference the finalized ARCHITECTURE.md and its final section numbers (4A->2.5), using the remap table produced in /arch-finalize."
+    },
+    {
+      "severity": "proposed-edit",
+      "finding": "The draft mislabels its \u00a722: it is titled 'Spec Anchor Index' but functions as a section table of contents. Renaming or repurposing avoids the false impression that requirement traceability already exists.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a722 (lines 608-636) titled 'Spec Anchor Index' but containing only Anchor|Topic rows; ARCHITECTURE_OUTLINE.md line 40 describes \u00a722 as 'Downstream task anchors ... Anchor index'",
+      "proposed_fix": "In ARCHITECTURE.md, keep \u00a722 as the true REQ->\u00a7 Spec Anchor Index (per the critical finding) and, if a section TOC is still wanted, move it to the document header or a separate 'Section Map' subsection so the two concerns are not conflated."
+    },
+    {
+      "severity": "question-for-human",
+      "finding": "Scope of the Spec Anchor Index for non-must-ship requirements is ambiguous. REQUIREMENTS.md tags several REQ-* as 'research required', 'deferred', or 'stretch' (e.g. REQ-I-002, REQ-I-004, REQ-I-005, REQ-I-011, REQ-S-005). It is unclear whether these must appear in the index (mapped to \u00a718 Deferred Work / a research note) or be omitted.",
+      "evidence": "REQUIREMENTS.md priority column values 'research required' / 'deferred' / 'stretch' (e.g. lines 142-145, 151, 116) vs. ARCHITECTURE_DRAFT.md \u00a718 Deferred Work (line 545)",
+      "proposed_fix": "Decision needed: include all REQ-* in the index for completeness, or only must-ship? Recommended default: include ALL REQ-* IDs, mapping must-ship to implementing sections and deferred/research-required to \u00a718 (or \u00a715/\u00a717 as appropriate) with a status note, so coverage checks can assert no REQ-* is silently dropped."
+    }
+  ],
+  "_key": "anchors"
+}

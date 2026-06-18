@@ -1,0 +1,73 @@
+{
+  "dimension": "D4 Interfaces / schemas / contracts",
+  "summary": "The \"freeze-first\" contract list names 11 load-bearing types, but only 4 have concrete typed shapes anywhere in the artifacts: CandidateIdea (+subtype payloads) and LineageGraphProjection in DATA_MODEL.md, RunEventEnvelope (twice, with a drifted `actor` type), and ModelRoute/ModelRole in ARCHITECTURE_DRAFT.md \u00a79. The remaining 7 \u2014 Agenome, CriticReview, CheckResult, FitnessScore, ScoringPolicy, ModelGatewayRequest/Response, ProviderCapability \u2014 are named in \u00a76's `contracts` list and described in prose/table rows but have NO TS/Zod shape, so they cannot be frozen as the \u00a74A DAG demands before verifier-council, selection-scoring, and model-gateway tracks fork in parallel. Most critically, \"energy\" is a load-bearing cap invariant (\"energy spend cannot exceed assigned caps\") yet has no concrete unit and no token/tool/spawn -> energy cost mapping anywhere; `RunConfig`/caps has no typed shape; and `RunEventType` is referenced as a closed-enum type but is never enumerated as a closed union (only a markdown table of event names exists, and the table's set does not match the projection/state tooling). These are exactly the contracts that must be frozen first, and they are the ones left unspecified.",
+  "findings": [
+    {
+      "severity": "critical",
+      "finding": "Energy is the central cap invariant but has no concrete unit and no cost mapping. The energy ledger gates spawn/depth/token/tool/time caps and the kill switch, yet nothing defines what one unit of energy IS, nor how a token count, tool call, or spawn converts into energy spent. Two tracks (runtime-kernel enforcing caps, selection-scoring computing 'energy efficiency' as a fitness component) both depend on this and will diverge.",
+      "evidence": "DATA_MODEL.md energy.spent row ('amount, unit, reason') leaves `unit` undefined; DOMAIN_MODEL.md EnergyEvent + 'Energy: finite compute/token/tool/spawn allowance'; ARCHITECTURE_DRAFT.md \u00a75 invariant 'Energy spend cannot exceed assigned caps' and \u00a76 selection-scoring 'energy efficiency' \u2014 no unit or token/tool/spawn->energy mapping anywhere",
+      "proposed_fix": "Add a typed EnergyEvent/EnergyUnit contract to the freeze-first set: define energy as a single integer unit and a fixed cost table, e.g. { llmCallTokens: 1 unit per N tokens, toolCall: fixed units, spawn: fixed units }. Recommended default: energy unit = 1, costMap = { tokensPerUnit: 1000, perToolCall: 5, perSpawn: 50 }, with EnergyEvent = { id, runId, generationId?, agenomeId?, eventType: 'llm'|'tool'|'spawn', amount: number, unit: 'doppl_energy', reason: string, providerMeta? }."
+    },
+    {
+      "severity": "critical",
+      "finding": "RunEventType is used as a typed (implicitly closed) enum in both RunEventEnvelope definitions but is never declared as a closed TS union. Only a prose markdown table of 17 event-type strings exists. Without a single canonical closed enum, the event-store track, runtime-kernel track, and projection-builders track will each hardcode their own string sets and drift.",
+      "evidence": "DATA_MODEL.md RunEventEnvelope `type: RunEventType` + 'Required Event Types' table (markdown only); ARCHITECTURE_DRAFT.md \u00a77 `type: RunEventType` with no enum body; ARCHITECTURE_OUTLINE.md 'RunEvent envelope and event type registry' listed as freeze-first",
+      "proposed_fix": "Freeze RunEventType as an explicit closed string-literal union (or Zod enum) sourced verbatim from the DATA_MODEL.md table's 17 values (run.configured ... run.stopped) and mark it the single registry. Also add a per-type payload-shape map so `payload: Record<string, unknown>` is narrowed by type (at least for energy.spent, fitness.scored, candidate.created, critic.reviewed which other tracks consume)."
+    },
+    {
+      "severity": "critical",
+      "finding": "FitnessScore and ScoringPolicy are freeze-first contracts with NO typed shape, and their content (component weights, policy shape) is an explicit open question. selection-scoring cannot fork in parallel, and the 'fitness must preserve component scores + policy version' invariant cannot be enforced without the shape, even though weights can legitimately stay open.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 lists FitnessScore + ScoringPolicy under `contracts` with no shape; \u00a75 'FitnessScore: policy-versioned score components and total'; DATA_MODEL.md 'Data Questions Remaining: Exact scoring component weights and policy shape' [open]; DOMAIN_MODEL.md 'exact scoring weights ... not yet locked' [open]",
+      "proposed_fix": "Freeze the STRUCTURE now, defer only the numeric weights: FitnessScore = { id, candidateId, total: number, components: Record<string, number>, policyVersion: string, explanation: string }; ScoringPolicy = { version: string, weights: Record<string, number>, normalization?: string }. This satisfies the 'component scores + policy version preserved' invariant while leaving weight VALUES as the flagged open question."
+    },
+    {
+      "severity": "important",
+      "finding": "Agenome is a freeze-first contract with NO typed shape, only a field list in prose. The runtime-kernel, reproduction-fusion, and event-store tracks all read/write Agenome (traits, parentage, mutation metadata) and will block or diverge on field names/types without a frozen TS shape.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 `contracts` lists `Agenome` with no shape; \u00a75 prose 'serialized agent genome with prompt, persona/value weights, tool permissions, decomposition policy, spawn budget, parentage, mutation metadata'; DOMAIN_MODEL.md Agenome row + agenome state machine; DATA_MODEL.md agenomes projection \u2014 no TS type",
+      "proposed_fix": "Add a typed Agenome shape mirroring CandidateIdea's level of detail: { id, runId, generationId, parentIds: string[], systemPrompt: string, personaWeights: Record<string,number>, toolPermissions: string[], decompositionPolicy: ..., spawnBudget: number, mutationMeta?: ..., status: 'seeded'|'active'|'spent'|'eligible_parent'|'failed'|'reproduced'|'culled' }."
+    },
+    {
+      "severity": "important",
+      "finding": "CriticReview and CheckResult are freeze-first contracts blocking the verifier-council and check-runners tracks, but have only prose/table descriptions, no TS shape. CriticReview's score-dimension structure and CheckResult's status enum (incl. 'skipped' with reason) and score type are unspecified, so verifier output and selection input cannot be contract-tested.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 lists CriticReview, CheckResult under `contracts` with no shape; \u00a76 check-runners 'Checks may return `skipped` with reason'; DOMAIN_MODEL.md CriticReview/CheckResult rows ('score dimensions, critique, confidence' / 'check_type, status, score, output, error'); DATA_MODEL.md critic.reviewed + check.completed payload columns",
+      "proposed_fix": "Freeze: CriticReview = { id, candidateId, mandate: CriticMandate, scores: Record<string,number>, critique: string, confidence: number, evidenceRefs: EvidenceRef[] } with CriticMandate a closed union of the \u00a76 mandates (factual_grounding|novelty_prior_art|feasibility|falsification|subtype_specific). CheckResult = { id, candidateId, checkType: string, status: 'passed'|'failed'|'skipped', score?: number, output?: ..., skipReason?: string, evidenceRefs: EvidenceRef[], error?: string }."
+    },
+    {
+      "severity": "important",
+      "finding": "ModelGatewayRequest/Response and ProviderCapability are freeze-first contracts (the model-gateway track's entire public surface, imported by runtime-kernel and verifier-council per the DAG) but have NO typed shape. Only ModelRoute/ModelRole are typed. The 'domain code only sees ModelGateway + capability metadata' import rule cannot be honored without the request/response and ProviderCapability types.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 `contracts` lists `ModelGatewayRequest/Response` and `ProviderCapability` with no shape; \u00a79 defines only ModelRole + ModelRoute (with inline `capabilities` object, not a named ProviderCapability); ARCHITECTURE_OUTLINE.md import rule 'domain/runtime code only sees ModelGateway and capability metadata'",
+      "proposed_fix": "Freeze ModelGatewayRequest = { role: ModelRole, messages/prompt, schema?: <structured-output schema>, maxTokens?, ... } and ModelGatewayResponse = { accepted: boolean, output?, validationResult, providerMeta: { provider, modelId, gatewayRequestId, tokensIn, tokensOut, costEstimate? }, langfuseTraceId?, langfuseObservationId?, rejection?: { reason } }. Promote the inline `capabilities` object in ModelRoute to the named ProviderCapability type so \u00a76 and \u00a79 reference one shape."
+    },
+    {
+      "severity": "important",
+      "finding": "RunConfig / run caps has no typed shape despite being a freeze-first dependency. RunConfig is listed in \u00a76 contracts and caps are a load-bearing invariant (population/generation/energy/depth/tool/time), persisted in run.configured, and enforced by runtime-kernel \u2014 but no Caps type enumerates the six cap fields with units, so the kill-switch/cap enforcer and the operator config UI can disagree.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 `contracts` lists `RunConfig` (no shape); \u00a79-adjacent \u00a712 POST /runs takes config; DOMAIN_MODEL.md 'Run caps include at least population size, generation count, energy/token budget, spawn depth, tool call count, and wall-clock timeout'; ARCHITECTURE_DRAFT.md line 459 'cap enforcement for population/generation/energy/depth/tool/time'",
+      "proposed_fix": "Freeze RunCaps = { maxPopulation: number, maxGenerations: number, energyBudget: number (in doppl_energy units), maxSpawnDepth: number, maxToolCalls: number, wallClockTimeoutMs: number } and RunConfig = { seed, enabledSubtypes: CandidateSubtype[], caps: RunCaps, modelProfile, scoringPolicyVersion }. Tie energyBudget unit to the EnergyEvent unit fix above."
+    },
+    {
+      "severity": "important",
+      "finding": "RunEventEnvelope has drifted between its two definitions: DATA_MODEL.md types `actor` as a closed union of 7 roles, while ARCHITECTURE_DRAFT.md \u00a77 types `actor: string` (open). Since this is the #1 freeze-first contract and two tracks copy it, one version must win before fork.",
+      "evidence": "DATA_MODEL.md RunEventEnvelope `actor: \"operator\"|\"runtime\"|\"agenome\"|\"critic\"|\"check_runner\"|\"selection_controller\"|\"system\"`; ARCHITECTURE_DRAFT.md \u00a77 RunEventEnvelope `actor: string`",
+      "proposed_fix": "Adopt the DATA_MODEL.md closed union as canonical and update \u00a77 to match (replace `actor: string` with the 7-role union). Closed union is preferable for replay/audit and matches the locked 'all selection decisions explainable from persisted data' posture."
+    },
+    {
+      "severity": "important",
+      "finding": "EvidenceRef is referenced by multiple frozen contracts (CandidateIdea.evidenceRefs, plus critic/check evidence refs in the event payloads) but is never defined. As a shared leaf type it must be frozen first or every consuming contract is incomplete.",
+      "evidence": "DATA_MODEL.md CandidateIdea `evidenceRefs: EvidenceRef[]` (type used, never declared); DOMAIN_MODEL.md CriticReview/CheckResult 'evidence refs'; DATA_MODEL.md events reference 'evidence refs' / 'raw/normalized output refs'",
+      "proposed_fix": "Freeze EvidenceRef = { kind: 'trace'|'check_output'|'prior_art'|'signal'|'raw_output'|'other', uri?: string, eventId?: string, label?: string, langfuseObservationId?: string }. Keep it minimal; this unblocks CandidateIdea, CriticReview, and CheckResult simultaneously."
+    },
+    {
+      "severity": "nice-to-have",
+      "finding": "RunEventType table contains event names whose state tooling has no matching projection or lifecycle hook, risking silent payload divergence: novelty.scored exists as an event but NoveltyScore is only 'Event log or fitness component' (DOMAIN_MODEL.md) with no projection table row, and lineage.culled vs the CullingEvent entity naming is inconsistent across docs.",
+      "evidence": "DATA_MODEL.md events list `novelty.scored` and `lineage.culled`; Core Tables has no novelty_scores table (only `embeddings`); DOMAIN_MODEL.md entity is `CullingEvent` while the event is `lineage.culled` and lineage edge type is `culled`",
+      "proposed_fix": "Decide whether NoveltyScore is its own projection or folded into FitnessScore.components, and record it. Normalize culling naming (event `lineage.culled`, entity CullingEvent, edge `culled`) with a one-line note that they refer to the same fact. Low risk for MVP but cheap to pin."
+    },
+    {
+      "severity": "question-for-human",
+      "finding": "The contracts module's serialization tech (TypeScript types vs Zod schemas vs JSON Schema) is left as an OR, but runtime payload validation ('all writes schema-validated', 'validate structured outputs') requires a runtime validator, not bare TS types. The choice affects how every freeze-first contract is authored.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a76 'Owns TypeScript/Zod or JSON Schema definitions'; \u00a76 event-store 'All writes schema-validated'; \u00a76 model-gateway 'Validate structured outputs'; ARCHITECTURE_OUTLINE.md \u00a713 'Zod/JSON schemas'",
+      "proposed_fix": "Decision needed before contracts track starts: pick ONE authoring mechanism. Recommended default: author contracts as Zod schemas and derive TS types via z.infer, so the same schema validates event-store writes and model-gateway structured outputs \u2014 avoids maintaining parallel TS + JSON Schema definitions."
+    }
+  ],
+  "_key": "interfaces-schemas"
+}

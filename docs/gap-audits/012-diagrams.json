@@ -1,0 +1,37 @@
+{
+  "dimension": "D12 Diagrams",
+  "summary": "DIAGRAM_PLAN.md is well-scoped: one P0 full-scope architecture diagram plus 10 sub-diagrams (sub-diagrams 1-6 = P0, 7-9 = P1, 10 = P2), each with a stated purpose, must-show list, spec anchors, and recommended Mermaid format. The design intent is sound. But three concrete gaps block clean finalization: (1) the draft contains ZERO Mermaid \u2014 \u00a74/\u00a74A are ASCII `text` blocks and \u00a719 is a 6-item bullet list that merely points at DIAGRAM_PLAN.md, so the binding ARCHITECTURE.md must actually embed the P0 Mermaid diagrams rather than inherit ASCII; (2) every \"Spec anchors\" entry in DIAGRAM_PLAN.md cites ARCHITECTURE_DRAFT.md section numbers (e.g. \u00a74A, \u00a720, \u00a722) that will be remapped when the template-based ARCHITECTURE.md is generated, so those references will dangle and must be re-pointed at the final anchors; and (3) draft \u00a719's 6-item list under-counts and mis-prioritizes versus DIAGRAM_PLAN (7 artifacts are P0, not 6). These are finalize-time bookkeeping fixes, all appropriate for the MVP posture.",
+  "findings": [
+    {
+      "severity": "important",
+      "finding": "The architecture draft contains no Mermaid diagrams at all \u2014 \u00a74 and \u00a74A are ASCII `text` code blocks, and \u00a719 Diagrams is a 6-bullet list that defers entirely to DIAGRAM_PLAN.md. The finalized ARCHITECTURE.md must embed the P0 diagrams as actual Mermaid (DIAGRAM_PLAN's recommended format for all P0 items is Mermaid), or the binding contract ships with no visual evidence.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a719 (lines 568-577, bullet list only) and \u00a74/\u00a74A (lines 86-101, 107+ use ```text); grep confirms 0 ```mermaid blocks vs 8 ```text blocks. DIAGRAM_PLAN.md 'Recommended format' fields all specify Mermaid.",
+      "proposed_fix": "On finalize, convert the \u00a74 ASCII overview into the P0 full-scope Mermaid flowchart and embed Mermaid for the six P0 sub-diagrams (lifecycle sequence, event-truth/replay, model gateway, lineage/Neo4j spike, dashboard data plane, trust boundaries). Replace draft \u00a719's bullet list with the embedded diagrams plus a one-line pointer to DIAGRAM_PLAN.md for P1/P2 deferrals."
+    },
+    {
+      "severity": "important",
+      "finding": "Every 'Spec anchors' block in DIAGRAM_PLAN.md references ARCHITECTURE_DRAFT.md section numbers (the full-scope diagram cites \u00a71,3,4,4A,6,7,9,11,12,15,16,17,18,20; sub-diagrams cite \u00a72,5,8,10,14, \u00a74A, \u00a713, \u00a720, \u00a722, etc.). When ARCHITECTURE.md is regenerated from the template, these section numbers will be remapped, so all of these anchor references will dangle and silently point at wrong/absent sections.",
+      "evidence": "DIAGRAM_PLAN.md lines 27-32, 67-72, 97-102, 130-136, 162-166, 192-198, 228-232, 263-268, 295-301, 329-336, 364-368 \u2014 all 'Spec anchors' bullets cite `ARCHITECTURE_DRAFT.md Section N`. ARCHITECTURE_DRAFT.md \u00a722 (lines 608-636) is the anchor index that finalize will re-stamp; \u00a723 (line 640) states the draft must not be implemented directly, implying renumbering on finalize.",
+      "proposed_fix": "As part of finalize, run a remap pass over DIAGRAM_PLAN.md: rewrite each 'Spec anchors' reference from `ARCHITECTURE_DRAFT.md Section N` to the corresponding final `ARCHITECTURE.md \u00a7X` anchor (using the new \u00a722-equivalent anchor index as the lookup table). Add a note at the top of DIAGRAM_PLAN.md that anchors track ARCHITECTURE.md, not the draft."
+    },
+    {
+      "severity": "nice-to-have",
+      "finding": "Draft \u00a719 lists only 6 diagrams (system context, runtime lifecycle, event/replay, provider gateway, lineage graph/projection, trust boundaries) but DIAGRAM_PLAN designates 7 artifacts as P0 \u2014 the full-scope architecture diagram PLUS sub-diagrams 1-6, which additionally include the Dashboard Data Plane (sub-diagram 5). The draft \u00a719 list omits the dashboard data plane and conflates the full-scope context diagram with sub-diagram 1.",
+      "evidence": "ARCHITECTURE_DRAFT.md \u00a719 lines 572-577 (6 bullets) vs DIAGRAM_PLAN.md: full-scope = P0 (line 36), sub-diagrams 1-6 = P0 (lines 74, 104, 138, 168, 198, 234), sub-diagram 5 Dashboard Data Plane = P0 (line 198) is absent from the \u00a719 list.",
+      "proposed_fix": "Align the finalized \u00a719 list with DIAGRAM_PLAN's P0 set: include the Dashboard Data Plane diagram explicitly, and distinguish the full-scope context diagram from the run-lifecycle sequence (sub-diagram 1) so the 7 P0 artifacts map 1:1."
+    },
+    {
+      "severity": "proposed-edit",
+      "finding": "The P0 diagram set that must be in the final ARCHITECTURE.md, derived from DIAGRAM_PLAN priorities, is: (1) Full-Scope Architecture flowchart, (2) Run Lifecycle Sequence, (3) Event Truth & Replay Model, (4) Model Gateway & Provider Routing, (5) Lineage Graph Projection & Neo4j Spike, (6) Dashboard Data Plane, (7) Trust Boundaries & Threat Model. P1 (Parallel Build DAG, Deployment/Demo Topology, Scoring/Novelty/Verifier) and P2 (Repo Scaffold) may stay in DIAGRAM_PLAN.md / appendix without blocking finalize.",
+      "evidence": "DIAGRAM_PLAN.md Priority fields: P0 at lines 36, 76, 104-105, 138-139, 168-169, 200-202, 234-236; P1 at lines 270, 304, 338; P2 at line 371.",
+      "proposed_fix": "Treat these 7 P0 diagrams as the embedded-Mermaid requirement for ARCHITECTURE.md. Several P0 sub-diagrams (event-truth/replay, trust boundaries, model gateway) encode the LOCKED load-bearing invariants \u2014 append-only authoritative event log, server-side-only keys/redaction, no arbitrary code execution, provider-agnostic gateway \u2014 so their inclusion doubles as invariant documentation and should not be deferred."
+    },
+    {
+      "severity": "question-for-human",
+      "finding": "DIAGRAM_PLAN.md repeatedly recommends 'optional polished version for the demo deck' / 'optional graph sketch for demo narrative' / 'optional UI annotation diagram' alongside the canonical Mermaid (lines 40, 173, 205). It is unspecified whether any non-Mermaid polished/demo diagrams are in scope for the 2-week MVP or are pure stretch.",
+      "evidence": "DIAGRAM_PLAN.md lines 40 (full-scope 'polished version optional for the demo deck'), 173 (lineage 'optional graph sketch'), 205 (dashboard 'optional UI annotation diagram during product/design work').",
+      "proposed_fix": "Decision needed: are demo-deck/polished diagrams MVP scope? Recommended default \u2014 defer ALL polished/non-Mermaid diagram variants to the showcase-prep phase as stretch; require only the 7 P0 Mermaid diagrams embedded in ARCHITECTURE.md for the binding contract, and mark the 'optional' variants explicitly as deferred so they are not silently expected."
+    }
+  ],
+  "_key": "diagrams"
+}
