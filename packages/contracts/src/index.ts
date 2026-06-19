@@ -36,3 +36,11 @@ export {
   ConfigValidationError,
   validateBootConfig,
 } from "./config/validate.js";
+
+// Verifier (§7/§14)
+export {
+  CriticMandate,
+  CriticMandateValues,
+  CriticReview,
+} from "./verifier/critic-review.js";
+export { CRITIC_INPUT_DELIMITER, CriticInput } from "./verifier/critic-input.js";
