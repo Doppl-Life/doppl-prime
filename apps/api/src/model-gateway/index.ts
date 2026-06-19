@@ -27,3 +27,8 @@ export {
   type ModelGateway,
   type TraceHandle,
 } from "./gateway.js";
+export {
+  pipeStructuredOutput,
+  type StructuredOutputContext,
+  type StructuredOutputResult,
+} from "./structured-output.js";
