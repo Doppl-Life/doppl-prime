@@ -18,7 +18,9 @@ describe("spec(§4) nextSequence — monotonic, gapless, per-run", () => {
   });
 
   beforeEach(async () => {
-    await handle.pool.query("DELETE FROM run_events");
+    // TRUNCATE bypasses the U6 append-only trigger (DDL-tier); used here
+    // only for test cleanup. The kernel never issues TRUNCATE.
+    await handle.pool.query("TRUNCATE run_events");
   });
 
   async function insertEvent(runId: string, sequence: number): Promise<void> {

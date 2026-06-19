@@ -34,7 +34,9 @@ describe("spec(§4) appendEvent — validate + redact + insert in one TX", () =>
   });
 
   beforeEach(async () => {
-    await handle.pool.query("DELETE FROM run_events");
+    // TRUNCATE bypasses the U6 append-only trigger (DDL-tier); used here
+    // only for test cleanup. The kernel never issues TRUNCATE.
+    await handle.pool.query("TRUNCATE run_events");
   });
 
   test("happy path: valid run.configured envelope inserts a row at sequence 0", async () => {
