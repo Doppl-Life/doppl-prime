@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 title: "feat: Scaffold + Phase 0 contract freeze (Doppl)"
 type: feat
 created: 2026-06-19
