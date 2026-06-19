@@ -35,6 +35,9 @@ importers:
       pg:
         specifier: 8.13.1
         version: 8.13.1
+      seedrandom:
+        specifier: 3.0.5
+        version: 3.0.5
       zod:
         specifier: 3.23.8
         version: 3.23.8
@@ -48,6 +51,9 @@ importers:
       '@types/pg':
         specifier: 8.11.10
         version: 8.11.10
+      '@types/seedrandom':
+        specifier: 3.0.8
+        version: 3.0.8
       drizzle-kit:
         specifier: 0.28.1
         version: 0.28.1
@@ -903,6 +909,9 @@ packages:
   '@types/pg@8.11.10':
     resolution: {integrity: sha512-LczQUW4dbOQzsH2RQ5qoeJ6qJPdrcM/DcMLoqWQkMLMsq83J5lAX3LXjdkWdpscFy67JSOWDnh7Ny/sPFykmkg==}
 
+  '@types/seedrandom@3.0.8':
+    resolution: {integrity: sha512-TY1eezMU2zH2ozQoAFAQFOPpvP15g+ZgSfTZt31AUUH/Rxtnz3H+A/Sv1Snw2/amp//omibc+AEkTaA8KUeOLQ==}
+
   '@types/ssh2-streams@0.1.13':
     resolution: {integrity: sha512-faHyY3brO9oLEA0QlcO8N2wT7R0+1sHWZvQ+y3rMLwdY1ZyS1z0W3t65j9PqT4HmQ6ALzNe7RZlNuCNE0wBSWA==}
 
@@ -1712,6 +1721,9 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
+  seedrandom@3.0.5:
+    resolution: {integrity: sha512-8OwmbklUNzwezjGInmZ+2clQmExQPvomqjL7LFqOYqtmuxRgQYqOD3mHaU+MvZn5FLUeVxVfQjwLZW/n/JFuqg==}
+
   shebang-command@2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
     engines: {node: '>=8'}
@@ -2483,6 +2495,8 @@ snapshots:
       '@types/node': 22.10.2
       pg-protocol: 1.15.0
       pg-types: 4.1.0
+
+  '@types/seedrandom@3.0.8': {}
 
   '@types/ssh2-streams@0.1.13':
     dependencies:
@@ -3318,6 +3332,8 @@ snapshots:
   safe-buffer@5.2.1: {}
 
   safer-buffer@2.1.2: {}
+
+  seedrandom@3.0.5: {}
 
   shebang-command@2.0.0:
     dependencies:
