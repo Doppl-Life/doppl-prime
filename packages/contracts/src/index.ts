@@ -6,6 +6,11 @@ export { spec } from "./testing/spec-tag.js";
 export { Actor, ActorRoles } from "./events/actor.js";
 export { RunEventType, RunEventTypeValues } from "./events/event-type.js";
 export { RunEventEnvelope } from "./events/envelope.js";
+export {
+  parseEventPayload,
+  RunEventPayloadMap,
+  type RunEventPayloadFor,
+} from "./events/payloads/per-type-map.js";
 
 // Security (§14)
 export { REDACTION_PLACEHOLDER, redact } from "./security/redaction.js";
