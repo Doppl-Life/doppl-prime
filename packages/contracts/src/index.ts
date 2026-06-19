@@ -9,3 +9,6 @@ export { RunEventEnvelope } from "./events/envelope.js";
 
 // Security (§14)
 export { REDACTION_PLACEHOLDER, redact } from "./security/redaction.js";
+
+// Domain (§3)
+export { Agenome, AgenomeStatus, AgenomeStatusValues } from "./domain/agenome.js";
