@@ -36,6 +36,10 @@ export const runs = pgTable("runs", {
   // snapshot of what the run was started against; the application boundary
   // still validates against the @doppl/contracts RunConfig schema.
   config: jsonb("config").notNull(),
+  // configured_at (Phase 3 U10) — the Phase 3 worker polls
+  // ORDER BY configured_at ASC. Default NOW() means the column populates
+  // automatically on INSERT.
+  configuredAt: timestamp("configured_at", { withTimezone: true }).notNull().defaultNow(),
   startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   terminalSummary: text("terminal_summary"),
