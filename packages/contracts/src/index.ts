@@ -44,3 +44,7 @@ export {
   CriticReview,
 } from "./verifier/critic-review.js";
 export { CRITIC_INPUT_DELIMITER, CriticInput } from "./verifier/critic-input.js";
+
+// Checks (§7/§14)
+export { CheckResult, CheckStatus, CheckStatusValues } from "./checks/check-result.js";
+export { CheckRunnerAdapter } from "./checks/check-runner-adapter.js";
