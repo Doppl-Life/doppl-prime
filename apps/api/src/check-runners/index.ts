@@ -20,7 +20,8 @@ export type {
 export { CheckRegistryError } from "./registry.js";
 export { runCheck } from "./run-check.js";
 export type { RunCheckInput } from "./run-check.js";
-// rerunCheck + LIVE_RERUNNABLE_ADAPTER_IDS are added by U10 (live-rerun.ts).
+export { LIVE_RERUNNABLE_ADAPTER_IDS, rerunCheck } from "./live-rerun.js";
+export type { RerunCheckInput, RerunCheckOutcome } from "./live-rerun.js";
 
 export const TRANSFER_ADAPTER_IDS = [
   "transfer.source_validity",
