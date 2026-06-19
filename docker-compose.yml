@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: doppl_postgres
+    environment:
+      POSTGRES_USER: doppl
+      POSTGRES_PASSWORD: doppl
+      POSTGRES_DB: doppl_dev
+    ports:
+      # Host port 5434 — 5432 is the system Postgres, 5433 is held by
+      # another local Docker project. DATABASE_URL matches 5434.
+      - "5434:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doppl -d doppl_dev"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg_data:
