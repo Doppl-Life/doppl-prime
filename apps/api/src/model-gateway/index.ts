@@ -17,4 +17,13 @@ export {
   RetryExhaustedError,
   RouteNotFoundError,
 } from "./errors.js";
-export type { ModelGateway } from "./gateway.js";
+export {
+  type Adapter,
+  type AdapterResult,
+  createGateway,
+  type GatewayDeps,
+  type GatewayEventStore,
+  type GatewayLangfuse,
+  type ModelGateway,
+  type TraceHandle,
+} from "./gateway.js";
