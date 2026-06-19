@@ -16,7 +16,7 @@ Derived from the Design Council / PearsonLloyd "A Better A&E" program and suppor
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/6207e643-8948-4dbc-96d4-178ded2d03e6/pasted-text.txt`
+`../sources.md` — Candidate Triage List A, item 11 ("The Emergency Room 'Wait-Time' Aggression Bottleneck").
 
 ### Derived By
 

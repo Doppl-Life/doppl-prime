@@ -11,6 +11,6 @@ For evaluation, withhold the known intervention (sensor fusion across in-water s
 ## Source Notes
 
 - Derived from a superyacht-industry domain expert's recollection of a real management-company incident.
-- Source transcript: `scratchpad/case-studies/jack-drone-privacy/Jack-syn-6-18.md` (conversational, spans several adjacent yacht scenarios).
-- Sibling case from the same transcript: `scratchpad/case-studies/jack-drone-privacy/` (paparazzi-drone privacy).
+- Source transcript: `../jack-drone-privacy/Jack-syn-6-18.md` (conversational, spans several adjacent yacht scenarios).
+- Sibling case from the same transcript: `../jack-drone-privacy/` (paparazzi-drone privacy).
 - Handle carefully: the superyacht domain is secretive and NDA-constrained. Keep anonymized; frame as a hypothetical but realistic security scenario.

@@ -11,6 +11,6 @@ For evaluation, treat multi-bearer auto-failover as the baseline to beat, not th
 ## Source Notes
 
 - Derived from a superyacht-industry domain expert describing how Starlink decimated the VSAT segment and shifted the real problem from raw connectivity to guaranteed continuity.
-- Source transcript: `scratchpad/case-studies/jack-drone-privacy/Jack-syn-6-18.md` (conversational, spans many yacht topics).
-- This is an intentionally **open / unsolved** case (see [MEMORY.md](../../../MEMORY.md) on open forks). Its value is the gap between the tempting answers and a genuine reframe; do not prematurely resolve it.
+- Source transcript: `../jack-drone-privacy/Jack-syn-6-18.md` (conversational, spans many yacht topics).
+- This is an intentionally **open / unsolved** case: do not prematurely resolve it. Its value is the gap between the tempting answers (cheap pipe; or expensive, regressive redundancy) and a genuine reframe.
 - Handle carefully: the superyacht domain is secretive and NDA-constrained. Keep anonymized; strip specific commercial terms.

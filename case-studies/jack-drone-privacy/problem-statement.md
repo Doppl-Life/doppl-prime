@@ -11,7 +11,7 @@ For evaluation, withhold the known solution (early detection triggers a private 
 ## Source Notes
 
 - Derived from a superyacht-industry domain expert's recollection; the expert flagged this case as especially strong because it has a simple, non-obvious, real-world-style solution.
-- Source transcript: `scratchpad/case-studies/jack-drone-privacy/Jack-syn-6-18.md` (conversational, spans several adjacent yacht scenarios).
-- Sibling case from the same transcript: `scratchpad/case-studies/jack-yacht-perimeter-intrusion/` (waterline intrusion).
+- Source transcript: `Jack-syn-6-18.md` (conversational, spans several adjacent yacht scenarios).
+- Sibling case from the same transcript: `../jack-yacht-perimeter-intrusion/` (waterline intrusion).
 - Handle carefully: the superyacht domain is secretive and NDA-constrained. Keep anonymized; frame as a hypothetical but realistic privacy/security scenario.
 - The known solution is intentionally omitted from the withheld-solution version used for generation runs.

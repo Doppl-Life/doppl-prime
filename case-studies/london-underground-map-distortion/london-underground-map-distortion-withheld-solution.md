@@ -16,7 +16,7 @@ Derived from public research on metro route choice and London Underground passen
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/6207e643-8948-4dbc-96d4-178ded2d03e6/pasted-text.txt`
+`../sources.md` — Candidate Triage List A, item 7 ("The London Underground Map Distortions").
 
 ### Derived By
 

@@ -16,7 +16,7 @@ Derived from Rory Sutherland's Knowledge Project discussion of airport-security 
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/6207e643-8948-4dbc-96d4-178ded2d03e6/pasted-text.txt`
+`../sources.md` — Candidate Triage List A, item 4 ("The Airport Security Fluid Smuggling Bottleneck").
 
 ### Derived By
 

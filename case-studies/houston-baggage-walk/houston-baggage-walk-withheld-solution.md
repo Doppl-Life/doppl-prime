@@ -16,7 +16,7 @@ Derived from a public behavioral-operations case about baggage-claim complaints 
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/39fcf3bf-eaa5-4c44-920e-71640763f2a4/pasted-text.txt`
+`../sources.md` — Candidate Triage List B ("The Houston Baggage Walk Reframe").
 
 ### Derived By
 

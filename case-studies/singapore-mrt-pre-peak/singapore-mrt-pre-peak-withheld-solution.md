@@ -16,7 +16,7 @@ Derived from public Singapore rail-demand management material.
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/39fcf3bf-eaa5-4c44-920e-71640763f2a4/pasted-text.txt`
+`../sources.md` — Candidate Triage List B ("Singapore Mass Rapid Transit Pre-Peak De-congestion").
 
 ### Derived By
 

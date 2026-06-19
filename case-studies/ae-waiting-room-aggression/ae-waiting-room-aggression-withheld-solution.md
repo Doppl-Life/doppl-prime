@@ -16,7 +16,7 @@ Derived from public material about reducing violence and aggression in emergency
 
 ### Source File
 
-`/Users/michaelhabermas/.codex/attachments/6207e643-8948-4dbc-96d4-178ded2d03e6/pasted-text.txt`
+`../sources.md` — Candidate Triage List A, item 11 ("The Emergency Room 'Wait-Time' Aggression Bottleneck").
 
 ### Derived By
 

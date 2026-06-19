@@ -18,7 +18,7 @@ This case was derived from a conversation with a superyacht-industry domain expe
 
 ### Source File
 
-`scratchpad/case-studies/jack-drone-privacy/Jack-syn-6-18.md`
+`Jack-syn-6-18.md`
 
 ### Derived By
 
