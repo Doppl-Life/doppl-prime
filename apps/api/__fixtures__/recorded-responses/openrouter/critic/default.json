@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "output": "{\"summary\":\"recorded critic verdict\",\"confidence\":0.75}",
+  "repairAttempts": 0,
+  "providerTraceId": "completion_recorded_critic",
+  "langfuseObservationId": "obs_recorded_critic",
+  "energyEstimate": 3,
+  "energyActual": 3
+}

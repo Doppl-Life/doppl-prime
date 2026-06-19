@@ -44,6 +44,10 @@ export {
   type LangfuseClientOptions,
 } from "./langfuse.js";
 export {
+  RecordedGateway,
+  type RecordedGatewayOptions,
+} from "./recorded-gateway.js";
+export {
   pipeStructuredOutput,
   type StructuredOutputContext,
   type StructuredOutputResult,

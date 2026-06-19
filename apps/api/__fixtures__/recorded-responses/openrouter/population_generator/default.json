@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "output": "{\"subtype\":\"cross_domain_transfer\",\"title\":\"recorded candidate\",\"summary\":\"placeholder\"}",
+  "repairAttempts": 0,
+  "providerTraceId": "completion_recorded_popgen",
+  "langfuseObservationId": "obs_recorded_popgen",
+  "energyEstimate": 5,
+  "energyActual": 5
+}
