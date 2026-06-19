@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { GatewayLangfuse, TraceHandle } from "./gateway.js";
+import { langfuseMetadata } from "./redaction.js";
 
 /**
  * Langfuse correlation with a local-trace fallback (P2.8). Per
@@ -76,13 +77,10 @@ export function createLangfuseClient(options: LangfuseClientOptions): GatewayLan
       sdk = options.sdkFactory();
     } else {
       // The real `langfuse` SDK import happens only when keys are set, so
-      // local-trace mode never pulls the dep in. We lazy-require to keep
-      // construction failures isolated.
-      // biome-ignore lint/correctness/noUnusedVariables: production wires the SDK here when implemented
-      const lazyImportPlaceholder = null;
-      throw new Error(
-        "langfuse SDK factory not supplied — pass `sdkFactory` (Phase 2 leaves the production wiring to caller config)",
-      );
+      // local-trace mode never pulls the dep in. Production callers pass a
+      // sdkFactory that constructs the real client; without one, fall back
+      // to local-trace IDs.
+      throw new Error("langfuse SDK factory not supplied — pass `sdkFactory` to enable Cloud mode");
     }
   } catch {
     return { startTrace: () => localTraceHandle() };
@@ -92,7 +90,9 @@ export function createLangfuseClient(options: LangfuseClientOptions): GatewayLan
   return {
     startTrace(opts) {
       const metadata = opts.metadata ?? {};
-      const filtered = includeContent ? metadata : stripContent(metadata);
+      const stripped = includeContent ? metadata : stripContent(metadata);
+      // §14 / P2.3 — scrub at the side-channel emit boundary.
+      const filtered = langfuseMetadata(stripped);
       try {
         const trace = client.trace({
           name: opts.name,
