@@ -4,6 +4,10 @@ export {
   type HttpClientOptions,
 } from "./adapters/http-client.js";
 export {
+  createOpenRouterAdapter,
+  type OpenRouterAdapterOptions,
+} from "./adapters/openrouter.js";
+export {
   createRegistry,
   defaultRoutes,
   type GatewayRegistry,
