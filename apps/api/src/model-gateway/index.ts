@@ -40,6 +40,10 @@ export {
   type TraceHandle,
 } from "./gateway.js";
 export {
+  createLangfuseClient,
+  type LangfuseClientOptions,
+} from "./langfuse.js";
+export {
   pipeStructuredOutput,
   type StructuredOutputContext,
   type StructuredOutputResult,
