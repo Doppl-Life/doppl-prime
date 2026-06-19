@@ -23,6 +23,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:int": "vitest run __integration_tests__",
+    "test:live": "vitest run __integration_tests__/live",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/event-store/migrate.ts"
   },
