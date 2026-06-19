@@ -115,9 +115,7 @@ export async function runGeneration(
     return {
       outcome: "stopped",
       survivingCandidateCount: 0,
-      ...(deps.killSwitch.reason() !== null
-        ? { reason: deps.killSwitch.reason() ?? undefined }
-        : {}),
+      ...(deps.killSwitch.reason() !== null ? { reason: deps.killSwitch.reason() as string } : {}),
     };
   }
 
@@ -148,7 +146,7 @@ export async function runGeneration(
         outcome: "stopped",
         survivingCandidateCount: persisted.length,
         ...(deps.killSwitch.reason() !== null
-          ? { reason: deps.killSwitch.reason() ?? undefined }
+          ? { reason: deps.killSwitch.reason() as string }
           : {}),
       };
     }
