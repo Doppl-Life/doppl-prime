@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase 4 — Verifier council & checks"
 type: feat
-status: active
+status: completed
 created: 2026-06-19
 owner: melissa
 depth: standard
