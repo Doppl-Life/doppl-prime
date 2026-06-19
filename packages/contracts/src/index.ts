@@ -12,3 +12,18 @@ export { REDACTION_PLACEHOLDER, redact } from "./security/redaction.js";
 
 // Domain (§3)
 export { Agenome, AgenomeStatus, AgenomeStatusValues } from "./domain/agenome.js";
+export {
+  CandidateIdea,
+  CandidateIdeaFieldNames,
+  CandidateStatus,
+  CandidateStatusValues,
+} from "./domain/candidate-idea.js";
+export {
+  CrossDomainTransferPayload,
+  SubtypeName,
+  SubtypeNameValues,
+  ZeitgeistSynthesisPayload,
+} from "./domain/subtype-payloads.js";
+
+// Evidence (§9)
+export { EvidenceKind, EvidenceKindValues, EvidenceRef } from "./domain/evidence-ref.js";
