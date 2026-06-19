@@ -1,5 +1,5 @@
 ---
-status: active
+status: completed
 title: "feat: Phase 2 — Model gateway & provider integration (Doppl)"
 type: feat
 created: 2026-06-19
