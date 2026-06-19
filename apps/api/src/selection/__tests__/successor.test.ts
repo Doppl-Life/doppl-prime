@@ -1,7 +1,7 @@
 import type { Agenome, RunCaps } from "@doppl/contracts";
-import type { ModelGateway } from "../../model-gateway/gateway.js";
 import { beforeEach, describe, expect, test } from "vitest";
 import type { AppendEventInput, AppendEventResult } from "../../event-store/append.js";
+import type { ModelGateway } from "../../model-gateway/gateway.js";
 import { allocateSuccessorBudget, clampBudget, normalizeWeights } from "../allocation.js";
 import { assembleSuccessorPopulation } from "../successor.js";
 
