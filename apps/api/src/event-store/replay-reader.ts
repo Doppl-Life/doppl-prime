@@ -44,7 +44,7 @@ export class ReplaySequenceGapError extends Error {
   }
 }
 
-interface RawEventRow {
+interface RawEventRow extends Record<string, unknown> {
   id: string;
   run_id: string;
   sequence: number | string;
