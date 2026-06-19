@@ -24,6 +24,16 @@ export {
   SubtypeNameValues,
   ZeitgeistSynthesisPayload,
 } from "./domain/subtype-payloads.js";
+export { CullingEvent } from "./domain/culling-event.js";
+export { FINAL_JUDGE_AXES, FinalJudgeRubric } from "./domain/final-judge-rubric.js";
+export { Generation, GenerationStatus, GenerationStatusValues } from "./domain/generation.js";
+export {
+  Run,
+  RunStatus,
+  RunStatusValues,
+  TerminalRunStatus,
+  TerminalRunStatusValues,
+} from "./domain/run.js";
 
 // Evidence (§9)
 export { EvidenceKind, EvidenceKindValues, EvidenceRef } from "./domain/evidence-ref.js";
