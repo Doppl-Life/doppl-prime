@@ -129,8 +129,7 @@ export async function appendEvent(
       // Drizzle's tx.execute returns raw rows without pg's automatic
       // timestamptz → Date conversion. Coerce here so the public return
       // type is always a Date.
-      occurredAt:
-        row.occurred_at instanceof Date ? row.occurred_at : new Date(row.occurred_at),
+      occurredAt: row.occurred_at instanceof Date ? row.occurred_at : new Date(row.occurred_at),
     };
   });
 }

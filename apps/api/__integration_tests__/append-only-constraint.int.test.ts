@@ -1,4 +1,4 @@
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { appendEvent } from "../src/event-store/append.js";
 import { type PgContainerHandle, startPgContainer } from "./helpers/pg-container.js";
