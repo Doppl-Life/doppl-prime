@@ -12,6 +12,10 @@ export {
   type OpenRouterAdapterOptions,
 } from "./adapters/openrouter.js";
 export {
+  createRetrievalAdapter,
+  type RetrievalAdapterOptions,
+} from "./adapters/retrieval.js";
+export {
   createRegistry,
   defaultRoutes,
   type GatewayRegistry,

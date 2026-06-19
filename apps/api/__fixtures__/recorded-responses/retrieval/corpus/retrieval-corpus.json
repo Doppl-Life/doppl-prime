@@ -1,0 +1,37 @@
+{
+  "queries": [
+    {
+      "matchPattern": "evolution",
+      "results": [
+        {
+          "title": "Diversity-preserving selection in evolutionary algorithms",
+          "content": "Selection pressure that biases toward diversity rather than fitness alone helps populations avoid premature convergence to local optima.",
+          "url": "https://example.com/evolution/diversity",
+          "score": 0.92
+        }
+      ]
+    },
+    {
+      "matchPattern": "mixture of experts",
+      "results": [
+        {
+          "title": "Load balancing in Mixture-of-Experts routing",
+          "content": "Routing collapse — where the gate concentrates on a small subset of experts — is a primary failure mode of MoE training; auxiliary losses encourage balanced utilization.",
+          "url": "https://example.com/ml/moe-routing",
+          "score": 0.88
+        }
+      ]
+    },
+    {
+      "matchPattern": "agent",
+      "results": [
+        {
+          "title": "Bounded-population agent evolution",
+          "content": "Doppl-style agent runtimes use finite caps on population, generations, energy, and depth to make evolution loops tractable for live demos.",
+          "url": "https://example.com/agents/bounded-population",
+          "score": 0.85
+        }
+      ]
+    }
+  ]
+}
