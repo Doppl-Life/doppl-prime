@@ -27,3 +27,12 @@ export {
 
 // Evidence (§9)
 export { EvidenceKind, EvidenceKindValues, EvidenceRef } from "./domain/evidence-ref.js";
+
+// Run (§4/§5/§15)
+export { RunCaps } from "./run/run-caps.js";
+export { RunConfig } from "./run/run-config.js";
+export {
+  type BootConfigSources,
+  ConfigValidationError,
+  validateBootConfig,
+} from "./config/validate.js";
