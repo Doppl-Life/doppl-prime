@@ -65,3 +65,8 @@ export {
   ReproductionMode,
   ReproductionModeValues,
 } from "./reproduction/reproduction-event.js";
+
+// Gateway (§9)
+export { ModelRole, ModelRoleValues } from "./gateway/model-role.js";
+export { ModelRoute } from "./gateway/model-route.js";
+export { ProviderCapability } from "./gateway/provider-capability.js";
