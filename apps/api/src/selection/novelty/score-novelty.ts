@@ -4,27 +4,26 @@ import type { AppendEventInput, AppendEventResult } from "../../event-store/appe
 import type { ModelGateway } from "../../model-gateway/gateway.js";
 import { cosineDistance } from "./cosine.js";
 import { EmbedError, embedCandidate } from "./embed.js";
+import { charNGramSet, jaccardDistance } from "./lexical-fallback.js";
 
 /**
- * `scoreCandidateNovelty` (P5.2) — embeds a candidate, computes app-
- * level cosine distance against the per-generation comparison set, and
- * persists a NoveltyScore in `novelty.scored`. Happy path only; the
- * degrade edge (retry → lexical fallback → novelty_scoring_degraded) is
- * the U2 extension.
+ * `scoreCandidateNovelty` (P5.2 + P5.3) — embeds a candidate, computes
+ * app-level cosine distance against the per-generation comparison set,
+ * and persists a NoveltyScore in `novelty.scored`. On embedding failure
+ * after a bounded retry, falls back to character-3-gram Jaccard
+ * distance and emits exactly one `novelty_scoring_degraded` event for
+ * the affected candidate. Never blocks the scoring state.
  *
- * `comparisonSet` is the seen-order list of (candidateId, vector) pairs
- * the candidate is compared against. Persisting `comparisonSet` on the
- * NoveltyScore makes replay-side cosine deterministic even though
- * floating-point sums depend on iteration order.
- *
- * Score is the mean cosine distance over the comparison set. Higher =
- * more novel. Range `[0, 2]` (cosine distance bounds). An empty
- * comparison set is the first-candidate boundary value: score 0.
+ * `comparisonSet` is the seen-order list of (candidateId, vector, text)
+ * triples the candidate is compared against. Embedded comparators
+ * supply vector; lexical fallback uses text. Replay reads the persisted
+ * score directly — no recomputation needed.
  */
 
 export interface ComparisonEntry {
   candidateId: string;
   vector: readonly number[];
+  text: string;
 }
 
 export interface ScoreNoveltyInput {
@@ -38,15 +37,18 @@ export interface ScoreNoveltyInput {
   agenomeId?: string;
   /** Other candidates already embedded this generation, in seen order. */
   comparison: readonly ComparisonEntry[];
+  /** Override embed retries (default 1). Setting 0 means no retry. */
+  retryMax?: number;
 }
 
-export interface ScoreNoveltyOutput {
-  noveltyScore: NoveltyScore;
-  vector: number[];
-  degraded: false;
-}
+export type ScoreNoveltyOutput =
+  | { noveltyScore: NoveltyScore; vector: number[]; degraded: false }
+  | { noveltyScore: NoveltyScore; vector: number[]; degraded: true; reason: string };
 
-function meanDistance(target: readonly number[], comparison: readonly ComparisonEntry[]): number {
+function meanCosineDistance(
+  target: readonly number[],
+  comparison: readonly ComparisonEntry[],
+): number {
   if (comparison.length === 0) return 0;
   let sum = 0;
   for (const entry of comparison) {
@@ -55,37 +57,111 @@ function meanDistance(target: readonly number[], comparison: readonly Comparison
   return sum / comparison.length;
 }
 
+function meanJaccardDistance(target: string, comparison: readonly ComparisonEntry[]): number {
+  if (comparison.length === 0) return 0;
+  const targetSet = charNGramSet(target);
+  let sum = 0;
+  for (const entry of comparison) {
+    sum += jaccardDistance(targetSet, charNGramSet(entry.text));
+  }
+  return sum / comparison.length;
+}
+
+async function tryEmbedWithRetry(
+  input: ScoreNoveltyInput,
+  retryMax: number,
+): Promise<Awaited<ReturnType<typeof embedCandidate>>> {
+  let attempt = 0;
+  let lastErr: unknown;
+  while (attempt <= retryMax) {
+    try {
+      return await embedCandidate({
+        gateway: input.gateway,
+        text: input.candidateText,
+        runId: input.runId,
+        candidateId: input.candidateId,
+        correlationId:
+          attempt === 0 ? input.correlationId : `${input.correlationId}_retry_${attempt}`,
+        ...(input.generationId !== undefined ? { generationId: input.generationId } : {}),
+        ...(input.agenomeId !== undefined ? { agenomeId: input.agenomeId } : {}),
+      });
+    } catch (err) {
+      lastErr = err;
+      attempt += 1;
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new EmbedError(`unknown embed failure: ${String(lastErr)}`);
+}
+
+const LEXICAL_MODEL_ID = "lexical_char3gram_jaccard";
+const RETRY_MAX_DEFAULT = Number(process.env.DOPPL_NOVELTY_RETRY_MAX ?? "1");
+
 export async function scoreCandidateNovelty(input: ScoreNoveltyInput): Promise<ScoreNoveltyOutput> {
-  let embedded: Awaited<ReturnType<typeof embedCandidate>>;
+  const retryMax = input.retryMax ?? RETRY_MAX_DEFAULT;
+
+  let embedded: Awaited<ReturnType<typeof embedCandidate>> | null = null;
+  let degradeReason: string | null = null;
+
   try {
-    embedded = await embedCandidate({
-      gateway: input.gateway,
-      text: input.candidateText,
-      runId: input.runId,
+    embedded = await tryEmbedWithRetry(input, retryMax);
+  } catch (err) {
+    degradeReason =
+      err instanceof Error
+        ? `embed_failed_after_retry:${err.message}`
+        : "embed_failed_after_retry:unknown";
+  }
+
+  let noveltyScore: NoveltyScore;
+  let vector: number[];
+
+  if (embedded) {
+    const score = meanCosineDistance(embedded.vector, input.comparison);
+    noveltyScore = {
+      id: `nov_${randomUUID()}`,
       candidateId: input.candidateId,
+      vector: embedded.vector,
+      embeddingModelId: embedded.embeddingModelId,
+      dimension: embedded.dimension,
+      comparisonSet: input.comparison.map((c) => c.candidateId),
+      method: "embedding_cosine_mean",
+      score,
+      explanation: `Mean cosine distance over ${input.comparison.length} comparators using ${embedded.embeddingModelId}`,
+    };
+    vector = embedded.vector;
+  } else {
+    // Degrade path. Emit novelty_scoring_degraded once, then compute
+    // lexical Jaccard. NoveltyScore.vector is a placeholder [0] under
+    // dimension 1 — the lexical method does not produce a numeric
+    // embedding. Replay reads `score` directly.
+    await input.appendEvent({
+      runId: input.runId,
+      type: "novelty_scoring_degraded",
+      actor: "selection_controller",
+      payload: {
+        reason: degradeReason ?? "embed_failed",
+        fallbackMethod: LEXICAL_MODEL_ID,
+      },
       correlationId: input.correlationId,
+      candidateId: input.candidateId,
       ...(input.generationId !== undefined ? { generationId: input.generationId } : {}),
       ...(input.agenomeId !== undefined ? { agenomeId: input.agenomeId } : {}),
     });
-  } catch (err) {
-    // Re-throw as EmbedError so the U2 caller can branch on it.
-    if (err instanceof EmbedError) throw err;
-    throw new EmbedError(`embed failed: ${err instanceof Error ? err.message : String(err)}`);
+    const score = meanJaccardDistance(input.candidateText, input.comparison);
+    noveltyScore = {
+      id: `nov_${randomUUID()}`,
+      candidateId: input.candidateId,
+      vector: [0],
+      embeddingModelId: LEXICAL_MODEL_ID,
+      dimension: 1,
+      comparisonSet: input.comparison.map((c) => c.candidateId),
+      method: LEXICAL_MODEL_ID,
+      score,
+      explanation: `Lexical fallback (char 3-gram Jaccard); ${input.comparison.length} comparators`,
+    };
+    vector = [0];
   }
-
-  const score = meanDistance(embedded.vector, input.comparison);
-
-  const noveltyScore: NoveltyScore = {
-    id: `nov_${randomUUID()}`,
-    candidateId: input.candidateId,
-    vector: embedded.vector,
-    embeddingModelId: embedded.embeddingModelId,
-    dimension: embedded.dimension,
-    comparisonSet: input.comparison.map((c) => c.candidateId),
-    method: "embedding_cosine_mean",
-    score,
-    explanation: `Mean cosine distance over ${input.comparison.length} comparators using ${embedded.embeddingModelId}`,
-  };
 
   await input.appendEvent({
     runId: input.runId,
@@ -96,13 +172,21 @@ export async function scoreCandidateNovelty(input: ScoreNoveltyInput): Promise<S
     candidateId: input.candidateId,
     ...(input.generationId !== undefined ? { generationId: input.generationId } : {}),
     ...(input.agenomeId !== undefined ? { agenomeId: input.agenomeId } : {}),
-    ...(embedded.response.providerTraceId !== undefined
+    ...(embedded?.response.providerTraceId !== undefined
       ? { langfuseTraceId: embedded.response.providerTraceId }
       : {}),
-    ...(embedded.response.langfuseObservationId !== undefined
+    ...(embedded?.response.langfuseObservationId !== undefined
       ? { langfuseObservationId: embedded.response.langfuseObservationId }
       : {}),
   });
 
-  return { noveltyScore, vector: embedded.vector, degraded: false };
+  if (embedded) {
+    return { noveltyScore, vector, degraded: false };
+  }
+  return {
+    noveltyScore,
+    vector,
+    degraded: true,
+    reason: degradeReason ?? "embed_failed",
+  };
 }

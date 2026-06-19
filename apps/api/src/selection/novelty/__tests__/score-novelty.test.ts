@@ -60,7 +60,7 @@ describe("scoreCandidateNovelty — happy path", () => {
 
   test("second candidate orthogonal to first → score 1", async () => {
     const gateway = makeGateway([0, 1, 0]);
-    const comparison: ComparisonEntry[] = [{ candidateId: "cand_1", vector: [1, 0, 0] }];
+    const comparison: ComparisonEntry[] = [{ candidateId: "cand_1", vector: [1, 0, 0], text: "" }];
     const out = await scoreCandidateNovelty({
       gateway,
       appendEvent: appender.fn,
@@ -77,8 +77,8 @@ describe("scoreCandidateNovelty — happy path", () => {
   test("identical to all comparators → score 0", async () => {
     const gateway = makeGateway([1, 0, 0]);
     const comparison: ComparisonEntry[] = [
-      { candidateId: "a", vector: [1, 0, 0] },
-      { candidateId: "b", vector: [1, 0, 0] },
+      { candidateId: "a", vector: [1, 0, 0], text: "" },
+      { candidateId: "b", vector: [1, 0, 0], text: "" },
     ];
     const out = await scoreCandidateNovelty({
       gateway,
@@ -97,8 +97,8 @@ describe("scoreCandidateNovelty — happy path", () => {
     // Target [1,0]; comparators [1,0] (dist 0) and [0,1] (dist 1) → mean 0.5
     const gateway = makeGateway([1, 0]);
     const comparison: ComparisonEntry[] = [
-      { candidateId: "a", vector: [1, 0] },
-      { candidateId: "b", vector: [0, 1] },
+      { candidateId: "a", vector: [1, 0], text: "" },
+      { candidateId: "b", vector: [0, 1], text: "" },
     ];
     const out = await scoreCandidateNovelty({
       gateway,
@@ -144,73 +144,154 @@ describe("scoreCandidateNovelty — happy path", () => {
   });
 });
 
-describe("scoreCandidateNovelty — embed failure", () => {
+describe("scoreCandidateNovelty — degrade path (U2)", () => {
   let appender: ReturnType<typeof makeFakeAppender>;
   beforeEach(() => {
     appender = makeFakeAppender();
   });
 
-  test("gateway throws → EmbedError propagates, no novelty.scored event", async () => {
+  test("embed fails twice (attempt + retry) → lexical fallback engages, novelty_scoring_degraded + novelty.scored both emitted", async () => {
     const failingGateway: ModelGateway = {
       invoke: async () => {
         throw new Error("provider down");
       },
     };
-    await expect(
-      scoreCandidateNovelty({
-        gateway: failingGateway,
-        appendEvent: appender.fn,
-        candidateId: "cand_f",
-        candidateText: "x",
-        runId: "run_f",
-        correlationId: "corr_f",
-        comparison: [],
-      }),
-    ).rejects.toThrow(/embed/i);
-    expect(appender.events.find((e) => e.type === "novelty.scored")).toBeUndefined();
+    const out = await scoreCandidateNovelty({
+      gateway: failingGateway,
+      appendEvent: appender.fn,
+      candidateId: "cand_d1",
+      candidateText: "the quick brown fox jumps over the lazy dog",
+      runId: "run_d1",
+      correlationId: "corr_d1",
+      comparison: [],
+      retryMax: 1,
+    });
+
+    expect(out.degraded).toBe(true);
+    if (!out.degraded) return;
+    expect(out.reason).toMatch(/embed_failed_after_retry/);
+
+    const types = appender.events.map((e) => e.type);
+    expect(types.filter((t) => t === "novelty_scoring_degraded")).toHaveLength(1);
+    expect(types.filter((t) => t === "novelty.scored")).toHaveLength(1);
+
+    expect(out.noveltyScore.method).toBe("lexical_char3gram_jaccard");
+    expect(out.noveltyScore.embeddingModelId).toBe("lexical_char3gram_jaccard");
   });
 
-  test("gateway returns ok:false → EmbedError, no event", async () => {
-    const notOkGateway: ModelGateway = {
-      invoke: async () => ({
-        ok: false,
-        repairAttempts: 0,
-        energyEstimate: 0,
-        validationError: "provider 500",
-      }),
+  test("degrade with non-empty comparison computes Jaccard distance over text", async () => {
+    const failingGateway: ModelGateway = {
+      invoke: async () => {
+        throw new Error("provider down");
+      },
     };
-    await expect(
-      scoreCandidateNovelty({
-        gateway: notOkGateway,
-        appendEvent: appender.fn,
-        candidateId: "cand_f2",
-        candidateText: "x",
-        runId: "run_f2",
-        correlationId: "corr_f2",
-        comparison: [],
-      }),
-    ).rejects.toThrow(/embed/i);
+    const out = await scoreCandidateNovelty({
+      gateway: failingGateway,
+      appendEvent: appender.fn,
+      candidateId: "cand_d2",
+      candidateText: "novel completely different idea",
+      runId: "run_d2",
+      correlationId: "corr_d2",
+      comparison: [{ candidateId: "a", vector: [], text: "an entirely separate concept" }],
+      retryMax: 0,
+    });
+    expect(out.degraded).toBe(true);
+    // High Jaccard distance for low overlap text (close to 1, definitely > 0.5)
+    expect(out.noveltyScore.score).toBeGreaterThan(0.5);
   });
 
-  test("malformed embedding response (missing dimension) → EmbedError", async () => {
+  test("identical comparison text → degraded score = 0", async () => {
+    const failingGateway: ModelGateway = {
+      invoke: async () => {
+        throw new Error("provider down");
+      },
+    };
+    const text = "identical text";
+    const out = await scoreCandidateNovelty({
+      gateway: failingGateway,
+      appendEvent: appender.fn,
+      candidateId: "cand_d3",
+      candidateText: text,
+      runId: "run_d3",
+      correlationId: "corr_d3",
+      comparison: [{ candidateId: "a", vector: [], text }],
+      retryMax: 0,
+    });
+    expect(out.degraded).toBe(true);
+    expect(out.noveltyScore.score).toBe(0);
+  });
+
+  test("retry succeeds → no degrade, no novelty_scoring_degraded event", async () => {
+    let attempts = 0;
+    const flakyGateway: ModelGateway = {
+      invoke: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error("transient");
+        return {
+          ok: true,
+          output: { vector: [1, 0, 0], embeddingModelId: "text-embedding-3-large", dimension: 3 },
+          repairAttempts: 0,
+          energyEstimate: 1,
+        };
+      },
+    };
+    const out = await scoreCandidateNovelty({
+      gateway: flakyGateway,
+      appendEvent: appender.fn,
+      candidateId: "cand_d4",
+      candidateText: "x",
+      runId: "run_d4",
+      correlationId: "corr_d4",
+      comparison: [],
+      retryMax: 1,
+    });
+    expect(out.degraded).toBe(false);
+    expect(appender.events.some((e) => e.type === "novelty_scoring_degraded")).toBe(false);
+  });
+
+  test("malformed response also engages the degrade path", async () => {
     const malformedGateway: ModelGateway = {
       invoke: async () => ({
         ok: true,
-        output: { vector: [1, 2, 3], embeddingModelId: "x" },
+        output: { vector: [1, 2, 3], embeddingModelId: "x" }, // missing dimension
         repairAttempts: 0,
         energyEstimate: 1,
       }),
     };
-    await expect(
-      scoreCandidateNovelty({
-        gateway: malformedGateway,
+    const out = await scoreCandidateNovelty({
+      gateway: malformedGateway,
+      appendEvent: appender.fn,
+      candidateId: "cand_d5",
+      candidateText: "y",
+      runId: "run_d5",
+      correlationId: "corr_d5",
+      comparison: [],
+      retryMax: 0,
+    });
+    expect(out.degraded).toBe(true);
+  });
+
+  test("never-block: 3 candidates all degrade → 3 novelty_scoring_degraded + 3 novelty.scored, never throws", async () => {
+    const failingGateway: ModelGateway = {
+      invoke: async () => {
+        throw new Error("down");
+      },
+    };
+    for (const id of ["d6a", "d6b", "d6c"]) {
+      const out = await scoreCandidateNovelty({
+        gateway: failingGateway,
         appendEvent: appender.fn,
-        candidateId: "cand_f3",
-        candidateText: "x",
-        runId: "run_f3",
-        correlationId: "corr_f3",
+        candidateId: id,
+        candidateText: `text ${id}`,
+        runId: "run_d6",
+        correlationId: `corr_${id}`,
         comparison: [],
-      }),
-    ).rejects.toThrow(/dimension/i);
+        retryMax: 0,
+      });
+      expect(out.degraded).toBe(true);
+    }
+    const types = appender.events.map((e) => e.type);
+    expect(types.filter((t) => t === "novelty_scoring_degraded")).toHaveLength(3);
+    expect(types.filter((t) => t === "novelty.scored")).toHaveLength(3);
   });
 });
