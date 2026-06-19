@@ -4,6 +4,10 @@ export {
   type HttpClientOptions,
 } from "./adapters/http-client.js";
 export {
+  createOpenAIEmbeddingAdapter,
+  type OpenAIEmbeddingAdapterOptions,
+} from "./adapters/openai-embedding.js";
+export {
   createOpenRouterAdapter,
   type OpenRouterAdapterOptions,
 } from "./adapters/openrouter.js";
