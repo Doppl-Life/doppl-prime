@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "output": {
+    "vector": [0.01, 0.02, 0.03],
+    "embeddingModelId": "text-embedding-3-small",
+    "dimension": 3
+  },
+  "repairAttempts": 0,
+  "providerTraceId": "embedding_recorded",
+  "langfuseObservationId": "obs_recorded_embedding",
+  "energyEstimate": 1,
+  "energyActual": 1
+}
