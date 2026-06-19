@@ -3,3 +3,4 @@ export * from "./model-gateway/index.js";
 export * from "./runtime/index.js";
 export * from "./verifier/index.js";
 export * from "./check-runners/index.js";
+export * from "./selection/index.js";
