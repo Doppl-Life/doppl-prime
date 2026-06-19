@@ -1,5 +1,7 @@
 # Problem Statement: Loft Insulation Adoption Failure
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 Loft insulation is one of the simpler domestic energy-efficiency upgrades in the United Kingdom. It reduces heat loss through the roof, keeps homes warmer, lowers energy use, and can reduce bills. The Energy Saving Trust says an uninsulated home can lose around 25% of its heat through the roof, and describes loft insulation as cost-effective when installed correctly because it can last around 40 years and pay for itself many times over. In many homes, the technical intervention is straightforward: lay insulation between and across the joists until the recommended depth is reached, while preserving ventilation and dealing with damp or access issues properly.
 
 That made the adoption failure interesting. If a household could save money, improve comfort, and reduce energy waste with a relatively low-risk home improvement, why were so many households still not doing it? The obvious diagnosis was that people did not understand the benefits, did not believe the financial case, were not sufficiently motivated by climate or bill savings, or needed stronger subsidies and marketing. Those explanations are plausible, but they treat the problem mainly as one of belief, awareness, or incentives.

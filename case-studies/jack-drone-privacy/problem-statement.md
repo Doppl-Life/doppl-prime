@@ -1,5 +1,7 @@
 # Problem Statement: Superyacht Drone Privacy
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 A wealthy, famous, highly filmable guest wants private time aboard a superyacht, away from land and public visibility. Paparazzi drones can still approach from outside the vessel and capture valuable footage from the air, undermining the privacy the yacht is supposed to provide. The drone never has to board, touch, or interact with the yacht — it only needs a camera angle.
 
 The obvious countermeasures are tempting and wrong: jam the drone's signal, shoot it down, or deploy interceptors. Each runs into hard constraints — radio jamming is illegal and dangerous near port, physical takedown creates liability and public spectacle, and many drones retain footage or self-return even when their control link is cut. Acting only once the drone is close enough to engage is too late, because by then the footage may already exist.

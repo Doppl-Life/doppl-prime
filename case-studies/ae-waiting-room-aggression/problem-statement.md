@@ -1,5 +1,7 @@
 # Problem Statement: A&E Waiting-Room Aggression
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 Hospital emergency departments experience verbal hostility, threatening behavior, and occasional physical aggression toward staff. Long waits matter, but the problem is not only the number of minutes patients wait. Patients and visitors often sit in an anxious, confusing environment without understanding where they are in the care process, why others may be seen first, or what happens next.
 
 The obvious answers are more security, more clinicians, faster triage, punitive warning signs, or zero-tolerance enforcement. Those may be necessary in some cases, but they do not address the anxiety and perceived unfairness that accumulate before aggression escalates.

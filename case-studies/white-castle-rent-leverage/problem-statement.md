@@ -1,5 +1,7 @@
 # Problem Statement: White Castle Rent Leverage
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 In the 1920s and 1930s, White Castle was inventing much of what later became fast food: a standardized menu, standardized preparation, small low-cost stores, and a recognizable brand architecture. The company sold inexpensive sliders from small white castle-like buildings at a time when public trust in ground beef had been damaged by meat-packing scandals and when the company needed every location to communicate cleanliness, order, and sameness.
 
 The interesting problem was real estate risk. A White Castle location depended on a small, specific site. If the company leased land and the landlord later refused renewal, raised rent sharply, or if the site proved weak, a conventional restaurant building would be trapped. The company could either pay more, walk away from its building investment, or spend heavily constructing a new store. For a young chain trying to scale small restaurants, that gave too much leverage to property owners and made site selection risk expensive.

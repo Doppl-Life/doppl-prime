@@ -1,5 +1,7 @@
 # Problem Statement: Superyacht Connectivity Continuity (Open)
 
+> **Doppl subtype:** `cross_domain_transfer` (open/unsolved; see `../subtype-index.md`).
+
 A charter guest paying roughly $2 million a week expects land-identical internet everywhere the yacht goes — calls, streams, and feeds must never visibly stutter. Starlink collapsed the old economics of yacht connectivity, taking what used to cost about $30,000 a month on bulky VSAT domes down to a couple hundred dollars a month. The obvious move is "just install Starlink and rip out the old gear," but Starlink does not cover everywhere, and a single dropped frame reads as a product failure. The deliverable was never cheap, fast internet — it is *uninterrupted experience*.
 
 The industry's standing answer is to keep redundant links and add an automatic failover layer so the connection "never perceptibly drops." That is expensive and elegant, and it is where the case gets interesting: it is the *action taken*, not a solution that closes the problem. Stacking a second bearer buys a better probability, not a guarantee — so why not a third, a fourth, and a backup for the controller that switches between them? The regress never terminates, each added layer is itself a new thing that can fail, and the single point of failure simply relocates into the switching box.

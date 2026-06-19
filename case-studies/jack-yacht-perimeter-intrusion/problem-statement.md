@@ -1,5 +1,7 @@
 # Problem Statement: Superyacht Waterline Intrusion
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 A superyacht with layered security — a dock watch, conventional CCTV, and crew on board — was still breached. An intruder entered the water from shore, swam to the vessel, used the tender in the water as a step, climbed aboard undetected, and was eventually found inside the interior corridors of a very large yacht. In this industry, a stranger reaching the interior is a catastrophic failure.
 
 The obvious answers are more guards, more deck cameras, or stricter access control at the boarding points. Those scale cost without closing the gap, because the breach did not come through a guarded point — it came from the water, an unwatched volume, at night, when human attention is weakest.

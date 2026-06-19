@@ -1,3 +1,10 @@
+# Superyacht Expert Transcript (Raw Source — RESTRICTED / INTERNAL)
+
+> **Visibility: restricted / internal-only. Do not use in demos, generation prompts, or external sharing.**
+> Raw, lightly-redacted source transcript behind the three `jack-*` superyacht cases (drone privacy, waterline intrusion, connectivity continuity). The superyacht domain is NDA-constrained: named client / vendor / owner identifiers have been replaced with generic descriptors. Conversational filler and profanity are left as captured. The derived, shareable case files are separately anonymized. Cataloged in `../sources.md` (List C).
+
+---
+
 for jack, superyacht network.
 Well, in the superyacht sector, it's all about fancy yachts. People buying yachts and things like that, right? It's generally about superyacht times, that kind of nonsense. Absolutely. If I create a new website, it would be very good. It would just be new product launches, interviews with the CEOs of big companies, views on the industry and that kind of stuff, what's new in tech and all that kind of shit.
 
@@ -22,7 +29,7 @@ We would like a system that would be able to detect them on the dock as they're 
 
 Is it a dolphin? Is it a turtle? Is it a piece of rubbish? It's a humanoid, right? So that's the problem you're asking them to solve.
 
-That would then compare it to our database, and for example, the company that could tell you does all this technology, Halo, would say, "Yeah, we've got perimeter drones that fly around above the yacht at night, and they're scanning with thermal cameras. They've got in-the-water sonars that can tell the difference between a dolphin and a diver.
+That would then compare it to our database, and for example, the company that could tell you does all this technology, [a maritime-security vendor], would say, "Yeah, we've got perimeter drones that fly around above the yacht at night, and they're scanning with thermal cameras. They've got in-the-water sonars that can tell the difference between a dolphin and a diver.
 
 So they've got underwater protection as well, and they would be able to detect easily an individual using AI cameras that is swimming to your yacht that is not a legitimate member of the crew. That would raise an alert to the special forces security that are on board that would act upon that situation, and the owner would go into lockdown in his safe room, and the whole thing would come together.
 
@@ -58,13 +65,13 @@ I can probably give you five or six scenarios of problems. Yeah. Right? I've giv
 
 So, yes, you've given me problem one is someone in the water with security. Yeah. Problem two was? What did we say the problem two was?
 
-Oh, it's, I need to retrofit my yacht to be a hybrid yacht, and it's currently a diesel yacht, and I want solutions to make it hybrid, to make it more sustainable. What can you offer us to basically make would there be solar sails if it's a sailing yacht? Would it be for example, BAE Systems is one of my clients. They do a system where they can just simply install a driver on the crankshaft that rotates from the diesel engines. This will act as an energy recuperation system. It will then charge a battery pack, which can then feed back into the yacht's systems, or it can drive directly the crankshaft. You can switch to hybrid, and it would be like a car when you're going under a certain speed, you're using electric.
+Oh, it's, I need to retrofit my yacht to be a hybrid yacht, and it's currently a diesel yacht, and I want solutions to make it hybrid, to make it more sustainable. What can you offer us to basically make would there be solar sails if it's a sailing yacht? Would it be for example, [a major defense contractor] is one of my clients. They do a system where they can just simply install a driver on the crankshaft that rotates from the diesel engines. This will act as an energy recuperation system. It will then charge a battery pack, which can then feed back into the yacht's systems, or it can drive directly the crankshaft. You can switch to hybrid, and it would be like a car when you're going under a certain speed, you're using electric.
 
 It would also be able to it's all about the algorithms, so the algorithms would be studying the crew and owner, and they would say, "At this time, everybody has showers, so we need to store the energy, and at the peak times, we can use the energy that we recuperated from the engine." There are thousands of scenarios like that for super yachts. Great. That's good one. The third one was the speakers, a non-obvious solution for big speakers on a yacht that they want to be able to have there, but they were getting in the way, moving them around is a problem. What's it called? What do I do? We hide it in the boat.
 
 Great. Now, A, if you can give because this is the kind of things I want, which is, in any of those scenarios, what I would want is as much detail as is relevant. Like you're talking about the retrofit, I would need to know what kind of boat it was and what they're looking for.
 
-The speakers, This is where the categories would be very important because, for example, you cannot suggest a solution when that solution on our matrix on the website under the search has said, "This solution is capable up to 70 meters." It is not a viable solution for yachts over 70 meters. Or, "This solution only works on a yacht over 60 meters because you need to have 500,000 brake horsepower diesel engines on board for it to be viable." So, you would look at the specifications and VA Systems system, which they're going to give you very limited information because, obviously, it's a super secretive industry and VA Systems are a massive weapons manufacturer, and that's a problem.
+The speakers, This is where the categories would be very important because, for example, you cannot suggest a solution when that solution on our matrix on the website under the search has said, "This solution is capable up to 70 meters." It is not a viable solution for yachts over 70 meters. Or, "This solution only works on a yacht over 60 meters because you need to have 500,000 brake horsepower diesel engines on board for it to be viable." So, you would look at the specifications and [a defense contractor]'s system, which they're going to give you very limited information because, obviously, it's a super secretive industry and [that contractor] is a massive weapons manufacturer, and that's a problem.
 
 We do categorize already the search. When you're doing a search on our website, you would say, "It is a 70-meter sailing yacht," or, "It is an 80-meter explorer yacht," where an explorer yacht is a yacht where, as an owner, youGreat. So cool. This is the next stage of this thing we can do. This is the commitment I would need from you in this time, which is these problems, the more detail I could have about what they're going into, like let's say the retrofit, what that boat was.
 
@@ -200,7 +207,7 @@ Now, people just set up Starlink onboard, and they're paying $200 a month or wha
 
 You have to have systems to switch from Starlink, because look, an owner or charter guest paying $2 million a week does not want the Instagram they're looking at to stop working on their phone. The expectation of super yachts is always to deliver exactly what you would get on land, but the solution to solve that problem is vastly more complex and expensive most of the time to just get the things that you expect to have at home.
 
-So whether that be, in another scenario, they do a thing called the champagne test. On a big yacht like Jeff Bezos's, on the champagne test, what you do is you have to have these very, very advanced stabilizer systems, which would be made up of things like wings under the water that constantly adjust to huge metal balls that spin at high speeds that stabilize the yacht.
+So whether that be, in another scenario, they do a thing called the champagne test. On a big yacht like [a well-known billionaire owner]'s, on the champagne test, what you do is you have to have these very, very advanced stabilizer systems, which would be made up of things like wings under the water that constantly adjust to huge metal balls that spin at high speeds that stabilize the yacht.
 
 You want to get to the scenario where you go out in a gale-force six storm, and you can put a glass of champagne on a table, and it will never fall over. It will barely vibrate. There are so many different aspects of the yacht where you are trying to solve this problem.
 
@@ -234,7 +241,7 @@ So they use forward-facing 3D radar to detect those, sonar, sorry, to detect tho
 
 The other way that they use 3D sonar and underwater radar is that they do this: if an owner will want to go, "I want to go where no owner has ever been before, but I'm in Thailand. There's loads of coral, there's loads of rocks." They're all hidden, right?
 
-So they would send a tender ahead with one equipped with one of these big pieces of equipment. A company that does that is you could look into is called Wasp, W-A-S-P. The tender will map out the entire area ahead of the yacht, and then the owner can be like, "Oh, yes, I went to this place that no one's ever been before, but I didn't damage any coral or sink the fucking yacht," which obviously to them is probably more important, their $400 million yacht.
+So they would send a tender ahead with one equipped with one of these big pieces of equipment. A company that does that is you could look into is [a hydrographic-survey vendor]. The tender will map out the entire area ahead of the yacht, and then the owner can be like, "Oh, yes, I went to this place that no one's ever been before, but I didn't damage any coral or sink the fucking yacht," which obviously to them is probably more important, their $400 million yacht.
 
 So that's the kind of tech. There's so much out there, right? But there is another one where you'll go, "I would like to go up the Amazon." Well, imagine all the first-ever yacht that went up the Amazon. Can you imagine the amount of problems that they faced with the moving sand? Nothing was ever the same.
 
@@ -254,7 +261,7 @@ The caveat with all of this, we're the most secretive industry in the world. So,
 
 The security one, I think, is one I can use. What's it called? Speak about? Like, "Hey, it's just because that's, you can generalize that to anything, which is called, 'Hey, the drones,' but 'Here's a solution we came up with. Play a song when you see one that will ' and everybody go inside and close the door." That is one that I think is crazy.
 
-Yes, you can look at that website, Halo, 2P Security, and you can look at all the technology they offer, and then you can imagine that the problems that that technology would solve. You're then from a technology angle backwards because it's bleeding the obvious you saw one there was an offensive defense drone. So what, I'm going to ask you, why would you need an offensive defense drone? Right. Well, that does seem like a contradiction in terms, don't they? Well, pirates.
+Yes, you can look at those vendor websites, [maritime-security vendors], and you can look at all the technology they offer, and then you can imagine that the problems that that technology would solve. You're then from a technology angle backwards because it's bleeding the obvious you saw one there was an offensive defense drone. So what, I'm going to ask you, why would you need an offensive defense drone? Right. Well, that does seem like a contradiction in terms, don't they? Well, pirates.
 
 Well, okay. So right now, I heard a story the other day about Russians. Big fashion's been going a few years is pirate hunting. You can pay to go out pirate hunting. Shut up. Because they're fucking charming, aren't they?
 

@@ -1,5 +1,7 @@
 # Problem Statement: VanMoof Shipping Damage
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 VanMoof, a Dutch bicycle company founded in Amsterdam in 2009, sold high-design city bikes and later e-bikes directly to customers in multiple countries. The company's product was expensive, physically large, and fragile enough that a careless impact in transit could damage the frame, wheels, electronics, alignment, or customer experience before the bike ever reached its rider.
 
 The interesting problem began when VanMoof expanded shipping to the United States. Bikes were being shipped in large flat cardboard boxes, and too many arrived damaged. The source row in the problem sheet summarizes the result as a packaging change that caused a 70% drop in damages. A later article on modern packaging describes the same VanMoof story and says that when the company began exporting to the United States, as many as a quarter of shipments arrived damaged. That scale made the issue more than a customer-support nuisance: every damaged delivery could mean replacement cost, repair logistics, refund friction, brand disappointment, and distrust in direct-to-consumer bike shipping.

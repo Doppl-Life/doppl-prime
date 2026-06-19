@@ -1,5 +1,7 @@
 # Problem Statement: Houston Baggage Walk Reframe
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 An airport receives persistent complaints about how long passengers wait for checked bags. The operations team has already pushed the mechanical baggage process close to its practical limit: bags take about eight minutes to arrive at claim, but passengers can reach the carousel much faster and spend most of the experience standing around.
 
 The obvious answer is to make the bags faster. Hire more baggage handlers, add automation, tune conveyors, or build more baggage capacity. Those moves are expensive, slow, and may not change the passenger's felt experience if the final minutes are still idle.

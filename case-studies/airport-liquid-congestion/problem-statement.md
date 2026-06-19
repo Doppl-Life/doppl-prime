@@ -1,5 +1,7 @@
 # Problem Statement: Airport Liquid Congestion
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 Airport security queues slow down when ordinary passengers accidentally bring oversized liquid containers into the screening lane. In most cases this is not malicious. People forget, misunderstand that the rule applies to container size rather than remaining liquid volume, or discover the problem only when they are already at the scanner.
 
 The obvious answers are more X-ray lanes, more staff, louder signs, or stricter confiscation. Those are expensive or late. Once the passenger reaches the gray bins, the mistake has already entered the bottleneck.

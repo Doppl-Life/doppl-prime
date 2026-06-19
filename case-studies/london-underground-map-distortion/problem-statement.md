@@ -1,5 +1,7 @@
 # Problem Statement: London Underground Map Distortion
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 London Underground passengers sometimes crowd certain stations, transfers, and line segments while alternative routes remain underused. The obvious answer is to add trains, platforms, staff, or physical capacity. Those moves are expensive, slow, and constrained by old infrastructure.
 
 The hidden variable is that passengers do not navigate only by physical geography or true travel time. They navigate through representations: schematic maps, route planners, perceived interchange convenience, habit, and memory. A distorted map can make one route look shorter, simpler, or more central than another even when the physical network says otherwise.

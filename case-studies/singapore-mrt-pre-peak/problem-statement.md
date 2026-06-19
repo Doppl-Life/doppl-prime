@@ -1,5 +1,7 @@
 # Problem Statement: Singapore MRT Pre-Peak Decongestion
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 Singapore's rail system faces heavy morning-peak crowding. The expensive default answer is to add physical capacity: more trains, more track, more stations, or larger rolling stock. Those moves are slow, capital intensive, and often inefficient when the worst crowding is concentrated in a narrow time window.
 
 The hidden variable is not total daily demand. It is the time distribution of demand. If a small fraction of commuters can shift earlier or later, the peak can flatten enough to improve comfort and reliability for everyone.

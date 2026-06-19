@@ -4,6 +4,8 @@ This schema defines the information needed to describe a case study clearly and 
 
 Case studies should separate evaluator-only targets from generated outputs. In withheld-solution prompts, the agenome should produce two artifacts in order: `problem_recovery` first, then `solution_generation`. The evaluator version stores the target answer in `evaluation_focus` and `solution`.
 
+> **Alignment with Doppl contracts.** `problem_recovery` is a shared, subtype-agnostic reasoning stage that runs *before* solution generation; `solution_generation` maps onto the canonical `CandidateIdea` (`ARCHITECTURE.md` §3, Appendix A). Problem Recovery is **not** a third subtype — every case is tagged `cross_domain_transfer` or `zeitgeist_synthesis`. See `ALIGNMENT.md` for the full rationale and `subtype-index.md` for per-case assignments.
+
 ## Case Study
 
 | Field | Type | Required | Description |
@@ -46,7 +48,7 @@ Problem Recovery translates the symptom report into the actual problem before an
 
 ### Solution Generation
 
-Solution Generation is the second judged output. It may include sprouts, afrits, or a single proposed intervention, but it should explicitly build from Problem Recovery rather than from the surface complaint alone. Use the existing `solution` fields below for the generated structure.
+Solution Generation is the second judged output. It may include sprouts, fruits, or a single proposed intervention, but it should explicitly build from Problem Recovery rather than from the surface complaint alone. Use the existing `solution` fields below for the generated structure.
 
 ## Source
 

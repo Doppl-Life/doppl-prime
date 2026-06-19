@@ -1,5 +1,7 @@
 # Problem Statement: Heinz Ketchup Authenticity
 
+> **Doppl subtype:** `cross_domain_transfer` (see `../subtype-index.md`).
+
 Heinz ketchup has a strong brand promise: when a customer sees a Heinz bottle on a restaurant table, they expect the taste, quality, and recipe associated with Heinz. That promise becomes fragile in restaurants and cafes because the bottle is reusable and visible while the refill process is invisible. A venue can place a Heinz bottle on the table but refill it with cheaper ketchup, capturing the brand signal without serving the branded product.
 
 The interesting problem appeared in Turkey, where some cafes were reportedly refilling Heinz ketchup bottles with lower-cost substitutes. This created a hard enforcement problem. Heinz could not station staff in every cafe, customers could not reliably inspect the supply chain, and taste alone was an imperfect detection method. The deception happened after the product left Heinz's direct control but before the customer used it.
