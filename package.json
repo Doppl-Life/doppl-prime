@@ -11,7 +11,8 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit -p tsconfig.base.json && pnpm -r --if-present typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:int": "pnpm -r --if-present test:int"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

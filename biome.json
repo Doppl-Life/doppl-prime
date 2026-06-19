@@ -12,6 +12,7 @@
       "**/coverage/**",
       "**/node_modules/**",
       "**/__snapshots__/**",
+      "**/migrations/**",
       "docs/**",
       ".codegraph/**",
       "*.md"
