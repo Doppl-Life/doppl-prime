@@ -70,3 +70,4 @@ export {
 export { ModelRole, ModelRoleValues } from "./gateway/model-role.js";
 export { ModelRoute } from "./gateway/model-route.js";
 export { ProviderCapability } from "./gateway/provider-capability.js";
+export { ModelGatewayRequest, ModelGatewayResponse } from "./gateway/model-gateway-io.js";
