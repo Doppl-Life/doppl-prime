@@ -48,3 +48,8 @@ export { CRITIC_INPUT_DELIMITER, CriticInput } from "./verifier/critic-input.js"
 // Checks (§7/§14)
 export { CheckResult, CheckStatus, CheckStatusValues } from "./checks/check-result.js";
 export { CheckRunnerAdapter } from "./checks/check-runner-adapter.js";
+
+// Scoring (§8)
+export { FitnessScore } from "./scoring/fitness-score.js";
+export { NoveltyScore } from "./scoring/novelty-score.js";
+export { ScoringPolicy } from "./scoring/scoring-policy.js";
