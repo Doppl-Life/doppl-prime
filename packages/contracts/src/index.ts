@@ -53,3 +53,15 @@ export { CheckRunnerAdapter } from "./checks/check-runner-adapter.js";
 export { FitnessScore } from "./scoring/fitness-score.js";
 export { NoveltyScore } from "./scoring/novelty-score.js";
 export { ScoringPolicy } from "./scoring/scoring-policy.js";
+
+// Reproduction (§4/§8)
+export {
+  EnergyEvent,
+  EnergyEventType,
+  EnergyEventTypeValues,
+} from "./reproduction/energy-event.js";
+export {
+  ReproductionEvent,
+  ReproductionMode,
+  ReproductionModeValues,
+} from "./reproduction/reproduction-event.js";
