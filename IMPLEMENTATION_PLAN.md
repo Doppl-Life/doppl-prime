@@ -25,6 +25,8 @@
 
 **Cycle note:** round closed via auto-cycle (impl context WARN 71%, clean boundary). Fresh implementer resumes at **P0.10** under canonical name `contract-contracts-implementer`.
 
+- **Team paused 2026-06-20** — handoff doc: `docs/team-handoffs/contract-001-2026-06-20-p0-resume-worktree.md` · last round-seal: `ef95485` · next-slice target: **P0.10**. Resume worktree-native: `/team-start contract` from inside `Capstone-contract`.
+
 **Resolved escalation (P0.2):** §14 env-**value** layer — human ratified **Option A** (2026-06-20): placed at the P1 boundary, deferred not cut. §14 note written; cross-track requirement on Carry-forward.
 
 **Next session target:** P0.10 (per-type payload-shape map for high-traffic event types; reuses EnergyEvent/CandidateIdea/CriticReview/CheckResult/NoveltyScore/FitnessScore; folds in the payload size/depth ceiling carry-forward).
