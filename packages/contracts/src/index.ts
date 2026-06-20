@@ -6,4 +6,5 @@
 export * from './events/actor';
 export * from './events/event-type';
 export * from './events/envelope';
+export * from './security/redaction';
 export * from './version';
