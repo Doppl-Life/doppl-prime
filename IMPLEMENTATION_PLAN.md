@@ -35,6 +35,8 @@ _(Empty at project start; populated as Step-9 routing surfaces operational items
 
 ## Deliverable map
 
+<!-- ▼ EXAMPLE BLOCK [id=deliverable-map]: deliverable map — the project's real required outputs (customized). ▼ -->
+
 | Deliverable | Status | Delivered by |
 |---|---|---|
 | Frozen shared-contracts package (`packages/contracts`) | ❌ | Phase 0 |
@@ -47,9 +49,13 @@ _(Empty at project start; populated as Step-9 routing surfaces operational items
 | React Flow lineage dashboard (live + replay, accessible) | ❌ | Phase 7 |
 | Local-first demo path + prepared-replay fallback | ❌ | Phase D |
 
+<!-- ▲ END EXAMPLE BLOCK [id=deliverable-map] ▲ -->
+
 ---
 
 ## Parallelization plan (Track map)
+
+<!-- ▼ EXAMPLE BLOCK [id=parallelization-plan]: Parallelization plan / Track map — TEAM MODE; authored by /tasks-gen, the authority for valid <track> names (customized). ▼ -->
 
 > **Team mode only.** A *track* is a set of phases forming a dependency-isolated region of the `ARCHITECTURE.md` §2.5 DAG. Tracks with no unsatisfied upstream-track dependency run **in parallel — each in its own git worktree with its own agent team**. A single-operator build walks the DAG serially in one tree (delete this section's worktree mechanics and just follow the critical path).
 
@@ -112,6 +118,8 @@ flowchart TD
 
 **Shared contracts across tracks** (frozen in Phase 0 before tracks fork — a change after fork is a cross-track Finding): every Appendix-A model — `RunEventEnvelope`+`RunEventType`, `RunConfig`/`RunCaps`, `Agenome`, `CandidateIdea`+subtype payloads, `EvidenceRef`, `CriticReview`/`CriticMandate`, `CheckResult`/`CheckRunnerAdapter`, `NoveltyScore`/`FitnessScore`/`ScoringPolicy`, `EnergyEvent`/`ReproductionEvent`, `ModelRoute`/`ModelRole`/`ProviderCapability`, `ModelGatewayRequest`/`Response`, `LineageGraphProjection`, `Run`/`Generation`/`CullingEvent`/`FinalJudgeRubric` — all in `packages/contracts`.
 
+<!-- ▲ END EXAMPLE BLOCK [id=parallelization-plan] ▲ -->
+
 ---
 
 ## Phase exit checklist (template — applies to every phase)
@@ -153,6 +161,9 @@ The project is "done" when:
 **Spec anchors:** `ARCHITECTURE.md §4`, §2.5, Appendix A.
 
 **Track:** `contract` · **Depends on (phases):** none.
+
+<!-- ▼ EXAMPLE BLOCK [id=task-entry-format]: task entry format — dense checkbox bullets (acceptance behaviors that pin BEHAVIOR, not tests), then `Files:` (NEW vs extended), `Cross-doc invariant:` (NEW/extended/none + seam-snapshot note), `Depends on:`. Illustrative — the 101 real task entries below ARE the format. ▼ -->
+<!-- ▲ END EXAMPLE BLOCK [id=task-entry-format] ▲ -->
 
 ### P0.1 — RunEventEnvelope + closed RunEventType registry + 7-role actor union
 
@@ -1374,6 +1385,8 @@ The project is "done" when:
 
 ---
 
+<!-- ▼ EXAMPLE BLOCK [id=optional-demo-phase]: OPTIONAL Demo phase — included because a local-first demo is an explicit deliverable (customized). ▼ -->
+
 ## Phase D — Demo (OPTIONAL)
 
 > **Optional phase.** Included because a local-first demo is an explicit deliverable (Jun 29 showcase). A demo sits *after* the system is correct, never in place of invariant/lifecycle/test work, and introduces no new contract surface.
@@ -1488,6 +1501,8 @@ The project is "done" when:
 - [ ] Replay never re-samples RNG, re-embeds vectors, or re-calls the web; replay state-equivalence holds; energy reflects successful productive spend only (invariants preserved — no cut).
 - [ ] Demo introduces NO new contract surface (no new RunEventType, no new Appendix-A model) and cuts no invariant/safety/test task; all §16 demo rehearsals are present and reuse existing tests.
 - [ ] No demo task carries crossDocInvariant other than none, and no seamSnapshot is required (no Appendix-A model defined/changed).
+
+<!-- ▲ END EXAMPLE BLOCK [id=optional-demo-phase] ▲ -->
 
 ---
 ## Trims / Nice-to-Haves Catalog
