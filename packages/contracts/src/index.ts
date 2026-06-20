@@ -4,6 +4,7 @@
  * outside this package.
  */
 export * from './config/validate';
+export * from './domain/agenome';
 export * from './domain/subtype';
 export * from './events/actor';
 export * from './events/event-type';
