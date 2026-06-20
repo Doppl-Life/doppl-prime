@@ -1,0 +1,99 @@
+/**
+ * Doppl high-contrast projector-legible theme (P7.3).
+ *
+ * Palette is Okabe-Ito colorblind-safe; status indicators always combine
+ * shape + icon + label + color so the palette is a redundant signal,
+ * never the only one. Font scale targets readable-from-the-back-of-the-
+ * room at 1080p projection.
+ */
+:root {
+  /* Surface tokens */
+  --doppl-bg: #0d1117;
+  --doppl-bg-elevated: #161b22;
+  --doppl-bg-input: #1c2128;
+  --doppl-border: #30363d;
+  --doppl-border-strong: #6e7681;
+
+  /* Text */
+  --doppl-text-primary: #e6edf3;
+  --doppl-text-secondary: #8d96a0;
+  --doppl-text-muted: #6e7681;
+
+  /* Okabe-Ito-style colorblind-safe palette */
+  --doppl-cyan: #56b4e9;
+  --doppl-green: #009e73;
+  --doppl-orange: #e69f00;
+  --doppl-yellow: #f0e442;
+  --doppl-blue: #0072b2;
+  --doppl-vermilion: #d55e00;
+  --doppl-pink: #cc79a7;
+  --doppl-neutral: #999999;
+
+  /* Status semantics (semantic aliases; never use color alone) */
+  --doppl-status-ok: var(--doppl-green);
+  --doppl-status-warn: var(--doppl-orange);
+  --doppl-status-error: var(--doppl-vermilion);
+  --doppl-status-skip: var(--doppl-pink);
+  --doppl-status-info: var(--doppl-cyan);
+  --doppl-status-pending: var(--doppl-yellow);
+  --doppl-status-neutral: var(--doppl-neutral);
+
+  /* Font scale (projector-legible) */
+  --doppl-fs-xs: 14px;
+  --doppl-fs-sm: 16px;
+  --doppl-fs-base: 18px;
+  --doppl-fs-lg: 22px;
+  --doppl-fs-xl: 28px;
+  --doppl-fs-2xl: 36px;
+  --doppl-fs-3xl: 48px;
+
+  /* Spacing */
+  --doppl-sp-1: 4px;
+  --doppl-sp-2: 8px;
+  --doppl-sp-3: 12px;
+  --doppl-sp-4: 16px;
+  --doppl-sp-6: 24px;
+  --doppl-sp-8: 32px;
+  --doppl-sp-12: 48px;
+
+  /* Radius */
+  --doppl-radius-sm: 4px;
+  --doppl-radius: 8px;
+  --doppl-radius-lg: 12px;
+
+  /* Focus ring (WCAG AA on dark) */
+  --doppl-focus-ring: 0 0 0 3px rgba(86, 180, 233, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--doppl-bg);
+  color: var(--doppl-text-primary);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  font-size: var(--doppl-fs-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--doppl-focus-ring);
+}
+
+a {
+  color: var(--doppl-cyan);
+  text-decoration: underline;
+}
+
+a:hover {
+  color: var(--doppl-yellow);
+}
