@@ -16,6 +16,7 @@ export * from './domain/subtype-payloads';
 export * from './events/actor';
 export * from './events/event-type';
 export * from './events/envelope';
+export * from './events/payload-map';
 export * from './gateway/gateway-request';
 export * from './gateway/gateway-response';
 export * from './gateway/model-role';
