@@ -15,4 +15,6 @@ export * from './events/envelope';
 export * from './run/run-caps';
 export * from './run/run-config';
 export * from './security/redaction';
+export * from './verifier/critic-input';
+export * from './verifier/critic-review';
 export * from './version';
