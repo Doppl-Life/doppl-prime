@@ -1,0 +1,101 @@
+import { screen } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
+import { type RunStoreState, initialRunStoreState } from "../../state/reducer.js";
+import { renderWithStore } from "../../test-utils/render.js";
+import { FinalIdeaPanel } from "../FinalIdeaPanel.js";
+
+function stateWithWinner(): RunStoreState {
+  return {
+    ...initialRunStoreState,
+    runId: "run_x",
+    run: { id: "run_x", status: "running" },
+    candidates: {
+      cand_lo: { id: "cand_lo", agenomeId: "ag_1", status: "scored" },
+      cand_hi: { id: "cand_hi", agenomeId: "ag_2", status: "selected" },
+    },
+    agenomes: {
+      ag_1: { id: "ag_1", parentIds: [], status: "active" },
+      ag_2: { id: "ag_2", parentIds: [], status: "eligible_parent" },
+    },
+    fitnessScores: {
+      f1: {
+        id: "f1",
+        candidateId: "cand_lo",
+        total: 1.5,
+        components: {},
+        policyVersion: "v1",
+        explanation: "",
+      },
+      f2: {
+        id: "f2",
+        candidateId: "cand_hi",
+        total: 3.5,
+        components: {},
+        policyVersion: "v1",
+        explanation: "",
+      },
+    },
+    criticReviews: {
+      r1: {
+        id: "r1",
+        candidateId: "cand_hi",
+        mandate: "factual_grounding",
+        scores: {},
+        critique: "",
+        confidence: 0.8,
+        evidenceRefs: [],
+      },
+    },
+    checkResults: {
+      c1: {
+        id: "c1",
+        candidateId: "cand_hi",
+        checkType: "final_judge",
+        status: "passed",
+        score: 22,
+        evidenceRefs: [],
+      },
+    },
+    energySpend: { ag_2: 25 },
+  };
+}
+
+describe("FinalIdeaPanel", () => {
+  test("empty fitness → 'will appear here once...' placeholder", () => {
+    renderWithStore(<FinalIdeaPanel />);
+    expect(screen.getByText(/will appear here once fitness has been scored/)).toBeInTheDocument();
+  });
+
+  test("zero-survivors completed run → 'No surviving idea' placeholder", () => {
+    renderWithStore(<FinalIdeaPanel />, {
+      initialState: {
+        ...initialRunStoreState,
+        runId: "run_x",
+        run: { id: "run_x", status: "completed" },
+      },
+    });
+    expect(screen.getByText(/No surviving idea/)).toBeInTheDocument();
+  });
+
+  test("highest-fitness candidate selected as the winner with all 6 proof links resolved", () => {
+    renderWithStore(<FinalIdeaPanel />, { initialState: stateWithWinner() });
+    expect(screen.getByText(/cand_hi/)).toBeInTheDocument();
+    expect(screen.getByText(/agenome/)).toBeInTheDocument();
+    // 6 link rows
+    const linkIds = ["lineage", "critics", "checks", "score", "energy", "traces"];
+    for (const id of linkIds) {
+      const link = document.querySelector(`[data-link-id="${id}"]`);
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute("data-resolved")).toBe("true");
+    }
+  });
+
+  test("if energy is missing, the energy link is flagged UNRESOLVED", () => {
+    const state = stateWithWinner();
+    state.energySpend = {};
+    renderWithStore(<FinalIdeaPanel />, { initialState: state });
+    const energyLink = document.querySelector('[data-link-id="energy"]');
+    expect(energyLink?.getAttribute("data-resolved")).toBe("false");
+    expect(screen.getAllByText("UNRESOLVED").length).toBeGreaterThan(0);
+  });
+});
