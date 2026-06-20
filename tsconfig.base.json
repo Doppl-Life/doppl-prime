@@ -16,5 +16,5 @@
     "noEmit": true,
     "useDefineForClassFields": true
   },
-  "exclude": ["**/node_modules", "**/dist", "**/coverage"]
+  "exclude": ["**/node_modules", "**/dist", "**/coverage", "apps/web"]
 }
