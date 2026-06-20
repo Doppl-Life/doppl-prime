@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase 6 — Projections, API & observability"
 type: feat
-status: active
+status: completed
 created: 2026-06-19
 owner: melissa
 depth: standard
