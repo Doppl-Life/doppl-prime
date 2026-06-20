@@ -1,3 +1,4 @@
+import { RunEventTypeValues } from "@doppl/contracts";
 import type { z } from "zod";
 import { RunEventEnvelope } from "./contracts.js";
 import { type RunClient, createRunClient } from "./runClient.js";
@@ -130,10 +131,18 @@ export function createSseStream(options: SseStreamOptions): SseStreamHandle {
     const source = new EventSourceCtor(url);
     eventSource = source;
     setMode("live");
-    source.onmessage = (event: MessageEvent<string>) => {
+    // The server emits each frame as `event: <type>\ndata: …`, so EventSource
+    // routes them to named listeners — `onmessage` only catches frames with no
+    // event field and would never fire here. Subscribe to every contract-known
+    // event type plus a default fallback so unanticipated types still surface.
+    const handle = (event: MessageEvent<string>): void => {
       consecutiveErrors = 0;
       dispatchRawMessage(event.data);
     };
+    for (const type of RunEventTypeValues) {
+      source.addEventListener(type, handle as EventListener);
+    }
+    source.onmessage = handle;
     source.onerror = (event: Event) => {
       options.onError?.({ kind: "network", detail: event });
       consecutiveErrors += 1;

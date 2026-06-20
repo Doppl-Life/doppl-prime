@@ -36,6 +36,7 @@ export function StopControl(): JSX.Element | null {
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <button
         type="button"
+        data-variant="danger"
         onClick={handleStop}
         disabled={terminal || requesting}
         aria-label="Stop run"

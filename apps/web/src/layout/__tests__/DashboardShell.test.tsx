@@ -19,18 +19,21 @@ describe("DashboardShell", () => {
     expect(screen.getByText(/IDLE/)).toBeInTheDocument();
   });
 
-  test("renders all three rails + all named panels", () => {
+  test("setup phase: renders left + main sections, named panels, and activity drawer", () => {
     const { container } = renderWithStore(<DashboardShell />);
     expect(container.querySelector('[data-rail="left"]')).not.toBeNull();
     expect(container.querySelector('[data-rail="main"]')).not.toBeNull();
-    expect(container.querySelector('[data-rail="right"]')).not.toBeNull();
     expect(container.querySelector('[data-panel="lineage"]')).not.toBeNull();
     expect(container.querySelector('[data-panel="fitness"]')).not.toBeNull();
     expect(container.querySelector('[data-panel="generations"]')).not.toBeNull();
+    // Activity firehose lives in the collapsible bottom drawer now.
+    expect(screen.getByRole("region", { name: /activity log/i })).toBeInTheDocument();
+    // Inspector is selection-driven; nothing selected → not rendered.
+    expect(container.querySelector('[data-rail="inspector"]')).toBeNull();
   });
 
-  test("header shows 'no run loaded' when no run is set", () => {
+  test("sidebar brand block shows 'no run loaded' when no run is set", () => {
     const { container } = renderWithStore(<DashboardShell />);
-    expect(container.querySelector("header")).toHaveTextContent(/no run loaded/i);
+    expect(container.querySelector("[data-brand]")).toHaveTextContent(/no run loaded/i);
   });
 });

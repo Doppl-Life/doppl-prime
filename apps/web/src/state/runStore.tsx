@@ -187,3 +187,115 @@ export function useCandidateChecks(candidateId: string | null) {
     return Object.values(state.checkResults).filter((r) => r.candidateId === candidateId);
   }, [state.checkResults, candidateId]);
 }
+
+export interface ActivityLane {
+  /** Lane key. `__pipeline__` collects envelopes with no agenomeId
+   *  (run.*, generation.*, novelty.scored, etc.) so they're still visible. */
+  laneKey: string;
+  agenomeId: string | null;
+  firstAt: string;
+  lastAt: string;
+  /** Latest critic verdict surfaced for this lane (most-recent critic.reviewed). */
+  latestVerdict: string | null;
+  /** Latest fitness total for this lane's candidates (most-recent fitness.scored). */
+  latestFitness: number | null;
+  /** Doppl-energy spend rolled up across events in this lane. */
+  energyTotal: number;
+  /** Whether any failure-type event landed in this lane. */
+  hasFailure: boolean;
+  events: import("./reducer.js").ActivityEventView[];
+}
+
+const PIPELINE_LANE_KEY = "__pipeline__";
+
+const FAILURE_TYPES = new Set([
+  "provider_call_failed",
+  "output_schema_rejected",
+  "energy_exhausted",
+  "reproduction_aborted_insufficient_parents",
+  "novelty_scoring_degraded",
+  "candidate_invalidated",
+  "generation_failed",
+]);
+
+interface EnergyPayloadShape {
+  energy?: { actual?: number; estimate?: number };
+}
+interface CriticPayloadShape {
+  review?: { verdict?: string };
+}
+interface FitnessPayloadShape {
+  fitness?: { total?: number; candidateId?: string };
+}
+
+/**
+ * Group the SSE-fed activity log into per-agenome lanes for the Activity panel.
+ * Pipeline-level events (no agenomeId) fall into a synthetic lane keyed by
+ * PIPELINE_LANE_KEY so they're still surfaced.
+ *
+ * Lanes are returned newest-first by lastAt — the most recently active lane
+ * appears at the top, which matches how the redteam-forge Activity view reads
+ * during a live run.
+ */
+export function useAgentActivityLanes(): ActivityLane[] {
+  const state = useRunState();
+  return useMemo(() => {
+    const byLane = new Map<string, ActivityLane>();
+    // candidateId → agenomeId, for resolving fitness.scored events whose
+    // envelope only carries candidateId.
+    const candidateOwner: Record<string, string> = {};
+    for (const c of Object.values(state.candidates)) {
+      candidateOwner[c.id] = c.agenomeId;
+    }
+
+    for (const ev of state.activityEventLog) {
+      const laneKey = ev.agenomeId ?? PIPELINE_LANE_KEY;
+      let lane = byLane.get(laneKey);
+      if (!lane) {
+        lane = {
+          laneKey,
+          agenomeId: ev.agenomeId ?? null,
+          firstAt: ev.occurredAt,
+          lastAt: ev.occurredAt,
+          latestVerdict: null,
+          latestFitness: null,
+          energyTotal: 0,
+          hasFailure: false,
+          events: [],
+        };
+        byLane.set(laneKey, lane);
+      }
+      lane.events.push(ev);
+      lane.lastAt = ev.occurredAt;
+
+      if (ev.type === "energy.spent") {
+        const p = ev.payload as EnergyPayloadShape;
+        lane.energyTotal += p.energy?.actual ?? p.energy?.estimate ?? 0;
+      } else if (ev.type === "critic.reviewed") {
+        const p = ev.payload as CriticPayloadShape;
+        if (p.review?.verdict) lane.latestVerdict = p.review.verdict;
+      } else if (ev.type === "fitness.scored") {
+        const p = ev.payload as FitnessPayloadShape;
+        if (typeof p.fitness?.total === "number") lane.latestFitness = p.fitness.total;
+        // If the fitness envelope has only candidateId, route the score to
+        // the candidate's owning agenome's lane too, so a downstream-only
+        // event still updates the right header.
+        const owner = p.fitness?.candidateId ? candidateOwner[p.fitness.candidateId] : undefined;
+        if (owner && owner !== ev.agenomeId) {
+          const ownerLane = byLane.get(owner);
+          if (ownerLane && typeof p.fitness?.total === "number") {
+            ownerLane.latestFitness = p.fitness.total;
+          }
+        }
+      }
+      if (FAILURE_TYPES.has(ev.type)) lane.hasFailure = true;
+    }
+
+    return Array.from(byLane.values()).sort((a, b) => {
+      // Pipeline lane sinks to the bottom so per-agenome lanes lead the view.
+      if (a.laneKey === PIPELINE_LANE_KEY) return 1;
+      if (b.laneKey === PIPELINE_LANE_KEY) return -1;
+      return b.lastAt.localeCompare(a.lastAt);
+    });
+  }, [state.activityEventLog, state.candidates]);
+}

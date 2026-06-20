@@ -6,14 +6,14 @@
  */
 
 export const PALETTE = {
-  cyan: "#56b4e9",
-  green: "#009e73",
-  orange: "#e69f00",
-  yellow: "#f0e442",
-  blue: "#0072b2",
-  vermilion: "#d55e00",
-  pink: "#cc79a7",
-  neutral: "#999999",
+  cyan: "#4f6f86", // dusty slate-blue
+  green: "#7c8a36", // drab moss / olive-lime
+  orange: "#bd8b3a", // ochre
+  yellow: "#ccbd5e", // khaki tan
+  blue: "#3a526b", // deep slate-blue
+  vermilion: "#a8472d", // brick / rust
+  pink: "#976470", // dusty mauve
+  neutral: "#7c7c64", // stone
 } as const;
 
 export const STATUS_COLORS = {

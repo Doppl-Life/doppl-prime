@@ -37,7 +37,7 @@ export function ModeIndicator(): JSX.Element {
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <StatusIndicator domain="run-mode" status={status} size="md" />
       {subtext && (
-        <span style={{ fontSize: 14, color: "var(--doppl-text-secondary)" }}>{subtext}</span>
+        <span style={{ fontSize: 14, color: "var(--doppl-on-dark-muted)" }}>{subtext}</span>
       )}
     </div>
   );

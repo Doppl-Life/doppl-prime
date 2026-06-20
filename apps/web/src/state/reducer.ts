@@ -69,6 +69,26 @@ export interface FailureEventView {
   payload: unknown;
 }
 
+/** Slim, display-only projection of RunEventEnvelopeT for the Activity timeline.
+ *  Kept narrow on purpose: the panel renders these directly, so omitting fields
+ *  the UI doesn't read (id, schemaVersion, runId, langfuse*) keeps the cap-bounded
+ *  memory footprint small. */
+export interface ActivityEventView {
+  sequence: number;
+  occurredAt: string;
+  type: string;
+  actor: string;
+  payload: unknown;
+  generationId?: string;
+  agenomeId?: string;
+  candidateId?: string;
+}
+
+/** Hard cap on retained activity events. The Activity panel is for "what just
+ *  happened" awareness, not full audit — older events are dropped FIFO. The
+ *  cap also bounds re-render cost: lanes are derived via useMemo over this list. */
+export const ACTIVITY_EVENT_LOG_CAP = 500;
+
 export interface CapsConsumed {
   energy: number;
   generations: number;
@@ -100,6 +120,7 @@ export interface RunStoreState {
     candidateId: string | null;
     agenomeId: string | null;
   };
+  activityEventLog: ActivityEventView[];
 }
 
 export const initialRunStoreState: RunStoreState = {
@@ -121,6 +142,7 @@ export const initialRunStoreState: RunStoreState = {
   energySpend: {},
   capsConsumed: { energy: 0, generations: 0, candidates: 0, toolCalls: 0 },
   selection: { candidateId: null, agenomeId: null },
+  activityEventLog: [],
 };
 
 export type RunStoreAction =
@@ -201,6 +223,24 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
   if (event.sequence <= state.sequenceThrough) return state;
   const next: RunStoreState = { ...state, sequenceThrough: event.sequence };
   if (!next.runId) next.runId = event.runId;
+
+  // Activity timeline: append the raw envelope (cap-bounded FIFO). Every event
+  // type lands here, including ones the projection below ignores — the Activity
+  // panel is the one place where "what just happened" is rendered without a
+  // domain filter.
+  const activityEntry: ActivityEventView = {
+    sequence: event.sequence,
+    occurredAt: String(event.occurredAt),
+    type: event.type,
+    actor: event.actor,
+    payload: event.payload,
+    ...(event.generationId !== undefined ? { generationId: event.generationId } : {}),
+    ...(event.agenomeId !== undefined ? { agenomeId: event.agenomeId } : {}),
+    ...(event.candidateId !== undefined ? { candidateId: event.candidateId } : {}),
+  };
+  const log = [...next.activityEventLog, activityEntry];
+  next.activityEventLog =
+    log.length > ACTIVITY_EVENT_LOG_CAP ? log.slice(-ACTIVITY_EVENT_LOG_CAP) : log;
 
   switch (event.type) {
     case "run.configured": {

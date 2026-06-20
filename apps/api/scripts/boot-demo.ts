@@ -1,3 +1,5 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -11,6 +13,7 @@ import {
 } from "../src/event-store/scripts/seed-demo.js";
 import { createServer } from "../src/http/server.js";
 import { Worker } from "../src/runtime/worker.js";
+import { createLiveProcessRun } from "./live-process-run.js";
 
 /**
  * Phase D unified demo boot script (PD.3 / U7).
@@ -127,13 +130,31 @@ export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoR
     }
   }
 
-  const app = createServer({ db });
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  const app = createServer({
+    db,
+    curatedPromptsDir: resolve(repoRoot, "fixtures/curated-prompts"),
+    replayFixturesDir: resolve(repoRoot, "fixtures/replay"),
+  });
   const port = bootEnv.DOPPL_HTTP_PORT ?? bootEnv.DOPPL_DEMO_HTTP_PORT;
   const server = serve({ fetch: app.fetch, port });
 
+  const liveProcessRun = createLiveProcessRun({ db });
   const worker = new Worker({
     db,
-    processRun: (runId) => placeholderProcessRun(db, runId),
+    processRun: (runId) =>
+      liveProcessRun(runId).catch(async (err: unknown) => {
+        // Generation loop already emits cap/failure events on its own
+        // paths; this catch handles anything that escapes (DB blip, bad
+        // config, etc.) so the run is marked failed instead of stuck.
+        const reason = err instanceof Error ? err.message : String(err);
+        try {
+          await placeholderProcessRun(db, runId);
+        } catch {
+          /* terminal fallback failed — let the worker continue */
+        }
+        process.stderr.write(`liveProcessRun(${runId}) crashed: ${reason}\n`);
+      }),
     disableHeartbeat: false,
   });
   // Worker.start() is a forever loop; intentionally not awaited so

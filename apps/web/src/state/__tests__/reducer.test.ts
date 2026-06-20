@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { RunEventEnvelopeT } from "../../data/contracts.js";
-import { initialRunStoreState, runStoreReducer } from "../reducer.js";
+import { ACTIVITY_EVENT_LOG_CAP, initialRunStoreState, runStoreReducer } from "../reducer.js";
 
 const VALID_CONFIG = {
   seed: "test-seed",
@@ -151,6 +151,65 @@ describe("runStoreReducer — applyEvent", () => {
     });
     expect(next.failureEvents).toHaveLength(1);
     expect(next.failureEvents[0]?.type).toBe("provider_call_failed");
+  });
+
+  test("activity log: every applied event is appended with envelope-derived fields", () => {
+    let state = runStoreReducer(initialRunStoreState, {
+      kind: "APPLY_EVENT",
+      event: envelope({
+        type: "generation.started",
+        sequence: 0,
+        payload: { index: 0 },
+        generationId: "gen_0",
+      }),
+    });
+    state = runStoreReducer(state, {
+      kind: "APPLY_EVENT",
+      event: envelope({
+        type: "energy.spent",
+        sequence: 1,
+        payload: { energy: { agenomeId: "ag_1", actual: 7, eventType: "llm" } },
+        agenomeId: "ag_1",
+      }),
+    });
+    expect(state.activityEventLog).toHaveLength(2);
+    expect(state.activityEventLog[0]?.type).toBe("generation.started");
+    expect(state.activityEventLog[0]?.generationId).toBe("gen_0");
+    expect(state.activityEventLog[0]?.agenomeId).toBeUndefined();
+    expect(state.activityEventLog[1]?.agenomeId).toBe("ag_1");
+    expect(state.activityEventLog[1]?.actor).toBe("runtime");
+  });
+
+  test("activity log: idempotent re-apply does not double-append", () => {
+    const event = envelope({
+      type: "generation.started",
+      sequence: 0,
+      payload: { index: 0 },
+      generationId: "gen_0",
+    });
+    const first = runStoreReducer(initialRunStoreState, { kind: "APPLY_EVENT", event });
+    const second = runStoreReducer(first, { kind: "APPLY_EVENT", event });
+    expect(first.activityEventLog).toHaveLength(1);
+    expect(second.activityEventLog).toHaveLength(1);
+    expect(second).toBe(first);
+  });
+
+  test(`activity log: capped at ACTIVITY_EVENT_LOG_CAP (=${ACTIVITY_EVENT_LOG_CAP}) — oldest dropped FIFO`, () => {
+    let state = initialRunStoreState;
+    const total = ACTIVITY_EVENT_LOG_CAP + 5;
+    for (let i = 0; i < total; i++) {
+      state = runStoreReducer(state, {
+        kind: "APPLY_EVENT",
+        event: envelope({
+          type: "energy.spent",
+          sequence: i,
+          payload: { energy: { agenomeId: `ag_${i}`, actual: 1, eventType: "llm" } },
+        }),
+      });
+    }
+    expect(state.activityEventLog).toHaveLength(ACTIVITY_EVENT_LOG_CAP);
+    expect(state.activityEventLog[0]?.sequence).toBe(5);
+    expect(state.activityEventLog.at(-1)?.sequence).toBe(total - 1);
   });
 
   test("energy.spent aggregates per agenome and updates capsConsumed", () => {

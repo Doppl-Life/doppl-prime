@@ -78,9 +78,15 @@ export function GenerationComparison({
         <CartesianGrid stroke="var(--doppl-border)" strokeDasharray="2 2" />
         <XAxis
           dataKey="generation"
-          label={{ value: "Generation", position: "insideBottom", offset: -4 }}
+          stroke="#000"
+          tick={{ fill: "var(--doppl-text-primary)" }}
+          label={{ value: "Generation", position: "insideBottom", offset: -4, fill: "#14150c" }}
         />
-        <YAxis label={{ value: "Fitness", angle: -90, position: "insideLeft" }} />
+        <YAxis
+          stroke="#000"
+          tick={{ fill: "var(--doppl-text-primary)" }}
+          label={{ value: "Fitness", angle: -90, position: "insideLeft", fill: "#14150c" }}
+        />
         <Tooltip />
         <Legend />
         <Bar dataKey="mean" name="Mean" fill={PALETTE.cyan} isAnimationActive={false} />

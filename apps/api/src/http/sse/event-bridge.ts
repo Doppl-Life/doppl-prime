@@ -26,6 +26,9 @@ export interface SerializedEvent {
   generationId?: string;
   correlationId?: string;
   payload: unknown;
+  /** Required by the client-side RunEventEnvelope schema; omitting it makes
+   *  every SSE frame fail safeParse and silently drop. */
+  schemaVersion: number;
 }
 
 export interface EventBridgeDeps {
@@ -54,6 +57,7 @@ export async function nextEventsAfter(
       ...(env.generationId !== undefined ? { generationId: env.generationId } : {}),
       ...(env.correlationId !== undefined ? { correlationId: env.correlationId } : {}),
       payload: env.payload,
+      schemaVersion: env.schemaVersion,
     });
     if (events.length >= limit) break;
   }
