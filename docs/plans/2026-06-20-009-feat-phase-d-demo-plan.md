@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase D — Demo (local-first showcase path)"
 type: feat
-status: active
+status: completed
 created: 2026-06-20
 owner: melissa
 depth: standard
