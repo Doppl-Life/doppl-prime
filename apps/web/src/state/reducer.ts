@@ -33,6 +33,11 @@ export interface RunRowView {
   terminalReason?: string;
   seed?: string;
   capsConfig?: unknown;
+  /** Human-readable problem statement supplied by the operator or the
+   *  curated prompt — surfaced verbatim in the dashboard's Problem banner. */
+  problemText?: string;
+  /** Short title for the problem — banner heading. */
+  problemTitle?: string;
 }
 
 export interface GenerationView {
@@ -157,7 +162,7 @@ export type RunStoreAction =
   | { kind: "RECORD_ERROR"; sequence: number; type: string; message: string };
 
 interface RunConfiguredPayload {
-  config?: { caps?: unknown; seed?: string };
+  config?: { caps?: unknown; seed?: string; problemText?: string; problemTitle?: string };
 }
 
 interface RunCompletedPayload {
@@ -251,6 +256,8 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
         configuredAt: String(event.occurredAt),
         ...(p.config?.seed !== undefined ? { seed: p.config.seed } : {}),
         ...(p.config?.caps !== undefined ? { capsConfig: p.config.caps } : {}),
+        ...(p.config?.problemText !== undefined ? { problemText: p.config.problemText } : {}),
+        ...(p.config?.problemTitle !== undefined ? { problemTitle: p.config.problemTitle } : {}),
       };
       return next;
     }

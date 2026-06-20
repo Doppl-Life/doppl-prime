@@ -1,0 +1,37 @@
+/* Lineage graph "data flow" animations. */
+
+/* Pulse a newly-arrived node so the eye catches it. The class is set on the
+   React Flow .react-flow__node wrapper via the node's `className` prop. */
+@keyframes doppl-node-pulse {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 var(--doppl-cyan, #38bdf8);
+    opacity: 0.6;
+  }
+  35% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 10px rgba(56, 189, 248, 0.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+    opacity: 1;
+  }
+}
+
+.doppl-node-new {
+  /* React Flow wraps each custom node in its own positioned div; this transform
+     compounds with the layout transform, but for a brief animation it's fine. */
+  animation: doppl-node-pulse 1100ms ease-out 1;
+  transform-origin: center center;
+  border-radius: 8px;
+}
+
+/* Animated edge — uses React Flow's built-in `animated: true` flag which draws
+   a marching-ants dashed line. We just bump the dash color so it's visible on
+   both light and dark themes. */
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--doppl-cyan, #38bdf8);
+  stroke-width: 2.5;
+}

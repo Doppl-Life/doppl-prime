@@ -148,9 +148,23 @@ export function FinalIdeaPanel(): JSX.Element {
               data-link-id={link.id}
               data-resolved={link.resolved}
               onClick={(e) => {
-                if (link.id === "critics" || link.id === "checks" || link.id === "score") {
+                // No router is wired for `#/lineage/...` etc. Cancel the
+                // hash navigation and route through the run store. Lineage
+                // also scrolls the graph into view; the others just select
+                // the candidate so the right-rail Inspector opens on it.
+                if (
+                  link.id === "lineage" ||
+                  link.id === "critics" ||
+                  link.id === "checks" ||
+                  link.id === "score"
+                ) {
                   e.preventDefault();
                   dispatch({ kind: "SELECT_CANDIDATE", candidateId: winnerFitness.candidateId });
+                  if (link.id === "lineage") {
+                    document
+                      .querySelector('[data-panel="lineage"]')
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
                 }
                 if (link.id === "energy" && winnerCandidate?.agenomeId) {
                   e.preventDefault();

@@ -153,6 +153,8 @@ export async function buildDemoConfig(input: BuildDemoConfigInput): Promise<Buil
       modelProfile: curated.modelProfile,
       scoringPolicyVersion: curated.scoringPolicyVersion,
       caps: curated.defaultCaps,
+      problemText: curated.prompt,
+      problemTitle: curated.title,
     });
     const { config, warnings } = applyDemoOverride(baseConfig, input.capOverride);
     return { config, warnings, source: "prepared", promptText: curated.prompt };
@@ -162,6 +164,9 @@ export async function buildDemoConfig(input: BuildDemoConfigInput): Promise<Buil
   if (promptText.length === 0) throw new EmptyPromptError();
 
   const seed = promptText.length <= 64 ? promptText : `op-${hashPrompt(promptText)}`;
+  // Title = the prompt itself if short, otherwise first ~72 chars + ellipsis.
+  const problemTitle =
+    promptText.length <= 80 ? promptText : `${promptText.slice(0, 72).trim()}…`;
   const baseConfig = RunConfigSchema.parse({
     seed,
     rngSeed: `op-rng-${hashPrompt(promptText).slice(0, 16)}`,
@@ -169,6 +174,8 @@ export async function buildDemoConfig(input: BuildDemoConfigInput): Promise<Buil
     modelProfile: OPERATOR_DEFAULTS.modelProfile,
     scoringPolicyVersion: OPERATOR_DEFAULTS.scoringPolicyVersion,
     caps: { ...OPERATOR_DEFAULTS.caps },
+    problemText: promptText,
+    problemTitle,
   });
   const { config, warnings } = applyDemoOverride(baseConfig, input.capOverride);
   return { config, warnings, source: "operator", promptText };

@@ -12,13 +12,23 @@ import type { StatusDomain } from "../ui/status-map.js";
 
 interface NodeShellProps {
   label: string;
+  kind: string;
+  rawId?: string | undefined;
   status?: string | undefined;
   domain: StatusDomain;
   metric?: { label: string; value: number | string } | undefined;
   borderColor?: string | undefined;
 }
 
-function NodeShell({ label, status, domain, metric, borderColor }: NodeShellProps): JSX.Element {
+function NodeShell({
+  label,
+  kind,
+  rawId,
+  status,
+  domain,
+  metric,
+  borderColor,
+}: NodeShellProps): JSX.Element {
   return (
     <div
       style={{
@@ -33,8 +43,20 @@ function NodeShell({ label, status, domain, metric, borderColor }: NodeShellProp
         flexDirection: "column",
         gap: 6,
       }}
+      title={rawId ? `${kind} · ${rawId}` : kind}
     >
       <Handle type="target" position={Position.Left} />
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--doppl-text-secondary)",
+        }}
+      >
+        {kind}
+      </div>
       <div style={{ fontWeight: 700 }}>{label}</div>
       {status && <StatusIndicator domain={domain} status={status} size="sm" />}
       {metric && (
@@ -50,6 +72,7 @@ function NodeShell({ label, status, domain, metric, borderColor }: NodeShellProp
 
 interface LineageNodeData {
   label: string;
+  rawId?: string;
   status?: string;
   metrics?: Record<string, number>;
 }
@@ -57,7 +80,9 @@ interface LineageNodeData {
 export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
   return (
     <NodeShell
-      label={`agenome · ${props.data.label}`}
+      kind="Agent"
+      rawId={props.data.rawId}
+      label={props.data.label}
       status={props.data.status}
       domain="agenome"
       borderColor="var(--doppl-status-info)"
@@ -68,7 +93,9 @@ export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
 export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
   return (
     <NodeShell
-      label={`candidate · ${props.data.label}`}
+      kind="Idea"
+      rawId={props.data.rawId}
+      label={props.data.label}
       status={props.data.status}
       domain="candidate"
       borderColor="var(--doppl-status-pending)"
@@ -80,7 +107,9 @@ export function CriticReviewNode(props: NodeProps<LineageNodeData>): JSX.Element
   const confidence = props.data.metrics?.confidence;
   return (
     <NodeShell
-      label={`critic · ${props.data.label}`}
+      kind="Critic"
+      rawId={props.data.rawId}
+      label={props.data.label}
       domain="critic_review"
       status="accepted"
       metric={confidence !== undefined ? { label: "confidence", value: confidence } : undefined}
@@ -93,7 +122,9 @@ export function CheckResultNode(props: NodeProps<LineageNodeData>): JSX.Element 
   const score = props.data.metrics?.score;
   return (
     <NodeShell
-      label={`check · ${props.data.label}`}
+      kind="Check"
+      rawId={props.data.rawId}
+      label={props.data.label}
       status={props.data.status}
       domain="check"
       metric={score !== undefined ? { label: "score", value: score } : undefined}
@@ -106,7 +137,9 @@ export function ScoringNode(props: NodeProps<LineageNodeData>): JSX.Element {
   const total = props.data.metrics?.total;
   return (
     <NodeShell
-      label={`scoring · ${props.data.label}`}
+      kind="Score"
+      rawId={props.data.rawId}
+      label={props.data.label}
       domain="candidate"
       status="scored"
       metric={total !== undefined ? { label: "total", value: total } : undefined}

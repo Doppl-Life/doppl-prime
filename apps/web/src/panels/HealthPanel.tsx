@@ -1,6 +1,7 @@
 import { type JSX, useEffect, useState } from "react";
 import type { RunHealth } from "../data/contracts.js";
 import { useRunStore } from "../state/runStore.js";
+import { Tooltip } from "../ui/Tooltip.js";
 
 const POLL_MS = 3000;
 const STALE_HEARTBEAT_MS = 10_000;
@@ -75,12 +76,25 @@ export function HealthPanel(): JSX.Element | null {
   return (
     <section aria-label="Run health" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <h3 style={{ fontSize: 16, margin: 0 }}>Run health · {health.status}</h3>
-      <div>generation: {health.currentGeneration}</div>
-      <div>candidates in flight: {health.candidatesInFlight}</div>
-      <div>last event: {health.lastEventOccurredAt ?? "—"}</div>
-      <div>
-        last heartbeat: {health.lastHeartbeatMs === null ? "—" : `${health.lastHeartbeatMs} ms ago`}
-      </div>
+      <Tooltip label="The generation currently being evolved" placement="right" block>
+        <div>generation: {health.currentGeneration}</div>
+      </Tooltip>
+      <Tooltip label="Candidate agents still being generated or scored right now" placement="right" block>
+        <div>candidates in flight: {health.candidatesInFlight}</div>
+      </Tooltip>
+      <Tooltip label="Timestamp of the most recent event received from the run" placement="right" block>
+        <div>last event: {health.lastEventOccurredAt ?? "—"}</div>
+      </Tooltip>
+      <Tooltip
+        label="Time since the last heartbeat. If this grows large the live stream may be stalling."
+        placement="right"
+        block
+      >
+        <div>
+          last heartbeat:{" "}
+          {health.lastHeartbeatMs === null ? "—" : `${health.lastHeartbeatMs} ms ago`}
+        </div>
+      </Tooltip>
       {isStaleHeartbeat && (
         <div
           role="alert"
@@ -97,28 +111,42 @@ export function HealthPanel(): JSX.Element | null {
         </div>
       )}
       <hr style={{ border: "none", borderTop: "1px solid var(--doppl-border)" }} />
-      <div>
-        energy: {health.capsConsumed.energy}
-        {capsCfg.energyBudget ? ` / ${capsCfg.energyBudget}` : ""}
-      </div>
-      <div>
-        generations: {health.capsConsumed.generations}
-        {capsCfg.maxGenerations ? ` / ${capsCfg.maxGenerations}` : ""}
-      </div>
+      <Tooltip
+        label="Doppl-energy consumed vs the run's budget. Energy bounds total compute."
+        placement="right"
+        block
+      >
+        <div>
+          energy: {health.capsConsumed.energy}
+          {capsCfg.energyBudget ? ` / ${capsCfg.energyBudget}` : ""}
+        </div>
+      </Tooltip>
+      <Tooltip label="Generations completed vs the configured maximum" placement="right" block>
+        <div>
+          generations: {health.capsConsumed.generations}
+          {capsCfg.maxGenerations ? ` / ${capsCfg.maxGenerations}` : ""}
+        </div>
+      </Tooltip>
       {/* `capsConsumed.candidates` is a lifetime total; `maxPopulation` is a
        *  per-generation cap (caps.ts enforces state.populationCount >= max).
        *  Rendering them as "N / M" reads as over-cap once N crosses M across
        *  multiple generations, which is wrong — they aren't comparable. So
        *  the cap is surfaced as its own row, labeled per-gen. */}
-      <div>candidates (total): {health.capsConsumed.candidates}</div>
-      <div>
-        population cap: {capsCfg.maxPopulation ?? "—"}
-        {capsCfg.maxPopulation ? " per gen" : ""}
-      </div>
-      <div>
-        tool calls: {health.capsConsumed.toolCalls}
-        {capsCfg.maxToolCalls ? ` / ${capsCfg.maxToolCalls}` : ""}
-      </div>
+      <Tooltip label="Lifetime count of candidates created across every generation" placement="right" block>
+        <div>candidates (total): {health.capsConsumed.candidates}</div>
+      </Tooltip>
+      <Tooltip label="Maximum candidate agents allowed per generation" placement="right" block>
+        <div>
+          population cap: {capsCfg.maxPopulation ?? "—"}
+          {capsCfg.maxPopulation ? " per gen" : ""}
+        </div>
+      </Tooltip>
+      <Tooltip label="Tool/LLM calls consumed vs the configured ceiling" placement="right" block>
+        <div>
+          tool calls: {health.capsConsumed.toolCalls}
+          {capsCfg.maxToolCalls ? ` / ${capsCfg.maxToolCalls}` : ""}
+        </div>
+      </Tooltip>
     </section>
   );
 }

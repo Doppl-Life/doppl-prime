@@ -16,6 +16,13 @@ export const RunConfig = z
     modelProfile: z.string().min(1),
     scoringPolicyVersion: z.string().min(1),
     rngSeed: z.string().min(1),
+    /** Human-readable problem statement — curated prompt's `prompt` body
+     *  or the operator-typed text. Optional for backward compat with
+     *  fixtures recorded before this field existed. */
+    problemText: z.string().min(1).optional(),
+    /** Human-readable problem title — curated prompt's `title` or a
+     *  short summary of the operator prompt. Optional for the same reason. */
+    problemTitle: z.string().min(1).optional(),
   })
   .strict();
 export type RunConfig = z.infer<typeof RunConfig>;

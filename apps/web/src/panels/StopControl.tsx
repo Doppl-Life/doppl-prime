@@ -1,5 +1,6 @@
 import { type JSX, useState } from "react";
 import { useRunStore } from "../state/runStore.js";
+import { Tooltip } from "../ui/Tooltip.js";
 
 /**
  * Stop control (P7.6). Single button that issues the idempotent
@@ -34,15 +35,24 @@ export function StopControl(): JSX.Element | null {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <button
-        type="button"
-        data-variant="danger"
-        onClick={handleStop}
-        disabled={terminal || requesting}
-        aria-label="Stop run"
+      <Tooltip
+        label={
+          terminal
+            ? "This run has reached a terminal state and can't be stopped"
+            : "Gracefully halt the run — partial evidence stays visible"
+        }
+        placement="right"
       >
-        {terminal ? `Run ${runStatus}` : requesting ? "Stopping…" : "Stop run"}
-      </button>
+        <button
+          type="button"
+          data-variant="danger"
+          onClick={handleStop}
+          disabled={terminal || requesting}
+          aria-label="Stop run"
+        >
+          {terminal ? `Run ${runStatus}` : requesting ? "Stopping…" : "Stop run"}
+        </button>
+      </Tooltip>
       {error && (
         <span role="alert" style={{ color: "var(--doppl-status-error)", fontSize: 14 }}>
           {error}

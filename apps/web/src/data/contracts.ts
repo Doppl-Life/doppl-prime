@@ -98,8 +98,13 @@ export const RunListEntry = z
     id: z.string().min(1),
     status: z.string().min(1),
     configuredAt: z.string().min(1),
+    runMode: z.string().min(1).optional(),
+    completedAt: z.string().nullable().optional(),
+    problemTitle: z.string().nullable().optional(),
+    terminalSummary: z.string().nullable().optional(),
   })
   .strict();
+export type RunListEntry = z.infer<typeof RunListEntry>;
 
 export const RunListResponse = z.object({ runs: z.array(RunListEntry) }).strict();
 export type RunListResponse = z.infer<typeof RunListResponse>;

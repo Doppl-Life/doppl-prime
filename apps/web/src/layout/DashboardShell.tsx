@@ -8,9 +8,12 @@ import { CandidateDetailInspector } from "../panels/CandidateDetailInspector.js"
 import { EnergyPanel } from "../panels/EnergyPanel.js";
 import { FinalIdeaPanel } from "../panels/FinalIdeaPanel.js";
 import { HealthPanel } from "../panels/HealthPanel.js";
+import { ProblemBanner } from "../panels/ProblemBanner.js";
+import { RunsListPanel } from "../panels/RunsListPanel.js";
 import { ModeIndicator } from "../panels/ModeIndicator.js";
 import { RunConfigPanel } from "../panels/RunConfigPanel.js";
 import { StopControl } from "../panels/StopControl.js";
+import { Tooltip } from "../ui/Tooltip.js";
 import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
 
 /**
@@ -64,13 +67,15 @@ function ViewTab({
   onClick,
   children,
   badge,
+  tip,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   badge?: number;
+  tip?: string;
 }): JSX.Element {
-  return (
+  const btn = (
     <button
       type="button"
       role="tab"
@@ -114,6 +119,13 @@ function ViewTab({
       )}
     </button>
   );
+  return tip ? (
+    <Tooltip label={tip} placement="bottom">
+      {btn}
+    </Tooltip>
+  ) : (
+    btn
+  );
 }
 
 function ViewTabs({
@@ -136,10 +148,19 @@ function ViewTabs({
         paddingBottom: 0,
       }}
     >
-      <ViewTab active={view === "dashboard"} onClick={() => setView("dashboard")}>
+      <ViewTab
+        active={view === "dashboard"}
+        onClick={() => setView("dashboard")}
+        tip="Lineage, fitness, energy and the final idea for this run"
+      >
         Dashboard
       </ViewTab>
-      <ViewTab active={view === "activity"} onClick={() => setView("activity")} badge={eventCount}>
+      <ViewTab
+        active={view === "activity"}
+        onClick={() => setView("activity")}
+        badge={eventCount}
+        tip="Flat, scannable log of every agent event in the run"
+      >
         Activity
       </ViewTab>
     </div>
@@ -180,10 +201,16 @@ function FitnessAndGenerations(): JSX.Element {
 }
 
 function LineagePanel({ tall }: { tall: boolean }): JSX.Element {
+  const h = tall ? 460 : 320;
   return (
     <div
       style={{
-        height: tall ? 460 : 320,
+        // The main column is a flex column with overflowY: auto. A bare
+        // `height` lets flex shrink the lineage panel to ~0px; React Flow
+        // then renders nothing visible. Lock the dimensions instead.
+        height: h,
+        minHeight: h,
+        flexShrink: 0,
         border: "1px solid var(--doppl-border)",
         borderRadius: 8,
         overflow: "hidden",
@@ -228,24 +255,28 @@ export function DashboardShell(): JSX.Element {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1 style={{ fontSize: "var(--doppl-fs-xl)", margin: 0 }}>Doppl</h1>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              style={{
-                background: "transparent",
-                color: "var(--doppl-on-dark)",
-                border: "1px solid rgba(43,214,255,0.4)",
-                boxShadow: "none",
-                padding: "4px 8px",
-                fontSize: 13,
-                letterSpacing: 0,
-                textTransform: "none",
-              }}
+            <Tooltip
+              label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              placement="bottom"
             >
-              {theme === "dark" ? "☀ Light" : "☾ Dark"}
-            </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                style={{
+                  background: "transparent",
+                  color: "var(--doppl-on-dark)",
+                  border: "1px solid rgba(43,214,255,0.4)",
+                  boxShadow: "none",
+                  padding: "4px 8px",
+                  fontSize: 13,
+                  letterSpacing: 0,
+                  textTransform: "none",
+                }}
+              >
+                {theme === "dark" ? "☀ Light" : "☾ Dark"}
+              </button>
+            </Tooltip>
           </div>
           <ModeIndicator />
           <div
@@ -278,11 +309,13 @@ export function DashboardShell(): JSX.Element {
                   <RunConfigPanel />
                 </div>
               </details>
+              <RunsListPanel />
             </>
           ) : (
             <>
               <StopControl />
               <HealthPanel />
+              <RunsListPanel />
               <details data-panel="reconfigure">
                 <summary
                   style={{
@@ -304,6 +337,7 @@ export function DashboardShell(): JSX.Element {
 
         <main style={mainStyle} data-rail="main">
           <ViewTabs view={view} setView={setView} eventCount={eventCount} />
+          <ProblemBanner />
           {view === "activity" ? (
             <AgentActivityTable />
           ) : phase === "review" ? (

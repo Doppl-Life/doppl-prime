@@ -1,6 +1,7 @@
 import { type JSX, useMemo, useState } from "react";
 import type { ActivityEventView } from "../state/reducer.js";
 import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
+import { Tooltip } from "../ui/Tooltip.js";
 import { describeEvent, formatTime, shortId } from "./AgentActivityPanel.js";
 
 /**
@@ -128,14 +129,24 @@ export function AgentActivityTable(): JSX.Element {
               letterSpacing: "0.04em",
               position: "sticky",
               top: 0,
-              background: "var(--doppl-bg-elevated)",
+              background: "var(--doppl-bg-solid)",
             }}
           >
-            <span role="columnheader">Time</span>
-            <span role="columnheader">Lane</span>
-            <span role="columnheader">Type</span>
-            <span role="columnheader">Actor</span>
-            <span role="columnheader">Details</span>
+            <Tooltip label="Local clock time the event occurred (HH:MM:SS)" placement="bottom">
+              <span role="columnheader">Time</span>
+            </Tooltip>
+            <Tooltip label="Which agenome lane the event belongs to (or Pipeline for run-level events)" placement="bottom">
+              <span role="columnheader">Lane</span>
+            </Tooltip>
+            <Tooltip label="Event type, e.g. candidate.created, critic.reviewed, fitness.scored" placement="bottom">
+              <span role="columnheader">Type</span>
+            </Tooltip>
+            <Tooltip label="The agent or subsystem that emitted the event" placement="bottom">
+              <span role="columnheader">Actor</span>
+            </Tooltip>
+            <Tooltip label="Key payload values — verdict, score, energy, status" placement="bottom">
+              <span role="columnheader">Details</span>
+            </Tooltip>
           </div>
           {rows.map((ev) => {
             const details = describeEvent(ev);

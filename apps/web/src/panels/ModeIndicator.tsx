@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import { useRunState } from "../state/runStore.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
+import { Tooltip } from "../ui/Tooltip.js";
 
 /**
  * Live/replay mode indicator (P7.4 + PD.6). Persistent at the top of
@@ -35,7 +36,12 @@ export function ModeIndicator(): JSX.Element {
   })();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <StatusIndicator domain="run-mode" status={status} size="md" />
+      <Tooltip
+        label="Run mode — how the dashboard is sourcing events (live SSE, polling, or replay)"
+        placement="bottom"
+      >
+        <StatusIndicator domain="run-mode" status={status} size="md" />
+      </Tooltip>
       {subtext && (
         <span style={{ fontSize: 14, color: "var(--doppl-on-dark-muted)" }}>{subtext}</span>
       )}

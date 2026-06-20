@@ -1,6 +1,7 @@
 import { type JSX, useEffect, useState } from "react";
 import type { CuratedPrompt, DemoLiveRequest } from "../data/runClient.js";
 import { useRunStore } from "../state/runStore.js";
+import { Tooltip } from "../ui/Tooltip.js";
 
 /**
  * OperatorPromptPanel (PD.5 / U9). The audience-visible "Start a demo
@@ -160,35 +161,53 @@ export function OperatorPromptPanel(props: OperatorPromptPanelProps): JSX.Elemen
             />
           </label>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <label>
-            <span style={{ fontSize: 13 }}>maxPopulation override</span>
-            <input
-              type="number"
-              min={1}
-              max={16}
-              value={maxPopulation}
-              onChange={(e) => setMaxPopulation(e.target.value)}
-              aria-label="maxPopulation override"
-              style={{ width: "100%" }}
-            />
-          </label>
-          <label>
-            <span style={{ fontSize: 13 }}>maxGenerations override</span>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={maxGenerations}
-              onChange={(e) => setMaxGenerations(e.target.value)}
-              aria-label="maxGenerations override"
-              style={{ width: "100%" }}
-            />
-          </label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--doppl-text-secondary)" }}>
+            Optional cap overrides
+          </span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Tooltip label="Cap the number of candidate agents per generation (1–16)">
+                <span style={{ fontSize: 12 }}>Max pop.</span>
+              </Tooltip>
+              <input
+                type="number"
+                min={1}
+                max={16}
+                value={maxPopulation}
+                onChange={(e) => setMaxPopulation(e.target.value)}
+                aria-label="maxPopulation override"
+                style={{ width: "100%" }}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <Tooltip label="Cap how many generations the run evolves through (1–12)">
+                <span style={{ fontSize: 12 }}>Max gen.</span>
+              </Tooltip>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={maxGenerations}
+                onChange={(e) => setMaxGenerations(e.target.value)}
+                aria-label="maxGenerations override"
+                style={{ width: "100%" }}
+              />
+            </label>
+          </div>
         </div>
-        <button type="submit" disabled={!canSubmit} aria-label="Start demo run">
-          {submitting ? "Starting…" : "Start"}
-        </button>
+        <Tooltip
+          label={
+            canSubmit
+              ? "Launch the run with the current prompt and caps"
+              : "Pick a curated problem or enter a custom prompt first"
+          }
+          placement="top"
+        >
+          <button type="submit" disabled={!canSubmit} aria-label="Start demo run">
+            {submitting ? "Starting…" : "Start"}
+          </button>
+        </Tooltip>
         {error && (
           <p role="alert" style={{ color: "var(--doppl-status-error)", fontSize: 13 }}>
             {error}
