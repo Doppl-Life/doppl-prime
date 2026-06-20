@@ -1,7 +1,7 @@
 ---
 title: "feat: Phase 7 — Frontend dashboard"
 type: feat
-status: active
+status: completed
 created: 2026-06-19
 owner: melissa
 depth: standard
