@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 import { FitnessOverTime } from "../charts/FitnessOverTime.js";
 import { GenerationComparison } from "../charts/GenerationComparison.js";
+import { OperatorPromptPanel } from "../demo/OperatorPromptPanel.js";
 import { LineageGraph } from "../lineage/LineageGraph.js";
 import { CandidateInspector } from "../panels/CandidateInspector.js";
 import { CheckEvidence } from "../panels/CheckEvidence.js";
@@ -80,6 +81,7 @@ export function DashboardShell(): JSX.Element {
       >
         <aside style={railStyle} data-rail="left">
           <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: 0 }}>Operator</h2>
+          <OperatorPromptPanel />
           <RunConfigPanel />
           <StopControl />
           <HealthPanel />
