@@ -1,4 +1,7 @@
-/* Lineage graph "data flow" animations. */
+/* Lineage graph "data flow" animations. Modeled on the
+   mh-doppl-spike/react-flow-demo prototype (#chain-evolve) where every
+   edge is a continuous marching-ants flow — gives the graph a "data is
+   moving through the pipeline" feel even when the run is at rest. */
 
 /* Pulse a newly-arrived node so the eye catches it. The class is set on the
    React Flow .react-flow__node wrapper via the node's `className` prop. */
@@ -21,17 +24,36 @@
 }
 
 .doppl-node-new {
-  /* React Flow wraps each custom node in its own positioned div; this transform
-     compounds with the layout transform, but for a brief animation it's fine. */
   animation: doppl-node-pulse 1100ms ease-out 1;
   transform-origin: center center;
   border-radius: 8px;
 }
 
-/* Animated edge — uses React Flow's built-in `animated: true` flag which draws
-   a marching-ants dashed line. We just bump the dash color so it's visible on
-   both light and dark themes. */
-.react-flow__edge.animated .react-flow__edge-path {
-  stroke: var(--doppl-cyan, #38bdf8);
+/* Continuous edge flow. Matches the prototype's `discdash` rule:
+     stroke-dasharray: 5; animation: discdash 1s linear infinite
+   so the marching ants visibly move toward the target every second. */
+@keyframes doppl-edge-flow {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Apply to every edge by default — the data flow is always happening
+   conceptually, so all the connections should hum. Idle edges still get
+   a subtle base color so the structure reads even without animation. */
+.react-flow__edge .react-flow__edge-path {
+  stroke: var(--doppl-edge-idle, #3a4453);
+  stroke-width: 1.5;
+}
+.doppl-flow .react-flow__edge .react-flow__edge-path {
+  stroke: var(--doppl-cyan, #58a6ff);
+  stroke-width: 1.75;
+  stroke-dasharray: 5;
+  animation: doppl-edge-flow 1s linear infinite;
+}
+/* Edges flagged as newly-arrived get a thicker stroke briefly so the
+   eye catches them in addition to the always-on flow. */
+.doppl-flow .react-flow__edge.animated .react-flow__edge-path {
   stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px rgba(88, 166, 255, 0.6));
 }

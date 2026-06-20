@@ -180,6 +180,56 @@ export function useCandidateReviews(candidateId: string | null) {
   }, [state.criticReviews, candidateId]);
 }
 
+/** Fixed names for the gen-0 seed personas, in materializeGen0Bundle order.
+ *  Kept here so every panel that resolves an agenomeId → display name uses
+ *  the same source of truth. */
+export const SEED_PERSONA_NAMES = [
+  "Explorer",
+  "Rigorist",
+  "Connector",
+  "Skeptic",
+  "Synthesist",
+] as const;
+
+/**
+ * Build a map from agenomeId → persona name. Gen-0 agenomes (`parentIds: []`)
+ * are named by insertion order against the seed bundle; descendants inherit
+ * the root ancestor's name by walking parentIds upward. Pure derivation —
+ * no schema changes required.
+ */
+export function useAgenomeDisplayNames(): Record<string, string> {
+  const state = useRunState();
+  return useMemo(() => {
+    const ids = Object.keys(state.agenomes);
+    const map: Record<string, string> = {};
+    let gen0Index = 0;
+    const findRootName = (id: string, depth = 0): string | undefined => {
+      if (depth > 16) return undefined;
+      const a = state.agenomes[id];
+      if (!a) return undefined;
+      if (a.parentIds.length === 0) return map[id];
+      for (const p of a.parentIds) {
+        const n = findRootName(p, depth + 1);
+        if (n) return n;
+      }
+      return undefined;
+    };
+    for (const id of ids) {
+      const a = state.agenomes[id];
+      if (a && a.parentIds.length === 0) {
+        map[id] = SEED_PERSONA_NAMES[gen0Index] ?? `Seed-${gen0Index + 1}`;
+        gen0Index += 1;
+      }
+    }
+    for (const id of ids) {
+      const a = state.agenomes[id];
+      if (!a || a.parentIds.length === 0) continue;
+      map[id] = findRootName(id) ?? "Descendant";
+    }
+    return map;
+  }, [state.agenomes]);
+}
+
 export function useCandidateChecks(candidateId: string | null) {
   const state = useRunState();
   return useMemo(() => {

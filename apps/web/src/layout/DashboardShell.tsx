@@ -98,7 +98,7 @@ function ViewTab({
         fontSize: "var(--doppl-fs-sm)",
         letterSpacing: "0.08em",
         textTransform: "uppercase",
-        textShadow: active ? "0 0 10px rgba(43,214,255,0.5)" : "none",
+        textShadow: active ? "0 0 10px var(--doppl-accent-glow)" : "none",
       }}
     >
       <span>{children}</span>
@@ -107,7 +107,7 @@ function ViewTab({
           style={{
             background: "var(--doppl-bg-input)",
             color: active ? "var(--doppl-accent)" : "var(--doppl-text-secondary)",
-            border: "1px solid rgba(43,214,255,0.4)",
+            border: "1px solid var(--doppl-hairline)",
             borderRadius: 3,
             padding: "0 6px",
             fontSize: 12,
@@ -144,7 +144,7 @@ function ViewTabs({
       style={{
         display: "flex",
         gap: 20,
-        borderBottom: "1px solid rgba(43,214,255,0.3)",
+        borderBottom: "1px solid var(--doppl-hairline)",
         paddingBottom: 0,
       }}
     >
@@ -201,23 +201,50 @@ function FitnessAndGenerations(): JSX.Element {
 }
 
 function LineagePanel({ tall }: { tall: boolean }): JSX.Element {
-  const h = tall ? 460 : 320;
+  // A 4-generation × 5-agenome run lays out ~100+ lineage nodes. 320px is
+  // far too tight to read even when fit-view zooms out — the cards become
+  // unreadable. Defaults go larger; an Expand button trades dashboard real
+  // estate for a closer look when the operator wants one.
+  const [expanded, setExpanded] = useState(false);
+  const base = tall ? 600 : 480;
+  const h = expanded ? 820 : base;
   return (
-    <div
-      style={{
-        // The main column is a flex column with overflowY: auto. A bare
-        // `height` lets flex shrink the lineage panel to ~0px; React Flow
-        // then renders nothing visible. Lock the dimensions instead.
-        height: h,
-        minHeight: h,
-        flexShrink: 0,
-        border: "1px solid var(--doppl-border)",
-        borderRadius: 8,
-        overflow: "hidden",
-      }}
-      data-panel="lineage"
-    >
-      <LineageGraph />
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <div
+        style={{
+          height: h,
+          minHeight: h,
+          border: "1px solid var(--doppl-border)",
+          borderRadius: 8,
+          overflow: "hidden",
+        }}
+        data-panel="lineage"
+      >
+        <LineageGraph />
+      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        title={expanded ? "Collapse lineage graph" : "Expand lineage graph"}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          background: "var(--doppl-bg-elevated)",
+          border: "1px solid var(--doppl-border)",
+          borderRadius: 6,
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: 600,
+          color: "var(--doppl-text-secondary)",
+          cursor: "pointer",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          zIndex: 5,
+        }}
+      >
+        {expanded ? "Collapse" : "Expand"}
+      </button>
     </div>
   );
 }
@@ -250,7 +277,7 @@ export function DashboardShell(): JSX.Element {
             flexDirection: "column",
             gap: 8,
             paddingBottom: 12,
-            borderBottom: "1px solid rgba(43,214,255,0.35)",
+            borderBottom: "1px solid var(--doppl-hairline)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -266,7 +293,7 @@ export function DashboardShell(): JSX.Element {
                 style={{
                   background: "transparent",
                   color: "var(--doppl-on-dark)",
-                  border: "1px solid rgba(43,214,255,0.4)",
+                  border: "1px solid var(--doppl-hairline)",
                   boxShadow: "none",
                   padding: "4px 8px",
                   fontSize: 13,
@@ -314,8 +341,6 @@ export function DashboardShell(): JSX.Element {
           ) : (
             <>
               <StopControl />
-              <HealthPanel />
-              <RunsListPanel />
               <details data-panel="reconfigure">
                 <summary
                   style={{
@@ -331,6 +356,8 @@ export function DashboardShell(): JSX.Element {
                   <OperatorPromptPanel />
                 </div>
               </details>
+              <HealthPanel />
+              <RunsListPanel />
             </>
           )}
         </aside>

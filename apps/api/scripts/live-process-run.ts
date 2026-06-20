@@ -36,20 +36,72 @@ interface RunRow {
   config: RunConfig;
 }
 
-function makeValidCandidatePayload(agenomeId: string, idx: number): unknown {
-  // Mirrors the shape the population_generator role is expected to emit
-  // (matches the integration test's reference payload). The repair-state
-  // edge will run safeParse and accept this as "under_review".
-  return {
-    subtype: "cross_domain_transfer",
-    title: `Stub candidate ${idx} from ${agenomeId.slice(0, 8)}`,
-    summary: "Synthetic candidate emitted by the boot-demo stub gateway.",
+// A small library of synthetic cross-domain analogies so each stub
+// candidate has a distinct, readable title rather than all 20 candidates
+// in a run looking identical. Per-call index picks one — deterministic
+// given the same run / agenome / generation, so replay is byte-stable.
+const STUB_ANALOGIES: ReadonlyArray<{
+  sourceDomain: string;
+  sourceTechnique: string;
+  targetDomain: string;
+  targetProblem: string;
+  transferMapping: string;
+  expectedMechanism: string;
+}> = [
+  {
+    sourceDomain: "hydraulic engineering",
+    sourceTechnique: "surge tanks",
+    targetDomain: "urban traffic",
+    targetProblem: "congestion shockwaves",
+    transferMapping: "pressure-equalization → buffered intersections",
+    expectedMechanism: "absorb spikes before they propagate upstream",
+  },
+  {
     sourceDomain: "biology",
     sourceTechnique: "selection pressure",
-    targetDomain: "ML",
-    targetProblem: "model collapse",
-    transferMapping: "fitness → loss",
-    expectedMechanism: "diversity-preserving sampler",
+    targetDomain: "ML training",
+    targetProblem: "mode collapse",
+    transferMapping: "fitness → diversity-weighted loss",
+    expectedMechanism: "preserve minority modes via novelty penalty",
+  },
+  {
+    sourceDomain: "ant colony foraging",
+    sourceTechnique: "pheromone evaporation",
+    targetDomain: "city logistics",
+    targetProblem: "stale delivery routes",
+    transferMapping: "evaporation rate → route-cost decay",
+    expectedMechanism: "stale routes lose weight, fresher ones win",
+  },
+  {
+    sourceDomain: "immunology",
+    sourceTechnique: "clonal selection",
+    targetDomain: "fraud detection",
+    targetProblem: "novel-attack adaptation",
+    transferMapping: "antibody diversity → ensemble specialists",
+    expectedMechanism: "amplify detectors that catch fresh patterns",
+  },
+  {
+    sourceDomain: "fluid dynamics",
+    sourceTechnique: "laminar-to-turbulent transition",
+    targetDomain: "team scaling",
+    targetProblem: "communication-overhead onset",
+    transferMapping: "Reynolds threshold → headcount threshold",
+    expectedMechanism: "predict the size at which structure must change",
+  },
+];
+
+function makeValidCandidatePayload(agenomeId: string, idx: number): unknown {
+  const analogy = STUB_ANALOGIES[idx % STUB_ANALOGIES.length] ?? STUB_ANALOGIES[0];
+  if (!analogy) throw new Error("STUB_ANALOGIES is empty"); // unreachable
+  // Build a title from the analogy so each candidate reads like an idea,
+  // not a placeholder string. e.g. "Apply surge tanks to congestion shockwaves".
+  const title = `Apply ${analogy.sourceTechnique} to ${analogy.targetProblem}`;
+  const summary = `Cross-domain transfer from ${analogy.sourceDomain} (${analogy.sourceTechnique}) to ${analogy.targetDomain}: ${analogy.transferMapping}.`;
+  return {
+    subtype: "cross_domain_transfer",
+    title,
+    summary,
+    ...analogy,
   };
 }
 

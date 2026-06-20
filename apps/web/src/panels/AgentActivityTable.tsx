@@ -109,7 +109,7 @@ export function AgentActivityTable(): JSX.Element {
           role="table"
           aria-label="Agent activity events"
           style={{
-            border: "1px solid rgba(43,214,255,0.4)",
+            border: "1px solid var(--doppl-hairline)",
             borderRadius: "var(--doppl-radius)",
             background: "var(--doppl-bg-elevated)",
             boxShadow: "var(--nb-shadow)",
@@ -122,7 +122,7 @@ export function AgentActivityTable(): JSX.Element {
               gridTemplateColumns: COLUMNS,
               gap: 12,
               padding: "8px 12px",
-              borderBottom: "1px solid rgba(43,214,255,0.4)",
+              borderBottom: "1px solid var(--doppl-hairline)",
               fontSize: 12,
               fontWeight: 800,
               textTransform: "uppercase",

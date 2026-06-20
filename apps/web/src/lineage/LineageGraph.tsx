@@ -1,8 +1,16 @@
 import { type JSX, useEffect, useMemo, useRef, useState } from "react";
-import ReactFlow, { Background, Controls, type Edge, type Node } from "reactflow";
+import ReactFlow, {
+  Background,
+  Controls,
+  type Edge,
+  MiniMap,
+  type Node,
+  ReactFlowProvider,
+  useReactFlow,
+} from "reactflow";
 import "reactflow/dist/style.css";
 import type { LineageGraphProjectionT } from "../data/contracts.js";
-import { useRunStore } from "../state/runStore.js";
+import { useAgenomeDisplayNames, useRunStore } from "../state/runStore.js";
 import { layoutGraph } from "./layout.js";
 import { nodeTypes } from "./nodeTypes.js";
 import "./lineageAnimations.css";
@@ -55,40 +63,7 @@ export function LineageGraph(): JSX.Element {
     };
   }, [state.runId, state.sequenceThrough, client]);
 
-  // Persona name map (client-side derivation). Gen-0 agenomes are
-  // materialized in a fixed order from defaultGen0Bundle — we name them
-  // by insertion order. Descendants inherit their root ancestor's name.
-  // Walking parentIds lets us trace any agenome back to its founding seed.
-  const PERSONA_NAMES = ["Explorer", "Rigorist", "Connector", "Skeptic", "Synthesist"];
-  const personaByAgenome = useMemo(() => {
-    const ids = Object.keys(state.agenomes);
-    const map: Record<string, string> = {};
-    let gen0Index = 0;
-    const findRootName = (id: string, depth = 0): string | undefined => {
-      if (depth > 16) return undefined; // cycle / runaway safety
-      const a = state.agenomes[id];
-      if (!a) return undefined;
-      if (a.parentIds.length === 0) return map[id];
-      for (const p of a.parentIds) {
-        const n = findRootName(p, depth + 1);
-        if (n) return n;
-      }
-      return undefined;
-    };
-    for (const id of ids) {
-      const a = state.agenomes[id];
-      if (a && a.parentIds.length === 0) {
-        map[id] = PERSONA_NAMES[gen0Index] ?? `Seed-${gen0Index + 1}`;
-        gen0Index += 1;
-      }
-    }
-    for (const id of ids) {
-      const a = state.agenomes[id];
-      if (!a || a.parentIds.length === 0) continue;
-      map[id] = findRootName(id) ?? "Descendant";
-    }
-    return map;
-  }, [state.agenomes]);
+  const personaByAgenome = useAgenomeDisplayNames();
 
   // Derive a candidate label from its agenome's persona + generation index
   // (parsed from candidateId of the form `cand_<agenome>_<genIdx>`) and its
@@ -135,12 +110,24 @@ export function LineageGraph(): JSX.Element {
 
   const { rfNodes, rfEdges } = useMemo<{ rfNodes: Node[]; rfEdges: Edge[] }>(() => {
     if (!projection) return { rfNodes: [], rfEdges: [] };
+    // Filter the projection down to the story-line node types so the graph
+    // stays readable: agents → ideas → fitness scores, plus the lineage
+    // edges connecting parent agents to their offspring. Critic reviews
+    // and individual check results are still available — they surface in
+    // the right-rail CandidateInspector when an idea is clicked.
+    const STORY_TYPES = new Set(["agenome", "candidate", "scoring"]);
+    const keptNodes = projection.nodes.filter((n) => STORY_TYPES.has(n.type));
+    const keptIds = new Set(keptNodes.map((n) => n.id));
+    const keptEdges = projection.edges.filter(
+      (e) => keptIds.has(e.source) && keptIds.has(e.target),
+    );
     const laid = layoutGraph(
-      projection.nodes.map((n) => ({ id: n.id, type: n.type })),
-      projection.edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+      keptNodes.map((n) => ({ id: n.id, type: n.type })),
+      keptEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+      { rankdir: "LR", nodesep: 50, ranksep: 220, defaultWidth: 200, defaultHeight: 88 },
     );
     const rfNodes: Node[] = laid.nodes.map((node) => {
-      const orig = projection.nodes.find((n) => n.id === node.id);
+      const orig = keptNodes.find((n) => n.id === node.id);
       // Replace the raw-UUID label with a human-readable derived label by
       // node type. Falls back to projection's label when no enrichment
       // applies (rare — only when the original entity hasn't been folded
@@ -173,7 +160,7 @@ export function LineageGraph(): JSX.Element {
       };
     });
     const rfEdges: Edge[] = laid.edges.map((e) => {
-      const orig = projection.edges.find((eo) => eo.id === e.id);
+      const orig = keptEdges.find((eo) => eo.id === e.id);
       return {
         id: e.id,
         source: e.source,
@@ -208,7 +195,40 @@ export function LineageGraph(): JSX.Element {
     );
   }
   return (
-    <div style={{ height: "100%", width: "100%" }} aria-label="Lineage graph">
+    <ReactFlowProvider>
+      <LineageCanvas rfNodes={rfNodes} rfEdges={rfEdges} dispatch={dispatch} />
+    </ReactFlowProvider>
+  );
+}
+
+function LineageCanvas({
+  rfNodes,
+  rfEdges,
+  dispatch,
+}: {
+  rfNodes: Node[];
+  rfEdges: Edge[];
+  // biome-ignore lint/suspicious/noExplicitAny: dispatch typing flows from useRunStore
+  dispatch: (action: any) => void;
+}): JSX.Element {
+  const rf = useReactFlow();
+
+  // Re-fit the view whenever the node count changes. React Flow's `fitView`
+  // prop only fits on initial mount; without this the graph stays zoomed on
+  // the first 3-5 nodes and the rest of the 100+ node tree is off-screen.
+  useEffect(() => {
+    if (rfNodes.length === 0) return;
+    // Defer one frame so React Flow has positioned the newly-merged nodes.
+    const t = setTimeout(() => rf.fitView({ padding: 0.05, duration: 300, maxZoom: 1.4 }), 50);
+    return () => clearTimeout(t);
+  }, [rf, rfNodes.length]);
+
+  return (
+    <div
+      className="doppl-flow"
+      style={{ height: "100%", width: "100%" }}
+      aria-label="Lineage graph"
+    >
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
@@ -221,10 +241,37 @@ export function LineageGraph(): JSX.Element {
           }
         }}
         fitView
+        fitViewOptions={{ padding: 0.05, maxZoom: 1.4 }}
+        minZoom={0.05}
+        maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
         <Background />
         <Controls />
+        {/* Birds-eye view so the operator can see where they are within
+         *  the 100+ node tree and click-to-pan to a region of interest. */}
+        <MiniMap
+          pannable
+          zoomable
+          maskColor="rgba(0,0,0,0.55)"
+          nodeColor={(n) => {
+            switch (n.type) {
+              case "agenome":
+                return "var(--doppl-status-info, #38bdf8)";
+              case "candidate":
+                return "var(--doppl-status-pending, #F2A93B)";
+              case "scoring":
+                return "var(--doppl-status-ok, #1FB890)";
+              case "critic_review":
+                return "var(--doppl-status-warn, #E84A8A)";
+              case "check_result":
+                return "var(--doppl-status-skip, #B8B4D4)";
+              default:
+                return "#888";
+            }
+          }}
+          style={{ background: "var(--doppl-bg-elevated)" }}
+        />
       </ReactFlow>
     </div>
   );

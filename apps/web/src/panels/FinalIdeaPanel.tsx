@@ -1,5 +1,5 @@
 import { type JSX, useMemo } from "react";
-import { useRunState, useRunStore } from "../state/runStore.js";
+import { useAgenomeDisplayNames, useRunState, useRunStore } from "../state/runStore.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
 
 /**
@@ -28,6 +28,7 @@ interface ProofLink {
 export function FinalIdeaPanel(): JSX.Element {
   const state = useRunState();
   const { dispatch } = useRunStore();
+  const personaNames = useAgenomeDisplayNames();
 
   const winnerFitness = useMemo(() => {
     const all = Object.values(state.fitnessScores);
@@ -122,11 +123,50 @@ export function FinalIdeaPanel(): JSX.Element {
     },
   ];
 
+  // Prefer the candidate's own title; fall back to a derived label so the
+  // header still reads like prose even for runs predating the title field.
+  const winnerTitle =
+    winnerCandidate?.title ??
+    (winnerCandidate?.summary ? winnerCandidate.summary : `Idea ${winnerFitness.candidateId.slice(-6)}`);
+  const personaName = winnerCandidate ? personaNames[winnerCandidate.agenomeId] : undefined;
   return (
     <section aria-label="Final surviving idea">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>
-        Final surviving idea · {winnerFitness.candidateId}
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--doppl-text-secondary)",
+          marginBottom: 4,
+        }}
+      >
+        Final surviving idea
+      </div>
+      <h2
+        style={{
+          fontSize: "var(--doppl-fs-xl, 22px)",
+          margin: "0 0 6px 0",
+          lineHeight: 1.25,
+          color: "var(--doppl-text-primary)",
+        }}
+        title={winnerFitness.candidateId}
+      >
+        {winnerTitle}
       </h2>
+      {winnerCandidate?.summary && winnerCandidate.summary !== winnerTitle && (
+        <p
+          style={{
+            margin: "0 0 10px 0",
+            color: "var(--doppl-text-secondary)",
+            fontSize: 14,
+            lineHeight: 1.5,
+            maxWidth: "72ch",
+          }}
+        >
+          {winnerCandidate.summary}
+        </p>
+      )}
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
         <StatusIndicator domain="candidate" status={winnerCandidate?.status ?? "scored"} />
         <span>fitness.total = {winnerFitness.total.toFixed(3)}</span>
@@ -134,7 +174,10 @@ export function FinalIdeaPanel(): JSX.Element {
       </div>
       {winnerAgenome && (
         <p style={{ marginTop: 0, color: "var(--doppl-text-secondary)" }}>
-          produced by agenome <strong>{winnerAgenome.id}</strong>
+          produced by{" "}
+          <strong title={winnerAgenome.id}>
+            {personaName ? `agent ${personaName}` : `agenome ${winnerAgenome.id}`}
+          </strong>
         </p>
       )}
       <h3 style={{ fontSize: 16 }}>Proof</h3>

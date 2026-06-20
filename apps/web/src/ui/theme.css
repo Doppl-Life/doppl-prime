@@ -7,19 +7,21 @@
  * icon + label + color) and hue-distinguishable while glowing on dark.
  */
 :root {
-  /* Surface tokens — deep space */
-  --doppl-bg: #060a14; /* page / void */
-  --doppl-bg-elevated: rgba(18, 29, 51, 0.55); /* frosted panel glass */
-  --doppl-bg-solid: #101a2e; /* opaque fallback where blur isn't wanted */
-  --doppl-bg-input: rgba(10, 19, 34, 0.7); /* input wells */
-  --doppl-sidebar-bg: linear-gradient(180deg, rgba(13, 21, 38, 0.72) 0%, rgba(8, 13, 26, 0.7) 100%);
-  --doppl-glass-blur: blur(16px) saturate(135%);
-  --doppl-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%);
-  --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  --doppl-bg-glow: radial-gradient(circle at 20% -10%, rgba(43, 214, 255, 0.08), transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(196, 107, 255, 0.08), transparent 40%);
-  --doppl-border: #2bd6ff; /* neon edge (used with low-alpha glows below) */
-  --doppl-border-strong: #7af0ff;
+  /* Surface tokens — deep navy */
+  --doppl-bg: #07101f; /* page / void */
+  --doppl-bg-elevated: rgba(15, 27, 47, 0.8); /* deep navy panel */
+  --doppl-bg-solid: #0e1c31; /* opaque panel */
+  --doppl-bg-input: rgba(9, 18, 33, 0.8); /* input wells */
+  --doppl-sidebar-bg: linear-gradient(180deg, #0b1426 0%, #070e1b 100%);
+  --doppl-glass-blur: blur(14px) saturate(130%);
+  --doppl-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%);
+  --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --doppl-bg-glow: radial-gradient(circle at 85% -5%, rgba(43, 214, 255, 0.1), transparent 42%),
+    radial-gradient(circle at 0% 100%, rgba(47, 230, 173, 0.06), transparent 45%);
+  /* Quiet slate hairline for panel/divider edges (not glowing cyan). */
+  --doppl-hairline: rgba(124, 162, 214, 0.2);
+  --doppl-border: rgba(124, 162, 214, 0.26); /* charts grid / axes / lineage edges */
+  --doppl-border-strong: rgba(124, 162, 214, 0.5);
 
   /* Text — cool HUD ink */
   --doppl-text-primary: #dce8f7;
@@ -30,10 +32,12 @@
   --doppl-on-dark: #e4eefb;
   --doppl-on-dark-muted: #93a6c6;
 
-  /* Accent — neon cyan primary */
-  --doppl-accent: #2bd6ff;
-  --doppl-accent-hover: #74e9ff;
-  --doppl-on-accent: #03121b;
+  /* Accent — mint-green primary (active/selected/buttons); cyan for links */
+  --doppl-accent: #2fe6ad;
+  --doppl-accent-hover: #5cf0c2;
+  --doppl-on-accent: #04211a;
+  --doppl-accent-glow: rgba(47, 230, 173, 0.4);
+  --doppl-link: #4fb6e8;
 
   /* Alert — neon red/magenta */
   --doppl-red: #ff4d6a;
@@ -81,21 +85,22 @@
   --doppl-sp-8: 32px;
   --doppl-sp-12: 48px;
 
-  /* Radius — slim, panel-grade */
-  --doppl-radius-sm: 3px;
-  --doppl-radius: 5px;
-  --doppl-radius-lg: 8px;
+  /* Radius — rounded panel-grade */
+  --doppl-radius-sm: 6px;
+  --doppl-radius: 10px;
+  --doppl-radius-lg: 14px;
 
-  /* HUD primitives — thin glowing edge + soft glow (no hard offset) */
-  --nb-border: 1px solid rgba(43, 214, 255, 0.45);
-  --nb-border-thin: 1px solid rgba(43, 214, 255, 0.28);
-  --nb-shadow: 0 0 16px rgba(43, 214, 255, 0.16), inset 0 0 0 1px rgba(43, 214, 255, 0.06);
-  --nb-shadow-lg: 0 0 26px rgba(43, 214, 255, 0.22);
-  --nb-shadow-sm: 0 0 10px rgba(43, 214, 255, 0.16);
+  /* Surface primitives — quiet hairline edge + soft depth shadow (glow is reserved
+     for active/selected states, applied per-element). */
+  --nb-border: 1px solid var(--doppl-hairline);
+  --nb-border-thin: 1px solid rgba(124, 162, 214, 0.14);
+  --nb-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --nb-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.46);
+  --nb-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.3);
 
-  /* Focus ring — cyan glow */
+  /* Focus ring — mint glow */
   --doppl-focus-ring: 0 0 0 2px var(--doppl-bg), 0 0 0 4px var(--doppl-accent),
-    0 0 14px rgba(43, 214, 255, 0.6);
+    0 0 14px var(--doppl-accent-glow);
 }
 
 /* ============================================================
@@ -113,8 +118,11 @@
   --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --doppl-bg-glow: radial-gradient(circle at 20% -10%, rgba(11, 159, 196, 0.07), transparent 45%),
     radial-gradient(circle at 100% 0%, rgba(155, 70, 216, 0.06), transparent 40%);
+  --doppl-hairline: rgba(13, 22, 38, 0.16);
   --doppl-border: #0b9fc4;
   --doppl-border-strong: #0883a3;
+  --doppl-link: #0883a3;
+  --doppl-accent-glow: rgba(10, 166, 201, 0.3);
 
   --doppl-text-primary: #0d1626;
   --doppl-text-secondary: #41506b;
@@ -200,7 +208,6 @@ h4 {
 }
 h1 {
   letter-spacing: 0.16em;
-  text-shadow: 0 0 12px rgba(43, 214, 255, 0.55);
 }
 h2,
 h3 {
@@ -208,14 +215,13 @@ h3 {
 }
 
 a {
-  color: var(--doppl-accent);
+  color: var(--doppl-link);
   text-decoration: none;
-  border-bottom: 1px solid rgba(43, 214, 255, 0.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--doppl-link) 40%, transparent);
   font-weight: 600;
 }
 a:hover {
-  color: var(--doppl-accent-hover);
-  text-shadow: 0 0 8px rgba(43, 214, 255, 0.6);
+  color: #7fcdf0;
 }
 
 /* ---- Panels: frosted glass blocks, glowing edge ---- */
@@ -240,20 +246,20 @@ section[aria-label],
   -webkit-backdrop-filter: var(--doppl-glass-blur);
 }
 
-/* Left sidebar — command rail. Slightly distinct surface + cyan edge glow. */
+/* Left sidebar — command rail. Distinct surface + quiet hairline edge. */
 aside[data-rail="left"] {
   background: var(--doppl-sidebar-bg) !important;
   backdrop-filter: var(--doppl-glass-blur);
   -webkit-backdrop-filter: var(--doppl-glass-blur);
   color: var(--doppl-on-dark);
-  border-right: 1px solid rgba(43, 214, 255, 0.35) !important;
-  box-shadow: 1px 0 18px rgba(43, 214, 255, 0.12);
+  border-right: 1px solid var(--doppl-hairline) !important;
+  box-shadow: 1px 0 24px rgba(0, 0, 0, 0.35);
 }
 aside[data-rail="left"] output span {
   color: var(--doppl-on-dark) !important;
 }
 aside[data-rail="right"] {
-  border-left: 1px solid rgba(43, 214, 255, 0.35) !important;
+  border-left: 1px solid var(--doppl-hairline) !important;
 }
 
 /* Lineage graph container */
@@ -278,19 +284,19 @@ button {
   background: var(--doppl-accent);
   color: var(--doppl-on-accent);
   border: 1px solid var(--doppl-accent-hover);
-  border-radius: var(--doppl-radius);
-  box-shadow: 0 0 14px rgba(43, 214, 255, 0.4);
+  border-radius: var(--doppl-radius-sm);
+  box-shadow: 0 0 16px var(--doppl-accent-glow);
   padding: 10px 18px;
   cursor: pointer;
   transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 button:hover:not(:disabled) {
   background: var(--doppl-accent-hover);
-  box-shadow: 0 0 22px rgba(43, 214, 255, 0.65);
+  box-shadow: 0 0 24px var(--doppl-accent-glow);
 }
 button:active:not(:disabled) {
   transform: translateY(1px) scale(0.99);
-  box-shadow: 0 0 8px rgba(43, 214, 255, 0.4);
+  box-shadow: 0 0 8px var(--doppl-accent-glow);
 }
 button:disabled {
   background: transparent;
@@ -320,7 +326,7 @@ textarea {
   font-size: var(--doppl-fs-sm);
   background: var(--doppl-bg-input);
   color: var(--doppl-text-primary);
-  border: 1px solid rgba(43, 214, 255, 0.35);
+  border: 1px solid var(--doppl-hairline);
   border-radius: var(--doppl-radius-sm);
   padding: 8px 10px;
 }
@@ -348,17 +354,16 @@ label {
   color: var(--doppl-text-primary);
 }
 
-/* ---- Dividers — glowing scanline ---- */
+/* ---- Dividers — quiet hairline ---- */
 hr {
   border: none !important;
   height: 1px !important;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(43, 214, 255, 0.7),
+    var(--doppl-hairline),
     transparent
   ) !important;
-  box-shadow: 0 0 8px rgba(43, 214, 255, 0.4);
   margin: var(--doppl-sp-3) 0;
 }
 
@@ -367,18 +372,15 @@ details summary {
   font-weight: 600;
 }
 
-/* ---- Tooltips — themed glass HUD bubble (hover + keyboard focus) ---- */
+/* ---- Tooltips — themed glass HUD bubble (portaled, fixed-positioned) ---- */
 .doppl-tip {
   align-items: center;
 }
 .doppl-tip__bubble {
-  position: absolute;
-  z-index: 60;
+  z-index: 1000;
   pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
   width: max-content;
-  max-width: 240px;
+  max-width: 260px;
   padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
@@ -391,34 +393,13 @@ details summary {
   border: 1px solid var(--doppl-border);
   border-radius: var(--doppl-radius-sm);
   box-shadow: var(--nb-shadow), var(--doppl-glass-edge);
-  transition: opacity 0.12s ease;
+  animation: doppl-tip-in 0.12s ease;
 }
-.doppl-tip[data-placement="top"] .doppl-tip__bubble {
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
-}
-.doppl-tip[data-placement="bottom"] .doppl-tip__bubble {
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 8px;
-}
-.doppl-tip[data-placement="right"] .doppl-tip__bubble {
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-left: 8px;
-}
-.doppl-tip[data-placement="left"] .doppl-tip__bubble {
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-right: 8px;
-}
-.doppl-tip:hover > .doppl-tip__bubble,
-.doppl-tip:focus-within > .doppl-tip__bubble {
-  opacity: 1;
-  visibility: visible;
+@keyframes doppl-tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

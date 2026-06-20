@@ -60,6 +60,7 @@ export interface CandidateView {
   subtype?: string;
   status: string;
   summary?: string;
+  title?: string;
 }
 
 export interface LineageEdgeView {
@@ -386,6 +387,9 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
           subtype: cand.subtype,
           status: cand.status,
           summary: cand.summary,
+          ...((cand as { title?: string }).title !== undefined
+            ? { title: (cand as { title: string }).title }
+            : {}),
         },
       };
       if (!next.agenomes[cand.agenomeId]) {
