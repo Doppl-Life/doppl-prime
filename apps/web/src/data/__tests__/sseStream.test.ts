@@ -71,6 +71,25 @@ function makeFakeClient(getEventsImpl: RunClient["getEvents"]): RunClient {
     getModelRoutes: async () => ({ routes: [] }),
     startRun: async () => ({ runId: "x" }),
     stopRun: async () => null,
+    getRunDetail: async () => ({
+      runId: "x",
+      headSequence: 0,
+      sequenceThrough: 0,
+      currentState: null,
+    }),
+    getCuratedPrompts: async () => [],
+    startDemoLive: async () => ({
+      runId: "x",
+      runMode: "live",
+      warnings: [],
+      source: "operator",
+    }),
+    startDemoReplay: async () => ({
+      runId: "x",
+      runMode: "replay",
+      eventsLoaded: 1,
+      eventsSkipped: 0,
+    }),
   };
 }
 

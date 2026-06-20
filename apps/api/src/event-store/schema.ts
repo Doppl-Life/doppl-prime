@@ -43,6 +43,10 @@ export const runs = pgTable("runs", {
   startedAt: timestamp("started_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   terminalSummary: text("terminal_summary"),
+  // mode (Phase D U3) — distinguishes live vs replay-seeded runs without
+  // widening the closed RunEventType enum. Default 'live' so the column
+  // backfills cleanly on existing rows.
+  mode: text("mode").notNull().default("live"),
 });
 
 // ─── run_events — the authoritative append-only log ────────────────────

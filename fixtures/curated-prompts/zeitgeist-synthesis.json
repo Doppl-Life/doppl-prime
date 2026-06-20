@@ -1,0 +1,18 @@
+{
+  "id": "zeitgeist-synthesis",
+  "title": "Zeitgeist synthesis: under-discussed implications of agent-evolution at scale",
+  "subtype": "zeitgeist_synthesis",
+  "prompt": "Synthesize three distinct streams of current discourse about evolutionary search over agent populations. Identify a single implication that is implied by all three streams but not explicitly named by any of them, and explain why it matters.",
+  "seed": "demo-prepared-zeitgeist-synthesis",
+  "rngSeed": "rng-zeitgeist-synthesis-v1",
+  "defaultCaps": {
+    "maxPopulation": 6,
+    "maxGenerations": 4,
+    "energyBudget": 8000,
+    "maxSpawnDepth": 3,
+    "maxToolCalls": 40,
+    "wallClockTimeoutMs": 600000
+  },
+  "modelProfile": "default",
+  "scoringPolicyVersion": "v1"
+}

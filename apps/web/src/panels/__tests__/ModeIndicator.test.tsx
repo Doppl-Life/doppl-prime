@@ -35,4 +35,27 @@ describe("ModeIndicator", () => {
     expect(screen.getByText("REPLAY")).toBeInTheDocument();
     expect(screen.getByText(/original timestamps/)).toBeInTheDocument();
   });
+
+  test("serverRunMode='replay' wins over local mode='live' (PD.6)", () => {
+    renderWithStore(<ModeIndicator />, {
+      initialState: {
+        ...initialRunStoreState,
+        mode: "live",
+        serverRunMode: "replay",
+      },
+    });
+    expect(screen.getByText("REPLAY")).toBeInTheDocument();
+    expect(screen.getByText(/fallback rung active/)).toBeInTheDocument();
+  });
+
+  test("serverRunMode='rehearsal' surfaces rehearsal subtext", () => {
+    renderWithStore(<ModeIndicator />, {
+      initialState: {
+        ...initialRunStoreState,
+        mode: "live",
+        serverRunMode: "rehearsal",
+      },
+    });
+    expect(screen.getByText(/rehearsal-recorded/)).toBeInTheDocument();
+  });
 });

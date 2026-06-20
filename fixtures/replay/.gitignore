@@ -1,0 +1,2 @@
+# Ad-hoc captures stay local; committed fixtures live alongside this file
+.local/

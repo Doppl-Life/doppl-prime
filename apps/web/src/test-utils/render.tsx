@@ -25,6 +25,25 @@ export function makeStubClient(overrides: Partial<RunClient> = {}): RunClient {
     getModelRoutes: vi.fn(async () => ({ routes: [] })),
     startRun: vi.fn(async () => ({ runId: "run-new" })),
     stopRun: vi.fn(async () => null),
+    getRunDetail: vi.fn(async () => ({
+      runId: "x",
+      headSequence: 0,
+      sequenceThrough: 0,
+      currentState: null,
+    })),
+    getCuratedPrompts: vi.fn(async () => []),
+    startDemoLive: vi.fn(async () => ({
+      runId: "run-demo-live",
+      runMode: "live" as const,
+      warnings: [],
+      source: "operator" as const,
+    })),
+    startDemoReplay: vi.fn(async () => ({
+      runId: "run-demo-replay",
+      runMode: "replay" as const,
+      eventsLoaded: 1,
+      eventsSkipped: 0,
+    })),
     ...overrides,
   };
 }

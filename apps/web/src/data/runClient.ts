@@ -49,6 +49,65 @@ export interface StartRunResponse {
   runId: string;
 }
 
+const RunDetailSchema = z
+  .object({
+    runId: z.string().min(1),
+    runMode: z.enum(["live", "replay", "rehearsal"]).optional(),
+    headSequence: z.number(),
+    sequenceThrough: z.number(),
+    currentState: z.unknown(),
+  })
+  .passthrough();
+export type RunDetail = z.infer<typeof RunDetailSchema>;
+
+const CuratedPromptSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    subtype: z.string().min(1),
+  })
+  .strict();
+export type CuratedPrompt = z.infer<typeof CuratedPromptSchema>;
+
+const CuratedPromptsResponseSchema = z
+  .object({
+    prompts: z.array(CuratedPromptSchema),
+  })
+  .strict();
+
+const DemoLiveResponseSchema = z
+  .object({
+    runId: z.string().min(1),
+    runMode: z.literal("live"),
+    warnings: z.array(z.string()),
+    source: z.enum(["prepared", "operator"]),
+  })
+  .strict();
+export type DemoLiveResponse = z.infer<typeof DemoLiveResponseSchema>;
+
+const DemoReplayResponseSchema = z
+  .object({
+    runId: z.string().min(1),
+    runMode: z.literal("replay"),
+    eventsLoaded: z.number(),
+    eventsSkipped: z.number(),
+  })
+  .strict();
+export type DemoReplayResponse = z.infer<typeof DemoReplayResponseSchema>;
+
+export interface DemoLiveRequest {
+  problemId?: string;
+  operatorPrompt?: string;
+  capOverride?: Partial<{
+    maxPopulation: number;
+    maxGenerations: number;
+    energyBudget: number;
+    maxSpawnDepth: number;
+    maxToolCalls: number;
+    wallClockTimeoutMs: number;
+  }>;
+}
+
 interface RawJson {
   bodyText: string;
   parsed: unknown;
@@ -112,6 +171,13 @@ export interface RunClient {
   getModelRoutes(): Promise<ModelRoutesResponse>;
   startRun(config: unknown, opts?: { idempotencyKey?: string }): Promise<StartRunResponse>;
   stopRun(runId: string): Promise<unknown>;
+  getRunDetail(runId: string): Promise<RunDetail>;
+  getCuratedPrompts(): Promise<CuratedPrompt[]>;
+  startDemoLive(
+    body: DemoLiveRequest,
+    opts?: { idempotencyKey?: string },
+  ): Promise<DemoLiveResponse>;
+  startDemoReplay(fixtureId: string): Promise<DemoReplayResponse>;
 }
 
 export function createRunClient(options: RunClientOptions = {}): RunClient {
@@ -199,6 +265,35 @@ export function createRunClient(options: RunClientOptions = {}): RunClient {
       const path = `/runs/${encodeURIComponent(runId)}/stop`;
       const { data } = await fetchJson(fetchImpl, baseUrl, path, { method: "POST" });
       return data?.parsed ?? null;
+    },
+    async getRunDetail(runId) {
+      const path = `/runs/${encodeURIComponent(runId)}`;
+      const { data } = await fetchJson(fetchImpl, baseUrl, path);
+      return safeParse(RunDetailSchema, path, data?.parsed);
+    },
+    async getCuratedPrompts() {
+      const path = "/demo/curated-prompts";
+      const { data } = await fetchJson(fetchImpl, baseUrl, path);
+      const parsed = safeParse(CuratedPromptsResponseSchema, path, data?.parsed);
+      return parsed.prompts;
+    },
+    async startDemoLive(body, opts) {
+      const path = "/demo/runs/live";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (opts?.idempotencyKey) {
+        headers["Idempotency-Key"] = opts.idempotencyKey;
+      }
+      const { data } = await fetchJson(fetchImpl, baseUrl, path, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      return safeParse(DemoLiveResponseSchema, path, data?.parsed);
+    },
+    async startDemoReplay(fixtureId) {
+      const path = `/demo/runs/replay/${encodeURIComponent(fixtureId)}`;
+      const { data } = await fetchJson(fetchImpl, baseUrl, path, { method: "POST" });
+      return safeParse(DemoReplayResponseSchema, path, data?.parsed);
     },
   };
 }

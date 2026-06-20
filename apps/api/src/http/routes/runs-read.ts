@@ -32,12 +32,13 @@ export interface RunsReadDeps {
 interface RunRowResult extends Record<string, unknown> {
   id: string;
   status: string;
+  mode: string;
   configured_at: Date | string;
 }
 
 async function fetchRunsList(deps: RunsReadDeps): Promise<RunRowResult[]> {
   const result = await deps.db.execute<RunRowResult>(
-    sql`SELECT id, status, configured_at FROM runs ORDER BY configured_at DESC`,
+    sql`SELECT id, status, mode, configured_at FROM runs ORDER BY configured_at DESC`,
   );
   return result.rows;
 }
@@ -45,9 +46,9 @@ async function fetchRunsList(deps: RunsReadDeps): Promise<RunRowResult[]> {
 async function fetchRunStatus(
   deps: RunsReadDeps,
   runId: string,
-): Promise<{ id: string; status: string } | null> {
-  const result = await deps.db.execute<{ id: string; status: string }>(
-    sql`SELECT id, status FROM runs WHERE id = ${runId} LIMIT 1`,
+): Promise<{ id: string; status: string; mode: string } | null> {
+  const result = await deps.db.execute<{ id: string; status: string; mode: string }>(
+    sql`SELECT id, status, mode FROM runs WHERE id = ${runId} LIMIT 1`,
   );
   return result.rows[0] ?? null;
 }
@@ -79,6 +80,7 @@ export function createRunsReadApp(deps: RunsReadDeps): Hono {
       runs: rows.map((r) => ({
         id: r.id,
         status: r.status,
+        runMode: r.mode,
         configuredAt:
           r.configured_at instanceof Date ? r.configured_at.toISOString() : r.configured_at,
       })),
@@ -97,6 +99,7 @@ export function createRunsReadApp(deps: RunsReadDeps): Hono {
     }
     return c.json({
       runId,
+      runMode: row.mode,
       headSequence: head,
       sequenceThrough: built.sequenceThrough,
       currentState: built.state,

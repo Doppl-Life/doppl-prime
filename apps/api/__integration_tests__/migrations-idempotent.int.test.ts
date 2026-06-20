@@ -14,7 +14,7 @@ describe("spec(§9) migrations are idempotent and materialize the full table set
     await handle?.cleanup();
   });
 
-  test("fresh container → migrations create the 12 canonical tables", async () => {
+  test("fresh container → migrations create the canonical table set", async () => {
     await runMigrations(handle.pool);
     const result = await handle.pool.query<{ table_name: string }>(
       `SELECT table_name
@@ -69,6 +69,35 @@ describe("spec(§9) migrations are idempotent and materialize the full table set
     const col = result.rows[0];
     expect(col?.is_nullable).toBe("NO");
     expect(col?.column_default ?? "").toMatch(/now\(\)/i);
+  });
+
+  test("runs.mode column exists with NOT NULL DEFAULT 'live' (0005)", async () => {
+    const result = await handle.pool.query<{
+      column_name: string;
+      is_nullable: string;
+      column_default: string | null;
+    }>(
+      `SELECT column_name, is_nullable, column_default
+       FROM information_schema.columns
+       WHERE table_name = 'runs' AND column_name = 'mode'`,
+    );
+    const col = result.rows[0];
+    expect(col?.is_nullable).toBe("NO");
+    expect(col?.column_default ?? "").toMatch(/^'live'/);
+  });
+
+  test("runs.mode accepts 'live' / 'replay' / 'rehearsal' values", async () => {
+    await handle.pool.query(
+      `INSERT INTO runs (id, status, config, mode)
+       VALUES ('run_mode_test_live', 'completed', '{}'::jsonb, 'live'),
+              ('run_mode_test_replay', 'completed', '{}'::jsonb, 'replay'),
+              ('run_mode_test_rehearsal', 'completed', '{}'::jsonb, 'rehearsal')`,
+    );
+    const rows = await handle.pool.query<{ id: string; mode: string }>(
+      `SELECT id, mode FROM runs WHERE id LIKE 'run_mode_test_%' ORDER BY id`,
+    );
+    expect(rows.rows.map((r) => r.mode).sort()).toEqual(["live", "rehearsal", "replay"]);
+    await handle.pool.query(`DELETE FROM runs WHERE id LIKE 'run_mode_test_%'`);
   });
 
   test("running migrations again is a no-op (idempotent)", async () => {

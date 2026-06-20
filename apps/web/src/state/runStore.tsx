@@ -92,6 +92,32 @@ export function RunStoreProvider(props: RunStoreProviderProps): JSX.Element {
     };
   }, [state.runId, props.disableLiveStream, props.baseUrl, client]);
 
+  // PD.6: fetch the run detail when a runId is set so the dashboard
+  // can label live vs replay vs rehearsal from the server's authoritative
+  // runs.mode column. Only dispatch when the server actually returns a
+  // mode — absence leaves any test-supplied initial state alone.
+  useEffect(() => {
+    if (!state.runId) return;
+    let cancelled = false;
+    void client
+      .getRunDetail(state.runId)
+      .then((detail) => {
+        if (cancelled) return;
+        if (detail.runMode !== undefined) {
+          dispatch({
+            kind: "SET_SERVER_RUN_MODE",
+            serverRunMode: detail.runMode,
+          });
+        }
+      })
+      .catch(() => {
+        // Surfacing is deferred to the panels; absence is non-fatal.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.runId, client]);
+
   const value = useMemo<RunStoreContextValue>(() => ({ state, dispatch, client }), [state, client]);
   return <RunStoreContext.Provider value={value}>{props.children}</RunStoreContext.Provider>;
 }
