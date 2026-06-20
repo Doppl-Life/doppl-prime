@@ -105,9 +105,15 @@ export function HealthPanel(): JSX.Element | null {
         generations: {health.capsConsumed.generations}
         {capsCfg.maxGenerations ? ` / ${capsCfg.maxGenerations}` : ""}
       </div>
+      {/* `capsConsumed.candidates` is a lifetime total; `maxPopulation` is a
+       *  per-generation cap (caps.ts enforces state.populationCount >= max).
+       *  Rendering them as "N / M" reads as over-cap once N crosses M across
+       *  multiple generations, which is wrong — they aren't comparable. So
+       *  the cap is surfaced as its own row, labeled per-gen. */}
+      <div>candidates (total): {health.capsConsumed.candidates}</div>
       <div>
-        candidates: {health.capsConsumed.candidates}
-        {capsCfg.maxPopulation ? ` / ${capsCfg.maxPopulation}` : ""}
+        population cap: {capsCfg.maxPopulation ?? "—"}
+        {capsCfg.maxPopulation ? " per gen" : ""}
       </div>
       <div>
         tool calls: {health.capsConsumed.toolCalls}

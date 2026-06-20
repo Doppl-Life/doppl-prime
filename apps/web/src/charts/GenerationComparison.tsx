@@ -78,14 +78,14 @@ export function GenerationComparison({
         <CartesianGrid stroke="var(--doppl-border)" strokeDasharray="2 2" />
         <XAxis
           dataKey="generation"
-          stroke="#000"
+          stroke="var(--doppl-border)"
           tick={{ fill: "var(--doppl-text-primary)" }}
-          label={{ value: "Generation", position: "insideBottom", offset: -4, fill: "#14150c" }}
+          label={{ value: "Generation", position: "insideBottom", offset: -4, fill: "#dce8f7" }}
         />
         <YAxis
-          stroke="#000"
+          stroke="var(--doppl-border)"
           tick={{ fill: "var(--doppl-text-primary)" }}
-          label={{ value: "Fitness", angle: -90, position: "insideLeft", fill: "#14150c" }}
+          label={{ value: "Fitness", angle: -90, position: "insideLeft", fill: "#dce8f7" }}
         />
         <Tooltip />
         <Legend />

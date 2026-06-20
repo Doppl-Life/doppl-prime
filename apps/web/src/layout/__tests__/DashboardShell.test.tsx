@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { renderWithStore } from "../../test-utils/render.js";
 import { DashboardShell } from "../DashboardShell.js";
@@ -26,10 +26,20 @@ describe("DashboardShell", () => {
     expect(container.querySelector('[data-panel="lineage"]')).not.toBeNull();
     expect(container.querySelector('[data-panel="fitness"]')).not.toBeNull();
     expect(container.querySelector('[data-panel="generations"]')).not.toBeNull();
-    // Activity firehose lives in the collapsible bottom drawer now.
-    expect(screen.getByRole("region", { name: /activity log/i })).toBeInTheDocument();
+    // Activity is its own view tab now (not inline).
+    expect(screen.getByRole("tab", { name: /^activity/i })).toBeInTheDocument();
     // Inspector is selection-driven; nothing selected → not rendered.
     expect(container.querySelector('[data-rail="inspector"]')).toBeNull();
+  });
+
+  test("Activity tab switches the main view to the flat event table", () => {
+    const { container } = renderWithStore(<DashboardShell />);
+    // Dashboard view first: lineage panel present.
+    expect(container.querySelector('[data-panel="lineage"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: /^activity/i }));
+    // Now the Agent activity section is shown and the dashboard panels are not.
+    expect(screen.getByRole("region", { name: /agent activity/i })).toBeInTheDocument();
+    expect(container.querySelector('[data-panel="lineage"]')).toBeNull();
   });
 
   test("sidebar brand block shows 'no run loaded' when no run is set", () => {

@@ -105,26 +105,30 @@ export function OperatorPromptPanel(props: OperatorPromptPanelProps): JSX.Elemen
       style={{ display: "flex", flexDirection: "column", gap: 8 }}
     >
       <h3 style={{ fontSize: 16, margin: 0 }}>Demo controls</h3>
-      <fieldset style={{ border: "none", padding: 0, display: "flex", gap: 12 }}>
-        <label>
+      <fieldset
+        style={{ border: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}
+      >
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
           <input
             type="radio"
             name="prompt-mode"
             value="prepared"
             checked={mode === "prepared"}
             onChange={() => setMode("prepared")}
-          />{" "}
-          Prepared
+            style={{ width: "auto", flex: "none" }}
+          />
+          <span style={{ whiteSpace: "nowrap" }}>Prepared</span>
         </label>
-        <label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
           <input
             type="radio"
             name="prompt-mode"
             value="operator"
             checked={mode === "operator"}
             onChange={() => setMode("operator")}
-          />{" "}
-          Custom prompt
+            style={{ width: "auto", flex: "none" }}
+          />
+          <span style={{ whiteSpace: "nowrap" }}>Custom prompt</span>
         </label>
       </fieldset>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>

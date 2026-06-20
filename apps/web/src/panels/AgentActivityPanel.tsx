@@ -11,11 +11,11 @@ import { type ActivityLane, useAgentActivityLanes, useRunState } from "../state/
  * polling needed; entries flow in as the stream advances.
  */
 
-function shortId(id: string): string {
+export function shortId(id: string): string {
   return id.length <= 10 ? id : `${id.slice(0, 8)}…`;
 }
 
-function formatTime(iso: string): string {
+export function formatTime(iso: string): string {
   // HH:MM:SS local — matches the redteam-forge column.
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -23,7 +23,7 @@ function formatTime(iso: string): string {
 }
 
 /** Summarize an event's payload into a single dense line (tokens · cost · verdict). */
-function describeEvent(ev: ActivityEventView): string {
+export function describeEvent(ev: ActivityEventView): string {
   const p = ev.payload as Record<string, unknown> | null;
   if (!p || typeof p !== "object") return "";
   const parts: string[] = [];

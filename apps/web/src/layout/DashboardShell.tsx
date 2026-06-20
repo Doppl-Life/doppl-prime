@@ -1,8 +1,9 @@
-import type { JSX } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { FitnessOverTime } from "../charts/FitnessOverTime.js";
 import { GenerationComparison } from "../charts/GenerationComparison.js";
 import { OperatorPromptPanel } from "../demo/OperatorPromptPanel.js";
 import { LineageGraph } from "../lineage/LineageGraph.js";
+import { AgentActivityTable } from "../panels/AgentActivityTable.js";
 import { CandidateDetailInspector } from "../panels/CandidateDetailInspector.js";
 import { EnergyPanel } from "../panels/EnergyPanel.js";
 import { FinalIdeaPanel } from "../panels/FinalIdeaPanel.js";
@@ -10,8 +11,7 @@ import { HealthPanel } from "../panels/HealthPanel.js";
 import { ModeIndicator } from "../panels/ModeIndicator.js";
 import { RunConfigPanel } from "../panels/RunConfigPanel.js";
 import { StopControl } from "../panels/StopControl.js";
-import { useRunState } from "../state/runStore.js";
-import { ActivityDrawer } from "./ActivityDrawer.js";
+import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
 
 /**
  * Phase-aware dashboard shell (UX restructure). The same app shifts
@@ -23,13 +23,128 @@ import { ActivityDrawer } from "./ActivityDrawer.js";
  *   - review: the Final surviving idea + generation comparison (the
  *             proof) lead; lineage stays available for provenance.
  *
- * The candidate detail panels are merged into a right-docked Inspector
- * that only appears on lineage selection, and the Agent activity
- * firehose lives in a collapsible bottom drawer.
+ * The dark sidebar carries brand + run status + a Dashboard/Activity
+ * nav. The candidate detail panels are merged into a right-docked
+ * Inspector that opens on lineage selection; the Agent activity
+ * firehose lives on its own flat, scannable Activity tab.
  */
 
 const TERMINAL_STATUSES = new Set(["completed", "stopped", "failed", "cancelled"]);
 type Phase = "setup" | "live" | "review";
+type View = "dashboard" | "activity";
+type Theme = "dark" | "light";
+
+const THEME_KEY = "doppl-theme";
+
+function readInitialTheme(): Theme {
+  try {
+    const saved = window.localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") return saved;
+  } catch {
+    /* localStorage unavailable (SSR / tests) */
+  }
+  return "dark";
+}
+
+function useTheme(): [Theme, () => void] {
+  const [theme, setTheme] = useState<Theme>(readInitialTheme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* ignore */
+    }
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
+}
+
+function ViewTab({
+  active,
+  onClick,
+  children,
+  badge,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  badge?: number;
+}): JSX.Element {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        background: "transparent",
+        color: active ? "var(--doppl-accent)" : "var(--doppl-text-secondary)",
+        border: "none",
+        borderBottom: active
+          ? "2px solid var(--doppl-accent)"
+          : "2px solid transparent",
+        boxShadow: "none",
+        borderRadius: 0,
+        padding: "8px 4px",
+        marginBottom: -2,
+        fontSize: "var(--doppl-fs-sm)",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        textShadow: active ? "0 0 10px rgba(43,214,255,0.5)" : "none",
+      }}
+    >
+      <span>{children}</span>
+      {badge !== undefined && badge > 0 && (
+        <span
+          style={{
+            background: "var(--doppl-bg-input)",
+            color: active ? "var(--doppl-accent)" : "var(--doppl-text-secondary)",
+            border: "1px solid rgba(43,214,255,0.4)",
+            borderRadius: 3,
+            padding: "0 6px",
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ViewTabs({
+  view,
+  setView,
+  eventCount,
+}: {
+  view: View;
+  setView: (v: View) => void;
+  eventCount: number;
+}): JSX.Element {
+  return (
+    <div
+      role="tablist"
+      aria-label="View"
+      style={{
+        display: "flex",
+        gap: 20,
+        borderBottom: "1px solid rgba(43,214,255,0.3)",
+        paddingBottom: 0,
+      }}
+    >
+      <ViewTab active={view === "dashboard"} onClick={() => setView("dashboard")}>
+        Dashboard
+      </ViewTab>
+      <ViewTab active={view === "activity"} onClick={() => setView("activity")} badge={eventCount}>
+        Activity
+      </ViewTab>
+    </div>
+  );
+}
 
 const railStyle: React.CSSProperties = {
   background: "var(--doppl-bg-elevated)",
@@ -82,45 +197,69 @@ function LineagePanel({ tall }: { tall: boolean }): JSX.Element {
 
 export function DashboardShell(): JSX.Element {
   const state = useRunState();
+  const lanes = useAgentActivityLanes();
+  const [view, setView] = useState<View>("dashboard");
+  const [theme, toggleTheme] = useTheme();
   const status = state.run?.status ?? (state.runId ? "running" : "idle");
   const phase: Phase = !state.runId
     ? "setup"
     : TERMINAL_STATUSES.has(status)
       ? "review"
       : "live";
-  const inspectorOpen = state.selection.candidateId != null;
+  const eventCount = lanes.reduce((n, l) => n + l.events.length, 0);
+  const inspectorOpen = view === "dashboard" && state.selection.candidateId != null;
 
   const bodyColumns = [phase === "setup" ? "340px" : "300px", "1fr", inspectorOpen ? "380px" : null]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "1fr auto", height: "100vh" }}>
-      <div style={{ display: "grid", gridTemplateColumns: bodyColumns, overflow: "hidden" }}>
-        <aside style={railStyle} data-rail="left">
-          <div
-            data-brand
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              paddingBottom: 12,
-              borderBottom: "3px solid #000",
-            }}
-          >
+    <div style={{ display: "grid", gridTemplateColumns: bodyColumns, height: "100vh", overflow: "hidden" }}>
+      <aside style={railStyle} data-rail="left">
+        <div
+          data-brand
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            paddingBottom: 12,
+            borderBottom: "1px solid rgba(43,214,255,0.35)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h1 style={{ fontSize: "var(--doppl-fs-xl)", margin: 0 }}>Doppl</h1>
-            <ModeIndicator />
-            <div
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
               style={{
-                color: "var(--doppl-on-dark-muted)",
-                fontSize: "var(--doppl-fs-xs)",
-                overflowWrap: "anywhere",
+                background: "transparent",
+                color: "var(--doppl-on-dark)",
+                border: "1px solid rgba(43,214,255,0.4)",
+                boxShadow: "none",
+                padding: "4px 8px",
+                fontSize: 13,
+                letterSpacing: 0,
+                textTransform: "none",
               }}
             >
-              {state.runId ? `run: ${state.runId}` : "no run loaded"}
-            </div>
+              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            </button>
           </div>
-          {phase === "setup" ? (
+          <ModeIndicator />
+          <div
+            style={{
+              color: "var(--doppl-on-dark-muted)",
+              fontSize: "var(--doppl-fs-xs)",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {state.runId ? `run: ${state.runId}` : "no run loaded"}
+          </div>
+        </div>
+
+        {phase === "setup" ? (
             <>
               <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: 0 }}>Operator</h2>
               <OperatorPromptPanel />
@@ -164,7 +303,10 @@ export function DashboardShell(): JSX.Element {
         </aside>
 
         <main style={mainStyle} data-rail="main">
-          {phase === "review" ? (
+          <ViewTabs view={view} setView={setView} eventCount={eventCount} />
+          {view === "activity" ? (
+            <AgentActivityTable />
+          ) : phase === "review" ? (
             <>
               <FinalIdeaPanel />
               <FitnessAndGenerations />
@@ -186,10 +328,7 @@ export function DashboardShell(): JSX.Element {
           )}
         </main>
 
-        {inspectorOpen && <CandidateDetailInspector />}
-      </div>
-
-      <ActivityDrawer />
+      {inspectorOpen && <CandidateDetailInspector />}
     </div>
   );
 }

@@ -35,7 +35,7 @@ export function CandidateDetailInspector(): JSX.Element | null {
       aria-label="Candidate inspector"
       style={{
         background: "var(--doppl-bg-elevated)",
-        borderLeft: "3px solid #000",
+        borderLeft: "1px solid rgba(43,214,255,0.35)",
         padding: 16,
         overflowY: "auto",
         display: "flex",
@@ -52,7 +52,7 @@ export function CandidateDetailInspector(): JSX.Element | null {
           style={{
             background: "var(--doppl-bg-input)",
             color: "var(--doppl-text-primary)",
-            border: "2px solid #000",
+            border: "1px solid rgba(43,214,255,0.4)",
             boxShadow: "none",
             padding: "4px 10px",
             fontSize: 14,
@@ -76,9 +76,11 @@ export function CandidateDetailInspector(): JSX.Element | null {
               onClick={() => setTab(key)}
               style={{
                 background: active ? "var(--doppl-accent)" : "var(--doppl-bg-input)",
-                color: "var(--doppl-text-primary)",
-                border: "2px solid #000",
-                boxShadow: active ? "2px 2px 0 #000" : "none",
+                color: active ? "var(--doppl-on-accent)" : "var(--doppl-text-primary)",
+                border: active
+                  ? "1px solid var(--doppl-accent-hover)"
+                  : "1px solid rgba(43,214,255,0.3)",
+                boxShadow: active ? "0 0 12px rgba(43,214,255,0.45)" : "none",
                 padding: "6px 12px",
                 fontSize: 14,
                 letterSpacing: 0,

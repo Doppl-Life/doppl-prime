@@ -1,47 +1,54 @@
 /**
- * Doppl theme — NEOBRUTALIST / military-drab (P7.3 retheme).
+ * Doppl theme — SCI-FI / FUTURISTIC HUD.
  *
- * Aesthetic: olive/khaki "field manual" surfaces, near-black ink,
- * thick black borders, hard offset shadows (no blur), zero radius,
- * heavy uppercase headings. The status palette stays redundant
- * (shape + icon + label + color) and remains hue-distinguishable
- * even though every swatch is desaturated toward drab.
+ * Deep-space surfaces, neon cyan + violet accents, thin glowing
+ * borders and soft glow shadows instead of hard offsets, HUD-style
+ * uppercase tracked headings. Status palette stays redundant (shape +
+ * icon + label + color) and hue-distinguishable while glowing on dark.
  */
 :root {
-  /* Surface tokens — neutral grey drab */
-  --doppl-bg: #6e7073; /* medium grey — page + header */
-  --doppl-bg-elevated: #ececea; /* light grey-white — panel blocks */
-  --doppl-bg-input: #c4c5c2; /* light-mid grey — inputs / wells */
-  --doppl-border: #000000;
-  --doppl-border-strong: #000000;
+  /* Surface tokens — deep space */
+  --doppl-bg: #060a14; /* page / void */
+  --doppl-bg-elevated: rgba(18, 29, 51, 0.55); /* frosted panel glass */
+  --doppl-bg-solid: #101a2e; /* opaque fallback where blur isn't wanted */
+  --doppl-bg-input: rgba(10, 19, 34, 0.7); /* input wells */
+  --doppl-sidebar-bg: linear-gradient(180deg, rgba(13, 21, 38, 0.72) 0%, rgba(8, 13, 26, 0.7) 100%);
+  --doppl-glass-blur: blur(16px) saturate(135%);
+  --doppl-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%);
+  --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --doppl-bg-glow: radial-gradient(circle at 20% -10%, rgba(43, 214, 255, 0.08), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(196, 107, 255, 0.08), transparent 40%);
+  --doppl-border: #2bd6ff; /* neon edge (used with low-alpha glows below) */
+  --doppl-border-strong: #7af0ff;
 
-  /* Text — near-black neutral ink on grey surfaces */
-  --doppl-text-primary: #141517;
-  --doppl-text-secondary: #323338;
-  --doppl-text-muted: #5a5b60;
+  /* Text — cool HUD ink */
+  --doppl-text-primary: #dce8f7;
+  --doppl-text-secondary: #8aa2c4;
+  --doppl-text-muted: #5d7095;
 
-  /* Accent (primary actions, links) — drab mustard / ochre */
-  --doppl-accent: #c2a14a;
-  --doppl-accent-hover: #d6b557;
+  /* Light ink on the (dark) sidebar — same family as primary here */
+  --doppl-on-dark: #e4eefb;
+  --doppl-on-dark-muted: #93a6c6;
 
-  /* Light ink for text sitting on the medium-grey header */
-  --doppl-on-dark: #fbfbfb;
-  --doppl-on-dark-muted: #e6e7e8;
+  /* Accent — neon cyan primary */
+  --doppl-accent: #2bd6ff;
+  --doppl-accent-hover: #74e9ff;
+  --doppl-on-accent: #03121b;
 
-  /* Red accent — destructive actions + banner stripe */
-  --doppl-red: #bb3b2c;
-  --doppl-red-hover: #cf4736;
-  --doppl-on-red: #f7e9e4;
+  /* Alert — neon red/magenta */
+  --doppl-red: #ff4d6a;
+  --doppl-red-hover: #ff7388;
+  --doppl-on-red: #1a0309;
 
-  /* Drab, desaturated, still hue-distinguishable palette */
-  --doppl-cyan: #4f6f86; /* dusty slate-blue */
-  --doppl-green: #7c8a36; /* drab moss / olive-lime */
-  --doppl-orange: #bd8b3a; /* ochre */
-  --doppl-yellow: #ccbd5e; /* khaki tan */
-  --doppl-blue: #3a526b; /* deep slate-blue */
-  --doppl-vermilion: #a8472d; /* brick / rust */
-  --doppl-pink: #976470; /* dusty mauve */
-  --doppl-neutral: #7c7c64; /* stone */
+  /* Neon, desaturated-on-purpose-no — bright + hue-distinguishable */
+  --doppl-cyan: #2bd6ff; /* info */
+  --doppl-green: #36f5a0; /* ok — neon mint */
+  --doppl-orange: #ffb454; /* warn — amber */
+  --doppl-yellow: #ffe26b; /* pending — gold */
+  --doppl-blue: #5a8bff; /* electric blue */
+  --doppl-vermilion: #ff4d6a; /* error — neon red */
+  --doppl-pink: #c46bff; /* skip — violet */
+  --doppl-neutral: #6f86a8; /* slate */
 
   /* Status semantics (semantic aliases; never use color alone) */
   --doppl-status-ok: var(--doppl-green);
@@ -51,9 +58,9 @@
   --doppl-status-info: var(--doppl-cyan);
   --doppl-status-pending: var(--doppl-yellow);
   --doppl-status-neutral: var(--doppl-neutral);
-  /* legacy "warning" aliases referenced by some panels */
-  --doppl-status-warning: #6b4f12;
-  --doppl-status-warning-bg: rgba(189, 139, 58, 0.28);
+  --doppl-status-success: var(--doppl-green);
+  --doppl-status-warning: #ffb454;
+  --doppl-status-warning-bg: rgba(255, 180, 84, 0.16);
 
   /* Font scale (projector-legible) */
   --doppl-fs-xs: 14px;
@@ -63,6 +70,7 @@
   --doppl-fs-xl: 28px;
   --doppl-fs-2xl: 36px;
   --doppl-fs-3xl: 48px;
+  --doppl-mono: "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
 
   /* Spacing */
   --doppl-sp-1: 4px;
@@ -73,20 +81,75 @@
   --doppl-sp-8: 32px;
   --doppl-sp-12: 48px;
 
-  /* Radius — neobrutalism is razor-sharp */
-  --doppl-radius-sm: 0px;
-  --doppl-radius: 0px;
-  --doppl-radius-lg: 0px;
+  /* Radius — slim, panel-grade */
+  --doppl-radius-sm: 3px;
+  --doppl-radius: 5px;
+  --doppl-radius-lg: 8px;
 
-  /* Neobrutalist primitives */
-  --nb-border: 3px solid #000;
-  --nb-border-thin: 2px solid #000;
-  --nb-shadow: 4px 4px 0 #000;
-  --nb-shadow-lg: 6px 6px 0 #000;
-  --nb-shadow-sm: 3px 3px 0 #000;
+  /* HUD primitives — thin glowing edge + soft glow (no hard offset) */
+  --nb-border: 1px solid rgba(43, 214, 255, 0.45);
+  --nb-border-thin: 1px solid rgba(43, 214, 255, 0.28);
+  --nb-shadow: 0 0 16px rgba(43, 214, 255, 0.16), inset 0 0 0 1px rgba(43, 214, 255, 0.06);
+  --nb-shadow-lg: 0 0 26px rgba(43, 214, 255, 0.22);
+  --nb-shadow-sm: 0 0 10px rgba(43, 214, 255, 0.16);
 
-  /* Focus ring — hard, high-contrast */
-  --doppl-focus-ring: 0 0 0 3px #14150c, 0 0 0 6px var(--doppl-accent);
+  /* Focus ring — cyan glow */
+  --doppl-focus-ring: 0 0 0 2px var(--doppl-bg), 0 0 0 4px var(--doppl-accent),
+    0 0 14px rgba(43, 214, 255, 0.6);
+}
+
+/* ============================================================
+   LIGHT MODE — toggled via <html data-theme="light">.
+   Overrides the token values only; every component follows.
+   ============================================================ */
+:root[data-theme="light"] {
+  --doppl-bg: #e8edf5;
+  --doppl-bg-elevated: #ffffff;
+  --doppl-bg-input: #eef2f8;
+  --doppl-sidebar-bg: linear-gradient(180deg, #f3f7fc 0%, #e6eef8 100%);
+  --doppl-bg-glow: radial-gradient(circle at 20% -10%, rgba(11, 159, 196, 0.07), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(155, 70, 216, 0.06), transparent 40%);
+  --doppl-border: #0b9fc4;
+  --doppl-border-strong: #0883a3;
+
+  --doppl-text-primary: #0d1626;
+  --doppl-text-secondary: #41506b;
+  --doppl-text-muted: #6c7b94;
+  --doppl-on-dark: #0d1626;
+  --doppl-on-dark-muted: #41506b;
+
+  --doppl-accent: #0aa6c9;
+  --doppl-accent-hover: #0bbbe0;
+  --doppl-on-accent: #03121b;
+
+  --doppl-red: #d83a52;
+  --doppl-red-hover: #ed4d65;
+  --doppl-on-red: #fff2f4;
+
+  --doppl-cyan: #0b9fc4;
+  --doppl-green: #1f9e6a;
+  --doppl-orange: #c97f1f;
+  --doppl-yellow: #a9851a;
+  --doppl-blue: #2f5fd6;
+  --doppl-vermilion: #d83a52;
+  --doppl-pink: #9b46d8;
+  --doppl-neutral: #5a6b86;
+
+  --doppl-status-warning: #9a6a12;
+  --doppl-status-warning-bg: rgba(201, 127, 31, 0.14);
+
+  /* softer, drop-shadow depth instead of neon glow on light */
+  --nb-border: 1px solid rgba(11, 159, 196, 0.5);
+  --nb-border-thin: 1px solid rgba(11, 159, 196, 0.3);
+  --nb-shadow: 0 1px 4px rgba(13, 22, 38, 0.12), 0 0 0 1px rgba(11, 159, 196, 0.1);
+  --nb-shadow-lg: 0 4px 16px rgba(13, 22, 38, 0.16);
+  --nb-shadow-sm: 0 1px 3px rgba(13, 22, 38, 0.12);
+
+  --doppl-focus-ring: 0 0 0 2px var(--doppl-bg), 0 0 0 4px var(--doppl-accent);
+}
+
+:root[data-theme="light"] h1 {
+  text-shadow: none;
 }
 
 * {
@@ -100,6 +163,7 @@ body,
   padding: 0;
   height: 100%;
   background: var(--doppl-bg);
+  background-image: var(--doppl-bg-glow);
   color: var(--doppl-text-primary);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
@@ -113,168 +177,168 @@ body,
   box-shadow: var(--doppl-focus-ring);
 }
 
-/* ---- Headings: heavy, tight, stencil-uppercase top level ---- */
+/* ---- Headings: HUD uppercase, tracked, faint glow ---- */
 h1,
 h2,
 h3,
 h4 {
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--doppl-text-primary);
 }
 h1 {
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.16em;
+  text-shadow: 0 0 12px rgba(43, 214, 255, 0.55);
+}
+h2,
+h3 {
+  letter-spacing: 0.08em;
 }
 
 a {
-  color: var(--doppl-text-primary);
-  text-decoration: underline;
-  text-decoration-thickness: 3px;
-  text-underline-offset: 2px;
-  font-weight: 700;
+  color: var(--doppl-accent);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(43, 214, 255, 0.4);
+  font-weight: 600;
 }
 a:hover {
-  background: var(--doppl-accent);
-  color: #14150c;
+  color: var(--doppl-accent-hover);
+  text-shadow: 0 0 8px rgba(43, 214, 255, 0.6);
 }
 
-/* ---- Panels: flat drab blocks, thick black border, hard shadow ---- */
+/* ---- Panels: dark glass blocks, glowing edge ---- */
 section[aria-label],
 [data-panel="fitness"],
 [data-panel="generations"] {
   background: var(--doppl-bg-elevated);
   border: var(--nb-border);
-  border-radius: 0;
+  border-radius: var(--doppl-radius);
   box-shadow: var(--nb-shadow);
   padding: var(--doppl-sp-4);
 }
 
-/* Top app bar — deep-olive banner with light ink + red accent stripe */
-header {
-  background: var(--doppl-bg) !important;
-  color: var(--doppl-on-dark);
-  border-top: 6px solid var(--doppl-red) !important;
-  border-bottom: 3px solid #000 !important;
-  box-shadow: 0 4px 0 #000;
-}
-header h1 {
-  color: var(--doppl-on-dark);
-}
-/* keep the mode label legible on dark; the colored shape still encodes status */
-header output span {
-  color: var(--doppl-on-dark) !important;
-}
-
-/* Left sidebar — dark color-blocked nav. Redefining the tokens inside
-   this scope recolors every nested panel (mode, operator, health) to
-   light-on-dark automatically. */
+/* Left sidebar — command rail. Slightly distinct surface + cyan edge glow. */
 aside[data-rail="left"] {
-  background: #26272b !important;
+  background: var(--doppl-sidebar-bg) !important;
   color: var(--doppl-on-dark);
-  border-right: 3px solid #000 !important;
-  --doppl-text-primary: #f2f3f4;
-  --doppl-text-secondary: #bcbec3;
-  --doppl-text-muted: #9a9ca2;
-  --doppl-bg-elevated: #303137;
-  --doppl-bg-input: #3f4147;
+  border-right: 1px solid rgba(43, 214, 255, 0.35) !important;
+  box-shadow: 1px 0 18px rgba(43, 214, 255, 0.12);
 }
-/* keep status labels legible on the dark sidebar; colored shape still encodes status */
 aside[data-rail="left"] output span {
   color: var(--doppl-on-dark) !important;
 }
 aside[data-rail="right"] {
-  border-left: 3px solid #000 !important;
+  border-left: 1px solid rgba(43, 214, 255, 0.35) !important;
 }
 
 /* Lineage graph container */
 [data-panel="lineage"] {
-  border: 3px solid #000 !important;
-  border-radius: 0 !important;
+  border: var(--nb-border) !important;
+  border-radius: var(--doppl-radius) !important;
   box-shadow: var(--nb-shadow);
 }
 
-/* React Flow nodes get the same hard shadow */
+/* React Flow nodes get a soft glow */
 .react-flow__node > div {
   box-shadow: var(--nb-shadow-sm);
 }
 
-/* ---- Buttons ---- */
+/* ---- Buttons — neon HUD ---- */
 button {
   font-family: inherit;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   font-size: var(--doppl-fs-sm);
   background: var(--doppl-accent);
-  color: #14150c;
-  border: var(--nb-border);
-  border-radius: 0;
-  box-shadow: var(--nb-shadow);
+  color: var(--doppl-on-accent);
+  border: 1px solid var(--doppl-accent-hover);
+  border-radius: var(--doppl-radius);
+  box-shadow: 0 0 14px rgba(43, 214, 255, 0.4);
   padding: 10px 18px;
   cursor: pointer;
-  transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.1s ease;
+  transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 button:hover:not(:disabled) {
   background: var(--doppl-accent-hover);
+  box-shadow: 0 0 22px rgba(43, 214, 255, 0.65);
 }
 button:active:not(:disabled) {
-  transform: translate(4px, 4px);
-  box-shadow: 0 0 0 #000;
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 0 8px rgba(43, 214, 255, 0.4);
 }
 button:disabled {
-  background: var(--doppl-bg-input);
+  background: transparent;
   color: var(--doppl-text-muted);
+  border-color: rgba(120, 140, 170, 0.35);
   box-shadow: none;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
 /* Destructive / kill-switch buttons */
 button[data-variant="danger"] {
   background: var(--doppl-red);
   color: var(--doppl-on-red);
+  border-color: var(--doppl-red-hover);
+  box-shadow: 0 0 14px rgba(255, 77, 106, 0.45);
 }
 button[data-variant="danger"]:hover:not(:disabled) {
   background: var(--doppl-red-hover);
+  box-shadow: 0 0 22px rgba(255, 77, 106, 0.7);
 }
 
-/* ---- Form fields ---- */
-input,
+/* ---- Form fields (text-like inputs only; radios/checkboxes excluded) ---- */
+input:not([type="radio"]):not([type="checkbox"]),
 select,
 textarea {
   font-family: inherit;
   font-size: var(--doppl-fs-sm);
   background: var(--doppl-bg-input);
   color: var(--doppl-text-primary);
-  border: var(--nb-border);
-  border-radius: 0;
+  border: 1px solid rgba(43, 214, 255, 0.35);
+  border-radius: var(--doppl-radius-sm);
   padding: 8px 10px;
 }
 input::placeholder,
 textarea::placeholder {
   color: var(--doppl-text-muted);
 }
-input:focus,
+input:not([type="radio"]):not([type="checkbox"]):focus,
 select:focus,
 textarea:focus {
   outline: none;
+  border-color: var(--doppl-accent);
   box-shadow: var(--doppl-focus-ring);
+}
+input[type="radio"],
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--doppl-accent);
+  cursor: pointer;
 }
 
 label {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--doppl-text-primary);
 }
 
-/* ---- Dividers ---- */
+/* ---- Dividers — glowing scanline ---- */
 hr {
   border: none !important;
-  border-top: 3px solid #000 !important;
+  height: 1px !important;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(43, 214, 255, 0.7),
+    transparent
+  ) !important;
+  box-shadow: 0 0 8px rgba(43, 214, 255, 0.4);
   margin: var(--doppl-sp-3) 0;
 }
 
 /* ---- Disclosure ---- */
 details summary {
-  font-weight: 700;
+  font-weight: 600;
 }
