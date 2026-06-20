@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "paths": {
+      "@doppl/contracts": ["./src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

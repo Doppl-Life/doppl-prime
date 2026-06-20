@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+
+# Hand-authored markdown, planning artifacts, and scaffolding are NOT prettier-managed
+# (reflowing them clobbers orchestrator-owned docs). Prettier governs code only.
+**/*.md
+docs/
+.claude/
+.scaffolding/
