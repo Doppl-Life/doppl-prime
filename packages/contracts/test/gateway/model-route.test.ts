@@ -33,7 +33,9 @@ describe('ModelRoute — role→provider routing (spec §6)', () => {
     // strict + closed sub-types: unknown rejected; bad role + malformed capability rejected.
     expect(() => ModelRoute.parse({ ...validRoute, bogus: 1 })).toThrow();
     expect(() => ModelRoute.parse({ ...validRoute, role: 'judge' })).toThrow();
-    expect(() => ModelRoute.parse({ ...validRoute, capability: { structuredOutputs: true } })).toThrow();
+    expect(() =>
+      ModelRoute.parse({ ...validRoute, capability: { structuredOutputs: true } }),
+    ).toThrow();
     for (const k of REQUIRED_KEYS) {
       const clone: Record<string, unknown> = { ...validRoute };
       delete clone[k];

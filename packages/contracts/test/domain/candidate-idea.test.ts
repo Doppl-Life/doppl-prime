@@ -111,9 +111,9 @@ describe('CandidateIdea — the canonical unit of work (spec §3)', () => {
   it('candidate_evidenceRefs_empty_ok_and_claims_nonempty', () => {
     // spec(§3): a fresh candidate has no evidence yet — evidenceRefs:[] parses; claims are
     // non-empty strings, so an empty-string claim is rejected.
-    expect(
-      CandidateIdea.parse({ ...validCdtCandidate, evidenceRefs: [] }).evidenceRefs,
-    ).toEqual([]);
+    expect(CandidateIdea.parse({ ...validCdtCandidate, evidenceRefs: [] }).evidenceRefs).toEqual(
+      [],
+    );
     // claims:[] (the EMPTY ARRAY) parses — ≥1-claim is a COUNT invariant the kernel enforces WITH
     // AN EVENT (lesson §6, same class as Agenome parentIds 0–2), NOT a contract constraint. All 4
     // downstream tracks assume a zero-claim candidate is structurally valid.

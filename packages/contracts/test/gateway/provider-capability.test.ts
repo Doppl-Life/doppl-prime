@@ -24,7 +24,9 @@ describe('ProviderCapability — capability matrix (spec §6)', () => {
       expect(() => ProviderCapability.parse(clone), `missing ${k}`).toThrow();
     }
     // booleans only; unknown field rejected.
-    expect(() => ProviderCapability.parse({ ...validCapability, structuredOutputs: 'yes' })).toThrow();
+    expect(() =>
+      ProviderCapability.parse({ ...validCapability, structuredOutputs: 'yes' }),
+    ).toThrow();
     expect(() => ProviderCapability.parse({ ...validCapability, toolCalling: 1 })).toThrow();
     expect(() => ProviderCapability.parse({ ...validCapability, bogus: true })).toThrow();
   });

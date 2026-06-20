@@ -5,7 +5,12 @@ import { z } from 'zod';
  * fusion = agenome-level `crossover` + output-level `output_synthesis`; `mutation_only` is the
  * degenerate <2-parent fallback (§3). Any other value is rejected.
  */
-export const ReproductionMode = z.enum(['fusion', 'crossover', 'output_synthesis', 'mutation_only']);
+export const ReproductionMode = z.enum([
+  'fusion',
+  'crossover',
+  'output_synthesis',
+  'mutation_only',
+]);
 
 export type ReproductionMode = z.infer<typeof ReproductionMode>;
 

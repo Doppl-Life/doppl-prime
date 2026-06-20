@@ -44,11 +44,14 @@ describe('ReproductionEvent — breeding with persisted RNG outcomes (spec §8)'
     // mutation_only legitimately has <2 parents (degenerate fallback, §3).
     for (const parents of [[], ['a'], ['a', 'b'], ['a', 'b', 'c']]) {
       expect(
-        ReproductionEvent.parse({ ...validReproduction, parentAgenomeIds: parents }).parentAgenomeIds,
+        ReproductionEvent.parse({ ...validReproduction, parentAgenomeIds: parents })
+          .parentAgenomeIds,
       ).toEqual(parents);
     }
     expect(() => ReproductionEvent.parse({ ...validReproduction, childAgenomeId: '' })).toThrow();
-    expect(() => ReproductionEvent.parse({ ...validReproduction, parentAgenomeIds: [''] })).toThrow();
+    expect(() =>
+      ReproductionEvent.parse({ ...validReproduction, parentAgenomeIds: [''] }),
+    ).toThrow();
   });
 
   it('reproduction_mode_closed_4_union', () => {
@@ -77,8 +80,12 @@ describe('ReproductionEvent — breeding with persisted RNG outcomes (spec §8)'
     expect(
       ReproductionEvent.parse({ ...validReproduction, crossoverPoints: [] }).crossoverPoints,
     ).toEqual([]);
-    expect(() => ReproductionEvent.parse({ ...validReproduction, crossoverPoints: [1.5] })).toThrow();
-    expect(() => ReproductionEvent.parse({ ...validReproduction, crossoverPoints: ['a'] })).toThrow();
+    expect(() =>
+      ReproductionEvent.parse({ ...validReproduction, crossoverPoints: [1.5] }),
+    ).toThrow();
+    expect(() =>
+      ReproductionEvent.parse({ ...validReproduction, crossoverPoints: ['a'] }),
+    ).toThrow();
     // mutationSummary: trait → concrete RNG outcome (string|number|boolean); {} ok; nested rejected.
     expect(
       ReproductionEvent.parse({ ...validReproduction, mutationSummary: {} }).mutationSummary,

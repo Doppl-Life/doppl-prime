@@ -31,7 +31,13 @@ const PROVIDER_CAPABILITY_FIELD_SNAPSHOT = [
   'streaming',
 ];
 
-const MODEL_ROUTE_FIELD_SNAPSHOT = ['role', 'provider', 'modelId', 'capability', 'fallbackRouteIds'];
+const MODEL_ROUTE_FIELD_SNAPSHOT = [
+  'role',
+  'provider',
+  'modelId',
+  'capability',
+  'fallbackRouteIds',
+];
 
 const GATEWAY_REQUEST_FIELD_SNAPSHOT = ['role', 'prompt', 'messages', 'schema', 'maxTokens'];
 

@@ -73,8 +73,9 @@ const sorted = (a: readonly string[]): string[] => [...a].sort();
 
 // Probe which Subtype member a discriminated-union variant accepts on its `subtype` field —
 // version-robust (no dependency on ZodLiteral internals across zod minors).
-const acceptedSubtype = (variant: { shape: { subtype: { safeParse: (v: unknown) => { success: boolean } } } }): string | undefined =>
-  Subtype.options.find((s) => variant.shape.subtype.safeParse(s).success);
+const acceptedSubtype = (variant: {
+  shape: { subtype: { safeParse: (v: unknown) => { success: boolean } } };
+}): string | undefined => Subtype.options.find((s) => variant.shape.subtype.safeParse(s).success);
 
 describe('schema snapshot — CandidateIdea / payloads / EvidenceRef (spec §3 / §4 / §2.5)', () => {
   it('barrel_exports_candidate_contracts', () => {

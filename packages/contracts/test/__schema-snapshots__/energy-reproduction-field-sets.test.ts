@@ -62,7 +62,9 @@ describe('schema snapshot — EnergyEvent / ReproductionEvent / ProviderMeta (sp
   it('schema_snapshot_energy_reproduction', () => {
     expect(sorted(Object.keys(EnergyEvent.shape))).toEqual(sorted(ENERGY_FIELD_SNAPSHOT));
     expect(sorted(EnergyEventType.options)).toEqual(sorted(ENERGY_EVENT_TYPE_SNAPSHOT));
-    expect(sorted(Object.keys(ReproductionEvent.shape))).toEqual(sorted(REPRODUCTION_FIELD_SNAPSHOT));
+    expect(sorted(Object.keys(ReproductionEvent.shape))).toEqual(
+      sorted(REPRODUCTION_FIELD_SNAPSHOT),
+    );
     expect(sorted(ReproductionMode.options)).toEqual(sorted(REPRODUCTION_MODE_SNAPSHOT));
     expect(sorted(Object.keys(ProviderMeta.shape))).toEqual(sorted(PROVIDER_META_FIELD_SNAPSHOT));
 

@@ -24,7 +24,12 @@ describe('ModelGatewayRequest — the only request seam (spec §6/§14)', () => 
     // schema?/maxTokens? are omittable; the full request parses.
     expect(ModelGatewayRequest.parse(validPromptRequest)).toEqual(validPromptRequest);
     expect(ModelGatewayRequest.parse(validMessagesRequest)).toEqual(validMessagesRequest);
-    const full = { role: 'critic', prompt: 'Evaluate.', schema: { type: 'object' }, maxTokens: 1024 };
+    const full = {
+      role: 'critic',
+      prompt: 'Evaluate.',
+      schema: { type: 'object' },
+      maxTokens: 1024,
+    };
     expect(ModelGatewayRequest.parse(full)).toEqual(full);
 
     // role is a ModelRole — a bad role is rejected.
@@ -32,7 +37,11 @@ describe('ModelGatewayRequest — the only request seam (spec §6/§14)', () => 
 
     // EXACTLY ONE of prompt/messages: both present → rejected; neither → rejected.
     expect(() =>
-      ModelGatewayRequest.parse({ role: 'critic', prompt: 'x', messages: validMessagesRequest.messages }),
+      ModelGatewayRequest.parse({
+        role: 'critic',
+        prompt: 'x',
+        messages: validMessagesRequest.messages,
+      }),
     ).toThrow();
     expect(() => ModelGatewayRequest.parse({ role: 'critic' })).toThrow();
 
@@ -51,7 +60,9 @@ describe('ModelGatewayRequest — the only request seam (spec §6/§14)', () => 
 
     // strict + §14: unknown field rejected; a credential field is unrepresentable.
     expect(() => ModelGatewayRequest.parse({ ...validPromptRequest, bogus: 1 })).toThrow();
-    expect(() => ModelGatewayRequest.parse({ ...validPromptRequest, apiKey: 'sk-secret' })).toThrow();
+    expect(() =>
+      ModelGatewayRequest.parse({ ...validPromptRequest, apiKey: 'sk-secret' }),
+    ).toThrow();
     expect(() => ModelGatewayRequest.parse({ ...validPromptRequest, secret: 'x' })).toThrow();
   });
 });

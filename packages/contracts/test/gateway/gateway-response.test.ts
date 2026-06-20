@@ -71,12 +71,8 @@ describe('ModelGatewayResponse — the only response seam (spec §6/§14)', () =
     expect(() =>
       ModelGatewayResponse.parse({ ...acceptedResponse, validationResult: 'rejected' }),
     ).toThrow(); // accepted:true but result rejected
-    expect(() =>
-      ModelGatewayResponse.parse({ ...rejectedResponse, accepted: true }),
-    ).toThrow(); // result rejected but accepted:true
-    expect(() =>
-      ModelGatewayResponse.parse({ ...acceptedResponse, accepted: false }),
-    ).toThrow(); // result accepted but accepted:false
+    expect(() => ModelGatewayResponse.parse({ ...rejectedResponse, accepted: true })).toThrow(); // result rejected but accepted:true
+    expect(() => ModelGatewayResponse.parse({ ...acceptedResponse, accepted: false })).toThrow(); // result accepted but accepted:false
   });
 
   it('gateway_rejected_requires_rejection', () => {
