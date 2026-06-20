@@ -1,0 +1,18 @@
+{
+  "id": "cross-domain-transfer",
+  "title": "Cross-domain transfer: hydraulic engineering → urban traffic flow",
+  "subtype": "cross_domain_transfer",
+  "prompt": "Map proven principles from hydraulic engineering (laminar flow, pressure-equalization, surge tanks) onto urban traffic flow design. Where do the analogies hold, where do they break, and what novel intervention does the strongest analogy suggest?",
+  "seed": "demo-prepared-cross-domain-transfer",
+  "rngSeed": "rng-cross-domain-transfer-v1",
+  "defaultCaps": {
+    "maxPopulation": 6,
+    "maxGenerations": 4,
+    "energyBudget": 8000,
+    "maxSpawnDepth": 3,
+    "maxToolCalls": 40,
+    "wallClockTimeoutMs": 600000
+  },
+  "modelProfile": "default",
+  "scoringPolicyVersion": "v1"
+}
