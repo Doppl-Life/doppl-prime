@@ -1,14 +1,18 @@
 import type { JSX } from "react";
+import { DashboardShell } from "./layout/DashboardShell.js";
+import { RunStoreProvider } from "./state/runStore.js";
 
 /**
- * App root — composed by U15's DashboardShell. The MVP scaffold renders
- * a placeholder until the shell + panels land.
+ * App root (P7.14). Wraps the dashboard shell in the RunStoreProvider
+ * so the SSE subscription + state reducer are available to every
+ * panel. The shell composition pins the §12 panel set.
  */
 export default function App(): JSX.Element {
+  const baseUrl =
+    (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE_URL ?? "";
   return (
-    <div style={{ padding: "2rem", fontFamily: "system-ui" }}>
-      <h1>Doppl Dashboard</h1>
-      <p>Phase 7 scaffold. Shell composition lands in U15.</p>
-    </div>
+    <RunStoreProvider baseUrl={baseUrl}>
+      <DashboardShell />
+    </RunStoreProvider>
   );
 }

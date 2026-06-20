@@ -18,5 +18,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test-utils/setup.ts"],
     coverage: { provider: "v8" },
+    // Playwright e2e specs live under tests/e2e/ and run via
+    // `pnpm test:e2e`. Vitest skips them.
+    exclude: ["**/node_modules/**", "**/dist/**", "tests/e2e/**"],
   },
 });
