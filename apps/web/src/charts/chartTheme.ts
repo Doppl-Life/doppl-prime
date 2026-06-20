@@ -21,6 +21,12 @@ export const SERIES_THEMES: readonly SeriesTheme[] = [
   { stroke: PALETTE.pink, strokeDasharray: "4 4", dotShape: "star" },
 ];
 
+const FALLBACK_THEME: SeriesTheme = {
+  stroke: PALETTE.cyan,
+  strokeDasharray: "0",
+  dotShape: "circle",
+};
+
 export function pickSeriesTheme(index: number): SeriesTheme {
-  return SERIES_THEMES[index % SERIES_THEMES.length] ?? SERIES_THEMES[0]!;
+  return SERIES_THEMES[index % SERIES_THEMES.length] ?? FALLBACK_THEME;
 }
