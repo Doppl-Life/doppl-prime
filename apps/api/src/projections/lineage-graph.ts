@@ -150,10 +150,15 @@ export async function buildLineageGraph(input: BuildLineageGraphInput): Promise<
     });
   }
 
+  // Phase 0's LineageGraphProjection requires sequenceThrough >= 0.
+  // For empty runs the EMPTY_SEQUENCE_THROUGH sentinel is -1; coerce
+  // to 0 at the schema boundary. Consumers should treat nodes.length
+  // === 0 as "no graph yet" rather than reading sequenceThrough.
+  const reported = sequenceThrough < 0 ? 0 : sequenceThrough;
   return {
     graph: {
       runId: input.runId,
-      sequenceThrough,
+      sequenceThrough: reported,
       nodes,
       edges,
     },

@@ -42,12 +42,12 @@ describe("spec(§9) buildLineageGraph", () => {
     await handle.pool.query("TRUNCATE run_events");
   });
 
-  test("empty event log → empty graph, sequenceThrough = -1", async () => {
+  test("empty event log → empty graph; graph.sequenceThrough coerced to 0 for schema validity (-1 internally)", async () => {
     const out = await buildLineageGraph({ db, runId: "run_empty" });
     expect(out.graph.runId).toBe("run_empty");
     expect(out.graph.nodes).toEqual([]);
     expect(out.graph.edges).toEqual([]);
-    expect(out.graph.sequenceThrough).toBe(-1);
+    expect(out.graph.sequenceThrough).toBe(0);
     expect(out.sequenceThrough).toBe(-1);
   });
 
