@@ -21,17 +21,14 @@ const VALID_CONFIG = {
 function envelope(
   overrides: Partial<RunEventEnvelopeT> & Pick<RunEventEnvelopeT, "type" | "sequence" | "payload">,
 ): RunEventEnvelopeT {
-  return {
+  const base = {
     id: `evt_${overrides.sequence}`,
     runId: "run_x",
-    sequence: overrides.sequence,
-    type: overrides.type,
     actor: "runtime",
     occurredAt: "2026-06-19T00:00:00Z",
     schemaVersion: 1,
-    payload: overrides.payload,
-    ...overrides,
-  } as RunEventEnvelopeT;
+  };
+  return { ...base, ...overrides } as RunEventEnvelopeT;
 }
 
 describe("runStoreReducer — applyEvent", () => {

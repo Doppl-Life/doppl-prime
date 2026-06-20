@@ -57,6 +57,7 @@ export function RunStoreProvider(props: RunStoreProviderProps): JSX.Element {
   const [state, dispatch] = useReducer(runStoreReducer, props.initialState ?? initialRunStoreState);
   const streamRef = useRef<SseStreamHandle | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.sequenceThrough is read for the initial cursor only; live cursor advances through the event handler
   useEffect(() => {
     if (props.disableLiveStream) return;
     if (!state.runId) return;
@@ -89,9 +90,6 @@ export function RunStoreProvider(props: RunStoreProviderProps): JSX.Element {
       handle.close();
       streamRef.current = null;
     };
-    // intentionally only re-subscribe on runId change; lastApplied
-    // updates flow through the event handler.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.runId, props.disableLiveStream, props.baseUrl, client]);
 
   const value = useMemo<RunStoreContextValue>(() => ({ state, dispatch, client }), [state, client]);
