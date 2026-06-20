@@ -3,8 +3,12 @@
  * seams. This barrel is the single import boundary every track consumes; no model is redefined
  * outside this package.
  */
+export * from './config/validate';
+export * from './domain/subtype';
 export * from './events/actor';
 export * from './events/event-type';
 export * from './events/envelope';
+export * from './run/run-caps';
+export * from './run/run-config';
 export * from './security/redaction';
 export * from './version';
