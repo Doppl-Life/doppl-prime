@@ -45,6 +45,7 @@ Six slices, six commits, suite **58 → 118** (+60 tests). All in `packages/cont
 ### Files modified
 - `src/index.ts` — barrel re-exports for every new schema/enum/helper (single import boundary).
 - `docs/sessions/contract-001-2026-06-20-p0-contracts-candidate-through-gateway.md` (this doc).
+- **Formatting fix (`609cb9d`, `style(contracts)`):** 10 files (reproduction-event + 9 tests) re-wrapped to satisfy the package-pinned prettier — see TDD compliance note below. Formatting-only; suite stayed 118/118.
 
 ## Decisions made
 
@@ -68,6 +69,7 @@ Six slices, six commits, suite **58 → 118** (+60 tests). All in `packages/cont
 - Two all-negative safety tests false-passed at confirm-RED (`critic_review_rejects_winner_or_policy_field` P0.6; `energy_no_failed_debit_field` P0.9) — hardened with a leading positive guard before GREEN (lesson §10). Tests still written first.
 - P0.7: Step-8 typecheck caught a test-fixture union-widening error vitest missed → fixed with a `: CheckRunnerAdapter` annotation (no assertion changed).
 - Safety-invariant slices (P0.6/P0.7/P0.8/P0.9) each ran an independent `security-reviewer` fan-out — **all CLEAN, 0 findings**.
+- **Tooling finding (resolved at `/session-end`):** the per-slice Step-8 `npx prettier --check <files>` resolved a DIFFERENT prettier than the package-pinned binary and reported false-clean on 10 files (Unicode chars in comments shifted line-wrap past print-width). `pnpm format:check` (the authoritative gate) caught it; reformatted + committed (`609cb9d`). **Process correction for future sessions: use `pnpm format:check` / `./node_modules/.bin/prettier`, NOT bare `npx prettier`, for the format gate.** No semantic impact (formatting-only; all snapshots/assertions unchanged, 118/118).
 
 ## Reachability
 
