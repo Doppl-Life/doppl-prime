@@ -31,6 +31,7 @@ describe("spec(§9) canonical table column-name sets are frozen", () => {
         "config",
         "configured_at",
         "id",
+        "mode",
         "started_at",
         "status",
         "terminal_summary",

@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { RunConfig as RunConfigSchema } from "@doppl/contracts";
 import { describe, expect, test } from "vitest";
 import {
@@ -8,7 +9,10 @@ import {
   listCuratedPrompts,
 } from "../src/runtime/demo/demo-run-config.js";
 
-const CURATED_DIR = resolve(process.cwd(), "../../fixtures/curated-prompts");
+const CURATED_DIR = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../fixtures/curated-prompts",
+);
 
 describe("spec(§17, PD.5) buildDemoConfig", () => {
   test("prepared mode with valid problemId returns parseable RunConfig", async () => {

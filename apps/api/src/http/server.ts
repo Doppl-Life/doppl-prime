@@ -2,6 +2,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Hono } from "hono";
 import type { GatewayRegistry } from "../model-gateway/default-routes.js";
 import { attachErrorHandler } from "./middleware/error.js";
+import { createDemoRoutesApp } from "./routes/demo.js";
 import { createHealthRouteApp } from "./routes/health.js";
 import { createModelRoutesApp } from "./routes/model-routes.js";
 import { createRunsReadApp } from "./routes/runs-read.js";
@@ -35,6 +36,9 @@ export interface CreateServerDeps {
    *  responds with an empty list. */
   registry?: GatewayRegistry;
   testStreamMaxDurationMs?: number;
+  /** Overrides for Phase D demo route fixture lookups (tests). */
+  curatedPromptsDir?: string;
+  replayFixturesDir?: string;
 }
 
 export function createServer(deps: CreateServerDeps): Hono {
@@ -45,6 +49,18 @@ export function createServer(deps: CreateServerDeps): Hono {
 
   app.route("/", createRunsWriteApp({ db: deps.db }));
   app.route("/", createRunsReadApp({ db: deps.db }));
+  app.route(
+    "/",
+    createDemoRoutesApp({
+      db: deps.db,
+      ...(deps.curatedPromptsDir !== undefined
+        ? { curatedPromptsDir: deps.curatedPromptsDir }
+        : {}),
+      ...(deps.replayFixturesDir !== undefined
+        ? { replayFixturesDir: deps.replayFixturesDir }
+        : {}),
+    }),
+  );
   app.route("/", createHealthRouteApp({ db: deps.db }));
   app.route(
     "/",
