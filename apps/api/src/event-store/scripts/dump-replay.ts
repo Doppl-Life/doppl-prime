@@ -77,10 +77,12 @@ export async function dumpReplay(input: DumpReplayInput): Promise<DumpReplayResu
   }
 
   const events: RunEventEnvelope[] = [];
-  let schemaVersion = CONTRACTS_SCHEMA_VERSION;
+  let schemaVersion: number = CONTRACTS_SCHEMA_VERSION;
   for await (const envelope of replayReader(input.db).events(input.runId)) {
     events.push(envelope);
-    schemaVersion = Math.max(schemaVersion, envelope.schemaVersion);
+    if (envelope.schemaVersion > schemaVersion) {
+      schemaVersion = envelope.schemaVersion;
+    }
   }
   if (events.length === 0) {
     throw new DumpRefusedError(`run ${input.runId} has zero events`);

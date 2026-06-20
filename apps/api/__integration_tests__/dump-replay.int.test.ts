@@ -14,7 +14,7 @@ import { type PgContainerHandle, startPgContainer } from "./helpers/pg-container
 
 const VALID_CONFIG = {
   seed: "dump-replay-seed",
-  enabledSubtypes: ["cross_domain_transfer"],
+  enabledSubtypes: ["cross_domain_transfer" as const],
   caps: {
     maxPopulation: 4,
     maxGenerations: 3,
@@ -39,6 +39,7 @@ describe("spec(§17) dumpReplay", () => {
   });
   afterAll(async () => {
     await handle?.cleanup();
+    if (outDir) await rm(outDir, { recursive: true, force: true }).catch(() => {});
   });
   beforeEach(async () => {
     await handle.pool.query("TRUNCATE run_events");
@@ -105,9 +106,5 @@ describe("spec(§17) dumpReplay", () => {
     await handle.pool.query("UPDATE runs SET status = 'cancelled' WHERE id = $1", [runId]);
     const result = await dumpReplay({ db, runId, outDir });
     expect(result.eventsExported).toBeGreaterThan(0);
-  });
-
-  afterAll(async () => {
-    if (outDir) await rm(outDir, { recursive: true, force: true }).catch(() => {});
   });
 });
