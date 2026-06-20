@@ -31,6 +31,7 @@ export function LineageGraph(): JSX.Element {
     error: null,
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.sequenceThrough deliberately included so live SSE updates refetch the lineage projection
   useEffect(() => {
     if (!state.runId) return;
     let cancelled = false;
