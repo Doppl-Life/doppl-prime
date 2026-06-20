@@ -4,3 +4,6 @@ export * from "./runtime/index.js";
 export * from "./verifier/index.js";
 export * from "./check-runners/index.js";
 export * from "./selection/index.js";
+export * from "./projections/index.js";
+export * from "./observability/index.js";
+export * from "./http/index.js";
