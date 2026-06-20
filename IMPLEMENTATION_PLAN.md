@@ -19,9 +19,15 @@
 
 ## Currently in progress
 
-**Bootstrap.** Plan generated from `ARCHITECTURE.md`; scaffolding not yet generated; first `/tdd` slice not started.
+**Phase 0 (contract freeze) — IN PROGRESS (11/14 tasks).** Shipped P0.1–P0.9 + P0.11 + P0.12. This round (contract-001 session, P0.5→P0.12): CandidateIdea/payloads/EvidenceRef (`49f77f3`) · CriticReview/criticInput injection-isolation (`dfd651f`) · CheckResult/CheckRunnerAdapter allowlist (`83db38d`) · scoring family (`837e5be`) · EnergyEvent/ReproductionEvent + shared `ProviderMeta` (`a13d9cc`) · gateway seam bundle P0.11+P0.12 (`9c174b7`). Implementer tip `294fe34` (incl. session doc + prettier reformat `609cb9d`); **round commit lands at this `/orchestrate-end`.** Full suite **118/118**.
 
-**Next session target:** P0.1 (RunEventEnvelope + closed RunEventType registry + actor union) — the contract freeze is the forced-serial bottleneck every track waits on.
+**Remaining P0 (4 tasks):** P0.10 (per-type payload map + payload size/depth ceiling — carry-forward security item) · `[P0.15 Run+Generation+CullingEvent + P0.13 LineageGraphProjection]` entities/lineage bundle · P0.15-`FinalJudgeRubric` (solo, held-out judge) · P0.14 (contract-test surface, phase-gate). Then `/phase-exit P0` closes the freeze. Bundling directive (Carry-forward standing directive) governs.
+
+**Cycle note:** round closed via auto-cycle (impl context WARN 71%, clean boundary). Fresh implementer resumes at **P0.10** under canonical name `contract-contracts-implementer`.
+
+**Resolved escalation (P0.2):** §14 env-**value** layer — human ratified **Option A** (2026-06-20): placed at the P1 boundary, deferred not cut. §14 note written; cross-track requirement on Carry-forward.
+
+**Next session target:** P0.10 (per-type payload-shape map for high-traffic event types; reuses EnergyEvent/CandidateIdea/CriticReview/CheckResult/NoveltyScore/FitnessScore; folds in the payload size/depth ceiling carry-forward).
 
 ---
 
@@ -29,7 +35,12 @@
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-_(Empty at project start; populated as Step-9 routing surfaces operational items.)_
+- **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). _(origin: 2026-06-20 P0.1 security review; cross-track)_
+- **`payload` has no size/depth bound at the envelope level** — enforce a ceiling at P0.10 per-type narrowing AND on the event-store append path (P1). Fold into the P0.10 brief. _(origin: 2026-06-20 P0.1 security review)_
+- **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. _(origin: 2026-06-20 P0.3; cross-track → kernel)_
+- **§14 env-VALUE redaction layer (ratified Option A) — INLINED, no further action.** Now an explicit acceptance + reachability bullet in **P1.2** (event-store, kernel track) and **P6.5** (observability/Langfuse, demo track); §14 note written. Kept here as a cross-track pointer so the kernel + demo orchestrators see it at orient. _(origin: 2026-06-20 P0.2 security review; human-RATIFIED Option A; DELETE at the /orchestrate-end after both tracks consume it)_
+- **STANDING DIRECTIVE (P0): bundle remaining schema slices where safe.** _(STATUS 2026-06-20: solo P0.6–P0.9 ✓ + gateway bundle `[P0.11+P0.12]` ✓ shipped. REMAINING: P0.10 (solo), `[P0.15 Run+Gen+Culling + P0.13]` (bundle), P0.15-`FinalJudgeRubric` (solo), P0.14 (phase-gate).)_ Human direction via lead (lead-APPROVED 2026-06-20) — bundle to speed the build; never bundle a safety-invariant slice with feature work; each bundled behavior keeps its own red→green + stays a coherent Step-2.5 unit. **SOLO:** P0.6 (`criticInput` injection-isolation, rule 5), P0.7 (`CheckRunnerAdapter` allowlist, rule 3), P0.8 (`ScoringPolicy`+novelty/fitness scoring contract, rule 6), **P0.9** (`EnergyEvent`/`ReproductionEvent` — no-failed-attempt-debit is safety rule 8; lead ruled FULLY SOLO, never in a feature bundle), **P0.15 `FinalJudgeRubric`** (held-out judge immutable-to-agents, rule 6 — split out of P0.15), P0.10 (per-type payload map **+ payload size/depth ceiling**, security carry-forward), P0.14 (contract-test phase-gate, deps everything). **BUNDLE:** `[P0.11+P0.12]` gateway contracts (§6) · `[P0.15 Run+Generation+CullingEvent + P0.13 LineageGraphProjection]` run-lifecycle entities + lineage projection (§3+§10; gated on P0.8 — the projection's node types ARE these entities). _(origin: 2026-06-20 lead-relayed human direction, lead-approved same day; applies from next dispatch after in-flight P0.5; KEEP until P0 complete)_
+- **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P2/P3 consume it)_
 
 ---
 
@@ -158,7 +169,7 @@ The project is "done" when:
 
 **Goal:** Freeze every Appendix-A model as a Zod schema (with z.infer TS types) in packages/contracts, plus the closed RunEventType registry, the closed 7-role actor union, the secret-redaction scrub contract, the boot config-validation contract, and the consumer/producer contract-test surface. These are the §2.5 shared contracts crossed by DAG edges; this phase is the forced-serial bottleneck that must be frozen before the four parallel tracks (kernel, verifier, selection, demo) fork. Every model-defining task ships a field-name-set schema-snapshot in its RED outline so a mid-build field change is caught as a cross-track regression. Numeric scoring weights are the only deferred-open values; all structures are frozen now.
 
-**Spec anchors:** `ARCHITECTURE.md §4`, §2.5, Appendix A.
+**Spec anchors:** `ARCHITECTURE.md §3`, §4, §2.5, §14, §15, Appendix A. _(§3 = P0.4 Agenome (+ later P0.5 CandidateIdea, P0.15 Run/Generation) state machines; §14 = P0.2 secret-redaction; §15 = P0.3 boot config-validation fail-fast; further per-model anchors §6/§7/§8/§10 are subsumed under Appendix A and added to this line as each covering slice lands, so phase-exit `spec-lint tests` enforces their coverage.)_
 
 **Track:** `contract` · **Depends on (phases):** none.
 
@@ -167,108 +178,108 @@ The project is "done" when:
 
 ### P0.1 — RunEventEnvelope + closed RunEventType registry + 7-role actor union
 
-- [ ] RunEventEnvelope carries exactly: id, runId, generationId?, agenomeId?, candidateId?, type:RunEventType, sequence, occurredAt, actor, correlationId?, langfuseTraceId?, langfuseObservationId?, payload, schemaVersion (per Appendix A §4)
-- [ ] sequence is the sole ordering key; it is a per-run monotonic integer and occurredAt is a UTC ISO-8601 string treated as display/analytics-only, never ordering (§4)
-- [ ] RunEventType is a CLOSED enum containing every lifecycle + failure/terminal type named in Appendix A: run.configured/started/completed/failed/stopped, generation.started/completed, agenome.spawned/fused/mutated/reproduced, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored, lineage.culled, energy.spent, provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded — and rejects any unlisted type
-- [ ] actor is the CLOSED 7-role union (operator, runtime, agenome, critic, check_runner, selection_controller, system) and supersedes any actor:string; any other value is rejected
-- [ ] schemaVersion is present on every envelope; readers must accept all schemaVersion ≤ current (the registry pins the current version constant)
-- [ ] payload is the generic JSONB-backed shape at envelope level (per-type narrowing is layered by P0.10), and an unknown envelope field is rejected by the schema
-- [ ] Files: packages/contracts/src/events/envelope.ts (NEW); packages/contracts/src/events/event-type.ts (NEW); packages/contracts/src/events/actor.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — RunEventEnvelope, RunEventType · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] RunEventEnvelope carries exactly: id, runId, generationId?, agenomeId?, candidateId?, type:RunEventType, sequence, occurredAt, actor, correlationId?, langfuseTraceId?, langfuseObservationId?, payload, schemaVersion (per Appendix A §4)
+- [x] sequence is the sole ordering key; it is a per-run monotonic integer and occurredAt is a UTC ISO-8601 string treated as display/analytics-only, never ordering (§4)
+- [x] RunEventType is a CLOSED enum containing every lifecycle + failure/terminal type named in Appendix A: run.configured/started/completed/failed/stopped, generation.started/completed, agenome.spawned/fused/mutated/reproduced, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored, lineage.culled, energy.spent, provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded — and rejects any unlisted type
+- [x] actor is the CLOSED 7-role union (operator, runtime, agenome, critic, check_runner, selection_controller, system) and supersedes any actor:string; any other value is rejected
+- [x] schemaVersion is present on every envelope; readers must accept all schemaVersion ≤ current (the registry pins the current version constant)
+- [x] payload is the generic JSONB-backed shape at envelope level (per-type narrowing is layered by P0.10), and an unknown envelope field is rejected by the schema
+- [x] Files: packages/contracts/src/events/envelope.ts (NEW); packages/contracts/src/events/event-type.ts (NEW); packages/contracts/src/events/actor.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — RunEventEnvelope, RunEventType · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.2 — Secret-redaction scrub contract (persistence-boundary filter)
 
-- [ ] Exposes a single pure scrub function applied to any event payload object before append and before Langfuse emit (§14 — one scrub used at both boundaries)
-- [ ] Redacts pattern-matched provider keys, Authorization headers, and known env-value formats from arbitrary nested payload objects (§14)
-- [ ] Is idempotent: scrubbing already-scrubbed output yields the same result and never reintroduces a secret
-- [ ] Returns a structurally-equivalent object with non-secret fields untouched (does not drop or reorder legitimate payload keys)
-- [ ] Defines the redaction placeholder token as a stable constant so snapshot/contract tests can assert against it
-- [ ] No secret value can appear in any output of the scrub (the safety invariant REQ-S-004 / RISK-006/009)
-- [ ] Files: packages/contracts/src/security/redaction.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: none
+- [x] Exposes a single pure scrub function applied to any event payload object before append and before Langfuse emit (§14 — one scrub used at both boundaries)
+- [x] Redacts pattern-matched provider keys, Authorization headers, and known env-value formats from arbitrary nested payload objects (§14)
+- [x] Is idempotent: scrubbing already-scrubbed output yields the same result and never reintroduces a secret
+- [x] Returns a structurally-equivalent object with non-secret fields untouched (does not drop or reorder legitimate payload keys)
+- [x] Defines the redaction placeholder token as a stable constant so snapshot/contract tests can assert against it
+- [x] No secret value can appear in any output of the scrub (the safety invariant REQ-S-004 / RISK-006/009)
+- [x] Files: packages/contracts/src/security/redaction.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none
+- [x] Depends on: none
 
 ### P0.3 — RunConfig / RunCaps schemas + boot config-validation contract
 
-- [ ] RunCaps carries exactly maxPopulation, maxGenerations, energyBudget (doppl_energy integer), maxSpawnDepth, maxToolCalls, wallClockTimeoutMs (Appendix A §4/§5)
-- [ ] RunConfig carries exactly seed, enabledSubtypes[] (from the two-member subtype union), caps:RunCaps, modelProfile, scoringPolicyVersion, rngSeed (Appendix A)
-- [ ] rngSeed is a required field on RunConfig so the per-run seed is persistable in run.configured for deterministic replay (§4 RNG capture)
-- [ ] Cap values are validated as positive/bounded so an invalid cap config fails fast at boot rather than at runtime (§15 fail-fast, REQ-NF-001)
-- [ ] Exposes a config-validation entry that parses config (defaults < file < env precedence) and throws a clear error on the first invalid field (§15)
-- [ ] energyBudget unit is doppl_energy and is a single integer (shared unit with EnergyEvent, §4)
-- [ ] Files: packages/contracts/src/run/run-config.ts (NEW); packages/contracts/src/run/run-caps.ts (NEW); packages/contracts/src/config/validate.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — RunConfig, RunCaps · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] RunCaps carries exactly maxPopulation, maxGenerations, energyBudget (doppl_energy integer), maxSpawnDepth, maxToolCalls, wallClockTimeoutMs (Appendix A §4/§5)
+- [x] RunConfig carries exactly seed, enabledSubtypes[] (from the two-member subtype union), caps:RunCaps, modelProfile, scoringPolicyVersion, rngSeed (Appendix A)
+- [x] rngSeed is a required field on RunConfig so the per-run seed is persistable in run.configured for deterministic replay (§4 RNG capture)
+- [x] Cap values are validated as positive/bounded so an invalid cap config fails fast at boot rather than at runtime (§15 fail-fast, REQ-NF-001)
+- [x] Exposes a config-validation entry that parses config (defaults < file < env precedence) and throws a clear error on the first invalid field (§15)
+- [x] energyBudget unit is doppl_energy and is a single integer (shared unit with EnergyEvent, §4)
+- [x] Files: packages/contracts/src/run/run-config.ts (NEW); packages/contracts/src/run/run-caps.ts (NEW); packages/contracts/src/config/validate.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — RunConfig, RunCaps · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.4 — Agenome schema (traits + 7-state status)
 
-- [ ] Agenome carries exactly id, runId, generationId, parentIds[], systemPrompt, personaWeights, toolPermissions[], decompositionPolicy, spawnBudget, mutationMeta?, status (Appendix A §3)
-- [ ] parentIds[] encodes 0-2 parents (gen-0 has none, fusion offspring usually 2) without enforcing the count at schema level beyond an array of ids (§3 relationships)
-- [ ] status is the CLOSED 7-state union: seeded, active, spent, eligible_parent, failed, reproduced, culled (§3 Agenome state machine); any other value rejected
-- [ ] spawnBudget is a hint integer (clamped at runtime, not at schema level)
-- [ ] mutationMeta is optional so seeded gen-0 agenomes validate without it
-- [ ] Files: packages/contracts/src/domain/agenome.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — Agenome · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] Agenome carries exactly id, runId, generationId, parentIds[], systemPrompt, personaWeights, toolPermissions[], decompositionPolicy, spawnBudget, mutationMeta?, status (Appendix A §3)
+- [x] parentIds[] encodes 0-2 parents (gen-0 has none, fusion offspring usually 2) without enforcing the count at schema level beyond an array of ids (§3 relationships)
+- [x] status is the CLOSED 7-state union: seeded, active, spent, eligible_parent, failed, reproduced, culled (§3 Agenome state machine); any other value rejected
+- [x] spawnBudget is a hint integer (clamped at runtime, not at schema level)
+- [x] mutationMeta is optional so seeded gen-0 agenomes validate without it
+- [x] Files: packages/contracts/src/domain/agenome.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — Agenome · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.5 — CandidateIdea + CrossDomainTransferPayload + ZeitgeistSynthesisPayload + EvidenceRef
 
-- [ ] CandidateIdea carries exactly id, runId, generationId, agenomeId, subtype, title, summary, claims[], evidenceRefs[], status, subtypePayload (Appendix A §3 + DATA_MODEL.md)
-- [ ] subtype is the CLOSED two-member union cross_domain_transfer | zeitgeist_synthesis and subtypePayload is a discriminated union matching the chosen subtype
-- [ ] status is the CLOSED 8-state union created, under_review, checked, scored, selected, rejected, culled, invalid (§3 Candidate state machine)
-- [ ] CrossDomainTransferPayload carries sourceDomain, sourceTechnique, targetDomain, targetProblem, transferMapping, expectedMechanism, executableCheckIdea? (DATA_MODEL.md)
-- [ ] ZeitgeistSynthesisPayload carries thesis, audience, currentSignals[], whyNow, falsifiablePredictions[], comparablePriorArt[] (DATA_MODEL.md)
-- [ ] EvidenceRef.kind is the CLOSED union trace | check_output | prior_art | signal | raw_output | other with eventId?/uri?/label?/langfuseObservationId?, and resolves WITHIN the Postgres tier (never an external store) per §4/§9
-- [ ] Files: packages/contracts/src/domain/candidate-idea.ts (NEW); packages/contracts/src/domain/subtype-payloads.ts (NEW); packages/contracts/src/domain/evidence-ref.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — CandidateIdea, CrossDomainTransferPayload, ZeitgeistSynthesisPayload, EvidenceRef · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] CandidateIdea carries exactly id, runId, generationId, agenomeId, subtype, title, summary, claims[], evidenceRefs[], status, subtypePayload (Appendix A §3 + DATA_MODEL.md)
+- [x] subtype is the CLOSED two-member union cross_domain_transfer | zeitgeist_synthesis and subtypePayload is a discriminated union matching the chosen subtype
+- [x] status is the CLOSED 8-state union created, under_review, checked, scored, selected, rejected, culled, invalid (§3 Candidate state machine)
+- [x] CrossDomainTransferPayload carries sourceDomain, sourceTechnique, targetDomain, targetProblem, transferMapping, expectedMechanism, executableCheckIdea? (DATA_MODEL.md)
+- [x] ZeitgeistSynthesisPayload carries thesis, audience, currentSignals[], whyNow, falsifiablePredictions[], comparablePriorArt[] (DATA_MODEL.md)
+- [x] EvidenceRef.kind is the CLOSED union trace | check_output | prior_art | signal | raw_output | other with eventId?/uri?/label?/langfuseObservationId?, and resolves WITHIN the Postgres tier (never an external store) per §4/§9
+- [x] Files: packages/contracts/src/domain/candidate-idea.ts (NEW); packages/contracts/src/domain/subtype-payloads.ts (NEW); packages/contracts/src/domain/evidence-ref.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — CandidateIdea, CrossDomainTransferPayload, ZeitgeistSynthesisPayload, EvidenceRef · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.6 — CriticReview + CriticMandate + criticInput isolation shape
 
-- [ ] CriticReview carries exactly id, candidateId, mandate, scores{}, critique, confidence, evidenceRefs[] (Appendix A §7)
-- [ ] mandate is the CLOSED CriticMandate union factual_grounding, novelty_prior_art, feasibility, falsification, subtype_specific (§7); any other value rejected
-- [ ] criticInput models trusted rubric and untrusted candidate payload as DISTINCT fields so candidate text is never interpolated into instruction strings (§7 / §14 prompt-injection isolation, T-002)
-- [ ] criticInput wraps the untrusted candidate field with a fixed sentinel delimiter constant exposed by the contract
-- [ ] CriticReview carries evidenceRefs[] of EvidenceRef so reviews are explainable from persisted events (§8); critics emit evidence only and the shape carries no winner-selection or policy-mutation field (§7/§14)
-- [ ] Files: packages/contracts/src/verifier/critic-review.ts (NEW); packages/contracts/src/verifier/critic-input.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — CriticReview, CriticMandate, criticInput · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: P0.5
+- [x] CriticReview carries exactly id, candidateId, mandate, scores{}, critique, confidence, evidenceRefs[] (Appendix A §7)
+- [x] mandate is the CLOSED CriticMandate union factual_grounding, novelty_prior_art, feasibility, falsification, subtype_specific (§7); any other value rejected
+- [x] criticInput models trusted rubric and untrusted candidate payload as DISTINCT fields so candidate text is never interpolated into instruction strings (§7 / §14 prompt-injection isolation, T-002)
+- [x] criticInput wraps the untrusted candidate field with a fixed sentinel delimiter constant exposed by the contract
+- [x] CriticReview carries evidenceRefs[] of EvidenceRef so reviews are explainable from persisted events (§8); critics emit evidence only and the shape carries no winner-selection or policy-mutation field (§7/§14)
+- [x] Files: packages/contracts/src/verifier/critic-review.ts (NEW); packages/contracts/src/verifier/critic-input.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — CriticReview, CriticMandate, criticInput · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: P0.5
 
 ### P0.7 — CheckResult + CheckRunnerAdapter allowlist shape
 
-- [ ] CheckResult carries exactly id, candidateId, checkType, status, score?, output?, skipReason?, evidenceRefs[], error? (Appendix A §7)
-- [ ] status is the CLOSED union passed | failed | skipped; a skipped result requires a skipReason (§7 — unregistered/execution-requiring check is recorded as skipped with reason)
-- [ ] CheckRunnerAdapter is an allowlist-registry shape keyed by adapter ID, mirroring the model registry, with a non-executing adapter contract (no arbitrary-code field) per §7/§14, REQ-S-003
-- [ ] An unregistered or execution-requiring adapter id maps to a skipped CheckResult with reason rather than executing (the allowlist invariant)
-- [ ] evidenceRefs[] are EvidenceRef so check evidence resolves within the Postgres tier (§9)
-- [ ] Files: packages/contracts/src/checks/check-result.ts (NEW); packages/contracts/src/checks/check-runner-adapter.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — CheckResult, CheckRunnerAdapter · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: P0.5
+- [x] CheckResult carries exactly id, candidateId, checkType, status, score?, output?, skipReason?, evidenceRefs[], error? (Appendix A §7)
+- [x] status is the CLOSED union passed | failed | skipped; a skipped result requires a skipReason (§7 — unregistered/execution-requiring check is recorded as skipped with reason)
+- [x] CheckRunnerAdapter is an allowlist-registry shape keyed by adapter ID, mirroring the model registry, with a non-executing adapter contract (no arbitrary-code field) per §7/§14, REQ-S-003
+- [x] An unregistered or execution-requiring adapter id maps to a skipped CheckResult with reason rather than executing (the allowlist invariant)
+- [x] evidenceRefs[] are EvidenceRef so check evidence resolves within the Postgres tier (§9)
+- [x] Files: packages/contracts/src/checks/check-result.ts (NEW); packages/contracts/src/checks/check-runner-adapter.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — CheckResult, CheckRunnerAdapter · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: P0.5
 
 ### P0.8 — NoveltyScore + FitnessScore + ScoringPolicy (structure frozen, weights deferred)
 
-- [ ] NoveltyScore carries exactly id, candidateId, vector, embeddingModelId, dimension, comparisonSet, method, score, explanation (Appendix A §8)
-- [ ] vector is the persisted float array (authoritative-once-computed) with embeddingModelId + dimension so replay reads the stored vector and never re-embeds (§4/§9)
-- [ ] FitnessScore carries exactly id, candidateId, total, components{}, policyVersion, explanation (Appendix A §8)
-- [ ] components{} includes the named decomposed signals (critic scores, subtype-check results, novelty, energy efficiency, held-out-judge acceptance) and fitness references the novelty it consumed so selection is explainable from persisted events (§8)
-- [ ] ScoringPolicy carries version, weights{}, normalization? with STRUCTURE frozen and numeric weight VALUES deferred-open (§8 — the only deferred-open contract values)
-- [ ] policyVersion on FitnessScore ties a score to a specific ScoringPolicy version (one selected score per policy version per candidate, §3)
-- [ ] Files: packages/contracts/src/scoring/novelty-score.ts (NEW); packages/contracts/src/scoring/fitness-score.ts (NEW); packages/contracts/src/scoring/scoring-policy.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — NoveltyScore, FitnessScore, ScoringPolicy · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] NoveltyScore carries exactly id, candidateId, vector, embeddingModelId, dimension, comparisonSet, method, score, explanation (Appendix A §8)
+- [x] vector is the persisted float array (authoritative-once-computed) with embeddingModelId + dimension so replay reads the stored vector and never re-embeds (§4/§9)
+- [x] FitnessScore carries exactly id, candidateId, total, components{}, policyVersion, explanation (Appendix A §8)
+- [x] components{} includes the named decomposed signals (critic scores, subtype-check results, novelty, energy efficiency, held-out-judge acceptance) and fitness references the novelty it consumed so selection is explainable from persisted events (§8)
+- [x] ScoringPolicy carries version, weights{}, normalization? with STRUCTURE frozen and numeric weight VALUES deferred-open (§8 — the only deferred-open contract values)
+- [x] policyVersion on FitnessScore ties a score to a specific ScoringPolicy version (one selected score per policy version per candidate, §3)
+- [x] Files: packages/contracts/src/scoring/novelty-score.ts (NEW); packages/contracts/src/scoring/fitness-score.ts (NEW); packages/contracts/src/scoring/scoring-policy.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — NoveltyScore, FitnessScore, ScoringPolicy · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.9 — EnergyEvent + ReproductionEvent schemas
 
-- [ ] EnergyEvent carries exactly id, runId, generationId?, agenomeId?, eventType, estimate, actual, unit:doppl_energy, reason, providerMeta? (Appendix A §4/§5)
-- [ ] eventType is the CLOSED union llm | tool | spawn; estimate and actual are both present so energy.spent persists pre-call estimate AND post-call reconciled actual (§4 energy)
-- [ ] EnergyEvent only models SUCCESSFUL productive spend — there is no failed/retried/repaired energy debit field (failed attempts emit provider_call_failed, never energy.spent, §4)
-- [ ] ReproductionEvent carries exactly id, runId, parentAgenomeIds[], childAgenomeId, mode, crossoverPoints, mutationSummary (Appendix A §8)
-- [ ] mode is the CLOSED union fusion | crossover | output_synthesis | mutation_only (§8 + §3 degenerate <2-parent fallback uses mutation_only)
-- [ ] crossoverPoints and mutationSummary persist concrete RNG outcomes so replay reconstructs from stored outcomes and never re-samples (§4 RNG capture)
-- [ ] Files: packages/contracts/src/domain/energy-event.ts (NEW); packages/contracts/src/domain/reproduction-event.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — EnergyEvent, ReproductionEvent · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] EnergyEvent carries exactly id, runId, generationId?, agenomeId?, eventType, estimate, actual, unit:doppl_energy, reason, providerMeta? (Appendix A §4/§5)
+- [x] eventType is the CLOSED union llm | tool | spawn; estimate and actual are both present so energy.spent persists pre-call estimate AND post-call reconciled actual (§4 energy)
+- [x] EnergyEvent only models SUCCESSFUL productive spend — there is no failed/retried/repaired energy debit field (failed attempts emit provider_call_failed, never energy.spent, §4)
+- [x] ReproductionEvent carries exactly id, runId, parentAgenomeIds[], childAgenomeId, mode, crossoverPoints, mutationSummary (Appendix A §8)
+- [x] mode is the CLOSED union fusion | crossover | output_synthesis | mutation_only (§8 + §3 degenerate <2-parent fallback uses mutation_only)
+- [x] crossoverPoints and mutationSummary persist concrete RNG outcomes so replay reconstructs from stored outcomes and never re-samples (§4 RNG capture)
+- [x] Files: packages/contracts/src/domain/energy-event.ts (NEW); packages/contracts/src/domain/reproduction-event.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — EnergyEvent, ReproductionEvent · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.10 — Per-type payload-shape map for high-traffic event types
 
@@ -283,26 +294,26 @@ The project is "done" when:
 
 ### P0.11 — ModelRoute / ModelRole / ProviderCapability schemas
 
-- [ ] ModelRole is the CLOSED 7-role union population_generator, critic, subtype_check, embedding, final_judge, fusion_synthesis, retrieval (§6 §7)
-- [ ] ProviderCapability carries structuredOutputs, embeddings, toolCalling?, streaming? with structuredOutputs + embeddings as the day-one gate flags and toolCalling/streaming optional (§6 MVP-lean matrix)
-- [ ] ModelRoute carries role, provider, modelId, capability:ProviderCapability, fallbackRouteIds[] (Appendix A §6)
-- [ ] fallbackRouteIds[] is present but may be empty (multi-hop chains added when a second provider is wired, §6)
-- [ ] Embeddings role is expressible as pinned to a direct-OpenAI route while other roles route via OpenRouter (§6 routing — schema does not force a single provider)
-- [ ] Files: packages/contracts/src/gateway/model-route.ts (NEW); packages/contracts/src/gateway/provider-capability.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — ModelRoute, ModelRole, ProviderCapability · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] ModelRole is the CLOSED 7-role union population_generator, critic, subtype_check, embedding, final_judge, fusion_synthesis, retrieval (§6 §7)
+- [x] ProviderCapability carries structuredOutputs, embeddings, toolCalling?, streaming? with structuredOutputs + embeddings as the day-one gate flags and toolCalling/streaming optional (§6 MVP-lean matrix)
+- [x] ModelRoute carries role, provider, modelId, capability:ProviderCapability, fallbackRouteIds[] (Appendix A §6)
+- [x] fallbackRouteIds[] is present but may be empty (multi-hop chains added when a second provider is wired, §6)
+- [x] Embeddings role is expressible as pinned to a direct-OpenAI route while other roles route via OpenRouter (§6 routing — schema does not force a single provider)
+- [x] Files: packages/contracts/src/gateway/model-route.ts (NEW); packages/contracts/src/gateway/provider-capability.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — ModelRoute, ModelRole, ProviderCapability · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.12 — ModelGatewayRequest / ModelGatewayResponse schemas
 
-- [ ] ModelGatewayRequest carries role, messages/prompt, schema?, maxTokens? (Appendix A §6); role is a ModelRole
-- [ ] ModelGatewayResponse carries accepted, output?, validationResult, providerMeta, langfuseTraceId?, rejection? (Appendix A §6)
-- [ ] providerMeta carries provider, modelId, gatewayRequestId, tokensIn/Out, costEstimate? so provider metadata is persistable on the originating event (§6/§9)
-- [ ] validationResult expresses the accepted | repaired(≤1) | rejected structured-output outcome and a rejected response carries a rejection reason (§6 — accepted/repaired/rejected with event)
-- [ ] The Request/Response shapes are the ONLY provider seam domain code sees (no vendor SDK types leak through), per §2.5 import-direction rule and §6
-- [ ] providerMeta and request objects carry no credential/secret field (credentials load from env only, §14)
-- [ ] Files: packages/contracts/src/gateway/gateway-request.ts (NEW); packages/contracts/src/gateway/gateway-response.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — ModelGatewayRequest, ModelGatewayResponse · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: P0.11
+- [x] ModelGatewayRequest carries role, messages/prompt, schema?, maxTokens? (Appendix A §6); role is a ModelRole
+- [x] ModelGatewayResponse carries accepted, output?, validationResult, providerMeta, langfuseTraceId?, rejection? (Appendix A §6)
+- [x] providerMeta carries provider, modelId, gatewayRequestId, tokensIn/Out, costEstimate? so provider metadata is persistable on the originating event (§6/§9)
+- [x] validationResult expresses the accepted | repaired(≤1) | rejected structured-output outcome and a rejected response carries a rejection reason (§6 — accepted/repaired/rejected with event)
+- [x] The Request/Response shapes are the ONLY provider seam domain code sees (no vendor SDK types leak through), per §2.5 import-direction rule and §6
+- [x] providerMeta and request objects carry no credential/secret field (credentials load from env only, §14)
+- [x] Files: packages/contracts/src/gateway/gateway-request.ts (NEW); packages/contracts/src/gateway/gateway-response.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — ModelGatewayRequest, ModelGatewayResponse · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: P0.11
 
 ### P0.13 — LineageGraphProjection schema
 
@@ -360,7 +371,7 @@ The project is "done" when:
 
 ### P1.1 — §4 event-model Zod contracts: RunEventEnvelope, closed RunEventType registry, actor 7-role union, EvidenceRef
 
-- [ ] RunEventType is a CLOSED enum covering the full §4/Appendix-A registry incl. every failure/terminal event (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded, run_failed, run_stopped) — an unknown type value is rejected, never silently accepted
+- [ ] RunEventType is a CLOSED enum covering the full §4/Appendix-A registry incl. every failure/terminal event (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded, run.failed, run.stopped) — an unknown type value is rejected, never silently accepted
 - [ ] RunEventEnvelope carries id, runId, optional generationId/agenomeId/candidateId, type, sequence, occurredAt (UTC ISO-8601), actor (closed 7-role union — string actor rejected), optional correlationId/langfuseTraceId/langfuseObservationId, payload (JSONB), and a required schemaVersion
 - [ ] EvidenceRef.kind is the closed union trace/check_output/prior_art/signal/raw_output/other; an EvidenceRef carrying only an external uri that is non-resolvable within Postgres is representable but the resolver (P1.7) treats Postgres-tier eventId as the authoritative pointer
 - [ ] Per-type payload-shape narrowing exists for the high-traffic types (energy.spent, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored); other types accept JSONB payload
@@ -374,6 +385,7 @@ The project is "done" when:
 
 - [ ] A single pure scrub function runs in event-store on every payload BEFORE append — no event is appended without passing through it
 - [ ] Redaction is pattern-based over key formats, Authorization headers, and env-value shapes (provider API keys, bearer tokens) and replaces matches with a non-reversible redaction marker rather than dropping the field
+- [ ] **Env-value layer (§14; human-ratified Option A 2026-06-20):** beyond the shared `packages/contracts` `scrubSecrets` (key-format + key-name layers), the event-store boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values — with a **reachability** assertion that the env-value scrub runs on the real before-append path, not only unit-tested (origin: P0.2 security review)
 - [ ] Scrub is deep/recursive over nested JSONB structures incl. arrays and inline raw/normalized provider outputs, so an over-persisted raw model output cannot leak a secret
 - [ ] Scrub is idempotent — re-running it on already-scrubbed content is a no-op and never corrupts non-secret data
 - [ ] The function is reusable by observability before Langfuse emit (same scrub at both boundaries), exported from a shared location
@@ -641,7 +653,7 @@ The project is "done" when:
 - [ ] The kill switch (operator stop or any cap breach) drives every non-terminal run/generation to failed or stopped, halts scheduling of new work, lets in-flight calls drain, and writes a partial terminal summary
 - [ ] wallClockTimeoutMs is enforced against run start and aborts the run (per-state deadline → failed) when exceeded
 - [ ] Cap state (consumed vs remaining per dimension) is queryable so the worker and health endpoint can read caps-consumed without re-deriving it
-- [ ] A cap breach is recorded as a persisted event (e.g. energy_exhausted / generation_failed / run_failed/stopped) so every cap-driven terminal path is replayable
+- [ ] A cap breach is recorded as a persisted event (e.g. energy_exhausted / generation_failed / run.failed/stopped) so every cap-driven terminal path is replayable
 - [ ] Files: apps/api/src/runtime/caps/capEnforcer.ts (NEW); apps/api/src/runtime/caps/killSwitch.ts (NEW); apps/api/src/runtime/caps/capLedger.ts (NEW)
 - [ ] Cross-doc invariant: none (consumes RunCaps, RunConfig — frozen in P0.3)
 - [ ] Depends on: P0.3, P3.2, P3.3
@@ -724,7 +736,7 @@ The project is "done" when:
 - [ ] A run ends completed if ANY generation ever produced a selected best-so-far candidate (that candidate is the final idea); the final idea reference is recorded on run.completed
 - [ ] A run ends failed only if NO generation ever produced a scored survivor; run.failed records reason and a partial summary
 - [ ] Operator stop / kill ends the run stopped with a partial terminal summary preserving partial evidence (consistent with the kill switch P3.4)
-- [ ] Crash-detected non-terminal runs are classified via run_failed{reason:"crash"} with a partial summary (handoff to P3.13)
+- [ ] Crash-detected non-terminal runs are classified via run.failed{reason:"crash"} with a partial summary (handoff to P3.13)
 - [ ] Terminal classification reads only persisted events (selected/scored history) so the same log always yields the same terminal verdict — it is replay-stable
 - [ ] Once classified terminal the run admits no further transitions (enforced by the run state machine P3.2)
 - [ ] Files: apps/api/src/runtime/terminal/terminalClassifier.ts (NEW); apps/api/src/runtime/terminal/partialSummary.ts (NEW)
@@ -745,7 +757,7 @@ The project is "done" when:
 
 ### P3.13 — Crash-forward recovery at boot
 
-- [ ] On restart the kernel reads the event log and marks any non-terminal run failed via run_failed{reason:"crash"} with a partial summary
+- [ ] On restart the kernel reads the event log and marks any non-terminal run failed via run.failed{reason:"crash"} with a partial summary
 - [ ] Recovery never attempts idempotent resume of a crashed run (true resume is deferred); it only forward-fails and leaves replay/prepared runs as the fallback
 - [ ] Recovery runs before the worker accepts new work, so the single-active-run guard (P3.12) starts from a clean no-active-run state
 - [ ] A run already terminal at restart is left untouched (no re-failing, no duplicate terminal events)
@@ -763,7 +775,7 @@ The project is "done" when:
 - [ ] Per-run RNG seed is persisted in run.configured and all non-deterministic outcomes are persisted in agenome.mutated/fused and lineage.culled; replay reconstructs from seed/outcomes and never re-samples
 - [ ] Every lifecycle decision and every failure path lands as an append-only, schema-validated, secret-redacted event with a per-run monotonic gap-free sequence as the sole ordering key (occurredAt never orders); the appender never updates/deletes
 - [ ] Gen-0 population is the human-authored baseline set (REQ-F-017), not random init; bounded retry (default 2) + per-call timeout + wall-clock + max caps make the loop finite by construction
-- [ ] An in-process single-active-run worker runs the generation loop idempotently by event-sequence, serializes one active run, emits a heartbeat, and recovers crash-forward (non-terminal runs → run_failed{reason:"crash"}) at boot; config is Zod-validated and fail-fast at boot
+- [ ] An in-process single-active-run worker runs the generation loop idempotently by event-sequence, serializes one active run, emits a heartbeat, and recovers crash-forward (non-terminal runs → run.failed{reason:"crash"}) at boot; config is Zod-validated and fail-fast at boot
 
 ---
 
@@ -1085,7 +1097,7 @@ The project is "done" when:
 
 - [ ] Folds the closed RunEventType stream into current-state rows for the canonical set: runs, generations, agenomes, candidate_ideas, critic_reviews, check_results, fitness_scores, novelty_scores, lineage_edges
 - [ ] novelty_scores current-state reads the persisted vector + embeddingModelId + dimension from the novelty.scored payload and never re-embeds; embeddings are authoritative-once-computed, not recomputed by this builder
-- [ ] Terminal/failure events (run_failed, run_stopped, energy_exhausted, generation_failed, etc.) move the affected run/generation/agenome into their correct terminal state in the projection
+- [ ] Terminal/failure events (run.failed, run.stopped, energy_exhausted, generation_failed, etc.) move the affected run/generation/agenome into their correct terminal state in the projection
 - [ ] Idempotent re-fold: applying the same event twice (or rebuilding) does not double-count or duplicate rows
 - [ ] dashboard_snapshots, when materialized, is rebuildable from events and carries the watermark; it is never read as a source of truth
 - [ ] Files: apps/api/projections/current-state.ts (NEW); apps/api/projections/reducers/ (NEW)
@@ -1118,6 +1130,7 @@ The project is "done" when:
 ### P6.5 — Secret redaction at the persistence boundary (scrub before append / before Langfuse)
 
 - [ ] A single scrub function runs in event-store on every payload before append and in observability before any Langfuse emit
+- [ ] **Env-value layer (§14; human-ratified Option A 2026-06-20):** the observability/Langfuse-emit boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values (beyond the shared `scrubSecrets` key-format + key-name layers) — with a **reachability** assertion that it runs on the real before-emit path (origin: P0.2 security review)
 - [ ] Redaction is pattern-based over key formats, Authorization headers, and env-shaped values, covering over-persisted raw model outputs
 - [ ] Structural guarantee holds: credentials load only from env and are never threaded into persisted request/response objects
 - [ ] Scrubbing is applied before the bytes are durable, so projections/replay never observe an unredacted secret
@@ -1525,4 +1538,14 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
 
-_(Empty at project start; populated at every `/orchestrate-end`.)_
+### 2026-06-20 — Phase 0 contract freeze: P0.5→P0.12 (6 slices) + WARN auto-cycle
+
+- Landed 7 task IDs (P0.5–P0.9 solo + the `[P0.11+P0.12]` gateway bundle): CandidateIdea/payloads/EvidenceRef (`49f77f3`), CriticReview/criticInput injection-isolation (`dfd651f`), CheckResult/CheckRunnerAdapter allowlist (`83db38d`), scoring family Novelty/Fitness/ScoringPolicy (`837e5be`), EnergyEvent/ReproductionEvent + shared ProviderMeta (`a13d9cc`), gateway seam bundle (`9c174b7`). Suite 58→118 (+60). **Phase 0 → 11/14.**
+- Decisions made: human **bundling directive** ratified + scoped (bundle remaining P0 where safe → 7 solo / 2 bundles; P0.9 ruled FULLY SOLO for rule #8). 5 security-reviewer fan-outs (P0.6/7/8/9 + gateway §14) all CLEAN, 0 findings. Q8 (P0.8): no shared `PolicyVersion` symbol (YAGNI). Q1 (P0.9): shared `ProviderMeta` extracted (lesson §5), consumed by P0.12.
+- Lessons banked §7–§14: discriminated-union correlation; injection-isolation primitive; emit-only/no-X-field-via-shape (+rule-#8 application); all-negative-test positive guard; allowlist-pinned-two-ways; immutability-via-versioning; authoritative-once-computed value; pinned-binary checks (npx-prettier false-clean + forbidden-pattern).
+- Cross-doc: ~20 `apps/api/CLAUDE.md` cross-doc + `ARCHITECTURE.md` Appendix-A rows hot-routed (incl. P0.7 CheckRunnerAdapter, P0.9 reproduction RNG-shape, P0.12 gateway gap-fills).
+- Scope shifts: none cut. Carry-forward: ProviderMeta item consumed→deleted; added §14 opaque-passthrough scrub (cross-track → kernel P2/P3).
+- Process finding: per-slice `npx prettier --check` false-clean on 10 files; `pnpm format:check` caught it at `/session-end` (`609cb9d`); banked as lesson §14 + forbidden-pattern.
+- Cycle: WARN crossing (impl 71%, "cycle approaching") → lead called auto-cycle at a clean boundary (no in-flight slice).
+- Next session target: **P0.10** (per-type payload map + payload size/depth ceiling), then `[P0.15 Run+Gen+Culling + P0.13]` bundle, P0.15-FinalJudgeRubric (solo), P0.14 (contract-test surface) → `/phase-exit P0`.
+- Reference: implementer session doc `contract-001-2026-06-20-p0-contracts-candidate-through-gateway.md` for technical detail.
