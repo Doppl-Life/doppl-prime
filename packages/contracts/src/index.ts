@@ -5,7 +5,10 @@
  */
 export * from './config/validate';
 export * from './domain/agenome';
+export * from './domain/candidate-idea';
+export * from './domain/evidence-ref';
 export * from './domain/subtype';
+export * from './domain/subtype-payloads';
 export * from './events/actor';
 export * from './events/event-type';
 export * from './events/envelope';
