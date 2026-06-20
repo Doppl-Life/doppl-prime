@@ -12,6 +12,7 @@ out/
 .turbo/
 .vite/
 *.tsbuildinfo
+vite.config.*.timestamp-*.mjs
 
 # ---- Test / coverage ----
 coverage/

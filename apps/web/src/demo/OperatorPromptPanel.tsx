@@ -140,6 +140,8 @@ export function OperatorPromptPanel(props: OperatorPromptPanelProps): JSX.Elemen
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
               aria-label="Curated problem"
+              title={prompts.find((p) => p.id === selectedId)?.title}
+              style={{ width: "100%", textOverflow: "ellipsis" }}
             >
               {prompts.length === 0 && <option value="">No curated prompts available</option>}
               {prompts.map((p) => (
@@ -148,6 +150,18 @@ export function OperatorPromptPanel(props: OperatorPromptPanelProps): JSX.Elemen
                 </option>
               ))}
             </select>
+            {selectedId && (
+              <span
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  color: "var(--doppl-text-secondary)",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {prompts.find((p) => p.id === selectedId)?.title}
+              </span>
+            )}
           </label>
         ) : (
           <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
