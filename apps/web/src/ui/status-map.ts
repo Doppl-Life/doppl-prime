@@ -243,6 +243,13 @@ const RUN_MODE_MAP: Record<string, StatusToken> = {
     color: STATUS_COLORS.info,
     aria: "replay mode",
   },
+  rehearsal: {
+    shape: "hexagon",
+    iconName: "rehearsal",
+    label: "REHEARSAL",
+    color: STATUS_COLORS.info,
+    aria: "rehearsal mode",
+  },
   polling: {
     shape: "diamond",
     iconName: "warning",

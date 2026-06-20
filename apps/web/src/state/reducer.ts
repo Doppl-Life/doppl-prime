@@ -19,6 +19,11 @@ import type {
 
 export type ViewMode = "idle" | "live" | "polling" | "replay";
 
+/** Server-authoritative run mode flag (PD.6). Sourced from the
+ *  /runs/:id response (Phase D U6); when set it wins over the
+ *  local SSE-derived `mode` for display purposes. */
+export type ServerRunMode = "live" | "replay" | "rehearsal";
+
 export interface RunRowView {
   id: string;
   status: string;
@@ -74,6 +79,10 @@ export interface CapsConsumed {
 export interface RunStoreState {
   runId: string | null;
   mode: ViewMode;
+  /** Server-authoritative run mode (PD.6). null until /runs/:id resolves. */
+  serverRunMode: ServerRunMode | null;
+  /** Latest known heartbeat lag in ms (PD.6). null when unknown. */
+  lastHeartbeatMs: number | null;
   sequenceThrough: number;
   errors: { sequence: number; type: string; message: string }[];
   failureEvents: FailureEventView[];
@@ -96,6 +105,8 @@ export interface RunStoreState {
 export const initialRunStoreState: RunStoreState = {
   runId: null,
   mode: "idle",
+  serverRunMode: null,
+  lastHeartbeatMs: null,
   sequenceThrough: -1,
   errors: [],
   failureEvents: [],
@@ -115,6 +126,8 @@ export const initialRunStoreState: RunStoreState = {
 export type RunStoreAction =
   | { kind: "APPLY_EVENT"; event: RunEventEnvelopeT }
   | { kind: "SET_MODE"; mode: ViewMode }
+  | { kind: "SET_SERVER_RUN_MODE"; serverRunMode: ServerRunMode | null }
+  | { kind: "SET_LAST_HEARTBEAT_MS"; lastHeartbeatMs: number | null }
   | { kind: "RESET" }
   | { kind: "SET_RUN_ID"; runId: string | null }
   | { kind: "SELECT_CANDIDATE"; candidateId: string | null }
@@ -423,6 +436,14 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
       return applyEvent(state, action.event);
     case "SET_MODE":
       return state.mode === action.mode ? state : { ...state, mode: action.mode };
+    case "SET_SERVER_RUN_MODE":
+      return state.serverRunMode === action.serverRunMode
+        ? state
+        : { ...state, serverRunMode: action.serverRunMode };
+    case "SET_LAST_HEARTBEAT_MS":
+      return state.lastHeartbeatMs === action.lastHeartbeatMs
+        ? state
+        : { ...state, lastHeartbeatMs: action.lastHeartbeatMs };
     case "SET_RUN_ID":
       return state.runId === action.runId ? state : { ...state, runId: action.runId };
     case "SELECT_CANDIDATE":
