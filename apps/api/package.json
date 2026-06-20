@@ -25,7 +25,10 @@
     "test:int": "vitest run __integration_tests__",
     "test:live": "vitest run __integration_tests__/live",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/event-store/migrate.ts"
+    "db:migrate": "tsx src/event-store/migrate.ts",
+    "boot:demo": "tsx scripts/boot-demo.ts",
+    "dump-replay": "tsx src/event-store/scripts/dump-replay.ts",
+    "seed-demo": "tsx src/event-store/scripts/seed-demo.ts"
   },
   "dependencies": {
     "@doppl/contracts": "workspace:*",
