@@ -34,13 +34,15 @@ describe("spec(§9) migrations are idempotent and materialize the full table set
         "embeddings",
         "fitness_scores",
         "generations",
+        "idempotency_keys",
         "lineage_edges",
         "novelty_scores",
         "run_events",
         "runs",
+        "worker_heartbeats",
       ]
     `);
-    expect(tables).toHaveLength(12);
+    expect(tables).toHaveLength(14);
   });
 
   test("run_events has the (run_id, sequence) unique index", async () => {

@@ -1,0 +1,3 @@
+# Spike-only data exports — never check in
+**/*.json
+**/.ipynb_checkpoints/
