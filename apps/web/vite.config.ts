@@ -11,6 +11,7 @@ export default defineConfig({
       "/runs": { target: API_TARGET, changeOrigin: true },
       "/model-routes": { target: API_TARGET, changeOrigin: true },
       "/healthz": { target: API_TARGET, changeOrigin: true },
+      "/demo": { target: API_TARGET, changeOrigin: true },
     },
   },
   test: {

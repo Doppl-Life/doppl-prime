@@ -85,9 +85,15 @@ export function FitnessOverTime({ width = 480, height = 280 }: FitnessOverTimePr
         <CartesianGrid stroke="var(--doppl-border)" strokeDasharray="2 2" />
         <XAxis
           dataKey="generation"
-          label={{ value: "Generation", position: "insideBottom", offset: -4 }}
+          stroke="var(--doppl-border)"
+          tick={{ fill: "var(--doppl-text-primary)" }}
+          label={{ value: "Generation", position: "insideBottom", offset: -4, fill: "#dce8f7" }}
         />
-        <YAxis label={{ value: "Fitness total", angle: -90, position: "insideLeft" }} />
+        <YAxis
+          stroke="var(--doppl-border)"
+          tick={{ fill: "var(--doppl-text-primary)" }}
+          label={{ value: "Fitness total", angle: -90, position: "insideLeft", fill: "#dce8f7" }}
+        />
         <Tooltip />
         <Legend />
         {candidateIds.map((id, idx) => {

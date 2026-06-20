@@ -33,6 +33,11 @@ export interface RunRowView {
   terminalReason?: string;
   seed?: string;
   capsConfig?: unknown;
+  /** Human-readable problem statement supplied by the operator or the
+   *  curated prompt — surfaced verbatim in the dashboard's Problem banner. */
+  problemText?: string;
+  /** Short title for the problem — banner heading. */
+  problemTitle?: string;
 }
 
 export interface GenerationView {
@@ -55,6 +60,7 @@ export interface CandidateView {
   subtype?: string;
   status: string;
   summary?: string;
+  title?: string;
 }
 
 export interface LineageEdgeView {
@@ -68,6 +74,26 @@ export interface FailureEventView {
   type: string;
   payload: unknown;
 }
+
+/** Slim, display-only projection of RunEventEnvelopeT for the Activity timeline.
+ *  Kept narrow on purpose: the panel renders these directly, so omitting fields
+ *  the UI doesn't read (id, schemaVersion, runId, langfuse*) keeps the cap-bounded
+ *  memory footprint small. */
+export interface ActivityEventView {
+  sequence: number;
+  occurredAt: string;
+  type: string;
+  actor: string;
+  payload: unknown;
+  generationId?: string;
+  agenomeId?: string;
+  candidateId?: string;
+}
+
+/** Hard cap on retained activity events. The Activity panel is for "what just
+ *  happened" awareness, not full audit — older events are dropped FIFO. The
+ *  cap also bounds re-render cost: lanes are derived via useMemo over this list. */
+export const ACTIVITY_EVENT_LOG_CAP = 500;
 
 export interface CapsConsumed {
   energy: number;
@@ -100,6 +126,7 @@ export interface RunStoreState {
     candidateId: string | null;
     agenomeId: string | null;
   };
+  activityEventLog: ActivityEventView[];
 }
 
 export const initialRunStoreState: RunStoreState = {
@@ -121,6 +148,7 @@ export const initialRunStoreState: RunStoreState = {
   energySpend: {},
   capsConsumed: { energy: 0, generations: 0, candidates: 0, toolCalls: 0 },
   selection: { candidateId: null, agenomeId: null },
+  activityEventLog: [],
 };
 
 export type RunStoreAction =
@@ -135,7 +163,7 @@ export type RunStoreAction =
   | { kind: "RECORD_ERROR"; sequence: number; type: string; message: string };
 
 interface RunConfiguredPayload {
-  config?: { caps?: unknown; seed?: string };
+  config?: { caps?: unknown; seed?: string; problemText?: string; problemTitle?: string };
 }
 
 interface RunCompletedPayload {
@@ -202,6 +230,24 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
   const next: RunStoreState = { ...state, sequenceThrough: event.sequence };
   if (!next.runId) next.runId = event.runId;
 
+  // Activity timeline: append the raw envelope (cap-bounded FIFO). Every event
+  // type lands here, including ones the projection below ignores — the Activity
+  // panel is the one place where "what just happened" is rendered without a
+  // domain filter.
+  const activityEntry: ActivityEventView = {
+    sequence: event.sequence,
+    occurredAt: String(event.occurredAt),
+    type: event.type,
+    actor: event.actor,
+    payload: event.payload,
+    ...(event.generationId !== undefined ? { generationId: event.generationId } : {}),
+    ...(event.agenomeId !== undefined ? { agenomeId: event.agenomeId } : {}),
+    ...(event.candidateId !== undefined ? { candidateId: event.candidateId } : {}),
+  };
+  const log = [...next.activityEventLog, activityEntry];
+  next.activityEventLog =
+    log.length > ACTIVITY_EVENT_LOG_CAP ? log.slice(-ACTIVITY_EVENT_LOG_CAP) : log;
+
   switch (event.type) {
     case "run.configured": {
       const p = event.payload as RunConfiguredPayload;
@@ -211,6 +257,8 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
         configuredAt: String(event.occurredAt),
         ...(p.config?.seed !== undefined ? { seed: p.config.seed } : {}),
         ...(p.config?.caps !== undefined ? { capsConfig: p.config.caps } : {}),
+        ...(p.config?.problemText !== undefined ? { problemText: p.config.problemText } : {}),
+        ...(p.config?.problemTitle !== undefined ? { problemTitle: p.config.problemTitle } : {}),
       };
       return next;
     }
@@ -339,6 +387,9 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
           subtype: cand.subtype,
           status: cand.status,
           summary: cand.summary,
+          ...((cand as { title?: string }).title !== undefined
+            ? { title: (cand as { title: string }).title }
+            : {}),
         },
       };
       if (!next.agenomes[cand.agenomeId]) {

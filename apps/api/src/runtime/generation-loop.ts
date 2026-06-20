@@ -204,6 +204,22 @@ export async function runGeneration(
     });
 
     if (handled.nextStatus === "under_review") {
+      // Parse the gateway's output JSON so the candidate.created event
+      // carries the model's actual title/summary/subtype payload — not
+      // hardcoded "Generated candidate" placeholders. Falls back to
+      // sensible defaults if any field is missing or the JSON is malformed.
+      let parsed: Record<string, unknown> = {};
+      try {
+        const raw = typeof response.output === "string" ? response.output : String(response.output);
+        const maybe = JSON.parse(raw);
+        if (maybe && typeof maybe === "object") parsed = maybe as Record<string, unknown>;
+      } catch {
+        /* keep defaults */
+      }
+      const str = (k: string, fallback: string): string =>
+        typeof parsed[k] === "string" && (parsed[k] as string).length > 0
+          ? (parsed[k] as string)
+          : fallback;
       await appendEvent(deps.db, {
         runId: input.runId,
         type: "candidate.created",
@@ -216,19 +232,19 @@ export async function runGeneration(
             runId: input.runId,
             generationId: `gen_${input.generationIndex}`,
             agenomeId: agenome.id,
-            subtype: "cross_domain_transfer",
-            title: "Generated candidate",
-            summary: "From generation loop",
+            subtype: str("subtype", "cross_domain_transfer"),
+            title: str("title", "Generated candidate"),
+            summary: str("summary", "From generation loop"),
             claims: [],
             evidenceRefs: [],
             status: "created",
             subtypePayload: {
-              sourceDomain: "biology",
-              sourceTechnique: "selection",
-              targetDomain: "ML",
-              targetProblem: "collapse",
-              transferMapping: "fitness → loss",
-              expectedMechanism: "diversity sampler",
+              sourceDomain: str("sourceDomain", "biology"),
+              sourceTechnique: str("sourceTechnique", "selection"),
+              targetDomain: str("targetDomain", "ML"),
+              targetProblem: str("targetProblem", "collapse"),
+              transferMapping: str("transferMapping", "fitness → loss"),
+              expectedMechanism: str("expectedMechanism", "diversity sampler"),
             },
           },
         },

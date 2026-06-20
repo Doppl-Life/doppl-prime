@@ -34,11 +34,18 @@ interface RunRowResult extends Record<string, unknown> {
   status: string;
   mode: string;
   configured_at: Date | string;
+  problem_title: string | null;
+  completed_at: Date | string | null;
+  terminal_summary: string | null;
 }
 
 async function fetchRunsList(deps: RunsReadDeps): Promise<RunRowResult[]> {
+  // Pulls the problem title out of the JSON config so the Runs list can show
+  // human-readable labels without a per-row roundtrip to fetch each config.
   const result = await deps.db.execute<RunRowResult>(
-    sql`SELECT id, status, mode, configured_at FROM runs ORDER BY configured_at DESC`,
+    sql`SELECT id, status, mode, configured_at, completed_at, terminal_summary,
+               config->>'problemTitle' AS problem_title
+        FROM runs ORDER BY configured_at DESC`,
   );
   return result.rows;
 }
@@ -83,6 +90,12 @@ export function createRunsReadApp(deps: RunsReadDeps): Hono {
         runMode: r.mode,
         configuredAt:
           r.configured_at instanceof Date ? r.configured_at.toISOString() : r.configured_at,
+        completedAt:
+          r.completed_at instanceof Date
+            ? r.completed_at.toISOString()
+            : r.completed_at ?? null,
+        problemTitle: r.problem_title,
+        terminalSummary: r.terminal_summary,
       })),
     });
   });

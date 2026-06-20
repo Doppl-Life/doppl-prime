@@ -5,15 +5,21 @@
  * AND in theme.css.
  */
 
+/**
+ * Palette references the CSS custom properties (defined in theme.css)
+ * rather than baking hex, so charts / status shapes / lineage all
+ * follow the active theme — including the light-mode toggle. The hex
+ * source of truth lives in theme.css :root and :root[data-theme=light].
+ */
 export const PALETTE = {
-  cyan: "#56b4e9",
-  green: "#009e73",
-  orange: "#e69f00",
-  yellow: "#f0e442",
-  blue: "#0072b2",
-  vermilion: "#d55e00",
-  pink: "#cc79a7",
-  neutral: "#999999",
+  cyan: "var(--doppl-cyan)", // info
+  green: "var(--doppl-green)", // ok
+  orange: "var(--doppl-orange)", // warn
+  yellow: "var(--doppl-yellow)", // pending
+  blue: "var(--doppl-blue)", // accent blue
+  vermilion: "var(--doppl-vermilion)", // error
+  pink: "var(--doppl-pink)", // skip
+  neutral: "var(--doppl-neutral)", // slate
 } as const;
 
 export const STATUS_COLORS = {

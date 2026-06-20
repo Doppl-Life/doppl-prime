@@ -7,7 +7,11 @@ interface FakeEventSourceInstance {
   closed: boolean;
   onmessage: ((ev: MessageEvent<string>) => void) | null;
   onerror: ((ev: Event) => void) | null;
+  addEventListener(type: string, listener: EventListener): void;
+  /** Default emit goes to onmessage (unnamed-event path). */
   emit(data: string): void;
+  /** Named-event emit goes to addEventListener-registered handlers. */
+  emitNamed(type: string, data: string): void;
   emitError(): void;
   close(): void;
 }
@@ -22,13 +26,27 @@ function makeFakeEventSource(): {
     closed = false;
     onmessage: ((ev: MessageEvent<string>) => void) | null = null;
     onerror: ((ev: Event) => void) | null = null;
+    private namedListeners = new Map<string, Set<EventListener>>();
     constructor(url: string) {
       this.url = url;
       instances.push(this);
     }
+    addEventListener(type: string, listener: EventListener) {
+      let bucket = this.namedListeners.get(type);
+      if (!bucket) {
+        bucket = new Set();
+        this.namedListeners.set(type, bucket);
+      }
+      bucket.add(listener);
+    }
     emit(data: string) {
       const ev = { data } as MessageEvent<string>;
       this.onmessage?.(ev);
+    }
+    emitNamed(type: string, data: string) {
+      const ev = { data } as MessageEvent<string>;
+      const bucket = this.namedListeners.get(type);
+      if (bucket) for (const fn of bucket) fn(ev as unknown as Event);
     }
     emitError() {
       this.onerror?.(new Event("error"));
@@ -99,6 +117,22 @@ describe("createSseStream — live phase", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  test("named-event SSE frame routes to onEvent (regression: server sends `event: <type>`)", () => {
+    const { ctor, instances } = makeFakeEventSource();
+    const seen: number[] = [];
+    createSseStream({
+      runId: "run_x",
+      onEvent: (e) => seen.push(e.sequence),
+      eventSourceImpl: ctor,
+      client: makeFakeClient(async () => ({ runId: "run_x", events: [], count: 0 })),
+    });
+    // The real server emits each frame with an `event:` header keyed by the
+    // event type. EventSource never dispatches those to onmessage — they only
+    // reach addEventListener subscribers. This asserts the bridge works.
+    instances[0]?.emitNamed("generation.started", JSON.stringify(VALID_ENVELOPE(0)));
+    expect(seen).toEqual([0]);
   });
 
   test("event with sequence > lastEventId is delivered", () => {
