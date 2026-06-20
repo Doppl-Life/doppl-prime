@@ -29,6 +29,13 @@
       "when": 1782000000000,
       "tag": "0003_idempotency_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782050000000,
+      "tag": "0004_worker_heartbeats",
+      "breakpoints": true
     }
   ]
 }
