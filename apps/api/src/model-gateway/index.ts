@@ -20,3 +20,8 @@ export { createGateway } from './gateway';
 export type { GatewayDeps } from './gateway';
 export { applyStructuredOutputDiscipline } from './structured-output';
 export type { ProviderCallFn, ProviderResult, StructuredOutputParams } from './structured-output';
+
+// Recorded/fake gateway (P2.9) — the freeze-bundle fork artifact dependent tracks + P3 integration
+// tests run against; completes the gateway chain.
+export { createFakeGateway, selectGateway } from './stub/fake-gateway';
+export type { FakeGatewayConfig, FakeMode, GatewaySelection } from './stub/fake-gateway';
