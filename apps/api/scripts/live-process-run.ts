@@ -47,6 +47,7 @@ const STUB_ANALOGIES: ReadonlyArray<{
   targetProblem: string;
   transferMapping: string;
   expectedMechanism: string;
+  explanation: string;
 }> = [
   {
     sourceDomain: "hydraulic engineering",
@@ -55,6 +56,8 @@ const STUB_ANALOGIES: ReadonlyArray<{
     targetProblem: "congestion shockwaves",
     transferMapping: "pressure-equalization → buffered intersections",
     expectedMechanism: "absorb spikes before they propagate upstream",
+    explanation:
+      "Imagine a water pipe: when flow suddenly stops, pressure shockwaves can rattle the whole system. Plumbing engineers fix this by adding small tanks that absorb the spike before it travels upstream. This idea borrows the trick for city streets — when a burst of cars hits an intersection, a 'buffer' area soaks up the shock so the jam doesn't cascade for miles. The same math that keeps water pipes from hammering could keep rush hour from collapsing.",
   },
   {
     sourceDomain: "biology",
@@ -63,6 +66,8 @@ const STUB_ANALOGIES: ReadonlyArray<{
     targetProblem: "mode collapse",
     transferMapping: "fitness → diversity-weighted loss",
     expectedMechanism: "preserve minority modes via novelty penalty",
+    explanation:
+      "An AI model that's trained too long sometimes gets stuck giving the same kinds of answers — like a chef who only ever makes pasta. Nature solved a similar problem millions of years ago: evolution doesn't just reward what works, it rewards what's rare and useful, so species stay diverse. This idea adds a 'diversity bonus' to AI training so the model is nudged to invent new answers instead of always falling back on the familiar ones. The hope is models trained this way stay creative even after very long training runs.",
   },
   {
     sourceDomain: "ant colony foraging",
@@ -71,6 +76,8 @@ const STUB_ANALOGIES: ReadonlyArray<{
     targetProblem: "stale delivery routes",
     transferMapping: "evaporation rate → route-cost decay",
     expectedMechanism: "stale routes lose weight, fresher ones win",
+    explanation:
+      "Ants don't have GPS. They leave scent trails to food, and those trails fade over time so old paths get forgotten. Delivery fleets have the same problem: a route that was great last month might be terrible today because of construction or a new traffic pattern. This idea borrows the ant trick — give every route a 'freshness' score that quietly decays each day, so the system naturally forgets stale routes and gravitates to ones that actually work now. No central planner has to micromanage; the system just gets out of its own way.",
   },
   {
     sourceDomain: "immunology",
@@ -79,6 +86,8 @@ const STUB_ANALOGIES: ReadonlyArray<{
     targetProblem: "novel-attack adaptation",
     transferMapping: "antibody diversity → ensemble specialists",
     expectedMechanism: "amplify detectors that catch fresh patterns",
+    explanation:
+      "Your immune system can't predict what new virus will show up, so it keeps a huge library of slightly-different antibodies, and when one happens to match an invader your body rapidly clones it. Fraud detection has the same predicament: attackers invent fresh tricks every week. This idea copies the immune-system strategy — keep many small specialist detectors instead of one big general one, and when one catches a fresh attack pattern, rapidly clone it to handle the surge. The rest stand by in case their own niche gets hit.",
   },
   {
     sourceDomain: "fluid dynamics",
@@ -87,6 +96,8 @@ const STUB_ANALOGIES: ReadonlyArray<{
     targetProblem: "communication-overhead onset",
     transferMapping: "Reynolds threshold → headcount threshold",
     expectedMechanism: "predict the size at which structure must change",
+    explanation:
+      "Water through a pipe is smooth at low speed and suddenly chaotic past a precise threshold — engineers have predicted that switch for a century with one number, the Reynolds number. This idea asks whether teams hit the same kind of threshold: at some headcount, coordination tips from a few quick chats into wall-to-wall meetings. If we can predict that threshold the way fluid dynamicists do, leaders can restructure proactively instead of waiting for the team to break.",
   },
 ];
 
@@ -97,11 +108,13 @@ function makeValidCandidatePayload(agenomeId: string, idx: number): unknown {
   // not a placeholder string. e.g. "Apply surge tanks to congestion shockwaves".
   const title = `Apply ${analogy.sourceTechnique} to ${analogy.targetProblem}`;
   const summary = `Cross-domain transfer from ${analogy.sourceDomain} (${analogy.sourceTechnique}) to ${analogy.targetDomain}: ${analogy.transferMapping}.`;
+  const { explanation, ...subtypePayload } = analogy;
   return {
     subtype: "cross_domain_transfer",
     title,
     summary,
-    ...analogy,
+    explanation,
+    ...subtypePayload,
   };
 }
 
