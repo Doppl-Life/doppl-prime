@@ -140,6 +140,75 @@ describe("runStoreReducer — applyEvent", () => {
     expect(next.capsConsumed.candidates).toBe(1);
   });
 
+  test("candidate.created with explanation populates CandidateView.explanation", () => {
+    const before = initialRunStoreState;
+    const event = envelope({
+      type: "candidate.created",
+      sequence: 0,
+      payload: {
+        candidate: {
+          id: "cand_1",
+          runId: "run_x",
+          generationId: "gen_0",
+          agenomeId: "ag_1",
+          subtype: "cross_domain_transfer",
+          title: "T",
+          summary: "S",
+          explanation: "In plain English: a clear analogy.",
+          claims: [],
+          evidenceRefs: [],
+          status: "created",
+          subtypePayload: {
+            sourceDomain: "a",
+            sourceTechnique: "b",
+            targetDomain: "c",
+            targetProblem: "d",
+            transferMapping: "e",
+            expectedMechanism: "f",
+          },
+        },
+      },
+      candidateId: "cand_1",
+      agenomeId: "ag_1",
+    });
+    const after = runStoreReducer(before, { kind: "APPLY_EVENT", event });
+    expect(after.candidates.cand_1?.explanation).toBe("In plain English: a clear analogy.");
+  });
+
+  test("candidate.created without explanation leaves CandidateView.explanation undefined", () => {
+    const before = initialRunStoreState;
+    const event = envelope({
+      type: "candidate.created",
+      sequence: 0,
+      payload: {
+        candidate: {
+          id: "cand_2",
+          runId: "run_x",
+          generationId: "gen_0",
+          agenomeId: "ag_1",
+          subtype: "cross_domain_transfer",
+          title: "T",
+          summary: "S",
+          claims: [],
+          evidenceRefs: [],
+          status: "created",
+          subtypePayload: {
+            sourceDomain: "a",
+            sourceTechnique: "b",
+            targetDomain: "c",
+            targetProblem: "d",
+            transferMapping: "e",
+            expectedMechanism: "f",
+          },
+        },
+      },
+      candidateId: "cand_2",
+      agenomeId: "ag_1",
+    });
+    const after = runStoreReducer(before, { kind: "APPLY_EVENT", event });
+    expect(after.candidates.cand_2?.explanation).toBeUndefined();
+  });
+
   test("failure events land in failureEvents log", () => {
     const next = runStoreReducer(initialRunStoreState, {
       kind: "APPLY_EVENT",

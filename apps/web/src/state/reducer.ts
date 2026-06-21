@@ -61,6 +61,7 @@ export interface CandidateView {
   status: string;
   summary?: string;
   title?: string;
+  explanation?: string;
 }
 
 export interface LineageEdgeView {
@@ -389,6 +390,9 @@ function applyEvent(state: RunStoreState, event: RunEventEnvelopeT): RunStoreSta
           summary: cand.summary,
           ...((cand as { title?: string }).title !== undefined
             ? { title: (cand as { title: string }).title }
+            : {}),
+          ...((cand as { explanation?: string }).explanation !== undefined
+            ? { explanation: (cand as { explanation: string }).explanation }
             : {}),
         },
       };
