@@ -145,13 +145,13 @@ export function CandidateInspector(): JSX.Element {
     );
   }
   const c = data.candidate;
+  // Prefer the SSE-fed store (it carries `explanation`, which the API response
+  // also has now); fall back to the API response for the initial render when
+  // the store hasn't been hydrated yet for this candidate.
   const stored = state.candidates[c.id];
   const title = stored?.title ?? c.title;
   const summary = stored?.summary ?? c.summary;
-  // No API fallback: the CandidateRow projection doesn't carry `explanation`
-  // (the projection is lossy for title/summary too — title/summary get
-  // backfilled from the live API response, but explanation is store-only).
-  const explanation = stored?.explanation;
+  const explanation = stored?.explanation ?? (c as { explanation?: string }).explanation;
   return (
     <section aria-label="Candidate inspector">
       <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>{title}</h2>

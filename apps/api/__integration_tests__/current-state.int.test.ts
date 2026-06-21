@@ -149,8 +149,53 @@ describe("spec(§9) buildCurrentState", () => {
     const out = await buildCurrentState({ db, runId });
     expect(out.state.candidates.cand_1?.agenomeId).toBe("ag_1");
     expect(out.state.candidates.cand_1?.subtype).toBe("cross_domain_transfer");
+    expect(out.state.candidates.cand_1?.title).toBe("Test candidate");
+    expect(out.state.candidates.cand_1?.summary).toBe("Test summary");
+    expect(out.state.candidates.cand_1?.claims).toEqual([]);
+    expect(out.state.candidates.cand_1?.evidenceRefs).toEqual([]);
+    expect(out.state.candidates.cand_1?.subtypePayload).toMatchObject({
+      sourceDomain: "biology",
+      targetDomain: "ML",
+    });
     expect(out.state.agenomes.ag_1).toBeDefined();
     expect(out.state.agenomes.ag_1?.parentIds).toEqual([]);
+  });
+
+  test("candidate.created with explanation populates the optional field on the row", async () => {
+    const runId = "run_cs_expl";
+    await appendEvent(db, {
+      runId,
+      type: "candidate.created",
+      actor: "agenome",
+      payload: {
+        candidate: {
+          ...CANDIDATE_FIXTURE("cand_e", "ag_e", "gen_0"),
+          runId,
+          explanation: "In plain English: a clear analogy.",
+        },
+      },
+      candidateId: "cand_e",
+      agenomeId: "ag_e",
+    });
+    const out = await buildCurrentState({ db, runId });
+    expect(out.state.candidates.cand_e?.explanation).toBe("In plain English: a clear analogy.");
+  });
+
+  test("candidate.created without explanation omits the field from the row", async () => {
+    const runId = "run_cs_no_expl";
+    await appendEvent(db, {
+      runId,
+      type: "candidate.created",
+      actor: "agenome",
+      payload: { candidate: { ...CANDIDATE_FIXTURE("cand_n", "ag_n", "gen_0"), runId } },
+      candidateId: "cand_n",
+      agenomeId: "ag_n",
+    });
+    const out = await buildCurrentState({ db, runId });
+    expect(out.state.candidates.cand_n?.explanation).toBeUndefined();
+    expect(
+      Object.prototype.hasOwnProperty.call(out.state.candidates.cand_n ?? {}, "explanation"),
+    ).toBe(false);
   });
 
   test("agenome.fused emits a lineage edge per parent", async () => {

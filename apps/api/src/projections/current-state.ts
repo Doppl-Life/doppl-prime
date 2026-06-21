@@ -54,6 +54,12 @@ export interface CandidateRow {
   generationId?: string;
   subtype?: string;
   status: string;
+  title?: string;
+  summary?: string;
+  explanation?: string;
+  claims?: string[];
+  evidenceRefs?: CandidateIdea["evidenceRefs"];
+  subtypePayload?: CandidateIdea["subtypePayload"];
 }
 
 export interface CriticReviewRow {
@@ -320,6 +326,12 @@ function reduce(state: CurrentState, event: RunEventEnvelope): CurrentState {
           generationId: cand.generationId,
           subtype: cand.subtype,
           status: cand.status,
+          title: cand.title,
+          summary: cand.summary,
+          ...(cand.explanation !== undefined ? { explanation: cand.explanation } : {}),
+          claims: cand.claims,
+          evidenceRefs: cand.evidenceRefs,
+          subtypePayload: cand.subtypePayload,
         },
       };
       // Ensure the producing agenome exists in the projection even if no
