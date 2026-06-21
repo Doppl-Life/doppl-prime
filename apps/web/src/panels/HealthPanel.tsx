@@ -20,6 +20,58 @@ interface RunCapsConfig {
  * lastHeartbeatMs is surfaced via the StatusIndicator on the run-mode
  * banner — this panel just renders the numbers.
  */
+
+/**
+ * One health metric: a muted label paired with a brighter, heavier
+ * value so the two read as distinct columns rather than one run-on
+ * line. Long values (e.g. ISO timestamps) wrap under the label.
+ */
+function Metric({
+  label,
+  value,
+  tip,
+}: {
+  label: string;
+  value: React.ReactNode;
+  tip: string;
+}): JSX.Element {
+  return (
+    <Tooltip label={tip} placement="right" block>
+      <div
+        style={{
+          display: "grid",
+          // Shared template across every row → the label/value boundary
+          // lines up into two clean columns instead of a ragged gap.
+          gridTemplateColumns: "8.5rem 1fr",
+          alignItems: "baseline",
+          columnGap: 12,
+        }}
+      >
+        <span
+          style={{
+            color: "var(--doppl-text-secondary)",
+            fontSize: 12,
+            letterSpacing: "0.02em",
+            lineHeight: 1.4,
+          }}
+        >
+          {label}
+        </span>
+        <span
+          style={{
+            color: "var(--doppl-text-primary)",
+            fontSize: 14,
+            fontWeight: 600,
+            fontVariantNumeric: "tabular-nums",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {value}
+        </span>
+      </div>
+    </Tooltip>
+  );
+}
 export function HealthPanel(): JSX.Element | null {
   const { state, client, dispatch } = useRunStore();
   const [health, setHealth] = useState<RunHealth | null>(null);
@@ -76,25 +128,26 @@ export function HealthPanel(): JSX.Element | null {
   return (
     <section aria-label="Run health" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <h3 style={{ fontSize: 16, margin: 0 }}>Run health · {health.status}</h3>
-      <Tooltip label="The generation currently being evolved" placement="right" block>
-        <div>generation: {health.currentGeneration}</div>
-      </Tooltip>
-      <Tooltip label="Candidate agents still being generated or scored right now" placement="right" block>
-        <div>candidates in flight: {health.candidatesInFlight}</div>
-      </Tooltip>
-      <Tooltip label="Timestamp of the most recent event received from the run" placement="right" block>
-        <div>last event: {health.lastEventOccurredAt ?? "—"}</div>
-      </Tooltip>
-      <Tooltip
-        label="Time since the last heartbeat. If this grows large the live stream may be stalling."
-        placement="right"
-        block
-      >
-        <div>
-          last heartbeat:{" "}
-          {health.lastHeartbeatMs === null ? "—" : `${health.lastHeartbeatMs} ms ago`}
-        </div>
-      </Tooltip>
+      <Metric
+        label="generation"
+        value={health.currentGeneration}
+        tip="The generation currently being evolved"
+      />
+      <Metric
+        label="candidates in flight"
+        value={health.candidatesInFlight}
+        tip="Candidate agents still being generated or scored right now"
+      />
+      <Metric
+        label="last event"
+        value={health.lastEventOccurredAt ?? "—"}
+        tip="Timestamp of the most recent event received from the run"
+      />
+      <Metric
+        label="last heartbeat"
+        value={health.lastHeartbeatMs === null ? "—" : `${health.lastHeartbeatMs} ms ago`}
+        tip="Time since the last heartbeat. If this grows large the live stream may be stalling."
+      />
       {isStaleHeartbeat && (
         <div
           role="alert"
@@ -111,42 +164,36 @@ export function HealthPanel(): JSX.Element | null {
         </div>
       )}
       <hr style={{ border: "none", borderTop: "1px solid var(--doppl-border)" }} />
-      <Tooltip
-        label="Doppl-energy consumed vs the run's budget. Energy bounds total compute."
-        placement="right"
-        block
-      >
-        <div>
-          energy: {health.capsConsumed.energy}
-          {capsCfg.energyBudget ? ` / ${capsCfg.energyBudget}` : ""}
-        </div>
-      </Tooltip>
-      <Tooltip label="Generations completed vs the configured maximum" placement="right" block>
-        <div>
-          generations: {health.capsConsumed.generations}
-          {capsCfg.maxGenerations ? ` / ${capsCfg.maxGenerations}` : ""}
-        </div>
-      </Tooltip>
+      <Metric
+        label="energy"
+        value={`${health.capsConsumed.energy}${capsCfg.energyBudget ? ` / ${capsCfg.energyBudget}` : ""}`}
+        tip="Doppl-energy consumed vs the run's budget. Energy bounds total compute."
+      />
+      <Metric
+        label="generations"
+        value={`${health.capsConsumed.generations}${capsCfg.maxGenerations ? ` / ${capsCfg.maxGenerations}` : ""}`}
+        tip="Generations completed vs the configured maximum"
+      />
       {/* `capsConsumed.candidates` is a lifetime total; `maxPopulation` is a
        *  per-generation cap (caps.ts enforces state.populationCount >= max).
        *  Rendering them as "N / M" reads as over-cap once N crosses M across
        *  multiple generations, which is wrong — they aren't comparable. So
        *  the cap is surfaced as its own row, labeled per-gen. */}
-      <Tooltip label="Lifetime count of candidates created across every generation" placement="right" block>
-        <div>candidates (total): {health.capsConsumed.candidates}</div>
-      </Tooltip>
-      <Tooltip label="Maximum candidate agents allowed per generation" placement="right" block>
-        <div>
-          population cap: {capsCfg.maxPopulation ?? "—"}
-          {capsCfg.maxPopulation ? " per gen" : ""}
-        </div>
-      </Tooltip>
-      <Tooltip label="Tool/LLM calls consumed vs the configured ceiling" placement="right" block>
-        <div>
-          tool calls: {health.capsConsumed.toolCalls}
-          {capsCfg.maxToolCalls ? ` / ${capsCfg.maxToolCalls}` : ""}
-        </div>
-      </Tooltip>
+      <Metric
+        label="candidates (total)"
+        value={health.capsConsumed.candidates}
+        tip="Lifetime count of candidates created across every generation"
+      />
+      <Metric
+        label="population cap"
+        value={`${capsCfg.maxPopulation ?? "—"}${capsCfg.maxPopulation ? " per gen" : ""}`}
+        tip="Maximum candidate agents allowed per generation"
+      />
+      <Metric
+        label="tool calls"
+        value={`${health.capsConsumed.toolCalls}${capsCfg.maxToolCalls ? ` / ${capsCfg.maxToolCalls}` : ""}`}
+        tip="Tool/LLM calls consumed vs the configured ceiling"
+      />
     </section>
   );
 }
