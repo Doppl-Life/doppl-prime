@@ -1,7 +1,7 @@
 import { CheckResult, CURRENT_SCHEMA_VERSION, resolveCheckAdapter } from '@doppl/contracts';
 import type { CheckRunnerRegistry } from '@doppl/contracts';
 import type { AppendInput, EventStore } from '../event-store';
-import { CHECK_RUNNER_IMPLS } from './registry';
+import { CHECK_RUNNER_IMPLS, type CheckRunnerInput, type RetrievalResult } from './registry';
 
 /**
  * P4.5 runCheck harness (KEY SAFETY RULE #3 — no arbitrary code execution; ARCHITECTURE.md §4 marker
@@ -25,6 +25,12 @@ export interface CheckRequest {
   checkType: string;
   resultId: string;
   candidate: string;
+  /**
+   * OPTIONAL grounding DATA the caller (P3) fetched + persisted for a retrieval-grounded adapter (rule #7
+   * replay re-threads the persisted outcome here). Deterministic adapters ignore it; absent → a grounding
+   * adapter records `skipped{retrieval_unavailable}`. The check impl NEVER fetches retrieval itself.
+   */
+  retrievalResults?: RetrievalResult[];
 }
 
 /** Run / generation / candidate correlation injected by the caller. */
@@ -108,7 +114,19 @@ export async function runCheck({
         evidenceRefs: [],
       };
     } else {
-      result = impl({ resultId, candidateId, checkType: resolved.checkType, candidate });
+      // Thread the caller-provided retrievalResults as DATA (deterministic adapters ignore it; grounding
+      // adapters consume it). The impl is pure — it never fetches retrieval (rule #3 + rule #7).
+      // Omit-if-undefined (exactOptionalPropertyTypes): an absent field, not a present-undefined one.
+      const implInput: CheckRunnerInput = {
+        resultId,
+        candidateId,
+        checkType: resolved.checkType,
+        candidate,
+      };
+      if (request.retrievalResults !== undefined) {
+        implInput.retrievalResults = request.retrievalResults;
+      }
+      result = impl(implInput);
     }
   }
 

@@ -1,6 +1,6 @@
 import { CrossDomainTransferPayload, ZeitgeistSynthesisPayload } from '@doppl/contracts';
-import type { CheckResult } from '@doppl/contracts';
-import type { CheckRunnerInput } from './registry';
+import type { CheckResult, EvidenceKind, EvidenceRef } from '@doppl/contracts';
+import type { CheckRunnerInput, RetrievalResult } from './registry';
 
 /**
  * Shared, SUBTYPE-AGNOSTIC check-adapter helpers (ARCHITECTURE.md §7, KEY SAFETY RULE #3). Pure,
@@ -87,6 +87,24 @@ export function decided(input: CheckRunnerInput, passed: boolean, output: string
   };
 }
 
+/** Build a `passed`/`failed` CheckResult carrying the grounding `evidenceRefs` it used (rule #7 record). */
+export function groundedResult(
+  input: CheckRunnerInput,
+  passed: boolean,
+  output: string,
+  evidenceRefs: EvidenceRef[],
+): CheckResult {
+  return {
+    id: input.resultId,
+    candidateId: input.candidateId,
+    checkType: input.checkType,
+    status: passed ? 'passed' : 'failed',
+    score: passed ? 1 : 0,
+    output,
+    evidenceRefs,
+  };
+}
+
 /** Build a `skipped` CheckResult with a fixed reason (the adapter is not applicable — never the untrusted id). */
 export function skipped(input: CheckRunnerInput, reason: string): CheckResult {
   return {
@@ -102,4 +120,35 @@ export function skipped(input: CheckRunnerInput, reason: string): CheckResult {
 /** Build the `failed` CheckResult for an unparseable candidate (rule #3 fail-not-throw). */
 export function unparseable(input: CheckRunnerInput): CheckResult {
   return decided(input, false, 'unparseable candidate payload');
+}
+
+/* --- Grounding helpers (P4.9b/P4.10b — retrieval-grounded checks; the CALLER fetches, the adapter is pure) --- */
+
+/**
+ * Fixed skip reason for a grounding adapter with no retrievalResults — the check COULDN'T ground (not the
+ * candidate's fault), so it `skipped`s (never a false grounding, never a re-fetch). A literal constant.
+ */
+export const RETRIEVAL_UNAVAILABLE_REASON = 'retrieval_unavailable';
+
+/** The joined corpus of retrieved texts (deterministic; the grounding overlap is computed against this). */
+export function retrievedCorpus(results: readonly RetrievalResult[]): string {
+  return results.map((r) => r.text).join(' ');
+}
+
+/**
+ * Record WHICH retrieved sources the adapter grounded against, as `EvidenceRef`s (label = source, within
+ * the Postgres tier — no external deref). NOTE: this records the adapter's grounding EVIDENCE; the FULL
+ * `retrievalResults` persistence + replay re-thread is the P3 caller's job (§9 rule #7), not the adapter's.
+ *
+ * `RetrievalResult` is caller-threaded DATA with NO runtime validation, so a degraded/fallback fetch could
+ * supply an empty/whitespace `source`. `EvidenceRef.label` is `.min(1)`, so an empty source would produce
+ * an INVALID `EvidenceRef` and make the downstream `CheckResult.parse` THROW — breaking the family's
+ * fail-not-throw discipline. Drop empty-source results here so the produced `EvidenceRef[]` is always
+ * schema-valid; the grounding verdict (computed from the texts) is unaffected.
+ */
+export function groundingRefs(
+  results: readonly RetrievalResult[],
+  kind: EvidenceKind,
+): EvidenceRef[] {
+  return results.filter((r) => r.source.trim().length > 0).map((r) => ({ kind, label: r.source }));
 }

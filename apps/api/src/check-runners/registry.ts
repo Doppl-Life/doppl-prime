@@ -14,6 +14,14 @@ import {
 import { ZEITGEIST_NOVELTY_ADAPTER_ID, zeitgeistNoveltyCheck } from './zeitgeist/novelty';
 import { ZEITGEIST_TIMING_ADAPTER_ID, zeitgeistTimingCheck } from './zeitgeist/timing';
 import { ZEITGEIST_COHERENCE_ADAPTER_ID, zeitgeistCoherenceCheck } from './zeitgeist/coherence';
+// P4.9b/P4.10b grounding adapters — PURE over caller-fetched retrievalResults (no provider reach; the P3
+// verifying phase does the gateway retrieval fetch + persistence + run/replay — named-deferral).
+import { PRIOR_ART_ADAPTER_ID, priorArtCheck } from './transfer/prior-art';
+import {
+  CURRENT_SIGNAL_GROUNDING_ADAPTER_ID,
+  currentSignalGroundingCheck,
+} from './zeitgeist/current-signal-grounding';
+import { FALSIFIABILITY_ADAPTER_ID, falsifiabilityCheck } from './zeitgeist/falsifiability';
 
 /**
  * P4.5 check-runner allowlist registry (KEY SAFETY RULE #3 — no arbitrary code execution; ARCHITECTURE.md
@@ -38,12 +46,29 @@ export const PREPARED_TOY_ADAPTER_ID = 'prepared.deterministic_toy';
 /** placeholder — superseded by real transfer/zeitgeist adapters in P4.9/P4.10 */
 export const EXECUTION_REQUIRING_ADAPTER_ID = 'prepared.execution_requiring';
 
-/** The deterministic input a non-executing {@link CheckRunner} evaluates. `candidate` is opaque data. */
+/**
+ * A retrieval result threaded into a grounding check as DATA (app-level — matches the gateway `retrieval`
+ * role's curated-corpus fixture; the real shape arrives with P2.6/P2.7). The CALLER (P3 verifying phase)
+ * fetches retrieval, persists the outcome, and threads the results in; the check adapter stays PURE (no
+ * provider reach — rule #3) and replay-safe by construction (it never calls a provider — rule #7).
+ */
+export interface RetrievalResult {
+  text: string;
+  source: string;
+  fallbackSourced: boolean;
+}
+
+/**
+ * The deterministic input a non-executing {@link CheckRunner} evaluates. `candidate` is opaque data.
+ * `retrievalResults` is OPTIONAL grounding DATA — the deterministic adapters ignore it; the grounding
+ * adapters (P4.9b/P4.10b) consume it. Absent → a grounding adapter records `skipped` (never re-fetches).
+ */
 export interface CheckRunnerInput {
   resultId: string;
   candidateId: string;
   checkType: string;
   candidate: string;
+  retrievalResults?: RetrievalResult[];
 }
 
 /** A NON-EXECUTING check: a pure, deterministic function (input → CheckResult) — no IO, no code exec. */
@@ -132,6 +157,25 @@ export const CHECK_RUNNER_REGISTRY: CheckRunnerRegistry = Object.freeze({
     subtype: 'zeitgeist_synthesis',
     label: 'Coherence (thesis connected to its whyNow + predictions)',
   },
+  // P4.9b/P4.10b grounding adapters (pure over caller-fetched retrievalResults). Complete both subtypes 5/5.
+  [PRIOR_ART_ADAPTER_ID]: {
+    id: PRIOR_ART_ADAPTER_ID,
+    checkType: 'transfer.prior_art',
+    subtype: 'cross_domain_transfer',
+    label: 'Prior-art grounding (candidate novel vs retrieved prior art)',
+  },
+  [CURRENT_SIGNAL_GROUNDING_ADAPTER_ID]: {
+    id: CURRENT_SIGNAL_GROUNDING_ADAPTER_ID,
+    checkType: 'zeitgeist.current_signal_grounding',
+    subtype: 'zeitgeist_synthesis',
+    label: 'Current-signal grounding (signals corroborated by retrieval)',
+  },
+  [FALSIFIABILITY_ADAPTER_ID]: {
+    id: FALSIFIABILITY_ADAPTER_ID,
+    checkType: 'zeitgeist.falsifiability',
+    subtype: 'zeitgeist_synthesis',
+    label: 'Falsifiability (predictions checkable against retrieved evidence)',
+  },
 });
 
 /**
@@ -151,4 +195,8 @@ export const CHECK_RUNNER_IMPLS: Readonly<Record<string, CheckRunner>> = Object.
   [ZEITGEIST_NOVELTY_ADAPTER_ID]: zeitgeistNoveltyCheck,
   [ZEITGEIST_TIMING_ADAPTER_ID]: zeitgeistTimingCheck,
   [ZEITGEIST_COHERENCE_ADAPTER_ID]: zeitgeistCoherenceCheck,
+  // P4.9b/P4.10b grounding adapter impls (pure over caller-fetched retrievalResults).
+  [PRIOR_ART_ADAPTER_ID]: priorArtCheck,
+  [CURRENT_SIGNAL_GROUNDING_ADAPTER_ID]: currentSignalGroundingCheck,
+  [FALSIFIABILITY_ADAPTER_ID]: falsifiabilityCheck,
 });
