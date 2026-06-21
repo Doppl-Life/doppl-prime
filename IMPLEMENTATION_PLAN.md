@@ -347,6 +347,22 @@ The project is "done" when:
 - [x] Cross-doc invariant: none
 - [x] Depends on: P0.1, P0.10, P0.11, P0.12, P0.13, P0.3, P0.4, P0.5, P0.6, P0.7, P0.8, P0.9
 
+### P0.16 — JudgeResult + judge.reviewed terminal event (held-out-judge output seam) — FREEZE AMENDMENT
+
+> Human-ratified (Option A) cross-track amendment surfaced by the selection track. Closes the held-out-judge OUTPUT gap: the judge's INPUT was frozen (P0.15 FinalJudgeRubric + the `final_judge` role + the `judge.review_started` marker) but its ACCEPTANCE OUTPUT had no model + no terminal event — P4.8 (producer) and P5.5 (consumer) both named a "persisted judge event" that did not exist. Authored ONLY on the contract track per LESSONS §19; additive + non-breaking (schemaVersion 2→3).
+
+- [x] NEW `JudgeResult` (`src/verifier/judge-result.ts`): strict {id, candidateId, axisScores(`z.record(FinalJudgeAxis, z.number())` — per-axis 0-5 over the closed 5 axes), acceptance(`z.number()` — the overall metric selection consumes), rubricPolicyVersion(`string.min(1)` = `FinalJudgeRubric.policyVersion` typing), providerMeta(shared `ProviderMeta`, required), langfuseTraceId?} — mirrors NoveltyScore (the authoritative-scoring sibling)
+- [x] NEW terminal `judge.reviewed` on the closed RunEventType enum (36→37); `CURRENT_SCHEMA_VERSION` 2→3; closure (RISK-006) preserved (rejects-unlisted still green)
+- [x] Per-type payload narrowing `judge.reviewed`←JudgeResult in payload-map.ts (high-traffic 6→7) — same schema validates write + model (mirrors novelty.scored←NoveltyScore)
+- [x] Rule #6 (anti-reward-hacking): axisScores keyed by the closed FinalJudgeAxis (exhaustive+closed — no agent can add/drop a judging axis); NO rubric/weights/immutableToAgents/scoreOverride field representable; rubricPolicyVersion binds the result to the exact immutable rubric (immutability-via-versioning)
+- [x] Rule #5: judge output is UNTRUSTED until schema-validated — strict, so a malformed output is rejected at the persist boundary. Rule #4: providerMeta no-secret. Rule #7: axisScores+acceptance REQUIRED so replay reads them, never re-judges
+- [x] FitnessScore UNCHANGED — fitness references judge.reviewed by `candidateId` join + `components.judge_acceptance` (NOT a duplicate authoritative copy; `judgeResultId` strict-rejected), exactly as it references novelty.scored
+- [x] §2.5 seam: member-set snapshot (37) + high-traffic key-set snapshot (7) + JudgeResult field-name snapshot + canonical fixtures (`validJudgeResult`, `validJudgeReviewedEnvelope`) + `payload:judge.reviewed` registry entry — all in lockstep (`spec(§7)`/`spec(§4)`)
+- [x] security-reviewer fan-out: PASS, 0 findings (rules #2/#4/#5/#6/#7 verified)
+- [x] Files: packages/contracts/src/verifier/judge-result.ts (NEW); src/events/event-type.ts, src/version.ts, src/events/payload-map.ts, src/__schema-snapshots__/field-sets.ts, src/test-fixtures/index.ts, src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — `JudgeResult` (§7/§8); RunEventType + per-type payload map rows updated
+- [x] Depends on: P0.1, P0.8, P0.10, P0.14, P0.15
+
 ### Acceptance criteria (P0)
 
 - [x] Every Appendix-A model is a Zod schema in packages/contracts with its z.infer TS type, exported from the index barrel; no model is redefined outside contracts.
@@ -1579,6 +1595,16 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ## Log
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
+
+### 2026-06-21 — Phase 0 freeze AMENDED (2nd): judge-output seam — `JudgeResult` + `judge.reviewed` + schemaVersion 3 (P0.16)
+
+- **Cross-track blocker, human-ratified Option A** (surfaced by the selection track): the held-out judge's INPUT was frozen (FinalJudgeRubric, the `final_judge` role, the `judge.review_started` marker) but its ACCEPTANCE OUTPUT had no model + no terminal event — P4.8 said "persist the judge event" / P5.5 said "read the persisted judge event," yet nothing was defined to persist or read (broke the §2.5 verifier→selection seam, judge replay-faithfulness, §8 explainability; transitively blocked the P5 scoring chain). The held-out judge is the anti-reward-hacking anchor (rule #6), so its output deserves a first-class, policyVersioned, replay-faithful record. Amended **before verifier/selection build against it** (LESSONS §19 playbook, 2nd application).
+- Single operator on the contract track (no contract team registered) authored the spec into the worktree docs (`ARCHITECTURE.md` §7/§8 + Appendix-A `JudgeResult` row + RunEventType/payload-map rows; `apps/api/CLAUDE.md` cross-doc table; this plan) + ran the SOLO/invariant `/tdd` slice. Field shape co-designed via the human conduit (ratified: `axisScores`=`z.record(FinalJudgeAxis, …)`; **FitnessScore UNCHANGED** — judge link by `candidateId` join + `components.judge_acceptance`, mirroring the novelty link, no `judgeResultId`).
+- Impl slice (P0.16, SOLO/invariant): NEW `JudgeResult` (mirrors NoveltyScore) + terminal `judge.reviewed` (RunEventType 36→37) + `judge.reviewed`←JudgeResult narrowing (high-traffic 6→7) + `CURRENT_SCHEMA_VERSION` 2→3 + JudgeResult field-set snapshot + canonical fixtures (`validJudgeResult` + `validJudgeReviewedEnvelope`). Suite 163→175. **Closure (RISK-006) + rule #6/#5/#4/#7 preserved; non-breaking** (additive enum + new narrowing; v1/v2 envelopes still validate — readers accept ≤ current). `feat`, not `feat!`.
+- **security-reviewer fan-out: PASS, 0 findings** (rules #2/#4/#5/#6/#7 all verified, incl. empirical confirmation that Zod 4.4.3's enum-keyed record is exhaustive+closed). **code-quality**: 5 findings — 2 in-slice fixed (stale "6 narrowed models" comment → 7; weak `toBeDefined()` → `toEqual`); 3 orchestrator-territory doc-staleness (CLAUDE.md schemaVersion/registry rows + missing JudgeResult row) fixed in this re-seal.
+- Lesson banked **§20** (judge-output seam as a first-class persisted model + the `z.record(ClosedEnum, …)` exhaustive-closed pattern; ⚠ Zod-v4-version-dependent). Observation flagged to the verifier track: there is no `judge`/`verifier` `Actor` member — the held-out judge emits `judge.reviewed` under `runtime` in the fixture (actor↔type pairing is a runtime rule §6, not a contract constraint; revisit only if a dedicated actor is wanted).
+- Next: `/preflight` 175/175 + delta-scoped re-`/phase-exit` for P0.16; then **merge track/contract→cody** as the authoritative source; verifier + selection `git merge cody` to pull the amended contract before building P4.8/P5.5. No track builds against it until that merge lands.
+- Reference: brief `contract-016-judge-output-seam.md`; session doc `contract-003-2026-06-21-judge-output-seam.md`.
 
 ### 2026-06-21 — Tooling hotfix: eslint ignores `scaffold/` (integration-preflight Finding)
 
