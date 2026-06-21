@@ -675,6 +675,7 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 - [ ] A single secret-scrub function runs on every payload before append (pattern-based over key formats / Authorization headers / env values); no credential can land in run_events
 - [ ] occurredAt is the Postgres append-stamped UTC ISO-8601 value, not a kernel-supplied clock
 - [ ] The appender exposes only append + read-ordered-by-sequence; it never updates or deletes an existing event row
+- **NOTE (rule #2 — role-split DEFERRED to hosted; user-ratified 2026-06-21):** the P1.4 append-only trigger is defeatable by a superuser/owner connection, so full rule-#2 enforcement needs the runtime to connect as a **least-privilege app role** (INSERT/SELECT only, not owner/superuser) with migrations as a separate owner role. **Local demo = trigger-only (accepted; no adversarial DB access).** **Come-back if hosted:** provision the app-role in the migration chain + wire the runtime DB connection (here / P3.12 worker) to use it, separate from the migration/owner role; pairs with the §14 access gate. _(origin: 2026-06-21 P1.4 `[high]` finding)_
 - [ ] Files: apps/api/src/runtime/eventlog/appendEvent.ts (NEW); apps/api/src/runtime/eventlog/sequenceAllocator.ts (NEW); apps/api/src/runtime/eventlog/redactSecrets.ts (NEW)
 - [ ] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType — frozen in P0.1)
 - [ ] Depends on: P0.1
