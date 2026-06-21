@@ -52,6 +52,13 @@ const BootEnvSchema = z
       .string()
       .optional()
       .transform((v) => (v ? Number.parseInt(v, 10) : undefined)),
+    // PORT is the standard PaaS-injected listen port (Railway, Fly, Heroku).
+    // When set, it wins over both DOPPL_HTTP_PORT and DOPPL_DEMO_HTTP_PORT so
+    // the same boot script runs locally and in a managed deploy.
+    PORT: z
+      .string()
+      .optional()
+      .transform((v) => (v ? Number.parseInt(v, 10) : undefined)),
     OPENAI_API_KEY: z.string().optional(),
     OPENROUTER_API_KEY: z.string().optional(),
     LANGFUSE_PUBLIC_KEY: z.string().optional(),
@@ -182,7 +189,7 @@ export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoR
     curatedPromptsDir: resolve(repoRoot, "fixtures/curated-prompts"),
     replayFixturesDir: resolve(repoRoot, "fixtures/replay"),
   });
-  const port = bootEnv.DOPPL_HTTP_PORT ?? bootEnv.DOPPL_DEMO_HTTP_PORT;
+  const port = bootEnv.PORT ?? bootEnv.DOPPL_HTTP_PORT ?? bootEnv.DOPPL_DEMO_HTTP_PORT;
   const server = serve({ fetch: app.fetch, port });
 
   const realGateway = buildRealGateway(db, env);
