@@ -5,7 +5,12 @@ import {
   validProviderMeta,
 } from '@doppl/contracts';
 import { createFakeGateway, type ModelGateway } from '../../../../src/model-gateway';
-import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../../../src/event-store';
+import type {
+  AppendInput,
+  AppendResult,
+  EventStore,
+  RunEventRow,
+} from '../../../../src/event-store';
 import { DEFAULT_JUDGE_RUBRIC } from '../../../../src/verifier/judge/rubric';
 import { runJudge } from '../../../../src/verifier/judge/judge-call';
 

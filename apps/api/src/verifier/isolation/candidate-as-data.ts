@@ -48,7 +48,9 @@ export interface AssembleIsolatedRequestParams {
  * omit-if-undefined — the strict, exactly-one-of request shape rejects explicit-`undefined` keys, so
  * absent stays absent (mirrors the P2.4 `buildRepairRequest` precedent, lesson 23).
  */
-export function assembleIsolatedRequest(params: AssembleIsolatedRequestParams): ModelGatewayRequest {
+export function assembleIsolatedRequest(
+  params: AssembleIsolatedRequestParams,
+): ModelGatewayRequest {
   const { role, instruction, candidate, schema, maxTokens } = params;
   const request: ModelGatewayRequest = {
     role,

@@ -7,7 +7,12 @@ import {
 } from '@doppl/contracts';
 import type { ModelGateway } from '../../../../src/model-gateway';
 import { createFakeGateway } from '../../../../src/model-gateway';
-import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../../../src/event-store';
+import type {
+  AppendInput,
+  AppendResult,
+  EventStore,
+  RunEventRow,
+} from '../../../../src/event-store';
 import { runCriticCall } from '../../../../src/verifier/council/critic-call';
 
 /**

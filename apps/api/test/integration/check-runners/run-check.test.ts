@@ -3,7 +3,10 @@ import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CheckResult } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../src/event-store';
-import { CHECK_RUNNER_REGISTRY, PREPARED_TOY_ADAPTER_ID } from '../../../src/check-runners/registry';
+import {
+  CHECK_RUNNER_REGISTRY,
+  PREPARED_TOY_ADAPTER_ID,
+} from '../../../src/check-runners/registry';
 import { runCheck } from '../../../src/check-runners/run-check';
 
 /**

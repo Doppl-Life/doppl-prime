@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { CriticReview, validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import { createFakeGateway } from '../../../../src/model-gateway';
-import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../../../src/event-store';
+import type {
+  AppendInput,
+  AppendResult,
+  EventStore,
+  RunEventRow,
+} from '../../../../src/event-store';
 import { runCouncil } from '../../../../src/verifier/council/run-council';
 
 /**

@@ -47,11 +47,11 @@ describe('CHECK_RUNNER_REGISTRY — static allowlist gate (rule #3)', () => {
       expect((resolved as CheckResult).status).toBe('skipped');
     }
     // sanity: the prepared toy adapter IS a registered descriptor (not a skip) with a registered impl.
-    expect('status' in resolveCheckAdapter(CHECK_RUNNER_REGISTRY, req(PREPARED_TOY_ADAPTER_ID))).toBe(
-      false,
-    );
     expect(
-      Object.prototype.hasOwnProperty.call(CHECK_RUNNER_IMPLS, PREPARED_TOY_ADAPTER_ID),
-    ).toBe(true);
+      'status' in resolveCheckAdapter(CHECK_RUNNER_REGISTRY, req(PREPARED_TOY_ADAPTER_ID)),
+    ).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(CHECK_RUNNER_IMPLS, PREPARED_TOY_ADAPTER_ID)).toBe(
+      true,
+    );
   });
 });
