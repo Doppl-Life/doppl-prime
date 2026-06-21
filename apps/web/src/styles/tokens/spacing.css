@@ -1,0 +1,46 @@
+/* ==========================================================================
+   Doppl — Spacing, radii, sizing, z-layers
+   8px base grid (4px half-step for dense mono rows).
+   ========================================================================== */
+:root {
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* radii */
+  --radius-sm: 6px; /* badges, chips, inputs */
+  --radius-md: 10px; /* cards, buttons (base) */
+  --radius-lg: 14px; /* panels, drawers */
+  --radius-xl: 20px; /* modals, big surfaces */
+  --radius-full: 9999px; /* meters, pills, node rings */
+  --radius: var(--radius-md);
+
+  /* lineage node sizing (graph) */
+  --node-agenome: 200px;
+  --node-candidate: 220px;
+  --node-evidence: 132px; /* critic / check */
+  --node-score: 156px;
+  --node-winner: 280px;
+  --node-gen-gap: 140px;
+
+  /* hit target floor (projector + touch) */
+  --hit-min: 44px;
+
+  /* z-layers — ModeBanner must sit above everything (live/replay never occluded) */
+  --z-base: 0; /* @kind other */
+  --z-graph-controls: 10; /* @kind other */
+  --z-sticky: 20; /* @kind other */
+  --z-ticker: 25; /* @kind other */
+  --z-drawer: 40; /* @kind other */
+  --z-modal: 50; /* @kind other */
+  --z-popover: 60; /* @kind other */
+  --z-banner: 70; /* @kind other */
+  --z-toast: 80; /* @kind other */
+}
