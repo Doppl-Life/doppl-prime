@@ -16,3 +16,9 @@ export type {
   EvidenceUnresolvedReason,
   EvidenceResolver,
 } from './evidence-resolver';
+
+// Replay reader + canonical serialization (P1.8) — reconstruct run state from the persisted log,
+// validate-not-sort (gap/out_of_order/schema_too_new), no provider seam (rule #7 structural — lesson 30).
+export { replayEvents, replayRun, createReplayReader, ReplayIntegrityError } from './replay-reader';
+export type { ReplayReader, ReplayIntegrityReason } from './replay-reader';
+export { canonicalSerialize } from './canonical-serialization';
