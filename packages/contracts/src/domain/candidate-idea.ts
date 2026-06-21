@@ -35,6 +35,7 @@ const baseCandidateFields = {
   agenomeId: z.string().min(1),
   title: z.string().min(1),
   summary: z.string(),
+  explanation: z.string().min(1).optional(),
   claims: z.array(z.string()),
   evidenceRefs: z.array(EvidenceRef),
   status: CandidateStatus,

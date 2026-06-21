@@ -56,6 +56,7 @@ describe(`${spec("§3")} CandidateIdea`, () => {
         "agenomeId",
         "claims",
         "evidenceRefs",
+        "explanation",
         "generationId",
         "id",
         "runId",
@@ -96,6 +97,20 @@ describe(`${spec("§3")} CandidateIdea`, () => {
 
   test("rejects unknown top-level fields (.strict() on both variants)", () => {
     expect(() => CandidateIdea.parse({ ...xdomain, bogus: 1 })).toThrow();
+  });
+
+  test("parses a candidate that includes an optional explanation", () => {
+    const withExplanation = { ...xdomain, explanation: "In plain English: it borrows a trick from plumbing." };
+    expect(CandidateIdea.parse(withExplanation)).toEqual(withExplanation);
+  });
+
+  test("parses a candidate that omits the optional explanation (back-compat)", () => {
+    // xdomain has no `explanation` key; should still parse.
+    expect(CandidateIdea.parse(xdomain)).toEqual(xdomain);
+  });
+
+  test("rejects an empty-string explanation (min(1) guard)", () => {
+    expect(() => CandidateIdea.parse({ ...xdomain, explanation: "" })).toThrow();
   });
 });
 
