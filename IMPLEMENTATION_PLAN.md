@@ -19,9 +19,9 @@
 
 ## Currently in progress
 
-**Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks).** `/phase-exit P0` verdict **CLEAR** (gate block under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo).
+**Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
-This round (contract-002 session, P0.10→P0.14): per-type payload map + payload ceiling `73289fd` · entities+lineage bundle [P0.13 + P0.15 Run/Generation/CullingEvent/LineageGraphProjection] `8bd9502` · FinalJudgeRubric `5058400` · P0.14 contract-test surface `0180c5f` · P0.10 phase-exit follow-up `c33eb2f`. Impl session doc `7d60cc3` (contract-002). **Round-seal: this `/orchestrate-end` commit (pushed to origin/track/contract).** Full suite **160/160**; `/preflight` clean; `pnpm audit --prod` clean.
+**Round commits:** contract-002 round (P0.10→P0.14) sealed `bab92e1` (suite 160/160; per-type payload map `73289fd`, entities+lineage bundle `8bd9502`, FinalJudgeRubric `5058400`, contract-test surface `0180c5f`, P0.10 follow-up `c33eb2f`; impl session doc `7d60cc3`/contract-002). **P0.1-amend round** (operation-start markers + schemaVersion 2) `dc493a3` (suite 163/163); **re-seal: this `/orchestrate-end` commit (pushed to origin/track/contract)**. `/preflight` clean; `pnpm audit --prod` clean.
 
 Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see Log.
 
@@ -178,7 +178,7 @@ The project is "done" when:
 
 - [x] RunEventEnvelope carries exactly: id, runId, generationId?, agenomeId?, candidateId?, type:RunEventType, sequence, occurredAt, actor, correlationId?, langfuseTraceId?, langfuseObservationId?, payload, schemaVersion (per Appendix A §4)
 - [x] sequence is the sole ordering key; it is a per-run monotonic integer and occurredAt is a UTC ISO-8601 string treated as display/analytics-only, never ordering (§4)
-- [x] RunEventType is a CLOSED enum containing every lifecycle + failure/terminal type named in Appendix A: run.configured/started/completed/failed/stopped, generation.started/completed, agenome.spawned/fused/mutated/reproduced, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored, lineage.culled, energy.spent, provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded — and rejects any unlisted type
+- [x] RunEventType is a CLOSED enum containing every lifecycle + failure/terminal type named in Appendix A: run.configured/started/completed/failed/stopped, generation.started/completed, agenome.spawned/fused/mutated/reproduced, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored, lineage.culled, energy.spent, provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded — and ALSO every operation-start / in-flight observability marker named in §4/§12/Appendix A: generation.verifying, generation.scoring, generation.reproducing, candidate.generation_started, critic.review_started, check.started, novelty.scoring_started, judge.review_started, fusion.started, tool_call.started, tool_call.finished — these markers are persisted, replay-faithful, and debit NO energy; rejects any unlisted type. Adding them is a schemaVersion bump covered by the field-name-set schema-snapshot test (re-record fixtures)
 - [x] actor is the CLOSED 7-role union (operator, runtime, agenome, critic, check_runner, selection_controller, system) and supersedes any actor:string; any other value is rejected
 - [x] schemaVersion is present on every envelope; readers must accept all schemaVersion ≤ current (the registry pins the current version constant)
 - [x] payload is the generic JSONB-backed shape at envelope level (per-type narrowing is layered by P0.10), and an unknown envelope field is rejected by the schema
@@ -375,6 +375,21 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] **Commits pushed to origin** — completed at `/orchestrate-end` (verify-only here; tree currently ahead).
 
 **Verdict: CLEAR** (rows 1–10). Rows 11–12 complete at close-out (`/session-end` + `/orchestrate-end`); Phase 0 ticks complete at `/orchestrate-end`.
+
+### Phase 0 — exit gate — `/phase-exit P0` RE-RUN (2026-06-21, P0.1-amend): CLEAR
+
+Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, suite 163/163, schemaVersion 2). **Delta-scoped** — additive 11-member enum + schemaVersion bump; the `bab92e1` full 4-auditor fan-out stands for the unchanged surface.
+
+- [x] **P0.1 RunEventType criterion re-ticked** — 36 members incl. the 11 operation-start markers.
+- [x] **`/preflight` clean** — `@doppl/contracts` tsc + eslint + prettier + 163/163 vitest (final state `dc493a3`).
+- [x] **Arch-drift (focused) CLEAR** — the 11 markers agree across `event-type.ts` (36) ↔ `field-sets` `EVENT_TYPE_SNAPSHOT` (36) ↔ `ARCHITECTURE.md` §4 + Appendix-A; no typo divergence; `CURRENT_SCHEMA_VERSION=2`.
+- [x] **Cross-doc verified** — `apps/api/CLAUDE.md` `RunEventType` row (36 + markers + no-energy-debit) + `RunEventEnvelope` row (schemaVersion 2, v1 still validates) updated.
+- [x] **Security CLEAR** — the amendment's Step-8 `security-reviewer` FAN OUT cleared all 5 surfaces (closure RISK-006, no-energy-debit rule #8, markers→generic, deliberate+pinned schemaVersion, v1/v2 forward-compat); 0 findings.
+- [x] **Spec coverage** — the 36-member snapshot pins the markers (`spec(§4)`).
+- Reachability / code-quality / dep-audit / perf: **unchanged from `bab92e1`** (additive enum, no new symbols/deps/budgets).
+- Session doc: the single-slice amendment is captured in this Log + brief `contract-015` + commit `dc493a3` (no separate session doc).
+
+**Verdict: CLEAR.** Re-seal at this `/orchestrate-end`.
 
 ---
 
@@ -741,6 +756,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] Partial failure: the generation proceeds running→degraded→verifying as long as ≥1 candidate reached created (configurable minPopulationSurvival), emitting a partial-failure event listing failed agenome IDs; running→failed only if all agenomes fail or provider failures exceed the run retry cap
 - [ ] Zero-survivors: a generation with no eligible parents takes scoring→completed (no offspring) and emits generation.completed{survivors:0}
 - [ ] Degenerate reproduction: <2 eligible parents → mutation-only reproduction from the single survivor emitting agenome.reproduced{mode:"mutation_only"}; 0 survivors routes to the zero-survivors path
+- [ ] Emits operation-start marker(s) on entering each generation phase — generation.verifying/scoring/reproducing — and relays tool_call.started/tool_call.finished from the gateway, all NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] The loop hands candidates to verifier/selection seams as DATA and consumes their events; it never itself critiques, checks, or scores
 - [ ] The loop repeats until caps (maxGenerations / energyBudget / wall-clock) are reached, then ends the run via terminal classification (P3.11)
 - [ ] Each per-stage deadline / wall-clock / kill aborts the current generation state to failed and is recorded as generation_failed
@@ -856,6 +872,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] an adapter that would require executing arbitrary/candidate-supplied code is rejected at registration or invocation and recorded as skipped with reason (no arbitrary code path exists)
 - [ ] the registry is closed/fixed at boot — there is no runtime API for an agent or candidate to register a new adapter
 - [ ] a registered non-executing adapter runs deterministically and produces a schema-valid CheckResult
+- [ ] emits the check.started operation-start marker (paired → check.completed) per invocation — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] every invocation (pass/fail/skip) emits a check.completed event whose payload is the validated CheckResult
 - [ ] Files: apps/api/check-runners/registry.ts (NEW); apps/api/check-runners/run-check.ts (NEW)
 - [ ] Cross-doc invariant: none (consumes CheckResult, CheckRunnerAdapter — frozen in P0.7)
@@ -865,6 +882,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 
 - [ ] each mandate runs as a gateway request under the critic ModelRole via the candidate-as-DATA isolation seam (P4.4) — never a direct provider SDK call
 - [ ] every critic output is validated against the CriticReview schema and accepted, repaired (at most once), or rejected with an output_schema_rejected event
+- [ ] emits the critic.review_started operation-start marker (paired → critic.reviewed) per mandate — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] an accepted CriticReview is persisted verbatim as a critic.reviewed event; the council NEVER selects, mutates candidates/lineage, or alters scoring policy
 - [ ] council output is the set of structured CriticReviews only; it returns no winner and no score-policy mutation
 - [ ] provider metadata + langfuse trace/observation IDs from the gateway response are persisted on the critic.reviewed event
@@ -887,6 +905,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 ### P4.8 — Held-out final-judge runner (outside breeding loop, fixed rubric, gateway-routed, immutable)
 
 - [ ] the final_judge runs under its own held-out ModelRole via the gateway, isolated from candidates via the candidate-as-DATA seam (P4.4)
+- [ ] emits the judge.review_started operation-start marker (paired → fitness.scored) — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] the judge applies the fixed 5-axis 0-5 rubric (P4.3) and produces the acceptance metric used to decide gen N+1 beats gen N
 - [ ] the judge is NOT in the critic rotation and is never one of the breeding-loop critics — it sits outside the breeding loop
 - [ ] judge config + rubric are immutable to agents: a metric-mutation attempt by any agenome cannot move the judge's anchor or rubric
@@ -969,6 +988,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] Computes app-level cosine / nearest-neighbour against the prior-candidate comparison set within the run/generation; comparisonSet recorded on the NoveltyScore so the comparison is auditable
 - [ ] The computed vector, embeddingModelId, and dimension are persisted into the novelty.scored event payload as JSONB (authoritative-once-computed) — pgvector is never the system of record
 - [ ] On replay the stored vector is read back and only the deterministic cosine math is recomputed — embeddings are never re-requested
+- [ ] emits the novelty.scoring_started operation-start marker (paired → novelty.scored) per candidate — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] Novelty is computed within the generation scoring state and emits exactly one novelty.scored per candidate scored
 - [ ] Cosine math is deterministic and order-independent over a fixed comparison set
 - [ ] Files: apps/api/src/selection/novelty/embed.ts (NEW); apps/api/src/selection/novelty/cosine.ts (NEW); apps/api/src/selection/novelty/score-novelty.ts (NEW)
@@ -1048,6 +1068,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] Implements agenome-level crossover (splice parents' prompts/personas/toolsets) AND output-level synthesis (a model merges two parents' reasoning via the fusion_synthesis gateway role)
 - [ ] Fusion prefers distant lineages, measured by parent-distance over the idea-space/novelty embedding, as an explicit anti-collapse force
 - [ ] crossoverPoints and the fusion outcome (including any RNG choices) are persisted in agenome.fused / ReproductionEvent so replay reconstructs the child without re-sampling or re-calling the synthesis model
+- [ ] emits the fusion.started operation-start marker (paired → agenome.fused) per fusion — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
 - [ ] The synthesis model call goes only through the ModelGateway port and persists its provider metadata/output into the originating event
 - [ ] Child agenomes from fusion record both parentIds and fusion metadata and are schema-validated; mode is recorded as fusion/crossover/output_synthesis accordingly
 - [ ] Parent-distance computation reuses persisted embedding vectors (never re-embeds on replay)
@@ -1183,6 +1204,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 ### P6.8 — GET /runs/:id/health runtime-signal endpoint
 
 - [ ] Returns current generation, count of candidates in flight, last-event time, and caps consumed (vs. configured maxima)
+- [ ] Reports operations in flight — unpaired operation-start markers with no paired completion (agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) — derived from the live event projection for live in-flight observability (§4/§12)
 - [ ] Values are derived from the live event projection so the operator can decide continue vs. switch-to-replay within the 10-minute window
 - [ ] last-event time reflects the most recent appended run_event; a stalled run shows a stale last-event time the operator can act on
 - [ ] caps-consumed reflects energy/population/generation/tool-call usage against RunCaps and never reports a value exceeding the enforced ceiling
@@ -1194,6 +1216,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 ### P6.9 — SSE run-event stream: delivery-only, resume from lastEventId, polling fallback
 
 - [ ] GET /runs/:id/stream emits run events over SSE in sequence order; the SSE id is the event sequence (lastEventId)
+- [ ] The stream carries operation-start / in-flight markers (generation.verifying/scoring/reproducing, *_started, tool_call.started/finished), not only completion events, so the dashboard renders a live in-flight window (§4/§12)
 - [ ] SSE is delivery-only and non-authoritative: it never writes to or mutates the event log, and dropping the stream loses no authoritative state
 - [ ] On reconnect the client resumes strictly from its last seen sequence (Last-Event-ID), receiving no gap and no duplicate before the cursor
 - [ ] If streaming is unavailable the client can fall back to polling GET /runs/:id/events / replay and reconstruct the same ordered view
@@ -1315,6 +1338,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 - [ ] Provides the five custom node types named in §10/§12 — agenome, candidate, critic/check, score, selected winner — each using the shared accessible status primitive (shape+label+icon+color)
 - [ ] Node positions come from a deterministic layout helper (Dagre/ELK) when the projection carries no coordinates, so the same projection lays out the same way each render
 - [ ] The graph updates incrementally as the projection's sequenceThrough advances, and a node's dataRef is the link target consumed by inspector/evidence panels and the final-idea panel
+- [ ] Derives a per-node working / in-flight sub-state when an operation-start marker is seen without its paired completion and clears it on the completion event, and surfaces a live activity feed (start→finish) so the audience sees what each agenome/critic/check/judge/fusion is doing in-flight — replay reproduces the same liveness (§4/§12)
 - [ ] The view makes spawn, survival, fusion, mutation, and generation improvement legible to an audience (REQ-UX-001, REQ-E-002)
 - [ ] Files: apps/web/src/lineage/LineageGraph.tsx (NEW); apps/web/src/lineage/nodeTypes.tsx (NEW — agenome/candidate/critic-check/score/selected); apps/web/src/lineage/layout.ts (NEW — Dagre/ELK helper)
 - [ ] Cross-doc invariant: none (consumes LineageGraphProjection — frozen in P0.13)
@@ -1384,6 +1408,7 @@ Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160).
 
 - [ ] Composes all panels into one projector-legible layout using the high-contrast theme and large fonts (§12), with the mode indicator and stop control persistently visible
 - [ ] Surfaces GET /runs/:id/health (current generation, candidates in flight, last-event time, caps consumed) so the operator can decide continue vs. switch-to-replay during the demo window (§11)
+- [ ] Renders an operations-in-flight summary from /runs/:id/health (unpaired start markers — agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) as a real-time in-flight window, identical in live and replay (§4/§12)
 - [ ] The UI displays only redacted payloads — it relies on the persistence-boundary redaction filter and never reconstructs or renders a secret/API key from any event/trace/UI payload (§14 safety pin)
 - [ ] No panel issues any write other than the two idempotent commands (POST /runs, POST /runs/:id/stop); the dashboard never mutates authoritative state (§12 invariant)
 - [ ] The shell handles run-not-found / empty-run / failed-run states gracefully and keeps already-loaded evidence inspectable
@@ -1554,6 +1579,16 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ## Log
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
+
+### 2026-06-21 — Phase 0 freeze AMENDED: operation-start markers + schemaVersion 2 (P0.1-amend)
+
+- **User-decided course-correction** (team stayed up, no cycle): the freeze had frozen `RunEventType` WITHOUT the operation-start / in-flight observability markers the architecture+plan now require. Amended **before the kernel forks** — forking from a freeze the plan already contradicts would force a post-fork schemaVersion bump + cross-track Finding.
+- Orchestrator authored the marker spec into the worktree's `ARCHITECTURE.md` (§4 observability paragraph + §11/§12/§13 + Appendix-A `RunEventType` row) + `IMPLEMENTATION_PLAN.md` (per-phase emit bullets P3/P4/P5/P6/P7 + the re-opened P0.1 criterion), from the integration-checkout (cody) diff as the authoritative source. Lead reconciles cody's now-redundant uncommitted copies at merge.
+- Impl slice `dc493a3` (P0.1-amend, SOLO/invariant): `RunEventType` 25→36 (+11 markers), `CURRENT_SCHEMA_VERSION` 1→2, member-set snapshot + fixtures re-recorded. Suite 160→163. **Closure (RISK-006) + no-energy-debit (rule #8) preserved; non-breaking** (markers fall back to the generic payload; v1 envelopes still validate). security-reviewer CLEAN.
+- `/phase-exit P0` **re-run (focused/delta-scoped): CLEAR** — the 11 markers agree code↔snapshot↔doc, preflight 163/163; the `bab92e1` full 4-auditor fan-out stands for the unchanged surface.
+- Lesson banked **§19** (amending-a-freeze playbook). Decisions: markers → generic payload (correlation is envelope-level); non-breaking `feat` (not `!`).
+- Next session target: the re-sealed freeze (schemaVersion 2) is the **kernel track's fork point**. Lead merges track/contract→cody + spins up the kernel worktree.
+- Reference: brief `contract-015-P0.1-amend-operation-start-markers.md`; commit `dc493a3`.
 
 ### 2026-06-21 — Phase 0 contract freeze CLOSED: P0.10→P0.14 + `/phase-exit P0` CLEAR
 
