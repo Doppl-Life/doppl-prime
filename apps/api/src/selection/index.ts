@@ -18,3 +18,12 @@ export type {
 } from './novelty/score-novelty';
 export { energyEfficiency } from './components/energy-efficiency';
 export type { EnergyEfficiencyResult } from './components/energy-efficiency';
+export { createRng } from './reproduction/rng';
+export type { Rng } from './reproduction/rng';
+export { applyMutation, mutate } from './reproduction/mutate';
+export type {
+  ApplyMutationDeps,
+  MutateDeps,
+  MutationBounds,
+  MutationSummary,
+} from './reproduction/mutate';
