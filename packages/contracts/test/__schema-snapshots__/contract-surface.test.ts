@@ -38,6 +38,7 @@ import {
   LineageNode,
   LineageEdge,
   FinalJudgeRubric,
+  JudgeResult,
   // closed unions
   RunEventType,
   Actor,
@@ -91,6 +92,7 @@ const OBJECT_MODELS: Record<string, { shape: Record<string, unknown> }> = {
   LineageNode,
   LineageEdge,
   FinalJudgeRubric,
+  JudgeResult,
 };
 
 // the 17 closed unions: a valid member parses AND an out-of-set value rejects (lesson §1).
