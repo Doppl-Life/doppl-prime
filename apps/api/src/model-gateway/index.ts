@@ -25,3 +25,9 @@ export type { ProviderCallFn, ProviderResult, StructuredOutputParams } from './s
 // tests run against; completes the gateway chain.
 export { createFakeGateway, selectGateway } from './stub/fake-gateway';
 export type { FakeGatewayConfig, FakeMode, GatewaySelection } from './stub/fake-gateway';
+
+// Model registry (P2.2) — role→route resolution + boot config validation + credential boundary;
+// provides createGateway's capabilityFor + the adapters' route resolution.
+export { createModelRegistry, loadModelRegistry, assertProviderCredentials } from './registry';
+export type { ModelRegistry, RegistryConfigSources } from './registry';
+export { RegistryConfig, RouteConfig } from './config.schema';
