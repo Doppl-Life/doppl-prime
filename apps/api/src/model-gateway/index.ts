@@ -39,6 +39,22 @@ export type {
 export { withRetry, ProviderTimeoutError } from './adapters/retry';
 export type { RetryOutcome, RetryDeps, RetryPolicy, AttemptFailure } from './adapters/retry';
 
+// Direct-OpenAI embedding adapter (P2.6) — the `embedding`-role `providerCall` (SDK behind the port,
+// rule #9) returning the authoritative vector + modelId + dimension for selection to persist.
+export {
+  createOpenAIEmbeddingProviderCall,
+  createOpenAIEmbeddingClient,
+  mapEmbeddingResponse,
+} from './adapters/openai-embedding.adapter';
+export type {
+  EmbeddingResult,
+  EmbeddingParams,
+  EmbeddingRawCompletion,
+  OpenAIEmbeddingClient,
+  OpenAIEmbeddingAdapterDeps,
+  SdkEmbeddingResponseLike,
+} from './adapters/openai-embedding.adapter';
+
 // Recorded/fake gateway (P2.9) — the freeze-bundle fork artifact dependent tracks + P3 integration
 // tests run against; completes the gateway chain.
 export { createFakeGateway, selectGateway } from './stub/fake-gateway';
