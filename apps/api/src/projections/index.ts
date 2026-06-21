@@ -9,3 +9,5 @@ export * from './projection-builder';
 export * from './watermark';
 export * from './current-state';
 export * from './lineage-graph';
+export * from './replay-reader';
+export * from './replay-summary';
