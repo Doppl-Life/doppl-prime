@@ -4,13 +4,19 @@ import { EvidenceRef } from './evidence-ref';
 import { CrossDomainTransferPayload, ZeitgeistSynthesisPayload } from './subtype-payloads';
 
 /**
- * CandidateStatus — the CLOSED 8-state candidate lifecycle (ARCHITECTURE.md §3 Candidate state
+ * CandidateStatus — the CLOSED 9-state candidate lifecycle (ARCHITECTURE.md §3 Candidate state
  * machine): `created → under_review → checked → scored → selected | rejected`; `→ culled` (lost a
  * generation) and `→ invalid` (failed schema validation) are terminal. Both subtypes share this one
  * lifecycle. The kernel (P3) drives the transitions; this freezes the state enum only.
+ *
+ * [P0.5-amend] `repairing` added (8→9, after `created`) so the §3 structured-output repair edge
+ * `created → repairing → under_review` (on a successful repair) / `repairing → invalid` (repair budget
+ * exhausted) is representable + persistable (CURRENT_SCHEMA_VERSION 3→4). Additive + backward-compatible
+ * (closure preserved — unknown statuses still rejected).
  */
 export const CandidateStatus = z.enum([
   'created',
+  'repairing',
   'under_review',
   'checked',
   'scored',

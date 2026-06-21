@@ -79,11 +79,11 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
   });
 
   it('canonical_fixtures_still_valid_at_current_version', () => {
-    // spec(§16) [P0.15-amend]: the canonical envelope fixture is re-recorded at the CURRENT schema
-    // version (3 — it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
+    // spec(§16) [P0.5-amend]: the canonical envelope fixture is re-recorded at the CURRENT schema
+    // version (4 — it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
     // (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives the amendment.
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
-    expect(validRunEventEnvelope.schemaVersion).toBe(3);
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(validRunEventEnvelope.schemaVersion).toBe(4);
   });
 
   it('types_are_single_source', () => {

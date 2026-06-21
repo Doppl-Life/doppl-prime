@@ -1,7 +1,8 @@
 // P0.5 — CandidateIdea: the canonical unit of work (ARCHITECTURE.md §3). Modeled as a
 // z.discriminatedUnion on `subtype` so the subtype⟺subtypePayload correlation is structurally
-// unrepresentable-when-wrong (a mismatched pair cannot parse). spec(§3): one 8-state lifecycle
-// shared by both subtypes; the schema encodes SHAPE only (transitions are the kernel's, P3).
+// unrepresentable-when-wrong (a mismatched pair cannot parse). spec(§3): one 9-state lifecycle
+// [P0.5-amend: +repairing] shared by both subtypes; the schema encodes SHAPE only (transitions are
+// the kernel's, P3).
 import { describe, it, expect } from 'vitest';
 import { CandidateIdea, CandidateStatus } from '@doppl/contracts';
 
@@ -65,6 +66,7 @@ const SHARED_REQUIRED = [
 
 const STATUS_STATES = [
   'created',
+  'repairing', // [P0.5-amend] §3 structured-output repair state
   'under_review',
   'checked',
   'scored',
@@ -96,16 +98,28 @@ describe('CandidateIdea — the canonical unit of work (spec §3)', () => {
     ).toThrow();
   });
 
-  it('candidate_status_closed_8_state', () => {
-    // spec(§3): status is the closed 8-state lifecycle union; any other value is rejected.
+  it('candidate_status_closed_9_state', () => {
+    // spec(§3): status is the closed 9-state lifecycle union [P0.5-amend: +repairing]; any other value
+    // is rejected (closure preserved — the amendment is additive, not a loosening, lesson §1).
     for (const s of STATUS_STATES) {
       expect(CandidateStatus.parse(s)).toBe(s);
       expect(CandidateIdea.parse({ ...validCdtCandidate, status: s }).status).toBe(s);
     }
-    expect(STATUS_STATES).toHaveLength(8);
+    expect(STATUS_STATES).toHaveLength(9);
     expect(() => CandidateStatus.parse('archived')).toThrow();
     expect(() => CandidateStatus.parse('')).toThrow();
     expect(() => CandidateIdea.parse({ ...validCdtCandidate, status: 'archived' })).toThrow();
+  });
+
+  it('candidate_status_includes_repairing', () => {
+    // spec(§3) [P0.5-amend]: `repairing` is a first-class candidate state (created→repairing→
+    // under_review / repairing→invalid); positive guard `created` still parses; `bogus` still rejected.
+    expect(CandidateStatus.parse('created')).toBe('created');
+    expect(CandidateStatus.parse('repairing')).toBe('repairing');
+    expect(CandidateIdea.parse({ ...validCdtCandidate, status: 'repairing' }).status).toBe(
+      'repairing',
+    );
+    expect(() => CandidateStatus.parse('bogus')).toThrow();
   });
 
   it('candidate_evidenceRefs_empty_ok_and_claims_nonempty', () => {

@@ -103,20 +103,21 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
   });
 
   it('schema_version_required_positive_int', () => {
-    // spec(§4): schemaVersion is a required positive integer on every envelope. [P0.15-amend] the bump
-    // to 3 doesn't break old-version validation at the contract level — 1, 2 (old) and 3 (current) all
+    // spec(§4): schemaVersion is a required positive integer on every envelope. [P0.5-amend] the bump
+    // to 4 doesn't break old-version validation at the contract level — 1/2/3 (old) and 4 (current) all
     // parse (the ≤-current reader logic is P1's; the contract just requires a positive int).
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 1 }).schemaVersion).toBe(1);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 2 }).schemaVersion).toBe(2);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 3 }).schemaVersion).toBe(3);
+    expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 4 }).schemaVersion).toBe(4);
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 0 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: -1 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_3', () => {
-    // spec(§4) [P0.15-amend]: the registry-pinned current schema version is 3 (bumped 2→3 for the
-    // additive GenerationStatus +degraded amendment). The exported constant is the single source.
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+  it('current_schema_version_is_4', () => {
+    // spec(§4) [P0.5-amend]: the registry-pinned current schema version is 4 (bumped 3→4 for the
+    // additive CandidateStatus +repairing amendment). The exported constant is the single source.
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 });
