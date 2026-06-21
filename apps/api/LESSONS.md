@@ -335,3 +335,18 @@ A config object carrying provider routing (the model registry) must never become
 The `defaults < file < env` merge is the lesson-§4 discipline (deep-merge objects / replace arrays+scalars / skip `__proto__`/`constructor`/`prototype` / field-identifying errors); contracts' `deepMerge` is private, so it's mirrored locally with §4 cited (single-source via a cross-track export only once a 2nd+ in-track consumer — e.g. P3.1's boot-config — appears).
 
 **Rule:** A config object carrying provider routing keeps credentials env-only + fail-fast-checked at boot + STRUCTURALLY unrepresentable in the config (strict schema rejects a cred field at every layer — §9 applied to creds); errors name vars/keys, never values; merge `defaults<file<env` via the §4 discipline.
+
+## <a id="28"></a>28. The provider-adapter pattern — SDK behind one client factory, a reusable no-throw retry policy, and a terminal `ProviderCallError` the GATEWAY maps to rejected
+
+**Date:** 2026-06-21.
+**Source slice:** kernel track P2.5 (`kernel-009`; commit hash recorded at round close); `apps/api/src/model-gateway/adapters/{openrouter.adapter.ts, retry.ts}` + `gateway.ts`.
+
+A provider adapter (the thing that actually calls a vendor) follows one shape, reused by every adapter (OpenRouter generation; OpenAI embeddings P2.6; retrieval P2.7):
+
+- **SDK behind ONE client factory:** the vendor SDK is imported in a single client factory; NO vendor type appears in the adapter's exported surface (rule #9 — domain/runtime see only contract types; grep-pinned). Credentials load only from env inside that factory (rule #4).
+- **A reusable `retry.ts` (`withRetry`):** bounded retries (default 2) + a per-role timeout (**injected adapter config** — the frozen `ModelRoute` has NO timeout field) + one fallback-route attempt, returning a DISCRIMINATED outcome. It NEVER throws on a provider failure; each failed attempt yields `provider_call_failed{attempt,reason}`. It does NO energy accounting (rule #8 — energy is the kernel's success-only concern, P3.5); a successful call returns `providerMeta` (actual provider/modelId/gatewayRequestId + tokens) for the kernel to reconcile.
+- **The no-throw envelope is the WHOLE adapter, not just the happy path:** a [medium] caught at Step 8 was eager fallback-ROUTE resolution throwing a raw `Error` OUTSIDE `withRetry` — anything that can fail (incl. resolving the fallback route) must be inside the bounded no-throw envelope, or it escapes as a raw throw.
+- **Terminal failure = throw `ProviderCallError`**, which the GATEWAY (`createGateway`, the port impl) maps to `accepted:false`/rejected (+providerMeta) — so domain code NEVER sees a throw (§6 port contract, lesson §20). The mapping lives ONCE in the gateway (DRY across all adapters), not per-adapter.
+- The adapter returns the **RAW output**; validation/repair/reject is the gateway discipline's job (§23), not the adapter's.
+
+**Rule:** A provider adapter imports the SDK in one client factory (no vendor type in its surface — rule #9; creds env-only — rule #4), runs a reusable bounded-retry/per-role-timeout/one-fallback policy that NEVER throws on a provider failure (everything fallible — incl. fallback-route resolution — inside the envelope) + does no energy accounting (rule #8), throws a terminal `ProviderCallError` the GATEWAY maps to a rejected response (§6/§20 — domain never sees a throw), and returns the raw output for the §23 discipline to validate.
