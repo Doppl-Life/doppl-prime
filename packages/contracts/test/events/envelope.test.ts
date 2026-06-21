@@ -103,8 +103,11 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
   });
 
   it('schema_version_required_positive_int', () => {
-    // spec(§4): schemaVersion is a required positive integer on every envelope.
+    // spec(§4): schemaVersion is a required positive integer on every envelope. [P0.1-amend] the bump
+    // to 2 doesn't break old-version validation at the contract level — both 1 (old) and 2 (current)
+    // parse (the ≤-current reader logic is P1's; the contract just requires a positive int).
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 1 }).schemaVersion).toBe(1);
+    expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 2 }).schemaVersion).toBe(2);
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 0 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: -1 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();

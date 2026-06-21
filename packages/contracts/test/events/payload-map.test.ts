@@ -12,6 +12,7 @@ import {
   validateEventPayload,
   MAX_PAYLOAD_BYTES,
   MAX_PAYLOAD_DEPTH,
+  EnergyEvent,
   type RunEventType,
 } from '@doppl/contracts';
 
@@ -185,6 +186,51 @@ describe('per-type payload map (spec §4)', () => {
     expect(() =>
       resolvePayloadSchema('fitness.scored').parse({ ...validFitness, noveltyScoreId: 'nov_1' }),
     ).toThrow();
+  });
+
+  it('markers_resolve_to_generic_payload', () => {
+    // spec(§4) lesson §15 [P0.1-amend]: the 11 operation-start markers carry envelope-level correlation
+    // only — each resolves to the GENERIC payload schema (no narrowed entry), and the 6 high-traffic
+    // narrowings are unchanged.
+    const MARKERS = [
+      'generation.verifying',
+      'generation.scoring',
+      'generation.reproducing',
+      'candidate.generation_started',
+      'critic.review_started',
+      'check.started',
+      'novelty.scoring_started',
+      'judge.review_started',
+      'fusion.started',
+      'tool_call.started',
+      'tool_call.finished',
+    ] as const;
+    for (const m of MARKERS) {
+      expect(resolvePayloadSchema(m), m).toBe(GENERIC_PAYLOAD_SCHEMA);
+    }
+    expect(MARKERS).toHaveLength(11);
+    // the 6 high-traffic narrowings still narrow (markers didn't disturb the map).
+    expect(resolvePayloadSchema('energy.spent')).not.toBe(GENERIC_PAYLOAD_SCHEMA);
+    expect(resolvePayloadSchema('candidate.created')).not.toBe(GENERIC_PAYLOAD_SCHEMA);
+  });
+
+  it('markers_are_not_energy_spent', () => {
+    // spec(§4) rule #8 [P0.1-amend]: no marker debits energy — none maps to EnergyEvent, and
+    // `energy.spent` remains the ONLY EnergyEvent-narrowed type (the high-traffic key-set is unchanged).
+    expect(new Set(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP))).toEqual(
+      new Set([
+        'energy.spent',
+        'candidate.created',
+        'critic.reviewed',
+        'check.completed',
+        'novelty.scored',
+        'fitness.scored',
+      ]),
+    );
+    expect(HIGH_TRAFFIC_PAYLOAD_MAP['energy.spent']).toBe(EnergyEvent);
+    for (const m of ['tool_call.started', 'tool_call.finished', 'check.started'] as const) {
+      expect(HIGH_TRAFFIC_PAYLOAD_MAP[m as keyof typeof HIGH_TRAFFIC_PAYLOAD_MAP]).toBeUndefined();
+    }
   });
 });
 

@@ -47,6 +47,18 @@ const EVENT_TYPE_SNAPSHOT = [
   'generation_failed',
   'reproduction_aborted_insufficient_parents',
   'novelty_scoring_degraded',
+  // P0.1-amend: 11 operation-start / in-flight observability markers (25 → 36).
+  'generation.verifying',
+  'generation.scoring',
+  'generation.reproducing',
+  'candidate.generation_started',
+  'critic.review_started',
+  'check.started',
+  'novelty.scoring_started',
+  'judge.review_started',
+  'fusion.started',
+  'tool_call.started',
+  'tool_call.finished',
 ];
 
 const ACTOR_SNAPSHOT = [
@@ -68,7 +80,8 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(typeof RunEventType.parse).toBe('function');
     expect(typeof RunEventEnvelope.parse).toBe('function');
     expect(Number.isInteger(CURRENT_SCHEMA_VERSION)).toBe(true);
-    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThan(0);
+    // P0.1-amend: deliberate schemaVersion bump 1 → 2, pinned by literal so it can't move silently.
+    expect(CURRENT_SCHEMA_VERSION).toBe(2);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {
@@ -77,7 +90,7 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(sorted(RunEventType.options)).toEqual(sorted(EVENT_TYPE_SNAPSHOT));
     expect(sorted(Actor.options)).toEqual(sorted(ACTOR_SNAPSHOT));
     expect(ENVELOPE_FIELD_SNAPSHOT).toHaveLength(14);
-    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(25);
+    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(36);
     expect(ACTOR_SNAPSHOT).toHaveLength(7);
   });
 });
