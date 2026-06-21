@@ -1,0 +1,47 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Cards — Candidate & Agenome" subtitle="Scannable summaries composed from StatusBadge + Meter" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-ui); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 660px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { CandidateCard, AgenomeCard } = window.DopplDesignSystem_352b49;
+  function Demo() {
+    return (
+      <div className="grid">
+        <CandidateCard
+          candidate={{ id: "cand_g3_004", subtype: "cross_domain_transfer", title: "Cold-chain routing via epidemic-curve forecasting", status: "selected" }}
+          fitnessTotal={0.84} novelty={0.74}
+          criticSummary={{ passed: 4, total: 5 }} checkSummary={{ passed: 2, failed: 0, skipped: 1 }}
+          generation={3} agenomeId="ag_a9" onInspect={() => {}} />
+        <CandidateCard
+          candidate={{ id: "cand_g1_017", subtype: "zeitgeist_synthesis", title: "Outcome-priced micro-dispatch for solo technicians", status: "scored" }}
+          fitnessTotal={0.51} novelty={0.66}
+          criticSummary={{ passed: 3, total: 5 }} checkSummary={{ passed: 1, failed: 1, skipped: 0 }}
+          generation={1} agenomeId="ag_a5" onInspect={() => {}} />
+        <AgenomeCard
+          agenome={{ id: "ag_a9", status: "reproduced", parentIds: ["ag_a7", "ag_a3"] }}
+          energySpent={410} energyBudget={500} candidatesProduced={1}
+          specializationTag="transfer / systems" onInspect={() => {}} />
+        <AgenomeCard
+          agenome={{ id: "ag_a0", status: "eligible_parent", parentIds: [] }}
+          energySpent={44} energyBudget={500} candidatesProduced={1}
+          specializationTag="seed" onInspect={() => {}} />
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

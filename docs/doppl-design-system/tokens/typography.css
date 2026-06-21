@@ -1,0 +1,24 @@
+/* ==========================================================================
+   Doppl — Typography
+   Inter for UI (projector-legible). JetBrains Mono for "machine truth":
+   genome text, IDs, sequence numbers, energy + fitness numbers, policyVersion.
+   The mono/sans split itself signals "computed data" vs "chrome".
+   Projector floor: nothing meaningful below 13px; live-story text >= 15px.
+   ========================================================================== */
+:root {
+  --font-ui:   "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* size / line-height / weight */
+  --text-display:    40px;  --text-display-lh:    46px;  --text-display-wt:    700;
+  --text-h1:         30px;  --text-h1-lh:         38px;  --text-h1-wt:         700;
+  --text-h2:         24px;  --text-h2-lh:         32px;  --text-h2-wt:         600;
+  --text-h3:         19px;  --text-h3-lh:         28px;  --text-h3-wt:         600;
+  --text-body-lg:    17px;  --text-body-lg-lh:    26px;  --text-body-lg-wt:    400;
+  --text-body:       15px;  --text-body-lh:       23px;  --text-body-wt:       400;
+  --text-label:      14px;  --text-label-lh:      20px;  --text-label-wt:      500;
+  --text-caption:    13px;  --text-caption-lh:    18px;  --text-caption-wt:    400;
+  --text-mono-lg:    16px;  --text-mono-lg-lh:    24px;  --text-mono-lg-wt:    500;
+  --text-mono:       14px;  --text-mono-lh:       21px;  --text-mono-wt:       400;
+  --text-mono-sm:    12px;  --text-mono-sm-lh:    18px;  --text-mono-sm-wt:    400;
+}

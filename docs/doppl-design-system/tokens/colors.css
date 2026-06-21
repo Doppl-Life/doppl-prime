@@ -1,0 +1,209 @@
+/* ==========================================================================
+   Doppl — Color tokens
+   The dark "evolutionary observatory / bioluminescent lab."
+   Calm, low-chroma chrome so the organism's status colors + energy glow are
+   the only saturated things on screen. Status is NEVER color alone — color is
+   the 4th redundant channel after shape + icon + label (see StatusBadge).
+   ========================================================================== */
+:root {
+  /* ---- Base / chrome (deep near-black, faint blue-violet bias) ---- */
+  --bg-void:        #070A12;   /* app backdrop behind everything (graph canvas) */
+  --bg-base:        #0B0F1A;   /* AppShell background */
+  --bg-surface:     #111726;   /* cards, panels */
+  --bg-surface-2:   #18202F;   /* raised surfaces, drawers */
+  --bg-overlay:     #1E2738;   /* popovers, tooltips, dropdowns */
+  --bg-scrim:       rgba(4, 6, 12, 0.72);   /* modal / drawer backdrop */
+
+  --border-subtle:  #1F2A3D;   /* hairline dividers, card borders */
+  --border-strong:  #33405A;   /* emphasized edges, focus-adjacent */
+
+  --fg-default:     #E6ECF7;   /* primary text */
+  --fg-muted:       #9AA7BE;   /* secondary / label text */
+  --fg-faint:       #5C6880;   /* disabled, ghosted, culled labels */
+  --fg-on-accent:   #06080E;   /* text on bright accent fills */
+
+  /* ---- Brand / interactive accent: "living cyan" ----
+     reserved for interactive + alive (active agenome, CTAs, focus) so it never
+     collides with eligible_parent (blue) or reproduced (violet). */
+  --accent:         #3BE3D0;
+  --accent-hover:   #5FECDC;
+  --accent-press:   #22C2B1;
+  --accent-soft:    rgba(59, 227, 208, 0.14);
+  --ring:           #3BE3D0;
+
+  /* ---- Semantic feedback (non-status chrome) ---- */
+  --info:           #5AA9FF;
+  --success:        #3FD17A;
+  --warning:        #F4B650;
+  --danger:         #F2545B;
+  --danger-soft:    rgba(242, 84, 91, 0.15);
+
+  /* ---- STATUS palette — colorblind-safe core (always paired w/ shape+icon+label) ---- */
+  /* Agenome */
+  --status-seeded:      #6B7790;
+  --status-active:      #3BE3D0;   /* cyan — pulsing */
+  --status-spent:       #7E8AA3;
+  --status-eligible:    #5AA9FF;   /* blue — eligible_parent */
+  --status-reproduced:  #B98CFF;   /* violet — fused (two-parent) */
+  --status-mutated:     #F4B650;   /* amber — mutation shimmer */
+  --status-failed:      #F2545B;   /* red — dashed */
+  --status-culled:      #465066;   /* gray — faded + sunk */
+
+  /* Candidate */
+  --status-created:     #9AA7BE;
+  --status-review:      #3BE3D0;   /* under_review — pulsing */
+  --status-checked:     #5AA9FF;
+  --status-scored:      #7FB2FF;
+  --status-selected:    #FFCA3A;   /* gold — the winner */
+  --status-rejected:    #8A6A6A;
+  --status-invalid:     #F2545B;
+
+  /* Check */
+  --check-passed:       #3FD17A;   /* green */
+  --check-failed:       #F2545B;   /* red */
+  --check-skipped:      #7E8AA3;   /* gray + reason */
+
+  /* Run / generation health (HealthIndicator, RunHeader) */
+  --health-healthy:     #3FD17A;
+  --health-degraded:    #F4B650;
+  --health-stalled:     #F2545B;
+
+  /* ---- Subtype encoding (pill: text + shape + color, never color alone) ---- */
+  --subtype-transfer:   #2FBFB0;   /* teal — cross_domain_transfer (XFER) */
+  --subtype-zeitgeist:  #C58BFF;   /* violet — zeitgeist_synthesis (ZEIT);
+                                      distinct from mutated amber to avoid collision */
+
+  /* ---- Meters: length = truth, color only grades the fill ---- */
+  --meter-track:    #1A2233;
+  --fitness-low:    #F2545B;   /* 0.00–0.40 */
+  --fitness-mid:    #F4B650;   /* 0.40–0.70 */
+  --fitness-high:   #3FD17A;   /* 0.70–1.00 */
+  --novelty-fill:   #B98CFF;   /* violet = distance / diversity */
+  --energy-full:    #3BE3D0;
+  --energy-mid:     #7FB2FF;
+  --energy-low:     #F4B650;
+  --energy-empty:   #3A465E;
+
+  /* ---- Lineage edge colors (typed graph edges) ---- */
+  --edge-spawned:   #5C6880;
+  --edge-produced:  #3BE3D0;
+  --edge-reviewed:  #5AA9FF;
+  --edge-checked:   #3FD17A;
+  --edge-scored:    #7FB2FF;
+  --edge-culled:    #465066;
+  --edge-fused:     #B98CFF;
+  --edge-mutated:   #F4B650;
+  --edge-selected:  #FFCA3A;
+}
+
+/* High-contrast theme — required projector seam. Glows become solid rings;
+   status colors bumped to their most-saturated stops. Toggle via .hc on <html>. */
+.hc {
+  --bg-base:       #000000;
+  --bg-surface:    #0A0A0A;
+  --bg-surface-2:  #141414;
+  --fg-default:    #FFFFFF;
+  --fg-muted:      #D6DEEC;
+  --border-subtle: #4A5872;
+  --border-strong: #6B7C9A;
+}
+
+/* ==========================================================================
+   Light theme — "the lab with the lights on."
+   The bioluminescent metaphor is dark-native, so light is a defined-but-
+   secondary surface: paper-white panels, ink text, status hues darkened for
+   AA contrast on light, and glows swapped for crisp rings (halos muddy on white).
+   Toggle via `.light` on <html>. Status SHAPE + ICON + LABEL are unchanged —
+   only the chrome and the hue stops shift.
+   ========================================================================== */
+:root.light {
+  /* base / chrome */
+  --bg-void:        #E7ECF3;
+  --bg-base:        #F4F6FA;
+  --bg-surface:     #FFFFFF;
+  --bg-surface-2:   #EEF2F8;
+  --bg-overlay:     #FFFFFF;
+  --bg-scrim:       rgba(20, 28, 45, 0.38);
+  --border-subtle:  #DCE3EE;
+  --border-strong:  #B7C2D6;
+  --fg-default:     #14203A;
+  --fg-muted:       #4A5870;
+  --fg-faint:       #8492AB;
+
+  /* accent — darkened teal so it clears AA on white for text/links */
+  --accent:         #0FA697;
+  --accent-hover:   #12B8A7;
+  --accent-press:   #0B8B7E;
+  --accent-soft:    rgba(15, 166, 151, 0.12);
+  --ring:           #0FA697;
+
+  /* semantic feedback (darkened for light bg) */
+  --info:           #2E72D6;
+  --success:        #1E9E57;
+  --warning:        #B5780C;
+  --danger:         #D7343B;
+  --danger-soft:    rgba(215, 52, 59, 0.10);
+
+  /* status — same families, AA-legible stops on light */
+  --status-seeded:      #6B7790;
+  --status-active:      #0E9E90;   /* darker cyan */
+  --status-spent:       #6E7A93;
+  --status-eligible:    #2E72D6;   /* blue */
+  --status-reproduced:  #7C4DEB;   /* violet */
+  --status-mutated:     #B5780C;   /* amber */
+  --status-failed:      #D7343B;
+  --status-culled:      #97A1B5;
+
+  --status-created:     #6E7A93;
+  --status-review:      #0E9E90;
+  --status-checked:     #2E72D6;
+  --status-scored:      #3E72C9;
+  --status-selected:    #B07D08;   /* gold, darkened for white */
+  --status-rejected:    #8A6A6A;
+  --status-invalid:     #D7343B;
+
+  --check-passed:       #1E9E57;
+  --check-failed:       #D7343B;
+  --check-skipped:      #6E7A93;
+
+  --health-healthy:     #1E9E57;
+  --health-degraded:    #B5780C;
+  --health-stalled:     #D7343B;
+
+  --subtype-transfer:   #0E938A;
+  --subtype-zeitgeist:  #7C4DEB;
+
+  /* meters */
+  --meter-track:    #E3E8F1;
+  --fitness-low:    #D7343B;
+  --fitness-mid:    #C9870A;
+  --fitness-high:   #1E9E57;
+  --novelty-fill:   #7C4DEB;
+  --energy-full:    #0E9E90;
+  --energy-mid:     #3E72C9;
+  --energy-low:     #B5780C;
+  --energy-empty:   #D3DAE6;
+
+  /* lineage edges */
+  --edge-spawned:   #97A1B5;
+  --edge-produced:  #0E9E90;
+  --edge-reviewed:  #2E72D6;
+  --edge-checked:   #1E9E57;
+  --edge-scored:    #3E72C9;
+  --edge-culled:    #B3BCCD;
+  --edge-fused:     #7C4DEB;
+  --edge-mutated:   #B5780C;
+  --edge-selected:  #B07D08;
+
+  /* depth: soft ink shadows; glows become crisp rings (halos muddy on white) */
+  --elev-1: 0 1px 2px rgba(20, 28, 45, 0.08);
+  --elev-2: 0 6px 20px rgba(20, 28, 45, 0.12);
+  --elev-3: 0 16px 48px rgba(20, 28, 45, 0.16);
+  --glow-active:  0 0 0 1.5px rgba(14, 158, 144, 0.55);
+  --glow-winner:  0 0 0 2px rgba(176, 125, 8, 0.6);
+  --glow-fusion:  0 0 0 1.5px rgba(124, 77, 235, 0.55);
+  --glow-danger:  0 0 0 1.5px rgba(215, 52, 59, 0.55);
+  --glow-energy:  0 0 0 1px rgba(14, 158, 144, 0.4);
+}
+:root.light { color-scheme: light; }
+

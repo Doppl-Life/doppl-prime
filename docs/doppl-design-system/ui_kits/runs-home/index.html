@@ -1,0 +1,134 @@
+<!-- @dsCard group="Runs Home" viewport="1100x640" name="S0 · Runs Home" subtitle="The control-room index: live + completed + failed runs, New Run, enter Replay" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doppl · Runs</title>
+<link rel="stylesheet" href="../../styles.css" />
+<script>
+  try { if (localStorage.getItem("doppl-theme") === "light") document.documentElement.classList.add("light"); } catch (e) {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; background: var(--bg-void); color: var(--fg-default); font-family: var(--font-ui); }
+  #root { min-height: 100vh; }
+  .shell { max-width: 1040px; margin: 0 auto; padding: 18px 22px 36px; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 4px 2px 18px; }
+  .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+  .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--bg-surface-2); border: 1px solid var(--border-strong); color: var(--fg-default); cursor: pointer; font-size: 15px; }
+  .chip { font-family: var(--font-ui); font-size: 13px; color: var(--fg-muted); background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius-full); padding: 5px 14px; cursor: pointer; }
+  .chip.on { color: var(--fg-on-accent); background: var(--accent); border-color: var(--accent); }
+  a.action { font-family: var(--font-ui); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius-md); padding: 7px 13px; }
+  a.action.muted { color: var(--fg-muted); border-color: var(--border-strong); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="../_shell/AppNav.js"></script>
+<script type="text/babel">
+const NS = window.DopplDesignSystem_352b49;
+const { StatusBadge, Meter, Button } = NS;
+
+const RUNS = [
+  { id: "run_7f3a", title: "Cross-domain: epidemiology → logistics", status: "running", mode: "LIVE",
+    gen: 3, max: 5, energyUsed: 6420, energyBudget: 12000,
+    best: "Cold-chain routing via epidemic-curve forecasting", bestFit: 0.84 },
+  { id: "run_5c1e", title: "Zeitgeist: AI-native field service", status: "completed", mode: "REPLAY",
+    gen: 5, max: 5, energyUsed: 9980, energyBudget: 12000, delta: 0.39,
+    best: "Outcome-priced micro-dispatch for solo technicians", bestFit: 0.91 },
+  { id: "run_2a90", title: "Cross-domain: materials → fintech", status: "failed", mode: "REPLAY",
+    gen: 1, max: 5, energyUsed: 1130, energyBudget: 12000,
+    failReason: "provider rate-limit (run_failed)", best: null },
+];
+
+function RunCard({ run }) {
+  const live = run.status === "running";
+  const failed = run.status === "failed";
+  return (
+    <div className="card" style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12,
+      borderColor: live ? "var(--accent)" : "var(--border-subtle)",
+      boxShadow: live ? "var(--glow-active)" : "var(--elev-1)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <StatusBadge domain="run" status={run.status} size="md" />
+        <span style={{ fontSize: 17, fontWeight: 700 }}>{run.title}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-faint)" }}>{run.id}</span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr auto", gap: 18, alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-muted)" }}>Gen {run.gen}/{run.max}</span>
+        <Meter kind="energy" value={run.energyUsed / run.energyBudget} label="energy"
+          valueLabel={`${Math.round((run.energyUsed / run.energyBudget) * 100)}%`} height={8} />
+        {run.best && (
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StatusBadge domain="candidate" status="selected" size="sm" showLabel={false} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--status-selected)" }}>
+              {run.bestFit.toFixed(2)}{run.delta ? <span style={{ color: "var(--fg-faint)" }}> · +{run.delta} vs gen-0</span> : null}
+            </span>
+          </span>
+        )}
+      </div>
+
+      <div style={{ fontSize: 14, color: failed ? "var(--danger)" : "var(--fg-muted)" }}>
+        {run.best ? <><span style={{ color: "var(--fg-faint)" }}>{run.mode === "LIVE" ? "best so far: " : "winner: "}</span>{run.best}</>
+                  : <>{run.failReason} — all lineages culled at gen {run.gen}</>}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 2 }}>
+        {live && <a className="action" href="../organism-view/index.html">Open live →</a>}
+        {!live && !failed && <a className="action" href="../organism-view/index.html">Replay ⏮</a>}
+        {!live && !failed && <a className="action muted" href="../final-idea/index.html">Final idea →</a>}
+        {failed && <a className="action muted" href="../organism-view/index.html">Replay partial ⏮</a>}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [filter, setFilter] = React.useState("All");
+  const [light, setLight] = React.useState(() => document.documentElement.classList.contains("light"));
+  const toggleTheme = () => setLight((v) => {
+    const nv = !v; document.documentElement.classList.toggle("light", nv);
+    try { localStorage.setItem("doppl-theme", nv ? "light" : "dark"); } catch (e) {}
+    return nv;
+  });
+
+  const map = { All: () => true, Live: (r) => r.status === "running", Completed: (r) => r.status === "completed", Failed: (r) => r.status === "failed" };
+  const shown = RUNS.filter(map[filter]);
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <span style={{ color: "var(--accent)", fontSize: 22, filter: "drop-shadow(0 0 6px rgba(59,227,208,0.6))" }}>◆</span>
+        <span style={{ fontSize: 20, fontWeight: 700 }}>Doppl</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-faint)", marginLeft: 6 }}>runs</span>
+        <button className="iconbtn" style={{ marginLeft: "auto" }} onClick={toggleTheme} aria-label="Toggle theme" title={light ? "Switch to dark" : "Switch to light"}>
+          {light ? "☾" : "☀"}
+        </button>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, flexWrap: "wrap" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Runs</h1>
+        <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
+          {["All", "Live", "Completed", "Failed"].map((f) => (
+            <button key={f} className={"chip" + (filter === f ? " on" : "")} onClick={() => setFilter(f)}>{f}</button>
+          ))}
+        </div>
+        <div style={{ marginLeft: "auto" }}>
+          <a href="../run-launcher/index.html" style={{ textDecoration: "none" }}><Button variant="primary" glyph="+">New Run</Button></a>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {shown.map((r) => <RunCard key={r.id} run={r} />)}
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

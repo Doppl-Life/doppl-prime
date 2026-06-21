@@ -1,0 +1,63 @@
+<!-- @dsCard group="Components" viewport="700x540" name="Feedback — ModeBanner & states" subtitle="LIVE/REPLAY signal + empty/loading/error/degraded shells" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-ui); }
+  .sec { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); margin: 0 0 12px; }
+  .block { margin-bottom: 22px; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); width: 320px; }
+  .panels { display: flex; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const NS = window.DopplDesignSystem_352b49;
+  const { ModeBanner, EmptyState, LoadingState, ErrorState, DegradedState, Button } = NS;
+
+  function Demo() {
+    return (
+      <div>
+        <div className="block">
+          <p className="sec">ModeBanner</p>
+          <div className="row" style={{ flexDirection: "column", alignItems: "stretch", maxWidth: 460 }}>
+            <ModeBanner mode="live" generationLabel="Gen 3/5" />
+            <ModeBanner mode="replay" recordedAt="2026-06-18" fullWidth />
+            <div className="row">
+              <ModeBanner mode="complete" generationLabel="best 0.84" />
+              <ModeBanner mode="failed" generationLabel="no survivor" />
+            </div>
+          </div>
+        </div>
+
+        <div className="block">
+          <p className="sec">Degraded — honest, never hidden</p>
+          <div className="row" style={{ flexDirection: "column", alignItems: "stretch", maxWidth: 520 }}>
+            <DegradedState kind="novelty_degraded" />
+            <DegradedState kind="all_culled" detail="Generation 2: 0 survivors" />
+          </div>
+        </div>
+
+        <div className="block">
+          <p className="sec">Empty / Loading / Error</p>
+          <div className="panels">
+            <div className="panel"><EmptyState icon="◌" title="Population blooming…" description="waiting for Gen 0 to spawn" /></div>
+            <div className="panel" style={{ padding: 16 }}><LoadingState shape="graph" label="Establishing stream…" /></div>
+            <div className="panel"><ErrorState title="Live stream lost" detail="GET /runs/run_7f3a/stream (503)" onRetry={() => {}} action={<Button variant="secondary" size="sm">Switch to replay</Button>} /></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>
