@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
-import { useFitnessSeries } from "../state/runStore.js";
+import { useAgenomeDisplayNames, useFitnessSeries, useRunState } from "../state/runStore.js";
 import { pickSeriesTheme } from "./chartTheme.js";
 
 /**
@@ -61,7 +61,23 @@ export interface FitnessOverTimeProps {
 
 export function FitnessOverTime({ width = 480, height = 280 }: FitnessOverTimeProps): JSX.Element {
   const rows = useFitnessSeries();
+  const state = useRunState();
+  const personaNames = useAgenomeDisplayNames();
   const { candidateIds, data } = normalize(rows);
+
+  // Readable legend label per candidate: short title (truncated) + persona,
+  // falling back to "Idea <last-6>" if title isn't loaded yet.
+  const labelFor = (candidateId: string): string => {
+    const cand = state.candidates[candidateId];
+    const persona = cand?.agenomeId ? personaNames[cand.agenomeId] : undefined;
+    const title = cand?.title?.trim();
+    if (title) {
+      const shortTitle = title.length > 28 ? `${title.slice(0, 27)}…` : title;
+      return persona ? `${shortTitle} · ${persona}` : shortTitle;
+    }
+    return persona ? `${persona} · Idea ${candidateId.slice(-6)}` : `Idea ${candidateId.slice(-6)}`;
+  };
+
   if (data.length === 0 || candidateIds.length === 0) {
     return (
       <div
@@ -103,7 +119,7 @@ export function FitnessOverTime({ width = 480, height = 280 }: FitnessOverTimePr
               key={id}
               type="monotone"
               dataKey={id}
-              name={id}
+              name={labelFor(id)}
               stroke={theme.stroke}
               strokeDasharray={theme.strokeDasharray}
               strokeWidth={2}

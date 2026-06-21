@@ -9,9 +9,11 @@ import { CriticGauntlet } from "./CriticGauntlet.js";
  * CandidateDetailInspector (UX restructure). The three former candidate
  * panels — CandidateInspector, CriticGauntlet, CheckEvidence — are all
  * detail views of the *same* selected candidate. This merges them into
- * one right-docked, tabbed inspector that only appears once a candidate
- * is selected from the lineage graph (state.selection.candidateId), and
- * is dismissible. Master-detail, not three scattered empty boxes.
+ * one tabbed inspector surfaced as a top-level Inspector view tab
+ * (alongside Dashboard / Activity). The tab only appears once a candidate
+ * is selected from the lineage graph (state.selection.candidateId); the
+ * Close button clears the selection, which dismisses the tab and returns
+ * the operator to the dashboard.
  */
 
 type DetailTab = "overview" | "critics" | "evidence";
@@ -31,14 +33,10 @@ export function CandidateDetailInspector(): JSX.Element | null {
   if (!candidateId) return null;
 
   return (
-    <aside
-      data-rail="inspector"
+    <section
+      data-detail="inspector"
       aria-label="Candidate inspector"
       style={{
-        background: "var(--doppl-bg-elevated)",
-        borderLeft: "1px solid var(--doppl-hairline)",
-        padding: 16,
-        overflowY: "auto",
         display: "flex",
         flexDirection: "column",
         gap: 12,
@@ -103,6 +101,6 @@ export function CandidateDetailInspector(): JSX.Element | null {
         {tab === "critics" && <CriticGauntlet />}
         {tab === "evidence" && <CheckEvidence />}
       </div>
-    </aside>
+    </section>
   );
 }

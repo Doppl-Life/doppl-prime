@@ -34,7 +34,7 @@ import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
 
 const TERMINAL_STATUSES = new Set(["completed", "stopped", "failed", "cancelled"]);
 type Phase = "setup" | "live" | "review";
-type View = "dashboard" | "activity";
+type View = "dashboard" | "activity" | "inspector";
 type Theme = "dark" | "light";
 
 const THEME_KEY = "doppl-theme";
@@ -132,10 +132,12 @@ function ViewTabs({
   view,
   setView,
   eventCount,
+  hasCandidate,
 }: {
   view: View;
   setView: (v: View) => void;
   eventCount: number;
+  hasCandidate: boolean;
 }): JSX.Element {
   return (
     <div
@@ -163,6 +165,15 @@ function ViewTabs({
       >
         Activity
       </ViewTab>
+      {hasCandidate && (
+        <ViewTab
+          active={view === "inspector"}
+          onClick={() => setView("inspector")}
+          tip="Overview, critics and evidence for the selected candidate"
+        >
+          Inspector
+        </ViewTab>
+      )}
     </div>
   );
 }
@@ -189,7 +200,20 @@ function FitnessAndGenerations(): JSX.Element {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
       <div data-panel="fitness">
-        <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>Fitness over time</h2>
+        <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 4px 0" }}>Fitness over time</h2>
+        <p
+          style={{
+            margin: "0 0 8px 0",
+            color: "var(--doppl-text-secondary)",
+            fontSize: 13,
+            lineHeight: 1.4,
+            maxWidth: "60ch",
+          }}
+        >
+          Each line follows one idea across generations of evolution. Y = its 0–1
+          score (critic + check verdicts combined; higher is better). X = which
+          generation it was scored in.
+        </p>
         <FitnessOverTime />
       </div>
       <div data-panel="generations">
@@ -261,11 +285,20 @@ export function DashboardShell(): JSX.Element {
       ? "review"
       : "live";
   const eventCount = lanes.reduce((n, l) => n + l.events.length, 0);
-  const inspectorOpen = view === "dashboard" && state.selection.candidateId != null;
+  const hasCandidate = state.selection.candidateId != null;
 
-  const bodyColumns = [phase === "setup" ? "340px" : "300px", "1fr", inspectorOpen ? "380px" : null]
-    .filter(Boolean)
-    .join(" ");
+  // Inspector is a selection-driven view tab. Selecting a candidate (e.g. from
+  // the lineage graph) brings it forward; clearing the selection sends the
+  // operator back to the dashboard so they're never stranded on an empty tab.
+  useEffect(() => {
+    if (hasCandidate) {
+      setView("inspector");
+    } else {
+      setView((v) => (v === "inspector" ? "dashboard" : v));
+    }
+  }, [hasCandidate]);
+
+  const bodyColumns = [phase === "setup" ? "340px" : "300px", "1fr"].join(" ");
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: bodyColumns, height: "100vh", overflow: "hidden" }}>
@@ -363,9 +396,16 @@ export function DashboardShell(): JSX.Element {
         </aside>
 
         <main style={mainStyle} data-rail="main">
-          <ViewTabs view={view} setView={setView} eventCount={eventCount} />
+          <ViewTabs
+            view={view}
+            setView={setView}
+            eventCount={eventCount}
+            hasCandidate={hasCandidate}
+          />
           <ProblemBanner />
-          {view === "activity" ? (
+          {view === "inspector" ? (
+            <CandidateDetailInspector />
+          ) : view === "activity" ? (
             <AgentActivityTable />
           ) : phase === "review" ? (
             <>
@@ -388,8 +428,6 @@ export function DashboardShell(): JSX.Element {
             </>
           )}
         </main>
-
-      {inspectorOpen && <CandidateDetailInspector />}
     </div>
   );
 }

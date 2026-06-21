@@ -35,16 +35,16 @@ export function CheckEvidence(): JSX.Element {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ textAlign: "left" }}>
-              <th>Check</th>
-              <th>Status</th>
-              <th>Detail</th>
-              <th>Evidence</th>
+              <th style={{ padding: "6px 12px 6px 0" }}>Check</th>
+              <th style={{ padding: "6px 12px" }}>Status</th>
+              <th style={{ padding: "6px 12px" }}>Detail</th>
+              <th style={{ padding: "6px 0 6px 12px" }}>Evidence</th>
             </tr>
           </thead>
           <tbody>
             {checks.map((check) => (
               <tr key={check.id}>
-                <td>
+                <td style={{ padding: "6px 12px 6px 0", verticalAlign: "top" }}>
                   {check.checkType}
                   {check.checkType === "final_judge" && (
                     <span
@@ -61,10 +61,10 @@ export function CheckEvidence(): JSX.Element {
                     </span>
                   )}
                 </td>
-                <td>
+                <td style={{ padding: "6px 12px", verticalAlign: "top" }}>
                   <StatusIndicator domain="check" status={check.status} size="sm" />
                 </td>
-                <td>
+                <td style={{ padding: "6px 12px", verticalAlign: "top", whiteSpace: "nowrap" }}>
                   {check.status === "skipped"
                     ? (check.skipReason ?? "(no reason)")
                     : check.status === "failed"
@@ -73,7 +73,7 @@ export function CheckEvidence(): JSX.Element {
                         ? `score ${check.score.toFixed(2)}`
                         : "—"}
                 </td>
-                <td>
+                <td style={{ padding: "6px 0 6px 12px", verticalAlign: "top" }}>
                   {check.evidenceRefs.length === 0
                     ? "—"
                     : check.evidenceRefs.map((ref, i) => (
