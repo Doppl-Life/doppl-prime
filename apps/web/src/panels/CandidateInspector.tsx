@@ -148,6 +148,9 @@ export function CandidateInspector(): JSX.Element {
   const stored = state.candidates[c.id];
   const title = stored?.title ?? c.title;
   const summary = stored?.summary ?? c.summary;
+  // No API fallback: the CandidateRow projection doesn't carry `explanation`
+  // (the projection is lossy for title/summary too — title/summary get
+  // backfilled from the live API response, but explanation is store-only).
   const explanation = stored?.explanation;
   return (
     <section aria-label="Candidate inspector">
