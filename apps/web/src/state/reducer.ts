@@ -520,6 +520,9 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
         selection: {
           ...state.selection,
           candidateId: action.candidateId,
+          // Picking a candidate replaces any agenome focus so the
+          // inspector area never tries to render both at once.
+          agenomeId: null,
           selectionEpoch: (state.selection.selectionEpoch ?? 0) + 1,
           ...(action.inspectorTab !== undefined ? { inspectorTab: action.inspectorTab } : {}),
         },
@@ -530,6 +533,9 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
         selection: {
           ...state.selection,
           agenomeId: action.agenomeId,
+          // Symmetric clear — see SELECT_CANDIDATE.
+          candidateId: null,
+          selectionEpoch: (state.selection.selectionEpoch ?? 0) + 1,
         },
       };
     case "SET_INSPECTOR_TAB":

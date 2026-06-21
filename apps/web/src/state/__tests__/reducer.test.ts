@@ -362,3 +362,58 @@ describe("runStoreReducer — other actions", () => {
     expect(next.errors[0]?.message).toBe("bad payload");
   });
 });
+
+describe("runStoreReducer — selection mutual exclusion", () => {
+  test("SELECT_AGENOME clears any prior candidateId", () => {
+    const seeded = {
+      ...initialRunStoreState,
+      selection: {
+        candidateId: "cand_x",
+        agenomeId: null,
+        inspectorTab: "overview" as const,
+        selectionEpoch: 0,
+      },
+    };
+    const next = runStoreReducer(seeded, {
+      kind: "SELECT_AGENOME",
+      agenomeId: "ag_1",
+    });
+    expect(next.selection.candidateId).toBeNull();
+    expect(next.selection.agenomeId).toBe("ag_1");
+  });
+
+  test("SELECT_CANDIDATE clears any prior agenomeId", () => {
+    const seeded = {
+      ...initialRunStoreState,
+      selection: {
+        candidateId: null,
+        agenomeId: "ag_1",
+        inspectorTab: "overview" as const,
+        selectionEpoch: 0,
+      },
+    };
+    const next = runStoreReducer(seeded, {
+      kind: "SELECT_CANDIDATE",
+      candidateId: "cand_x",
+    });
+    expect(next.selection.agenomeId).toBeNull();
+    expect(next.selection.candidateId).toBe("cand_x");
+  });
+
+  test("SELECT_AGENOME bumps selectionEpoch", () => {
+    const seeded = {
+      ...initialRunStoreState,
+      selection: {
+        candidateId: null,
+        agenomeId: null,
+        inspectorTab: "overview" as const,
+        selectionEpoch: 4,
+      },
+    };
+    const next = runStoreReducer(seeded, {
+      kind: "SELECT_AGENOME",
+      agenomeId: "ag_1",
+    });
+    expect(next.selection.selectionEpoch).toBe(5);
+  });
+});
