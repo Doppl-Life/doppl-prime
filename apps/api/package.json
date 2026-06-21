@@ -26,6 +26,7 @@
     "test:live": "vitest run __integration_tests__/live",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/event-store/migrate.ts",
+    "start": "tsx scripts/boot-demo.ts",
     "boot:demo": "tsx scripts/boot-demo.ts",
     "dump-replay": "tsx src/event-store/scripts/dump-replay.ts",
     "seed-demo": "tsx src/event-store/scripts/seed-demo.ts"
@@ -39,6 +40,7 @@
     "openai": "4.77.0",
     "pg": "8.13.1",
     "seedrandom": "3.0.5",
+    "tsx": "4.19.2",
     "zod": "3.23.8"
   },
   "devDependencies": {
@@ -47,7 +49,6 @@
     "@types/pg": "8.11.10",
     "@types/seedrandom": "3.0.8",
     "drizzle-kit": "0.28.1",
-    "tsx": "4.19.2",
     "typescript": "5.6.3",
     "vitest": "2.1.5"
   }
