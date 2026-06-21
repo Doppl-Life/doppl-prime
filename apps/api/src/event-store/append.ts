@@ -39,6 +39,22 @@ export class AppendError extends Error {
   }
 }
 
+/**
+ * Summarize a ZodError for an AUTHORITATIVE-path error message using each issue's `path` + `code` ONLY
+ * (KEY SAFETY RULE #4 / LESSON 26: authoritative-path errors never echo the rejected payload/received
+ * value). Zod's `.message` interpolates the received value (e.g. a secret-shaped `actor`), so it is
+ * NEVER used here; `path` is field names (not data) and `code` is a Zod enum — neither carries secrets.
+ */
+export function summarizeValidationIssues(error: z.ZodError): string {
+  const parts = error.issues.map((issue) => {
+    const path = issue.path
+      .map((p) => (typeof p === 'symbol' ? p.toString() : String(p)))
+      .join('.');
+    return path.length > 0 ? `${path}: ${issue.code}` : issue.code;
+  });
+  return parts.length > 0 ? parts.join('; ') : 'schema validation failed';
+}
+
 export type RunEventRow = typeof runEvents.$inferSelect;
 
 export interface EventStore {
@@ -60,9 +76,10 @@ export function createEventStore({ db, secretValues }: EventStoreDeps): EventSto
         //    schema-invalid envelope rejects with nothing written.
         const parsed = AppendInputSchema.safeParse(input);
         if (!parsed.success) {
+          // Path + code only — never Zod's `.message`/`.received` (no-value-echo, rule #4 / LESSON 26).
           throw new AppendError(
             'schema_invalid',
-            `envelope failed validation: ${parsed.error.message}`,
+            `envelope failed validation — ${summarizeValidationIssues(parsed.error)}`,
           );
         }
         const env = parsed.data;
