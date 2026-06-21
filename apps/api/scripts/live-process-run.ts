@@ -398,6 +398,8 @@ export function createLiveProcessRun(
           agenomes,
           caps,
           wallClockStartMs,
+          enabledSubtypes: config.enabledSubtypes,
+          ...(config.problemText !== undefined ? { problemText: config.problemText } : {}),
         },
       );
       lastOutcome = out.outcome;

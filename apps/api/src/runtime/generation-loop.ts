@@ -1,4 +1,4 @@
-import type { Agenome, ModelGatewayResponse, RunCaps } from "@doppl/contracts";
+import type { Agenome, ModelGatewayResponse, RunCaps, SubtypeName } from "@doppl/contracts";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { appendEvent } from "../event-store/append.js";
 import type { ModelGateway } from "../model-gateway/gateway.js";
@@ -32,38 +32,41 @@ import { GenerationStateMachine } from "./state-machines/generation.js";
  * `str()` parser in the candidate.created emission already falls back
  * to defaults when a value isn't a non-empty string.
  *
- * NOTE: kept narrow to the cross_domain_transfer shape that the live
- * generation path currently emits. If zeitgeist_synthesis ever becomes
- * a live output, extend `properties` + `required` accordingly.
+ * Built per-call so the `subtype` enum reflects the run's
+ * `enabledSubtypes`. A run scoped to a single subtype will only ever
+ * receive responses with that subtype, instead of relying on the
+ * persona prompt to choose correctly.
  */
-const POPULATION_GENERATOR_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    subtype: { type: "string", enum: ["cross_domain_transfer", "zeitgeist_synthesis"] },
-    title: { type: "string" },
-    summary: { type: "string" },
-    explanation: { type: "string" },
-    sourceDomain: { type: ["string", "null"] },
-    sourceTechnique: { type: ["string", "null"] },
-    targetDomain: { type: ["string", "null"] },
-    targetProblem: { type: ["string", "null"] },
-    transferMapping: { type: ["string", "null"] },
-    expectedMechanism: { type: ["string", "null"] },
-  },
-  required: [
-    "subtype",
-    "title",
-    "summary",
-    "explanation",
-    "sourceDomain",
-    "sourceTechnique",
-    "targetDomain",
-    "targetProblem",
-    "transferMapping",
-    "expectedMechanism",
-  ],
-} as const;
+function buildPopulationGeneratorSchema(enabledSubtypes: SubtypeName[]) {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      subtype: { type: "string", enum: enabledSubtypes },
+      title: { type: "string" },
+      summary: { type: "string" },
+      explanation: { type: "string" },
+      sourceDomain: { type: ["string", "null"] },
+      sourceTechnique: { type: ["string", "null"] },
+      targetDomain: { type: ["string", "null"] },
+      targetProblem: { type: ["string", "null"] },
+      transferMapping: { type: ["string", "null"] },
+      expectedMechanism: { type: ["string", "null"] },
+    },
+    required: [
+      "subtype",
+      "title",
+      "summary",
+      "explanation",
+      "sourceDomain",
+      "sourceTechnique",
+      "targetDomain",
+      "targetProblem",
+      "transferMapping",
+      "expectedMechanism",
+    ],
+  } as const;
+}
 
 export interface RunGenerationDeps {
   // biome-ignore lint/suspicious/noExplicitAny: drizzle's tx generic varies by dialect
@@ -88,6 +91,15 @@ export interface RunGenerationInput {
   agenomes: Agenome[];
   caps: RunCaps;
   wallClockStartMs: number;
+  /** Subtype names the model is allowed to emit. Drives both the
+   *  schema's enum restriction and the per-call user-message subtype
+   *  reminder. */
+  enabledSubtypes: SubtypeName[];
+  /** Human-readable problem statement (the curated prompt's body or the
+   *  operator's typed text). Forwarded into the model's user message so
+   *  candidates address the actual problem. Optional for backward
+   *  compat with pre-prompt-text fixtures. */
+  problemText?: string;
 }
 
 export interface RunGenerationOutput {
@@ -208,15 +220,31 @@ export async function runGeneration(
 
     let response: ModelGatewayResponse;
     try {
+      // Build the actual chat messages: the agenome's persona prompt
+      // is the system message; the run's problem statement (with a
+      // subtype reminder) is the user message. Until this was
+      // threaded, the persona prompt was sent as a single user
+      // message with no problem context — the model invented its own
+      // problem to solve.
+      const subtypeList = input.enabledSubtypes.join(", ");
+      const userMessage = [
+        input.problemText
+          ? `Problem:\n${input.problemText}`
+          : "Problem: (none provided; respond with a well-formed candidate idea anyway).",
+        `Respond with a single JSON object. The "subtype" field must be exactly one of: ${subtypeList}.`,
+      ].join("\n\n");
       response = await deps.gateway.invoke({
         role: "population_generator",
         runId: input.runId,
         agenomeId: agenome.id,
         input: {
-          prompt: agenome.systemPrompt,
+          messages: [
+            { role: "system", content: agenome.systemPrompt },
+            { role: "user", content: userMessage },
+          ],
         },
         correlationId: `corr_${agenome.id}`,
-        schemaForOutput: POPULATION_GENERATOR_SCHEMA,
+        schemaForOutput: buildPopulationGeneratorSchema(input.enabledSubtypes),
       });
     } catch (_err) {
       // Provider failure already persisted by the gateway dispatcher;
@@ -278,7 +306,7 @@ export async function runGeneration(
             runId: input.runId,
             generationId: `gen_${input.generationIndex}`,
             agenomeId: agenome.id,
-            subtype: str("subtype", "cross_domain_transfer"),
+            subtype: str("subtype", input.enabledSubtypes[0] as string),
             title: str("title", "Generated candidate"),
             summary: str("summary", "From generation loop"),
             ...(explanationValue ? { explanation: explanationValue } : {}),

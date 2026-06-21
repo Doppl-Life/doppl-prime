@@ -65,6 +65,7 @@ const BASE_INPUT: RunGenerationInput = {
   agenomes: ONE_AGENOME,
   caps: CAPS,
   wallClockStartMs: Date.now(),
+  enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
 };
 
 function makeGateway(outputJson: string): {

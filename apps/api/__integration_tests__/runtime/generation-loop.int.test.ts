@@ -111,6 +111,7 @@ describe("spec(§3 / §5) runGeneration — generation loop orchestrator", () =>
       agenomes,
       caps: CAPS,
       wallClockStartMs: Date.now(),
+      enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
     });
     expect(result.outcome).toBe("completed");
 
@@ -156,6 +157,7 @@ describe("spec(§3 / §5) runGeneration — generation loop orchestrator", () =>
       agenomes,
       caps: CAPS,
       wallClockStartMs: Date.now(),
+      enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
     });
     expect(result.outcome).toBe("completed");
 
@@ -188,6 +190,7 @@ describe("spec(§3 / §5) runGeneration — generation loop orchestrator", () =>
       agenomes,
       caps: CAPS,
       wallClockStartMs: Date.now(),
+      enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
     });
     expect(result.outcome).toBe("completed");
     expect(result.survivingCandidateCount).toBe(0);
@@ -209,6 +212,7 @@ describe("spec(§3 / §5) runGeneration — generation loop orchestrator", () =>
       agenomes,
       caps: CAPS,
       wallClockStartMs: Date.now(),
+      enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
     });
     expect(result.outcome).toBe("stopped");
 
@@ -244,6 +248,7 @@ describe("spec(§3 / §5) runGeneration — generation loop orchestrator", () =>
         agenomes,
         caps: TIGHT_CAPS,
         wallClockStartMs: Date.now(),
+        enabledSubtypes: ["cross_domain_transfer", "zeitgeist_synthesis"],
       },
     );
     expect(result.outcome).toBe("failed");
