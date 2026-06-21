@@ -129,9 +129,9 @@ Several typed models in this codebase are **contracts** mirrored in `ARCHITECTUR
 
 | Model | `ARCHITECTURE.md` section | Notes |
 |---|---|---|
-| <model> | §X | <field summary> |
+| Consumed read-only: `RunEventEnvelope`/`RunEventType`, `RunConfig`/`RunCaps`, `CandidateIdea`, `LineageGraphProjection`, `ModelRoute` | §4 / §10 / §11 / §12 | The dashboard **CONSUMES** these frozen contracts **read-only** via the single `apps/web/src/data/contracts.ts` re-export seam (`z.infer` types; never redefined — defines no Appendix-A model). Drift is caught by `tsc` against the frozen `@doppl/contracts` exports **+** the `runClient`/`sseStream` Zod-validate-on-read (a server payload that drifts from the contract surfaces as a typed `PayloadValidationError`, never corrupt state). (P7.1) |
 
-<!-- Starts empty. The dashboard consumes LineageGraphProjection + the projection read models (frozen in packages/contracts, ARCHITECTURE.md Appendix A); the orchestrator adds a row here as each consumed contract lands. -->
+<!-- The dashboard is a read-only CONSUMER (it defines no Appendix-A model); this row tracks the consumed contract surface. Add/refine as later panels consume more (e.g. the health signal at P7.14 if promoted to a shared contract). -->
 
 ## Module organization
 
@@ -140,19 +140,24 @@ Several typed models in this codebase are **contracts** mirrored in `ARCHITECTUR
 ```
 apps/web/
   src/
-    lib/                  # REST + SSE client over the typed contracts; sequence-keyed resync reducer
-    components/
-      lineage/            # React Flow lineage tree (custom node types: agenome/candidate/critic-check/score/winner)
-      run/                # run-config panel, stop control, live/replay mode indicator
-      evidence/           # critic gauntlet, subtype-check, energy, fitness-over-time, final-idea proof panels
-    routes/               # dashboard shell + route composition
+    data/                 # REST client + SSE stream over the typed contracts + typed errors (P7.1: runClient, sseStream, contracts, errors)
+    state/                # client run-store: sequence-keyed fold + resync + polling fallback (P7.2: reducer, runStore, resync)
+    styles/               # design tokens COPIED from docs/doppl-design-system (P7.3): index.css barrel + tokens/*.css + assets/fonts/*.woff2; imported once at the app root
+    components/           # components PORTED TS-strict from the prototype, by its categories:
+      core/               #   StatusBadge + status-map (P7.3); Button, Meter (core primitives)
+      cards/              #   CandidateCard, AgenomeCard (inspectors)
+      feedback/           #   ModeBanner (P7.4 mode indicator), system/empty/error/degraded states
+      observatory/        #   HealthIndicator, RunEnergyGauge, CriticGauntletPanel, ActivityTicker
+      lineage/            #   React Flow lineage tree + NodeInspector (P7.7, from ui_kits/organism-view)
+    routes/               # dashboard shell + route composition (run-launcher, runs-home, final-idea)
   test/{unit,e2e}/
 ```
 
 Layer dependency direction (top depends on bottom, never reverse):
 
 ```
-routes → components → lib (API/SSE client) → packages/contracts (types only)
+routes → components (core/cards/feedback/observatory/lineage) → state (run-store) → data (REST/SSE client) → packages/contracts (types only)
+                                  ↘ styles/tokens (CSS custom properties; consumed via var(), no raw hex/px — design adherence)
 ```
 
 The dashboard never imports `apps/api` internals; it reads projections through `lib/`. Enforce with a boundary lint where possible — the test *is* the spec for the rule.
@@ -181,6 +186,8 @@ Lessons start at §1.
 
 | # | Date | Topic | Rule (one-liner) |
 |--:|---|---|---|
-| | | | |
+| 1 | 2026-06-21 | [dashboard data seam](LESSONS.md#1) | validate every server payload before view state (typed `PayloadValidationError`; gate non-2xx → typed `TransportError` before parse); SSE ordered/deduped by `sequence` ALONE (monotonic watermark, `occurredAt` never consulted) + non-authoritative (resync from `lastEventId` reaches the same view); inject the transport (fetch/EventSource doubles) → network-free deterministic tests; no `apps/api` import, no secret, opaque ids percent-encoded · pin: `apps/web/test/unit/data/{runClient,sseStream}.test.ts` |
+| 2 | 2026-06-21 | [client run-store fold + resync](LESSONS.md#2) | the run-store folds validated events keyed by `sequence` (idempotent monotonic watermark — re-apply/seed-overlap never double-counts); resync after `lastEventId` reaches a fresh-fold state (SSE non-authoritative); retain failure events (not dropped); carry `mode` (live\|replay) on the store, NEVER fold it (identical live/replay fold); the store is a pub-sub AND the sseStream `onEvent` SINK (IoC — wire the stream at integration/P7.14, not in the store); guard the resync cursor before fetch; defer a consumer-less/pairing-ambiguous derivation (in-flight window) to the slice that renders it (P7.7) · pin: `apps/web/test/unit/state/{reducer,resync,runStore}.test.ts` |
+| 3 | 2026-06-21 | [build UI from the design-system prototype](LESSONS.md#3) | build the dashboard FROM `docs/doppl-design-system/`: COPY its CSS tokens (consume via `var()`, no raw hex/px — the port may EXCEED the prototype's own adherence, e.g. fix its raw-px StatusBadge to `--space-*`) + PORT components to TS-strict (never import the `.jsx`); the status-map is EXHAUSTIVE over the FROZEN domain enums (contract = authority, prototype = design ref), drift reconciled frozen-wins (omit prototype-only e.g. agenome 'mutated'; add frozen-only e.g. candidate 'culled' + the whole `generation` domain; unknown→neutral); status = shape+icon+label+color never color alone, glyph `aria-hidden` + status in label/`title` · pin: `apps/web/test/unit/components/{status-map,StatusBadge}.test.*` |
 
-<!-- Starts empty. Each row links to its `LESSONS.md` anchor. -->
+<!-- Each row links to its `LESSONS.md` anchor. -->
