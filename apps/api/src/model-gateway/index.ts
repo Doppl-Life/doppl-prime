@@ -55,6 +55,21 @@ export type {
   SdkEmbeddingResponseLike,
 } from './adapters/openai-embedding.adapter';
 
+// Retrieval / web-search adapter (P2.7) — pluggable live-search seam (no vendor pin) + curated-corpus
+// fallback that NEVER rejects; `retrievalEvidenceRef` anchors grounding in Postgres (rule #7).
+export { createRetrievalProviderCall, retrievalEvidenceRef } from './adapters/retrieval.adapter';
+export type {
+  RetrievalOutput,
+  RetrievalResultItem,
+  RetrievalKind,
+  RetrievalSearchClient,
+  RetrievalSearchParams,
+  RetrievalSearchResponse,
+  RetrievalAdapterDeps,
+} from './adapters/retrieval.adapter';
+export { loadCuratedCorpus, searchCuratedCorpus } from './adapters/curated-corpus';
+export type { CuratedCorpus, CuratedCorpusEntry } from './adapters/curated-corpus';
+
 // Recorded/fake gateway (P2.9) — the freeze-bundle fork artifact dependent tracks + P3 integration
 // tests run against; completes the gateway chain.
 export { createFakeGateway, selectGateway } from './stub/fake-gateway';
