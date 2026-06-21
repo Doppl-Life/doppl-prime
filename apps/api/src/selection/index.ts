@@ -46,6 +46,17 @@ export { selectParents } from './parent-selection';
 export type { SelectParentsInput, SelectParentsResult } from './parent-selection';
 export { createRng } from './reproduction/rng';
 export type { Rng } from './reproduction/rng';
+export { parentDistance, selectDistantPair } from './reproduction/parent-distance';
+export type { FusionParent } from './reproduction/parent-distance';
+export { crossover, reconstructCrossover } from './reproduction/crossover';
+export type {
+  ChildTraits,
+  CrossoverChoices,
+  CrossoverResult,
+  Parent,
+} from './reproduction/crossover';
+export { applyFusion, fuse } from './reproduction/fuse';
+export type { FuseDeps, FuseInput, FuseResult, FusionEmitter } from './reproduction/fuse';
 export { applyMutation, mutate } from './reproduction/mutate';
 export type {
   ApplyMutationDeps,
