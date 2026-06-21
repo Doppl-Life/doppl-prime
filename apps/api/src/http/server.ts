@@ -1,5 +1,6 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import type { GatewayRegistry } from "../model-gateway/default-routes.js";
 import { attachErrorHandler } from "./middleware/error.js";
 import { createDemoRoutesApp } from "./routes/demo.js";
@@ -43,6 +44,11 @@ export interface CreateServerDeps {
 
 export function createServer(deps: CreateServerDeps): Hono {
   const app = new Hono();
+  // Permissive CORS so the deployed dashboard (different origin from the
+  // api) can call /runs, /events, /stream, etc. The api is unauthenticated
+  // and intended to be publicly callable, so origin restriction would buy
+  // nothing here.
+  app.use("*", cors({ origin: "*", credentials: false }));
   attachErrorHandler(app);
 
   app.get("/healthz", (c) => c.json({ status: "ok" }));
