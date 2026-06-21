@@ -86,6 +86,7 @@ function exceedsDepth(value: unknown, maxDepth: number): boolean {
     if (depth > maxDepth) {
       return true;
     }
+    // Object.values on an array yields its elements (intentional — array nesting counts toward depth).
     for (const child of Object.values(node as Record<string, unknown>)) {
       stack.push({ node: child, depth: depth + 1 });
     }
@@ -100,10 +101,13 @@ function exceedsDepth(value: unknown, maxDepth: number): boolean {
  * ORDER IS LOAD-BEARING — the DEPTH check runs BEFORE the size check, and must NOT be reordered to
  * size-first: `JSON.stringify` itself recurses and would throw a RangeError (stack overflow) on a
  * deeply-nested attacker payload before any size check could run. So depth is bounded-and-rejected
- * first; only a depth-safe payload is ever stringified. Anything that can't be measured — an
- * unserializable value (e.g. a BigInt, where `JSON.stringify` throws) or a payload whose own accessor
- * throws — is treated as a `max_bytes` violation; a circular ref is caught earlier as `max_depth` by
- * the bounded walk. The guard fails CLOSED (reject) on any throw, never leaking it to the caller.
+ * first; only a depth-safe payload is ever stringified. Size is measured in TRUE UTF-8 BYTES
+ * (`Buffer.byteLength`, a pure Node global — no IO), so the ceiling matches its MiB-labeled
+ * `MAX_PAYLOAD_BYTES` for multibyte payloads (a UTF-16 `.length` would under-count up to ~2–4×).
+ * Anything that can't be measured — an unserializable value (e.g. a BigInt, where `JSON.stringify`
+ * throws) or a payload whose own accessor throws — is treated as a `max_bytes` violation; a circular
+ * ref is caught earlier as `max_depth` by the bounded walk. The guard fails CLOSED (reject) on any
+ * throw, never leaking it to the caller.
  */
 export function enforcePayloadCeiling(payload: unknown): CeilingResult {
   try {
@@ -112,7 +116,10 @@ export function enforcePayloadCeiling(payload: unknown): CeilingResult {
       return { ok: false, violation: 'max_depth' };
     }
     const serialized = JSON.stringify(payload);
-    if (typeof serialized !== 'string' || serialized.length > MAX_PAYLOAD_BYTES) {
+    if (
+      typeof serialized !== 'string' ||
+      Buffer.byteLength(serialized, 'utf8') > MAX_PAYLOAD_BYTES
+    ) {
       return { ok: false, violation: 'max_bytes' };
     }
     return { ok: true };
@@ -130,8 +137,9 @@ export type PayloadValidationResult =
  * validateEventPayload — the single entry the P1 append path calls. Enforces the ceiling, THEN
  * validates the resolved (narrowed-or-generic) schema. A ceiling violation OR a high-traffic shape
  * mismatch fails with a discriminating `reason` (`max_bytes` | `max_depth` | `shape_mismatch`); P1
- * emits a rejection/violation event on failure rather than throwing. On success the validated payload
- * is echoed back.
+ * emits a rejection/violation event on failure rather than throwing. On success the schema's PARSED
+ * value is returned (not the caller's input), so a future schema transform/coercion can't persist a
+ * pre-transform value onto the authoritative append path.
  */
 export function validateEventPayload(
   type: RunEventType,
@@ -145,5 +153,8 @@ export function validateEventPayload(
   if (!parsed.success) {
     return { ok: false, reason: 'shape_mismatch', error: parsed.error };
   }
-  return { ok: true, payload };
+  // Return the PARSED value, NOT the caller's input — so a future schema transform/coercion/default
+  // can't slip a pre-transform value onto the authoritative append path. Every resolved schema yields
+  // an object (the 6 narrowed models or the generic record), so the narrowing cast is sound.
+  return { ok: true, payload: parsed.data as Record<string, unknown> };
 }

@@ -232,6 +232,14 @@ describe('payload ceiling — bounded DoS guard (spec §4, security)', () => {
     expect(() => enforcePayloadCeiling(circular)).not.toThrow();
     expect(enforcePayloadCeiling(circular)).toEqual({ ok: false, violation: 'max_depth' });
   });
+
+  it('enforce_ceiling_byte_measure_is_utf8', () => {
+    // [P0.10 follow-up] the size ceiling measures true UTF-8 BYTES (Buffer.byteLength), not UTF-16
+    // code units — a multibyte payload whose UTF-16 length is UNDER MAX but whose UTF-8 byte length
+    // EXCEEDS it must be rejected. (A UTF-16 `.length` measure would wrongly accept it.)
+    const payload = { blob: '😀'.repeat(262_145) }; // UTF-16 ~524k units < MAX; UTF-8 ~1.05 MiB > MAX
+    expect(enforcePayloadCeiling(payload)).toEqual({ ok: false, violation: 'max_bytes' });
+  });
 });
 
 describe('validateEventPayload — composed ceiling-then-shape entry (spec §4)', () => {
@@ -257,6 +265,25 @@ describe('validateEventPayload — composed ceiling-then-shape entry (spec §4)'
     const ceilingFail = validateEventPayload('run.started', deep);
     expect(ceilingFail.ok).toBe(false);
     if (!ceilingFail.ok) expect(ceilingFail.reason).toBe('max_depth');
+  });
+
+  it('validate_event_payload_returns_parsed_value_not_input', () => {
+    // [P0.10 follow-up] validateEventPayload returns the schema's PARSED value, NOT the caller's input
+    // object — so a future schema gaining .transform/.coerce/.default can't slip pre-transform values
+    // onto the authoritative append path. Pinned via reference identity: Zod builds a NEW object on
+    // parse, so the returned payload is deep-equal to but NOT the same reference as the input (an
+    // input-echo would return the same reference).
+    const input = { ...validEnergy };
+    const narrowed = validateEventPayload('energy.spent', input);
+    expect(narrowed.ok).toBe(true);
+    if (narrowed.ok) {
+      expect(narrowed.payload).toEqual(input);
+      expect(narrowed.payload).not.toBe(input);
+    }
+    const genericInput = { foo: 'bar' };
+    const generic = validateEventPayload('run.started', genericInput);
+    expect(generic.ok).toBe(true);
+    if (generic.ok) expect(generic.payload).not.toBe(genericInput);
   });
 });
 
