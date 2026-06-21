@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['test/**/*.test.ts'],
+    // Unit project only — integration tests (testcontainers) run via vitest.integration.config.ts,
+    // so `pnpm test` / `test:unit` / preflight never boot a Docker container.
+    include: ['test/unit/**/*.test.ts'],
   },
 });
