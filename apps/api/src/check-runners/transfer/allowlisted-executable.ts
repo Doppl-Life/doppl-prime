@@ -1,6 +1,6 @@
 import type { CheckResult } from '@doppl/contracts';
 import type { CheckRunner, CheckRunnerInput } from '../registry';
-import { decided, normalize, parseTransferCandidate, skipped } from './shared';
+import { decided, normalize, parseTransferCandidate, skipped } from '../shared';
 
 /**
  * P4.9 allowlisted-executable check (ARCHITECTURE.md §7/§14, KEY SAFETY RULE #3 — no arbitrary code

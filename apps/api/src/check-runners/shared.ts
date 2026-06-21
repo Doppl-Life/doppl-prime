@@ -1,12 +1,13 @@
-import { CrossDomainTransferPayload } from '@doppl/contracts';
+import { CrossDomainTransferPayload, ZeitgeistSynthesisPayload } from '@doppl/contracts';
 import type { CheckResult } from '@doppl/contracts';
-import type { CheckRunnerInput } from '../registry';
+import type { CheckRunnerInput } from './registry';
 
 /**
- * P4.9 transfer-check shared helpers (ARCHITECTURE.md §7, KEY SAFETY RULE #3). Pure, deterministic, no
- * IO, no code execution. The candidate is parsed as DATA (a `CrossDomainTransferPayload`) — never
- * `eval`/`Function`/executed. An unparseable candidate yields `null` (the adapter records a `failed`
- * CheckResult, never a throw — rule #3 untrusted-data discipline).
+ * Shared, SUBTYPE-AGNOSTIC check-adapter helpers (ARCHITECTURE.md §7, KEY SAFETY RULE #3). Pure,
+ * deterministic, no IO, no code execution. A candidate is parsed as DATA (a frozen subtype payload) —
+ * never `eval`/`Function`/executed. An unparseable candidate yields `null` (the adapter records a
+ * `failed` CheckResult, never a throw — rule #3 untrusted-data discipline). Used by both the P4.9
+ * cross-domain-transfer and the P4.10 zeitgeist-synthesis adapters (lesson 32).
  */
 
 /** Minimum token length counted toward an overlap (drops trivial 1–2 char tokens). Named const = tunable. */
@@ -25,6 +26,21 @@ export function parseTransferCandidate(candidate: string): CrossDomainTransferPa
     return null;
   }
   const parsed = CrossDomainTransferPayload.safeParse(json);
+  return parsed.success ? parsed.data : null;
+}
+
+/**
+ * Parse the untrusted `candidate` string as a {@link ZeitgeistSynthesisPayload} (data only). Same
+ * fail-not-throw discipline as {@link parseTransferCandidate}; NEVER executes the candidate.
+ */
+export function parseZeitgeistCandidate(candidate: string): ZeitgeistSynthesisPayload | null {
+  let json: unknown;
+  try {
+    json = JSON.parse(candidate);
+  } catch {
+    return null;
+  }
+  const parsed = ZeitgeistSynthesisPayload.safeParse(json);
   return parsed.success ? parsed.data : null;
 }
 
@@ -48,7 +64,7 @@ export function tokenSet(text: string): Set<string> {
   );
 }
 
-/** Count of shared tokens between two texts (deterministic; the target-fit overlap signal). */
+/** Count of shared tokens between two texts (deterministic; the relational overlap signal). */
 export function tokenOverlap(a: string, b: string): number {
   const setB = tokenSet(b);
   let shared = 0;
@@ -85,5 +101,5 @@ export function skipped(input: CheckRunnerInput, reason: string): CheckResult {
 
 /** Build the `failed` CheckResult for an unparseable candidate (rule #3 fail-not-throw). */
 export function unparseable(input: CheckRunnerInput): CheckResult {
-  return decided(input, false, 'unparseable cross_domain_transfer payload');
+  return decided(input, false, 'unparseable candidate payload');
 }

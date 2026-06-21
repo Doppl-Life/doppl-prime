@@ -1,6 +1,6 @@
 import type { CheckResult } from '@doppl/contracts';
 import type { CheckRunner, CheckRunnerInput } from '../registry';
-import { decided, parseTransferCandidate, unparseable, wordCount } from './shared';
+import { decided, parseTransferCandidate, unparseable, wordCount } from '../shared';
 
 /**
  * P4.9 mapping-quality check (ARCHITECTURE.md §7, KEY SAFETY RULE #3 — pure non-executing CheckRunner).

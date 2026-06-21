@@ -1,6 +1,6 @@
 import type { CheckResult } from '@doppl/contracts';
 import type { CheckRunner, CheckRunnerInput } from '../registry';
-import { decided, normalize, parseTransferCandidate, unparseable } from './shared';
+import { decided, normalize, parseTransferCandidate, unparseable } from '../shared';
 
 /**
  * P4.9 source-domain-validity check (ARCHITECTURE.md §7, KEY SAFETY RULE #3 — pure non-executing

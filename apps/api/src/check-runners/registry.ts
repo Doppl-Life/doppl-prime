@@ -9,6 +9,11 @@ import {
   ALLOWLISTED_EXECUTABLE_ADAPTER_ID,
   allowlistedExecutableCheck,
 } from './transfer/allowlisted-executable';
+// P4.10 deterministic zeitgeist-synthesis adapters (registered below; same TYPE-only dependency, no
+// runtime cycle). current-signal-grounding + falsifiability are DEFERRED (retrieval/async-harness gated).
+import { ZEITGEIST_NOVELTY_ADAPTER_ID, zeitgeistNoveltyCheck } from './zeitgeist/novelty';
+import { ZEITGEIST_TIMING_ADAPTER_ID, zeitgeistTimingCheck } from './zeitgeist/timing';
+import { ZEITGEIST_COHERENCE_ADAPTER_ID, zeitgeistCoherenceCheck } from './zeitgeist/coherence';
 
 /**
  * P4.5 check-runner allowlist registry (KEY SAFETY RULE #3 — no arbitrary code execution; ARCHITECTURE.md
@@ -107,6 +112,26 @@ export const CHECK_RUNNER_REGISTRY: CheckRunnerRegistry = Object.freeze({
     subtype: 'cross_domain_transfer',
     label: 'Allowlisted-executable (prepared problems only; never executes candidate code)',
   },
+  // P4.10 zeitgeist-synthesis deterministic adapters (zeitgeist_synthesis subtype).
+  [ZEITGEIST_NOVELTY_ADAPTER_ID]: {
+    id: ZEITGEIST_NOVELTY_ADAPTER_ID,
+    checkType: 'zeitgeist.novelty',
+    subtype: 'zeitgeist_synthesis',
+    label:
+      'Novelty self-consistency (thesis distinct from cited prior art; NOT the P5 embedding score)',
+  },
+  [ZEITGEIST_TIMING_ADAPTER_ID]: {
+    id: ZEITGEIST_TIMING_ADAPTER_ID,
+    checkType: 'zeitgeist.timing',
+    subtype: 'zeitgeist_synthesis',
+    label: 'Timing (whyNow grounded in cited current signals)',
+  },
+  [ZEITGEIST_COHERENCE_ADAPTER_ID]: {
+    id: ZEITGEIST_COHERENCE_ADAPTER_ID,
+    checkType: 'zeitgeist.coherence',
+    subtype: 'zeitgeist_synthesis',
+    label: 'Coherence (thesis connected to its whyNow + predictions)',
+  },
 });
 
 /**
@@ -122,4 +147,8 @@ export const CHECK_RUNNER_IMPLS: Readonly<Record<string, CheckRunner>> = Object.
   [TARGET_FIT_ADAPTER_ID]: targetFitCheck,
   [MAPPING_QUALITY_ADAPTER_ID]: mappingQualityCheck,
   [ALLOWLISTED_EXECUTABLE_ADAPTER_ID]: allowlistedExecutableCheck,
+  // P4.10 zeitgeist adapter impls (pure, non-executing — parse candidate as DATA).
+  [ZEITGEIST_NOVELTY_ADAPTER_ID]: zeitgeistNoveltyCheck,
+  [ZEITGEIST_TIMING_ADAPTER_ID]: zeitgeistTimingCheck,
+  [ZEITGEIST_COHERENCE_ADAPTER_ID]: zeitgeistCoherenceCheck,
 });
