@@ -19,10 +19,11 @@ interface CandidateInspectorResponse {
     generationId: string;
     agenomeId: string;
     subtype: string;
-    title: string;
-    summary: string;
-    claims: string[];
-    evidenceRefs: import("../data/contracts.js").EvidenceRefT[];
+    title?: string;
+    summary?: string;
+    explanation?: string;
+    claims?: string[];
+    evidenceRefs?: import("../data/contracts.js").EvidenceRefT[];
     status: string;
     subtypePayload?: Record<string, unknown>;
   };
@@ -203,30 +204,34 @@ export function CandidateInspector(): JSX.Element {
       ) : (
         <p style={{ marginTop: 8 }}>{summary}</p>
       )}
-      {c.claims.length > 0 && (
+      {(c.claims?.length ?? 0) > 0 && (
         <>
           <h3 style={{ fontSize: 16 }}>Claims</h3>
           <ul>
-            {c.claims.map((claim, i) => (
+            {c.claims?.map((claim, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: claims are read-only static text
               <li key={`${claim}-${i}`}>{claim}</li>
             ))}
           </ul>
         </>
       )}
-      <h3 style={{ fontSize: 16 }}>Subtype payload</h3>
-      {isCrossDomain(c.subtypePayload) ? (
-        <CrossDomainBlock payload={c.subtypePayload as Record<string, unknown>} />
-      ) : isZeitgeist(c.subtypePayload) ? (
-        <ZeitgeistBlock payload={c.subtypePayload as Record<string, unknown>} />
-      ) : (
-        <p style={{ color: "var(--doppl-text-muted)" }}>(unrecognized subtype payload)</p>
+      {c.subtypePayload && (
+        <>
+          <h3 style={{ fontSize: 16 }}>Subtype payload</h3>
+          {isCrossDomain(c.subtypePayload) ? (
+            <CrossDomainBlock payload={c.subtypePayload as Record<string, unknown>} />
+          ) : isZeitgeist(c.subtypePayload) ? (
+            <ZeitgeistBlock payload={c.subtypePayload as Record<string, unknown>} />
+          ) : (
+            <p style={{ color: "var(--doppl-text-muted)" }}>(unrecognized subtype payload)</p>
+          )}
+        </>
       )}
-      {c.evidenceRefs.length > 0 && (
+      {(c.evidenceRefs?.length ?? 0) > 0 && (
         <>
           <h3 style={{ fontSize: 16 }}>Evidence</h3>
           <ul>
-            {c.evidenceRefs.map((ref, i) => (
+            {c.evidenceRefs?.map((ref, i) => (
               <li key={`${ref.kind}-${i}`}>
                 <EvidenceRefLink reference={ref} />
               </li>
