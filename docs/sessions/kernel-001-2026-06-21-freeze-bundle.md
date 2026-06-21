@@ -3,6 +3,7 @@
 **Date:** 2026-06-21
 **Track:** kernel · **Role:** orchestrator (kernel-runtime-orchestrator)
 **Predecessor:** `contract-002-2026-06-21-…` (prior round, contract track — Phase 0 freeze close)
+**Successor:** `kernel-002-2026-06-21-freeze-bundle-and-p2.2-registry.md` (implementer technical close-out + P2.2)
 **Round commit:** see Log entry / this round's `docs(kernel)` terminal commit.
 
 ## Summary
