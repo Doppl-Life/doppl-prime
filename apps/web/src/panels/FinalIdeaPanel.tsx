@@ -271,7 +271,8 @@ export function FinalIdeaPanel(): JSX.Element {
                   link.id === "lineage" ||
                   link.id === "critics" ||
                   link.id === "checks" ||
-                  link.id === "score"
+                  link.id === "score" ||
+                  link.id === "traces"
                 ) {
                   e.preventDefault();
                   dispatch({ kind: "SELECT_CANDIDATE", candidateId: winnerFitness.candidateId });

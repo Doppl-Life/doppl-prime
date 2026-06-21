@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { type RunStoreState, initialRunStoreState } from "../../state/reducer.js";
 import { renderWithStore } from "../../test-utils/render.js";
@@ -119,6 +119,21 @@ describe("FinalIdeaPanel", () => {
     expect(screen.getByText(/Plain English: borrow a pressure-release trick/)).toBeInTheDocument();
     expect(screen.getByText(/Technical summary/i)).toBeInTheDocument();
     expect(screen.getByText(/Cross-domain transfer from hydraulic engineering/)).toBeInTheDocument();
+  });
+
+  test("Traces proof link cancels hash navigation (no longer pushes #/traces/... to URL)", () => {
+    const state = stateWithWinner();
+    renderWithStore(<FinalIdeaPanel />, { initialState: state });
+    const tracesLink = document.querySelector('[data-link-id="traces"]') as HTMLAnchorElement;
+    expect(tracesLink).not.toBeNull();
+    const originalHash = window.location.hash;
+    // Click must be cancellable; preventDefault fires inside the panel so the
+    // hash never updates. Before the fix, this link did nothing AND polluted
+    // the URL with an unhandled #/traces/<id> hash.
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    fireEvent(tracesLink, event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(window.location.hash).toBe(originalHash);
   });
 
   test("when winner has no explanation, falls back to single summary line (no 'Technical summary' label)", () => {
