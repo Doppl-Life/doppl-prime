@@ -145,4 +145,62 @@ describe("runGeneration — problem text and enabledSubtypes threading", () => {
     const candidate = (created?.payload as { candidate: Record<string, unknown> }).candidate;
     expect(candidate.subtype).toBe("zeitgeist_synthesis");
   });
+
+  test("schema includes zeitgeist payload fields when zeitgeist_synthesis is enabled", async () => {
+    const { gateway, calls } = makeGateway(
+      '{"subtype":"zeitgeist_synthesis","title":"X","summary":"Y","explanation":"Z"}',
+    );
+    await runGeneration(makeDeps(gateway), ZEITGEIST_INPUT);
+
+    const schema = calls[0]?.schemaForOutput as {
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    // Cross-domain fields stay so a both-enabled run can still emit them;
+    // zeitgeist fields are the new ones we're proving land in the schema.
+    for (const key of [
+      "thesis",
+      "audience",
+      "currentSignals",
+      "whyNow",
+      "falsifiablePredictions",
+      "comparablePriorArt",
+    ]) {
+      expect(schema.properties[key]).toBeDefined();
+      expect(schema.required).toContain(key);
+    }
+  });
+
+  test("candidate.created emits a zeitgeist-shaped subtypePayload when the model returns a zeitgeist JSON", async () => {
+    const { gateway } = makeGateway(
+      JSON.stringify({
+        subtype: "zeitgeist_synthesis",
+        title: "Convergent automation pressure",
+        summary: "Three discourse streams converge.",
+        explanation: "All three discussions point at the same blind spot.",
+        thesis: "Agent populations will compress the long tail.",
+        audience: "ML platform leads",
+        currentSignals: ["arxiv X", "blog Y", "podcast Z"],
+        whyNow: "Compute curves crossed last quarter.",
+        falsifiablePredictions: ["tail unchanged in 12 months"],
+        comparablePriorArt: ["AlphaZero distill", "RLHF ladder"],
+      }),
+    );
+    await runGeneration(makeDeps(gateway), ZEITGEIST_INPUT);
+
+    const created = capturedEvents.find((e) => e.type === "candidate.created");
+    expect(created).toBeDefined();
+    const candidate = (created?.payload as { candidate: Record<string, unknown> }).candidate;
+    expect(candidate.subtype).toBe("zeitgeist_synthesis");
+    const payload = candidate.subtypePayload as Record<string, unknown>;
+    expect(payload.thesis).toBe("Agent populations will compress the long tail.");
+    expect(payload.audience).toBe("ML platform leads");
+    expect(payload.currentSignals).toEqual(["arxiv X", "blog Y", "podcast Z"]);
+    expect(payload.whyNow).toBe("Compute curves crossed last quarter.");
+    expect(payload.falsifiablePredictions).toEqual(["tail unchanged in 12 months"]);
+    expect(payload.comparablePriorArt).toEqual(["AlphaZero distill", "RLHF ladder"]);
+    // The cross-domain fields must NOT leak into a zeitgeist payload.
+    expect(payload.sourceDomain).toBeUndefined();
+    expect(payload.transferMapping).toBeUndefined();
+  });
 });

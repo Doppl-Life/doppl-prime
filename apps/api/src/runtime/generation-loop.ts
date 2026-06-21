@@ -46,12 +46,22 @@ function buildPopulationGeneratorSchema(enabledSubtypes: SubtypeName[]) {
       title: { type: "string" },
       summary: { type: "string" },
       explanation: { type: "string" },
+      // Cross-domain fields — used when subtype === "cross_domain_transfer".
       sourceDomain: { type: ["string", "null"] },
       sourceTechnique: { type: ["string", "null"] },
       targetDomain: { type: ["string", "null"] },
       targetProblem: { type: ["string", "null"] },
       transferMapping: { type: ["string", "null"] },
       expectedMechanism: { type: ["string", "null"] },
+      // Zeitgeist fields — used when subtype === "zeitgeist_synthesis".
+      // Strict mode requires every property to live in `required`, so the
+      // unused side of the discriminator is left null by the model.
+      thesis: { type: ["string", "null"] },
+      audience: { type: ["string", "null"] },
+      currentSignals: { type: ["array", "null"], items: { type: "string" } },
+      whyNow: { type: ["string", "null"] },
+      falsifiablePredictions: { type: ["array", "null"], items: { type: "string" } },
+      comparablePriorArt: { type: ["array", "null"], items: { type: "string" } },
     },
     required: [
       "subtype",
@@ -64,6 +74,12 @@ function buildPopulationGeneratorSchema(enabledSubtypes: SubtypeName[]) {
       "targetProblem",
       "transferMapping",
       "expectedMechanism",
+      "thesis",
+      "audience",
+      "currentSignals",
+      "whyNow",
+      "falsifiablePredictions",
+      "comparablePriorArt",
     ],
   } as const;
 }
@@ -227,11 +243,23 @@ export async function runGeneration(
       // message with no problem context — the model invented its own
       // problem to solve.
       const subtypeList = input.enabledSubtypes.join(", ");
+      const fieldGuide: string[] = [];
+      if (input.enabledSubtypes.includes("cross_domain_transfer")) {
+        fieldGuide.push(
+          'If "subtype" is "cross_domain_transfer": fill sourceDomain, sourceTechnique, targetDomain, targetProblem, transferMapping, expectedMechanism. Set thesis, audience, currentSignals, whyNow, falsifiablePredictions, comparablePriorArt to null.',
+        );
+      }
+      if (input.enabledSubtypes.includes("zeitgeist_synthesis")) {
+        fieldGuide.push(
+          'If "subtype" is "zeitgeist_synthesis": fill thesis, audience, currentSignals (array of short phrases), whyNow, falsifiablePredictions (array), comparablePriorArt (array). Set sourceDomain, sourceTechnique, targetDomain, targetProblem, transferMapping, expectedMechanism to null.',
+        );
+      }
       const userMessage = [
         input.problemText
           ? `Problem:\n${input.problemText}`
           : "Problem: (none provided; respond with a well-formed candidate idea anyway).",
         `Respond with a single JSON object. The "subtype" field must be exactly one of: ${subtypeList}.`,
+        ...fieldGuide,
       ].join("\n\n");
       response = await deps.gateway.invoke({
         role: "population_generator",
@@ -293,7 +321,34 @@ export async function runGeneration(
         typeof parsed[k] === "string" && (parsed[k] as string).length > 0
           ? (parsed[k] as string)
           : fallback;
+      const strArr = (k: string): string[] =>
+        Array.isArray(parsed[k])
+          ? (parsed[k] as unknown[]).filter((v): v is string => typeof v === "string")
+          : [];
       const explanationValue = str("explanation", "");
+      const chosenSubtype = str("subtype", input.enabledSubtypes[0] as string);
+      // Per ARCHITECTURE.md §3, the subtypePayload shape is a discriminated
+      // union keyed on `subtype`. Emit only the side that matches the
+      // chosen subtype — the other side's fields stayed in the schema as
+      // `["string","null"]` but must NOT leak into the persisted payload.
+      const subtypePayload: Record<string, unknown> =
+        chosenSubtype === "zeitgeist_synthesis"
+          ? {
+              thesis: str("thesis", "Implied convergence across discourse streams"),
+              audience: str("audience", "Researchers tracking the field"),
+              currentSignals: strArr("currentSignals"),
+              whyNow: str("whyNow", "Recent shifts make the question newly tractable"),
+              falsifiablePredictions: strArr("falsifiablePredictions"),
+              comparablePriorArt: strArr("comparablePriorArt"),
+            }
+          : {
+              sourceDomain: str("sourceDomain", "biology"),
+              sourceTechnique: str("sourceTechnique", "selection"),
+              targetDomain: str("targetDomain", "ML"),
+              targetProblem: str("targetProblem", "collapse"),
+              transferMapping: str("transferMapping", "fitness → loss"),
+              expectedMechanism: str("expectedMechanism", "diversity sampler"),
+            };
       await appendEvent(deps.db, {
         runId: input.runId,
         type: "candidate.created",
@@ -306,21 +361,14 @@ export async function runGeneration(
             runId: input.runId,
             generationId: `gen_${input.generationIndex}`,
             agenomeId: agenome.id,
-            subtype: str("subtype", input.enabledSubtypes[0] as string),
+            subtype: chosenSubtype,
             title: str("title", "Generated candidate"),
             summary: str("summary", "From generation loop"),
             ...(explanationValue ? { explanation: explanationValue } : {}),
             claims: [],
             evidenceRefs: [],
             status: "created",
-            subtypePayload: {
-              sourceDomain: str("sourceDomain", "biology"),
-              sourceTechnique: str("sourceTechnique", "selection"),
-              targetDomain: str("targetDomain", "ML"),
-              targetProblem: str("targetProblem", "collapse"),
-              transferMapping: str("transferMapping", "fitness → loss"),
-              expectedMechanism: str("expectedMechanism", "diversity sampler"),
-            },
+            subtypePayload,
           },
         },
       });
