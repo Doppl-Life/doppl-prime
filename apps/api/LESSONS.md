@@ -320,3 +320,18 @@ Sequence allocation under concurrency: `pg_advisory_xact_lock(hashtext(run_id))`
 **Forward-guard (rule #4):** an `AppendError` that interpolates a Zod error message is safe ONLY while payload validation is a SEPARATE step from the envelope `safeParse` — today the `schema_invalid` message can't carry payload content. If a future change folds payload validation INTO the envelope parse, that error message would echo payload bytes (a secret-leak vector on an error path the scrub doesn't cover). Keep payload content out of authoritative-path error messages.
 
 **Rule:** The authoritative append is one txn — validate (omit the server/DB-assigned `sequence`+`occurredAt`) → ceiling (reject `{ok:false}`, caller emits the event) → scrub the parsed payload → advisory-lock-serialized sequence (`pg_advisory_xact_lock(hashtext(run_id))` + `COALESCE(MAX+1,0)`) → insert; the writer exposes only append + ordered-read; ids parameterized; authoritative-path error messages never echo payload content.
+
+## <a id="27"></a>27. The credential boundary at config — provider keys are env-only, fail-fast-checked at boot, and STRUCTURALLY unrepresentable in the config object
+
+**Date:** 2026-06-21.
+**Source slice:** kernel track P2.2 (`kernel-008`; commit hash recorded at round close); `apps/api/src/model-gateway/{config.schema.ts, registry.ts}` + `apps/api/src/config/model-registry.config.ts`.
+
+A config object carrying provider routing (the model registry) must never become a credential-leak vector if logged or persisted. Three legs make the boundary hold (rule #4):
+
+- **Structurally unrepresentable:** the config schema is strict (`RouteConfig`/`RegistryConfig` = `z.strictObject`), so a credential field (`apiKey`/`token`/…) is REJECTED at validation — at the top level, nested on a route, AND in the file/env override layers. The config carries only provider/modelId/capability/fallback. This is lesson §9's "no-X-field-via-shape" applied to credentials: the leak is unrepresentable, not merely absent.
+- **env-only + fail-fast:** `assertProviderCredentials(env)` reads ONLY injected env (the boot layer passes `process.env` — lesson §4), checks the required set at boot, and aborts with a clear error on a missing/blank var. Credentials are passed to adapters at call time, never stored in the config object.
+- **No value-echo in errors:** the fail-fast error NAMES the missing var, never its value; Zod's "Unrecognized key" names the rejected key, not the value — so even the error path can't leak (cf. §26's forward-guard).
+
+The `defaults < file < env` merge is the lesson-§4 discipline (deep-merge objects / replace arrays+scalars / skip `__proto__`/`constructor`/`prototype` / field-identifying errors); contracts' `deepMerge` is private, so it's mirrored locally with §4 cited (single-source via a cross-track export only once a 2nd+ in-track consumer — e.g. P3.1's boot-config — appears).
+
+**Rule:** A config object carrying provider routing keeps credentials env-only + fail-fast-checked at boot + STRUCTURALLY unrepresentable in the config (strict schema rejects a cred field at every layer — §9 applied to creds); errors name vars/keys, never values; merge `defaults<file<env` via the §4 discipline.
