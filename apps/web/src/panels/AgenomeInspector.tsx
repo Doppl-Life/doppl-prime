@@ -31,7 +31,14 @@ export function AgenomeInspector(): JSX.Element {
   // and bail out below only on the visible content.
   const candidates: CandidateView[] = useMemo(() => {
     if (!agenomeId) return [];
-    return Object.values(state.candidates).filter((c) => c.agenomeId === agenomeId);
+    return Object.values(state.candidates)
+      .filter((c) => c.agenomeId === agenomeId)
+      .sort((a, b) => {
+        const ga = a.generationId ?? "";
+        const gb = b.generationId ?? "";
+        if (ga !== gb) return ga < gb ? -1 : 1;
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      });
   }, [agenomeId, state.candidates]);
 
   const recentActivity = useMemo(() => {
@@ -50,6 +57,8 @@ export function AgenomeInspector(): JSX.Element {
     }
     return best;
   }, [candidates, state.fitnessScores]);
+
+  const generationId = candidates[0]?.generationId;
 
   if (!agenomeId) {
     return (
@@ -82,6 +91,17 @@ export function AgenomeInspector(): JSX.Element {
               {personaName ?? agenomeId}
             </h3>
             {agenome ? <StatusIndicator domain="agenome" status={agenome.status} size="sm" /> : null}
+            {generationId ? (
+              <span
+                style={{
+                  fontFamily: "var(--doppl-font-mono, monospace)",
+                  fontSize: 12,
+                  color: "var(--doppl-text-secondary)",
+                }}
+              >
+                {generationId}
+              </span>
+            ) : null}
           </div>
           {personaName ? (
             <div

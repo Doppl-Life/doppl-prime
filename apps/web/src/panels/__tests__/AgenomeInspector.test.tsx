@@ -88,6 +88,33 @@ describe("AgenomeInspector", () => {
     expect(screen.queryByText("First idea")).toBeNull();
   });
 
+  test("recent activity rows render for matching agenome and exclude other agenomes' events", () => {
+    const state = {
+      ...seededState(),
+      activityEventLog: [
+        {
+          sequence: 1,
+          occurredAt: "2026-06-21T00:00:00Z",
+          type: "candidate.created",
+          actor: "runtime",
+          payload: {},
+          agenomeId: "ag_child",
+        },
+        {
+          sequence: 2,
+          occurredAt: "2026-06-21T00:00:00Z",
+          type: "candidate.scored",
+          actor: "runtime",
+          payload: {},
+          agenomeId: "ag_root",
+        },
+      ],
+    };
+    renderWithStore(<AgenomeInspector />, { initialState: state });
+    expect(screen.getByText("candidate.created")).toBeInTheDocument();
+    expect(screen.queryByText("candidate.scored")).toBeNull();
+  });
+
   test("zero parents, zero candidates, zero activity → renders empty states without crashing", () => {
     const empty = {
       ...initialRunStoreState,
