@@ -4,8 +4,8 @@ import { GenerationComparison } from "../charts/GenerationComparison.js";
 import { OperatorPromptPanel } from "../demo/OperatorPromptPanel.js";
 import { LineageGraph } from "../lineage/LineageGraph.js";
 import { AgentActivityTable } from "../panels/AgentActivityTable.js";
-import { AgenomeDetailDrawer } from "../panels/AgenomeDetailDrawer.js";
 import { CandidateDetailInspector } from "../panels/CandidateDetailInspector.js";
+import { DetailDrawer } from "../panels/DetailDrawer.js";
 import { EnergyPanel } from "../panels/EnergyPanel.js";
 import { FinalIdeaPanel } from "../panels/FinalIdeaPanel.js";
 import { HealthPanel } from "../panels/HealthPanel.js";
@@ -305,21 +305,15 @@ export function DashboardShell(): JSX.Element {
       : "live";
   const eventCount = lanes.reduce((n, l) => n + l.events.length, 0);
   const hasCandidate = state.selection.candidateId != null;
-  const selectionEpoch = state.selection.selectionEpoch;
 
-  // Inspector view-tab is candidate-only. Agenome selections pop a
-  // modal (AgenomeDetailModal mounted at shell root) instead, so they
-  // don't compete with the candidate inspector for the tab.
-  // Depending on selectionEpoch — not just hasCandidate — means
-  // re-selecting the same candidate (e.g. clicking a second proof
-  // link) still re-opens the tab.
-  useEffect(() => {
-    if (hasCandidate) {
-      setView("inspector");
-    } else {
-      setView((v) => (v === "inspector" ? "dashboard" : v));
-    }
-  }, [hasCandidate, selectionEpoch]);
+  // Selection details (agenome OR candidate) now live in the
+  // DetailDrawer — the right-side panel that overlays the dashboard.
+  // The Inspector view-tab no longer auto-switches on selection, so a
+  // candidate click from inside the drawer (the "Candidates produced"
+  // list) keeps the detail in the drawer instead of pulling focus to
+  // the main pane. The Inspector tab still exists as a manual
+  // navigation option and renders the current candidate selection
+  // when active.
 
   const bodyColumns = [phase === "setup" ? "400px" : "360px", "1fr"].join(" ");
 
@@ -451,7 +445,7 @@ export function DashboardShell(): JSX.Element {
             </>
           )}
         </main>
-      <AgenomeDetailDrawer />
+      <DetailDrawer />
     </div>
   );
 }

@@ -2,27 +2,30 @@ import { type JSX, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRunState, useRunStore } from "../state/runStore.js";
 import { AgenomeInspector } from "./AgenomeInspector.js";
+import { CandidateDetailInspector } from "./CandidateDetailInspector.js";
 
 /**
- * AgenomeDetailDrawer — portal-mounted right-side panel that wraps
- * AgenomeInspector. Visible when state.selection.agenomeId is set,
- * dismissed by ESC or by the close button. Dismiss dispatches
- * SELECT_AGENOME with null so the reducer clears the selection and the
- * mutual-exclusion guarantee from Task 1 still holds.
+ * DetailDrawer — the universal right-side detail surface. Visible
+ * whenever there is a selection (agenome or candidate). When an
+ * agenome is selected, renders AgenomeInspector; when a candidate is
+ * selected, renders CandidateDetailInspector. Mutual exclusion in the
+ * reducer (one selection at a time) means we never have to decide
+ * which side wins inside the drawer.
  *
- * Unlike a modal, there is no backdrop scrim — the rest of the
- * dashboard stays interactive while the drawer is open, so the
- * operator can keep inspecting the lineage graph or Energy panel while
- * the detail view sits alongside.
+ * Dismissed by ESC or the close button — clearing selection.agenomeId
+ * AND selection.candidateId. There is no backdrop scrim so the rest
+ * of the dashboard stays interactive while the drawer is open.
  *
  * Rendered at document.body so it overlays the whole dashboard rather
  * than getting clipped by a parent's overflow.
  */
-export function AgenomeDetailDrawer(): JSX.Element | null {
+export function DetailDrawer(): JSX.Element | null {
   const state = useRunState();
   const { dispatch } = useRunStore();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const open = state.selection.agenomeId != null;
+  const agenomeOpen = state.selection.agenomeId != null;
+  const candidateOpen = state.selection.candidateId != null;
+  const open = agenomeOpen || candidateOpen;
 
   // Close on ESC. Attached at the document level so the drawer still
   // closes when focus has wandered outside its content. The listener is
@@ -30,7 +33,10 @@ export function AgenomeDetailDrawer(): JSX.Element | null {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dispatch({ kind: "SELECT_AGENOME", agenomeId: null });
+      if (e.key === "Escape") {
+        dispatch({ kind: "SELECT_AGENOME", agenomeId: null });
+        dispatch({ kind: "SELECT_CANDIDATE", candidateId: null });
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -45,25 +51,28 @@ export function AgenomeDetailDrawer(): JSX.Element | null {
 
   if (!open) return null;
 
-  const close = () => dispatch({ kind: "SELECT_AGENOME", agenomeId: null });
+  const close = () => {
+    dispatch({ kind: "SELECT_AGENOME", agenomeId: null });
+    dispatch({ kind: "SELECT_CANDIDATE", candidateId: null });
+  };
 
   return createPortal(
     <aside
       role="dialog"
-      aria-label="Agenome detail"
+      aria-label="Detail"
       style={{
         position: "fixed",
         top: 0,
         right: 0,
         height: "100vh",
-        width: "min(480px, 92vw)",
+        width: "min(520px, 92vw)",
         background: "var(--doppl-bg-surface, #0e1424)",
         color: "var(--doppl-text-primary)",
         borderLeft: "1px solid var(--doppl-border)",
         boxShadow: "-12px 0 36px rgba(0, 0, 0, 0.35)",
         overflow: "auto",
         // Top padding leaves room for the close button to sit clear of
-        // the inspector's PanelTitle.
+        // whatever PanelTitle the inspector renders.
         padding: "44px 20px 20px",
         zIndex: 1000,
       }}
@@ -71,7 +80,7 @@ export function AgenomeDetailDrawer(): JSX.Element | null {
       <button
         ref={closeButtonRef}
         type="button"
-        aria-label="Close agenome detail"
+        aria-label="Close detail"
         onClick={close}
         style={{
           position: "absolute",
@@ -95,7 +104,10 @@ export function AgenomeDetailDrawer(): JSX.Element | null {
       >
         ×
       </button>
-      <AgenomeInspector />
+      {/* Mutual exclusion in the reducer means only one of these is
+          ever rendered at a time. Agenome wins the tie-break that
+          can't actually happen. */}
+      {agenomeOpen ? <AgenomeInspector /> : <CandidateDetailInspector />}
     </aside>,
     document.body,
   );
