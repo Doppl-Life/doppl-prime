@@ -18,3 +18,7 @@
 apps/api/test/unit/event-store/redaction.test.ts:generic-api-key:14
 # line 89 = fake sk- fixture in test_does_not_mutate_input
 apps/api/test/unit/event-store/redaction.test.ts:generic-api-key:89
+
+# P1.3 append-only writer test (kernel-007) — fake DB-password fixture (DB_SECRET) the scrub-before-
+# insert test MUST contain to prove the env-value scrub runs before persist. Not a real secret.
+apps/api/test/integration/event-store/append.test.ts:generic-api-key:19
