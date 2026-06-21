@@ -1,4 +1,14 @@
 import type { CheckResult, CheckRunnerRegistry } from '@doppl/contracts';
+// P4.9 deterministic cross-domain-transfer adapters (registered below). The adapters' only dependency on
+// this module is TYPE-only (CheckRunner/CheckRunnerInput, erased at runtime) — no runtime import cycle.
+// prior-art is DEFERRED (needs retrieval P2.6/P2.7 + an async harness — not buildable in the pure-sync path).
+import { SOURCE_VALIDITY_ADAPTER_ID, sourceValidityCheck } from './transfer/source-validity';
+import { TARGET_FIT_ADAPTER_ID, targetFitCheck } from './transfer/target-fit';
+import { MAPPING_QUALITY_ADAPTER_ID, mappingQualityCheck } from './transfer/mapping-quality';
+import {
+  ALLOWLISTED_EXECUTABLE_ADAPTER_ID,
+  allowlistedExecutableCheck,
+} from './transfer/allowlisted-executable';
 
 /**
  * P4.5 check-runner allowlist registry (KEY SAFETY RULE #3 — no arbitrary code execution; ARCHITECTURE.md
@@ -11,7 +21,8 @@ import type { CheckResult, CheckRunnerRegistry } from '@doppl/contracts';
  *    entry here is recorded `skipped` by the harness (no exec path exists).
  *
  * The gate is the frozen `resolveCheckAdapter` (own-property lookup, fail-safe skip) — re-exported here
- * for consumers; never reimplemented (lesson 8/11). The real transfer/zeitgeist adapters land P4.9/P4.10.
+ * for consumers; never reimplemented (lesson 8/11). P4.9 adds the 4 deterministic cross-domain-transfer
+ * adapters; the prepared placeholders remain as the P4.5 test fixtures (they are still referenced).
  */
 
 export { resolveCheckAdapter } from '@doppl/contracts';
@@ -62,13 +73,39 @@ export const CHECK_RUNNER_REGISTRY: CheckRunnerRegistry = Object.freeze({
   [PREPARED_TOY_ADAPTER_ID]: {
     id: PREPARED_TOY_ADAPTER_ID,
     checkType: 'prepared_deterministic_toy',
-    label: 'Prepared deterministic toy check (placeholder — P4.9/P4.10 supersede)',
+    label:
+      'Prepared deterministic toy check (placeholder — also the P4.5 registered-impl test fixture)',
   },
-  // placeholder — superseded by real transfer/zeitgeist adapters in P4.9/P4.10
+  // placeholder — also the P4.5 registered-but-no-impl skip-path test fixture (kept; still referenced)
   [EXECUTION_REQUIRING_ADAPTER_ID]: {
     id: EXECUTION_REQUIRING_ADAPTER_ID,
     checkType: 'prepared_execution_requiring',
     label: 'Prepared execution-requiring check (placeholder — non-executing impl absent → skipped)',
+  },
+  // P4.9 cross-domain-transfer deterministic adapters (cross_domain_transfer subtype).
+  [SOURCE_VALIDITY_ADAPTER_ID]: {
+    id: SOURCE_VALIDITY_ADAPTER_ID,
+    checkType: 'transfer.source_validity',
+    subtype: 'cross_domain_transfer',
+    label: 'Source-domain-validity (transfer must cross domains)',
+  },
+  [TARGET_FIT_ADAPTER_ID]: {
+    id: TARGET_FIT_ADAPTER_ID,
+    checkType: 'transfer.target_fit',
+    subtype: 'cross_domain_transfer',
+    label: 'Target-fit (mapping references the target)',
+  },
+  [MAPPING_QUALITY_ADAPTER_ID]: {
+    id: MAPPING_QUALITY_ADAPTER_ID,
+    checkType: 'transfer.mapping_quality',
+    subtype: 'cross_domain_transfer',
+    label: 'Mapping-quality (mapping + mechanism are substantive)',
+  },
+  [ALLOWLISTED_EXECUTABLE_ADAPTER_ID]: {
+    id: ALLOWLISTED_EXECUTABLE_ADAPTER_ID,
+    checkType: 'transfer.allowlisted_executable',
+    subtype: 'cross_domain_transfer',
+    label: 'Allowlisted-executable (prepared problems only; never executes candidate code)',
   },
 });
 
@@ -80,4 +117,9 @@ export const CHECK_RUNNER_REGISTRY: CheckRunnerRegistry = Object.freeze({
 export const CHECK_RUNNER_IMPLS: Readonly<Record<string, CheckRunner>> = Object.freeze({
   [PREPARED_TOY_ADAPTER_ID]: preparedToyCheck,
   // EXECUTION_REQUIRING_ADAPTER_ID intentionally has NO impl → execution_required skip.
+  // P4.9 transfer adapter impls (pure, non-executing — parse candidate as DATA).
+  [SOURCE_VALIDITY_ADAPTER_ID]: sourceValidityCheck,
+  [TARGET_FIT_ADAPTER_ID]: targetFitCheck,
+  [MAPPING_QUALITY_ADAPTER_ID]: mappingQualityCheck,
+  [ALLOWLISTED_EXECUTABLE_ADAPTER_ID]: allowlistedExecutableCheck,
 });
