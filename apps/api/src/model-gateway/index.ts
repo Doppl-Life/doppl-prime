@@ -13,3 +13,10 @@ export {
   ProviderCapability,
   ModelRoute,
 } from '@doppl/contracts';
+
+// Structured-output discipline + gateway shell (P2.4) — the seam grows; @doppl/contracts stays the
+// sole definition source for the wire contracts above.
+export { createGateway } from './gateway';
+export type { GatewayDeps } from './gateway';
+export { applyStructuredOutputDiscipline } from './structured-output';
+export type { ProviderCallFn, ProviderResult, StructuredOutputParams } from './structured-output';
