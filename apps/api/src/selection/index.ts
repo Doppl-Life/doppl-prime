@@ -32,6 +32,18 @@ export {
 export type { Contribution, ScoringResult } from './fitness/policy';
 export { scoreFitness } from './fitness/score-fitness';
 export type { FitnessEmitter, ScoreFitnessDeps, ScoreFitnessInput } from './fitness/score-fitness';
+export { cull } from './cull';
+export type {
+  AgenomeFitness,
+  CullDeps,
+  CullEmitter,
+  CullInput,
+  CullPolicy,
+  CullResult,
+  ScoredCandidate,
+} from './cull';
+export { selectParents } from './parent-selection';
+export type { SelectParentsInput, SelectParentsResult } from './parent-selection';
 export { createRng } from './reproduction/rng';
 export type { Rng } from './reproduction/rng';
 export { applyMutation, mutate } from './reproduction/mutate';
