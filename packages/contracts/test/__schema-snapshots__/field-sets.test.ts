@@ -80,8 +80,9 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(typeof RunEventType.parse).toBe('function');
     expect(typeof RunEventEnvelope.parse).toBe('function');
     expect(Number.isInteger(CURRENT_SCHEMA_VERSION)).toBe(true);
-    // P0.1-amend: deliberate schemaVersion bump 1 → 2, pinned by literal so it can't move silently.
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+    // Deliberate schemaVersion bumps pinned by literal so they can't move silently: 1→2 (P0.1-amend
+    // RunEventType markers), 2→3 (P0.15-amend GenerationStatus +degraded).
+    expect(CURRENT_SCHEMA_VERSION).toBe(3);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {

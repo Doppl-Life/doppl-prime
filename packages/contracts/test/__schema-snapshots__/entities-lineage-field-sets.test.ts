@@ -1,6 +1,6 @@
 // P0.15(partial)+P0.13 — §2.5 cross-track schema-snapshot gate for the run-lifecycle entities + the
 // lineage projection. spec(§3) spec(§8) spec(§10) spec(§2.5): each field-set + every closed union
-// (RunStatus 8, GenerationStatus 8, LineageNodeType 6) == frozen snapshot — an added/removed/renamed
+// (RunStatus 8, GenerationStatus 9, LineageNodeType 6) == frozen snapshot — an added/removed/renamed
 // field or union member on any of these four §2.5-seam contracts is caught here before tracks fork.
 import { describe, it, expect } from 'vitest';
 import {
@@ -41,6 +41,7 @@ const GENERATION_FIELD_SNAPSHOT = ['id', 'runId', 'index', 'status', 'startedAt'
 const GENERATION_STATUS_SNAPSHOT = [
   'pending',
   'running',
+  'degraded', // [P0.15-amend] §3 running→degraded→verifying partial-failure edge (schemaVersion 2→3)
   'verifying',
   'scoring',
   'reproducing',
@@ -98,7 +99,7 @@ describe('schema snapshot — entities + lineage projection (spec §3 / §8 / §
     expect(RUN_FIELD_SNAPSHOT).toHaveLength(7);
     expect(RUN_STATUS_SNAPSHOT).toHaveLength(8);
     expect(GENERATION_FIELD_SNAPSHOT).toHaveLength(6);
-    expect(GENERATION_STATUS_SNAPSHOT).toHaveLength(8);
+    expect(GENERATION_STATUS_SNAPSHOT).toHaveLength(9); // [P0.15-amend] 8→9 (+degraded)
     expect(CULLING_FIELD_SNAPSHOT).toHaveLength(6);
     expect(PROJECTION_FIELD_SNAPSHOT).toHaveLength(4);
     expect(NODE_FIELD_SNAPSHOT).toHaveLength(6);
