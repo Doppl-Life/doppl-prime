@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { useFitnessSeries } from "../state/runStore.js";
 import { PALETTE } from "../ui/theme.js";
 
@@ -88,11 +88,46 @@ export function GenerationComparison({
           label={{ value: "Fitness", angle: -90, position: "insideLeft", fill: "#dce8f7" }}
         />
         <Tooltip />
-        <Legend />
         <Bar dataKey="mean" name="Mean" fill={PALETTE.cyan} isAnimationActive={false} />
         <Bar dataKey="median" name="Median" fill={PALETTE.orange} isAnimationActive={false} />
         <Bar dataKey="max" name="Max" fill={PALETTE.green} isAnimationActive={false} />
       </BarChart>
+      {/* Custom legend below the full-width plot, matching the Fitness chart:
+          compact, left-aligned rows instead of recharts' centered default. */}
+      <ul
+        style={{
+          listStyle: "none",
+          margin: "8px 0 0",
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          fontSize: 12,
+        }}
+      >
+        {[
+          { label: "Mean", color: PALETTE.cyan },
+          { label: "Median", color: PALETTE.orange },
+          { label: "Max", color: PALETTE.green },
+        ].map((series) => (
+          <li
+            key={series.label}
+            style={{ display: "flex", alignItems: "center", gap: 8, color: series.color }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                flexShrink: 0,
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: series.color,
+              }}
+            />
+            <span>{series.label}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

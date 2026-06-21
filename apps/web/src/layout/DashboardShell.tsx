@@ -13,6 +13,7 @@ import { RunsListPanel } from "../panels/RunsListPanel.js";
 import { ModeIndicator } from "../panels/ModeIndicator.js";
 import { RunConfigPanel } from "../panels/RunConfigPanel.js";
 import { StopControl } from "../panels/StopControl.js";
+import { PanelTitle } from "../ui/PanelTitle.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
 
@@ -197,28 +198,45 @@ const mainStyle: React.CSSProperties = {
 };
 
 function FitnessAndGenerations(): JSX.Element {
+  const captionStyle: React.CSSProperties = {
+    margin: "0 0 8px 0",
+    color: "var(--doppl-text-secondary)",
+    fontSize: 13,
+    lineHeight: 1.4,
+    maxWidth: "60ch",
+  };
+  // Center the chart+legend block in whatever vertical space the (equal-height)
+  // card has left after the title/caption, so the shorter panel reads as
+  // balanced rather than top-loaded with an empty gap underneath.
+  const chartAreaStyle: React.CSSProperties = {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  };
+  const panelStyle: React.CSSProperties = { display: "flex", flexDirection: "column" };
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-      <div data-panel="fitness">
-        <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 4px 0" }}>Fitness over time</h2>
-        <p
-          style={{
-            margin: "0 0 8px 0",
-            color: "var(--doppl-text-secondary)",
-            fontSize: 13,
-            lineHeight: 1.4,
-            maxWidth: "60ch",
-          }}
-        >
+      <div data-panel="fitness" style={panelStyle}>
+        <PanelTitle style={{ marginBottom: 4 }}>Fitness over time</PanelTitle>
+        <p style={captionStyle}>
           Each line follows one idea across generations of evolution. Y = its 0–1
           score (critic + check verdicts combined; higher is better). X = which
           generation it was scored in.
         </p>
-        <FitnessOverTime />
+        <div style={chartAreaStyle}>
+          <FitnessOverTime />
+        </div>
       </div>
-      <div data-panel="generations">
-        <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>Generation comparison</h2>
-        <GenerationComparison />
+      <div data-panel="generations" style={panelStyle}>
+        <PanelTitle style={{ marginBottom: 4 }}>Generation comparison</PanelTitle>
+        <p style={captionStyle}>
+          Each generation's fitness spread: mean and median show typical idea
+          quality, while max marks the single best idea that generation produced.
+        </p>
+        <div style={chartAreaStyle}>
+          <GenerationComparison />
+        </div>
       </div>
     </div>
   );
@@ -301,7 +319,7 @@ export function DashboardShell(): JSX.Element {
     }
   }, [hasCandidate, selectionEpoch]);
 
-  const bodyColumns = [phase === "setup" ? "340px" : "300px", "1fr"].join(" ");
+  const bodyColumns = [phase === "setup" ? "400px" : "360px", "1fr"].join(" ");
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: bodyColumns, height: "100vh", overflow: "hidden" }}>

@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useAgenomeDisplayNames, useFitnessSeries, useRunState } from "../state/runStore.js";
 import { pickSeriesTheme } from "./chartTheme.js";
 
@@ -111,7 +111,6 @@ export function FitnessOverTime({ width = 480, height = 280 }: FitnessOverTimePr
           label={{ value: "Fitness total", angle: -90, position: "insideLeft", fill: "#dce8f7" }}
         />
         <Tooltip />
-        <Legend />
         {candidateIds.map((id, idx) => {
           const theme = pickSeriesTheme(idx);
           return (
@@ -130,6 +129,40 @@ export function FitnessOverTime({ width = 480, height = 280 }: FitnessOverTimePr
           );
         })}
       </LineChart>
+      {/* Custom legend below the full-width plot. Recharts' built-in vertical
+          legend reserves space beside the chart, which squishes it — this
+          keeps the chart intact and stacks compact, left-aligned rows. */}
+      <ul
+        style={{
+          listStyle: "none",
+          margin: "8px 0 0",
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          fontSize: 12,
+        }}
+      >
+        {candidateIds.map((id, idx) => {
+          const theme = pickSeriesTheme(idx);
+          return (
+            <li
+              key={id}
+              style={{ display: "flex", alignItems: "center", gap: 8, color: theme.stroke }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  flexShrink: 0,
+                  width: 16,
+                  borderTop: `2px ${theme.strokeDasharray ? "dashed" : "solid"} ${theme.stroke}`,
+                }}
+              />
+              <span>{labelFor(id)}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
