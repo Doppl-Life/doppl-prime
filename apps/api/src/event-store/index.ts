@@ -8,3 +8,11 @@ export * from './append';
 export * from './schema';
 export { runMigrations } from './migrate';
 export { scrubEventPayload } from './redaction';
+
+// EvidenceRef resolver (P1.7) — pure Postgres-tier dereference, fail-closed on external pointers (rule #7).
+export { resolveEvidenceRef, createEvidenceResolver } from './evidence-resolver';
+export type {
+  EvidenceResolution,
+  EvidenceUnresolvedReason,
+  EvidenceResolver,
+} from './evidence-resolver';
