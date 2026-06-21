@@ -62,3 +62,6 @@ desktop.ini
 # ---- Scratch / generated ----
 tmp/
 scaffold/
+
+# ---- Code-intelligence index (CodeGraph MCP) — local, never tracked ----
+.codegraph/

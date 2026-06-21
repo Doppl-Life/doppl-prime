@@ -19,17 +19,13 @@
 
 ## Currently in progress
 
-**Phase 0 (contract freeze) — IN PROGRESS (11/14 tasks).** Shipped P0.1–P0.9 + P0.11 + P0.12. This round (contract-001 session, P0.5→P0.12): CandidateIdea/payloads/EvidenceRef (`49f77f3`) · CriticReview/criticInput injection-isolation (`dfd651f`) · CheckResult/CheckRunnerAdapter allowlist (`83db38d`) · scoring family (`837e5be`) · EnergyEvent/ReproductionEvent + shared `ProviderMeta` (`a13d9cc`) · gateway seam bundle P0.11+P0.12 (`9c174b7`). Implementer tip `294fe34` (incl. session doc + prettier reformat `609cb9d`); **round commit lands at this `/orchestrate-end`.** Full suite **118/118**.
+**Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks).** `/phase-exit P0` verdict **CLEAR** (gate block under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo).
 
-**Remaining P0 (4 tasks):** P0.10 (per-type payload map + payload size/depth ceiling — carry-forward security item) · `[P0.15 Run+Generation+CullingEvent + P0.13 LineageGraphProjection]` entities/lineage bundle · P0.15-`FinalJudgeRubric` (solo, held-out judge) · P0.14 (contract-test surface, phase-gate). Then `/phase-exit P0` closes the freeze. Bundling directive (Carry-forward standing directive) governs.
+This round (contract-002 session, P0.10→P0.14): per-type payload map + payload ceiling `73289fd` · entities+lineage bundle [P0.13 + P0.15 Run/Generation/CullingEvent/LineageGraphProjection] `8bd9502` · FinalJudgeRubric `5058400` · P0.14 contract-test surface `0180c5f` · P0.10 phase-exit follow-up `c33eb2f`. Impl session doc `7d60cc3` (contract-002). **Round-seal: this `/orchestrate-end` commit (pushed to origin/track/contract).** Full suite **160/160**; `/preflight` clean; `pnpm audit --prod` clean.
 
-**Cycle note:** round closed via auto-cycle (impl context WARN 71%, clean boundary). Fresh implementer resumes at **P0.10** under canonical name `contract-contracts-implementer`.
+Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see Log.
 
-- **Team paused 2026-06-20** — handoff doc: `docs/team-handoffs/contract-001-2026-06-20-p0-resume-worktree.md` · last round-seal: `ef95485` · next-slice target: **P0.10**. Resume worktree-native: `/team-start contract` from inside `Capstone-contract`.
-
-**Resolved escalation (P0.2):** §14 env-**value** layer — human ratified **Option A** (2026-06-20): placed at the P1 boundary, deferred not cut. §14 note written; cross-track requirement on Carry-forward.
-
-**Next session target:** P0.10 (per-type payload-shape map for high-traffic event types; reuses EnergyEvent/CandidateIdea/CriticReview/CheckResult/NoveltyScore/FitnessScore; folds in the payload size/depth ceiling carry-forward).
+**Next:** Phase 0 is frozen → the **kernel track forks** (Phase 1 — persistence & event store; `Depends on (phases): none` but consumes the P0 contracts). Cross-track handoff items for the downstream tracks' orchestrators are in Carry-forward (each carries a cross-track marker + a `DELETE after <track> consumes it` note). **No further contract-track slices.**
 
 ---
 
@@ -38,11 +34,11 @@
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
 - **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). _(origin: 2026-06-20 P0.1 security review; cross-track)_
-- **`payload` has no size/depth bound at the envelope level** — enforce a ceiling at P0.10 per-type narrowing AND on the event-store append path (P1). Fold into the P0.10 brief. _(origin: 2026-06-20 P0.1 security review)_
+- **Payload size/depth ceiling — P0.10 portion DONE; P1 portion open.** `enforcePayloadCeiling` (`MAX_PAYLOAD_BYTES`=1 MiB, `MAX_PAYLOAD_DEPTH`=32; depth-before-size; result-object, never throws) + `validateEventPayload` landed in P0.10 (`packages/contracts/src/events/payload-map.ts`). **P1 (cross-track → kernel/event-store):** the append path MUST call `validateEventPayload` (narrow + ceiling) BEFORE append and emit a violation event on `{ok:false}`; ALSO confirm an upstream request-body byte gate (Fastify `bodyLimit`) precedes it so the O(node-count) depth-probe cost is bounded by request size. _(origin: 2026-06-20 P0.1 + P0.10 security reviews; cross-track → kernel P1; DELETE after P1 consumes it)_
 - **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. _(origin: 2026-06-20 P0.3; cross-track → kernel)_
 - **§14 env-VALUE redaction layer (ratified Option A) — INLINED, no further action.** Now an explicit acceptance + reachability bullet in **P1.2** (event-store, kernel track) and **P6.5** (observability/Langfuse, demo track); §14 note written. Kept here as a cross-track pointer so the kernel + demo orchestrators see it at orient. _(origin: 2026-06-20 P0.2 security review; human-RATIFIED Option A; DELETE at the /orchestrate-end after both tracks consume it)_
-- **STANDING DIRECTIVE (P0): bundle remaining schema slices where safe.** _(STATUS 2026-06-20: solo P0.6–P0.9 ✓ + gateway bundle `[P0.11+P0.12]` ✓ shipped. REMAINING: P0.10 (solo), `[P0.15 Run+Gen+Culling + P0.13]` (bundle), P0.15-`FinalJudgeRubric` (solo), P0.14 (phase-gate).)_ Human direction via lead (lead-APPROVED 2026-06-20) — bundle to speed the build; never bundle a safety-invariant slice with feature work; each bundled behavior keeps its own red→green + stays a coherent Step-2.5 unit. **SOLO:** P0.6 (`criticInput` injection-isolation, rule 5), P0.7 (`CheckRunnerAdapter` allowlist, rule 3), P0.8 (`ScoringPolicy`+novelty/fitness scoring contract, rule 6), **P0.9** (`EnergyEvent`/`ReproductionEvent` — no-failed-attempt-debit is safety rule 8; lead ruled FULLY SOLO, never in a feature bundle), **P0.15 `FinalJudgeRubric`** (held-out judge immutable-to-agents, rule 6 — split out of P0.15), P0.10 (per-type payload map **+ payload size/depth ceiling**, security carry-forward), P0.14 (contract-test phase-gate, deps everything). **BUNDLE:** `[P0.11+P0.12]` gateway contracts (§6) · `[P0.15 Run+Generation+CullingEvent + P0.13 LineageGraphProjection]` run-lifecycle entities + lineage projection (§3+§10; gated on P0.8 — the projection's node types ARE these entities). _(origin: 2026-06-20 lead-relayed human direction, lead-approved same day; applies from next dispatch after in-flight P0.5; KEEP until P0 complete)_
 - **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P2/P3 consume it)_
+- **Held-out judge LOAD path must validate the rubric before use (cross-track → verifier P4 / selection P5).** `FinalJudgeRubric` (P0.15) pins SHAPE only — closed 5-axis, `immutableToAgents:true` literal, required `policyVersion`, no-authority-field. The CONTRACT cannot enforce a no-agent-write path or full-axis-set completeness (lesson §6). The P4 held-out-judge load path MUST (a) load the rubric/config from immutable config, NEVER an agent-writable path (rule #6 / §14), and (b) assert the rubric carries the FULL 5-axis set + `immutableToAgents:true` before scoring. **Cross-track pointer** — the verifier track inlines this into its P4 held-out-judge task at `/orchestrate-start`. _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; cross-track → verifier P4/P5; DELETE after P4/P5 consume it)_
 
 ---
 
@@ -52,7 +48,7 @@ Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/
 
 | Deliverable | Status | Delivered by |
 |---|---|---|
-| Frozen shared-contracts package (`packages/contracts`) | ❌ | Phase 0 |
+| Frozen shared-contracts package (`packages/contracts`) | ✅ | Phase 0 |
 | Postgres append-only event store + replay reader | ❌ | Phase 1 |
 | Provider-agnostic ModelGateway (OpenRouter / OpenAI / retrieval) | ❌ | Phase 2 |
 | Runtime kernel — bounded evolution loop, caps, energy, RNG | ❌ | Phase 3 |
@@ -285,14 +281,14 @@ The project is "done" when:
 
 ### P0.10 — Per-type payload-shape map for high-traffic event types
 
-- [ ] Defines a per-type payload narrowing for the high-traffic types named in §4: energy.spent, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored
-- [ ] Each narrowed payload reuses the corresponding Appendix-A model (energy.spent←EnergyEvent, candidate.created←CandidateIdea, critic.reviewed←CriticReview, check.completed←CheckResult, novelty.scored←NoveltyScore incl. persisted vector, fitness.scored←FitnessScore) so the same Zod schema validates the event-store write and the model
-- [ ] novelty.scored payload carries the persisted embedding vector + embeddingModelId + dimension (authoritative-once-computed home, §9)
-- [ ] fitness.scored payload references the novelty it consumed (§8 explainability)
-- [ ] A high-traffic event whose payload does not match its narrowed shape is rejected; types outside the high-traffic set fall back to the generic JSONB payload (§4)
-- [ ] Files: packages/contracts/src/events/payload-map.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: extended — RunEventEnvelope, EnergyEvent, CandidateIdea, CriticReview, CheckResult, NoveltyScore, FitnessScore · seam: schema-snapshot test
-- [ ] Depends on: P0.1, P0.5, P0.6, P0.7, P0.8, P0.9
+- [x] Defines a per-type payload narrowing for the high-traffic types named in §4: energy.spent, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored
+- [x] Each narrowed payload reuses the corresponding Appendix-A model (energy.spent←EnergyEvent, candidate.created←CandidateIdea, critic.reviewed←CriticReview, check.completed←CheckResult, novelty.scored←NoveltyScore incl. persisted vector, fitness.scored←FitnessScore) so the same Zod schema validates the event-store write and the model
+- [x] novelty.scored payload carries the persisted embedding vector + embeddingModelId + dimension (authoritative-once-computed home, §9)
+- [x] fitness.scored payload references the novelty it consumed (§8 explainability)
+- [x] A high-traffic event whose payload does not match its narrowed shape is rejected; types outside the high-traffic set fall back to the generic JSONB payload (§4)
+- [x] Files: packages/contracts/src/events/payload-map.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: extended — RunEventEnvelope, EnergyEvent, CandidateIdea, CriticReview, CheckResult, NoveltyScore, FitnessScore · seam: schema-snapshot test
+- [x] Depends on: P0.1, P0.5, P0.6, P0.7, P0.8, P0.9
 
 ### P0.11 — ModelRoute / ModelRole / ProviderCapability schemas
 
@@ -319,47 +315,66 @@ The project is "done" when:
 
 ### P0.13 — LineageGraphProjection schema
 
-- [ ] LineageGraphProjection carries exactly runId, nodes[], edges[], sequenceThrough (Appendix A §10)
-- [ ] Each node carries id, type, label, status?, metrics?, dataRef; node type is the CLOSED union generation, agenome, candidate, critic, check, score (§10 / DATA_MODEL.md)
-- [ ] Each edge carries id, source, target, type, label? (§10)
-- [ ] sequenceThrough records the per-run sequence watermark the projection was built through so it is rebuildable/discardable when newer events exist (§9 watermark rule)
-- [ ] The projection is storage-agnostic (consumers depend on this shape, not on physical storage / Neo4j), per §10
-- [ ] Files: packages/contracts/src/projections/lineage-graph.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — LineageGraphProjection · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: none
+- [x] LineageGraphProjection carries exactly runId, nodes[], edges[], sequenceThrough (Appendix A §10)
+- [x] Each node carries id, type, label, status?, metrics?, dataRef; node type is the CLOSED union generation, agenome, candidate, critic, check, score (§10 / DATA_MODEL.md)
+- [x] Each edge carries id, source, target, type, label? (§10)
+- [x] sequenceThrough records the per-run sequence watermark the projection was built through so it is rebuildable/discardable when newer events exist (§9 watermark rule)
+- [x] The projection is storage-agnostic (consumers depend on this shape, not on physical storage / Neo4j), per §10
+- [x] Files: packages/contracts/src/projections/lineage-graph.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — LineageGraphProjection · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: none
 
 ### P0.15 — Run / Generation / CullingEvent / FinalJudgeRubric entity contracts (close Appendix-A gaps)
 
-- [ ] Run carries id, seed, enabledSubtypes[], caps, status, startedAt, completedAt? (from DOMAIN_MODEL.md Core Entities; §3 names Run as "typed in Appendix A")
-- [ ] Generation carries id, runId, index, status, startedAt, completedAt? (DOMAIN_MODEL.md)
-- [ ] CullingEvent carries id, runId, generationId, targetIds[], reason, scoreSnapshot (DOMAIN_MODEL.md) — the persisted shape behind the lineage.culled event type
-- [ ] FinalJudgeRubric carries axes (the 5 named axes: grounding, novelty, feasibility, falsification_survival, subtype_check_pass), weights (deferred-open values), policyVersion, immutableToAgents:true (§7/§8)
-- [ ] RECONCILED (at the tasks-gen gate): ARCHITECTURE.md Appendix A now carries `Run`/`Generation`, `CullingEvent`, and `FinalJudgeRubric` rows (inlined from the cited DOMAIN_MODEL.md/DATA_MODEL.md). Freeze the Zod shapes to MATCH those Appendix-A rows — they are now §2.5 shared contracts (schema-snapshot test in the RED outline)
-- [ ] Files: packages/contracts/src/domain/run.ts (NEW); packages/contracts/src/domain/generation.ts (NEW); packages/contracts/src/domain/culling-event.ts (NEW); packages/contracts/src/verifier/final-judge-rubric.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: NEW — Run, Generation, CullingEvent, FinalJudgeRubric · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
-- [ ] Depends on: P0.3, P0.8
+- [x] Run carries id, seed, enabledSubtypes[], caps, status, startedAt, completedAt? (from DOMAIN_MODEL.md Core Entities; §3 names Run as "typed in Appendix A")
+- [x] Generation carries id, runId, index, status, startedAt, completedAt? (DOMAIN_MODEL.md)
+- [x] CullingEvent carries id, runId, generationId, targetIds[], reason, scoreSnapshot (DOMAIN_MODEL.md) — the persisted shape behind the lineage.culled event type
+- [x] FinalJudgeRubric carries axes (the 5 named axes: grounding, novelty, feasibility, falsification_survival, subtype_check_pass), weights (deferred-open values), policyVersion, immutableToAgents:true (§7/§8)
+- [x] RECONCILED (at the tasks-gen gate): ARCHITECTURE.md Appendix A now carries `Run`/`Generation`, `CullingEvent`, and `FinalJudgeRubric` rows (inlined from the cited DOMAIN_MODEL.md/DATA_MODEL.md). Freeze the Zod shapes to MATCH those Appendix-A rows — they are now §2.5 shared contracts (schema-snapshot test in the RED outline)
+- [x] Files: packages/contracts/src/domain/run.ts (NEW); packages/contracts/src/domain/generation.ts (NEW); packages/contracts/src/domain/culling-event.ts (NEW); packages/contracts/src/verifier/final-judge-rubric.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — Run, Generation, CullingEvent, FinalJudgeRubric · §2.5 seam: RED outline includes the field-name-set **schema-snapshot test** (`spec(§X)`-tagged)
+- [x] Depends on: P0.3, P0.8
 
 ### P0.14 — Contract-test surface — consumer/producer payload agreement
 
-- [ ] Establishes the contracts-package gate that every consumer of a shared schema agrees with the producer on payload shapes (§16 contract tests, RISK-014 / REQ-T-007)
-- [ ] Provides a single canonical valid fixture per Appendix-A model exported from the contracts package for cross-track producers/consumers to validate against
-- [ ] Provides the field-name-set schema-snapshot harness so any added/removed/renamed field on any §2.5 shared model is caught as a regression before tracks fork
-- [ ] Asserts the closed unions (RunEventType, actor, ModelRole, CriticMandate, subtype, all state-machine status unions) reject out-of-set values at the contract boundary
-- [ ] Exports z.infer TS types for every model so consumers import types from contracts and never redefine them (single-source-of-truth invariant, §4 Zod-authored)
-- [ ] Index barrel re-exports every frozen schema + type so a track imports exactly one package boundary (§2.5 import-direction)
-- [ ] Files: packages/contracts/src/test-fixtures/index.ts (NEW); packages/contracts/src/__schema-snapshots__/field-sets.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P0.1, P0.10, P0.11, P0.12, P0.13, P0.3, P0.4, P0.5, P0.6, P0.7, P0.8, P0.9
+- [x] Establishes the contracts-package gate that every consumer of a shared schema agrees with the producer on payload shapes (§16 contract tests, RISK-014 / REQ-T-007)
+- [x] Provides a single canonical valid fixture per Appendix-A model exported from the contracts package for cross-track producers/consumers to validate against
+- [x] Provides the field-name-set schema-snapshot harness so any added/removed/renamed field on any §2.5 shared model is caught as a regression before tracks fork
+- [x] Asserts the closed unions (RunEventType, actor, ModelRole, CriticMandate, subtype, all state-machine status unions) reject out-of-set values at the contract boundary
+- [x] Exports z.infer TS types for every model so consumers import types from contracts and never redefine them (single-source-of-truth invariant, §4 Zod-authored)
+- [x] Index barrel re-exports every frozen schema + type so a track imports exactly one package boundary (§2.5 import-direction)
+- [x] Files: packages/contracts/src/test-fixtures/index.ts (NEW); packages/contracts/src/__schema-snapshots__/field-sets.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P0.1, P0.10, P0.11, P0.12, P0.13, P0.3, P0.4, P0.5, P0.6, P0.7, P0.8, P0.9
 
 ### Acceptance criteria (P0)
 
-- [ ] Every Appendix-A model is a Zod schema in packages/contracts with its z.infer TS type, exported from the index barrel; no model is redefined outside contracts.
-- [ ] RunEventType and the actor 7-role union are CLOSED enums that reject any unlisted value, including all named failure/terminal event types so every §3/§5 failure path has a persisted event (RISK-006 closed).
-- [ ] sequence is the sole ordering key on RunEventEnvelope; occurredAt is display/analytics-only; schemaVersion is on every envelope and readers accept schemaVersion ≤ current.
-- [ ] Persisted-once-computed invariants are structurally encoded: NoveltyScore.vector + embeddingModelId + dimension persisted; EnergyEvent has estimate+actual and no failed-attempt debit; RNG outcomes live in reproduction/mutation payloads.
-- [ ] Safety pins are present as contract surface: single secret-redaction scrub (idempotent, used at append + Langfuse boundaries); CheckRunnerAdapter allowlist with non-executing/skipped-with-reason; criticInput separates trusted rubric from untrusted candidate data with a sentinel delimiter.
-- [ ] ScoringPolicy/FitnessScore structure is frozen with numeric weights as the only deferred-open values; config validation parses defaults<file<env and fails fast on the first invalid field.
-- [ ] The contract-test surface proves consumer/producer payload agreement and every model-defining task carries a field-name-set schema-snapshot in its RED outline (REQ-T-007 / RISK-014), so a mid-build field change is caught as a cross-track regression before the four tracks fork.
+- [x] Every Appendix-A model is a Zod schema in packages/contracts with its z.infer TS type, exported from the index barrel; no model is redefined outside contracts.
+- [x] RunEventType and the actor 7-role union are CLOSED enums that reject any unlisted value, including all named failure/terminal event types so every §3/§5 failure path has a persisted event (RISK-006 closed).
+- [x] sequence is the sole ordering key on RunEventEnvelope; occurredAt is display/analytics-only; schemaVersion is on every envelope and readers accept schemaVersion ≤ current.
+- [x] Persisted-once-computed invariants are structurally encoded: NoveltyScore.vector + embeddingModelId + dimension persisted; EnergyEvent has estimate+actual and no failed-attempt debit; RNG outcomes live in reproduction/mutation payloads.
+- [x] Safety pins are present as contract surface: single secret-redaction scrub (idempotent, used at append + Langfuse boundaries); CheckRunnerAdapter allowlist with non-executing/skipped-with-reason; criticInput separates trusted rubric from untrusted candidate data with a sentinel delimiter.
+- [x] ScoringPolicy/FitnessScore structure is frozen with numeric weights as the only deferred-open values; config validation parses defaults<file<env and fails fast on the first invalid field.
+- [x] The contract-test surface proves consumer/producer payload agreement and every model-defining task carries a field-name-set schema-snapshot in its RED outline (REQ-T-007 / RISK-014), so a mid-build field change is caught as a cross-track regression before the four tracks fork.
+
+### Phase 0 — exit gate — `/phase-exit P0` (2026-06-20): CLEAR
+
+Run at the close of the P0.10→P0.14 round (impl tip `c33eb2f`, suite 160/160). Auditor reports in `docs/audits/P0-*.md`.
+
+- [x] **All phase task checkboxes ticked** — P0.1–P0.13, P0.14, P0.15 all `[x]`.
+- [x] **Acceptance criterion met** — the 7 P0 acceptance bullets above, verified by the arch-drift audit + the P0.14 contract-surface (29 models field-set-snapshotted, 17 unions swept, 36 fixtures valid) + the 160-test suite. No runtime smoke (pure contracts).
+- [x] **`/preflight` clean** — `@doppl/contracts` tsc + eslint + prettier --check + 160/160 vitest (final state `c33eb2f`).
+- [x] **Cross-doc invariants verified** — arch-drift CLEAR (0 drift); the one STALE-DOC (Appendix-A `RunConfig`/`RunCaps` row) fixed this round; the `apps/api/CLAUDE.md` cross-doc table + Appendix A match the schemas.
+- [x] **Reachability audit clean** — `reachability-auditor` CLEAR (96 reachable, 0 unreachable/orphan; runtime wiring is P1–P7 by design). `docs/audits/P0-reachability.md`.
+- [x] **Arch-drift audit clean** — `arch-drift-auditor` CLEAR over §3/§4/§6/§7/§8/§9/§10/§14/§16. `docs/audits/P0-arch-drift.md`.
+- [x] **Spec coverage** — verified by the arch-drift audit (every Appendix-A model `spec(§X)`-snapshot-tagged) + the P0.14 surface. _(`spec-lint tests` has a `**Spec anchors:**` bold-format parse quirk affecting all phases — tooling note, not a coverage gap.)_
+- [x] **Whole-system security review** — consolidating `security-reviewer` CLEAN (safety pins #3/#5/#6/#8 + §14 + the P0.10 ceiling all hold; 0 findings); per-slice security-reviewer also CLEAN on every safety slice. `docs/audits/P0-security.md`. _(code-quality CLEAR; 1 medium + 2 low fixed in `c33eb2f`, 1 low deferred — `EXPECTED_FIXTURE_NAMES`, dual-covered.)_
+- [x] **Dependency audit** — `pnpm audit --prod`: no known vulnerabilities.
+- [x] **Perf budgets** — n/a (deliberate deferral, REQ-NF-003).
+- [ ] **Session doc(s) exist** — completed at impl `/session-end` (this round's close-out).
+- [ ] **Commits pushed to origin** — completed at `/orchestrate-end` (verify-only here; tree currently ahead).
+
+**Verdict: CLEAR** (rows 1–10). Rows 11–12 complete at close-out (`/session-end` + `/orchestrate-end`); Phase 0 ticks complete at `/orchestrate-end`.
 
 ---
 
@@ -1539,6 +1554,17 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ## Log
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
+
+### 2026-06-21 — Phase 0 contract freeze CLOSED: P0.10→P0.14 + `/phase-exit P0` CLEAR
+
+- Landed the final 5 P0 task IDs (P0.10, P0.13, P0.15-entities, P0.15-`FinalJudgeRubric`, P0.14) across 5 commits: payload map + ceiling `73289fd` · entities+lineage bundle `8bd9502` · FinalJudgeRubric `5058400` · contract-test surface `0180c5f` · P0.10 follow-up `c33eb2f`. **Phase 0 → 14/14; suite 118→160.** Contract freeze COMPLETE — the four downstream tracks (kernel/verifier/selection/demo) can fork.
+- `/phase-exit P0` = **CLEAR**: 4-auditor fan-out (reachability / arch-drift / security-consolidating / code-quality) all CLEAR + `pnpm audit --prod` clean + `/preflight` 160/160. Reports in `docs/audits/P0-*.md`; gate block under the Phase 0 section.
+- Findings dispositioned: 1 arch-drift STALE-DOC (orchestrator's own malformed Appendix-A edit) fixed; 1 code-quality **[medium]** (validator echoed caller input, not the parsed value — latent authoritative-log integrity risk) + 2 [low] fixed in `c33eb2f` (security re-review CLEAN); 1 [low] deferred (dual-covered).
+- Decisions made: `fitness.scored`↔novelty link = reuse `FitnessScore` + shared `candidateId`/`components` (Q1=A); `Run.seed` = scenario string (≠ `rngSeed` — impl caught a brief contradiction, ruled on evidence); payload ceiling = true-byte `Buffer.byteLength` + depth-before-size; `FinalJudgeRubric` stacks all 4 immutability legs. Lessons banked **§15–§18**.
+- Finding (resolved this round): `scripts/guards/territory-guard.sh` blanket `"docs/"` blocked the impl's `docs/sessions/` at close-out — narrowed to the canonical orchestrator subpaths + synced `apps/api/CLAUDE.md`; escalated to the lead for an upstream `/scaffold-upgrade`.
+- Scope shifts: none cut. Carry-forward triaged (Step 5.5): standing bundling directive **DELETED** (P0 complete); 6 cross-track pointers **KEPT** for the downstream tracks' orchestrators (IDs-opaque, payload-ceiling-P1, validateRunConfig-boot, §14-redaction, gateway-passthrough-scrub, held-out-judge-load).
+- Next session target: Phase 0 frozen → **kernel track forks** (P1 persistence & event store). No further contract-track slices.
+- Reference: implementer session doc `contract-002-2026-06-21-p0-payload-map-entities-lineage-judge-surface.md` for technical detail.
 
 ### 2026-06-20 — Phase 0 contract freeze: P0.5→P0.12 (6 slices) + WARN auto-cycle
 

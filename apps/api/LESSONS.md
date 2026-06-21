@@ -174,3 +174,45 @@ Rule #7 (replay calls no providers) is supported at the contract tier by making 
 A per-slice Step-8 `npx prettier --check` resolved a DIFFERENT prettier than the workspace-pinned binary and reported **false-clean** on 10 files (Unicode in code comments shifted line-wrap past print-width); the authoritative `pnpm format:check` caught it only at `/session-end`, forcing a separate formatting-only commit (`609cb9d`). `npx <tool>` resolves the first match on `PATH` or fetches a "latest" — not necessarily the version pinned in the workspace — so version skew yields different rules: a check that passes locally while the pinned binary (CI / `/preflight`) fails. Always run the workspace-pinned binary: `pnpm format:check` / `pnpm lint` / `pnpm typecheck`, or `./node_modules/.bin/<tool>` — never bare `npx prettier`/`npx eslint`/`npx tsc`.
 
 **Rule:** Run format/lint/type checks through the package-pinned binary (`pnpm <script>` or `./node_modules/.bin/<tool>`), never `npx <tool>` — `npx` can resolve a different version and report false-clean.
+
+## <a id="15"></a>15. Per-type narrowing is a SEPARATE layer over the frozen envelope — a type→schema map + own-property resolver, fail-OPEN to generic, fail-CLOSED on a known-type mismatch
+
+**Date:** 2026-06-20.
+**Source slice:** contract track P0.10 (`73289fd`); `packages/contracts/src/events/payload-map.ts`.
+
+`RunEventEnvelope.payload` is generic JSONB (`z.record(z.string(), z.unknown())`) at the envelope level; the six high-traffic event types (§4) need their payload narrowed to a frozen Appendix-A model so the SAME schema validates the event-store write and the model. The narrowing is built as a SEPARATE layer (`payload-map.ts`) — it never mutates the frozen P0.1 envelope. `HIGH_TRAFFIC_PAYLOAD_MAP: Partial<Record<RunEventType, ZodType>>` maps each high-traffic type to its model; `resolvePayloadSchema(type)` returns the narrowed schema for a high-traffic type and the generic schema otherwise.
+
+The resolver fails two ways by design: fail-OPEN to the generic JSONB schema for any non-high-traffic type (an unknown/new type still validates as generic — the registry is the closure, not the resolver), and fail-CLOSED (reject) when a high-traffic type's payload doesn't match its narrowed model (a malformed high-traffic event can't slip through as generic). The lookup is own-property (`Object.prototype.hasOwnProperty.call`, lesson §11) so a crafted `type` like `__proto__`/`constructor` resolves to generic, never a borrowed schema off the prototype chain. The key-set + per-key mapping is snapshot-pinned so a high-traffic type can't be added/remapped silently. Downstream (the P1 append path) calls the composed `validateEventPayload(type, payload)` before append.
+
+**Rule:** Narrow a generic envelope payload in a SEPARATE layer (type→schema map + own-property resolver), never by mutating the frozen envelope; fail OPEN to generic for unknown types, fail CLOSED on a known-type mismatch; snapshot the map.
+
+## <a id="16"></a>16. A payload-DoS ceiling is a BOUNDED security primitive — depth-BEFORE-size (stringify recurses), iterative early-exit, true-byte count, result-object — not a Zod range
+
+**Date:** 2026-06-20.
+**Source slice:** contract track P0.10 (`73289fd`, follow-up `c33eb2f`); `packages/contracts/src/events/payload-map.ts`.
+
+The envelope payload had no size/depth bound (P0.1 security review). `enforcePayloadCeiling(payload)` adds one as a pure result-object primitive (`{ok:true}` | `{ok:false, violation}`), NOT a Zod range refinement — a DoS bound is a security check the append path emits an event on, not a parse-time range (lesson §6: ranges that protect against a buggy producer are kernel rules; this is a security bound the contract owns and the append path calls).
+
+Two non-obvious load-bearing properties: (1) it checks DEPTH BEFORE SIZE, because `JSON.stringify` itself recurses and would stack-overflow on a deeply-nested attacker payload BEFORE a size check could run — the depth check is an iterative explicit-stack walk that early-exits the instant depth exceeds the limit, never fully traversing pathological input. (2) the size check uses `Buffer.byteLength(s, 'utf8')` (true UTF-8 bytes), not `s.length` (UTF-16 code units, which under-counts multibyte/supplementary chars up to ~4× and makes the ceiling looser than its byte label). The whole thing is wrapped so an unserializable payload (BigInt, circular ref) becomes a violation, never a throw. Constants are literal-value-snapshot-pinned so a silent weakening of the bound is a test-breaking, reviewable change.
+
+**Rule:** A payload-DoS ceiling is a bounded pure primitive (depth-before-size; iterative early-exit so deep input can't stack-overflow stringify; true-byte `Buffer.byteLength`; result-object never-throws; literal-pinned constants) that the append path calls — not a Zod range.
+
+## <a id="17"></a>17. An agent-immutable anchor stacks ALL the immutability legs — closed-enum set + literal-true flag + required version + no-authority-field-via-strict + member/field snapshot
+
+**Date:** 2026-06-20.
+**Source slice:** contract track P0.15 FinalJudgeRubric (`5058400`); `packages/contracts/src/verifier/final-judge-rubric.ts`.
+
+The held-out judge's rubric is the bedrock fitness anchor agents cannot move (safety rule #6). The contract pins immutability by SHAPE by stacking every leg at once — none alone is sufficient: a closed `z.enum` axis set (no agent can add/remove a judging axis, lesson §1), `immutableToAgents: z.literal(true)` (the flag can't be flipped or omitted), a REQUIRED `policyVersion` typed identically to `ScoringPolicy.version` (immutability-via-versioning, lesson §12 — never mutated in place), `z.strictObject` with no mutation/override/authority field representable (lesson §9), and a field-set + member-set + literal-value snapshot so any weakening is a cross-track regression (lesson §1).
+
+The contract pins SHAPE only — completeness (the rubric carries the full axis set) and the no-agent-write-path are RUNTIME invariants (lesson §6) the P4/P5 held-out-judge LOAD path enforces (load from immutable config; assert the full axis set + `immutableToAgents:true` before scoring). The contract is defense-in-depth; the load path is the primary gate.
+
+**Rule:** For a contract that must be immutable to agents, stack all the legs — closed-enum set + `literal(true)` flag + required identical-typed version + strict no-authority-field + value/member snapshot — and pin completeness + the no-write-path at the runtime load boundary.
+
+## <a id="18"></a>18. A boundary validator returns the PARSED value, never the caller's input — else a transform/coercion silently bypasses on the authoritative path
+
+**Date:** 2026-06-20.
+**Source slice:** contract track P0.10 follow-up (`c33eb2f`); `packages/contracts/src/events/payload-map.ts`.
+
+`validateEventPayload(type, payload)` originally returned `{ok:true, payload}` echoing the CALLER's input object rather than `parsed.data` from the `safeParse`. Functionally identical TODAY (no high-traffic schema uses `.transform`/`.coerce`/`.default`), but a latent data-integrity hole on the authoritative event log: the instant any schema gains a coercion, the P1 append path would persist the PRE-transform value — a TOCTOU between validate and use. A validator at a persistence boundary must return the validated/normalized output, so what was checked is exactly what flows downstream. (Surfaced as a phase-exit code-quality [medium]; fixed before the freeze closed.)
+
+**Rule:** A boundary validator returns `parsed.data` (the validated/normalized value), never the caller's input — so a present-or-future transform/coercion can't bypass onto the authoritative path.

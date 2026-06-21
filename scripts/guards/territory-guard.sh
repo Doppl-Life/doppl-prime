@@ -30,8 +30,15 @@ TERRITORY=(
   "apps/api/LESSONS.md"
   "apps/web/CLAUDE.md"
   "apps/web/LESSONS.md"
-  "docs/"
+  "docs/briefs/"
+  "docs/runbooks/"
+  "docs/audits/"
+  "docs/orchestrator-briefing.md"
+  "docs/tdd-brief-template.md"
 )
+# NOTE: scope to the orchestrator's specific docs/ subpaths (matching the canonical
+# "must NOT touch" list in apps/api/CLAUDE.md) — NOT a blanket "docs/", which wrongly
+# blocked docs/sessions/ (implementer's /session-end) + docs/team-handoffs/ (lead's /team-end).
 
 for t in "${TERRITORY[@]}"; do
   case "$rel" in
