@@ -25,7 +25,9 @@
 
 Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see Log.
 
-**Next:** Phase 0 is frozen → the **kernel track forks** (Phase 1 — persistence & event store; `Depends on (phases): none` but consumes the P0 contracts). Cross-track handoff items for the downstream tracks' orchestrators are in Carry-forward (each carries a cross-track marker + a `DELETE after <track> consumes it` note). **No further contract-track slices.**
+**Kernel freeze bundle — COMPLETE + MERGED to integration (cody merge `e638d81`).** 7 slices green: gateway P2.1/P2.4/P2.9 + event-store P1.1/P1.2/P1.4/P1.3 (round-seal `fd9459c`). Integration preflight on merged cody **CLEAR** (docker OK · typecheck · lint · format · 32 unit · 18 integration). **→ verifier / selection / demo can now FORK** from cody (frozen contracts + gateway stub + fixtures).
+
+**Next:** the **kernel track continues** on `track/kernel` (held until the fork is stood up): rest-of-P2 (`{P2.2+P2.5}`, `{P2.6+P2.7}`, P2.3, P2.8) + rest-of-P1 (`{P1.5+P1.6}`, P1.7, P1.8) then all of P3 — grouped per the standing bundle-where-safe directive, safety-invariant slices solo. Downstream cross-track handoff items remain in Carry-forward (kernel-consumed portions annotated; demo/verifier portions pending).
 
 ---
 
@@ -33,11 +35,11 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-- **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). _(origin: 2026-06-20 P0.1 security review; cross-track)_
-- **Payload size/depth ceiling — P0.10 portion DONE; P1 portion open.** `enforcePayloadCeiling` (`MAX_PAYLOAD_BYTES`=1 MiB, `MAX_PAYLOAD_DEPTH`=32; depth-before-size; result-object, never throws) + `validateEventPayload` landed in P0.10 (`packages/contracts/src/events/payload-map.ts`). **P1 (cross-track → kernel/event-store):** the append path MUST call `validateEventPayload` (narrow + ceiling) BEFORE append and emit a violation event on `{ok:false}`; ALSO confirm an upstream request-body byte gate (Fastify `bodyLimit`) precedes it so the O(node-count) depth-probe cost is bounded by request size. _(origin: 2026-06-20 P0.1 + P0.10 security reviews; cross-track → kernel P1; DELETE after P1 consumes it)_
+- **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). **Kernel P1 CONSUMED** (`runId`/`candidateId` treated as opaque bytes, parameterized + verified across P1.3/P1.4); demo P6/P7/PD still pending. _(origin: 2026-06-20 P0.1 security review; cross-track; DELETE after demo consumes it)_
+- **Payload size/depth ceiling — append-path CONSUMED (P1.3); P6/API `bodyLimit` residual open.** `validateEventPayload` (per-type narrow + `MAX_PAYLOAD_BYTES`=1 MiB / `MAX_PAYLOAD_DEPTH`=32 ceiling, depth-before-size; P0.10) is wired BEFORE append with `max_bytes`/`max_depth` rejection reasons (verified `apps/api/src/event-store/append.ts:72`). **Residual (cross-track → demo P6/API):** set a Fastify `bodyLimit` request-body gate at the API ingestion layer so the O(node-count) depth-probe cost stays bounded by request size — the security rationale the append-path ceiling pairs with. _(origin: 2026-06-20 P0.1 + P0.10 security reviews; append-path consumed P1.3; DELETE after P6 sets bodyLimit)_
 - **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. _(origin: 2026-06-20 P0.3; cross-track → kernel)_
 - **§14 env-VALUE redaction layer (ratified Option A) — kernel/P1.2 CONSUMED + hardened; demo/P6.5 still open.** Acceptance + reachability bullet in **P1.2** (event-store, kernel — SHIPPED; its env-value layer now redacts **object KEYS + array elements as well as values, with de-collision**, after a `[high]` secret-as-key finding) and **P6.5** (observability/Langfuse, demo track — OPEN). **P6.5 MUST also redact KEYS, not just values, with de-collision** — `RunEventEnvelope.payload` / `GENERIC_PAYLOAD_SCHEMA` are open `z.record` so producer-controlled keys reach the boundary; a values-only scrub leaks a secret-as-key. See ARCHITECTURE.md §14 + `apps/api/LESSONS` §21. _(origin: 2026-06-20 P0.2 security review; human-RATIFIED Option A; hardened by 2026-06-21 P1.2 `[high]` finding; DELETE at the /orchestrate-end after the demo track consumes it)_
-- **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P2/P3 consume it)_
+- **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. **Scrub-at-persist BUILT** (P1.2 boundary scrub → wired before append in P1.3 `append.ts`; P2.4 structured-output carries candidate text as data); **remaining: the P3 event-emission reachability pins** on these passthrough fields when the runtime emits gateway-carrying events. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P3 emission pins)_
 - **Held-out judge LOAD path must validate the rubric before use (cross-track → verifier P4 / selection P5).** `FinalJudgeRubric` (P0.15) pins SHAPE only — closed 5-axis, `immutableToAgents:true` literal, required `policyVersion`, no-authority-field. The CONTRACT cannot enforce a no-agent-write path or full-axis-set completeness (lesson §6). The P4 held-out-judge load path MUST (a) load the rubric/config from immutable config, NEVER an agent-writable path (rule #6 / §14), and (b) assert the rubric carries the FULL 5-axis set + `immutableToAgents:true` before scoring. **Cross-track pointer** — the verifier track inlines this into its P4 held-out-judge task at `/orchestrate-start`. _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; cross-track → verifier P4/P5; DELETE after P4/P5 consume it)_
 - **STANDING (user, 2026-06-21): bundle slices where safe to speed the build.** Group dep-compatible, same-code-area, non-invariant slices into ONE atomic red→green→commit unit. **Safety-invariant slices NEVER bundle with feature work** (root `CLAUDE.md` TDD posture) — they stay solo. Applies to every track's remaining phases (kernel first; freeze bundle stays tight per the deps/safety/cross-area analysis). _(origin: 2026-06-21 lead relay of user direction; STANDING — keep through triage; re-issues the P0-era bundling directive deleted at contract-002 close)_
 
@@ -404,54 +406,54 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P1.1 — §4 event-model Zod contracts: RunEventEnvelope, closed RunEventType registry, actor 7-role union, EvidenceRef
 
-- [ ] RunEventType is a CLOSED enum covering the full §4/Appendix-A registry incl. every failure/terminal event (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded, run.failed, run.stopped) — an unknown type value is rejected, never silently accepted
-- [ ] RunEventEnvelope carries id, runId, optional generationId/agenomeId/candidateId, type, sequence, occurredAt (UTC ISO-8601), actor (closed 7-role union — string actor rejected), optional correlationId/langfuseTraceId/langfuseObservationId, payload (JSONB), and a required schemaVersion
-- [ ] EvidenceRef.kind is the closed union trace/check_output/prior_art/signal/raw_output/other; an EvidenceRef carrying only an external uri that is non-resolvable within Postgres is representable but the resolver (P1.7) treats Postgres-tier eventId as the authoritative pointer
-- [ ] Per-type payload-shape narrowing exists for the high-traffic types (energy.spent, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored); other types accept JSONB payload
-- [ ] Types are derived via z.infer from the Zod schemas (no parallel hand-written TS); one schema is the single source for both event-store write validation and downstream consumers
-- [ ] schemaVersion is a required positive integer on every envelope
-- [ ] Files: packages/contracts/src/events/run-event-type.ts (NEW); packages/contracts/src/events/run-event-envelope.ts (NEW); packages/contracts/src/events/actor.ts (NEW); packages/contracts/src/events/evidence-ref.ts (NEW); packages/contracts/src/events/payloads.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType, EvidenceRef — frozen in P0.1, P0.5)
-- [ ] Depends on: P0.1, P0.5
+- [x] RunEventType is a CLOSED enum covering the full §4/Appendix-A registry incl. every failure/terminal event (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded, run.failed, run.stopped) — an unknown type value is rejected, never silently accepted
+- [x] RunEventEnvelope carries id, runId, optional generationId/agenomeId/candidateId, type, sequence, occurredAt (UTC ISO-8601), actor (closed 7-role union — string actor rejected), optional correlationId/langfuseTraceId/langfuseObservationId, payload (JSONB), and a required schemaVersion
+- [x] EvidenceRef.kind is the closed union trace/check_output/prior_art/signal/raw_output/other; an EvidenceRef carrying only an external uri that is non-resolvable within Postgres is representable but the resolver (P1.7) treats Postgres-tier eventId as the authoritative pointer
+- [x] Per-type payload-shape narrowing exists for the high-traffic types (energy.spent, candidate.created, critic.reviewed, check.completed, novelty.scored, fitness.scored); other types accept JSONB payload
+- [x] Types are derived via z.infer from the Zod schemas (no parallel hand-written TS); one schema is the single source for both event-store write validation and downstream consumers
+- [x] schemaVersion is a required positive integer on every envelope
+- [x] Files: packages/contracts/src/events/run-event-type.ts (NEW); packages/contracts/src/events/run-event-envelope.ts (NEW); packages/contracts/src/events/actor.ts (NEW); packages/contracts/src/events/evidence-ref.ts (NEW); packages/contracts/src/events/payloads.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType, EvidenceRef — frozen in P0.1, P0.5)
+- [x] Depends on: P0.1, P0.5
 
 ### P1.2 — Secret-redaction scrub function (write-boundary safety pin)
 
-- [ ] A single pure scrub function runs in event-store on every payload BEFORE append — no event is appended without passing through it
-- [ ] Redaction is pattern-based over key formats, Authorization headers, and env-value shapes (provider API keys, bearer tokens) and replaces matches with a non-reversible redaction marker rather than dropping the field
-- [ ] **Env-value layer (§14; human-ratified Option A 2026-06-20):** beyond the shared `packages/contracts` `scrubSecrets` (key-format + key-name layers), the event-store boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values — with a **reachability** assertion that the env-value scrub runs on the real before-append path, not only unit-tested (origin: P0.2 security review)
-- [ ] Scrub is deep/recursive over nested JSONB structures incl. arrays and inline raw/normalized provider outputs, so an over-persisted raw model output cannot leak a secret
-- [ ] Scrub is idempotent — re-running it on already-scrubbed content is a no-op and never corrupts non-secret data
-- [ ] The function is reusable by observability before Langfuse emit (same scrub at both boundaries), exported from a shared location
-- [ ] Credentials are structurally absent from persisted request/response objects (loaded only from env, never threaded into payloads) — redaction is defense-in-depth on top of that guarantee
-- [ ] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (extended — re-exports shared scrub)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: none
+- [x] A single pure scrub function runs in event-store on every payload BEFORE append — no event is appended without passing through it
+- [x] Redaction is pattern-based over key formats, Authorization headers, and env-value shapes (provider API keys, bearer tokens) and replaces matches with a non-reversible redaction marker rather than dropping the field
+- [x] **Env-value layer (§14; human-ratified Option A 2026-06-20):** beyond the shared `packages/contracts` `scrubSecrets` (key-format + key-name layers), the event-store boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values — with a **reachability** assertion that the env-value scrub runs on the real before-append path, not only unit-tested (origin: P0.2 security review)
+- [x] Scrub is deep/recursive over nested JSONB structures incl. arrays and inline raw/normalized provider outputs, so an over-persisted raw model output cannot leak a secret
+- [x] Scrub is idempotent — re-running it on already-scrubbed content is a no-op and never corrupts non-secret data
+- [x] The function is reusable by observability before Langfuse emit (same scrub at both boundaries), exported from a shared location
+- [x] Credentials are structurally absent from persisted request/response objects (loaded only from env, never threaded into payloads) — redaction is defense-in-depth on top of that guarantee
+- [x] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (extended — re-exports shared scrub)
+- [x] Cross-doc invariant: none
+- [x] Depends on: none
 
 ### P1.3 — Append-only event writer: per-run monotonic sequence + schema-validated transactional append
 
-- [ ] Append validates the envelope against the P1.1 Zod schema inside the same transaction as the insert; a schema-invalid envelope is rejected and nothing is written
-- [ ] sequence is monotonic and gapless per runId and is assigned/enforced server-side; a write attempting to reuse or skip a sequence for a run is rejected (sole ordering key invariant)
-- [ ] occurredAt is stamped by Postgres at append time (UTC), not supplied by the caller, and is never used for ordering
-- [ ] Appends go through the P1.2 redaction scrub before insert — an unscrubbed payload cannot reach the table
-- [ ] run_events is append-only: any UPDATE or DELETE against a persisted event is prevented (constraint/trigger), so historical events are immutable
-- [ ] Concurrent appends for the same run serialize so two events cannot receive the same sequence; cross-run appends do not contend on each other's sequence
-- [ ] The write is the sole authoritative path — projections/SSE/Langfuse/Neo4j are never treated as authoritative
-- [ ] Files: apps/api/event-store/append.ts (NEW); apps/api/event-store/sequence.ts (NEW); apps/api/event-store/index.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope — frozen in P0.1)
-- [ ] Depends on: P0.1, P1.1, P1.2
+- [x] Append validates the envelope against the P1.1 Zod schema inside the same transaction as the insert; a schema-invalid envelope is rejected and nothing is written
+- [x] sequence is monotonic and gapless per runId and is assigned/enforced server-side; a write attempting to reuse or skip a sequence for a run is rejected (sole ordering key invariant)
+- [x] occurredAt is stamped by Postgres at append time (UTC), not supplied by the caller, and is never used for ordering
+- [x] Appends go through the P1.2 redaction scrub before insert — an unscrubbed payload cannot reach the table
+- [x] run_events is append-only: any UPDATE or DELETE against a persisted event is prevented (constraint/trigger), so historical events are immutable
+- [x] Concurrent appends for the same run serialize so two events cannot receive the same sequence; cross-run appends do not contend on each other's sequence
+- [x] The write is the sole authoritative path — projections/SSE/Langfuse/Neo4j are never treated as authoritative
+- [x] Files: apps/api/event-store/append.ts (NEW); apps/api/event-store/sequence.ts (NEW); apps/api/event-store/index.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope — frozen in P0.1)
+- [x] Depends on: P0.1, P1.1, P1.2
 
 ### P1.4 — Drizzle migration chain: run_events + canonical projection/table set, run identically local & hosted at boot
 
-- [ ] Migrations materialize the full canonical table set: runs, run_events (authoritative), generations, agenomes, candidate_ideas, critic_reviews, check_results, fitness_scores, novelty_scores, lineage_edges, embeddings, dashboard_snapshots
-- [ ] run_events has the append-only enforcement and a per-run monotonic-sequence constraint (e.g. unique (run_id, sequence)) backing the P1.3 invariant
-- [ ] occurredAt column is DB-stamped (default now() UTC); payload is JSONB
-- [ ] Every table/projection change ships a migration in a single ordered chain; local and hosted run the SAME chain at boot, then the seed/replay loader — boot is migrate → seed → start
-- [ ] Cached/rebuildable projections (dashboard_snapshots and any cached projection) carry the (runId, sequence) watermark column they were built through
-- [ ] embeddings table stores vector + embedding-model-id + dimension as an index/query layer over the authoritative vector in novelty.scored — never the system of record
-- [ ] Migration chain is idempotent at boot: re-running against an already-migrated DB is a clean no-op
-- [ ] Files: apps/api/event-store/schema.ts (NEW — Drizzle table defs); apps/api/event-store/migrations/ (NEW — generated migration chain); apps/api/drizzle.config.ts (NEW); apps/api/event-store/migrate.ts (NEW — boot migrator)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P1.1
+- [x] Migrations materialize the full canonical table set: runs, run_events (authoritative), generations, agenomes, candidate_ideas, critic_reviews, check_results, fitness_scores, novelty_scores, lineage_edges, embeddings, dashboard_snapshots
+- [x] run_events has the append-only enforcement and a per-run monotonic-sequence constraint (e.g. unique (run_id, sequence)) backing the P1.3 invariant
+- [x] occurredAt column is DB-stamped (default now() UTC); payload is JSONB
+- [x] Every table/projection change ships a migration in a single ordered chain; local and hosted run the SAME chain at boot, then the seed/replay loader — boot is migrate → seed → start
+- [x] Cached/rebuildable projections (dashboard_snapshots and any cached projection) carry the (runId, sequence) watermark column they were built through
+- [x] embeddings table stores vector + embedding-model-id + dimension as an index/query layer over the authoritative vector in novelty.scored — never the system of record
+- [x] Migration chain is idempotent at boot: re-running against an already-migrated DB is a clean no-op
+- [x] Files: apps/api/event-store/schema.ts (NEW — Drizzle table defs); apps/api/event-store/migrations/ (NEW — generated migration chain); apps/api/drizzle.config.ts (NEW); apps/api/event-store/migrate.ts (NEW — boot migrator)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P1.1
 
 ### P1.5 — EnergyEvent contract + energy.spent payload (estimate + actual persisted)
 
@@ -520,15 +522,15 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.1 — Gateway port & wire contracts (ModelGatewayRequest/Response, ModelRoute/ModelRole/ProviderCapability)
 
-- [ ] ModelRole is a closed 7-member union exactly: population_generator, critic, subtype_check, embedding, final_judge, fusion_synthesis, retrieval — any other role value is a schema error
-- [ ] ProviderCapability carries structuredOutputs + embeddings as the two required MVP flags; toolCalling/streaming are optional and fallbackRouteIds is an array (may be empty) — absence of optional flags is valid, not a failure
-- [ ] ModelGatewayRequest = {role, messages/prompt, schema?, maxTokens?}; ModelGatewayResponse = {accepted, output?, validationResult, providerMeta{provider, modelId, gatewayRequestId, tokensIn, tokensOut, costEstimate?}, langfuseTraceId?, rejection?} per Appendix A — providerMeta is present on every response (accepted or rejected)
-- [ ] ModelGateway is expressed as a port/interface only; the type surface exposes no vendor SDK type, only Request/Response + ProviderCapability so domain/runtime importers depend on contracts alone
-- [ ] All four contracts are authored as Zod schemas with z.infer types; one schema validates both the gateway boundary and (where a request carries schema) the structured output
-- [ ] An accepted response always carries a validationResult marking success and never a rejection; a non-accepted response always carries a rejection reason and accepted=false
-- [ ] Files: packages/contracts/src/model-gateway.ts (NEW); packages/contracts/src/model-route.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none (consumes ModelGatewayRequest, ModelGatewayResponse, ModelRoute, ModelRole, ProviderCapability — frozen in P0.11, P0.12)
-- [ ] Depends on: P0.11, P0.12
+- [x] ModelRole is a closed 7-member union exactly: population_generator, critic, subtype_check, embedding, final_judge, fusion_synthesis, retrieval — any other role value is a schema error
+- [x] ProviderCapability carries structuredOutputs + embeddings as the two required MVP flags; toolCalling/streaming are optional and fallbackRouteIds is an array (may be empty) — absence of optional flags is valid, not a failure
+- [x] ModelGatewayRequest = {role, messages/prompt, schema?, maxTokens?}; ModelGatewayResponse = {accepted, output?, validationResult, providerMeta{provider, modelId, gatewayRequestId, tokensIn, tokensOut, costEstimate?}, langfuseTraceId?, rejection?} per Appendix A — providerMeta is present on every response (accepted or rejected)
+- [x] ModelGateway is expressed as a port/interface only; the type surface exposes no vendor SDK type, only Request/Response + ProviderCapability so domain/runtime importers depend on contracts alone
+- [x] All four contracts are authored as Zod schemas with z.infer types; one schema validates both the gateway boundary and (where a request carries schema) the structured output
+- [x] An accepted response always carries a validationResult marking success and never a rejection; a non-accepted response always carries a rejection reason and accepted=false
+- [x] Files: packages/contracts/src/model-gateway.ts (NEW); packages/contracts/src/model-route.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none (consumes ModelGatewayRequest, ModelGatewayResponse, ModelRoute, ModelRole, ProviderCapability — frozen in P0.11, P0.12)
+- [x] Depends on: P0.11, P0.12
 
 ### P2.2 — Model registry: role→route resolution, Zod-validated config, fail-fast at boot
 
@@ -555,15 +557,15 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.4 — Structured-output discipline: validate → accept / repair (≤1) / reject with event
 
-- [ ] A model output that passes its request Zod schema is accepted with validationResult=ok and no repair attempt is made
-- [ ] A repairable invalid output triggers at most ONE repair attempt; a single repair that then validates yields an accepted response, and the repair attempt itself does not multiply into further repairs
-- [ ] An output still invalid after the single repair (or non-repairable) is rejected: response.accepted=false with a rejection reason, and an output_schema_rejected event is produced for persistence by the caller
-- [ ] Repair and validation work is treated as the same logical call boundary — neither validation failure, repair, nor retry debits energy (energy = successful productive spend only)
-- [ ] Candidate/model text is carried as data within the structured field and is never interpolated into a system/instruction string during validation or repair
-- [ ] Provider metadata (provider, modelId, gatewayRequestId, tokensIn/Out, costEstimate?) is attached to both accepted and rejected responses
-- [ ] Files: apps/api/model-gateway/structured-output.ts (NEW); apps/api/model-gateway/gateway.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
-- [ ] Depends on: P0.12, P2.1, P2.2
+- [x] A model output that passes its request Zod schema is accepted with validationResult=ok and no repair attempt is made
+- [x] A repairable invalid output triggers at most ONE repair attempt; a single repair that then validates yields an accepted response, and the repair attempt itself does not multiply into further repairs
+- [x] An output still invalid after the single repair (or non-repairable) is rejected: response.accepted=false with a rejection reason, and an output_schema_rejected event is produced for persistence by the caller
+- [x] Repair and validation work is treated as the same logical call boundary — neither validation failure, repair, nor retry debits energy (energy = successful productive spend only)
+- [x] Candidate/model text is carried as data within the structured field and is never interpolated into a system/instruction string during validation or repair
+- [x] Provider metadata (provider, modelId, gatewayRequestId, tokensIn/Out, costEstimate?) is attached to both accepted and rejected responses
+- [x] Files: apps/api/model-gateway/structured-output.ts (NEW); apps/api/model-gateway/gateway.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
+- [x] Depends on: P0.12, P2.1, P2.2
 
 ### P2.5 — OpenRouter generation adapter (primary) with bounded retry + per-role timeout + one fallback route
 
@@ -612,14 +614,14 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.9 — Recorded/fake gateway stub for parallel-track fork
 
-- [ ] A fake ModelGateway implements the exact same port and returns deterministic, schema-valid Response objects per role so runtime/verifier/selection tracks can fork without live providers
-- [ ] The stub records/replays fixed outputs (including a deterministic embedding vector and a curated retrieval result) so dependent tracks get stable, replayable behavior
-- [ ] The stub can be configured to produce a repairable output and a reject output so the structured-output accept/repair/reject discipline is exercisable without a provider
-- [ ] The stub honors the no-energy-on-failure invariant by never representing a failed/retried attempt as energy-bearing
-- [ ] The stub is selectable via config/env (defaults < file < env) so a track runs against it without code changes
-- [ ] Files: apps/api/model-gateway/stub/fake-gateway.ts (NEW); apps/api/model-gateway/stub/fixtures.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ModelGatewayRequest, ModelGatewayResponse — frozen in P0.12)
-- [ ] Depends on: P0.12, P2.1, P2.4
+- [x] A fake ModelGateway implements the exact same port and returns deterministic, schema-valid Response objects per role so runtime/verifier/selection tracks can fork without live providers
+- [x] The stub records/replays fixed outputs (including a deterministic embedding vector and a curated retrieval result) so dependent tracks get stable, replayable behavior
+- [x] The stub can be configured to produce a repairable output and a reject output so the structured-output accept/repair/reject discipline is exercisable without a provider
+- [x] The stub honors the no-energy-on-failure invariant by never representing a failed/retried attempt as energy-bearing
+- [x] The stub is selectable via config/env (defaults < file < env) so a track runs against it without code changes
+- [x] Files: apps/api/model-gateway/stub/fake-gateway.ts (NEW); apps/api/model-gateway/stub/fixtures.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ModelGatewayRequest, ModelGatewayResponse — frozen in P0.12)
+- [x] Depends on: P0.12, P2.1, P2.4
 
 ### Acceptance criteria (P2)
 
@@ -1581,6 +1583,14 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ## Log
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
+
+### 2026-06-21 — Kernel freeze bundle merged to integration (P1+P2 unblock)
+
+- **7 freeze-bundle slices green + merged** (`track/kernel → cody`, merge `e638d81`): gateway P2.1 `171fe23` / P2.4 `9c8c886` / P2.9 `7fb9259` + event-store P1.1 `1c301b1` / P1.2 `1f79273` / P1.4 `ec3a549` / P1.3 `8bcce9c`; round-seal `fd9459c` (LESSONS §20–§26, 7 `kernel-00N` briefs, session doc `kernel-001`).
+- Suite: contracts 163 + apps/api 32 unit / 18 integration. **Integration preflight on merged cody CLEAR** (docker OK · typecheck · lint · format · 32 unit · 18 integration). **→ verifier / selection / demo can fork** from cody (frozen contracts + gateway stub + fixtures).
+- Decisions: **testcontainers** PG harness (user, cat-4); **no-FK event-store** (log independent of projections; projector replays the log); advisory-lock sequence allocation; `AppendInput` omits sequence + occurredAt (server/DB-assigned). **`[high]` append-only privilege finding → user-ratified defer-to-hosted** (`c066a12`: trigger + least-privilege role-split documented; local demo = trigger-only). §14 redaction keys+array-elements hardening (`0d92fa7`, P1.2 secret-as-key finding). Standing bundle-where-safe directive (`5d7a26c`).
+- Carry-forward triage: payload-ceiling re-scoped (append-path consumed P1.3 `append.ts:72`; P6 `bodyLimit` residual kept); IDs-opaque / §14-redaction / gateway-passthrough annotated kernel-consumed + demo/verifier-pending; 7 task boxes ticked (P1.1–P1.4, P2.1/P2.4/P2.9 — phase boxes NOT ticked, gate on `/phase-exit`).
+- **Next:** kernel track continues rest-of-P2/P1 then P3, held until the downstream fork is stood up. Lead applied this integration reconciliation; orch session doc `kernel-001`.
 
 ### 2026-06-21 — Tooling hotfix: eslint ignores `scaffold/` (integration-preflight Finding)
 
