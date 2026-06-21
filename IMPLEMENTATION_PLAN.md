@@ -27,7 +27,9 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 **Kernel freeze bundle — COMPLETE + MERGED to integration (cody merge `e638d81`).** 7 slices green: gateway P2.1/P2.4/P2.9 + event-store P1.1/P1.2/P1.4/P1.3 (round-seal `fd9459c`). Integration preflight on merged cody **CLEAR** (docker OK · typecheck · lint · format · 32 unit · 18 integration). **→ verifier / selection / demo can now FORK** from cody (frozen contracts + gateway stub + fixtures).
 
-**Next:** the **kernel track continues** on `track/kernel` (held until the fork is stood up): rest-of-P2 (`{P2.2+P2.5}`, `{P2.6+P2.7}`, P2.3, P2.8) + rest-of-P1 (`{P1.5+P1.6}`, P1.7, P1.8) then all of P3 — grouped per the standing bundle-where-safe directive, safety-invariant slices solo. Downstream cross-track handoff items remain in Carry-forward (kernel-consumed portions annotated; demo/verifier portions pending).
+**Phase 1 — COMPLETE ✅ + `/phase-exit P1` CLEAR (kernel track).** P1.1–P1.4 shipped; P1.5/P1.6 **satisfied-by-P0** (lead-confirmed); P1.7 evidence-resolver `d3a61ed`; P1.8 replay-reader `dca9bc4` + kernel-014 phase-exit `[medium]` fixes `86553c3`. Audit fan-out all CLEAR (reachability `docs/audits/P1-reachability.md` · arch-drift · security `docs/audits/P1-security.md` · deps). Round-seal `bd4068a` → **merged to cody** (merge `36836a1`); integration preflight CLEAR. **Phase 2 partial:** P2.1/P2.2/P2.4/P2.5/P2.6/P2.7/P2.9 done; **P2.3 + P2.8 OPEN — cross-track boundary** (both write `packages/observability`, demo-track territory; kernel coordinates through the lead before touching it).
+
+**Next:** the **kernel track is in Phase 3** on `track/kernel` (P3.1 boot-config in progress) — state machines, caps + kill switch, energy ledger, RNG seed, generation loop (incl. operation-start markers + gateway `tool_call.*` relay), crash-forward, in-process worker — grouped per the standing bundle-where-safe directive, safety-invariant slices SOLO. Downstream cross-track handoff items remain in Carry-forward (kernel-consumed portions annotated; demo/verifier portions pending). **Downstream tracks (verifier/selection/demo) ready to fork from cody.**
 
 ---
 
@@ -35,12 +37,13 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-- **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). **Kernel P1 CONSUMED** (`runId`/`candidateId` treated as opaque bytes, parameterized + verified across P1.3/P1.4); demo P6/P7/PD still pending. _(origin: 2026-06-20 P0.1 security review; cross-track; DELETE after demo consumes it)_
-- **Payload size/depth ceiling — append-path CONSUMED (P1.3); P6/API `bodyLimit` residual open.** `validateEventPayload` (per-type narrow + `MAX_PAYLOAD_BYTES`=1 MiB / `MAX_PAYLOAD_DEPTH`=32 ceiling, depth-before-size; P0.10) is wired BEFORE append with `max_bytes`/`max_depth` rejection reasons (verified `apps/api/src/event-store/append.ts:72`). **Residual (cross-track → demo P6/API):** set a Fastify `bodyLimit` request-body gate at the API ingestion layer so the O(node-count) depth-probe cost stays bounded by request size — the security rationale the append-path ceiling pairs with. _(origin: 2026-06-20 P0.1 + P0.10 security reviews; append-path consumed P1.3; DELETE after P6 sets bodyLimit)_
+- **IDs are opaque/unbounded strings — downstream MUST treat `runId`/`candidateId`/all id fields as untrusted bytes** (parameterize; never concatenate into SQL / file paths / channel names). Fold into the kernel + event-store briefs (P1) and the projection/demo briefs (P6/P7/PD). **Kernel P1 CONSUMED** (`runId`/`candidateId` treated as opaque bytes, parameterized + verified across P1.3/P1.4; P1.7 resolver uses exact-equality match, no id interpolation); demo P6/P7/PD still pending. _(origin: 2026-06-20 P0.1 security review; cross-track; DELETE after demo consumes it)_
+- **Payload size/depth ceiling — append-path CONSUMED (P1.3); P6/API `bodyLimit` residual open.** `validateEventPayload` (per-type narrow + `MAX_PAYLOAD_BYTES`=1 MiB / `MAX_PAYLOAD_DEPTH`=32 ceiling, depth-before-size; P0.10) is wired BEFORE append with `max_bytes`/`max_depth` rejection reasons (verified `apps/api/src/event-store/append.ts:72`). **Residual (cross-track → demo P6/API):** set a Fastify `bodyLimit` request-body gate at the API ingestion layer so the O(node-count) depth-probe cost stays bounded by request size — the security rationale the append-path ceiling pairs with. **ALSO (P6, rule #2 — from /phase-exit P1 [low]):** `apps/api/src/event-store/index.ts` `export * from './schema'` re-exports all 12 table objects ungated; when P6 projection-builders land, add a write-gate so a builder can't `db.insert(<authoritative table>)` outside the append path. _(origin: 2026-06-20 P0.1 + P0.10 security reviews + 2026-06-21 /phase-exit P1; append-path consumed P1.3; DELETE after P6 sets bodyLimit + write-gate)_
 - **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. _(origin: 2026-06-20 P0.3; cross-track → kernel)_
 - **§14 env-VALUE redaction layer (ratified Option A) — kernel/P1.2 CONSUMED + hardened; demo/P6.5 still open.** Acceptance + reachability bullet in **P1.2** (event-store, kernel — SHIPPED; its env-value layer now redacts **object KEYS + array elements as well as values, with de-collision**, after a `[high]` secret-as-key finding) and **P6.5** (observability/Langfuse, demo track — OPEN). **P6.5 MUST also redact KEYS, not just values, with de-collision** — `RunEventEnvelope.payload` / `GENERIC_PAYLOAD_SCHEMA` are open `z.record` so producer-controlled keys reach the boundary; a values-only scrub leaks a secret-as-key. See ARCHITECTURE.md §14 + `apps/api/LESSONS` §21. _(origin: 2026-06-20 P0.2 security review; human-RATIFIED Option A; hardened by 2026-06-21 P1.2 `[high]` finding; DELETE at the /orchestrate-end after the demo track consumes it)_
 - **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. **Scrub-at-persist BUILT** (P1.2 boundary scrub → wired before append in P1.3 `append.ts`; P2.4 structured-output carries candidate text as data); **remaining: the P3 event-emission reachability pins** on these passthrough fields when the runtime emits gateway-carrying events. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P3 emission pins)_
 - **Held-out judge LOAD path must validate the rubric before use (cross-track → verifier P4 / selection P5).** `FinalJudgeRubric` (P0.15) pins SHAPE only — closed 5-axis, `immutableToAgents:true` literal, required `policyVersion`, no-authority-field. The CONTRACT cannot enforce a no-agent-write path or full-axis-set completeness (lesson §6). The P4 held-out-judge load path MUST (a) load the rubric/config from immutable config, NEVER an agent-writable path (rule #6 / §14), and (b) assert the rubric carries the FULL 5-axis set + `immutableToAgents:true` before scoring. **Cross-track pointer** — the verifier track inlines this into its P4 held-out-judge task at `/orchestrate-start`. _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; cross-track → verifier P4/P5; DELETE after P4/P5 consume it)_
+- **Kernel P2.8 Langfuse adapter MUST import demo's canonical emit-boundary scrub — never reimplement (cross-track → kernel P2.8; safety §14 / rule #4).** **Kernel track ACCEPTED 2026-06-21: single scrub, demo-owned, kernel consumes it — agreement settled, pending P2.8 implementation.** Demo P6.5 shipped the canonical Langfuse-emit secret-scrub `scrubObservabilityPayload` + `createEmitBoundary` in `packages/observability` (committed `0e2f793` on track/demo). §14 mandates a SINGLE scrub function at all boundaries; a second divergent kernel-side copy is the L21 key-leak class (one boundary hardens, the other silently leaks secrets into Langfuse traces). When kernel builds P2.8, its adapter MUST `import` + call the demo-owned scrub before any emit, never write its own. Pairs with the "opaque gateway passthroughs → scrub before Langfuse emit" item above. _(origin: 2026-06-21 demo P6.5 Step-9 Finding, lead-routed per user [also relayed direct to kernel lead]; cross-track → kernel P2.8; DELETE after kernel P2.8 imports the canonical scrub)_
 - **STANDING (user, 2026-06-21): bundle slices where safe to speed the build.** Group dep-compatible, same-code-area, non-invariant slices into ONE atomic red→green→commit unit. **Safety-invariant slices NEVER bundle with feature work** (root `CLAUDE.md` TDD posture) — they stay solo. Applies to every track's remaining phases (kernel first; freeze bundle stays tight per the deps/safety/cross-area analysis). _(origin: 2026-06-21 lead relay of user direction; STANDING — keep through triage; re-issues the P0-era bundling directive deleted at contract-002 close)_
 
 ---
@@ -350,6 +353,22 @@ The project is "done" when:
 - [x] Cross-doc invariant: none
 - [x] Depends on: P0.1, P0.10, P0.11, P0.12, P0.13, P0.3, P0.4, P0.5, P0.6, P0.7, P0.8, P0.9
 
+### P0.16 — JudgeResult + judge.reviewed terminal event (held-out-judge output seam) — FREEZE AMENDMENT
+
+> Human-ratified (Option A) cross-track amendment surfaced by the selection track. Closes the held-out-judge OUTPUT gap: the judge's INPUT was frozen (P0.15 FinalJudgeRubric + the `final_judge` role + the `judge.review_started` marker) but its ACCEPTANCE OUTPUT had no model + no terminal event — P4.8 (producer) and P5.5 (consumer) both named a "persisted judge event" that did not exist. Authored ONLY on the contract track per LESSONS §19; additive + non-breaking (schemaVersion 2→3).
+
+- [x] NEW `JudgeResult` (`src/verifier/judge-result.ts`): strict {id, candidateId, axisScores(`z.record(FinalJudgeAxis, z.number())` — per-axis 0-5 over the closed 5 axes), acceptance(`z.number()` — the overall metric selection consumes), rubricPolicyVersion(`string.min(1)` = `FinalJudgeRubric.policyVersion` typing), providerMeta(shared `ProviderMeta`, required), langfuseTraceId?} — mirrors NoveltyScore (the authoritative-scoring sibling)
+- [x] NEW terminal `judge.reviewed` on the closed RunEventType enum (36→37); `CURRENT_SCHEMA_VERSION` 2→3; closure (RISK-006) preserved (rejects-unlisted still green)
+- [x] Per-type payload narrowing `judge.reviewed`←JudgeResult in payload-map.ts (high-traffic 6→7) — same schema validates write + model (mirrors novelty.scored←NoveltyScore)
+- [x] Rule #6 (anti-reward-hacking): axisScores keyed by the closed FinalJudgeAxis (exhaustive+closed — no agent can add/drop a judging axis); NO rubric/weights/immutableToAgents/scoreOverride field representable; rubricPolicyVersion binds the result to the exact immutable rubric (immutability-via-versioning)
+- [x] Rule #5: judge output is UNTRUSTED until schema-validated — strict, so a malformed output is rejected at the persist boundary. Rule #4: providerMeta no-secret. Rule #7: axisScores+acceptance REQUIRED so replay reads them, never re-judges
+- [x] FitnessScore UNCHANGED — fitness references judge.reviewed by `candidateId` join + `components.judge_acceptance` (NOT a duplicate authoritative copy; `judgeResultId` strict-rejected), exactly as it references novelty.scored
+- [x] §2.5 seam: member-set snapshot (37) + high-traffic key-set snapshot (7) + JudgeResult field-name snapshot + canonical fixtures (`validJudgeResult`, `validJudgeReviewedEnvelope`) + `payload:judge.reviewed` registry entry — all in lockstep (`spec(§7)`/`spec(§4)`)
+- [x] security-reviewer fan-out: PASS, 0 findings (rules #2/#4/#5/#6/#7 verified)
+- [x] Files: packages/contracts/src/verifier/judge-result.ts (NEW); src/events/event-type.ts, src/version.ts, src/events/payload-map.ts, src/__schema-snapshots__/field-sets.ts, src/test-fixtures/index.ts, src/index.ts (extended)
+- [x] Cross-doc invariant: NEW — `JudgeResult` (§7/§8); RunEventType + per-type payload map rows updated
+- [x] Depends on: P0.1, P0.8, P0.10, P0.14, P0.15
+
 ### Acceptance criteria (P0)
 
 - [x] Every Appendix-A model is a Zod schema in packages/contracts with its z.infer TS type, exported from the index barrel; no model is redefined outside contracts.
@@ -457,58 +476,62 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P1.5 — EnergyEvent contract + energy.spent payload (estimate + actual persisted)
 
-- [ ] EnergyEvent carries id, runId, optional generationId/agenomeId, eventType (closed union llm/tool/spawn), estimate, actual, unit fixed to doppl_energy, reason, optional providerMeta
-- [ ] energy.spent payload persists BOTH the pre-call estimate and the post-call reconciled actual
-- [ ] energy.spent is emitted only for SUCCESSFUL productive spend; the contract gives no representation for debiting on a failed/retried/repaired attempt (failures persist provider_call_failed instead, never energy.spent)
-- [ ] unit is constrained to the single doppl_energy unit value
-- [ ] Authored as Zod with z.infer types and exported from the contracts package for shared use by runtime-kernel (caps) and selection-scoring (efficiency)
-- [ ] Files: packages/contracts/src/events/energy-event.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
-- [ ] Depends on: P0.9, P1.1
+- **SATISFIED-BY-P0 (no new code; lead-confirmed 2026-06-21):** EnergyEvent frozen P0.9 (`packages/contracts/src/domain/energy-event.ts`); `energy.spent`→EnergyEvent narrowing P0.10 (`events/payload-map.ts:35`). The stale `events/energy-event.ts` path never existed; emission is P3.5. Bullets ticked as the deliverable exists + is validated on the append path.
+
+- [x] EnergyEvent carries id, runId, optional generationId/agenomeId, eventType (closed union llm/tool/spawn), estimate, actual, unit fixed to doppl_energy, reason, optional providerMeta
+- [x] energy.spent payload persists BOTH the pre-call estimate and the post-call reconciled actual
+- [x] energy.spent is emitted only for SUCCESSFUL productive spend; the contract gives no representation for debiting on a failed/retried/repaired attempt (failures persist provider_call_failed instead, never energy.spent)
+- [x] unit is constrained to the single doppl_energy unit value
+- [x] Authored as Zod with z.infer types and exported from the contracts package for shared use by runtime-kernel (caps) and selection-scoring (efficiency)
+- [x] Files: packages/contracts/src/events/energy-event.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
+- [x] Depends on: P0.9, P1.1
 
 ### P1.6 — Embeddings authoritative-once-computed: novelty.scored payload + NoveltyScore vector persistence
 
-- [ ] novelty.scored payload persists the embedding vector (JSONB float array) + embeddingModelId + dimension alongside candidateId, comparisonSet, method, score, explanation
-- [ ] The persisted vector in novelty.scored is authoritative: once computed it is the system of record and is never re-embedded (replay reads it, recomputing only deterministic cosine math)
-- [ ] dimension matches the vector length and the embeddingModelId pins the model used, so a vector cannot be silently reinterpreted under a different model
-- [ ] The embeddings table (P1.4) is populated as a query index over this authoritative payload vector, not as an alternate source of truth — both the app-cosine and pgvector paths read the same authoritative vector
-- [ ] Authored as Zod (NoveltyScore + the novelty.scored payload narrowing) with z.infer types, exported from contracts
-- [ ] Files: packages/contracts/src/events/novelty-score.ts (NEW); packages/contracts/src/events/payloads.ts (extended — novelty.scored narrowing); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none (consumes NoveltyScore — frozen in P0.8)
-- [ ] Depends on: P0.8, P1.1
+- **SATISFIED-BY-P0 (no new code; lead-confirmed 2026-06-21):** NoveltyScore frozen P0.8 (`packages/contracts/src/scoring/novelty-score.ts`); `novelty.scored`→NoveltyScore narrowing P0.10 (`events/payload-map.ts:39`); embeddings-table-as-index shipped P1.4. Emission is P5. Bullets ticked as the deliverable exists + is validated on the append path.
+
+- [x] novelty.scored payload persists the embedding vector (JSONB float array) + embeddingModelId + dimension alongside candidateId, comparisonSet, method, score, explanation
+- [x] The persisted vector in novelty.scored is authoritative: once computed it is the system of record and is never re-embedded (replay reads it, recomputing only deterministic cosine math)
+- [x] dimension matches the vector length and the embeddingModelId pins the model used, so a vector cannot be silently reinterpreted under a different model
+- [x] The embeddings table (P1.4) is populated as a query index over this authoritative payload vector, not as an alternate source of truth — both the app-cosine and pgvector paths read the same authoritative vector
+- [x] Authored as Zod (NoveltyScore + the novelty.scored payload narrowing) with z.infer types, exported from contracts
+- [x] Files: packages/contracts/src/events/novelty-score.ts (NEW); packages/contracts/src/events/payloads.ts (extended — novelty.scored narrowing); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none (consumes NoveltyScore — frozen in P0.8)
+- [x] Depends on: P0.8, P1.1
 
 ### P1.7 — Inline raw+normalized outputs & EvidenceRef resolver (Postgres-tier only)
 
-- [ ] Both raw provider output and normalized candidate output are stored inline in the authoritative event payload (JSONB) — never offloaded to a non-authoritative external store
-- [ ] EvidenceRef resolves strictly within the Postgres tier: a kind/eventId reference dereferences to a persisted event/payload row
-- [ ] An EvidenceRef pointing outside the Postgres tier (external uri only, nothing replay can reproduce) is not dereferenced as authoritative — resolution fails closed rather than fetching externally
-- [ ] Resolution reads only persisted rows (no model/web calls), so any evidence pointer is reproducible during replay
-- [ ] Inline raw outputs are subject to the P1.2 redaction scrub at append (no secret reaches the inline payload)
-- [ ] Files: apps/api/event-store/evidence-resolver.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes EvidenceRef — frozen in P0.5)
-- [ ] Depends on: P0.5, P1.1, P1.2, P1.3
+- [x] Both raw provider output and normalized candidate output are stored inline in the authoritative event payload (JSONB) — never offloaded to a non-authoritative external store
+- [x] EvidenceRef resolves strictly within the Postgres tier: a kind/eventId reference dereferences to a persisted event/payload row
+- [x] An EvidenceRef pointing outside the Postgres tier (external uri only, nothing replay can reproduce) is not dereferenced as authoritative — resolution fails closed rather than fetching externally
+- [x] Resolution reads only persisted rows (no model/web calls), so any evidence pointer is reproducible during replay
+- [x] Inline raw outputs are subject to the P1.2 redaction scrub at append (no secret reaches the inline payload)
+- [x] Files: apps/api/event-store/evidence-resolver.ts (NEW)
+- [x] Cross-doc invariant: none (consumes EvidenceRef — frozen in P0.5)
+- [x] Depends on: P0.5, P1.1, P1.2, P1.3
 
 ### P1.8 — Replay reader: ordered (run_id, sequence), no external calls, schemaVersion ≤ current, state-equivalence
 
-- [ ] Reader yields a run's events strictly ordered by (run_id, sequence) — never by occurredAt — and ignores any clock for ordering
-- [ ] Replay performs NO model, embedding, or web calls: it reads persisted seed/RNG outcomes, persisted retrieval results, and persisted embedding vectors and recomputes only deterministic math
-- [ ] Reader accepts every envelope with schemaVersion ≤ current and rejects schemaVersion > current; an older-schemaVersion fixture replays without upcasters
-- [ ] State-equivalence: the projection rebuilt from the stored log equals the projection captured at run end over a canonical serialization
-- [ ] Replay is read-only — it never appends, mutates, or re-stamps historical events
-- [ ] A gap or out-of-order sequence in the stored log surfaces as an error rather than producing a silently wrong projection
-- [ ] Files: apps/api/event-store/replay-reader.ts (NEW); apps/api/event-store/canonical-serialization.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope — frozen in P0.1)
-- [ ] Depends on: P0.1, P1.1, P1.3, P1.4
+- [x] Reader yields a run's events strictly ordered by (run_id, sequence) — never by occurredAt — and ignores any clock for ordering
+- [x] Replay performs NO model, embedding, or web calls: it reads persisted seed/RNG outcomes, persisted retrieval results, and persisted embedding vectors and recomputes only deterministic math
+- [x] Reader accepts every envelope with schemaVersion ≤ current and rejects schemaVersion > current; an older-schemaVersion fixture replays without upcasters
+- [x] State-equivalence: the projection rebuilt from the stored log equals the projection captured at run end over a canonical serialization
+- [x] Replay is read-only — it never appends, mutates, or re-stamps historical events
+- [x] A gap or out-of-order sequence in the stored log surfaces as an error rather than producing a silently wrong projection
+- [x] Files: apps/api/event-store/replay-reader.ts (NEW); apps/api/event-store/canonical-serialization.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope — frozen in P0.1)
+- [x] Depends on: P0.1, P1.1, P1.3, P1.4
 
 ### Acceptance criteria (P1)
 
-- [ ] run_events is append-only (UPDATE/DELETE prevented), every append is Zod-schema-validated and redaction-scrubbed inside one transaction, and per-run sequence is monotonic/gapless and is the sole ordering key (occurredAt is DB-stamped UTC, never used for ordering)
-- [ ] The §4 event-model contracts (RunEventEnvelope, closed RunEventType, EvidenceRef, EnergyEvent, NoveltyScore) are Zod-authored with z.infer types in packages/contracts and frozen for downstream tracks; each carries a schema-snapshot pin
-- [ ] The Drizzle migration chain materializes the full canonical table set, runs identically local + hosted at boot (migrate → seed → start), is idempotent on re-run, and every table change ships a migration
-- [ ] Embeddings are authoritative-once-computed: vector + embeddingModelId + dimension persisted in novelty.scored, with the embeddings table only an index over them; replay never re-embeds
-- [ ] Raw + normalized outputs live inline in the event payload and EvidenceRef resolves only within the Postgres tier (fails closed on external-only refs)
-- [ ] The replay reader reconstructs state ordered by (run_id, sequence) with no model/embedding/web calls, accepts schemaVersion ≤ current incl. an older-schemaVersion fixture, and asserts state-equivalence against the run-end projection
-- [ ] The secret-redaction scrub runs at the write boundary on every payload before append and is reusable at the Langfuse emit boundary; no secret appears in any persisted event
+- [x] run_events is append-only (UPDATE/DELETE prevented), every append is Zod-schema-validated and redaction-scrubbed inside one transaction, and per-run sequence is monotonic/gapless and is the sole ordering key (occurredAt is DB-stamped UTC, never used for ordering)
+- [x] The §4 event-model contracts (RunEventEnvelope, closed RunEventType, EvidenceRef, EnergyEvent, NoveltyScore) are Zod-authored with z.infer types in packages/contracts and frozen for downstream tracks; each carries a schema-snapshot pin
+- [x] The Drizzle migration chain materializes the full canonical table set, runs identically local + hosted at boot (migrate → seed → start), is idempotent on re-run, and every table change ships a migration
+- [x] Embeddings are authoritative-once-computed: vector + embeddingModelId + dimension persisted in novelty.scored, with the embeddings table only an index over them; replay never re-embeds
+- [x] Raw + normalized outputs live inline in the event payload and EvidenceRef resolves only within the Postgres tier (fails closed on external-only refs)
+- [x] The replay reader reconstructs state ordered by (run_id, sequence) with no model/embedding/web calls, accepts schemaVersion ≤ current incl. an older-schemaVersion fixture, and asserts state-equivalence against the run-end projection
+- [x] The secret-redaction scrub runs at the write boundary on every payload before append and is reusable at the Langfuse emit boundary; no secret appears in any persisted event
 
 ---
 
@@ -534,15 +557,15 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.2 — Model registry: role→route resolution, Zod-validated config, fail-fast at boot
 
-- [ ] Registry maps each of the 7 roles to exactly one ModelRoute and resolution by role returns that route's provider/modelId/capability; an unmapped role is a boot/config error, never a silent default
-- [ ] Registry config file is Zod-validated at startup with precedence defaults < file < env; an invalid or incomplete registry fails fast with a clear error rather than starting degraded
-- [ ] Required provider credentials (OpenRouter key, OpenAI key for embeddings, DB URL) are fail-fast checked at boot; credentials load only from env and are never embedded in the registry config object
-- [ ] Generation/critic/final_judge/fusion_synthesis roles resolve to OpenRouter as primary; the embedding role resolves to direct OpenAI text-embedding-3-small; the retrieval role resolves to the web-search/retrieval route
-- [ ] Model tiering is expressible per role (cheaper model for population/critic, stronger model for final_judge/synthesis) and the resolved route reflects the configured tier
-- [ ] fallbackRouteIds on a route, when present, reference only other registered routes; a dangling fallback id is a config-validation error
-- [ ] Files: apps/api/model-gateway/registry.ts (NEW); apps/api/model-gateway/config.schema.ts (NEW); apps/api/config/model-registry.config.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ModelRoute, ModelRole, ProviderCapability — frozen in P0.11)
-- [ ] Depends on: P0.11, P2.1
+- [x] Registry maps each of the 7 roles to exactly one ModelRoute and resolution by role returns that route's provider/modelId/capability; an unmapped role is a boot/config error, never a silent default
+- [x] Registry config file is Zod-validated at startup with precedence defaults < file < env; an invalid or incomplete registry fails fast with a clear error rather than starting degraded
+- [x] Required provider credentials (OpenRouter key, OpenAI key for embeddings, DB URL) are fail-fast checked at boot; credentials load only from env and are never embedded in the registry config object
+- [x] Generation/critic/final_judge/fusion_synthesis roles resolve to OpenRouter as primary; the embedding role resolves to direct OpenAI text-embedding-3-small; the retrieval role resolves to the web-search/retrieval route
+- [x] Model tiering is expressible per role (cheaper model for population/critic, stronger model for final_judge/synthesis) and the resolved route reflects the configured tier
+- [x] fallbackRouteIds on a route, when present, reference only other registered routes; a dangling fallback id is a config-validation error
+- [x] Files: apps/api/model-gateway/registry.ts (NEW); apps/api/model-gateway/config.schema.ts (NEW); apps/api/config/model-registry.config.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ModelRoute, ModelRole, ProviderCapability — frozen in P0.11)
+- [x] Depends on: P0.11, P2.1
 
 ### P2.3 — Secret redaction at the gateway/persistence boundary
 
@@ -569,48 +592,48 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.5 — OpenRouter generation adapter (primary) with bounded retry + per-role timeout + one fallback route
 
-- [ ] Adapter imports the vendor SDK and is reachable only via the ModelGateway port; runtime/domain importers never see the OpenRouter type
-- [ ] Bounded retries default to 2 with short backoff; per-role timeout applies per attempt; after retries one fallback-route attempt is made before a final reject
-- [ ] Each failed attempt surfaces enough info for a provider_call_failed{attempt,reason} event; failed/retried attempts never emit energy.spent and never debit the ledger
-- [ ] A terminal reject after retries+fallback returns accepted=false with rejection populated and providerMeta carried — it fails the call, not the whole run
-- [ ] Returned providerMeta reflects the actual provider/modelId/gatewayRequestId and token usage from the successful provider response for post-call energy reconciliation by the kernel
-- [ ] Strict structured-output mode is requested from OpenRouter where supported and the raw provider output is returned for validation by P2.4
-- [ ] Files: apps/api/model-gateway/adapters/openrouter.adapter.ts (NEW); apps/api/model-gateway/adapters/retry.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ModelGatewayResponse, ProviderCapability — frozen in P0.11, P0.12)
-- [ ] Depends on: P0.11, P0.12, P2.2, P2.4
+- [x] Adapter imports the vendor SDK and is reachable only via the ModelGateway port; runtime/domain importers never see the OpenRouter type
+- [x] Bounded retries default to 2 with short backoff; per-role timeout applies per attempt; after retries one fallback-route attempt is made before a final reject
+- [x] Each failed attempt surfaces enough info for a provider_call_failed{attempt,reason} event; failed/retried attempts never emit energy.spent and never debit the ledger
+- [x] A terminal reject after retries+fallback returns accepted=false with rejection populated and providerMeta carried — it fails the call, not the whole run
+- [x] Returned providerMeta reflects the actual provider/modelId/gatewayRequestId and token usage from the successful provider response for post-call energy reconciliation by the kernel
+- [x] Strict structured-output mode is requested from OpenRouter where supported and the raw provider output is returned for validation by P2.4
+- [x] Files: apps/api/model-gateway/adapters/openrouter.adapter.ts (NEW); apps/api/model-gateway/adapters/retry.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ModelGatewayResponse, ProviderCapability — frozen in P0.11, P0.12)
+- [x] Depends on: P0.11, P0.12, P2.2, P2.4
 
 ### P2.6 — Direct-OpenAI embedding adapter (text-embedding-3-small) behind the gateway
 
-- [ ] Embedding role routes to direct OpenAI text-embedding-3-small; the model id and produced vector dimension are returned so callers can persist embeddingModelId + dimension authoritatively
-- [ ] Adapter returns the raw float-array vector to the caller; it does not itself persist — vectors are stored authoritatively in novelty.scored by selection-scoring downstream
-- [ ] Embedding requests are reachable only via the ModelGateway port; the OpenAI SDK type never leaks past the adapter
-- [ ] An OpenRouter-only configuration that still supplies an OpenAI key satisfies embeddings; the no-embeddings app-level-cosine path is left available as a degrade and is not blocked by this adapter
-- [ ] Embedding failures are bounded by retry/timeout like other calls and do not debit energy on failed attempts
-- [ ] Files: apps/api/model-gateway/adapters/openai-embedding.adapter.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ProviderCapability — frozen in P0.11)
-- [ ] Depends on: P0.11, P2.2, P2.4
+- [x] Embedding role routes to direct OpenAI text-embedding-3-small; the model id and produced vector dimension are returned so callers can persist embeddingModelId + dimension authoritatively
+- [x] Adapter returns the raw float-array vector to the caller; it does not itself persist — vectors are stored authoritatively in novelty.scored by selection-scoring downstream
+- [x] Embedding requests are reachable only via the ModelGateway port; the OpenAI SDK type never leaks past the adapter
+- [x] An OpenRouter-only configuration that still supplies an OpenAI key satisfies embeddings; the no-embeddings app-level-cosine path is left available as a degrade and is not blocked by this adapter
+- [x] Embedding failures are bounded by retry/timeout like other calls and do not debit energy on failed attempts
+- [x] Files: apps/api/model-gateway/adapters/openai-embedding.adapter.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ProviderCapability — frozen in P0.11)
+- [x] Depends on: P0.11, P2.2, P2.4
 
 ### P2.7 — Retrieval / web-search adapter with results persisted into originating event + curated-corpus fallback
 
-- [ ] The retrieval role grounds critics/zeitgeist via live web search; the returned results are shaped so the caller persists them INTO the originating event payload (replay never re-calls the web)
-- [ ] An operator-curated static prior-art/signals corpus is the rehearsed fallback: when live retrieval is unavailable or rate-limited the adapter returns curated results clearly tagged as fallback-sourced
-- [ ] Retrieval results are returnable as EvidenceRef-resolvable references within the Postgres tier (kind prior_art/signal) — never a pointer to a non-authoritative external store
-- [ ] Retrieval cost/latency and rate-limit failures are surfaced as failures bounded by retry/timeout and never debit energy on failed attempts
-- [ ] Web-search tool-call cost is reported in providerMeta so the kernel can account tool-call energy on success only
-- [ ] Files: apps/api/model-gateway/adapters/retrieval.adapter.ts (NEW); apps/api/model-gateway/adapters/curated-corpus.ts (NEW); apps/api/config/prior-art-corpus.config.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes EvidenceRef — frozen in P0.5)
-- [ ] Depends on: P0.5, P2.2, P2.4
+- [x] The retrieval role grounds critics/zeitgeist via live web search; the returned results are shaped so the caller persists them INTO the originating event payload (replay never re-calls the web)
+- [x] An operator-curated static prior-art/signals corpus is the rehearsed fallback: when live retrieval is unavailable or rate-limited the adapter returns curated results clearly tagged as fallback-sourced
+- [x] Retrieval results are returnable as EvidenceRef-resolvable references within the Postgres tier (kind prior_art/signal) — never a pointer to a non-authoritative external store
+- [x] Retrieval cost/latency and rate-limit failures are surfaced as failures bounded by retry/timeout and never debit energy on failed attempts
+- [x] Web-search tool-call cost is reported in providerMeta so the kernel can account tool-call energy on success only
+- [x] Files: apps/api/model-gateway/adapters/retrieval.adapter.ts (NEW); apps/api/model-gateway/adapters/curated-corpus.ts (NEW); apps/api/config/prior-art-corpus.config.ts (NEW)
+- [x] Cross-doc invariant: none (consumes EvidenceRef — frozen in P0.5)
+- [x] Depends on: P0.5, P2.2, P2.4
 
 ### P2.8 — Langfuse correlation: trace/observation IDs returned, local-trace fallback, operator content toggle
 
-- [ ] Successful gateway calls return langfuseTraceId/observationId on the response and these are carried onto the persisted LLM-related event for correlation
-- [ ] Langfuse is non-authoritative: if export fails the call still succeeds and the event log retains local trace metadata sufficient for demo/debug — only a local warning is logged, no event-log entry for the export failure
-- [ ] An operator content toggle disables external content logging to Langfuse (content withheld) while still emitting trace/observation IDs and model metadata
-- [ ] All payloads emitted to Langfuse pass through the secret-redaction scrub (P2.3) before emit
-- [ ] When Langfuse is disabled the trace-id field degrades cleanly (absent/local), and when enabled the trace-id is carried — neither path throws
-- [ ] Files: packages/observability/src/langfuse.ts (NEW); packages/observability/src/trace-metadata.ts (NEW); apps/api/model-gateway/gateway.ts (extended)
-- [ ] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
-- [ ] Depends on: P0.12, P2.3, P2.4
+- [x] Successful gateway calls return langfuseTraceId/observationId on the response and these are carried onto the persisted LLM-related event for correlation
+- [x] Langfuse is non-authoritative: if export fails the call still succeeds and the event log retains local trace metadata sufficient for demo/debug — only a local warning is logged, no event-log entry for the export failure
+- [x] An operator content toggle disables external content logging to Langfuse (content withheld) while still emitting trace/observation IDs and model metadata
+- [x] All payloads emitted to Langfuse pass through the secret-redaction scrub (P2.3) before emit
+- [x] When Langfuse is disabled the trace-id field degrades cleanly (absent/local), and when enabled the trace-id is carried — neither path throws
+- [x] Files: packages/observability/src/langfuse.ts (NEW); packages/observability/src/trace-metadata.ts (NEW); apps/api/model-gateway/gateway.ts (extended)
+- [x] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
+- [x] Depends on: P0.12, P2.3, P2.4
 
 ### P2.9 — Recorded/fake gateway stub for parallel-track fork
 
@@ -1584,6 +1607,13 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
 
+### 2026-06-21 — Kernel Phase 1 COMPLETE + /phase-exit P1 CLEAR; rest-of-P2 merged
+
+- **Round `bd4068a` merged to cody** (merge `36836a1`): P2.7 retrieval `67520ae` · P1.7 evidence-resolver `d3a61ed` · P1.8 replay-reader `dca9bc4` · kernel-014 phase-exit `[medium]` fixes `86553c3` (canonicalize double-toJSON in the state-equivalence path + append.ts Zod-message rule#4 forward-guard — folded before the seal so nothing dropped). Also lands P2.2 `8df860a` / P2.5 `5fd1c57` / P2.6 `10a58d3` from prior round `a80be52`.
+- **`/phase-exit P1` → CLEAR** (12 gate rows): reachability CLEAR (`docs/audits/P1-reachability.md`, 35 exports / 0 silent gaps) · arch-drift CLEAR (0 drift; 1 harmless §4 stale-diagram note) · security CLEAR (`docs/audits/P1-security.md`, rules #2/#4/#7 hold on integrated surface, 4 per-slice fixes held) · deps clean · preflight 163 + 101.
+- **P1.5/P1.6 = satisfied-by-P0** (lead-verified: EnergyEvent P0.9 + NoveltyScore P0.8, both narrowed in the P0.10 payload-map; stale `events/*` paths never existed) — no work lost, no frozen-contract re-author.
+- ARCH-notes applied (§6 retrieval never-reject/pluggable-seam, §9 evidence-resolver fail-closed taxonomy + replay validate-not-sort, §4 stale-diagram). Carry-forward: IDs-opaque +P1.7 note; payload-ceiling P6-residual +barrel-write-gate [low]. Ticks: P2.2/P2.5/P2.6/P2.7 + P1.5/P1.6/P1.7/P1.8 + Acceptance(P1); P2.3/P2.8 + Acceptance(P2) left open (Phase 2 partial). Lessons §29–§31 + §26 hardening (in apps/api). Suite: contracts 163 + apps/api 108 unit / 20 integration. Routing ledger: `docs/sessions/kernel-003-…-routing-ledger.md`. **Next: Phase 3** (P3.1 in progress). ⚠️ P2.3/P2.8 cross-track-observability boundary pending demo-team coordination.
+
 ### 2026-06-21 — Kernel freeze bundle merged to integration (P1+P2 unblock)
 
 - **7 freeze-bundle slices green + merged** (`track/kernel → cody`, merge `e638d81`): gateway P2.1 `171fe23` / P2.4 `9c8c886` / P2.9 `7fb9259` + event-store P1.1 `1c301b1` / P1.2 `1f79273` / P1.4 `ec3a549` / P1.3 `8bcce9c`; round-seal `fd9459c` (LESSONS §20–§26, 7 `kernel-00N` briefs, session doc `kernel-001`).
@@ -1591,6 +1621,16 @@ The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inli
 - Decisions: **testcontainers** PG harness (user, cat-4); **no-FK event-store** (log independent of projections; projector replays the log); advisory-lock sequence allocation; `AppendInput` omits sequence + occurredAt (server/DB-assigned). **`[high]` append-only privilege finding → user-ratified defer-to-hosted** (`c066a12`: trigger + least-privilege role-split documented; local demo = trigger-only). §14 redaction keys+array-elements hardening (`0d92fa7`, P1.2 secret-as-key finding). Standing bundle-where-safe directive (`5d7a26c`).
 - Carry-forward triage: payload-ceiling re-scoped (append-path consumed P1.3 `append.ts:72`; P6 `bodyLimit` residual kept); IDs-opaque / §14-redaction / gateway-passthrough annotated kernel-consumed + demo/verifier-pending; 7 task boxes ticked (P1.1–P1.4, P2.1/P2.4/P2.9 — phase boxes NOT ticked, gate on `/phase-exit`).
 - **Next:** kernel track continues rest-of-P2/P1 then P3, held until the downstream fork is stood up. Lead applied this integration reconciliation; orch session doc `kernel-001`.
+
+### 2026-06-21 — Phase 0 freeze AMENDED (2nd): judge-output seam — `JudgeResult` + `judge.reviewed` + schemaVersion 3 (P0.16)
+
+- **Cross-track blocker, human-ratified Option A** (surfaced by the selection track): the held-out judge's INPUT was frozen (FinalJudgeRubric, the `final_judge` role, the `judge.review_started` marker) but its ACCEPTANCE OUTPUT had no model + no terminal event — P4.8 said "persist the judge event" / P5.5 said "read the persisted judge event," yet nothing was defined to persist or read (broke the §2.5 verifier→selection seam, judge replay-faithfulness, §8 explainability; transitively blocked the P5 scoring chain). The held-out judge is the anti-reward-hacking anchor (rule #6), so its output deserves a first-class, policyVersioned, replay-faithful record. Amended **before verifier/selection build against it** (LESSONS §19 playbook, 2nd application).
+- Single operator on the contract track (no contract team registered) authored the spec into the worktree docs (`ARCHITECTURE.md` §7/§8 + Appendix-A `JudgeResult` row + RunEventType/payload-map rows; `apps/api/CLAUDE.md` cross-doc table; this plan) + ran the SOLO/invariant `/tdd` slice. Field shape co-designed via the human conduit (ratified: `axisScores`=`z.record(FinalJudgeAxis, …)`; **FitnessScore UNCHANGED** — judge link by `candidateId` join + `components.judge_acceptance`, mirroring the novelty link, no `judgeResultId`).
+- Impl slice (P0.16, SOLO/invariant): NEW `JudgeResult` (mirrors NoveltyScore) + terminal `judge.reviewed` (RunEventType 36→37) + `judge.reviewed`←JudgeResult narrowing (high-traffic 6→7) + `CURRENT_SCHEMA_VERSION` 2→3 + JudgeResult field-set snapshot + canonical fixtures (`validJudgeResult` + `validJudgeReviewedEnvelope`). Suite 163→175. **Closure (RISK-006) + rule #6/#5/#4/#7 preserved; non-breaking** (additive enum + new narrowing; v1/v2 envelopes still validate — readers accept ≤ current). `feat`, not `feat!`.
+- **security-reviewer fan-out: PASS, 0 findings** (rules #2/#4/#5/#6/#7 all verified, incl. empirical confirmation that Zod 4.4.3's enum-keyed record is exhaustive+closed). **code-quality**: 5 findings — 2 in-slice fixed (stale "6 narrowed models" comment → 7; weak `toBeDefined()` → `toEqual`); 3 orchestrator-territory doc-staleness (CLAUDE.md schemaVersion/registry rows + missing JudgeResult row) fixed in this re-seal.
+- Lesson banked **§32** (judge-output seam as a first-class persisted model + the `z.record(ClosedEnum, …)` exhaustive-closed pattern; ⚠ Zod-v4-version-dependent; renumbered from contract-track §20 on merge — cody already held §20–§31). Observation flagged to the verifier track: there is no `judge`/`verifier` `Actor` member — the held-out judge emits `judge.reviewed` under `runtime` in the fixture (actor↔type pairing is a runtime rule §6, not a contract constraint; revisit only if a dedicated actor is wanted).
+- Next: `/preflight` 175/175 + delta-scoped re-`/phase-exit` for P0.16; then **merge track/contract→cody** as the authoritative source; verifier + selection `git merge cody` to pull the amended contract before building P4.8/P5.5. No track builds against it until that merge lands.
+- Reference: brief `contract-016-judge-output-seam.md`; session doc `contract-003-2026-06-21-judge-output-seam.md`.
 
 ### 2026-06-21 — Tooling hotfix: eslint ignores `scaffold/` (integration-preflight Finding)
 

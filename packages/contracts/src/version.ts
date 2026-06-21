@@ -6,7 +6,9 @@
  * pins the constant (ARCHITECTURE.md §4).
  *
  * Bumped 1 → 2 by P0.1-amend (the 11 operation-start markers extended the `RunEventType` registry).
- * Old `schemaVersion: 1` envelopes still validate (the bump is forward-compatible — readers accept
- * `≤ current`); the bump is the deliberate, snapshot-pinned signal that the registry changed.
+ * Bumped 2 → 3 by the judge-output amendment (the terminal `judge.reviewed` type + the `JudgeResult`
+ * narrowing extended the registry + the per-type payload map). Old `schemaVersion: 1`/`2` envelopes
+ * still validate (the bump is forward-compatible — readers accept `≤ current`); the bump is the
+ * deliberate, snapshot-pinned signal that the registry changed.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;

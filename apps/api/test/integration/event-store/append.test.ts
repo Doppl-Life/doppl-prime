@@ -54,6 +54,21 @@ describe('createEventStore.append — the sole authoritative write path', () => 
     expect(await store.readByRun(runId)).toHaveLength(0);
   });
 
+  // spec(§14) rule #4 / LESSON 26 — the authoritative-path schema_invalid error names the offending
+  // PATH but never echoes the rejected received value. `callerValue` stands in for a caller-controlled
+  // (potentially secret) value; deliberately not secret-shaped so the fixture doesn't trip the guard.
+  test('test_schema_invalid_error_omits_received_value', async () => {
+    const runId = 'run-invalid-noecho';
+    const callerValue = 'caller-supplied-bad-value';
+    const bad = { ...makeInput(runId), actor: callerValue } as unknown as AppendInput;
+    const err = (await store.append(bad).catch((e: unknown) => e)) as AppendError;
+    expect(err).toBeInstanceOf(AppendError);
+    expect(err.reason).toBe('schema_invalid');
+    expect(err.message).toContain('actor'); // the path — debuggable
+    expect(err.message).not.toContain(callerValue); // received value NEVER echoed
+    expect(await store.readByRun(runId)).toHaveLength(0); // nothing written
+  });
+
   // spec(§4) — sequence is per-run monotonic + gapless (0,1,2,…), assigned server-side.
   test('test_sequence_monotonic_gapless_per_run', async () => {
     const runId = 'run-monotonic';

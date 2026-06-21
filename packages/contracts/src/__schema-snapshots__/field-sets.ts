@@ -175,4 +175,13 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
   LineageNode: ['id', 'type', 'label', 'status', 'metrics', 'dataRef'],
   LineageEdge: ['id', 'source', 'target', 'type', 'label'],
   FinalJudgeRubric: ['axes', 'weights', 'policyVersion', 'immutableToAgents'],
+  JudgeResult: [
+    'id',
+    'candidateId',
+    'axisScores',
+    'acceptance',
+    'rubricPolicyVersion',
+    'providerMeta',
+    'langfuseTraceId',
+  ],
 };

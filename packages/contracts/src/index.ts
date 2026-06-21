@@ -36,6 +36,7 @@ export * from './security/redaction';
 export * from './verifier/critic-input';
 export * from './verifier/critic-review';
 export * from './verifier/final-judge-rubric';
+export * from './verifier/judge-result';
 export * from './version';
 // P0.14 contract-test surface — canonical fixtures + consolidated field-set snapshot harness
 // (shipped from src/ for cross-track contract tests; see §16 / §2.5).
