@@ -35,4 +35,5 @@ export * from './scoring/scoring-policy';
 export * from './security/redaction';
 export * from './verifier/critic-input';
 export * from './verifier/critic-review';
+export * from './verifier/final-judge-rubric';
 export * from './version';
