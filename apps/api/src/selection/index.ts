@@ -57,6 +57,15 @@ export type {
 } from './reproduction/crossover';
 export { applyFusion, fuse } from './reproduction/fuse';
 export type { FuseDeps, FuseInput, FuseResult, FusionEmitter } from './reproduction/fuse';
+export { abortInsufficientParents, reproduceMutationOnly } from './reproduction/degenerate';
+export type {
+  DegenerateDeps,
+  DegenerateOutcome,
+  ReproductionContext,
+  SelectionEmitter,
+} from './reproduction/degenerate';
+export { applyReproduction, reproduce } from './reproduction/reproduce';
+export type { ReproduceDeps, ReproduceInput, ReproduceResult } from './reproduction/reproduce';
 export { applyMutation, mutate } from './reproduction/mutate';
 export type {
   ApplyMutationDeps,
