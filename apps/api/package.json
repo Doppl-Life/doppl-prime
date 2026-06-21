@@ -1,0 +1,25 @@
+{
+  "name": "@doppl/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "format:check": "prettier --check . --ignore-path ../../.prettierignore",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "vitest run test/integration --passWithNoTests"
+  },
+  "dependencies": {
+    "@doppl/contracts": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "eslint": "^10.5.0",
+    "prettier": "^3.8.4",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
