@@ -9,3 +9,6 @@ pnpm-lock.yaml
 docs/
 .claude/
 .scaffolding/
+
+# Drizzle-generated migration artifacts (SQL chain + meta snapshots/journal) — generated, not prettier-managed
+**/event-store/migrations/

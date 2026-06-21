@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@doppl/contracts": ["../../packages/contracts/src/index.ts"]
+    }
+  },
+  "include": [
+    "src",
+    "test",
+    "vitest.config.ts",
+    "vitest.integration.config.ts",
+    "drizzle.config.ts"
+  ]
+}

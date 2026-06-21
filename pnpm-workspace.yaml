@@ -1,3 +1,11 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+# Native build-script decisions for the P1.4 kernel integration deps (pnpm 11 requires each be
+# explicitly allowed/denied). esbuild: drizzle-kit's bundler needs its platform binary. ssh2 +
+# cpu-features: testcontainers' SSH/crypto. protobufjs: postinstall not needed at runtime → denied.
+allowBuilds:
+  cpu-features: true
+  esbuild: true
+  protobufjs: false
+  ssh2: true
