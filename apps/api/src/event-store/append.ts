@@ -5,6 +5,11 @@ import { RunEventEnvelope, validateEventPayload } from '@doppl/contracts';
 import { runEvents } from './schema';
 import { scrubEventPayload } from './redaction';
 import { allocateSequence } from './sequence';
+import { summarizeZodIssues } from '../shared/zod-errors';
+
+// Single-sourced no-echo Zod summarizer (P3.1, LESSON 27). Re-exported under the historical name so the
+// event-store barrel + the kernel-014 tests keep their import surface stable.
+export { summarizeZodIssues as summarizeValidationIssues } from '../shared/zod-errors';
 
 /**
  * The single authoritative append path for `run_events` (KEY SAFETY RULES #2 + #4, ARCHITECTURE.md
@@ -39,22 +44,6 @@ export class AppendError extends Error {
   }
 }
 
-/**
- * Summarize a ZodError for an AUTHORITATIVE-path error message using each issue's `path` + `code` ONLY
- * (KEY SAFETY RULE #4 / LESSON 26: authoritative-path errors never echo the rejected payload/received
- * value). Zod's `.message` interpolates the received value (e.g. a secret-shaped `actor`), so it is
- * NEVER used here; `path` is field names (not data) and `code` is a Zod enum — neither carries secrets.
- */
-export function summarizeValidationIssues(error: z.ZodError): string {
-  const parts = error.issues.map((issue) => {
-    const path = issue.path
-      .map((p) => (typeof p === 'symbol' ? p.toString() : String(p)))
-      .join('.');
-    return path.length > 0 ? `${path}: ${issue.code}` : issue.code;
-  });
-  return parts.length > 0 ? parts.join('; ') : 'schema validation failed';
-}
-
 export type RunEventRow = typeof runEvents.$inferSelect;
 
 export interface EventStore {
@@ -79,7 +68,7 @@ export function createEventStore({ db, secretValues }: EventStoreDeps): EventSto
           // Path + code only — never Zod's `.message`/`.received` (no-value-echo, rule #4 / LESSON 26).
           throw new AppendError(
             'schema_invalid',
-            `envelope failed validation — ${summarizeValidationIssues(parsed.error)}`,
+            `envelope failed validation — ${summarizeZodIssues(parsed.error)}`,
           );
         }
         const env = parsed.data;
