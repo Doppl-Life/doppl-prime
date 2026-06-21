@@ -22,7 +22,7 @@ describe("StopControl", () => {
     expect(btn).toBeEnabled();
   });
 
-  test("terminal run shows disabled button labeled with terminal status", () => {
+  test("terminal run shows a non-interactive status, not a button", () => {
     renderWithStore(<StopControl />, {
       initialState: {
         ...initialRunStoreState,
@@ -30,9 +30,10 @@ describe("StopControl", () => {
         run: { id: "run_x", status: "completed" },
       },
     });
-    const btn = screen.getByRole("button");
-    expect(btn).toBeDisabled();
-    expect(btn).toHaveTextContent(/Run completed/i);
+    // No stop button once the run is terminal — there's nothing to stop.
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByLabelText("Run completed")).toBeInTheDocument();
+    expect(screen.getByText(/completed/i)).toBeInTheDocument();
   });
 
   test("click invokes stopRun once", async () => {

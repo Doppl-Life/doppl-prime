@@ -1,12 +1,14 @@
 import { type JSX, useState } from "react";
 import { useRunStore } from "../state/runStore.js";
+import { StatusIndicator } from "../ui/StatusIndicator.js";
 import { Tooltip } from "../ui/Tooltip.js";
 
 /**
- * Stop control (P7.6). Single button that issues the idempotent
- * POST /runs/:id/stop command. Disabled in terminal states based on
- * store state — never on optimistic local guessing. Partial evidence
- * remains visible after stop.
+ * Stop control (P7.6). Issues the idempotent POST /runs/:id/stop
+ * command while a run is active. Once the run reaches a terminal state
+ * there's nothing to stop, so we render a non-interactive status
+ * indicator instead of a disabled button — "Run completed" is state,
+ * not an action. Partial evidence remains visible after stop.
  */
 
 const TERMINAL_STATUSES = new Set(["completed", "stopped", "failed", "cancelled"]);
@@ -33,24 +35,40 @@ export function StopControl(): JSX.Element | null {
     }
   }
 
+  if (terminal) {
+    return (
+      <Tooltip label="This run has finished — its results stay visible below" placement="right">
+        <div
+          role="status"
+          aria-label={`Run ${runStatus}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            alignSelf: "flex-start",
+            padding: "8px 12px",
+            borderRadius: 8,
+            background: "var(--doppl-bg-input)",
+            border: "1px solid var(--doppl-hairline)",
+          }}
+        >
+          <StatusIndicator domain="run" status={runStatus} size="sm" />
+        </div>
+      </Tooltip>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <Tooltip
-        label={
-          terminal
-            ? "This run has reached a terminal state and can't be stopped"
-            : "Gracefully halt the run — partial evidence stays visible"
-        }
-        placement="right"
-      >
+      <Tooltip label="Gracefully halt the run — partial evidence stays visible" placement="right">
         <button
           type="button"
           data-variant="danger"
           onClick={handleStop}
-          disabled={terminal || requesting}
+          disabled={requesting}
           aria-label="Stop run"
         >
-          {terminal ? `Run ${runStatus}` : requesting ? "Stopping…" : "Stop run"}
+          {requesting ? "Stopping…" : "Stop run"}
         </button>
       </Tooltip>
       {error && (
