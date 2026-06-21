@@ -3,7 +3,7 @@
 - **Date:** 2026-06-20
 - **Phase:** Phase 0 (shared contracts & event model) — `track/contract`
 - **Predecessor session:** none (first contract-track session doc; P0.1–P0.4 landed pre-session-doc, committed `022e9ff`/`4b5db40`/`1e4dd4f`/`bdf3816`)
-- **Successor session:** _TBD — picks up P0.10 (per-type payload map)_
+- **Successor session:** [contract-002-2026-06-21-p0-payload-map-entities-lineage-judge-surface.md](contract-002-2026-06-21-p0-payload-map-entities-lineage-judge-surface.md) — closed Phase 0 (P0.10→P0.14, 14/14)
 - **Role:** `contract-contracts-implementer` (heartbeat label read `contract-core-implementer`)
 
 ## Why this session existed
