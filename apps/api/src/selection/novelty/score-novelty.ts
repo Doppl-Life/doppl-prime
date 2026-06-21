@@ -2,25 +2,35 @@ import { CURRENT_SCHEMA_VERSION, NoveltyScore } from '@doppl/contracts';
 import type { RunEventEnvelope } from '@doppl/contracts';
 import type { ModelGateway } from '../../model-gateway';
 import { cosineSimilarity, noveltyFromSimilarities } from './cosine';
+import { lexicalNoveltyScore } from './lexical-fallback';
 import { embed } from './embed';
 
 /**
- * scoreNovelty — orchestrates novelty scoring for one candidate (P5.2, ARCHITECTURE.md §8): emit the
- * `novelty.scoring_started` marker → embed the summary → app-level cosine vs the prior-candidate
- * comparison set → build + validate the frozen `NoveltyScore` → emit `novelty.scored`. Emission goes
- * through an injected `NoveltyEmitter` seam (I/O = the frozen envelope minus the server-assigned
- * fields), so emission ordering lives INSIDE selection and the real `EventStore.append` wires in at
- * P3.
+ * scoreNovelty — orchestrates novelty scoring for one candidate (P5.2 + P5.3, ARCHITECTURE.md §8):
+ * emit the `novelty.scoring_started` marker → embed the summary → app-level cosine vs the
+ * prior-candidate comparison set → build + validate the frozen `NoveltyScore` → emit `novelty.scored`.
+ * Emission goes through an injected `NoveltyEmitter` seam (I/O = the frozen envelope minus the
+ * server-assigned fields), so emission ordering lives INSIDE selection and the real
+ * `EventStore.append` wires in at P3.
  *
- * Replay re-derives the score from the persisted vector via `cosine.ts` (rule #7 — zero gateway
- * calls); the two emitted events carry the generic marker payload + the `NoveltyScore` and never
- * debit energy (rule #8 — neither is `energy.spent`).
+ * P5.3 degrade path: on embed failure, fall back to the deterministic lexical method and emit
+ * `novelty_scoring_degraded` carrying the estimate (NOT `novelty.scored` — the frozen `NoveltyScore`
+ * requires a real embedding vector the lexical path lacks). Never blocks, never silent-zeros, and is
+ * replay-faithful (the lexical estimate is pure over persisted summaries).
+ *
+ * Replay re-derives the score from the persisted vector via `cosine.ts` / the lexical method (rule #7
+ * — zero gateway calls); no emitted event is `energy.spent` (rule #8).
  */
 
-/** A comparison candidate: its id (recorded in `comparisonSet`) + its persisted embedding vector. */
+/**
+ * A comparison candidate: its id (recorded in `comparisonSet`), its persisted embedding `vector` (the
+ * cosine happy path), and its `summary` text (the lexical degrade path) — both from persisted prior
+ * candidates.
+ */
 export interface NoveltyComparison {
   candidateId: string;
   vector: readonly number[];
+  summary: string;
 }
 
 export interface ScoreNoveltyInput {
@@ -47,16 +57,28 @@ export interface ScoreNoveltyDeps {
   newId: () => string;
 }
 
+/**
+ * ScoreNoveltyResult — the discriminated outcome. The happy path carries the authoritative
+ * `NoveltyScore`; the degrade path (P5.3) carries the lexical ESTIMATE + the fallback method + the
+ * embed-failure reason (no `NoveltyScore` — the estimate has no embedding vector and rides
+ * `novelty_scoring_degraded`).
+ */
+export type ScoreNoveltyResult =
+  | { degraded: false; noveltyScore: NoveltyScore }
+  | { degraded: true; estimatedScore: number; method: string; reason: string };
+
 const NOVELTY_METHOD = 'cosine';
+const LEXICAL_METHOD = 'lexical_jaccard';
 
 export async function scoreNovelty(
   input: ScoreNoveltyInput,
   deps: ScoreNoveltyDeps,
-): Promise<NoveltyScore> {
+): Promise<ScoreNoveltyResult> {
   const { runId, generationId, candidateId, summary, comparison } = input;
   const base = { runId, generationId, candidateId };
 
   // 1. Operation-start marker — generic payload, envelope-level correlation, NO energy debit (rule #8).
+  //    Fires on BOTH terminal paths (→ novelty.scored OR → novelty_scoring_degraded).
   await deps.emit({
     ...base,
     id: deps.newId(),
@@ -69,9 +91,22 @@ export async function scoreNovelty(
   // 2. Embed — the only gateway call on this path.
   const embedded = await embed(summary, { gateway: deps.gateway });
   if (!embedded.ok) {
-    // Transitional stub: the retry → lexical fallback → `novelty_scoring_degraded` path is P5.3,
-    // which replaces this throw. Carries the failure CODE only — never the provider payload.
-    throw new Error(`novelty embedding failed: ${embedded.reason}`);
+    // P5.3 degrade path: deterministic lexical fallback over persisted summaries. Never block, never
+    // silent-zero (the estimate is flagged via method ≠ cosine), replay-faithful (no gateway call).
+    const estimatedScore = lexicalNoveltyScore(
+      summary,
+      comparison.map((c) => c.summary),
+    );
+    const reason = embedded.reason;
+    await deps.emit({
+      ...base,
+      id: deps.newId(),
+      type: 'novelty_scoring_degraded',
+      actor: 'selection_controller',
+      payload: { candidateId, reason, method: LEXICAL_METHOD, estimatedScore },
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+    });
+    return { degraded: true, estimatedScore, method: LEXICAL_METHOD, reason };
   }
 
   // 3. App-level cosine / nearest-neighbour over the comparison set.
@@ -102,7 +137,7 @@ export async function scoreNovelty(
     schemaVersion: CURRENT_SCHEMA_VERSION,
   });
 
-  return noveltyScore;
+  return { degraded: false, noveltyScore };
 }
 
 /**

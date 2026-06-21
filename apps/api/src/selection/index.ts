@@ -5,6 +5,7 @@
  * state (P3) is the first consumer of `scoreNovelty`.
  */
 export { cosineSimilarity, noveltyFromSimilarities, noveltyScoreOf } from './novelty/cosine';
+export { jaccardSimilarity, lexicalNoveltyScore } from './novelty/lexical-fallback';
 export { embed } from './novelty/embed';
 export type { EmbedDeps, EmbedResult } from './novelty/embed';
 export { scoreNovelty } from './novelty/score-novelty';
@@ -13,4 +14,7 @@ export type {
   NoveltyEmitter,
   ScoreNoveltyDeps,
   ScoreNoveltyInput,
+  ScoreNoveltyResult,
 } from './novelty/score-novelty';
+export { energyEfficiency } from './components/energy-efficiency';
+export type { EnergyEfficiencyResult } from './components/energy-efficiency';
