@@ -4,7 +4,7 @@
 **Track:** contract (phases: P0)
 **Worktree:** `../Capstone-contract` (branch `track/contract`)
 **Predecessor handoff:** first handoff
-**Successor handoff:** _(filled in when the next /team-end runs)_
+**Successor handoff:** `docs/team-handoffs/contract-002-2026-06-21-phase0-complete-merged.md`
 **Round-seal commit at handoff:** `ef95485`
 
 ## Why this handoff exists
