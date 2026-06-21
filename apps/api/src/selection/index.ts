@@ -22,6 +22,16 @@ export { criticScores } from './components/critic-scores';
 export type { CriticScoresResult } from './components/critic-scores';
 export { JUDGE_ACCEPTANCE_KEY, judgeAcceptance } from './components/judge-acceptance';
 export type { JudgeAcceptanceResult } from './components/judge-acceptance';
+export {
+  CRITIC_SCORES_KEY,
+  ENERGY_EFFICIENCY_KEY,
+  NOVELTY_KEY,
+  SUBTYPE_CHECK_KEY,
+  applyScoringPolicy,
+} from './fitness/policy';
+export type { Contribution, ScoringResult } from './fitness/policy';
+export { scoreFitness } from './fitness/score-fitness';
+export type { FitnessEmitter, ScoreFitnessDeps, ScoreFitnessInput } from './fitness/score-fitness';
 export { createRng } from './reproduction/rng';
 export type { Rng } from './reproduction/rng';
 export { applyMutation, mutate } from './reproduction/mutate';
