@@ -4,7 +4,7 @@ import { GenerationComparison } from "../charts/GenerationComparison.js";
 import { OperatorPromptPanel } from "../demo/OperatorPromptPanel.js";
 import { LineageGraph } from "../lineage/LineageGraph.js";
 import { AgentActivityTable } from "../panels/AgentActivityTable.js";
-import { AgenomeInspector } from "../panels/AgenomeInspector.js";
+import { AgenomeDetailModal } from "../panels/AgenomeDetailModal.js";
 import { CandidateDetailInspector } from "../panels/CandidateDetailInspector.js";
 import { EnergyPanel } from "../panels/EnergyPanel.js";
 import { FinalIdeaPanel } from "../panels/FinalIdeaPanel.js";
@@ -305,22 +305,21 @@ export function DashboardShell(): JSX.Element {
       : "live";
   const eventCount = lanes.reduce((n, l) => n + l.events.length, 0);
   const hasCandidate = state.selection.candidateId != null;
-  const hasAgenome = state.selection.agenomeId != null;
-  const hasSelection = hasCandidate || hasAgenome;
   const selectionEpoch = state.selection.selectionEpoch;
 
-  // Inspector is a selection-driven view tab. Any candidate or agenome selection
-  // (lineage click or a proof link) brings it forward; clearing the selection sends the
-  // operator back to the dashboard so they're never stranded on an empty tab.
-  // Depending on selectionEpoch — not just the selection — means re-selecting the
-  // *same* item (e.g. clicking a second proof link) still re-opens it.
+  // Inspector view-tab is candidate-only. Agenome selections pop a
+  // modal (AgenomeDetailModal mounted at shell root) instead, so they
+  // don't compete with the candidate inspector for the tab.
+  // Depending on selectionEpoch — not just hasCandidate — means
+  // re-selecting the same candidate (e.g. clicking a second proof
+  // link) still re-opens the tab.
   useEffect(() => {
-    if (hasSelection) {
+    if (hasCandidate) {
       setView("inspector");
     } else {
       setView((v) => (v === "inspector" ? "dashboard" : v));
     }
-  }, [hasSelection, selectionEpoch]);
+  }, [hasCandidate, selectionEpoch]);
 
   const bodyColumns = [phase === "setup" ? "400px" : "360px", "1fr"].join(" ");
 
@@ -424,15 +423,11 @@ export function DashboardShell(): JSX.Element {
             view={view}
             setView={setView}
             eventCount={eventCount}
-            hasCandidate={hasSelection}
+            hasCandidate={hasCandidate}
           />
           <ProblemBanner />
           {view === "inspector" ? (
-            state.selection.agenomeId != null ? (
-              <AgenomeInspector />
-            ) : (
-              <CandidateDetailInspector />
-            )
+            <CandidateDetailInspector />
           ) : view === "activity" ? (
             <AgentActivityTable />
           ) : phase === "review" ? (
@@ -456,6 +451,7 @@ export function DashboardShell(): JSX.Element {
             </>
           )}
         </main>
+      <AgenomeDetailModal />
     </div>
   );
 }
