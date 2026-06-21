@@ -67,15 +67,25 @@ const BASE_INPUT: RunGenerationInput = {
   wallClockStartMs: Date.now(),
 };
 
-function makeGateway(outputJson: string): ModelGateway {
+function makeGateway(outputJson: string): {
+  gateway: ModelGateway;
+  calls: ModelGatewayRequest[];
+} {
+  const calls: ModelGatewayRequest[] = [];
   return {
-    invoke: async (_req: ModelGatewayRequest): Promise<ModelGatewayResponse> => ({
-      ok: true,
-      output: outputJson,
-      repairAttempts: 0,
-      energyEstimate: 1,
-      energyActual: 1,
-    }),
+    calls,
+    gateway: {
+      invoke: async (req: ModelGatewayRequest): Promise<ModelGatewayResponse> => {
+        calls.push(req);
+        return {
+          ok: true,
+          output: outputJson,
+          repairAttempts: 0,
+          energyEstimate: 1,
+          energyActual: 1,
+        };
+      },
+    },
   };
 }
 
@@ -98,7 +108,7 @@ describe("runGeneration — candidate.created carries explanation", () => {
   });
 
   test("emits candidate.created with explanation when model JSON includes a non-empty explanation", async () => {
-    const gateway = makeGateway(
+    const { gateway } = makeGateway(
       '{"subtype":"cross_domain_transfer","title":"X","summary":"Y","explanation":"In plain English: a clear analogy."}',
     );
     const deps = makeDeps(gateway);
@@ -111,8 +121,28 @@ describe("runGeneration — candidate.created carries explanation", () => {
     expect(candidate.explanation).toBe("In plain English: a clear analogy.");
   });
 
+  test("passes a strict JSON schema to the gateway with `explanation` in required[]", async () => {
+    const { gateway, calls } = makeGateway(
+      '{"subtype":"cross_domain_transfer","title":"X","summary":"Y","explanation":"e"}',
+    );
+    const deps = makeDeps(gateway);
+
+    await runGeneration(deps, BASE_INPUT);
+
+    expect(calls.length).toBeGreaterThan(0);
+    const schema = calls[0]?.schemaForOutput as {
+      required?: string[];
+      additionalProperties?: boolean;
+      properties?: Record<string, unknown>;
+    };
+    expect(schema).toBeDefined();
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.required).toContain("explanation");
+    expect(schema.properties?.explanation).toEqual({ type: "string" });
+  });
+
   test("emits candidate.created WITHOUT explanation key when model JSON omits explanation", async () => {
-    const gateway = makeGateway(
+    const { gateway } = makeGateway(
       '{"subtype":"cross_domain_transfer","title":"X","summary":"Y"}',
     );
     const deps = makeDeps(gateway);

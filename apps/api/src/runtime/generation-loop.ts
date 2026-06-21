@@ -21,6 +21,50 @@ import { GenerationStateMachine } from "./state-machines/generation.js";
  * themselves.
  */
 
+/**
+ * Strict JSON schema sent to the population_generator model so the
+ * provider enforces the candidate output contract instead of relying
+ * on the model to follow the prompt. Required keys: subtype, title,
+ * summary, explanation. Subtype-specific cross_domain_transfer fields
+ * are also required by the schema (strict mode requires every property
+ * to be listed in `required`) but typed as `["string","null"]` so the
+ * model can return null for fields that don't apply — the existing
+ * `str()` parser in the candidate.created emission already falls back
+ * to defaults when a value isn't a non-empty string.
+ *
+ * NOTE: kept narrow to the cross_domain_transfer shape that the live
+ * generation path currently emits. If zeitgeist_synthesis ever becomes
+ * a live output, extend `properties` + `required` accordingly.
+ */
+const POPULATION_GENERATOR_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    subtype: { type: "string", enum: ["cross_domain_transfer", "zeitgeist_synthesis"] },
+    title: { type: "string" },
+    summary: { type: "string" },
+    explanation: { type: "string" },
+    sourceDomain: { type: ["string", "null"] },
+    sourceTechnique: { type: ["string", "null"] },
+    targetDomain: { type: ["string", "null"] },
+    targetProblem: { type: ["string", "null"] },
+    transferMapping: { type: ["string", "null"] },
+    expectedMechanism: { type: ["string", "null"] },
+  },
+  required: [
+    "subtype",
+    "title",
+    "summary",
+    "explanation",
+    "sourceDomain",
+    "sourceTechnique",
+    "targetDomain",
+    "targetProblem",
+    "transferMapping",
+    "expectedMechanism",
+  ],
+} as const;
+
 export interface RunGenerationDeps {
   // biome-ignore lint/suspicious/noExplicitAny: drizzle's tx generic varies by dialect
   db: NodePgDatabase<any>;
@@ -172,6 +216,7 @@ export async function runGeneration(
           prompt: agenome.systemPrompt,
         },
         correlationId: `corr_${agenome.id}`,
+        schemaForOutput: POPULATION_GENERATOR_SCHEMA,
       });
     } catch (_err) {
       // Provider failure already persisted by the gateway dispatcher;
