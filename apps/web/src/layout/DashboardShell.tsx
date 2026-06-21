@@ -4,7 +4,7 @@ import { GenerationComparison } from "../charts/GenerationComparison.js";
 import { OperatorPromptPanel } from "../demo/OperatorPromptPanel.js";
 import { LineageGraph } from "../lineage/LineageGraph.js";
 import { AgentActivityTable } from "../panels/AgentActivityTable.js";
-import { AgenomeDetailModal } from "../panels/AgenomeDetailModal.js";
+import { AgenomeDetailDrawer } from "../panels/AgenomeDetailDrawer.js";
 import { CandidateDetailInspector } from "../panels/CandidateDetailInspector.js";
 import { EnergyPanel } from "../panels/EnergyPanel.js";
 import { FinalIdeaPanel } from "../panels/FinalIdeaPanel.js";
@@ -451,7 +451,7 @@ export function DashboardShell(): JSX.Element {
             </>
           )}
         </main>
-      <AgenomeDetailModal />
+      <AgenomeDetailDrawer />
     </div>
   );
 }

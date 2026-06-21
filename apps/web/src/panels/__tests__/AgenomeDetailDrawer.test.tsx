@@ -2,7 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { initialRunStoreState } from "../../state/reducer.js";
 import { renderWithStore } from "../../test-utils/render.js";
-import { AgenomeDetailModal } from "../AgenomeDetailModal.js";
+import { AgenomeDetailDrawer } from "../AgenomeDetailDrawer.js";
 
 const seededState = () => ({
   ...initialRunStoreState,
@@ -19,36 +19,28 @@ const seededState = () => ({
   },
 });
 
-describe("AgenomeDetailModal", () => {
+describe("AgenomeDetailDrawer", () => {
   test("renders nothing when no agenome is selected", () => {
-    renderWithStore(<AgenomeDetailModal />);
+    renderWithStore(<AgenomeDetailDrawer />);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  test("renders the dialog and the wrapped AgenomeInspector when agenomeId is set", () => {
-    renderWithStore(<AgenomeDetailModal />, { initialState: seededState() });
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toBeInTheDocument();
+  test("renders the drawer and the wrapped AgenomeInspector when agenomeId is set", () => {
+    renderWithStore(<AgenomeDetailDrawer />, { initialState: seededState() });
+    const drawer = screen.getByRole("dialog");
+    expect(drawer).toBeInTheDocument();
     // The selected agenome's id appears via the wrapped inspector.
     expect(screen.getByText("ag_child")).toBeInTheDocument();
   });
 
-  test("clicking the close button clears the selection (modal closes)", () => {
-    renderWithStore(<AgenomeDetailModal />, { initialState: seededState() });
+  test("clicking the close button clears the selection (drawer closes)", () => {
+    renderWithStore(<AgenomeDetailDrawer />, { initialState: seededState() });
     fireEvent.click(screen.getByLabelText("Close agenome detail"));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  test("clicking the backdrop clears the selection", () => {
-    renderWithStore(<AgenomeDetailModal />, { initialState: seededState() });
-    // The dialog itself is the backdrop; clicking it (not its inner card)
-    // closes the modal.
-    fireEvent.click(screen.getByRole("dialog"));
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
   test("pressing Escape clears the selection", () => {
-    renderWithStore(<AgenomeDetailModal />, { initialState: seededState() });
+    renderWithStore(<AgenomeDetailDrawer />, { initialState: seededState() });
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
