@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import { useRunState } from "../state/runStore.js";
+import { PanelTitle, PanelValue } from "../ui/PanelTitle.js";
 
 /**
  * Problem banner. Surfaces the actual question we asked the run — the
@@ -38,29 +39,9 @@ export function ProblemBanner(): JSX.Element | null {
         marginBottom: 16,
       }}
     >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--doppl-text-secondary)",
-          marginBottom: 4,
-        }}
-      >
-        Problem
-      </div>
+      <PanelTitle>Problem</PanelTitle>
       {fallbackTitle && (
-        <div
-          style={{
-            fontSize: "var(--doppl-fs-lg, 18px)",
-            fontWeight: 700,
-            color: "var(--doppl-text-primary)",
-            marginBottom: body ? 6 : 0,
-          }}
-        >
-          {fallbackTitle}
-        </div>
+        <PanelValue style={{ marginBottom: body ? 6 : 0 }}>{fallbackTitle}</PanelValue>
       )}
       {body && (
         <div

@@ -5,6 +5,7 @@ import {
   useRunState,
   useRunStore,
 } from "../state/runStore.js";
+import { PanelTitle } from "../ui/PanelTitle.js";
 
 /**
  * Energy-per-agenome panel (P7.9). Sortable table of agenomes by
@@ -18,6 +19,27 @@ interface RunCapsConfig {
   energyBudget?: number;
 }
 
+// Header cells: small uppercase muted labels on a tinted band with a
+// solid underline, so the heading reads as a header and not just a
+// bolder first data row.
+const energyHeadStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  background: "var(--doppl-bg-input)",
+  borderBottom: "2px solid var(--doppl-border)",
+  color: "var(--doppl-text-secondary)",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  whiteSpace: "nowrap",
+};
+
+const energyCellStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  borderBottom: "1px solid var(--doppl-hairline)",
+  verticalAlign: "middle",
+};
+
 export function EnergyPanel(): JSX.Element {
   const rows = useEnergyByAgenome();
   const state = useRunState();
@@ -30,7 +52,7 @@ export function EnergyPanel(): JSX.Element {
 
   return (
     <section aria-label="Energy per agenome" data-panel="energy">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 4px" }}>Energy spend</h2>
+      <PanelTitle style={{ marginBottom: 4 }}>Energy spend</PanelTitle>
       <p
         style={{
           margin: "0 0 10px 0",
@@ -64,9 +86,9 @@ export function EnergyPanel(): JSX.Element {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ textAlign: "left" }}>
-              <th>Agenome</th>
-              <th>Energy spent (success only)</th>
-              <th>Of budget</th>
+              <th style={energyHeadStyle}>Agenome</th>
+              <th style={energyHeadStyle}>Energy spent (success only)</th>
+              <th style={energyHeadStyle}>Of budget</th>
             </tr>
           </thead>
           <tbody>
@@ -88,7 +110,7 @@ export function EnergyPanel(): JSX.Element {
                   tabIndex={0}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>
+                  <td style={energyCellStyle}>
                     <div style={{ fontWeight: 700, color: "var(--doppl-text-primary)" }}>
                       {persona}
                     </div>
@@ -99,8 +121,8 @@ export function EnergyPanel(): JSX.Element {
                       {lineageLabel} · #{idTail}
                     </div>
                   </td>
-                  <td>{row.total.toFixed(2)}</td>
-                  <td>
+                  <td style={energyCellStyle}>{row.total.toFixed(2)}</td>
+                  <td style={energyCellStyle}>
                     <div
                       style={{
                         background: "var(--doppl-bg-input)",

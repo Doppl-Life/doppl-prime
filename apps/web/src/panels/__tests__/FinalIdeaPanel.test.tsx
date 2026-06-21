@@ -81,10 +81,10 @@ describe("FinalIdeaPanel", () => {
   test("highest-fitness candidate selected as the winner with all 6 proof links resolved", () => {
     renderWithStore(<FinalIdeaPanel />, { initialState: stateWithWinner() });
     // Header now leads with the candidate's title/summary instead of the
-    // UUID; the UUID stays on the heading's title= attribute. Look for it
-    // by querying that title attribute so the test stays stable as we vary
+    // UUID; the UUID stays on the value element's title= attribute. Look for
+    // it by querying that title attribute so the test stays stable as we vary
     // what the visible header says.
-    const heading = document.querySelector('h2[title="cand_hi"]');
+    const heading = document.querySelector('[title="cand_hi"]');
     expect(heading).not.toBeNull();
     // Agenome line still mentions "agenome" or "agent" — the fallback uses
     // "agenome <id>"; the persona derivation here resolves to "Descendant"
