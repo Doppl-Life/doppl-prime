@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useCandidateReviews, useRunState } from "../state/runStore.js";
+import { useAgenomeDisplayNames, useCandidateReviews, useRunState } from "../state/runStore.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
 import { EvidenceRefLink } from "./evidenceRef.js";
 
@@ -15,6 +15,7 @@ import { EvidenceRefLink } from "./evidenceRef.js";
 
 export function CriticGauntlet(): JSX.Element {
   const state = useRunState();
+  const personaNames = useAgenomeDisplayNames();
   const candidateId = state.selection.candidateId;
   const reviews = useCandidateReviews(candidateId);
   const candidate = candidateId ? state.candidates[candidateId] : null;
@@ -30,9 +31,17 @@ export function CriticGauntlet(): JSX.Element {
     );
   }
 
+  const persona = candidate?.agenomeId ? personaNames[candidate.agenomeId] : undefined;
+  const candidateLabel = candidate?.title
+    ? persona
+      ? `${candidate.title} · ${persona}`
+      : candidate.title
+    : `Idea ${candidateId.slice(-6)}`;
   return (
     <section aria-label="Critic gauntlet">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>Critic gauntlet · {candidateId}</h2>
+      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }} title={candidateId}>
+        Critic gauntlet · {candidateLabel}
+      </h2>
       {candidate?.summary && (
         <aside
           aria-label="Candidate output — untrusted data"

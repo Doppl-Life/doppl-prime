@@ -36,7 +36,7 @@ function stateWith(): RunStoreState {
         evidenceRefs: [],
       },
     },
-    selection: { candidateId: "cand_1", agenomeId: null },
+    selection: { candidateId: "cand_1", agenomeId: null, selectionEpoch: 0 },
   };
 }
 

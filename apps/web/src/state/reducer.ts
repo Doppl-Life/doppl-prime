@@ -127,6 +127,13 @@ export interface RunStoreState {
     candidateId: string | null;
     agenomeId: string | null;
     inspectorTab?: "overview" | "critics" | "evidence";
+    /**
+     * Bumped on every SELECT_CANDIDATE dispatch (even re-selecting the
+     * same candidate). Lets the shell react to "open the inspector"
+     * intent that wouldn't otherwise change candidateId — e.g. clicking
+     * two different proof links for the same winning candidate.
+     */
+    selectionEpoch?: number;
   };
   activityEventLog: ActivityEventView[];
 }
@@ -149,7 +156,7 @@ export const initialRunStoreState: RunStoreState = {
   noveltyScores: {},
   energySpend: {},
   capsConsumed: { energy: 0, generations: 0, candidates: 0, toolCalls: 0 },
-  selection: { candidateId: null, agenomeId: null, inspectorTab: "overview" },
+  selection: { candidateId: null, agenomeId: null, inspectorTab: "overview", selectionEpoch: 0 },
   activityEventLog: [],
 };
 
@@ -513,6 +520,7 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
         selection: {
           ...state.selection,
           candidateId: action.candidateId,
+          selectionEpoch: (state.selection.selectionEpoch ?? 0) + 1,
           ...(action.inspectorTab !== undefined ? { inspectorTab: action.inspectorTab } : {}),
         },
       };

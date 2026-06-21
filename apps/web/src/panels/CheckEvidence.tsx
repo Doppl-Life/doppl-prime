@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useCandidateChecks, useRunState } from "../state/runStore.js";
+import { useAgenomeDisplayNames, useCandidateChecks, useRunState } from "../state/runStore.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
 import { EvidenceRefLink } from "./evidenceRef.js";
 
@@ -13,8 +13,10 @@ import { EvidenceRefLink } from "./evidenceRef.js";
 
 export function CheckEvidence(): JSX.Element {
   const state = useRunState();
+  const personaNames = useAgenomeDisplayNames();
   const candidateId = state.selection.candidateId;
   const checks = useCandidateChecks(candidateId);
+  const candidate = candidateId ? state.candidates[candidateId] : null;
 
   if (!candidateId) {
     return (
@@ -26,9 +28,17 @@ export function CheckEvidence(): JSX.Element {
       </section>
     );
   }
+  const persona = candidate?.agenomeId ? personaNames[candidate.agenomeId] : undefined;
+  const candidateLabel = candidate?.title
+    ? persona
+      ? `${candidate.title} · ${persona}`
+      : candidate.title
+    : `Idea ${candidateId.slice(-6)}`;
   return (
     <section aria-label="Check evidence">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>Check evidence · {candidateId}</h2>
+      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }} title={candidateId}>
+        Check evidence · {candidateLabel}
+      </h2>
       {checks.length === 0 ? (
         <p style={{ color: "var(--doppl-text-secondary)" }}>No check results yet.</p>
       ) : (

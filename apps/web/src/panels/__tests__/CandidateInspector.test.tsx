@@ -41,7 +41,7 @@ describe("CandidateInspector", () => {
       initialState: {
         ...initialRunStoreState,
         runId: "run_x",
-        selection: { candidateId: "cand_1", agenomeId: null },
+        selection: { candidateId: "cand_1", agenomeId: null, selectionEpoch: 0 },
       },
     });
     await waitFor(() => {
@@ -83,7 +83,7 @@ describe("CandidateInspector", () => {
       initialState: {
         ...initialRunStoreState,
         runId: "run_x",
-        selection: { candidateId: "cand_z", agenomeId: null },
+        selection: { candidateId: "cand_z", agenomeId: null, selectionEpoch: 0 },
       },
     });
     await waitFor(() => {
@@ -104,7 +104,7 @@ describe("CandidateInspector", () => {
       initialState: {
         ...initialRunStoreState,
         runId: "run_x",
-        selection: { candidateId: "cand_missing", agenomeId: null },
+        selection: { candidateId: "cand_missing", agenomeId: null, selectionEpoch: 0 },
       },
     });
     await waitFor(() => {
@@ -135,7 +135,7 @@ describe("CandidateInspector", () => {
       initialState: {
         ...initialRunStoreState,
         runId: "run_x",
-        selection: { candidateId: "cand_se", agenomeId: null },
+        selection: { candidateId: "cand_se", agenomeId: null, selectionEpoch: 0 },
         candidates: {
           cand_se: {
             id: "cand_se",

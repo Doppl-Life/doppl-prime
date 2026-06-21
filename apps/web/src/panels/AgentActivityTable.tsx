@@ -1,6 +1,10 @@
 import { type JSX, useMemo, useState } from "react";
 import type { ActivityEventView } from "../state/reducer.js";
-import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
+import {
+  useAgenomeDisplayNames,
+  useAgentActivityLanes,
+  useRunState,
+} from "../state/runStore.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { describeEvent, formatTime, shortId } from "./AgentActivityPanel.js";
 
@@ -40,27 +44,37 @@ const COLUMNS = "92px 130px minmax(150px, 1fr) 120px minmax(180px, 1.4fr)";
 export function AgentActivityTable(): JSX.Element {
   const lanes = useAgentActivityLanes();
   const state = useRunState();
+  const personaNames = useAgenomeDisplayNames();
   const [laneFilter, setLaneFilter] = useState<string>("all");
+
+  // Lane label: "Pipeline" for run-level events, otherwise the persona name
+  // (Skeptic/Rigorist/…) with a short id tail so multiple descendants of the
+  // same root persona stay distinguishable.
+  const laneLabelFor = (agenomeId: string | null): string => {
+    if (agenomeId === null) return "Pipeline";
+    const persona = personaNames[agenomeId];
+    return persona ? `${persona} · #${agenomeId.slice(-6)}` : shortId(agenomeId);
+  };
 
   const flat = useMemo<FlatEvent[]>(() => {
     const out: FlatEvent[] = [];
     for (const lane of lanes) {
-      const laneLabel = lane.agenomeId === null ? "Pipeline" : shortId(lane.agenomeId);
+      const laneLabel = laneLabelFor(lane.agenomeId);
       for (const ev of lane.events) {
         out.push({ ...ev, laneLabel, laneKey: lane.laneKey });
       }
     }
     out.sort((a, b) => b.sequence - a.sequence); // newest first
     return out;
-  }, [lanes]);
+  }, [lanes, personaNames]);
 
   const laneOptions = useMemo(
     () =>
       lanes.map((l) => ({
         key: l.laneKey,
-        label: l.agenomeId === null ? "Pipeline" : shortId(l.agenomeId),
+        label: laneLabelFor(l.agenomeId),
       })),
-    [lanes],
+    [lanes, personaNames],
   );
 
   const rows = laneFilter === "all" ? flat : flat.filter((e) => e.laneKey === laneFilter);

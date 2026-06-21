@@ -8,7 +8,7 @@ function stateWithChecks(): RunStoreState {
   return {
     ...initialRunStoreState,
     runId: "run_x",
-    selection: { candidateId: "cand_1", agenomeId: null },
+    selection: { candidateId: "cand_1", agenomeId: null, selectionEpoch: 0 },
     checkResults: {
       a: {
         id: "a",

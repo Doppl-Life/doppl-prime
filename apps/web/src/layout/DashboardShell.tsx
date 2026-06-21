@@ -26,10 +26,10 @@ import { useAgentActivityLanes, useRunState } from "../state/runStore.js";
  *   - review: the Final surviving idea + generation comparison (the
  *             proof) lead; lineage stays available for provenance.
  *
- * The dark sidebar carries brand + run status + a Dashboard/Activity
- * nav. The candidate detail panels are merged into a right-docked
- * Inspector that opens on lineage selection; the Agent activity
- * firehose lives on its own flat, scannable Activity tab.
+ * The dark sidebar carries brand + run status + a Dashboard/Activity/
+ * Inspector nav. The candidate detail panels are merged into an
+ * Inspector view tab that appears on lineage selection; the Agent
+ * activity firehose lives on its own flat, scannable Activity tab.
  */
 
 const TERMINAL_STATUSES = new Set(["completed", "stopped", "failed", "cancelled"]);
@@ -286,17 +286,20 @@ export function DashboardShell(): JSX.Element {
       : "live";
   const eventCount = lanes.reduce((n, l) => n + l.events.length, 0);
   const hasCandidate = state.selection.candidateId != null;
+  const selectionEpoch = state.selection.selectionEpoch;
 
-  // Inspector is a selection-driven view tab. Selecting a candidate (e.g. from
-  // the lineage graph) brings it forward; clearing the selection sends the
+  // Inspector is a selection-driven view tab. Any candidate selection (lineage
+  // click or a proof link) brings it forward; clearing the selection sends the
   // operator back to the dashboard so they're never stranded on an empty tab.
+  // Depending on selectionEpoch — not just candidateId — means re-selecting the
+  // *same* candidate (e.g. clicking a second proof link) still re-opens it.
   useEffect(() => {
     if (hasCandidate) {
       setView("inspector");
     } else {
       setView((v) => (v === "inspector" ? "dashboard" : v));
     }
-  }, [hasCandidate]);
+  }, [hasCandidate, selectionEpoch]);
 
   const bodyColumns = [phase === "setup" ? "340px" : "300px", "1fr"].join(" ");
 

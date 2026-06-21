@@ -325,6 +325,23 @@ describe("runStoreReducer — other actions", () => {
     expect(next.selection.candidateId).toBe("cand_X");
   });
 
+  test("SELECT_CANDIDATE bumps selectionEpoch even when re-selecting the same candidate", () => {
+    const s1 = runStoreReducer(initialRunStoreState, {
+      kind: "SELECT_CANDIDATE",
+      candidateId: "cand_X",
+      inspectorTab: "critics",
+    });
+    const s2 = runStoreReducer(s1, {
+      kind: "SELECT_CANDIDATE",
+      candidateId: "cand_X",
+      inspectorTab: "evidence",
+    });
+    // candidateId is unchanged, but the epoch advances so the shell can
+    // re-open the inspector for a second proof-link click.
+    expect(s2.selection.candidateId).toBe("cand_X");
+    expect(s2.selection.selectionEpoch).toBe((s1.selection.selectionEpoch ?? 0) + 1);
+  });
+
   test("RESET returns initial state", () => {
     const s0 = runStoreReducer(initialRunStoreState, {
       kind: "SET_MODE",
