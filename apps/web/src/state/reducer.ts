@@ -513,7 +513,13 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
         ? state
         : { ...state, lastHeartbeatMs: action.lastHeartbeatMs };
     case "SET_RUN_ID":
-      return state.runId === action.runId ? state : { ...state, runId: action.runId };
+      // Switching runs has to fully reset run-scoped state. Otherwise
+      // sequenceThrough (and every other per-run collection) leaks from
+      // the old run: sseStream re-opens at the old cursor, then drops
+      // every new-run event whose sequence is <= the leftover value.
+      return state.runId === action.runId
+        ? state
+        : { ...initialRunStoreState, runId: action.runId };
     case "SELECT_CANDIDATE":
       return {
         ...state,

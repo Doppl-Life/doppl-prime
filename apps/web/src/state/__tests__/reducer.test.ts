@@ -417,3 +417,37 @@ describe("runStoreReducer — selection mutual exclusion", () => {
     expect(next.selection.selectionEpoch).toBe(5);
   });
 });
+
+describe("runStoreReducer — SET_RUN_ID resets run-scoped state", () => {
+  test("switching to a different run wipes sequenceThrough and all collections", () => {
+    // Without this reset, sseStream opens the new SSE at the prior run's
+    // sequenceThrough and drops every event whose sequence is <= that
+    // value — the dashboard silently stays on the old data.
+    const seeded = {
+      ...initialRunStoreState,
+      runId: "run_old",
+      sequenceThrough: 42,
+      agenomes: { ag_1: { id: "ag_1", parentIds: [], status: "spawned" } },
+      candidates: {
+        cand_1: {
+          id: "cand_1",
+          agenomeId: "ag_1",
+          status: "scored",
+        },
+      },
+      energySpend: { ag_1: 12 },
+    };
+    const next = runStoreReducer(seeded, { kind: "SET_RUN_ID", runId: "run_new" });
+    expect(next.runId).toBe("run_new");
+    expect(next.sequenceThrough).toBe(-1);
+    expect(next.agenomes).toEqual({});
+    expect(next.candidates).toEqual({});
+    expect(next.energySpend).toEqual({});
+  });
+
+  test("dispatching with the same runId is a no-op (returns same reference)", () => {
+    const seeded = { ...initialRunStoreState, runId: "run_x", sequenceThrough: 5 };
+    const next = runStoreReducer(seeded, { kind: "SET_RUN_ID", runId: "run_x" });
+    expect(next).toBe(seeded);
+  });
+});
