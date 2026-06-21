@@ -1580,6 +1580,12 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
 
+### 2026-06-21 — Tooling hotfix: eslint ignores `scaffold/` (integration-preflight Finding)
+
+- Integration preflight (cody) `pnpm lint` failed — 6 no-undef errors in `scaffold/skills/learn-site/templates/check-diagrams.mjs`. Root cause: `scaffold/` is gitignored vendored cruft but the frozen `eslint.config.mjs` ignored only dist/node_modules/coverage; eslint doesn't read `.gitignore`, so it linted it. Frozen contracts 100% green — only the cody-root eslint glob tripped.
+- Fix (tooling-only, NO schema change, NO schemaVersion bump): added `'**/scaffold/**'` to `eslint.config.mjs` ignores (mirrors `.gitignore` intent). My worktree has no `scaffold/` on disk (untracked, cody-only), so local preflight is green with or without — config validated + preflight re-confirmed green (163/163); lead verifies the actual fix in the cody integration preflight after re-merge.
+- Re-seal: this commit. No re-`/phase-exit` (tooling-only, no contract surface touched).
+
 ### 2026-06-21 — Phase 0 freeze AMENDED: operation-start markers + schemaVersion 2 (P0.1-amend)
 
 - **User-decided course-correction** (team stayed up, no cycle): the freeze had frozen `RunEventType` WITHOUT the operation-start / in-flight observability markers the architecture+plan now require. Amended **before the kernel forks** — forking from a freeze the plan already contradicts would force a post-fork schemaVersion bump + cross-track Finding.
