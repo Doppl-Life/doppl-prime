@@ -50,4 +50,28 @@ describe('canonicalSerialize — key-order independent, array-order significant 
     expect(canonicalSerialize(a)).not.toBe(canonicalSerialize(c)); // distinct instants stay distinct
     expect(canonicalSerialize(a)).toContain('2026-06-21T00:00:00.000Z'); // ISO, not collapsed to {}
   });
+
+  // spec(§4) — toJSON is applied EXACTLY ONCE per slot (like JSON.stringify): a toJSON returning a
+  // toJSON-bearing object serializes that RESULT structurally — the result's own toJSON is NOT
+  // re-invoked. The buggy recursive version produced `"X"` instead of `{"b":2}`.
+  test('canonicalize_calls_tojson_once_per_slot', () => {
+    const v = { toJSON: () => ({ b: 2, toJSON: () => 'X' }) };
+    expect(canonicalSerialize(v)).toBe(JSON.stringify(v)); // JSON.stringify-parity (positive guard)
+    expect(canonicalSerialize(v)).toBe('{"b":2}'); // the outer toJSON's result, structurally
+  });
+
+  // spec(§4) — don't over-correct: a MEMBER's toJSON IS still honored (a member accessed via the parent
+  // is its own slot — matches JSON.stringify). A Date member normalizes to ISO.
+  test('canonicalize_member_tojson_still_honored', () => {
+    const state = { at: new Date('2026-06-21T00:00:00.000Z'), tag: 'x' };
+    expect(canonicalSerialize(state)).toBe(JSON.stringify(state));
+    expect(canonicalSerialize(state)).toBe('{"at":"2026-06-21T00:00:00.000Z","tag":"x"}');
+  });
+
+  // spec(§4) — fold-state contract intact: a BigInt still throws loud (a fold-authoring bug, never a
+  // silent wrong serialization).
+  test('canonicalize_bigint_throws_regression', () => {
+    expect(canonicalSerialize({ ok: 1 })).toBe('{"ok":1}'); // positive guard
+    expect(() => canonicalSerialize({ big: 10n })).toThrow();
+  });
 });
