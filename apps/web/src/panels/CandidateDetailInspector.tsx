@@ -1,4 +1,4 @@
-import { type JSX, useState } from "react";
+import { type JSX } from "react";
 import { useRunState, useRunStore } from "../state/runStore.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { CandidateInspector } from "./CandidateInspector.js";
@@ -25,7 +25,7 @@ const TABS: { key: DetailTab; label: string; tip: string }[] = [
 export function CandidateDetailInspector(): JSX.Element | null {
   const state = useRunState();
   const { dispatch } = useRunStore();
-  const [tab, setTab] = useState<DetailTab>("overview");
+  const tab: DetailTab = state.selection.inspectorTab ?? "overview";
 
   const candidateId = state.selection.candidateId;
   if (!candidateId) return null;
@@ -76,7 +76,7 @@ export function CandidateDetailInspector(): JSX.Element | null {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(key)}
+                onClick={() => dispatch({ kind: "SET_INSPECTOR_TAB", tab: key })}
                 style={{
                   background: active ? "var(--doppl-accent)" : "var(--doppl-bg-input)",
                   color: active ? "var(--doppl-on-accent)" : "var(--doppl-text-primary)",

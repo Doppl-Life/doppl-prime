@@ -126,6 +126,7 @@ export interface RunStoreState {
   selection: {
     candidateId: string | null;
     agenomeId: string | null;
+    inspectorTab?: "overview" | "critics" | "evidence";
   };
   activityEventLog: ActivityEventView[];
 }
@@ -148,7 +149,7 @@ export const initialRunStoreState: RunStoreState = {
   noveltyScores: {},
   energySpend: {},
   capsConsumed: { energy: 0, generations: 0, candidates: 0, toolCalls: 0 },
-  selection: { candidateId: null, agenomeId: null },
+  selection: { candidateId: null, agenomeId: null, inspectorTab: "overview" },
   activityEventLog: [],
 };
 
@@ -159,8 +160,13 @@ export type RunStoreAction =
   | { kind: "SET_LAST_HEARTBEAT_MS"; lastHeartbeatMs: number | null }
   | { kind: "RESET" }
   | { kind: "SET_RUN_ID"; runId: string | null }
-  | { kind: "SELECT_CANDIDATE"; candidateId: string | null }
+  | {
+      kind: "SELECT_CANDIDATE";
+      candidateId: string | null;
+      inspectorTab?: "overview" | "critics" | "evidence";
+    }
   | { kind: "SELECT_AGENOME"; agenomeId: string | null }
+  | { kind: "SET_INSPECTOR_TAB"; tab: "overview" | "critics" | "evidence" }
   | { kind: "RECORD_ERROR"; sequence: number; type: string; message: string };
 
 interface RunConfiguredPayload {
@@ -507,6 +513,7 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
         selection: {
           ...state.selection,
           candidateId: action.candidateId,
+          ...(action.inspectorTab !== undefined ? { inspectorTab: action.inspectorTab } : {}),
         },
       };
     case "SELECT_AGENOME":
@@ -517,6 +524,10 @@ export function runStoreReducer(state: RunStoreState, action: RunStoreAction): R
           agenomeId: action.agenomeId,
         },
       };
+    case "SET_INSPECTOR_TAB":
+      return state.selection.inspectorTab === action.tab
+        ? state
+        : { ...state, selection: { ...state.selection, inspectorTab: action.tab } };
     case "RECORD_ERROR":
       return {
         ...state,

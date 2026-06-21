@@ -2,6 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { type RunStoreState, initialRunStoreState } from "../../state/reducer.js";
 import { renderWithStore } from "../../test-utils/render.js";
+import { CandidateDetailInspector } from "../CandidateDetailInspector.js";
 import { FinalIdeaPanel } from "../FinalIdeaPanel.js";
 
 function stateWithWinner(): RunStoreState {
@@ -134,6 +135,42 @@ describe("FinalIdeaPanel", () => {
     fireEvent(tracesLink, event);
     expect(event.defaultPrevented).toBe(true);
     expect(window.location.hash).toBe(originalHash);
+  });
+
+  test("each proof link selects the matching inspector tab (critics → Critics, checks → Evidence, others → Overview)", () => {
+    const state = stateWithWinner();
+    renderWithStore(
+      <>
+        <FinalIdeaPanel />
+        <CandidateDetailInspector />
+      </>,
+      { initialState: state },
+    );
+
+    // Helper: click the proof link with the given data-link-id.
+    const click = (id: string) => {
+      const link = document.querySelector(`[data-link-id="${id}"]`) as HTMLAnchorElement;
+      expect(link).not.toBeNull();
+      fireEvent.click(link);
+    };
+    // Helper: read which inspector tab is currently selected.
+    const selectedTab = () =>
+      document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null;
+
+    click("critics");
+    expect(selectedTab()).toBe("Critics");
+
+    click("checks");
+    expect(selectedTab()).toBe("Evidence");
+
+    click("score");
+    expect(selectedTab()).toBe("Overview");
+
+    click("lineage");
+    expect(selectedTab()).toBe("Overview");
+
+    click("traces");
+    expect(selectedTab()).toBe("Overview");
   });
 
   test("when winner has no explanation, falls back to single summary line (no 'Technical summary' label)", () => {

@@ -267,15 +267,25 @@ export function FinalIdeaPanel(): JSX.Element {
                 // hash navigation and route through the run store. Lineage
                 // also scrolls the graph into view; the others just select
                 // the candidate so the right-rail Inspector opens on it.
-                if (
-                  link.id === "lineage" ||
-                  link.id === "critics" ||
-                  link.id === "checks" ||
-                  link.id === "score" ||
-                  link.id === "traces"
-                ) {
+                // Each proof link lands the operator on a distinguishable
+                // place: critics/checks land on their inspector tab; lineage
+                // also scrolls the graph into view; energy scrolls to the
+                // energy panel and selects the producing agenome.
+                const tabByLink: Record<string, "overview" | "critics" | "evidence"> = {
+                  lineage: "overview",
+                  critics: "critics",
+                  checks: "evidence",
+                  score: "overview",
+                  traces: "overview",
+                };
+                const tab = tabByLink[link.id];
+                if (tab) {
                   e.preventDefault();
-                  dispatch({ kind: "SELECT_CANDIDATE", candidateId: winnerFitness.candidateId });
+                  dispatch({
+                    kind: "SELECT_CANDIDATE",
+                    candidateId: winnerFitness.candidateId,
+                    inspectorTab: tab,
+                  });
                   if (link.id === "lineage") {
                     document
                       .querySelector('[data-panel="lineage"]')
@@ -285,6 +295,9 @@ export function FinalIdeaPanel(): JSX.Element {
                 if (link.id === "energy" && winnerCandidate?.agenomeId) {
                   e.preventDefault();
                   dispatch({ kind: "SELECT_AGENOME", agenomeId: winnerCandidate.agenomeId });
+                  document
+                    .querySelector('[data-panel="energy"]')
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }
               }}
               style={{

@@ -22,7 +22,7 @@ export function EnergyPanel(): JSX.Element {
   const sorted = [...rows].sort((a, b) => b.total - a.total);
 
   return (
-    <section aria-label="Energy per agenome">
+    <section aria-label="Energy per agenome" data-panel="energy">
       <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 8px" }}>Energy spend</h2>
       {exhausted && (
         <div
