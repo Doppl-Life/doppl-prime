@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { z } from "zod";
+import { appendEvent } from "../src/event-store/append.js";
 import { runMigrations } from "../src/event-store/migrate.js";
 import {
   SchemaVersionMismatchError,
@@ -12,6 +13,12 @@ import {
   seedDemo,
 } from "../src/event-store/scripts/seed-demo.js";
 import { createServer } from "../src/http/server.js";
+import { createOpenRouterAdapter } from "../src/model-gateway/adapters/openrouter.js";
+import { defaultRoutes } from "../src/model-gateway/default-routes.js";
+import { createGateway } from "../src/model-gateway/gateway.js";
+import type { ModelGateway } from "../src/model-gateway/gateway.js";
+import { createLangfuseClient } from "../src/model-gateway/langfuse.js";
+import { createRegistry } from "../src/model-gateway/default-routes.js";
 import { Worker } from "../src/runtime/worker.js";
 import { createLiveProcessRun } from "./live-process-run.js";
 
@@ -59,6 +66,8 @@ export interface BootDemoResult {
   port: number;
   fixtureLoaded: { runId: string; eventsLoaded: number } | null;
   langfuseMode: "cloud" | "local-trace";
+  /** "real" when OPENROUTER_API_KEY is set; "stub" otherwise (hardcoded analogies). */
+  gatewayMode: "real" | "stub";
   shutdown: () => Promise<void>;
 }
 
@@ -97,6 +106,43 @@ async function placeholderProcessRun(
 
 function detectLangfuseMode(env: NodeJS.ProcessEnv): "cloud" | "local-trace" {
   return env.LANGFUSE_PUBLIC_KEY && env.LANGFUSE_SECRET_KEY ? "cloud" : "local-trace";
+}
+
+/**
+ * Build the real ModelGateway when OPENROUTER_API_KEY is present. Returns
+ * null in stub mode (caller falls back to `createLiveProcessRun`'s default
+ * deterministic stub gateway). The gateway emits energy.spent and
+ * provider_call_failed events through the supplied event store.
+ */
+function buildRealGateway(
+  // biome-ignore lint/suspicious/noExplicitAny: drizzle dialect-generic
+  db: ReturnType<typeof drizzle<any>>,
+  env: NodeJS.ProcessEnv,
+): ModelGateway | null {
+  if (!env.OPENROUTER_API_KEY) return null;
+  const openrouter = createOpenRouterAdapter({
+    env: { OPENROUTER_API_KEY: env.OPENROUTER_API_KEY },
+  });
+  const registry = createRegistry(defaultRoutes);
+  const langfuse = createLangfuseClient({
+    env: {
+      LANGFUSE_PUBLIC_KEY: env.LANGFUSE_PUBLIC_KEY,
+      LANGFUSE_SECRET_KEY: env.LANGFUSE_SECRET_KEY,
+      LANGFUSE_HOST: env.LANGFUSE_HOST,
+      DOPPL_LANGFUSE_INCLUDE_CONTENT: env.DOPPL_LANGFUSE_INCLUDE_CONTENT,
+    },
+  });
+  return createGateway({
+    registry,
+    adapterFor: (provider) => {
+      if (provider === "openrouter") return openrouter;
+      throw new Error(`boot-demo gateway: no adapter registered for provider "${provider}"`);
+    },
+    eventStore: {
+      appendEvent: (input) => appendEvent(db, input),
+    },
+    langfuse,
+  });
 }
 
 export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoResult> {
@@ -139,7 +185,10 @@ export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoR
   const port = bootEnv.DOPPL_HTTP_PORT ?? bootEnv.DOPPL_DEMO_HTTP_PORT;
   const server = serve({ fetch: app.fetch, port });
 
-  const liveProcessRun = createLiveProcessRun({ db });
+  const realGateway = buildRealGateway(db, env);
+  const liveProcessRun = createLiveProcessRun(
+    realGateway ? { db, gateway: realGateway } : { db },
+  );
   const worker = new Worker({
     db,
     processRun: (runId) =>
@@ -177,6 +226,7 @@ export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoR
     port,
     fixtureLoaded,
     langfuseMode: detectLangfuseMode(env),
+    gatewayMode: realGateway ? "real" : "stub",
     shutdown,
   };
 }
@@ -191,6 +241,7 @@ async function main(): Promise<void> {
           port: result.port,
           fixtureLoaded: result.fixtureLoaded,
           langfuseMode: result.langfuseMode,
+          gatewayMode: result.gatewayMode,
         },
         null,
         2,
