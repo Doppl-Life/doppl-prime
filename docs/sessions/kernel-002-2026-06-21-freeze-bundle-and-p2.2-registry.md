@@ -4,7 +4,7 @@
 **Track:** kernel · **Role:** implementer (kernel-runtime-implementer)
 **Phase:** P1 (persistence & event store) + P2 (model gateway)
 **Predecessor:** `kernel-001-2026-06-21-freeze-bundle.md` (orchestrator round framing — same round)
-**Successor:** _(next kernel-runtime-implementer session — set on cycle)_
+**Successor:** `kernel-004-2026-06-21-retrieval-evidence-resolver-replay-reader.md` (P2.7 retrieval · P1.7 resolver · P1.8 replay — Phase-1 close)
 
 ## Why this session existed
 
