@@ -1,7 +1,10 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
-import type { RunConfig } from '@doppl/contracts';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import type { ModelRoute, RunConfig } from '@doppl/contracts';
 import type { EventStore } from './event-store';
 import { registerRunRoutes } from './routes/runs';
+import { registerRunReadRoutes } from './routes/runs-read';
+import { registerModelRoutes } from './routes/model-routes';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -35,12 +38,16 @@ export const DEFAULT_RUN_CONFIG: RunConfig = {
 
 export interface BuildServerDeps {
   store: EventStore;
+  /** Drizzle handle backing the demo `listRunIds` reader (GET /runs). */
+  db: NodePgDatabase;
   /** Defaults + cap maxima (defaults to {@link DEFAULT_RUN_CONFIG}). */
   defaultConfig?: RunConfig;
   /** Injected unique-id generator. */
   newId: () => string;
   /** Request-body ingestion limit in bytes (defaults to {@link DEFAULT_BODY_LIMIT}). */
   bodyLimit?: number;
+  /** The configured ModelRoute set served by GET /model-routes (defaults to empty). */
+  modelRoutes?: readonly ModelRoute[];
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
@@ -64,5 +71,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
     newId: deps.newId,
   });
+  registerRunReadRoutes(app, { store: deps.store, db: deps.db });
+  registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   return app;
 }

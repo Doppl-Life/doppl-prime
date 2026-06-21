@@ -38,6 +38,7 @@ const validBody = {
 function makeApp(bodyLimit?: number) {
   return buildServer({
     store,
+    db,
     defaultConfig: DEFAULT_RUN_CONFIG,
     newId: () => `id-${idCounter++}`,
     ...(bodyLimit !== undefined ? { bodyLimit } : {}),
