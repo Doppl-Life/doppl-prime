@@ -1,11 +1,17 @@
 import type { JSX } from "react";
-import { useEnergyByAgenome, useRunState, useRunStore } from "../state/runStore.js";
+import {
+  useAgenomeDisplayNames,
+  useEnergyByAgenome,
+  useRunState,
+  useRunStore,
+} from "../state/runStore.js";
 
 /**
  * Energy-per-agenome panel (P7.9). Sortable table of agenomes by
- * accumulated doppl_energy spend. Per-row: status indicator, energy
- * total, progress bar against the configured energyBudget cap.
- * Highlights energy_exhausted state when present.
+ * accumulated doppl_energy spend. Per-row: persona name (with
+ * seed/descendant marker and id tail), energy total, progress bar
+ * against the configured energyBudget cap. Highlights energy_exhausted
+ * state when present.
  */
 
 interface RunCapsConfig {
@@ -15,6 +21,7 @@ interface RunCapsConfig {
 export function EnergyPanel(): JSX.Element {
   const rows = useEnergyByAgenome();
   const state = useRunState();
+  const personaNames = useAgenomeDisplayNames();
   const { dispatch } = useRunStore();
   const energyBudget = (state.run?.capsConfig as RunCapsConfig | undefined)?.energyBudget ?? 0;
   const exhausted = state.failureEvents.some((f) => f.type === "energy_exhausted");
@@ -23,7 +30,21 @@ export function EnergyPanel(): JSX.Element {
 
   return (
     <section aria-label="Energy per agenome" data-panel="energy">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 8px" }}>Energy spend</h2>
+      <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: "0 0 4px" }}>Energy spend</h2>
+      <p
+        style={{
+          margin: "0 0 10px 0",
+          color: "var(--doppl-text-secondary)",
+          fontSize: 13,
+          lineHeight: 1.4,
+          maxWidth: "72ch",
+        }}
+      >
+        Each agent in the run draws from a shared energy budget for model calls
+        and tool use. Agents inherit a persona (Skeptic, Rigorist, etc.) from
+        their root ancestor — "seed" rows are the original gen-0 agents,
+        "descendant" rows were spawned later by mutation or fusion.
+      </p>
       {exhausted && (
         <div
           role="alert"
@@ -49,44 +70,61 @@ export function EnergyPanel(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((row) => (
-              <tr
-                key={row.agenomeId}
-                onClick={() => dispatch({ kind: "SELECT_AGENOME", agenomeId: row.agenomeId })}
-                onKeyUp={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    dispatch({ kind: "SELECT_AGENOME", agenomeId: row.agenomeId });
-                  }
-                }}
-                tabIndex={0}
-                style={{ cursor: "pointer" }}
-              >
-                <td>{row.agenomeId}</td>
-                <td>{row.total.toFixed(2)}</td>
-                <td>
-                  <div
-                    style={{
-                      background: "var(--doppl-bg-input)",
-                      height: 8,
-                      borderRadius: 4,
-                      overflow: "hidden",
-                    }}
-                  >
+            {sorted.map((row) => {
+              const ag = state.agenomes[row.agenomeId];
+              const persona = personaNames[row.agenomeId] ?? "Unknown";
+              const isSeed = ag?.parentIds.length === 0;
+              const lineageLabel = isSeed ? "seed" : "descendant";
+              const idTail = row.agenomeId.slice(-6);
+              return (
+                <tr
+                  key={row.agenomeId}
+                  onClick={() => dispatch({ kind: "SELECT_AGENOME", agenomeId: row.agenomeId })}
+                  onKeyUp={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      dispatch({ kind: "SELECT_AGENOME", agenomeId: row.agenomeId });
+                    }
+                  }}
+                  tabIndex={0}
+                  style={{ cursor: "pointer" }}
+                >
+                  <td>
+                    <div style={{ fontWeight: 700, color: "var(--doppl-text-primary)" }}>
+                      {persona}
+                    </div>
+                    <div
+                      style={{ fontSize: 12, color: "var(--doppl-text-secondary)" }}
+                      title={row.agenomeId}
+                    >
+                      {lineageLabel} · #{idTail}
+                    </div>
+                  </td>
+                  <td>{row.total.toFixed(2)}</td>
+                  <td>
                     <div
                       style={{
-                        width: `${
-                          energyBudget > 0 ? Math.min(100, (row.total / energyBudget) * 100) : 0
-                        }%`,
-                        height: "100%",
-                        background: exhausted
-                          ? "var(--doppl-status-error)"
-                          : "var(--doppl-status-info)",
+                        background: "var(--doppl-bg-input)",
+                        height: 8,
+                        borderRadius: 4,
+                        overflow: "hidden",
                       }}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ))}
+                    >
+                      <div
+                        style={{
+                          width: `${
+                            energyBudget > 0 ? Math.min(100, (row.total / energyBudget) * 100) : 0
+                          }%`,
+                          height: "100%",
+                          background: exhausted
+                            ? "var(--doppl-status-error)"
+                            : "var(--doppl-status-info)",
+                        }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
