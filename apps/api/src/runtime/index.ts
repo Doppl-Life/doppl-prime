@@ -4,8 +4,9 @@
  * PURE decisions; the loop/appender own emit + persist (§5 ownership split).
  */
 
-// State-machine transition guards (P3.2). Candidate machine follows the CandidateStatus +`repairing`
-// amendment (finding: §3 requires `repairing`, the frozen enum omits it — escalated like degraded).
+// State-machine transition guards (P3.2 — all 4 machines: Run/Generation/Agenome from kernel-017, the
+// Candidate machine completed in kernel-019 once `repairing` landed via the kernel-018 CandidateStatus
+// amendment). Pure (from,to)→decision over per-machine tables on one shared builder (lesson §33).
 export {
   makeTransitionGuard,
   type TransitionDecision,
@@ -24,3 +25,8 @@ export {
   AGENOME_TRANSITIONS,
   AGENOME_TERMINALS,
 } from './state/agenomeStateMachine';
+export {
+  canTransitionCandidate,
+  CANDIDATE_TRANSITIONS,
+  CANDIDATE_TERMINALS,
+} from './state/candidateStateMachine';
