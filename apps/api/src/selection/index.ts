@@ -20,6 +20,8 @@ export { energyEfficiency } from './components/energy-efficiency';
 export type { EnergyEfficiencyResult } from './components/energy-efficiency';
 export { criticScores } from './components/critic-scores';
 export type { CriticScoresResult } from './components/critic-scores';
+export { JUDGE_ACCEPTANCE_KEY, judgeAcceptance } from './components/judge-acceptance';
+export type { JudgeAcceptanceResult } from './components/judge-acceptance';
 export { createRng } from './reproduction/rng';
 export type { Rng } from './reproduction/rng';
 export { applyMutation, mutate } from './reproduction/mutate';
