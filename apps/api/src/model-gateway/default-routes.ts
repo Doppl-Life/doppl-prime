@@ -39,9 +39,13 @@ export const defaultRoutes: Record<ModelRole, ModelRoute> = {
   population_generator: {
     role: "population_generator",
     provider: "openrouter",
-    modelId: "meta-llama/llama-3.3-70b-instruct",
+    // openai/gpt-4o-mini honors strict json_schema enforcement; the
+    // previous primary (meta-llama/llama-3.3-70b-instruct) silently
+    // skipped required schema fields like `explanation`. Llama stays
+    // as a fallback for outages.
+    modelId: "openai/gpt-4o-mini",
     capabilities: GEN_CAPS,
-    fallbackRouteIds: ["openrouter:openai/gpt-4o-mini"],
+    fallbackRouteIds: ["openrouter:meta-llama/llama-3.3-70b-instruct"],
   },
   critic: {
     role: "critic",
