@@ -111,4 +111,50 @@ describe("CandidateInspector", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("not found");
     });
   });
+
+  test("renders title/summary/explanation from the store even when API response lacks them", async () => {
+    const client = makeStubClient({
+      getCandidate: async () => ({
+        runId: "run_x",
+        candidate: {
+          // API projection is lossy; pretend the server returned only the skeleton.
+          id: "cand_se",
+          runId: "run_x",
+          generationId: "gen_0",
+          agenomeId: "ag_1",
+          subtype: "cross_domain_transfer",
+          // title, summary, subtypePayload intentionally absent from this response
+          claims: [],
+          evidenceRefs: [],
+          status: "scored",
+        } as unknown as never,
+      }),
+    });
+    renderWithStore(<CandidateInspector />, {
+      client,
+      initialState: {
+        ...initialRunStoreState,
+        runId: "run_x",
+        selection: { candidateId: "cand_se", agenomeId: null },
+        candidates: {
+          cand_se: {
+            id: "cand_se",
+            agenomeId: "ag_1",
+            generationId: "gen_0",
+            subtype: "cross_domain_transfer",
+            status: "scored",
+            title: "Stored title",
+            summary: "Stored technical summary.",
+            explanation: "Plain English: stored layperson explanation.",
+          },
+        },
+      },
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Stored title")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/stored layperson explanation/i)).toBeInTheDocument();
+    expect(screen.getByText("Technical summary")).toBeInTheDocument();
+    expect(screen.getByText(/Stored technical summary\./)).toBeInTheDocument();
+  });
 });

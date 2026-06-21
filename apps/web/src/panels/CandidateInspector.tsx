@@ -145,14 +145,61 @@ export function CandidateInspector(): JSX.Element {
     );
   }
   const c = data.candidate;
+  const stored = state.candidates[c.id];
+  const title = stored?.title ?? c.title;
+  const summary = stored?.summary ?? c.summary;
+  const explanation = stored?.explanation;
   return (
     <section aria-label="Candidate inspector">
-      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>{c.title}</h2>
+      <h2 style={{ fontSize: "var(--doppl-fs-lg)" }}>{title}</h2>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <StatusIndicator domain="candidate" status={c.status} />
         <span style={{ color: "var(--doppl-text-secondary)" }}>{c.subtype}</span>
       </div>
-      <p style={{ marginTop: 8 }}>{c.summary}</p>
+      {explanation ? (
+        <>
+          <p
+            style={{
+              marginTop: 8,
+              marginBottom: 6,
+              color: "var(--doppl-text-primary)",
+              fontSize: 15,
+              lineHeight: 1.55,
+            }}
+          >
+            {explanation}
+          </p>
+          {summary && (
+            <>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--doppl-text-secondary)",
+                  marginTop: 4,
+                  marginBottom: 2,
+                }}
+              >
+                Technical summary
+              </div>
+              <p
+                style={{
+                  margin: "0 0 8px 0",
+                  color: "var(--doppl-text-secondary)",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                {summary}
+              </p>
+            </>
+          )}
+        </>
+      ) : (
+        <p style={{ marginTop: 8 }}>{summary}</p>
+      )}
       {c.claims.length > 0 && (
         <>
           <h3 style={{ fontSize: 16 }}>Claims</h3>
