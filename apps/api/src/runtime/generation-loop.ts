@@ -220,6 +220,7 @@ export async function runGeneration(
         typeof parsed[k] === "string" && (parsed[k] as string).length > 0
           ? (parsed[k] as string)
           : fallback;
+      const explanationValue = str("explanation", "");
       await appendEvent(deps.db, {
         runId: input.runId,
         type: "candidate.created",
@@ -235,6 +236,7 @@ export async function runGeneration(
             subtype: str("subtype", "cross_domain_transfer"),
             title: str("title", "Generated candidate"),
             summary: str("summary", "From generation loop"),
+            ...(explanationValue ? { explanation: explanationValue } : {}),
             claims: [],
             evidenceRefs: [],
             status: "created",
