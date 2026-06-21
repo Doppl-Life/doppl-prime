@@ -106,4 +106,31 @@ describe("FinalIdeaPanel", () => {
     expect(energyLink?.getAttribute("data-resolved")).toBe("false");
     expect(screen.getAllByText("UNRESOLVED").length).toBeGreaterThan(0);
   });
+
+  test("when winner has an explanation, renders both the explanation and labeled technical summary", () => {
+    const state = stateWithWinner();
+    state.candidates.cand_hi = {
+      ...state.candidates.cand_hi!,
+      title: "Surge tanks for traffic",
+      summary: "Cross-domain transfer from hydraulic engineering to traffic flow.",
+      explanation: "Plain English: borrow a pressure-release trick from water pipes to smooth out traffic jams.",
+    };
+    renderWithStore(<FinalIdeaPanel />, { initialState: state });
+    expect(screen.getByText(/Plain English: borrow a pressure-release trick/)).toBeInTheDocument();
+    expect(screen.getByText(/Technical summary/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cross-domain transfer from hydraulic engineering/)).toBeInTheDocument();
+  });
+
+  test("when winner has no explanation, falls back to single summary line (no 'Technical summary' label)", () => {
+    const state = stateWithWinner();
+    state.candidates.cand_hi = {
+      ...state.candidates.cand_hi!,
+      title: "Surge tanks for traffic",
+      summary: "Cross-domain transfer from hydraulic engineering to traffic flow.",
+      // explanation intentionally omitted
+    };
+    renderWithStore(<FinalIdeaPanel />, { initialState: state });
+    expect(screen.getByText(/Cross-domain transfer from hydraulic engineering/)).toBeInTheDocument();
+    expect(screen.queryByText(/Technical summary/i)).toBeNull();
+  });
 });

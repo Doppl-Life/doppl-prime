@@ -166,18 +166,63 @@ export function FinalIdeaPanel(): JSX.Element {
       >
         {winnerTitle}
       </h2>
-      {winnerCandidate?.summary && winnerCandidate.summary !== winnerTitle && (
-        <p
-          style={{
-            margin: "0 0 10px 0",
-            color: "var(--doppl-text-secondary)",
-            fontSize: 14,
-            lineHeight: 1.5,
-            maxWidth: "72ch",
-          }}
-        >
-          {winnerCandidate.summary}
-        </p>
+      {winnerCandidate?.explanation ? (
+        <>
+          <p
+            style={{
+              margin: "0 0 8px 0",
+              color: "var(--doppl-text-primary)",
+              fontSize: 15,
+              lineHeight: 1.55,
+              maxWidth: "72ch",
+            }}
+          >
+            {winnerCandidate.explanation}
+          </p>
+          {winnerCandidate.summary && winnerCandidate.summary !== winnerTitle && (
+            <>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--doppl-text-secondary)",
+                  marginTop: 4,
+                  marginBottom: 2,
+                }}
+              >
+                Technical summary
+              </div>
+              <p
+                style={{
+                  margin: "0 0 10px 0",
+                  color: "var(--doppl-text-secondary)",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  maxWidth: "72ch",
+                }}
+              >
+                {winnerCandidate.summary}
+              </p>
+            </>
+          )}
+        </>
+      ) : (
+        winnerCandidate?.summary &&
+        winnerCandidate.summary !== winnerTitle && (
+          <p
+            style={{
+              margin: "0 0 10px 0",
+              color: "var(--doppl-text-secondary)",
+              fontSize: 14,
+              lineHeight: 1.5,
+              maxWidth: "72ch",
+            }}
+          >
+            {winnerCandidate.summary}
+          </p>
+        )
       )}
       <div
         style={{
