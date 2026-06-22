@@ -3,6 +3,9 @@ export interface CalibratorSolution {
   solution_id: string;
   title: string;
   source_type: "kernel" | "manual" | "unknown";
+  output_class?: "candidate" | "pepsi" | "possible_pepsi" | "many_pepsis";
+  phase?: "research_discovery" | "problem_discovery" | "solution_discovery";
+  subtype?: string;
   kernel?: string;
   branch?: string;
   run_id?: string;

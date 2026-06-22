@@ -28,6 +28,8 @@ Current MVP behavior:
 - Human solution ratings are submitted on a `-5` to `+5` scale and written back as markdown under the case `ratings/` folder.
 - The UI supports case selection, solution selection, expandable case/problem/solution details, optional reviewer email, notes, and saved-path feedback.
 - The seeded fixture includes `fsd-accident-economy` plus Cody- and Melissa-labeled solution artifacts.
+- Michael's `fsd-accident-economy` assay fixture has been added as a third solution artifact, and the rating contract now supports Michael-style verdicts: `dead`, `obvious`, `interesting`, `investigate`, and `keeper`.
+- Solution frontmatter now allows `output_class`, `phase`, and `subtype` so the vault can distinguish final solution candidates from assay branches, Pepsis, and many-Pepsis outputs.
 
 Verification as of June 22, 2026:
 

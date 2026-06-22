@@ -68,6 +68,7 @@ describe("App", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     await userEvent.click(screen.getByRole("button", { name: "+4" }));
+    await userEvent.click(screen.getByRole("button", { name: "investigate" }));
     await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
     await userEvent.click(screen.getByRole("button", { name: "Submit rating" }));
     await waitFor(() => {

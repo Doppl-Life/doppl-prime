@@ -31,6 +31,7 @@ calibration-vault/
       problem.md
       solutions/
         cody-accident-economy-map.md
+        michael-accident-economy-assay.md
         melissa-accident-economy-map.md
       ratings/
         .gitkeep
@@ -43,3 +44,13 @@ calibration-vault/cases/<case_id>/ratings/rating_<timestamp>_<solution_id>.md
 ```
 
 Future auth can add reviewer identity enforcement, but the MVP already preserves an optional `reviewer_email` field so Gauntlet-email sign-in can map cleanly onto the vault contract later.
+
+## Michael Branch Influence
+
+The `michael` branch frames calibration as an outcome assay over kernel branches, not only as numeric grading of a final answer. The calibrator now preserves that shape in three ways:
+
+- Michael's `fsd-accident-economy` assay fixture is represented as a third solution artifact.
+- Solution artifacts can declare `output_class`, `phase`, and `subtype` fields so candidates can later become Pepsis, many-Pepsis packets, or solution-discovery records.
+- Human ratings can include both a `-5` to `+5` score and a categorical verdict: `dead`, `obvious`, `interesting`, `investigate`, or `keeper`.
+
+The score says how strong the artifact is. The verdict says what Doppl should do with it next.

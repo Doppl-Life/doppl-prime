@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CalibratorIndex, CalibratorSolution, RatingSubmitResponse } from "./types";
 
 const scores = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+const verdicts = ["dead", "obvious", "interesting", "investigate", "keeper"];
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -36,6 +37,9 @@ function MarkdownBlock({ text }: { text: string }) {
 function KernelMeta({ solution }: { solution: CalibratorSolution }) {
   const fields = [
     ["kernel", solution.kernel],
+    ["class", solution.output_class],
+    ["phase", solution.phase],
+    ["subtype", solution.subtype],
     ["branch", solution.branch],
     ["run", solution.run_id],
     ["generation", solution.generation_id],
@@ -65,6 +69,7 @@ export function App() {
   const [problemOpen, setProblemOpen] = useState(true);
   const [solutionOpen, setSolutionOpen] = useState(true);
   const [score, setScore] = useState<number | null>(null);
+  const [verdict, setVerdict] = useState("");
   const [notes, setNotes] = useState("");
   const [reviewerEmail, setReviewerEmail] = useState("");
   const [savedPath, setSavedPath] = useState("");
@@ -116,6 +121,7 @@ export function App() {
           case_id: selectedCase.case_id,
           solution_id: selectedSolution.solution_id,
           score,
+          verdict: verdict || undefined,
           notes,
           reviewer_email: reviewerEmail,
         }),
@@ -128,6 +134,7 @@ export function App() {
       setSavedPath(body.relativePath ?? "");
       setNotes("");
       setScore(null);
+      setVerdict("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rating submission failed");
     } finally {
@@ -172,6 +179,7 @@ export function App() {
               setSelectedCaseId(event.target.value);
               setSelectedSolutionId(nextCase?.solutions[0]?.solution_id ?? null);
               setScore(null);
+              setVerdict("");
               setSavedPath("");
             }}
           >
@@ -193,6 +201,7 @@ export function App() {
               onClick={() => {
                 setSelectedSolutionId(solution.solution_id);
                 setScore(null);
+                setVerdict("");
                 setSavedPath("");
               }}
             >
@@ -200,54 +209,6 @@ export function App() {
               <small>{solution.kernel ?? solution.source_type}</small>
             </button>
           ))}
-        </section>
-
-        <section className="rating-panel" aria-label="Rating controls">
-          <h2>Solution rating</h2>
-          <div className="score-row" aria-label="Score">
-            {scores.map((value) => (
-              <button
-                className={score === value ? "score selected" : "score"}
-                key={value}
-                type="button"
-                onClick={() => setScore(value)}
-                aria-pressed={score === value}
-              >
-                {scoreLabel(value)}
-              </button>
-            ))}
-          </div>
-          <label className="field">
-            <span>Reviewer email</span>
-            <input
-              type="email"
-              value={reviewerEmail}
-              onChange={(event) => setReviewerEmail(event.target.value)}
-              placeholder="name@gauntletai.com"
-            />
-          </label>
-          <label className="field">
-            <span>Notes</span>
-            <textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="What made this solution useful or weak?"
-            />
-          </label>
-          <button
-            className="submit-button"
-            type="button"
-            disabled={score === null || isSubmitting}
-            onClick={submitRating}
-          >
-            {isSubmitting ? "Saving..." : "Submit rating"}
-          </button>
-          {error ? (
-            <p role="alert" className="error">
-              {error}
-            </p>
-          ) : null}
-          {savedPath ? <p className="saved-path">Saved to {savedPath}</p> : null}
         </section>
       </aside>
 
@@ -290,6 +251,70 @@ export function App() {
           <p>No solution selected.</p>
         )}
       </section>
+
+      <aside className="rating-panel" aria-label="Rating controls">
+        <h2>Solution rating</h2>
+        <div className="score-row" aria-label="Score">
+          {scores.map((value) => (
+            <button
+              className={score === value ? "score selected" : "score"}
+              key={value}
+              type="button"
+              onClick={() => setScore(value)}
+              aria-pressed={score === value}
+            >
+              {scoreLabel(value)}
+            </button>
+          ))}
+        </div>
+        <label className="field">
+          <span>Reviewer email</span>
+          <input
+            type="email"
+            value={reviewerEmail}
+            onChange={(event) => setReviewerEmail(event.target.value)}
+            placeholder="name@gauntletai.com"
+          />
+        </label>
+        <div className="field">
+          <span>Verdict</span>
+          <div className="verdict-row" aria-label="Verdict">
+            {verdicts.map((value) => (
+              <button
+                className={verdict === value ? "verdict selected" : "verdict"}
+                key={value}
+                type="button"
+                onClick={() => setVerdict((current) => (current === value ? "" : value))}
+                aria-pressed={verdict === value}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label className="field">
+          <span>Notes</span>
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder="What made this solution useful or weak?"
+          />
+        </label>
+        <button
+          className="submit-button"
+          type="button"
+          disabled={score === null || isSubmitting}
+          onClick={submitRating}
+        >
+          {isSubmitting ? "Saving..." : "Submit rating"}
+        </button>
+        {error ? (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        ) : null}
+        {savedPath ? <p className="saved-path">Saved to {savedPath}</p> : null}
+      </aside>
     </main>
   );
 }
