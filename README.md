@@ -31,7 +31,7 @@ Refresh the committed static preview:
 npm run kernel:publish
 ```
 
-The static preview is written to `published/kernel/` for GitHub-Pages-style hosting.
+The static preview index is written to `published/index.html`; the kernel proof board is written to `published/kernel/`.
 
 ## Status
 

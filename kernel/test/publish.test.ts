@@ -4,7 +4,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { runKernel } from '../src/run-kernel.ts';
-import { publishStaticKernelRun } from '../src/publish.ts';
+import { publishStaticKernelRun, writePublishedIndex } from '../src/publish.ts';
 
 async function fixtureRun() {
   return runKernel({
@@ -26,4 +26,18 @@ test('publishes proof board and vault artifacts into a static directory', async 
   const html = await readFile(manifest.indexHtml, 'utf8');
   assert.match(html, /Doppl Kernel Proof Board/);
   assert.match(html, /published-vault/);
+});
+
+test('writes a top-level published index that links to the kernel preview', async () => {
+  const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-site-'));
+  const indexPath = await writePublishedIndex(outDir, {
+    kernelHref: 'kernel/',
+    kernelTitle: 'Doppl Kernel Proof Board',
+    runId: 'run_publish',
+  });
+  const html = await readFile(indexPath, 'utf8');
+  assert.equal(indexPath, path.join(outDir, 'index.html'));
+  assert.match(html, /href="kernel\/"/);
+  assert.match(html, /Doppl Kernel Proof Board/);
+  assert.match(html, /run_publish/);
 });
