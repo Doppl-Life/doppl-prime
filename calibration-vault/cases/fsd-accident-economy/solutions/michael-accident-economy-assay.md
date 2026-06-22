@@ -4,6 +4,16 @@ case_id: fsd-accident-economy
 solution_id: michael-accident-economy-assay
 title: Accident Economy Assay Branches
 source_type: kernel
+comparison_set_id: fsd-accident-economy-v0
+comparison_input_hash: sha256:fixture-fsd-accident-economy-v0
+comparison_input_paths:
+  - calibration-vault/cases/fsd-accident-economy/case.md
+  - calibration-vault/cases/fsd-accident-economy/problem.md
+source_status: fixture
+source_branch: michael
+source_commit: unavailable-for-fixture
+adapter_version: calibrator-comparison-v0
+adapter_notes: "Seeded assay fixture; Michael's branch marks this specific case solution as pending."
 output_class: many_pepsis
 phase: solution_discovery
 subtype: consequence

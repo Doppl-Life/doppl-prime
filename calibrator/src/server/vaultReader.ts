@@ -1,8 +1,20 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import matter from "gray-matter";
-import type { CalibratorCase, CalibratorIndex, CalibratorRating, CalibratorSolution } from "../types";
-import { CaseFrontmatter, ProblemFrontmatter, RatingFrontmatter, SolutionFrontmatter } from "./vaultSchemas";
+import type {
+  CalibratorCase,
+  CalibratorComparisonSet,
+  CalibratorIndex,
+  CalibratorRating,
+  CalibratorSolution,
+} from "../types";
+import {
+  CaseFrontmatter,
+  ComparisonSetFrontmatter,
+  ProblemFrontmatter,
+  RatingFrontmatter,
+  SolutionFrontmatter,
+} from "./vaultSchemas";
 
 async function readMarkdown(path: string): Promise<{ data: Record<string, unknown>; content: string }> {
   const raw = await readFile(path, "utf8");
@@ -68,8 +80,39 @@ async function readRatingsBySolution(casePath: string): Promise<Map<string, Cali
   return ratingsBySolution;
 }
 
+async function readComparisonSets(vaultRoot: string): Promise<CalibratorComparisonSet[]> {
+  const comparisonSetsPath = join(vaultRoot, "comparison-sets");
+  let names: string[];
+  try {
+    names = (await readdir(comparisonSetsPath)).filter((name) => name.endsWith(".md")).sort();
+  } catch (err) {
+    const code = err instanceof Error && "code" in err ? (err as NodeJS.ErrnoException).code : undefined;
+    if (code === "ENOENT") return [];
+    throw err;
+  }
+
+  const comparisonSets: CalibratorComparisonSet[] = [];
+  for (const name of names) {
+    const parsed = await readMarkdown(join(comparisonSetsPath, name));
+    const frontmatter = ComparisonSetFrontmatter.parse(parsed.data);
+    comparisonSets.push({
+      comparison_set_id: frontmatter.comparison_set_id,
+      case_id: frontmatter.case_id,
+      title: frontmatter.title,
+      status: frontmatter.status,
+      input_hash: frontmatter.input_hash,
+      input_paths: frontmatter.input_paths,
+      adapter_version: frontmatter.adapter_version,
+      body: parsed.content.trim(),
+    });
+  }
+
+  return comparisonSets;
+}
+
 export async function readVaultIndex(vaultRoot: string): Promise<CalibratorIndex> {
   const casesRoot = join(vaultRoot, "cases");
+  const comparisonSets = await readComparisonSets(vaultRoot);
   const names = (await readdir(casesRoot, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
@@ -100,6 +143,7 @@ export async function readVaultIndex(vaultRoot: string): Promise<CalibratorIndex
 
   return {
     generated_at: new Date().toISOString(),
+    comparison_sets: comparisonSets,
     cases,
   };
 }

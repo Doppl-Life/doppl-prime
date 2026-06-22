@@ -7,6 +7,18 @@ import type { CalibratorIndex } from "../src/types";
 
 const fixture: CalibratorIndex = {
   generated_at: "2026-06-22T00:00:00.000Z",
+  comparison_sets: [
+    {
+      comparison_set_id: "fsd-accident-economy-v0",
+      case_id: "fsd-accident-economy",
+      title: "FSD Accident Economy Kernel Comparison v0",
+      status: "fixture_only",
+      input_hash: "sha256:fixture-fsd-accident-economy-v0",
+      input_paths: ["case.md", "problem.md"],
+      adapter_version: "calibrator-comparison-v0",
+      body: "# Comparison",
+    },
+  ],
   cases: [
     {
       case_id: "fsd-accident-economy",
@@ -21,6 +33,14 @@ const fixture: CalibratorIndex = {
           solution_id: "cody-accident-economy-map",
           title: "Crash Substrate Exposure Map",
           source_type: "kernel",
+          comparison_set_id: "fsd-accident-economy-v0",
+          comparison_input_hash: "sha256:fixture-fsd-accident-economy-v0",
+          comparison_input_paths: ["case.md", "problem.md"],
+          source_status: "fixture",
+          source_branch: "cody",
+          source_commit: "unavailable-for-fixture",
+          adapter_version: "calibrator-comparison-v0",
+          adapter_notes: "Seeded representative artifact.",
           kernel: "cody",
           judge_score: 3.7,
           body: "# Solution body",
@@ -73,6 +93,11 @@ describe("App", () => {
   it("loads the case and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent(
+      "FSD Accident Economy Kernel Comparison v0",
+    );
+    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
+    expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
     expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("Human avg");
     expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("+4");
     expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("investigate 1");

@@ -54,11 +54,16 @@ function MarkdownBlock({ text }: { text: string }) {
 
 function KernelMeta({ solution }: { solution: CalibratorSolution }) {
   const fields = [
+    ["source status", solution.source_status],
+    ["comparison", solution.comparison_set_id],
+    ["input hash", solution.comparison_input_hash],
+    ["adapter", solution.adapter_version],
     ["kernel", solution.kernel],
     ["class", solution.output_class],
     ["phase", solution.phase],
     ["subtype", solution.subtype],
-    ["branch", solution.branch],
+    ["branch", solution.source_branch ?? solution.branch],
+    ["commit", solution.source_commit],
     ["run", solution.run_id],
     ["generation", solution.generation_id],
     ["agenome", solution.agenome_id],
@@ -77,6 +82,14 @@ function KernelMeta({ solution }: { solution: CalibratorSolution }) {
       ))}
     </dl>
   );
+}
+
+function sourceStatusLabel(status?: CalibratorSolution["source_status"]): string {
+  if (!status) return "Unknown";
+  return status
+    .split("_")
+    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+    .join(" ");
 }
 
 function CalibrationHistory({ solution }: { solution: CalibratorSolution }) {
@@ -165,6 +178,11 @@ export function App() {
       null,
     [selectedCase, selectedSolutionId],
   );
+  const selectedComparisonSet = useMemo(() => {
+    const comparisonSetId = selectedSolution?.comparison_set_id;
+    if (!comparisonSetId) return null;
+    return (index?.comparison_sets ?? []).find((set) => set.comparison_set_id === comparisonSetId) ?? null;
+  }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
 
   async function submitRating() {
     if (!selectedCase || !selectedSolution || score === null) return;
@@ -272,7 +290,8 @@ export function App() {
             >
               <span>{solution.title}</span>
               <small>
-                {solution.kernel ?? solution.source_type} / {solution.human_ratings.length} ratings
+                {solution.kernel ?? solution.source_type} / {sourceStatusLabel(solution.source_status)} /{" "}
+                {solution.human_ratings.length} ratings
               </small>
             </button>
           ))}
@@ -288,6 +307,29 @@ export function App() {
           </div>
           <p>{selectedCase.solutions.length} solutions in vault</p>
         </header>
+
+        {selectedComparisonSet ? (
+          <section className="comparison-banner" aria-label="Comparison set provenance">
+            <div>
+              <p className="eyebrow">Comparison Set</p>
+              <h3>{selectedComparisonSet.title}</h3>
+            </div>
+            <dl>
+              <div>
+                <dt>Status</dt>
+                <dd>{selectedComparisonSet.status.replace("_", " ")}</dd>
+              </div>
+              <div>
+                <dt>Input hash</dt>
+                <dd>{selectedComparisonSet.input_hash}</dd>
+              </div>
+              <div>
+                <dt>Adapter</dt>
+                <dd>{selectedComparisonSet.adapter_version}</dd>
+              </div>
+            </dl>
+          </section>
+        ) : null}
 
         <section className="context-grid">
           <article className="panel">
@@ -313,6 +355,9 @@ export function App() {
               <span>{solutionOpen ? "Collapse" : "Expand"}</span>
             </button>
             <KernelMeta solution={selectedSolution} />
+            {selectedSolution.adapter_notes ? (
+              <p className="adapter-note">{selectedSolution.adapter_notes}</p>
+            ) : null}
             <CalibrationHistory solution={selectedSolution} />
             {solutionOpen ? <MarkdownBlock text={selectedSolution.body} /> : null}
           </article>

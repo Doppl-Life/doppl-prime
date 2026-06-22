@@ -36,6 +36,10 @@ Current MVP behavior:
 - Each solution displays human calibration history: rating count, average human score, judge-score delta, and verdict distribution.
 - After a local submit, the app refreshes the vault index so the saved rating appears in the workbench immediately.
 - GitHub Pages is enabled for the `calibration` branch and publishes the static preview from the committed `published/` folder.
+- Apples-to-apples comparison is now explicit in the vault through `calibration-vault/comparison-sets/fsd-accident-economy-v0.md`.
+- The current Cody-, Melissa-, and Michael-labeled artifacts are marked `source_status: fixture`; future adapters must promote them to `imported` or `live_run` only with branch, commit, source artifact/run id, and shared input hash.
+- The UI shows comparison-set status and per-solution adapter notes so reviewers can distinguish seeded fixtures from genuine kernel outputs.
+- The calibrator has an SVG favicon wired into the app and static export.
 
 Verification as of June 22, 2026:
 

@@ -15,14 +15,42 @@ describe("readVaultIndex", () => {
       "melissa-accident-economy-map",
       "michael-accident-economy-assay",
     ]);
+    expect(index.comparison_sets[0]).toMatchObject({
+      comparison_set_id: "fsd-accident-economy-v0",
+      status: "fixture_only",
+    });
+    expect(item?.solutions[0]).toMatchObject({
+      comparison_set_id: "fsd-accident-economy-v0",
+      source_status: "fixture",
+      adapter_version: "calibrator-comparison-v0",
+    });
     expect(item?.solutions[0]?.human_ratings).toEqual([]);
   });
 
   it("attaches rating markdown to the matching solution", async () => {
     const vaultRoot = join(tmpdir(), `calibrator-vault-${Date.now()}`);
     const caseRoot = join(vaultRoot, "cases/fsd-case");
+    await mkdir(join(vaultRoot, "comparison-sets"), { recursive: true });
     await mkdir(join(caseRoot, "solutions"), { recursive: true });
     await mkdir(join(caseRoot, "ratings"), { recursive: true });
+    await writeFile(
+      join(vaultRoot, "comparison-sets/fsd-case-v0.md"),
+      [
+        "---",
+        "artifact_type: comparison_set",
+        "comparison_set_id: fsd-case-v0",
+        "case_id: fsd-case",
+        "title: FSD Case Comparison",
+        "status: fixture_only",
+        "input_hash: sha256:fixture",
+        "input_paths: []",
+        "adapter_version: test-adapter-v0",
+        "---",
+        "",
+        "# Comparison",
+      ].join("\n"),
+      "utf8",
+    );
     await writeFile(
       join(caseRoot, "case.md"),
       [
@@ -61,6 +89,9 @@ describe("readVaultIndex", () => {
         "solution_id: cody",
         "title: Cody Solution",
         "source_type: kernel",
+        "comparison_set_id: fsd-case-v0",
+        "source_status: fixture",
+        "adapter_version: test-adapter-v0",
         "kernel: cody",
         "judge_score: 3",
         "---",

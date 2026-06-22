@@ -17,6 +17,14 @@ export interface CalibratorSolution {
   solution_id: string;
   title: string;
   source_type: "kernel" | "manual" | "unknown";
+  comparison_set_id?: string;
+  comparison_input_hash?: string;
+  comparison_input_paths?: string[];
+  source_status?: "fixture" | "imported" | "live_run" | "pending" | "unavailable";
+  source_branch?: string;
+  source_commit?: string;
+  adapter_version?: string;
+  adapter_notes?: string;
   output_class?: "candidate" | "pepsi" | "possible_pepsi" | "many_pepsis";
   phase?: "research_discovery" | "problem_discovery" | "solution_discovery";
   subtype?: string;
@@ -46,8 +54,20 @@ export interface CalibratorCase {
   solutions: CalibratorSolution[];
 }
 
+export interface CalibratorComparisonSet {
+  comparison_set_id: string;
+  case_id: string;
+  title: string;
+  status: "fixture_only" | "mixed" | "imported" | "live_run";
+  input_hash: string;
+  input_paths: string[];
+  adapter_version: string;
+  body: string;
+}
+
 export interface CalibratorIndex {
   generated_at: string;
+  comparison_sets: CalibratorComparisonSet[];
   cases: CalibratorCase[];
 }
 

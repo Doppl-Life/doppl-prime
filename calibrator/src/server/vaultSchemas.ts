@@ -27,6 +27,14 @@ export const SolutionFrontmatter = z.object({
   solution_id: z.string().min(1),
   title: z.string().min(1),
   source_type: z.enum(["kernel", "manual", "unknown"]),
+  comparison_set_id: z.string().min(1).optional(),
+  comparison_input_hash: z.string().min(1).optional(),
+  comparison_input_paths: z.array(z.string().min(1)).default([]),
+  source_status: z.enum(["fixture", "imported", "live_run", "pending", "unavailable"]).optional(),
+  source_branch: z.string().min(1).optional(),
+  source_commit: z.string().min(1).optional(),
+  adapter_version: z.string().min(1).optional(),
+  adapter_notes: z.string().min(1).optional(),
   output_class: z.enum(["candidate", "pepsi", "possible_pepsi", "many_pepsis"]).optional(),
   phase: z.enum(["research_discovery", "problem_discovery", "solution_discovery"]).optional(),
   subtype: z.string().min(1).optional(),
@@ -38,6 +46,18 @@ export const SolutionFrontmatter = z.object({
   candidate_id: z.string().min(1).optional(),
   judge_score: z.number().optional(),
   fitness_score: z.number().optional(),
+  created_at: IsoDateString.optional(),
+});
+
+export const ComparisonSetFrontmatter = z.object({
+  artifact_type: z.literal("comparison_set"),
+  comparison_set_id: z.string().min(1),
+  case_id: z.string().min(1),
+  title: z.string().min(1),
+  status: z.enum(["fixture_only", "mixed", "imported", "live_run"]),
+  input_hash: z.string().min(1),
+  input_paths: z.array(z.string().min(1)).default([]),
+  adapter_version: z.string().min(1),
   created_at: IsoDateString.optional(),
 });
 
@@ -72,5 +92,6 @@ export const RatingFrontmatter = z.object({
 export type CaseFrontmatter = z.infer<typeof CaseFrontmatter>;
 export type ProblemFrontmatter = z.infer<typeof ProblemFrontmatter>;
 export type SolutionFrontmatter = z.infer<typeof SolutionFrontmatter>;
+export type ComparisonSetFrontmatter = z.infer<typeof ComparisonSetFrontmatter>;
 export type RatingSubmission = z.infer<typeof RatingSubmission>;
 export type RatingFrontmatter = z.infer<typeof RatingFrontmatter>;

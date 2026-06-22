@@ -4,6 +4,16 @@ case_id: fsd-accident-economy
 solution_id: melissa-accident-economy-map
 title: Accident Demand Shock Readiness Plan
 source_type: kernel
+comparison_set_id: fsd-accident-economy-v0
+comparison_input_hash: sha256:fixture-fsd-accident-economy-v0
+comparison_input_paths:
+  - calibration-vault/cases/fsd-accident-economy/case.md
+  - calibration-vault/cases/fsd-accident-economy/problem.md
+source_status: fixture
+source_branch: melissa
+source_commit: unavailable-for-fixture
+adapter_version: calibrator-comparison-v0
+adapter_notes: "Seeded representative artifact; not yet imported from a live Melissa run."
 kernel: melissa
 branch: melissa
 run_id: run_fixture_melissa_001
