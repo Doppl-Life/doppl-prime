@@ -1,4 +1,4 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -43,5 +43,30 @@ describe("writeRatingMarkdown", () => {
     expect(ledgerEvent.score).toBe(4);
     expect(ledgerEvent.verdict).toBe("investigate");
     expect(ledgerEvent.reviewer_email).toBe("reviewer@gauntletai.com");
+  });
+
+  it("writes a problem recovery rating markdown file", async () => {
+    const root = await mkdtemp(join(tmpdir(), "calibrator-rating-"));
+    await mkdir(join(root, "calibration-vault/cases/fsd-accident-economy/ratings"), {
+      recursive: true,
+    });
+
+    const result = await writeRatingMarkdown({
+      vaultRoot: join(root, "calibration-vault"),
+      now: new Date("2026-06-22T12:00:00.000Z"),
+      submission: {
+        case_id: "fsd-accident-economy",
+        rating_target: "problem_recovery",
+        problem_recovery_id: "pr_fsd_accident_economy",
+        score: 5,
+        notes: "Strong recovered problem.",
+        reviewer_email: "",
+      },
+    });
+
+    const written = await readFile(result.absolutePath, "utf8");
+    expect(written).toContain("rating_target: problem_recovery");
+    expect(written).toContain("problem_recovery_id: pr_fsd_accident_economy");
+    expect(written).not.toContain("solution_id:");
   });
 });

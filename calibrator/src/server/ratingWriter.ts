@@ -26,9 +26,11 @@ export interface RatingLedgerEvent {
   rating_id: string;
   rating_markdown_path: string;
   case_id: string;
-  solution_id: string;
-  phase: "solution_discovery";
-  target_kind: "solution";
+  rating_target: "solution" | "problem_recovery";
+  solution_id?: string;
+  problem_recovery_id?: string;
+  phase: "problem_discovery" | "solution_discovery";
+  target_kind: "solution" | "problem_recovery";
   score: number;
   verdict?: "dead" | "obvious" | "interesting" | "investigate" | "keeper";
   reviewer_email?: string;
@@ -61,17 +63,27 @@ function frontmatterYaml(frontmatter: Record<string, unknown>): string {
 export async function writeRatingMarkdown(input: WriteRatingInput): Promise<WriteRatingResult> {
   const submission = RatingSubmission.parse(input.submission);
   const now = input.now ?? new Date();
-  const ratingId = `rating_${timestampId(now)}_${safeIdPart(submission.solution_id)}`;
+  const targetId =
+    submission.rating_target === "problem_recovery"
+      ? submission.problem_recovery_id
+      : submission.solution_id;
+  if (!targetId) {
+    throw new Error(`Missing id for ${submission.rating_target} rating`);
+  }
+  const phase = submission.rating_target === "problem_recovery" ? "problem_discovery" : "solution_discovery";
+  const ratingId = `rating_${timestampId(now)}_${safeIdPart(targetId)}`;
   const frontmatter = RatingFrontmatter.parse({
     artifact_type: "human_rating",
     rating_id: ratingId,
-    rating_target: "solution",
+    rating_target: submission.rating_target,
     case_id: submission.case_id,
-    solution_id: submission.solution_id,
+    solution_id: submission.rating_target === "solution" ? submission.solution_id : undefined,
+    problem_recovery_id:
+      submission.rating_target === "problem_recovery" ? submission.problem_recovery_id : undefined,
     score: submission.score,
     verdict: submission.verdict,
-    phase: "solution_discovery",
-    target_kind: "solution",
+    phase,
+    target_kind: submission.rating_target,
     scale_min: -5,
     scale_max: 5,
     reviewer_email: submission.reviewer_email || undefined,
@@ -113,9 +125,12 @@ export async function writeRatingMarkdown(input: WriteRatingInput): Promise<Writ
     rating_id: ratingId,
     rating_markdown_path: relativePath,
     case_id: submission.case_id,
-    solution_id: submission.solution_id,
-    phase: "solution_discovery",
-    target_kind: "solution",
+    rating_target: submission.rating_target,
+    solution_id: submission.rating_target === "solution" ? submission.solution_id : undefined,
+    problem_recovery_id:
+      submission.rating_target === "problem_recovery" ? submission.problem_recovery_id : undefined,
+    phase,
+    target_kind: submission.rating_target,
     score: submission.score,
     verdict: submission.verdict,
     reviewer_email: submission.reviewer_email || undefined,

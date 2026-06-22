@@ -1,8 +1,9 @@
 export interface CalibratorRating {
   rating_id: string;
-  rating_target: "solution";
+  rating_target: "solution" | "problem_recovery";
   case_id: string;
-  solution_id: string;
+  solution_id?: string;
+  problem_recovery_id?: string;
   score: number;
   verdict?: "dead" | "obvious" | "interesting" | "investigate" | "keeper";
   reviewer_email?: string;

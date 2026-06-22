@@ -37,7 +37,7 @@
 - Test: `calibrator/test/vaultSchemas.test.ts`
 - Test: `calibrator/test/ratingWriter.test.ts`
 
-- [ ] **Step 1: Add failing schema tests**
+- [x] **Step 1: Add failing schema tests**
 
 Add tests that parse both valid rating targets:
 
@@ -81,7 +81,7 @@ it("accepts stored problem recovery rating frontmatter", () => {
 });
 ```
 
-- [ ] **Step 2: Run schema tests to verify failure**
+- [x] **Step 2: Run schema tests to verify failure**
 
 Run:
 
@@ -91,7 +91,7 @@ npm --prefix calibrator run test -- vaultSchemas
 
 Expected: FAIL because `rating_target` currently only accepts `solution` and the schemas do not know `problem_recovery_id`.
 
-- [ ] **Step 3: Update rating schemas and shared types**
+- [x] **Step 3: Update rating schemas and shared types**
 
 In `vaultSchemas.ts`, define target-aware schemas:
 
@@ -132,7 +132,7 @@ solution_id?: string;
 problem_recovery_id?: string;
 ```
 
-- [ ] **Step 4: Add failing writer test**
+- [x] **Step 4: Add failing writer test**
 
 In `ratingWriter.test.ts`, add:
 
@@ -161,7 +161,7 @@ it("writes a problem recovery rating markdown file", async () => {
 });
 ```
 
-- [ ] **Step 5: Run writer test to verify failure**
+- [x] **Step 5: Run writer test to verify failure**
 
 Run:
 
@@ -171,7 +171,7 @@ npm --prefix calibrator run test -- ratingWriter
 
 Expected: FAIL because the writer assumes `solution_id`.
 
-- [ ] **Step 6: Update rating writer**
+- [x] **Step 6: Update rating writer**
 
 In `ratingWriter.ts`, derive the target id:
 
@@ -206,7 +206,7 @@ const frontmatter = {
 };
 ```
 
-- [ ] **Step 7: Run target tests**
+- [x] **Step 7: Run target tests**
 
 Run:
 

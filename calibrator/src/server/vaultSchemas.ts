@@ -5,6 +5,9 @@ const IsoDateString = z.preprocess((value) => {
   return value;
 }, z.string().min(1));
 
+const RatingTarget = z.enum(["solution", "problem_recovery"]);
+const Verdict = z.enum(["dead", "obvious", "interesting", "investigate", "keeper"]);
+
 export const CaseFrontmatter = z.object({
   artifact_type: z.literal("case"),
   case_id: z.string().min(1),
@@ -61,33 +64,70 @@ export const ComparisonSetFrontmatter = z.object({
   created_at: IsoDateString.optional(),
 });
 
-export const RatingSubmission = z.object({
-  case_id: z.string().min(1),
-  solution_id: z.string().min(1),
-  score: z.number().int().min(-5).max(5),
-  verdict: z.enum(["dead", "obvious", "interesting", "investigate", "keeper"]).optional(),
-  notes: z.string().default(""),
-  reviewer_email: z.string().email().optional().or(z.literal("")),
-  reviewer_name: z.string().optional(),
-});
+export const RatingSubmission = z
+  .object({
+    case_id: z.string().min(1),
+    rating_target: RatingTarget.default("solution"),
+    solution_id: z.string().min(1).optional(),
+    problem_recovery_id: z.string().min(1).optional(),
+    score: z.number().int().min(-5).max(5),
+    verdict: Verdict.optional(),
+    notes: z.string().default(""),
+    reviewer_email: z.string().email().optional().or(z.literal("")),
+    reviewer_name: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.rating_target === "solution" && !value.solution_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["solution_id"],
+        message: "solution_id is required",
+      });
+    }
+    if (value.rating_target === "problem_recovery" && !value.problem_recovery_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["problem_recovery_id"],
+        message: "problem_recovery_id is required",
+      });
+    }
+  });
 
-export const RatingFrontmatter = z.object({
-  artifact_type: z.literal("human_rating"),
-  rating_id: z.string().min(1),
-  rating_target: z.literal("solution"),
-  case_id: z.string().min(1),
-  solution_id: z.string().min(1),
-  score: z.number().int().min(-5).max(5),
-  verdict: z.enum(["dead", "obvious", "interesting", "investigate", "keeper"]).optional(),
-  phase: z.literal("solution_discovery"),
-  target_kind: z.literal("solution"),
-  scale_min: z.literal(-5),
-  scale_max: z.literal(5),
-  reviewer_email: z.string().optional(),
-  reviewer_name: z.string().optional(),
-  submitted_at: IsoDateString,
-  app_version: z.literal("calibrator-v0"),
-});
+export const RatingFrontmatter = z
+  .object({
+    artifact_type: z.literal("human_rating"),
+    rating_id: z.string().min(1),
+    rating_target: RatingTarget,
+    case_id: z.string().min(1),
+    solution_id: z.string().min(1).optional(),
+    problem_recovery_id: z.string().min(1).optional(),
+    score: z.number().int().min(-5).max(5),
+    verdict: Verdict.optional(),
+    phase: z.enum(["problem_discovery", "solution_discovery"]).optional(),
+    target_kind: RatingTarget.optional(),
+    scale_min: z.literal(-5),
+    scale_max: z.literal(5),
+    reviewer_email: z.string().optional(),
+    reviewer_name: z.string().optional(),
+    submitted_at: IsoDateString,
+    app_version: z.literal("calibrator-v0"),
+  })
+  .superRefine((value, ctx) => {
+    if (value.rating_target === "solution" && !value.solution_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["solution_id"],
+        message: "solution_id is required",
+      });
+    }
+    if (value.rating_target === "problem_recovery" && !value.problem_recovery_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["problem_recovery_id"],
+        message: "problem_recovery_id is required",
+      });
+    }
+  });
 
 export type CaseFrontmatter = z.infer<typeof CaseFrontmatter>;
 export type ProblemFrontmatter = z.infer<typeof ProblemFrontmatter>;

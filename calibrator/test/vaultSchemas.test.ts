@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { RatingSubmission, SolutionFrontmatter } from "../src/server/vaultSchemas";
+import { RatingFrontmatter, RatingSubmission, SolutionFrontmatter } from "../src/server/vaultSchemas";
 
 describe("vault schemas", () => {
   it("accepts a valid solution frontmatter object", () => {
@@ -21,10 +21,47 @@ describe("vault schemas", () => {
     expect(() =>
       RatingSubmission.parse({
         case_id: "fsd-accident-economy",
+        rating_target: "solution",
         solution_id: "cody-accident-economy-map",
         score: 6,
         notes: "",
       }),
     ).toThrow();
+  });
+
+  it("accepts a problem recovery rating submission", () => {
+    expect(
+      RatingSubmission.parse({
+        case_id: "fsd-accident-economy",
+        rating_target: "problem_recovery",
+        problem_recovery_id: "pr_fsd_accident_economy",
+        score: 4,
+        notes: "Recovered the real economic dependency problem.",
+      }),
+    ).toMatchObject({
+      rating_target: "problem_recovery",
+      problem_recovery_id: "pr_fsd_accident_economy",
+      score: 4,
+    });
+  });
+
+  it("accepts stored problem recovery rating frontmatter", () => {
+    expect(
+      RatingFrontmatter.parse({
+        artifact_type: "human_rating",
+        rating_id: "rating_problem_recovery",
+        rating_target: "problem_recovery",
+        case_id: "fsd-accident-economy",
+        problem_recovery_id: "pr_fsd_accident_economy",
+        score: 5,
+        scale_min: -5,
+        scale_max: 5,
+        submitted_at: "2026-06-22T00:00:00.000Z",
+        app_version: "calibrator-v0",
+      }),
+    ).toMatchObject({
+      rating_target: "problem_recovery",
+      problem_recovery_id: "pr_fsd_accident_economy",
+    });
   });
 });
