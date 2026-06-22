@@ -4,6 +4,123 @@ import { mkdtemp } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { handleKernelHttpRequest } from '../src/server.ts';
+import { loadCaseStudy } from '../src/case-loader.ts';
+import { createDefaultModelGenerationPrompts } from '../src/generation-providers.ts';
+import { createJsonKnowledgeGateway } from '../src/knowledge-gateway.ts';
+import { type ModelCallRecord, writeModelCallRecords } from '../src/model-gateway.ts';
+
+async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId,
+    targetCase: caseStudy.id,
+    maxItems: 4,
+  });
+  const prompts = createDefaultModelGenerationPrompts();
+  const problemRecovery = {
+    title: 'HTTP Replay Recovery',
+    recoveredProblem:
+      'Autonomous driving changes the reason households own idle cars, shifting value toward fleet inventory.',
+    hiddenConstraint: 'The fork is whether autonomous miles become pure service capacity.',
+    falsifier: 'Private autonomous car purchases keep rising while fleet miles remain marginal.',
+  };
+  const candidates = [
+    {
+      id: 'http_replay_a',
+      agenomeId: 'ag_blindside',
+      title: 'Insurance Transfer Clock',
+      summary: 'Use liability transfer as the earliest signal of ownership unwind.',
+      mechanism: 'Track when insurers and OEMs price the vehicle, not the driver, as the risk subject.',
+      claimedDelta: 'Moves the thesis earlier than visible sales declines.',
+      citedKnowledge: ['K1', 'K2'],
+    },
+    {
+      id: 'http_replay_b',
+      agenomeId: 'ag_first_principles',
+      title: 'Residual Stress Ledger',
+      summary: 'Follow residual-value exposure through leases, floorplan loans, and auto ABS.',
+      mechanism: 'Map who holds depreciation risk as autonomous utilization rises.',
+      claimedDelta: 'Turns adoption into a balance-sheet watchlist.',
+      citedKnowledge: ['K1'],
+    },
+  ];
+  const completedProblemRecovery = {
+    id: `recovery_${caseStudy.id}`,
+    caseId: caseStudy.id,
+    ...problemRecovery,
+    citedKnowledge: knowledgePacket.items.map((item) => item.citeHandle),
+  };
+  const completedCandidates = candidates.map((candidate) => ({
+    ...candidate,
+    caseId: caseStudy.id,
+    generation: 0,
+  }));
+  const records: ModelCallRecord[] = [
+    {
+      id: 'call_http_replay_problem',
+      runId,
+      purpose: 'problem_recovery',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.problemRecovery({ runId, caseStudy, knowledgePacket }),
+      outputText: JSON.stringify(problemRecovery),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_candidates',
+      runId,
+      purpose: 'candidate_generation',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.candidateGeneration({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        knowledgePacket,
+        generation: 0,
+      }),
+      outputText: JSON.stringify({ candidates }),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_critics',
+      runId,
+      purpose: 'critic_judgment',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.criticJudgment({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        candidates: completedCandidates,
+        knowledgePacket,
+      }),
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'http_replay_a',
+            criticId: 'grounding',
+            score: 88,
+            pressure: 'Liability transfer is externally observable.',
+            revisionMandate: 'Name the filings that prove risk transfer.',
+          },
+          {
+            candidateId: 'http_replay_b',
+            criticId: 'grounding',
+            score: 72,
+            pressure: 'Residual exposure is measurable but closer to the obvious thesis.',
+            revisionMandate: 'Pick the first counterparty likely to break.',
+          },
+        ],
+      }),
+      metadata: {},
+    },
+  ];
+  await writeModelCallRecords(filePath, records);
+}
 
 test('kernel HTTP server reports health', async () => {
   const response = await handleKernelHttpRequest({ method: 'GET', url: '/health' });
@@ -33,4 +150,30 @@ test('kernel HTTP server runs a fixture kernel request', async () => {
   assert.equal(response.body.budget.usedUnits, 1);
   assert.match(response.body.proofBoard, /proof-board\/index\.html$/);
   assert.ok(response.body.files.some((file: string) => file.endsWith('run-index.json')));
+});
+
+test('kernel HTTP server runs from replayed model calls', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-replay-'));
+  const modelCallsPath = path.join(root, 'model-calls.jsonl');
+  await writeReplayCalls(modelCallsPath, 'run_http_replay', 'fixture-model');
+
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_replay',
+      generations: 1,
+      budget: 1,
+      model: 'fixture-model',
+      replayModelCallsPath: modelCallsPath,
+      outDir: path.join(root, 'vault'),
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runId, 'run_http_replay');
+  assert.equal(response.body.child, 'child_http_replay_a_http_replay_b');
+  assert.equal(response.body.candidates, 2);
+  assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
 });

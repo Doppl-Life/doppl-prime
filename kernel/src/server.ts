@@ -1,5 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { defaultKernelArgs } from './cli.ts';
+import { createModelGenerationProviders, type GenerationProviders } from './generation-providers.ts';
+import { createReplayModelClient, readModelCallRecords } from './model-gateway.ts';
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
@@ -10,6 +12,8 @@ type KernelRunRequest = {
   budget?: number;
   outDir?: string;
   proofBoardDir?: string;
+  replayModelCallsPath?: string;
+  model?: string;
 };
 
 type KernelHttpRequest = {
@@ -56,21 +60,36 @@ function parseBudget(value: unknown, fallback: number): number {
   return value;
 }
 
+async function generationProvidersFromRequest(
+  parsed: KernelRunRequest,
+): Promise<GenerationProviders | undefined> {
+  if (!parsed.replayModelCallsPath) return undefined;
+  if (!parsed.model) throw new Error('model is required when replayModelCallsPath is set');
+  const records = await readModelCallRecords(parsed.replayModelCallsPath);
+  return createModelGenerationProviders({
+    client: createReplayModelClient(records),
+    model: parsed.model,
+  });
+}
+
 async function runFromRequestBody(body: string | undefined): Promise<Record<string, unknown>> {
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
+  const generationProviders = await generationProvidersFromRequest(parsed);
   const run = await runKernel({
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
     generations,
     evolutionBudget: { maxUnits: budget },
+    generationProviders,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
   const proofBoard = await writeProofBoard(run, parsed.proofBoardDir || defaultKernelArgs.proofBoardDir);
   return {
     runId: run.id,
     caseId: run.caseStudy.id,
+    candidates: run.candidates.length,
     generations: run.evolution.length,
     budget: run.budget,
     child: run.fusion?.child.id || null,
