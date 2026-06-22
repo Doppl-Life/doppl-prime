@@ -56,6 +56,35 @@
     "path": "trace.json",
     "eventsPath": "events.jsonl"
   },
+  "evolution": [
+    {
+      "generation": 0,
+      "candidateIds": [
+        "cand_liability_clock",
+        "cand_recovery_market",
+        "cand_lender_residual"
+      ],
+      "selectedParentIds": [
+        "cand_liability_clock",
+        "cand_recovery_market"
+      ],
+      "childId": "child_cand_liability_clock_cand_recovery_market",
+      "fitnessTotals": [
+        {
+          "candidateId": "cand_liability_clock",
+          "total": 80
+        },
+        {
+          "candidateId": "cand_recovery_market",
+          "total": 40
+        },
+        {
+          "candidateId": "cand_lender_residual",
+          "total": 20
+        }
+      ]
+    }
+  ],
   "modelOutputs": {
     "accepted": 0,
     "repairRequested": 0,

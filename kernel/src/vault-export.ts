@@ -79,6 +79,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       eventsPath: 'events.jsonl',
       modelCallsPath: paths.modelCallsPath,
     },
+    evolution: run.evolution,
     modelOutputs: replayRunProjection(run.events).modelOutputs,
   };
 }

@@ -1,4 +1,13 @@
-import { assertKernelRun, type CandidateSolution, type KernelRun, type MemoryMode } from './contracts.ts';
+import {
+  assertKernelRun,
+  type CandidateSolution,
+  type CriticVerdict,
+  type EvolutionGeneration,
+  type FitnessRecord,
+  type FusionResult,
+  type KernelRun,
+  type MemoryMode,
+} from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
 import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
 import { scoreCandidates, selectParents, checkPairCompatibility } from './scoring.ts';
@@ -40,6 +49,7 @@ export async function runKernel(input: {
   knowledgePacketPath: string;
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
+  generations?: number;
 }): Promise<KernelRun> {
   const trace = createMemoryEventRecorder();
   const caseStudy = await loadCaseStudy(input.casePath);
@@ -68,6 +78,7 @@ export async function runKernel(input: {
 
   const generationProviders =
     input.generationProviders || (await createFixtureGenerationProviders(input.fixturePath));
+  const generationCount = Math.max(1, Math.floor(input.generations ?? 1));
 
   const problemRecovery = await generationProviders.problemRecovery.recover({
     runId: input.runId,
@@ -76,61 +87,100 @@ export async function runKernel(input: {
   });
   trace.push('problem_recovery.created', { recoveryId: problemRecovery.id });
 
-  const candidates = await generationProviders.candidateGenerator.generate({
-    runId: input.runId,
-    caseStudy,
-    problemRecovery,
-    knowledgePacket,
-    generation: 0,
-  });
-  for (const candidate of candidates) {
-    trace.push('candidate.created', {
-      candidateId: candidate.id,
-      agenomeId: candidate.agenomeId,
-    });
-  }
+  const candidates: CandidateSolution[] = [];
+  const criticVerdicts: CriticVerdict[] = [];
+  const fitnessRecords: FitnessRecord[] = [];
+  const evolution: EvolutionGeneration[] = [];
+  let carryoverChild: CandidateSolution | undefined;
+  let selectedParents: [CandidateSolution, CandidateSolution] | [] = [];
+  let fusion: FusionResult | undefined;
 
-  const criticVerdicts = await generationProviders.criticCouncil.judge({
-    runId: input.runId,
-    caseStudy,
-    problemRecovery,
-    candidates,
-    knowledgePacket,
-  });
-  for (const verdict of criticVerdicts) {
-    trace.push('critic.verdict_recorded', {
-      candidateId: verdict.candidateId,
-      criticId: verdict.criticId,
-      score: verdict.score,
+  for (let generation = 0; generation < generationCount; generation += 1) {
+    trace.push('generation.started', { generation });
+    const freshCandidates = await generationProviders.candidateGenerator.generate({
+      runId: input.runId,
+      caseStudy,
+      problemRecovery,
+      knowledgePacket,
+      generation,
     });
-  }
+    candidates.push(...freshCandidates);
+    for (const candidate of freshCandidates) {
+      trace.push('candidate.created', {
+        candidateId: candidate.id,
+        agenomeId: candidate.agenomeId,
+        generation,
+      });
+    }
 
-  const fitnessRecords = scoreCandidates(criticVerdicts);
-  for (const fitness of fitnessRecords) {
-    trace.push('fitness.scored', {
-      candidateId: fitness.candidateId,
-      total: fitness.total,
+    const generationCandidates = carryoverChild
+      ? [carryoverChild, ...freshCandidates]
+      : freshCandidates;
+    const generationVerdicts = await generationProviders.criticCouncil.judge({
+      runId: input.runId,
+      caseStudy,
+      problemRecovery,
+      candidates: generationCandidates,
+      knowledgePacket,
     });
-  }
+    criticVerdicts.push(...generationVerdicts);
+    for (const verdict of generationVerdicts) {
+      trace.push('critic.verdict_recorded', {
+        candidateId: verdict.candidateId,
+        criticId: verdict.criticId,
+        score: verdict.score,
+        generation,
+      });
+    }
 
-  const selectedParents = selectedCandidates(selectParents(fitnessRecords), candidates);
-  let fusion;
-  if (selectedParents.length === 2) {
-    const compatibility = checkPairCompatibility(selectedParents[0].id, selectedParents[1].id);
-    trace.push('pair.compatibility_checked', { ...compatibility });
-    fusion = fuseCandidates({
-      caseId: caseStudy.id,
-      parentA: selectedParents[0],
-      parentB: selectedParents[1],
-      parentAScore: fitnessRecords.find((record) => record.candidateId === selectedParents[0].id)!
-        .total,
-      parentBScore: fitnessRecords.find((record) => record.candidateId === selectedParents[1].id)!
-        .total,
-      compatibility,
+    const generationFitnessRecords = scoreCandidates(generationVerdicts);
+    fitnessRecords.push(...generationFitnessRecords);
+    for (const fitness of generationFitnessRecords) {
+      trace.push('fitness.scored', {
+        candidateId: fitness.candidateId,
+        total: fitness.total,
+        generation,
+      });
+    }
+
+    selectedParents = selectedCandidates(selectParents(generationFitnessRecords), generationCandidates);
+    fusion = undefined;
+    if (selectedParents.length === 2) {
+      const compatibility = checkPairCompatibility(selectedParents[0].id, selectedParents[1].id);
+      trace.push('pair.compatibility_checked', { ...compatibility, generation });
+      fusion = fuseCandidates({
+        caseId: caseStudy.id,
+        parentA: selectedParents[0],
+        parentB: selectedParents[1],
+        parentAScore: generationFitnessRecords.find(
+          (record) => record.candidateId === selectedParents[0].id,
+        )!.total,
+        parentBScore: generationFitnessRecords.find(
+          (record) => record.candidateId === selectedParents[1].id,
+        )!.total,
+        compatibility,
+      });
+      trace.push('candidate.fused', {
+        childId: fusion.child.id,
+        inheritanceWeights: fusion.inheritanceWeights,
+        generation,
+      });
+      carryoverChild = fusion.child;
+    }
+    evolution.push({
+      generation,
+      candidateIds: generationCandidates.map((candidate) => candidate.id),
+      selectedParentIds:
+        selectedParents.length === 2 ? [selectedParents[0].id, selectedParents[1].id] : [],
+      childId: fusion?.child.id,
+      fitnessTotals: generationFitnessRecords.map((fitness) => ({
+        candidateId: fitness.candidateId,
+        total: fitness.total,
+      })),
     });
-    trace.push('candidate.fused', {
-      childId: fusion.child.id,
-      inheritanceWeights: fusion.inheritanceWeights,
+    trace.push('generation.completed', {
+      generation,
+      childId: fusion?.child.id || null,
     });
   }
   const modelCallRecords = modelCallRecordsFrom(generationProviders);
@@ -159,6 +209,7 @@ export async function runKernel(input: {
     fitnessRecords,
     selectedParents,
     fusion,
+    evolution,
     events: trace.events,
     modelCallRecords,
   });

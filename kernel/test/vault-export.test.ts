@@ -55,6 +55,7 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.trace.path, 'trace.json');
   assert.equal(index.trace.eventsPath, 'events.jsonl');
   assert.equal(index.modelOutputs.accepted, 0);
+  assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
 });
 
 test('exports model call evidence when present on the run', async () => {

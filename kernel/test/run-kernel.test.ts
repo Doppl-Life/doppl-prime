@@ -100,6 +100,78 @@ test('runs through injected generation providers', async () => {
   assert.equal(run.fusion?.parentCandidateIds[0], 'injected_a');
 });
 
+test('can evolve a child across multiple generations', async () => {
+  const run = await runKernel({
+    runId: 'run_evolution',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+    generations: 2,
+    generationProviders: {
+      problemRecovery: {
+        async recover({ caseStudy }) {
+          return {
+            id: `evolution_recovery_${caseStudy.id}`,
+            caseId: caseStudy.id,
+            title: 'Evolution Recovery',
+            recoveredProblem: 'Recover once and let the population evolve.',
+            hiddenConstraint: 'A child must be eligible in the next generation.',
+            falsifier: 'Generation one only judges fresh candidates.',
+            citedKnowledge: [],
+          };
+        },
+      },
+      candidateGenerator: {
+        async generate({ caseStudy, generation }) {
+          return [
+            {
+              id: `evo_${generation}_a`,
+              caseId: caseStudy.id,
+              agenomeId: `ag_evo_${generation}_a`,
+              generation,
+              title: `Evolution ${generation} A`,
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+            {
+              id: `evo_${generation}_b`,
+              caseId: caseStudy.id,
+              agenomeId: `ag_evo_${generation}_b`,
+              generation,
+              title: `Evolution ${generation} B`,
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+          ];
+        },
+      },
+      criticCouncil: {
+        async judge({ candidates }) {
+          return candidates.map((candidate, index) => ({
+            candidateId: candidate.id,
+            criticId: 'evolution',
+            score: candidate.id.startsWith('child_') ? 95 : 80 - index,
+            pressure: `${candidate.id} pressure`,
+            revisionMandate: 'continue',
+          }));
+        },
+      },
+    },
+  });
+
+  assert.equal(run.evolution.length, 2);
+  assert.deepEqual(run.evolution.map((generation) => generation.generation), [0, 1]);
+  assert.equal(run.evolution[0]!.childId?.startsWith('child_'), true);
+  assert.ok(run.evolution[1]!.candidateIds.includes(run.evolution[0]!.childId!));
+  assert.equal(run.fusion?.parentCandidateIds[0], run.evolution[0]!.childId);
+  assert.equal(run.fusion?.child.generation, 2);
+});
+
 test('runs through replayed model generation providers', async () => {
   const prompts = {
     recovery: 'recover for run model',

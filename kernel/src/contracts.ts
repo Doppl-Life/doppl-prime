@@ -92,6 +92,14 @@ export type FusionResult = {
   mutationNotes: string[];
 };
 
+export type EvolutionGeneration = {
+  generation: number;
+  candidateIds: string[];
+  selectedParentIds: [string, string] | [];
+  childId?: string;
+  fitnessTotals: Array<{ candidateId: string; total: number }>;
+};
+
 export type RunEvent = {
   index: number;
   type: string;
@@ -114,6 +122,7 @@ export type KernelRun = {
   fitnessRecords: FitnessRecord[];
   selectedParents: [CandidateSolution, CandidateSolution] | [];
   fusion?: FusionResult;
+  evolution: EvolutionGeneration[];
   events: RunEvent[];
   modelCallRecords?: ModelCallRecord[];
   vaultExport?: VaultExportManifest;
@@ -302,5 +311,6 @@ export function assertKernelRun(value: unknown): KernelRun {
   for (const verdict of run.criticVerdicts || []) assertCriticVerdict(verdict);
   for (const fitness of run.fitnessRecords || []) assertFitnessRecord(fitness);
   if (run.fusion) assertFusionResult(run.fusion);
+  if (!Array.isArray(run.evolution)) throw new Error('KernelRun.evolution is required');
   return run as KernelRun;
 }

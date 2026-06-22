@@ -276,6 +276,35 @@
       "Combined mechanisms only after separate parent scoring and compatibility check."
     ]
   },
+  "evolution": [
+    {
+      "generation": 0,
+      "candidateIds": [
+        "cand_liability_clock",
+        "cand_recovery_market",
+        "cand_lender_residual"
+      ],
+      "selectedParentIds": [
+        "cand_liability_clock",
+        "cand_recovery_market"
+      ],
+      "childId": "child_cand_liability_clock_cand_recovery_market",
+      "fitnessTotals": [
+        {
+          "candidateId": "cand_liability_clock",
+          "total": 80
+        },
+        {
+          "candidateId": "cand_recovery_market",
+          "total": 40
+        },
+        {
+          "candidateId": "cand_lender_residual",
+          "total": 20
+        }
+      ]
+    }
+  ],
   "events": [
     {
       "index": 0,
@@ -334,35 +363,36 @@
     },
     {
       "index": 7,
-      "type": "candidate.created",
+      "type": "generation.started",
       "payload": {
-        "candidateId": "cand_liability_clock",
-        "agenomeId": "ag_blindside"
+        "generation": 0
       }
     },
     {
       "index": 8,
       "type": "candidate.created",
       "payload": {
-        "candidateId": "cand_recovery_market",
-        "agenomeId": "ag_first_principles"
+        "candidateId": "cand_liability_clock",
+        "agenomeId": "ag_blindside",
+        "generation": 0
       }
     },
     {
       "index": 9,
       "type": "candidate.created",
       "payload": {
-        "candidateId": "cand_lender_residual",
-        "agenomeId": "ag_constraint_injection"
+        "candidateId": "cand_recovery_market",
+        "agenomeId": "ag_first_principles",
+        "generation": 0
       }
     },
     {
       "index": 10,
-      "type": "critic.verdict_recorded",
+      "type": "candidate.created",
       "payload": {
-        "candidateId": "cand_liability_clock",
-        "criticId": "grounding",
-        "score": 86
+        "candidateId": "cand_lender_residual",
+        "agenomeId": "ag_constraint_injection",
+        "generation": 0
       }
     },
     {
@@ -370,8 +400,9 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_liability_clock",
-        "criticId": "novelty",
-        "score": 78
+        "criticId": "grounding",
+        "score": 86,
+        "generation": 0
       }
     },
     {
@@ -379,17 +410,19 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_liability_clock",
-        "criticId": "mechanism",
-        "score": 76
+        "criticId": "novelty",
+        "score": 78,
+        "generation": 0
       }
     },
     {
       "index": 13,
       "type": "critic.verdict_recorded",
       "payload": {
-        "candidateId": "cand_recovery_market",
-        "criticId": "grounding",
-        "score": 44
+        "candidateId": "cand_liability_clock",
+        "criticId": "mechanism",
+        "score": 76,
+        "generation": 0
       }
     },
     {
@@ -397,8 +430,9 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_recovery_market",
-        "criticId": "novelty",
-        "score": 40
+        "criticId": "grounding",
+        "score": 44,
+        "generation": 0
       }
     },
     {
@@ -406,17 +440,19 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_recovery_market",
-        "criticId": "mechanism",
-        "score": 36
+        "criticId": "novelty",
+        "score": 40,
+        "generation": 0
       }
     },
     {
       "index": 16,
       "type": "critic.verdict_recorded",
       "payload": {
-        "candidateId": "cand_lender_residual",
-        "criticId": "grounding",
-        "score": 24
+        "candidateId": "cand_recovery_market",
+        "criticId": "mechanism",
+        "score": 36,
+        "generation": 0
       }
     },
     {
@@ -424,8 +460,9 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_lender_residual",
-        "criticId": "novelty",
-        "score": 20
+        "criticId": "grounding",
+        "score": 24,
+        "generation": 0
       }
     },
     {
@@ -433,57 +470,81 @@
       "type": "critic.verdict_recorded",
       "payload": {
         "candidateId": "cand_lender_residual",
-        "criticId": "mechanism",
-        "score": 16
+        "criticId": "novelty",
+        "score": 20,
+        "generation": 0
       }
     },
     {
       "index": 19,
-      "type": "fitness.scored",
+      "type": "critic.verdict_recorded",
       "payload": {
-        "candidateId": "cand_liability_clock",
-        "total": 80
+        "candidateId": "cand_lender_residual",
+        "criticId": "mechanism",
+        "score": 16,
+        "generation": 0
       }
     },
     {
       "index": 20,
       "type": "fitness.scored",
       "payload": {
-        "candidateId": "cand_recovery_market",
-        "total": 40
+        "candidateId": "cand_liability_clock",
+        "total": 80,
+        "generation": 0
       }
     },
     {
       "index": 21,
       "type": "fitness.scored",
       "payload": {
-        "candidateId": "cand_lender_residual",
-        "total": 20
+        "candidateId": "cand_recovery_market",
+        "total": 40,
+        "generation": 0
       }
     },
     {
       "index": 22,
+      "type": "fitness.scored",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "total": 20,
+        "generation": 0
+      }
+    },
+    {
+      "index": 23,
       "type": "pair.compatibility_checked",
       "payload": {
         "parentA": "cand_liability_clock",
         "parentB": "cand_recovery_market",
         "score": 76,
-        "rationale": "Parents preserve distinct mechanisms while sharing enough case grounding to fuse."
+        "rationale": "Parents preserve distinct mechanisms while sharing enough case grounding to fuse.",
+        "generation": 0
       }
     },
     {
-      "index": 23,
+      "index": 24,
       "type": "candidate.fused",
       "payload": {
         "childId": "child_cand_liability_clock_cand_recovery_market",
         "inheritanceWeights": {
           "parentA": 0.667,
           "parentB": 0.333
-        }
+        },
+        "generation": 0
       }
     },
     {
-      "index": 24,
+      "index": 25,
+      "type": "generation.completed",
+      "payload": {
+        "generation": 0,
+        "childId": "child_cand_liability_clock_cand_recovery_market"
+      }
+    },
+    {
+      "index": 26,
       "type": "run.completed",
       "payload": {
         "runId": "run_fsd_ownership_fixture",
