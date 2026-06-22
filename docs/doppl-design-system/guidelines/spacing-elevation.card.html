@@ -1,0 +1,31 @@
+<!-- @dsCard group="Spacing" viewport="700x200" name="Radii, elevation & glow" subtitle="Depth via glow + subtle borders, not heavy shadows; only living things glow" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 22px; font-family: var(--font-ui); }
+  .grp { display: flex; gap: 18px; margin-bottom: 20px; align-items: flex-end; }
+  .box { width: 78px; height: 54px; background: var(--bg-surface-2); border: 1px solid var(--border-subtle); display: flex; align-items: flex-end; justify-content: center; }
+  .n { font-family: var(--font-mono); font-size: 10px; color: var(--fg-muted); padding-bottom: 4px; }
+  .glow { width: 64px; height: 54px; border-radius: var(--radius-md); background: var(--bg-surface-2); }
+</style>
+</head>
+<body>
+  <div class="grp">
+    <div class="box" style="border-radius:var(--radius-sm)"><span class="n">sm 6</span></div>
+    <div class="box" style="border-radius:var(--radius-md)"><span class="n">md 10</span></div>
+    <div class="box" style="border-radius:var(--radius-lg)"><span class="n">lg 14</span></div>
+    <div class="box" style="border-radius:var(--radius-xl)"><span class="n">xl 20</span></div>
+    <div class="box" style="border-radius:var(--radius-full);width:54px"><span class="n">full</span></div>
+  </div>
+  <div class="grp">
+    <div class="glow" style="box-shadow:var(--elev-2)"></div>
+    <div class="glow" style="box-shadow:var(--glow-active)"></div>
+    <div class="glow" style="box-shadow:var(--glow-winner)"></div>
+    <div class="glow" style="box-shadow:var(--glow-fusion)"></div>
+    <div class="glow" style="box-shadow:var(--glow-danger)"></div>
+  </div>
+</body>
+</html>

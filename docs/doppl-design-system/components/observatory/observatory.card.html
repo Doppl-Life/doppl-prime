@@ -1,0 +1,98 @@
+<!-- @dsCard group="Components" viewport="700x560" name="Observatory — live kernel window" subtitle="Streaming ActivityTicker · draining energy · health · the critic gauntlet + held-out judge, live" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 20px; font-family: var(--font-ui); }
+  .grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 16px; max-width: 670px; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 12px 14px; }
+  .ttl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); margin: 0 0 10px; }
+  .tickerwrap { height: 250px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { ActivityTicker, HealthIndicator, RunEnergyGauge, CriticGauntletPanel } = window.DopplDesignSystem_352b49;
+
+  // canned event script — the prototype timer replays this into the reducer,
+  // exactly as production feeds GET /runs/:id/stream.
+  const SCRIPT = [
+    { type: "generation.started", actor: "kernel", phrase: "generation 3 started" },
+    { type: "agenome.fused", actor: "kernel", phrase: "ag_a9 fused from ag_a7 + ag_a3" },
+    { type: "agenome.mutated", actor: "kernel", phrase: "ag_a9 mutated · rigor +0.10" },
+    { type: "candidate.created", actor: "ag_a9", phrase: "produced cand_g3_004" },
+    { type: "energy.spent", actor: "ag_a9", phrase: "+132 llm gen call" },
+    { type: "critic.reviewed", actor: "critic", phrase: "cand_g3_004 grounding 0.81" },
+    { type: "critic.reviewed", actor: "critic", phrase: "cand_g3_004 novelty 0.77" },
+    { type: "energy.spent", actor: "ag_a9", phrase: "+10 retrieval tool" },
+    { type: "critic.reviewed", actor: "critic", phrase: "cand_g3_004 feasibility 0.69" },
+    { type: "check.completed", actor: "check", phrase: "exec-toy-routing passed · −12% miles" },
+    { type: "novelty.scored", actor: "selection", phrase: "cand_g3_004 novelty 0.74" },
+    { type: "fitness.scored", actor: "selection", phrase: "cand_g3_004 → 0.84 (new best)" },
+    { type: "lineage.culled", actor: "selection", phrase: "ag_a10 culled · fitness 0.31" },
+  ];
+
+  const REVIEWS = [
+    { mandate: "factual_grounding", score: 0.81, confidence: 0.9, critique: "Signals well-sourced; one weak citation." },
+    { mandate: "novelty_prior_art", score: 0.77, confidence: 0.8, critique: "No direct prior art mapping SIR onto routing." },
+    { mandate: "feasibility", score: 0.69, confidence: 0.7, critique: "Forecast-data availability is the main risk." },
+    { mandate: "falsification", score: 0.78, confidence: 0.85 },
+    { mandate: "subtype_specific", score: 0.88, confidence: 0.9 },
+  ];
+
+  function App() {
+    const [events, setEvents] = React.useState([]);
+    const [spent, setSpent] = React.useState(6000);
+    const [shown, setShown] = React.useState(0);   // critic rows revealed
+    const [judge, setJudge] = React.useState(null);
+    const i = React.useRef(0);
+
+    React.useEffect(() => {
+      const id = setInterval(() => {
+        const e = SCRIPT[i.current % SCRIPT.length];
+        const seq = 1130 + i.current;
+        setEvents((prev) => [...prev.slice(-40), { ...e, sequence: seq, occurredAt: Date.now() }]);
+        if (e.type === "energy.spent") setSpent((s) => Math.min(12000, s + 142));
+        if (e.type === "critic.reviewed") setShown((n) => Math.min(REVIEWS.length, n + 1));
+        if (e.type === "fitness.scored") { setShown(REVIEWS.length); setJudge({ acceptance: 0.88 }); }
+        if (i.current % SCRIPT.length === SCRIPT.length - 1) { /* loop: reset judge after a beat */ }
+        i.current += 1;
+      }, 1100);
+      return () => clearInterval(id);
+    }, []);
+
+    const reviews = REVIEWS.map((r, idx) => idx < shown ? r : { mandate: r.mandate, score: null });
+
+    return (
+      <div className="grid">
+        <div className="col">
+          <div className="tickerwrap"><ActivityTicker events={events} mode="live" maxRows={11} /></div>
+          <div className="panel">
+            <p className="ttl">Run energy · draining</p>
+            <RunEnergyGauge spent={spent} budget={12000} />
+            <div style={{ marginTop: 12 }}>
+              <HealthIndicator
+                health={{ currentGeneration: 3, candidatesInFlight: 4, lastEventAgeMs: 900,
+                  capsConsumed: { energy: spent / 12000, generations: 0.6, population: 0.9 } }}
+                status="healthy" />
+            </div>
+          </div>
+        </div>
+        <div className="col">
+          <CriticGauntletPanel reviews={reviews} judge={judge} mode="live" />
+        </div>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

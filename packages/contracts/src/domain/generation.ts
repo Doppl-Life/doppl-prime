@@ -1,12 +1,18 @@
 import { z } from 'zod';
 
 /**
- * GenerationStatus — the CLOSED 8-member generation-lifecycle union (ARCHITECTURE.md §3/§5, Appendix
+ * GenerationStatus — the CLOSED 9-member generation-lifecycle union (ARCHITECTURE.md §3/§5, Appendix
  * A). The P3 kernel drives the transitions; this freezes the status enum only. Any other value rejected.
+ *
+ * [P0.15-amend] `degraded` added (8→9, after `running`) so the §3 partial-failure edge
+ * `running → degraded → verifying` is representable + persistable. (kernel-020 reconcile: this fold
+ * lands at CURRENT_SCHEMA_VERSION 3→4 alongside CandidateStatus `repairing`; P0.16 judge took v3.)
+ * Additive + backward-compatible (closure preserved — unknown statuses still rejected).
  */
 export const GenerationStatus = z.enum([
   'pending',
   'running',
+  'degraded',
   'verifying',
   'scoring',
   'reproducing',

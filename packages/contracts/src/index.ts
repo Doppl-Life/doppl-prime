@@ -27,6 +27,7 @@ export * from './gateway/model-route';
 export * from './gateway/provider-capability';
 export * from './gateway/provider-meta';
 export * from './projections/lineage-graph';
+export * from './projections/projection-watermark';
 export * from './run/run-caps';
 export * from './run/run-config';
 export * from './scoring/fitness-score';

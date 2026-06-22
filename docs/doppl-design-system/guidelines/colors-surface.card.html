@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Surface & chrome" subtitle="Deep near-black observatory base; calm low-chroma so the organism is the only vivid thing" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 20px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .sw { width: 96px; }
+  .chip { height: 56px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+  .name { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); margin-top: 7px; }
+  .hex { font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--bg-void)"></div><div class="name">bg-void</div><div class="hex">#070A12</div></div>
+    <div class="sw"><div class="chip" style="background:var(--bg-base)"></div><div class="name">bg-base</div><div class="hex">#0B0F1A</div></div>
+    <div class="sw"><div class="chip" style="background:var(--bg-surface)"></div><div class="name">bg-surface</div><div class="hex">#111726</div></div>
+    <div class="sw"><div class="chip" style="background:var(--bg-surface-2)"></div><div class="name">bg-surface-2</div><div class="hex">#18202F</div></div>
+    <div class="sw"><div class="chip" style="background:var(--bg-overlay)"></div><div class="name">bg-overlay</div><div class="hex">#1E2738</div></div>
+    <div class="sw"><div class="chip" style="background:var(--bg-surface);border-color:var(--border-strong)"></div><div class="name">border-strong</div><div class="hex">#33405A</div></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text" subtitle="Three foreground weights on the card surface; culled/disabled drops to faint" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-surface); padding: 22px; font-family: var(--font-ui); }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .line { display: flex; align-items: baseline; gap: 14px; }
+  .lbl { font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); width: 130px; }
+  .d { color: var(--fg-default); font-size: 19px; font-weight: 600; }
+  .m { color: var(--fg-muted); font-size: 15px; }
+  .f { color: var(--fg-faint); font-size: 15px; }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div class="line"><span class="lbl">fg-default #E6ECF7</span><span class="d">The organism is getting smarter in real time.</span></div>
+    <div class="line"><span class="lbl">fg-muted #9AA7BE</span><span class="m">Secondary labels, captions, metadata.</span></div>
+    <div class="line"><span class="lbl">fg-faint #5C6880</span><span class="f">Disabled, ghosted, culled lineage labels.</span></div>
+  </div>
+</body>
+</html>

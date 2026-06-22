@@ -18,6 +18,7 @@ const GEN_REQUIRED = ['id', 'runId', 'index', 'status', 'startedAt'] as const;
 const GEN_STATUSES = [
   'pending',
   'running',
+  'degraded', // [P0.15-amend] §3 partial-failure status
   'verifying',
   'scoring',
   'reproducing',
@@ -46,15 +47,25 @@ describe('Generation — per-run generation entity (spec §3)', () => {
     expect(() => Generation.parse({ ...validGeneration, index: 1.5 })).toThrow();
   });
 
-  it('generation_status_closed_8_union', () => {
-    // spec(§3): GenerationStatus is the closed 8-member union; any other value is rejected.
+  it('generation_status_closed_9_union', () => {
+    // spec(§3): GenerationStatus is the closed 9-member union [P0.15-amend: +degraded]; any other
+    // value is rejected (closure preserved — the amendment is additive, not a loosening, lesson §1).
     for (const s of GEN_STATUSES) {
       expect(GenerationStatus.parse(s)).toBe(s);
       expect(Generation.parse({ ...validGeneration, status: s }).status).toBe(s);
     }
-    expect(GEN_STATUSES).toHaveLength(8);
+    expect(GEN_STATUSES).toHaveLength(9);
     expect(() => GenerationStatus.parse('aborted')).toThrow();
     expect(() => GenerationStatus.parse('')).toThrow();
     expect(() => Generation.parse({ ...validGeneration, status: 'aborted' })).toThrow();
+  });
+
+  it('generation_status_includes_degraded', () => {
+    // spec(§3) [P0.15-amend]: `degraded` is a first-class status (running→degraded→verifying partial-
+    // failure edge); positive guard `running` still parses. Closure preserved: `bogus` still rejected.
+    expect(GenerationStatus.parse('running')).toBe('running');
+    expect(GenerationStatus.parse('degraded')).toBe('degraded');
+    expect(Generation.parse({ ...validGeneration, status: 'degraded' }).status).toBe('degraded');
+    expect(() => GenerationStatus.parse('bogus')).toThrow();
   });
 });

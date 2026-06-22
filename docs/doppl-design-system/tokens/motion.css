@@ -1,0 +1,27 @@
+/* ==========================================================================
+   Doppl — Motion tokens (the liveness vocabulary)
+   Motion is the soul and must be MEANINGFUL, never decorative. Every liveness
+   beat maps to a named token. Durations are tuned to read on a projector
+   (slightly slower than a desktop app — the room needs time to see it happen).
+   ALWAYS gate behind prefers-reduced-motion (see base.css).
+   ========================================================================== */
+:root {
+  --motion-spawn-ms:        420ms; /* @kind other */   /* node grows in (overshoot) */
+  --motion-pulse-ms:        1600ms; /* @kind other */  /* active / under_review breathing pulse (loop) */
+  --motion-energy-drain-ms: 700ms; /* @kind other */   /* EnergyMeter charge drops on energy.spent */
+  --motion-critic-pulse-ms: 500ms; /* @kind other */   /* CriticNode flash as a ReviewRow lands */
+  --motion-cull-ms:         600ms; /* @kind other */   /* weak lineage fades + sinks */
+  --motion-fusion-ms:       900ms; /* @kind other */   /* two parent edges converge into a child */
+  --motion-mutate-ms:       700ms; /* @kind other */   /* amber shimmer sweep across a mutated node */
+  --motion-gen-advance-ms:  800ms; /* @kind other */   /* camera / tier shift as generation N+1 appears */
+  --motion-chart-climb-ms:  600ms; /* @kind other */   /* FitnessOverTimeChart line draws upward */
+
+  --motion-fast: 150ms; /* @kind other */   /* hover, focus, micro-interactions */
+  --motion-base: 240ms; /* @kind other */   /* drawer/modal open, tab switch */
+  --motion-slow: 380ms; /* @kind other */   /* panel reveals */
+
+  /* easings */
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */
+  --ease-out:       cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in-out:    cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+}

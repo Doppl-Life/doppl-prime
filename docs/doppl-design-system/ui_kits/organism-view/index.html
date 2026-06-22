@@ -1,0 +1,200 @@
+<!-- @dsCard group="Organism View" viewport="1400x820" name="S2 · Live Organism View" subtitle="The real-time kernel window: living lineage graph (click any node), per-agent activity + energy, the critic gauntlet & held-out judge, all streaming" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doppl · Organism View</title>
+<link rel="stylesheet" href="../../styles.css" />
+<script>
+  try { if (localStorage.getItem("doppl-theme") === "light") document.documentElement.classList.add("light"); } catch (e) {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; background: var(--bg-void); color: var(--fg-default); font-family: var(--font-ui); }
+  #root { min-height: 100vh; }
+  .shell { max-width: 1400px; margin: 0 auto; padding: 16px 20px 32px; }
+  .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+  .ttl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); margin: 0; }
+  .scrub { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 999px; background: var(--border-strong); outline: none; }
+  .scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow-active); cursor: pointer; }
+  .scrub::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--bg-surface-2); border: 1px solid var(--border-strong); color: var(--fg-default); cursor: pointer; font-size: 15px; }
+  .iconbtn:hover { background: var(--bg-overlay); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="../_shell/AppNav.js"></script>
+<script src="data.jsx" type="text/babel"></script>
+<script src="LineageGraph.jsx" type="text/babel"></script>
+<script src="AgentRoster.jsx" type="text/babel"></script>
+<script src="NodeInspector.jsx" type="text/babel"></script>
+<script type="text/babel">
+const NS = window.DopplDesignSystem_352b49;
+const { ModeBanner, RunEnergyGauge, HealthIndicator, ActivityTicker, CriticGauntletPanel, Button } = NS;
+
+function GenCounter({ gen, max }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg-default)" }}>
+      <span style={{ color: "var(--fg-faint)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>gen</span>
+      <span style={{ display: "inline-flex", gap: 3 }}>
+        {Array.from({ length: max }).map((_, i) => (
+          <span key={i} style={{ width: 8, height: 8, borderRadius: "50%",
+            background: i < gen ? "var(--accent)" : i === gen ? "var(--status-active)" : "var(--meter-track)",
+            boxShadow: i === gen ? "var(--glow-active)" : "none" }} />
+        ))}
+      </span>
+      <span>{gen}/{max}</span>
+    </div>
+  );
+}
+
+function FitnessSparkline({ points }) {
+  const W = 300, H = 70, pad = 8;
+  const all = window.DopplKit.FITNESS;
+  const x = (i) => pad + (i / (all.length - 1)) * (W - pad * 2);
+  const y = (v) => H - pad - v * (H - pad * 2);
+  const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${x(all.indexOf(p))} ${y(p.best)}`).join(" ");
+  const last = points[points.length - 1];
+  return (
+    <div className="card" style={{ padding: "12px 14px" }}>
+      <p className="ttl">Best fitness / generation — the climb</p>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: "block", marginTop: 8, height: 70 }}>
+        <line x1={pad} y1={y(0.45)} x2={W - pad} y2={y(0.45)} stroke="var(--border-subtle)" strokeDasharray="3 3" />
+        <path d={line} fill="none" stroke="var(--fitness-high)" strokeWidth="2.5"
+          style={{ filter: "drop-shadow(0 0 4px rgba(63,209,122,0.5))" }} />
+        {points.map((p) => <circle key={p.gen} cx={x(all.indexOf(p))} cy={y(p.best)} r="3.5" fill="var(--fitness-high)" />)}
+      </svg>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-muted)", marginTop: 4 }}>
+        {last ? `gen ${last.gen} · best ${last.best.toFixed(2)}` : "awaiting gen 0…"}
+        <span style={{ color: "var(--fg-faint)" }}> · baseline 0.45</span>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const K = window.DopplKit;
+  const [step, setStep] = React.useState(0);
+  const [playing, setPlaying] = React.useState(true);
+  const [scrubbed, setScrubbed] = React.useState(false);
+  const [selected, setSelected] = React.useState(null);
+  const [light, setLight] = React.useState(() => document.documentElement.classList.contains("light"));
+
+  React.useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      setStep((s) => { if (s >= K.MAXSTEP) { setPlaying(false); return s; } return s + 1; });
+    }, 1100);
+    return () => clearInterval(id);
+  }, [playing]);
+
+  const toggleTheme = () => setLight((v) => {
+    const nv = !v;
+    document.documentElement.classList.toggle("light", nv);
+    try { localStorage.setItem("doppl-theme", nv ? "light" : "dark"); } catch (e) {}
+    return nv;
+  });
+
+  const live = K.NODES.filter((n) => step >= n.born);
+  const gen = Math.max(0, ...live.map((n) => n.gen));
+  const active = live.filter((n) => K.statusAt(n, step) === "active").length;
+  const spent = K.energyAt(step);
+  const done = step >= K.MAXSTEP;
+  const mode = done ? "complete" : (playing && !scrubbed ? "live" : "replay");
+  const tmode = mode === "complete" ? "replay" : mode;
+
+  const reviews = K.reviewsAt(step);
+  const judge = step >= 18 ? { acceptance: 0.88 } : null;
+  const events = K.tickerThrough(step);
+  const fitPts = K.fitnessThrough(step);
+
+  const restart = () => { setStep(0); setScrubbed(false); setPlaying(true); };
+  const toggle = () => { if (done) return restart(); setScrubbed(false); setPlaying((p) => !p); };
+
+  return (
+    <div className="shell">
+      {/* ── RunHeader ── */}
+      <div className="card" style={{ padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <a href="../runs-home/index.html" title="Back to runs" style={{ textDecoration: "none", lineHeight: 0 }}>
+            <span style={{ color: "var(--accent)", fontSize: 20, filter: "drop-shadow(0 0 6px rgba(59,227,208,0.6))" }}>◆</span>
+          </a>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Cross-domain: epidemiology → logistics</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-faint)" }}>run_7f3a · sp-v3 · balanced</div>
+          </div>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <ModeBanner mode={mode} generationLabel={`Gen ${gen}/5`} />
+          <GenCounter gen={gen} max={5} />
+          <RunEnergyGauge spent={spent} budget={12000} mode={tmode} />
+          {done && (
+            <a href="../final-idea/index.html" style={{ textDecoration: "none" }}>
+              <Button variant="primary" glyph="♔">Reveal Final Idea</Button>
+            </a>
+          )}
+          <button className="iconbtn" onClick={toggleTheme} title={light ? "Switch to dark" : "Switch to light"} aria-label="Toggle theme">
+            {light ? "☾" : "☀"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── timeline / scrubber ── */}
+      <div className="card" style={{ padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 14 }}>
+        <button className="iconbtn" onClick={toggle} title={done ? "Restart" : playing ? "Pause" : "Play"}>
+          {done ? "↻" : playing ? "❚❚" : "▶"}
+        </button>
+        <button className="iconbtn" onClick={restart} title="Restart" style={{ fontSize: 13 }}>↺</button>
+        <input className="scrub" type="range" min="0" max={K.MAXSTEP} value={step} style={{ flex: 1 }}
+          onChange={(e) => { setStep(+e.target.value); setPlaying(false); setScrubbed(true); }} />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-muted)", minWidth: 96, textAlign: "right" }}>
+          step {step}/{K.MAXSTEP} · seq {1100 + step}
+        </span>
+      </div>
+
+      {/* ── the graph: full width, the centerpiece ── */}
+      <div className="card" style={{ padding: "12px 16px 20px", marginBottom: 14, overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 6 }}>
+          <p className="ttl">Lineage · the living family tree</p>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-muted)" }}>
+            {live.length} agenomes · <span style={{ color: "var(--status-active)" }}>{active} working</span>
+            <span style={{ color: "var(--fg-faint)" }}> · click a node to inspect</span>
+          </span>
+        </div>
+        <window.OrganismLineageGraph step={step} selectedId={selected} onSelect={setSelected} />
+      </div>
+
+      {/* ── telemetry row ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px 360px", gap: 14, alignItems: "start" }}>
+        <div style={{ height: 320, minWidth: 0 }}>
+          <ActivityTicker events={events} mode={tmode} maxRows={13} title="Kernel activity" />
+        </div>
+        <window.OrganismAgentRoster step={step} onSelect={setSelected} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ padding: "12px 14px" }}>
+            <p className="ttl" style={{ marginBottom: 10 }}>Runtime health</p>
+            <HealthIndicator
+              health={{ currentGeneration: gen, candidatesInFlight: active, lastEventAgeMs: playing ? 700 : 4200,
+                capsConsumed: { energy: spent / 12000, generations: gen / 5, population: live.length / 20 } }}
+              status={playing ? "healthy" : "slow"} mode={tmode} />
+          </div>
+          <FitnessSparkline points={fitPts} />
+          <CriticGauntletPanel reviews={reviews} judge={judge} mode={tmode} />
+        </div>
+      </div>
+
+      {/* ── node inspector drawer ── */}
+      <window.OrganismNodeInspector nodeId={selected} step={step} onClose={() => setSelected(null)} onSelect={setSelected} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

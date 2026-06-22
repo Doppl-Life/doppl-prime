@@ -47,6 +47,7 @@ pgdata/
 
 # ---- OS ----
 .DS_Store
+.thumbnail
 Thumbs.db
 desktop.ini
 

@@ -1,0 +1,202 @@
+<!-- @dsCard group="Run Launcher" viewport="1040x720" name="S1 · Run Launcher" subtitle="Configure + start a run: prompt source, subtypes, safe caps (hard-max), model profile — the only screen that creates state" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doppl · New Run</title>
+<link rel="stylesheet" href="../../styles.css" />
+<script>
+  try { if (localStorage.getItem("doppl-theme") === "light") document.documentElement.classList.add("light"); } catch (e) {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; background: var(--bg-void); color: var(--fg-default); font-family: var(--font-ui); }
+  #root { min-height: 100vh; }
+  .shell { max-width: 760px; margin: 0 auto; padding: 18px 22px 40px; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+  .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--bg-surface-2); border: 1px solid var(--border-strong); color: var(--fg-default); cursor: pointer; font-size: 15px; }
+  .sec { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); margin: 0 0 12px; }
+  .num { font-family: var(--font-mono); }
+  textarea, select { font-family: var(--font-ui); font-size: 14px; color: var(--fg-default); background: var(--bg-base); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 10px 12px; width: 100%; box-sizing: border-box; }
+  textarea:focus, select:focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 5px; border-radius: 999px; background: var(--meter-track); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow-active); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  a.link { color: var(--fg-muted); text-decoration: none; font-size: 13px; font-family: var(--font-ui); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="../_shell/AppNav.js"></script>
+<script type="text/babel">
+const NS = window.DopplDesignSystem_352b49;
+const { Button, StatusBadge } = NS;
+
+const PREPARED = [
+  { id: "set_transfer_demo", label: "Prepared · epidemiology → logistics (transfer)", seed: "Find a non-obvious technique transfer that improves last-mile vaccine delivery." },
+  { id: "set_zeitgeist", label: "Prepared · small-business AI adoption (zeitgeist)", seed: "What's an under-priced thesis about small-business AI adoption right now?" },
+  { id: "set_materials", label: "Prepared · materials science → scheduling (transfer)", seed: "Apply a technique from materials science to employee scheduling." },
+];
+
+const CAPS = [
+  { key: "maxPopulation", label: "Population", def: 18, max: 20, unit: "" },
+  { key: "maxGenerations", label: "Generations", def: 5, max: 8, unit: "" },
+  { key: "energyBudget", label: "Energy budget", def: 12000, max: 20000, unit: "doppl_energy", step: 500 },
+  { key: "maxSpawnDepth", label: "Spawn depth", def: 3, max: 5, unit: "" },
+  { key: "maxToolCalls", label: "Tool calls", def: 120, max: 200, unit: "", step: 10 },
+  { key: "wallClockMin", label: "Wall-clock", def: 10, max: 15, unit: "min" },
+];
+
+function Toggle({ on, onClick, children, sub }) {
+  return (
+    <button onClick={onClick} style={{
+      flex: 1, textAlign: "left", cursor: "pointer", padding: "12px 14px",
+      borderRadius: "var(--radius-md)", background: on ? "var(--accent-soft)" : "var(--bg-base)",
+      border: `1px solid ${on ? "var(--accent)" : "var(--border-strong)"}`,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ width: 34, height: 18, borderRadius: 999, background: on ? "var(--accent)" : "var(--meter-track)", position: "relative", flex: "none", transition: "background var(--motion-fast)" }}>
+          <span style={{ position: "absolute", top: 2, left: on ? 18 : 2, width: 14, height: 14, borderRadius: "50%", background: on ? "var(--fg-on-accent)" : "var(--fg-muted)", transition: "left var(--motion-fast)" }} />
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", color: on ? "var(--accent)" : "var(--fg-muted)" }}>{children}</span>
+      </div>
+      <div style={{ fontSize: 11.5, color: "var(--fg-faint)", marginTop: 5, paddingLeft: 44 }}>{sub}</div>
+    </button>
+  );
+}
+
+function CapRow({ cap, value, onChange }) {
+  const atMax = value >= cap.max;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 132px", gap: 14, alignItems: "center", marginBottom: 12 }}>
+      <span style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--fg-muted)" }}>{cap.label}</span>
+      <input type="range" min={cap.step || 1} max={cap.max} step={cap.step || 1} value={value}
+        onChange={(e) => onChange(Math.min(cap.max, +e.target.value))} />
+      <span className="num" style={{ fontSize: 12, color: "var(--fg-default)", textAlign: "right" }}>
+        <span style={{ color: atMax ? "var(--warning)" : "var(--fg-default)" }}>{value.toLocaleString()}</span>
+        <span style={{ color: "var(--fg-faint)" }}> / {cap.max.toLocaleString()} {cap.unit}</span>
+      </span>
+    </div>
+  );
+}
+
+function App() {
+  const [light, setLight] = React.useState(() => document.documentElement.classList.contains("light"));
+  const [source, setSource] = React.useState("prepared");
+  const [setId, setSetId] = React.useState(PREPARED[0].id);
+  const [livePrompt, setLivePrompt] = React.useState("");
+  const [subtypes, setSubtypes] = React.useState({ cross_domain_transfer: true, zeitgeist_synthesis: true });
+  const [caps, setCaps] = React.useState(Object.fromEntries(CAPS.map((c) => [c.key, c.def])));
+  const [profile, setProfile] = React.useState("balanced");
+  const [starting, setStarting] = React.useState(false);
+
+  const toggleTheme = () => setLight((v) => { const nv = !v; document.documentElement.classList.toggle("light", nv); try { localStorage.setItem("doppl-theme", nv ? "light" : "dark"); } catch (e) {} return nv; });
+
+  const anySubtype = subtypes.cross_domain_transfer || subtypes.zeitgeist_synthesis;
+  const promptOk = source === "prepared" ? true : livePrompt.trim().length > 0;
+  const canStart = anySubtype && promptOk && !starting;
+
+  const start = () => {
+    if (!canStart) return;
+    setStarting(true);
+    setTimeout(() => { window.location.href = "../organism-view/index.html"; }, 1100);
+  };
+  const setCap = (k, v) => setCaps((c) => ({ ...c, [k]: v }));
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <a className="link" href="../runs-home/index.html" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "var(--accent)", fontSize: 20, filter: "drop-shadow(0 0 6px rgba(59,227,208,0.6))" }}>◆</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--fg-default)" }}>Doppl</span>
+        </a>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-faint)" }}>new run</span>
+        <a className="link" href="../runs-home/index.html" style={{ marginLeft: 8 }}>← back to runs</a>
+        <button className="iconbtn" style={{ marginLeft: "auto" }} onClick={toggleTheme} aria-label="Toggle theme">{light ? "☾" : "☀"}</button>
+      </div>
+
+      <h1 style={{ fontSize: 26, fontWeight: 700, margin: "0 0 18px" }}>Seed a new run</h1>
+
+      <div className="card" style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 26 }}>
+        {/* ① prompt source */}
+        <div>
+          <p className="sec">① Prompt source</p>
+          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <Toggle on={source === "prepared"} onClick={() => setSource("prepared")} sub="rehearsed, guaranteed-good">prepared set</Toggle>
+            <Toggle on={source === "live"} onClick={() => setSource("live")} sub="a question from the room">live prompt</Toggle>
+          </div>
+          {source === "prepared" ? (
+            <select value={setId} onChange={(e) => setSetId(e.target.value)}>
+              {PREPARED.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+          ) : (
+            <textarea rows={3} placeholder="How might a mid-size hospital cut ER wait times this winter?"
+              value={livePrompt} onChange={(e) => setLivePrompt(e.target.value)} />
+          )}
+          {source === "prepared" && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "var(--fg-faint)", marginTop: 8 }}>
+              seed: "{PREPARED.find((p) => p.id === setId).seed}"
+            </div>
+          )}
+        </div>
+
+        {/* ② subtypes */}
+        <div>
+          <p className="sec">② Idea subtypes — both on by default · ≥1 required</p>
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            <Toggle on={subtypes.cross_domain_transfer} onClick={() => setSubtypes((s) => ({ ...s, cross_domain_transfer: !s.cross_domain_transfer }))} sub="steal a trick from domain A → problem B">cross_domain_transfer</Toggle>
+            <Toggle on={subtypes.zeitgeist_synthesis} onClick={() => setSubtypes((s) => ({ ...s, zeitgeist_synthesis: !s.zeitgeist_synthesis }))} sub="a sharp thesis fitted to right-now signals">zeitgeist_synthesis</Toggle>
+          </div>
+          {!anySubtype && <div style={{ color: "var(--danger)", fontSize: 12, marginTop: 8 }}>Enable at least one subtype.</div>}
+        </div>
+
+        {/* ③ caps */}
+        <div>
+          <p className="sec">③ Safe caps — finite by construction · slider can't pass the hard-max</p>
+          {CAPS.map((c) => <CapRow key={c.key} cap={c} value={caps[c.key]} onChange={(v) => setCap(c.key, v)} />)}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--health-degraded)", marginTop: 4 }}>
+            <span aria-hidden="true">⚠</span> Caps are validated in the kernel — overrides only <strong>lower</strong> them within the validated ceiling.
+          </div>
+        </div>
+
+        {/* ④ model + policy */}
+        <div>
+          <p className="sec">④ Model profile + scoring policy</p>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <select value={profile} onChange={(e) => setProfile(e.target.value)} style={{ flex: 1, minWidth: 200 }}>
+              <option value="cheap">Cheap (fast, rougher)</option>
+              <option value="balanced">Balanced (default)</option>
+              <option value="strong">Strong (judge/synthesis upgraded)</option>
+            </select>
+            <select value="sp-v3" disabled style={{ flex: 1, minWidth: 200, opacity: 0.8 }}>
+              <option value="sp-v3">sp-v3 · 5-axis, equal weights + energy tiebreak</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* footer */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <StatusBadge domain="subtype" status="cross_domain_transfer" />
+          {subtypes.zeitgeist_synthesis && <StatusBadge domain="subtype" status="zeitgeist_synthesis" />}
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 12 }}>
+          <a href="../runs-home/index.html" style={{ textDecoration: "none" }}><Button variant="ghost">Cancel</Button></a>
+          <Button variant="primary" glyph={starting ? "◐" : "▶"} disabled={!canStart} onClick={start}>
+            {starting ? "Seeding population…" : "Start run"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 - **Track / phase:** kernel · Phase 2 (model gateway) tail + **Phase 1 (persistence) close**
 - **Role:** kernel-runtime-implementer
 - **Predecessor:** [kernel-002](kernel-002-2026-06-21-freeze-bundle-and-p2.2-registry.md) (last implementer session; freeze bundle + P2.2 registry)
-- **Successor:** _(next kernel-runtime-implementer session — P3 runtime kernel)_
+- **Successor:** [kernel-005](kernel-005-2026-06-21-boot-config-state-machines-two-freeze-amendments.md) (P3.1 boot config · P3.2 state machines · GenerationStatus + CandidateStatus freeze amendments)
 - **Related (orchestrator territory):** [kernel-003](kernel-003-2026-06-21-orchestrator-routing-ledger.md) (orchestrator routing ledger)
 - **Commits this round:** `67520ae` (P2.7) · `d3a61ed` (P1.7) · `dca9bc4` (P1.8)
 

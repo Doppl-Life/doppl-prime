@@ -1,0 +1,30 @@
+<!-- @dsCard group="Brand" viewport="700x230" name="Wordmark & mode banner" subtitle="Calm chrome, vivid organism · LIVE vs REPLAY must be unmistakable at projector distance" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 26px 24px; font-family: var(--font-ui); }
+  .mark { display: flex; align-items: center; gap: 11px; margin-bottom: 26px; }
+  .dia { color: var(--accent); font-size: 26px; line-height: 1; filter: drop-shadow(0 0 8px rgba(59,227,208,0.6)); }
+  .word { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--fg-default); }
+  .tag { font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); margin-left: 8px; align-self: flex-end; padding-bottom: 5px; }
+  .banners { display: flex; gap: 16px; flex-wrap: wrap; }
+  .live { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border-radius: var(--radius-full); background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent); font-weight: 600; font-size: 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow-active); animation: doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite; }
+  .replay { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border-radius: var(--radius-sm); color: var(--warning); font-weight: 600; font-size: 14px;
+    background: repeating-linear-gradient(45deg, rgba(244,182,80,0.14) 0 8px, rgba(244,182,80,0.05) 8px 16px); border: 1px solid var(--warning); }
+</style>
+</head>
+<body>
+  <div class="mark">
+    <span class="dia">◆</span><span class="word">Doppl</span>
+    <span class="tag">an agent-evolution runtime you watch</span>
+  </div>
+  <div class="banners">
+    <span class="live"><span class="dot"></span>● LIVE — Gen 3/5</span>
+    <span class="replay">⏮ REPLAY · recorded run · no live calls</span>
+  </div>
+</body>
+</html>
