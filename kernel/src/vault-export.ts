@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CandidateSolution, KernelRun, VaultExportManifest } from './contracts.ts';
+import { writeRunEvents } from './event-store.ts';
 
 function frontmatter(fields: Record<string, string>): string {
   return [
@@ -80,5 +81,9 @@ ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
   const tracePath = path.join(runDir, 'trace.json');
   await writeFile(tracePath, JSON.stringify(run, null, 2), 'utf8');
   files.push(tracePath);
+
+  const eventLogPath = path.join(runDir, 'events.jsonl');
+  await writeRunEvents(eventLogPath, run.events);
+  files.push(eventLogPath);
   return { rootDir: runDir, files };
 }

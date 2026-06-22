@@ -22,7 +22,7 @@ npm test
 npm run kernel:run
 ```
 
-The command writes markdown-vault artifacts and `trace.json` under `kernel/out/vault/`.
+The command writes markdown-vault artifacts, `trace.json`, and replayable `events.jsonl` under `kernel/out/vault/`.
 It also writes a browser-readable proof board to `kernel/out/proof-board/index.html`.
 
 Refresh the committed static preview:

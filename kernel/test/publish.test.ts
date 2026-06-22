@@ -21,6 +21,7 @@ test('publishes proof board and vault artifacts into a static directory', async 
   const manifest = await publishStaticKernelRun(await fixtureRun(), outDir);
   assert.equal(manifest.indexHtml, path.join(outDir, 'index.html'));
   assert.ok(manifest.files.some((file) => file.endsWith('trace.json')));
+  assert.ok(manifest.files.some((file) => file.endsWith('events.jsonl')));
   assert.ok(manifest.files.some((file) => file.endsWith('problem-recovery.md')));
   assert.ok(manifest.files.some((file) => file.includes('child_cand_liability_clock')));
   const html = await readFile(manifest.indexHtml, 'utf8');

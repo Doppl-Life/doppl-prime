@@ -1,19 +1,10 @@
-import type { CandidateSolution, KernelRun, MemoryMode, RunEvent } from './contracts.ts';
+import type { CandidateSolution, KernelRun, MemoryMode } from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
 import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
 import { loadKernelFixture } from './fixtures.ts';
 import { scoreCandidates, selectParents, checkPairCompatibility } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
-
-function eventFactory() {
-  const events: RunEvent[] = [];
-  return {
-    events,
-    push(type: string, payload: Record<string, unknown>) {
-      events.push({ index: events.length, type, payload });
-    },
-  };
-}
+import { createMemoryEventRecorder } from './event-store.ts';
 
 function selectedCandidates(
   selectedIds: [string, string] | [],
@@ -32,7 +23,7 @@ export async function runKernel(input: {
   knowledgePacketPath: string;
   memoryMode: MemoryMode;
 }): Promise<KernelRun> {
-  const trace = eventFactory();
+  const trace = createMemoryEventRecorder();
   const caseStudy = await loadCaseStudy(input.casePath);
   trace.push('run.started', { runId: input.runId, caseId: caseStudy.id });
   trace.push('knowledge.packet_requested', {

@@ -9,6 +9,7 @@
     "published/kernel/published-vault/cand_lender_residual.md",
     "published/kernel/published-vault/child_cand_liability_clock_cand_recovery_market.md",
     "published/kernel/published-vault/trace.json",
+    "published/kernel/published-vault/events.jsonl",
     "published/kernel/manifest.json"
   ]
 }
