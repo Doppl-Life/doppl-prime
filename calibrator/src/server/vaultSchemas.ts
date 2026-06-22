@@ -88,6 +88,8 @@ export const KernelCaseRunFrontmatter = z.object({
   kernel: z.string().min(1).optional(),
   branch: z.string().min(1).optional(),
   run_id: z.string().min(1).optional(),
+  problem_recovery_title: z.string().min(1).optional(),
+  solution_title: z.string().min(1).optional(),
   created_at: IsoDateString.optional(),
 });
 

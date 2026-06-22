@@ -158,7 +158,7 @@ async function readRunArtifacts(casePath: string, ratings: RatingMaps): Promise<
       problemRecoveries.push({
         ...common,
         problem_recovery_id: problemRecoveryId,
-        title: "Problem Recovery",
+        title: frontmatter.problem_recovery_title ?? "Problem Recovery",
         trace: sections.trace,
         discovery: sections.discovery,
         case_study: sections.caseStudy,
@@ -172,7 +172,7 @@ async function readRunArtifacts(casePath: string, ratings: RatingMaps): Promise<
       solutions.push({
         ...common,
         solution_id: solutionId,
-        title: "Solution",
+        title: frontmatter.solution_title ?? "Solution",
         body: sections.solution,
         human_ratings: ratings.bySolution.get(solutionId) ?? [],
       });

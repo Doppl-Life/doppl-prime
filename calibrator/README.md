@@ -64,6 +64,41 @@ created_at: 2026-06-22T00:00:00.000Z
 
 `Solution` is optional. Calibrator indexes `Problem Recovery` as its own rateable output because a kernel can recover the right problem and still propose a weak solution, or solve the wrong problem well.
 
+## Kernel Run JSON Import
+
+Kernels can also emit a JSON contract and let Calibrator write the canonical run markdown:
+
+```json
+{
+  "schema_version": "calibrator-kernel-run-v1",
+  "case_id": "fsd-accident-economy",
+  "run_artifact_id": "dalton-fsd-run-001",
+  "source_status": "live_run",
+  "kernel": "dalton",
+  "branch": "dalton",
+  "run_id": "run_001",
+  "trace": ["case loaded", "problem recovered", "solution drafted"],
+  "discovery": "Research notes or discovery summary.",
+  "problem_recovery": {
+    "title": "Recovered problem title",
+    "body": "Recovered problem text."
+  },
+  "solution": {
+    "title": "Solution title",
+    "body": "Solution text."
+  }
+}
+```
+
+Import one JSON object or an array of objects:
+
+```bash
+npm --prefix calibrator run import:kernel-runs -- --input path/to/kernel-output.json
+npm --prefix calibrator run generate:index
+```
+
+The importer writes `calibration-vault/cases/<case_id>/runs/<run_artifact_id>.md`. Calibrator then indexes the run's `Problem Recovery` and optional `Solution` sections as separate rateable artifacts. This is the preferred contract for future full-kernel branches because it preserves trace, discovery, recovered problem, solution, source branch, commit, run id, and kernel labels in one durable artifact.
+
 ## Comparison Provenance
 
 Apples-to-apples comparison is represented explicitly in markdown. Comparison sets live under `calibration-vault/comparison-sets/` and solution frontmatter records the shared input hash, input paths, source status, source branch, source commit, and source mapping version.
@@ -96,6 +131,8 @@ calibration-vault/
         melissa-accident-economy-map.md
       ratings/
         .gitkeep
+      runs/
+        dalton-fsd-run-001.md
 ```
 
 Rating submissions are written to:

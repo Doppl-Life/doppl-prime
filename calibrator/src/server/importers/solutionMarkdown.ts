@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { ImportedSolutionArtifact } from "./importTypes";
 import { caseRoot } from "../vaultPaths";
 
-function toYamlValue(value: unknown): string {
+export function toYamlValue(value: unknown): string {
   if (typeof value === "number") return String(value);
   if (Array.isArray(value)) {
     if (value.length === 0) return "[]";
@@ -13,7 +13,7 @@ function toYamlValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function frontmatterYaml(frontmatter: Record<string, unknown>): string {
+export function frontmatterYaml(frontmatter: Record<string, unknown>): string {
   return Object.entries(frontmatter)
     .filter(([, value]) => value !== undefined && value !== "")
     .map(([key, value]) => `${key}: ${toYamlValue(value)}`)
