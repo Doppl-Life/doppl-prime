@@ -4,6 +4,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
+  createOpenRouterModelClient,
   createReplayModelClient,
   createRecordingModelClient,
   parseJsonObjectResponse,
@@ -118,4 +119,48 @@ test('recording model client captures returned call records', async () => {
 
   assert.equal(wrapped.records.length, 1);
   assert.equal(wrapped.records[0]?.prompt, 'recover');
+});
+
+test('openrouter model client sends server-side authenticated chat completions', async () => {
+  const requests: Array<{ url: string; init: { headers: Record<string, string>; body: string } }> =
+    [];
+  const client = createOpenRouterModelClient({
+    apiKey: 'test-api-key',
+    fetch: async (url, init) => {
+      requests.push({
+        url,
+        init: {
+          headers: init.headers as Record<string, string>,
+          body: init.body as string,
+        },
+      });
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'req_123' },
+        async json() {
+          return { choices: [{ message: { content: '{"ok":true}' } }] };
+        },
+      };
+    },
+  });
+
+  const record = await client.complete({
+    runId: 'run_live',
+    purpose: 'problem_recovery',
+    prompt: 'recover',
+    model: 'openrouter/test-model',
+    responseFormat: 'json_object',
+  });
+
+  assert.equal(requests[0]?.url, 'https://openrouter.ai/api/v1/chat/completions');
+  assert.equal(requests[0]?.init.headers.Authorization, 'Bearer test-api-key');
+  assert.equal(JSON.parse(requests[0]!.init.body).response_format.type, 'json_object');
+  assert.equal(record.provider, 'openrouter');
+  assert.equal(record.outputText, '{"ok":true}');
+  assert.equal(record.metadata.requestId, 'req_123');
+});
+
+test('openrouter model client rejects missing server-side API keys', () => {
+  assert.throws(() => createOpenRouterModelClient({ apiKey: '' }), /OPENROUTER_API_KEY is required/);
 });

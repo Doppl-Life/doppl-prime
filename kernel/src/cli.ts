@@ -2,7 +2,11 @@ import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { createModelGenerationProviders } from './generation-providers.ts';
-import { createReplayModelClient, readModelCallRecords } from './model-gateway.ts';
+import {
+  createOpenRouterModelClient,
+  createReplayModelClient,
+  readModelCallRecords,
+} from './model-gateway.ts';
 
 export type KernelCliArgs = {
   runId: string;
@@ -17,6 +21,7 @@ export type KernelCliArgs = {
   publishDir: string;
   replayModelCallsPath?: string;
   model?: string;
+  liveModel?: boolean;
 };
 
 export const defaultKernelArgs: KernelCliArgs = {
@@ -86,12 +91,20 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
     } else if (flag === '--model') {
       args.model = readFlagValue(argv, index, flag);
       index += 1;
+    } else if (flag === '--live-model') {
+      args.liveModel = true;
     } else {
       throw new Error(`unknown CLI flag: ${flag}`);
     }
   }
   if (args.replayModelCallsPath && !args.model) {
     throw new Error('--model is required when --replay-model-calls is set');
+  }
+  if (args.liveModel && !args.model) {
+    throw new Error('--model is required when --live-model is set');
+  }
+  if (args.liveModel && args.replayModelCallsPath) {
+    throw new Error('--live-model cannot be combined with --replay-model-calls');
   }
   return args;
 }
@@ -105,9 +118,20 @@ async function generationProvidersFromCliArgs(args: KernelCliArgs) {
   });
 }
 
+function liveGenerationProvidersFromCliArgs(args: KernelCliArgs) {
+  if (!args.liveModel) return undefined;
+  return createModelGenerationProviders({
+    client: createOpenRouterModelClient({
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+    }),
+    model: args.model!,
+  });
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cliArgs = parseKernelCliArgs(process.argv.slice(2));
-  const generationProviders = await generationProvidersFromCliArgs(cliArgs);
+  const generationProviders =
+    liveGenerationProvidersFromCliArgs(cliArgs) || (await generationProvidersFromCliArgs(cliArgs));
   const run = await runKernel({ ...cliArgs, generationProviders });
   const manifest = await exportRunToVault(run, cliArgs.outDir);
   const proofBoard = await writeProofBoard(run, cliArgs.proofBoardDir);

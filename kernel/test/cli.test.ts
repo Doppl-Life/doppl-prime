@@ -43,6 +43,13 @@ test('CLI args can configure replayed model calls', () => {
   assert.equal(args.model, 'fixture-model');
 });
 
+test('CLI args can configure live server-side model calls', () => {
+  const args = parseKernelCliArgs(['--live-model', '--model', 'openrouter/test-model']);
+
+  assert.equal(args.liveModel, true);
+  assert.equal(args.model, 'openrouter/test-model');
+});
+
 test('CLI args reject invalid numeric values', () => {
   assert.throws(() => parseKernelCliArgs(['--generations', '0']), /--generations must be an integer >= 1/);
   assert.throws(() => parseKernelCliArgs(['--budget', '-1']), /--budget must be an integer >= 0/);
@@ -53,4 +60,8 @@ test('CLI args require a model when replaying model calls', () => {
     () => parseKernelCliArgs(['--replay-model-calls', 'kernel/fixtures/model-calls.jsonl']),
     /--model is required when --replay-model-calls is set/,
   );
+});
+
+test('CLI args require a model when live model calls are enabled', () => {
+  assert.throws(() => parseKernelCliArgs(['--live-model']), /--model is required when --live-model is set/);
 });
