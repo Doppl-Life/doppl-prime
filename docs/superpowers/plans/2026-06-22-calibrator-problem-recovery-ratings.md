@@ -585,7 +585,7 @@ git commit -m "docs: publish calibrator problem recovery preview"
 **Files:**
 - No source edits expected.
 
-- [ ] **Step 1: Verify commit identity**
+- [x] **Step 1: Verify commit identity**
 
 Run:
 
@@ -596,7 +596,7 @@ git log --format='%H%x09%an%x09%ae%x09%cn%x09%ce%x09%s' calibration
 
 Expected: recent commits use `loopstrangest`; no disallowed identity strings appear in the branch history.
 
-- [ ] **Step 2: Push branch**
+- [x] **Step 2: Push branch**
 
 Run:
 
@@ -606,7 +606,7 @@ git push origin calibration
 
 Expected: push succeeds.
 
-- [ ] **Step 3: Verify GitHub Pages deployment**
+- [x] **Step 3: Verify GitHub Pages deployment**
 
 Run:
 
@@ -617,7 +617,7 @@ curl -I https://doppl-life.github.io/doppl-prime/calibrator/
 
 Expected: latest `Deploy Published Preview` succeeds and URL returns `HTTP/2 200`.
 
-- [ ] **Step 4: Final status**
+- [x] **Step 4: Final status**
 
 Run:
 
