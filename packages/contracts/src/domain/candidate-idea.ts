@@ -11,8 +11,9 @@ import { CrossDomainTransferPayload, ZeitgeistSynthesisPayload } from './subtype
  *
  * [P0.5-amend] `repairing` added (8→9, after `created`) so the §3 structured-output repair edge
  * `created → repairing → under_review` (on a successful repair) / `repairing → invalid` (repair budget
- * exhausted) is representable + persistable (CURRENT_SCHEMA_VERSION 3→4). Additive + backward-compatible
- * (closure preserved — unknown statuses still rejected).
+ * exhausted) is representable + persistable. (kernel-020 reconcile: this fold lands at
+ * CURRENT_SCHEMA_VERSION 3→4 together with GenerationStatus `degraded`; P0.16 judge took v3.)
+ * Additive + backward-compatible (closure preserved — unknown statuses still rejected).
  */
 export const CandidateStatus = z.enum([
   'created',

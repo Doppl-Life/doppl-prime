@@ -36,6 +36,8 @@ const EVENT_TYPE_SNAPSHOT = [
   'candidate.created',
   'critic.reviewed',
   'check.completed',
+  // judge-output amendment: held-out judge acceptance result (narrows to JudgeResult).
+  'judge.reviewed',
   'novelty.scored',
   'fitness.scored',
   'lineage.culled',
@@ -80,9 +82,9 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(typeof RunEventType.parse).toBe('function');
     expect(typeof RunEventEnvelope.parse).toBe('function');
     expect(Number.isInteger(CURRENT_SCHEMA_VERSION)).toBe(true);
-    // Deliberate schemaVersion bumps pinned by literal so they can't move silently: 1→2 (P0.1-amend
-    // RunEventType markers), 2→3 (P0.15-amend GenerationStatus +degraded), 3→4 (P0.5-amend
-    // CandidateStatus +repairing).
+    // Deliberate schemaVersion bumps pinned by literal so they can't move silently (kernel-020
+    // linearized): 1→2 (P0.1-amend RunEventType markers), 2→3 (P0.16 judge.reviewed + JudgeResult),
+    // 3→4 (kernel P0.15-amend GenerationStatus +degraded & P0.5-amend CandidateStatus +repairing, folded).
     expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 
@@ -92,7 +94,7 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(sorted(RunEventType.options)).toEqual(sorted(EVENT_TYPE_SNAPSHOT));
     expect(sorted(Actor.options)).toEqual(sorted(ACTOR_SNAPSHOT));
     expect(ENVELOPE_FIELD_SNAPSHOT).toHaveLength(14);
-    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(36);
+    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(37);
     expect(ACTOR_SNAPSHOT).toHaveLength(7);
   });
 });

@@ -103,9 +103,11 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
   });
 
   it('schema_version_required_positive_int', () => {
-    // spec(§4): schemaVersion is a required positive integer on every envelope. [P0.5-amend] the bump
-    // to 4 doesn't break old-version validation at the contract level — 1/2/3 (old) and 4 (current) all
-    // parse (the ≤-current reader logic is P1's; the contract just requires a positive int).
+    // spec(§4): schemaVersion is a required positive integer on every envelope. [kernel-020 reconcile]
+    // the linearized bumps don't break old-version validation at the contract level — 1 (oldest),
+    // 2 (P0.1-amend markers), 3 (P0.16 judge), and 4 (current — kernel degraded+repairing) all parse
+    // (the ≤-current reader logic is P1's; the contract just requires a positive int). This is the
+    // forward-compatible / non-breaking guarantee made concrete.
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 1 }).schemaVersion).toBe(1);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 2 }).schemaVersion).toBe(2);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 3 }).schemaVersion).toBe(3);

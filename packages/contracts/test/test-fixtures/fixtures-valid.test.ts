@@ -51,12 +51,14 @@ const EXPECTED_FIXTURE_NAMES = [
   'CullingEvent',
   'LineageGraphProjection',
   'FinalJudgeRubric',
+  'JudgeResult',
   'payload:energy.spent',
   'payload:candidate.created',
   'payload:critic.reviewed',
   'payload:check.completed',
   'payload:novelty.scored',
   'payload:fitness.scored',
+  'payload:judge.reviewed',
 ] as const;
 
 describe('contract-test surface — canonical fixtures (spec §16)', () => {
@@ -79,9 +81,10 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
   });
 
   it('canonical_fixtures_still_valid_at_current_version', () => {
-    // spec(§16) [P0.5-amend]: the canonical envelope fixture is re-recorded at the CURRENT schema
-    // version (4 — it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
-    // (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives the amendment.
+    // spec(§16) [kernel-020 reconcile]: the canonical envelope fixture is re-recorded at the CURRENT
+    // schema version (4 — it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
+    // (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives the reconciliation
+    // (judge=v3 + folded degraded/repairing=v4).
     expect(CURRENT_SCHEMA_VERSION).toBe(4);
     expect(validRunEventEnvelope.schemaVersion).toBe(4);
   });

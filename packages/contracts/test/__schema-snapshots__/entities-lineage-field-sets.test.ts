@@ -41,7 +41,7 @@ const GENERATION_FIELD_SNAPSHOT = ['id', 'runId', 'index', 'status', 'startedAt'
 const GENERATION_STATUS_SNAPSHOT = [
   'pending',
   'running',
-  'degraded', // [P0.15-amend] §3 running→degraded→verifying partial-failure edge (schemaVersion 2→3)
+  'degraded', // [P0.15-amend] §3 running→degraded→verifying partial-failure edge (kernel-020: folds to schemaVersion 4)
   'verifying',
   'scoring',
   'reproducing',

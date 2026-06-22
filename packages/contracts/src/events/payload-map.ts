@@ -6,14 +6,17 @@ import { CriticReview } from '../verifier/critic-review';
 import { CheckResult } from '../checks/check-result';
 import { NoveltyScore } from '../scoring/novelty-score';
 import { FitnessScore } from '../scoring/fitness-score';
+import { JudgeResult } from '../verifier/judge-result';
 
 /**
  * Per-type payload-shape map + payload-DoS ceiling (ARCHITECTURE.md §4/§8/§9). P0.10.
  *
  * A SEPARATE layer OVER the generic frozen `RunEventEnvelope.payload` (P0.1) — it never mutates the
- * envelope. For the six high-traffic event types named in §4 the payload is NARROWED to the matching
+ * envelope. For the seven high-traffic event types named in §4 the payload is NARROWED to the matching
  * frozen Appendix-A model, so the SAME Zod schema validates the event-store write and the model;
- * every other type falls back to the generic JSONB payload. A bounded ceiling
+ * every other type falls back to the generic JSONB payload. (The 7th — judge.reviewed ← JudgeResult,
+ * the judge-output amendment — mirrors novelty.scored ← NoveltyScore: the judge's persisted acceptance
+ * record is the authoritative verifier→selection seam.) A bounded ceiling
  * (`enforcePayloadCeiling`) guards against payload size/depth DoS (the P0.1 security carry-forward),
  * and `validateEventPayload` composes the two as the single entry the P1 append path calls.
  */
@@ -38,6 +41,7 @@ export const HIGH_TRAFFIC_PAYLOAD_MAP: Partial<Record<RunEventType, z.ZodType>> 
   'check.completed': CheckResult,
   'novelty.scored': NoveltyScore,
   'fitness.scored': FitnessScore,
+  'judge.reviewed': JudgeResult,
 };
 
 /**
@@ -155,6 +159,6 @@ export function validateEventPayload(
   }
   // Return the PARSED value, NOT the caller's input — so a future schema transform/coercion/default
   // can't slip a pre-transform value onto the authoritative append path. Every resolved schema yields
-  // an object (the 6 narrowed models or the generic record), so the narrowing cast is sound.
+  // an object (the 7 narrowed models or the generic record), so the narrowing cast is sound.
   return { ok: true, payload: parsed.data as Record<string, unknown> };
 }

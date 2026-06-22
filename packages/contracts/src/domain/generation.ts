@@ -5,7 +5,8 @@ import { z } from 'zod';
  * A). The P3 kernel drives the transitions; this freezes the status enum only. Any other value rejected.
  *
  * [P0.15-amend] `degraded` added (8→9, after `running`) so the §3 partial-failure edge
- * `running → degraded → verifying` is representable + persistable (CURRENT_SCHEMA_VERSION 2→3).
+ * `running → degraded → verifying` is representable + persistable. (kernel-020 reconcile: this fold
+ * lands at CURRENT_SCHEMA_VERSION 3→4 alongside CandidateStatus `repairing`; P0.16 judge took v3.)
  * Additive + backward-compatible (closure preserved — unknown statuses still rejected).
  */
 export const GenerationStatus = z.enum([
