@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-22T19:16:27.256Z",
+  "generated_at": "2026-06-22T19:25:26.867Z",
   "comparison_sets": [
     {
       "comparison_set_id": "fsd-accident-economy-v0",
@@ -39,6 +39,27 @@
           "source_status": "fixture",
           "created_at": "2026-06-22T00:00:00.000Z",
           "body": "# Accident Economy Dependency Shock\n\nThe recovered problem is that crash reduction removes a recurring event stream that many adjacent systems implicitly depend on: insurance acquisition, claims operations, repairs, towing, legal intake, trauma workflows, public cost recovery, media spend, and donor-supply edges.\n\nThe quality question is whether a kernel saw this as a dependency-unwind problem rather than only a safer-roads or cheaper-transportation story.",
+          "human_ratings": []
+        },
+        {
+          "case_id": "fsd-accident-economy",
+          "source_type": "kernel",
+          "source_status": "imported",
+          "source_branch": "dalton",
+          "source_commit": "fixture-pending-real-kernel",
+          "source_mapping_version": "calibrator-kernel-run-import-v1",
+          "adapter_version": "calibrator-kernel-run-import-v1",
+          "adapter_notes": "Fixture imported through calibrator-kernel-run-v1 to prove the run-level contract before the real dalton kernel exists.",
+          "kernel": "dalton",
+          "branch": "dalton",
+          "run_id": "run_fixture_dalton_001",
+          "run_artifact_id": "dalton-fsd-accident-economy-001",
+          "problem_recovery_id": "dalton-fsd-accident-economy-001__problem_recovery",
+          "title": "Crash-Volume Revenue Dependency",
+          "trace": "1. Read the case as an economic-dependency problem rather than a transportation-pricing problem.\n2. Separated harm reduction from the institutions currently funded or activated by crash volume.\n3. Recovered the latent problem as a demand shock across insurance, repair, legal, medical, public recovery, and household support systems.\n4. Drafted a solution that inventories exposure, stages transition paths, and avoids preserving crash harm as a revenue source.",
+          "discovery": "The useful outward search is not for more autonomous-vehicle forecasts. It is for crash-adjacent revenue and operating systems that treat accidents as recurring inputs: insurance pools, claims administration, collision repair, towing and storage, salvage auctions, injury litigation, trauma care, rehabilitation, public cost recovery, and household disruption management.",
+          "case_study": "When the Crashes Don't Come asks what happens if full self-driving reduces human-caused crash volume at scale. The obvious story is safety and cheaper rides, but the calibrator case asks whether crash-linked economic systems are prepared for a major demand shock.",
+          "body": "The recovered problem is that reducing crashes removes an event stream that many adjacent institutions use as demand, funding, workload, or justification. A successful Doppl run should expose which systems can shrink naturally, which need transition planning, and which public benefits should be preserved without preserving the crashes themselves.",
           "human_ratings": []
         }
       ],
@@ -219,6 +240,24 @@
           "candidate_id": "branch-solution-md",
           "created_at": "2026-06-22T17:29:17.547Z",
           "body": "# Michael Branch Pending Solution\n\nThe Michael branch has an explicit solution artifact for this case, but it marks the case as pending rather than solved.\n\n## Source Markdown\n\n# Solution: When the Crashes Don't Come\n\nSolution unknown as of June 22, 2026.\n\nThis problem is pending and unsolved.",
+          "human_ratings": []
+        },
+        {
+          "case_id": "fsd-accident-economy",
+          "source_type": "kernel",
+          "source_status": "imported",
+          "source_branch": "dalton",
+          "source_commit": "fixture-pending-real-kernel",
+          "source_mapping_version": "calibrator-kernel-run-import-v1",
+          "adapter_version": "calibrator-kernel-run-import-v1",
+          "adapter_notes": "Fixture imported through calibrator-kernel-run-v1 to prove the run-level contract before the real dalton kernel exists.",
+          "kernel": "dalton",
+          "branch": "dalton",
+          "run_id": "run_fixture_dalton_001",
+          "run_artifact_id": "dalton-fsd-accident-economy-001",
+          "solution_id": "dalton-fsd-accident-economy-001__solution",
+          "title": "Accident-Economy Transition Ledger",
+          "body": "Build a transition ledger for crash-adjacent institutions. First, classify each institution by dependency type: direct revenue, workload activation, pooled-risk pricing, legal intake, medical capacity, public reimbursement, or household support. Second, estimate exposure timing as immediate, medium-term, or long-tail. Third, separate socially useful capacity from harm-dependent throughput. Fourth, propose transition paths: retrain repair capacity toward sensor calibration and fleet maintenance, redirect public recovery workflows toward prevention and mobility-safety audits, and redesign insurance products around residual edge-case risk rather than routine collision frequency.",
           "human_ratings": []
         }
       ]

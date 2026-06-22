@@ -13,6 +13,7 @@ describe("readVaultIndex", () => {
     expect(item?.solutions.map((solution) => solution.solution_id).sort()).toEqual([
       "cody-accident-economy-map",
       "cody-runtime-branch-import",
+      "dalton-fsd-accident-economy-001__solution",
       "melissa-accident-economy-map",
       "melissa-runtime-branch-import",
       "michael-accident-economy-assay",
@@ -20,6 +21,9 @@ describe("readVaultIndex", () => {
     ]);
     expect(item?.problem_recoveries.map((problem) => problem.problem_recovery_id)).toContain(
       "pr_fsd_accident_economy_fixture",
+    );
+    expect(item?.problem_recoveries.map((problem) => problem.problem_recovery_id)).toContain(
+      "dalton-fsd-accident-economy-001__problem_recovery",
     );
     expect(index.comparison_sets[0]).toMatchObject({
       comparison_set_id: "fsd-accident-economy-v0",
@@ -190,6 +194,8 @@ describe("readVaultIndex", () => {
         "source_status: imported",
         "kernel: cody",
         "source_mapping_version: cody-runtime-importer-v1",
+        "problem_recovery_title: Runtime Problem Recovery",
+        "solution_title: Runtime Solution",
         "created_at: 2026-06-22T00:00:00.000Z",
         "---",
         "",
@@ -240,12 +246,13 @@ describe("readVaultIndex", () => {
     expect(index.cases[0]?.problem_recoveries[0]).toMatchObject({
       problem_recovery_id: "run_fixture__problem_recovery",
       run_artifact_id: "run_fixture",
-      title: "Problem Recovery",
+      title: "Runtime Problem Recovery",
       body: "Recovered problem body.",
       human_ratings: [{ rating_id: "rating_problem", score: 4 }],
     });
-    expect(index.cases[0]?.solutions.some((solution) => solution.solution_id === "run_fixture__solution")).toBe(
-      true,
-    );
+    expect(index.cases[0]?.solutions[0]).toMatchObject({
+      solution_id: "run_fixture__solution",
+      title: "Runtime Solution",
+    });
   });
 });

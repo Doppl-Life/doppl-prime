@@ -37,6 +37,16 @@ const fixture: CalibratorIndex = {
           body: "# Recovered problem body",
           human_ratings: [],
         },
+        {
+          case_id: "fsd-accident-economy",
+          problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+          title: "Crash-Volume Revenue Dependency",
+          source_type: "kernel",
+          source_status: "imported",
+          kernel: "dalton",
+          body: "# Imported recovered problem body",
+          human_ratings: [],
+        },
       ],
       solutions: [
         {
@@ -115,7 +125,8 @@ describe("App", () => {
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Problem Recovery");
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident Economy Dependency Shock");
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
     expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Stated Context");
@@ -124,6 +135,15 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeEnabled();
+  });
+
+  it("moves to the next unrated artifact in the review queue", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByRole("heading", { name: "Crash Substrate Exposure Map" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
+    expect(screen.getByRole("heading", { name: "Michael Branch Pending Solution" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Review artifact")).toHaveValue("solution:michael-branch-solution-import");
   });
 
   it("submits a rating and shows the saved path", async () => {

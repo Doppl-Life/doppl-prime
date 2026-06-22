@@ -9,6 +9,9 @@ import type {
 
 type RatingTarget = "problem_recovery" | "solution";
 type ReviewArtifact = CalibratorProblemRecovery | CalibratorSolution;
+type ReviewQueueItem =
+  | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
+  | { target: "solution"; id: string; artifact: CalibratorSolution; solutionIndex: number };
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -141,6 +144,7 @@ function artifactBody(artifact: ReviewArtifact | null, blindMode: boolean): stri
 export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
+  const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<string | null>(null);
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [blindMode, setBlindMode] = useState(false);
@@ -177,6 +181,7 @@ export function App() {
         const firstCase = data.cases[0];
         if (firstCase) {
           setSelectedCaseId(firstCase.case_id);
+          setSelectedProblemRecoveryId(firstCase.problem_recoveries[0]?.problem_recovery_id ?? null);
           setSelectedSolutionId(firstCase.solutions[0]?.solution_id ?? null);
         }
       })
@@ -203,7 +208,31 @@ export function App() {
   const selectedSolutionIndex = selectedSolution
     ? visibleSolutions.findIndex((solution) => solution.solution_id === selectedSolution.solution_id)
     : -1;
-  const selectedProblemRecovery = selectedCase?.problem_recoveries[0] ?? null;
+  const visibleProblemRecoveries = useMemo(() => {
+    if (!selectedCase) return [];
+    return selectedCase.problem_recoveries;
+  }, [selectedCase]);
+  const selectedProblemRecovery = useMemo(
+    () =>
+      visibleProblemRecoveries.find((recovery) => recovery.problem_recovery_id === selectedProblemRecoveryId) ??
+      visibleProblemRecoveries[0] ??
+      null,
+    [visibleProblemRecoveries, selectedProblemRecoveryId],
+  );
+  const reviewQueue = useMemo<ReviewQueueItem[]>(() => {
+    const problemRecoveryItems: ReviewQueueItem[] = visibleProblemRecoveries.map((artifact) => ({
+      target: "problem_recovery",
+      id: artifact.problem_recovery_id,
+      artifact,
+    }));
+    const solutionItems: ReviewQueueItem[] = visibleSolutions.map((artifact, solutionIndex) => ({
+      target: "solution",
+      id: artifact.solution_id,
+      artifact,
+      solutionIndex,
+    }));
+    return [...problemRecoveryItems, ...solutionItems];
+  }, [visibleProblemRecoveries, visibleSolutions]);
   const activeReviewArtifact =
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const activeSolutionIndex = ratingTarget === "solution" ? selectedSolutionIndex : -1;
@@ -213,6 +242,17 @@ export function App() {
     ratingTarget === "problem_recovery"
       ? `problem_recovery:${selectedProblemRecovery?.problem_recovery_id ?? ""}`
       : `solution:${selectedSolution?.solution_id ?? ""}`;
+  const activeQueueIndex = reviewQueue.findIndex((item) => item.target === ratingTarget && item.id === (ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : selectedSolution?.solution_id));
+  const unratedCount = reviewQueue.filter((item) => item.artifact.human_ratings.length === 0).length;
+  const nextUnratedItem = useMemo(() => {
+    if (reviewQueue.length === 0) return null;
+    const start = activeQueueIndex >= 0 ? activeQueueIndex + 1 : 0;
+    for (let offset = 0; offset < reviewQueue.length; offset += 1) {
+      const candidate = reviewQueue[(start + offset) % reviewQueue.length];
+      if (candidate.artifact.human_ratings.length === 0) return candidate;
+    }
+    return null;
+  }, [activeQueueIndex, reviewQueue]);
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -259,6 +299,18 @@ export function App() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function selectReviewItem(item: ReviewQueueItem) {
+    setRatingTarget(item.target);
+    if (item.target === "problem_recovery") {
+      setSelectedProblemRecoveryId(item.id);
+    } else {
+      setSelectedSolutionId(item.id);
+    }
+    setScore(null);
+    setSavedPath("");
+    setSourceDetailsOpen(false);
   }
 
   if (error && !index) {
@@ -308,6 +360,7 @@ export function App() {
             onChange={(event) => {
               const nextCase = index.cases.find((item) => item.case_id === event.target.value);
               setSelectedCaseId(event.target.value);
+              setSelectedProblemRecoveryId(nextCase?.problem_recoveries[0]?.problem_recovery_id ?? null);
               setSelectedSolutionId(nextCase?.solutions[0]?.solution_id ?? null);
               setRatingTarget(nextCase?.problem_recoveries[0] ? "problem_recovery" : "solution");
               setScore(null);
@@ -332,6 +385,7 @@ export function App() {
               const [nextTarget, nextId] = event.target.value.split(":");
               if (nextTarget === "problem_recovery") {
                 setRatingTarget("problem_recovery");
+                setSelectedProblemRecoveryId(nextId);
               } else {
                 setRatingTarget("solution");
                 setSelectedSolutionId(nextId);
@@ -341,11 +395,11 @@ export function App() {
               setSourceDetailsOpen(false);
             }}
           >
-            {selectedProblemRecovery ? (
-              <option value={`problem_recovery:${selectedProblemRecovery.problem_recovery_id}`}>
-                Problem Recovery ({selectedProblemRecovery.human_ratings.length} ratings)
+            {visibleProblemRecoveries.map((recovery) => (
+              <option key={recovery.problem_recovery_id} value={`problem_recovery:${recovery.problem_recovery_id}`}>
+                {recovery.title} ({recovery.human_ratings.length} ratings)
               </option>
-            ) : null}
+            ))}
             {visibleSolutions.map((solution, index) => (
               <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
                 {blindMode ? blindSolutionLabel(index) : solution.title} ({solution.human_ratings.length} ratings)
@@ -357,7 +411,18 @@ export function App() {
         <div className="review-status" aria-label="Current review status">
           <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Solution"}</span>
           <strong>{activeRatingCount} ratings</strong>
+          <strong>{unratedCount} unrated</strong>
           {!isWritable ? <em>Static preview</em> : null}
+          <button
+            type="button"
+            className="next-unrated-button"
+            disabled={!nextUnratedItem}
+            onClick={() => {
+              if (nextUnratedItem) selectReviewItem(nextUnratedItem);
+            }}
+          >
+            Next unrated
+          </button>
         </div>
       </section>
 
