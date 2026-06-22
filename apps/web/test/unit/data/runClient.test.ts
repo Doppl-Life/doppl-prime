@@ -1,7 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { validCandidateIdeaCrossDomain, validModelRoute, validRun } from '@doppl/contracts';
+import {
+  validCandidateIdeaCrossDomain,
+  validModelRoute,
+  validRun,
+  validRunConfig,
+} from '@doppl/contracts';
 import type { LineageGraphProjection } from '@doppl/contracts';
 import {
   createRunClient,
@@ -15,8 +20,14 @@ import { multiNodeLineage, malformedLineage } from '../../fixtures/lineage';
  * call and records the (url, init) it was invoked with — no network, fully deterministic.
  */
 function fakeFetch(body: unknown, status = 200) {
-  const calls: { url: string; init: { method?: string; body?: string } | undefined }[] = [];
-  const fn = (url: string, init?: { method?: string; body?: string }) => {
+  const calls: {
+    url: string;
+    init: { method?: string; body?: string; headers?: Record<string, string> } | undefined;
+  }[] = [];
+  const fn = (
+    url: string,
+    init?: { method?: string; body?: string; headers?: Record<string, string> },
+  ) => {
     calls.push({ url, init });
     return Promise.resolve({
       ok: status >= 200 && status < 300,
@@ -96,6 +107,15 @@ describe('runClient — read-only REST seam', () => {
     expect(stopFetch.calls).toHaveLength(2);
     expect(stopFetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/stop`);
     expect(stopFetch.calls[0]?.init?.method).toBe('POST');
+  });
+
+  // spec(§11): startRun forwards an idempotency key as an Idempotency-Key header so the API can dedup
+  // a duplicate submit (the client never re-implements the dedup).
+  it('test_start_run_sends_idempotency_key', async () => {
+    const fetch = fakeFetch(validRun);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    await client.startRun(validRunConfig, { idempotencyKey: 'idem-123' });
+    expect(fetch.calls[0]?.init?.headers?.['Idempotency-Key']).toBe('idem-123');
   });
 
   // spec(§14 carry-forward: IDs are opaque/untrusted bytes — never concatenated raw into a path).

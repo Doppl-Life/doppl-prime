@@ -51,7 +51,7 @@ export interface RunClient {
   getReplay(runId: string): Promise<RunEventEnvelope[]>;
   getCandidate(runId: string, candidateId: string): Promise<CandidateIdea>;
   listModelRoutes(): Promise<ModelRoute[]>;
-  startRun(config: RunConfig): Promise<Run>;
+  startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<Run>;
   stopRun(runId: string): Promise<Run>;
 }
 
@@ -82,9 +82,14 @@ export function createRunClient(options: RunClientOptions): RunClient {
     return parseOrThrow(schema, endpoint, body);
   }
 
-  const postInit = (body?: unknown): FetchRequestInit => ({
+  // The optional Idempotency-Key lets the API dedup a duplicate submit (the client never
+  // re-implements the dedup — §11); the API + kernel remain the authoritative idempotency guard.
+  const postInit = (body?: unknown, idempotencyKey?: string): FetchRequestInit => ({
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
+    },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
@@ -101,7 +106,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
     getCandidate: (runId, candidateId) =>
       getJson(`/runs/${enc(runId)}/candidates/${enc(candidateId)}`, CandidateIdea),
     listModelRoutes: () => getJson('/model-routes', ModelRouteArray),
-    startRun: (config) => getJson('/runs', Run, postInit(config)),
+    startRun: (config, opts) => getJson('/runs', Run, postInit(config, opts?.idempotencyKey)),
     stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, Run, postInit()),
   };
 }
