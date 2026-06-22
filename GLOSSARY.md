@@ -135,6 +135,18 @@ term, leave it out.
 - **Def:** a mechanism-first thesis where the core pattern transfers from one
   domain to another and timing is incidental.
 
+### Pepsi
+
+- **Def:** an inspectable candidate branch with a named claim, problem-recovery
+  chain, implication map, falsifier, mechanism cost, lens fit, and lineage. A
+  generated idea is not a Pepsi until it validates as a complete packet.
+
+### Pepsi Output
+
+- **Def:** the `kernel.pepsi-output.v1` human-facing projection built from
+  `RunTrace` or an optional local generator. It is public output; evaluator-side
+  Pepsi segmentation fixtures are calibration, not this artifact.
+
 ## Proof
 
 ### Bedrock

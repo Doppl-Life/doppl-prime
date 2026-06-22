@@ -1,3 +1,4 @@
+// Owns the canonical navigation injected into local and published kernel views.
 export type KernelView = 'assay' | 'microscope' | 'architecture' | 'architecture-v2';
 export type KernelNavActive = KernelView | 'review' | 'none';
 
@@ -8,7 +9,7 @@ type ViewLink = {
 };
 
 const views: ViewLink[] = [
-  { key: 'assay', label: 'Assay', blurb: 'work surface' },
+  { key: 'assay', label: 'Pepsi Output', blurb: 'packets' },
   { key: 'microscope', label: 'Trace', blurb: 'single run' },
   { key: 'architecture', label: 'Architecture', blurb: 'system map' },
   { key: 'architecture-v2', label: 'Architecture v2', blurb: 'engineer map' },
@@ -27,6 +28,8 @@ export function renderViewNav(
   const review = options.reviewHref
     ? `<a class="kernel-view-link${reviewActive}" href="${options.reviewHref}">Review<small>saved verdicts</small></a>`
     : '';
+  const activeAdvanced = views.slice(1).find((view) => view.key === active);
+  const advancedSummary = activeAdvanced ? activeAdvanced.label : 'Advanced';
   const advanced = views.slice(1)
     .map((view) => {
       const activeClass = view.key === active ? ' is-active' : '';
@@ -59,7 +62,7 @@ export function renderViewNav(
 @media (max-width:700px){.kernel-view-nav a small{display:none}.kernel-view-nav .kernel-view-hub{margin-left:0}.kernel-view-more{position:static}.kernel-view-more div{position:static;display:flex;flex-wrap:wrap;min-width:0;box-shadow:none}}
 </style>
 <nav class="kernel-view-nav" aria-label="Kernel view navigation">
-  <strong>Kernel</strong><a class="kernel-view-link${assayActive}" href="${hrefs.assay}">Assay<small>${assay.blurb}</small></a>${review}<details class="kernel-view-more"><summary>Advanced</summary><div>${advanced}</div></details>${hub}
+  <strong>Kernel</strong><a class="kernel-view-link${assayActive}" href="${hrefs.assay}">${assay.label}<small>${assay.blurb}</small></a>${review}<details class="kernel-view-more"><summary>${advancedSummary}</summary><div>${advanced}</div></details>${hub}
 </nav>
 <!-- kernel-view-nav:end -->`;
 }

@@ -2,18 +2,20 @@
 
 Use `pnpm serve` unless you need a specific artifact.
 
-Surface boundary: the viewer is a microscope, not the specimen. Reviewer-facing pages may show problem framing, candidate Pepsis, tactics, evidence, and verdict controls. They must not render private QA metaphors, design-principle labels, conversation shorthand, or slide-branding as if those are what the reviewer came to inspect.
+Surface boundary: the viewer is a microscope, not the specimen. Reviewer-facing pages may show Pepsi output packets, problem framing, tactics, evidence, controls, and verdict controls. They must not render private QA metaphors, design-principle labels, conversation shorthand, or slide-branding as if those are what the reviewer came to inspect.
 
-Control boundary: a clean control can see the real scenario packet: prior conversation, things tried, candidate attempts, constraints, and neutral summaries. It must not see prior verdicts, kernel scores, selected winners, solution keys, Pepsi maps, or meta-guidance about what the assay thinks is interesting. Context is evidence; downstream selection is leakage.
+Control boundary: a clean control can see the real scenario packet: prior conversation, things tried, candidate attempts, constraints, and neutral summaries. It must not see prior verdicts, kernel scores, selected winners, solution keys, Pepsi output, Pepsi segmentation maps, or meta-guidance about what the assay thinks is interesting. Context is evidence; downstream selection is leakage.
 
 | Surface | Command | Owns |
 | --- | --- | --- |
-| Local viewer | `pnpm serve` | Owns port 4317 by default: frees it first, then serves one localhost hub, one nav, `/api/trace`, Assay, Microscope, Architecture, static Architecture v2, Review Digest. |
-| Default proof | `pnpm build` | Typecheck plus compact multi-fixture proof board. |
+| Local viewer | `pnpm serve` | Owns port 4317 by default: frees it first, then serves one localhost hub, one nav, `/api/trace`, Pepsi-first Assay, Microscope, Architecture, static Architecture v2, Review Digest. |
+| Default proof | `pnpm build` | Typecheck, integrity checks, Pepsi generator boundary harness, and compact multi-fixture proof board. |
 | Proof only | `pnpm proof` | Compact proof board without typecheck. |
-| Deploy HTML | `pnpm publish:html` | Direct-renders the same view functions into committed `published/*.html` and ignored `published/index.html`. |
+| Pepsi generator harness | `pnpm pepsi:generator-check` | Exercises absent, failed, malformed, timeout, valid, and contaminated generator paths without provider SDKs. |
+| Deploy HTML | `pnpm publish:html` | Direct-renders the same view functions into committed `published/*.html` and ignored `published/index.html`; Assay snapshots `kernel.pepsi-output.v1`, never live provider calls. |
 | Deploy static server | `pnpm serve:static` | Serves only `published/**` for Render/static smoke tests. |
 | Case-study leakage lint | `pnpm case-study:lint` | Validates seed-visible case packets do not leak evaluator-only solution language. |
+| Clear local run data | `pnpm clear:run-data` | Removes disposable `out/**` and `records/assay-judgments/**`; does not touch committed publish snapshots. |
 | Case-study corpus | no direct command | Typed loader for `case-studies/**`; seed paths read only `case-study.md`, judge paths can read `solution.md`; subtype metadata lives in `tools/case-study-manifest.ts`. |
 | Source radar | no direct command | Typed source recipes, source outcome snapshot, decay rules, and resolved benchmark calibration. |
 | Least-action calibration | no direct command | Typed mechanism-economy fixtures, prompt packaging, weighted fitness components, chart projection, scoring, and six-gate calibration. |
@@ -25,6 +27,7 @@ Control boundary: a clean control can see the real scenario packet: prior conver
 Canonical sources:
 
 - Trace truth: `src/trace.ts` via `buildRunTrace()`.
+- Pepsi output projection: `tools/pepsi-output.ts`.
 - View nav: `tools/view-nav.ts`.
 - Live server: `tools/serve.ts`.
 - Deploy publisher: `tools/publish.ts`.
@@ -43,5 +46,6 @@ Deleted surfaces stay deleted unless a named consumer returns: hub scripts,
 `tools/microscope/report.ts`, `tools/microscope/walkthrough.ts`.
 
 Assay, Review, Microscope, and Architecture are local UI renderers behind
-`pnpm serve`, not standalone package scripts. `pnpm serve` is the only local UI
-front door.
+`pnpm serve`, not standalone package scripts. Assay is the Pepsi-first public
+output surface; segmentation fixtures remain evaluator calibration. `pnpm serve`
+is the only local UI front door.

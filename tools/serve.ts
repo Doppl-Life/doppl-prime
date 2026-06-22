@@ -259,7 +259,7 @@ code{color:#d5f2dc;font:12px ui-monospace,Menlo,monospace}
 ${card('/architecture-v2', "Architecture v2 — static artifact", 'Hand-authored engineer map; use /api/trace for live trace truth.')}
 ${card('/architecture', 'Architecture — system map', 'The original contract + spine card view.')}
 ${card('/microscope', 'Microscope — single trace', 'One run: generation, scoring, two selectors, post-selection lens.')}
-${card('/assay', 'Assay — cases + controls', 'Discovery-first outcome assay with feedback + judgments.')}
+${card('/assay', 'Pepsi Output — cases + controls', 'Pepsi-first output packets with controls, feedback, and judgments.')}
 ${card('/review', 'Review — judgments digest', 'Aggregated reviewer verdicts from the ledger.')}
 ${card('/api/trace', 'API — /api/trace', 'The raw RunTrace JSON used by the live views.')}
 </div>

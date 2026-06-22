@@ -1,3 +1,4 @@
+// Builds the local judgment digest for assay and Pepsi packet verdicts.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -107,7 +108,7 @@ function actionFor(digest: CaseDigest): string {
   const pepsiStrong = digest.pepsi.some(isStrong);
 
   if (!hasControl && (kernelUseful || pepsiStrong || kernelStrong)) return 'needs control';
-  if (pepsiStrong && !controlStrong) return 'pepsi lane ahead';
+  if (pepsiStrong && !controlStrong) return 'pepsi packet ahead';
   if (pepsiStrong && controlStrong) return 'compare pepsi/control';
   if (kernelStrong && !controlStrong) return 'kernel ahead';
   if (kernelStrong && controlStrong) return 'compare deltas';
@@ -152,7 +153,7 @@ function renderConsole(allEvents: JudgmentEvent[], latest: JudgmentEvent[], case
     'assay judgment digest',
     `ledger=${relativeLedgerPath(ledgerPath)}; events=${allEvents.length}; latest=${latest.length}; reviewers=${reviewers}; runs=${runs}; useful=${useful}; strong=${strong}`,
     agreementSummary(agreement),
-    '| case | control | kernel case | pepsi lane | candidates | reviewers | action |',
+    '| case | control | kernel case | pepsi packets | candidates | reviewers | action |',
     '| --- | --- | --- | --- | --- | ---: | --- |',
   ];
   for (const item of cases) {
@@ -248,12 +249,12 @@ function renderHtml(allEvents: JudgmentEvent[], latest: JudgmentEvent[], cases: 
       </section>
       <section class="card">
         <h2>What To Read</h2>
-        <p><strong>needs control</strong> means the row has signal but no clean comparison yet. <strong>pepsi lane ahead</strong> means the segmentation board itself reached investigate/keeper while control did not. <strong>compare pepsi/control</strong> means both have signal and need contrast. <strong>kernel ahead</strong> means kernel verdicts reached investigate/keeper while control did not. <strong>control ahead</strong> means the clean answer is currently stronger. <strong>compare deltas</strong> means both have signal and need human contrast. <strong>needs signal</strong> means the ledger does not yet justify a conclusion.</p>
+        <p><strong>needs control</strong> means the row has signal but no clean comparison yet. <strong>pepsi packet ahead</strong> means a Pepsi packet reached investigate/keeper while control did not. <strong>compare pepsi/control</strong> means both have signal and need contrast. <strong>kernel ahead</strong> means kernel verdicts reached investigate/keeper while control did not. <strong>control ahead</strong> means the clean answer is currently stronger. <strong>compare deltas</strong> means both have signal and need human contrast. <strong>needs signal</strong> means the ledger does not yet justify a conclusion.</p>
         ${cases.length ? '' : '<p class="empty-note">No judgments yet. Digest shape: mark assay rows, then reload this page to see actions fill in.</p>'}
       </section>
     </div>
     <table>
-      <thead><tr><th>case</th><th>control</th><th>kernel case</th><th>pepsi lane</th><th>candidates</th><th>reviewers</th><th>action</th></tr></thead>
+      <thead><tr><th>case</th><th>control</th><th>kernel case</th><th>pepsi packets</th><th>candidates</th><th>reviewers</th><th>action</th></tr></thead>
       <tbody>
         ${(cases.length ? cases : [{
           caseSlug: 'none',
@@ -264,7 +265,7 @@ function renderHtml(allEvents: JudgmentEvent[], latest: JudgmentEvent[], cases: 
           reviewers: new Set<string>(),
         }]).map((item) => {
           const action = cases.length ? actionFor(item) : 'run pnpm serve';
-          const good = action === 'kernel ahead' || action === 'pepsi lane ahead' || action === 'compare pepsi/control';
+          const good = action === 'kernel ahead' || action === 'pepsi packet ahead' || action === 'compare pepsi/control';
           return `<tr><td>${escapeHtml(item.caseSlug)}</td><td>${escapeHtml(countText(item.control))}</td><td>${escapeHtml(countText(item.kernel))}</td><td>${escapeHtml(countText(item.pepsi))}</td><td>${escapeHtml(countText(item.candidate))}</td><td>${item.reviewers.size}</td><td><span class="action ${good ? 'good' : ''}">${escapeHtml(action)}</span></td></tr>`;
         }).join('')}
       </tbody>

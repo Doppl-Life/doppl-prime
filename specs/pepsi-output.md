@@ -30,18 +30,60 @@ because the unlock has multiple governing logics.
 Sprout/afrit belongs to bedrock signal. Pepsi belongs to assay output and human
 inspection. They can overlap, but they answer different questions.
 
+## Canonical Projection
+
+`RunTrace` remains process truth. It explains what the kernel generated,
+scored, selected, rejected, and checked.
+
+`kernel.pepsi-output.v1` is the canonical human-facing output projection. It is
+what Assay renders first and what `pnpm publish:html` snapshots into
+`published/assay.html`.
+
+Pepsi Output can be produced two ways:
+
+- deterministic fallback from selected `RunTrace` candidates.
+- optional executable generator configured with `DOPPL_PEPSI_GENERATOR`.
+
+The generator receives JSON on stdin and returns `PepsiOutput` JSON on stdout.
+Its request contains `RunTrace` plus seed-visible case context only: seed id,
+public title/subtype/status, seed case-study path, and seed markdown byte count.
+It must not receive `solution.md`, evaluator-side Pepsi segmentation fixtures,
+known-solution or known-answer markers, or judge-only case material.
+
+If the generator is unset, exits nonzero, times out, emits malformed JSON, or
+emits invalid `kernel.pepsi-output.v1`, the system falls back to deterministic
+assembly and exposes the generator status in `PepsiOutput.status`.
+
+`pnpm pepsi:generator-check` is the durable harness for this boundary. It proves
+absent, failed, malformed, timed-out, valid, and contaminated generator paths.
+A contaminated request must be rejected before the configured executable is
+spawned.
+
+## Calibration Fixtures
+
+`fixtures/pepsi-segmentation/*.json` uses
+`kernel.pepsi-segmentation.v1`. Those files are evaluator-side calibration and
+reference data, not public output and not generator input.
+
+The shared validator keeps this split explicit:
+
+- `assertPepsiSegmentation()` validates calibration fixtures.
+- `assertPepsiOutput()` validates public output packets.
+
+Do not render segmentation fixtures as the canonical public Pepsi surface.
+
 ## Required Packet
 
-Every Pepsi packet should expose:
+Every `PepsiPacket` must expose:
 
 - `title`: compact label.
 - `claim`: the thing being asserted.
 - `subtype`: cross-domain transfer, zeitgeist synthesis, problem recovery,
   consequence, strategy, warning, protocol, product, or test.
 - `sourceContext`: case/source/seed context, with restricted details removed.
-- `surfaceComplaint`: the visible problem.
-- `problemRecovery`: stated symptom, deleted assumption, hidden variable, and
-  actual problem.
+- `problemRecovery.surfaceComplaint`: the visible problem.
+- `problemRecovery`: stated symptom, deleted assumption, hidden variable,
+  actual problem, and candidate response.
 - `implicationMap`: what disappears, what gets cheaper, who wins, who loses,
   second-order effects.
 - `noveltyBasis`: why this is not already covered.
@@ -51,7 +93,7 @@ Every Pepsi packet should expose:
 - `mechanismCost`: complexity, dependency, workflow, or access burden.
 - `lensFit`: why this matters for the current lens.
 - `lineage`: parent, generation, operator, claimed delta, nearest prior.
-- `judgment`: dead, obvious, interesting, investigate, or keeper when a human
+- `humanJudgment`: dead, obvious, interesting, investigate, or keeper when a human
   has judged it.
 
 If a packet cannot fill these fields, it can still be a candidate. It is not yet
@@ -120,6 +162,9 @@ The assay should distinguish:
 Do not manufacture plurality. A single-Pepsi case should stay single.
 Do not flatten plurality. A many-Pepsis case should expose its distinct logics.
 
+In code, the public distinction is packet completeness, not fixture status. A
+candidate becomes a public Pepsi only when it validates as `PepsiPacket`.
+
 ## Human Verdicts
 
 Verdicts are bedrock signals:
@@ -140,4 +185,5 @@ a fixture, a spec change, or trash.
 - A one-Pepsi case is padded into fake branches.
 - The implication map names winners but no losers, or effects but no mechanism.
 - Restricted source details leak into a demo packet.
+- Known-solution or known-answer markers appear in generator input.
 - The packet lacks a falsifier.

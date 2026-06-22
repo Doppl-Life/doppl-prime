@@ -9,8 +9,8 @@ source material only while it is being mined.
   runtime, modes, caps, lineage, and trace boundary.
 - [`fitness-selection.md`](./fitness-selection.md) - novelty, grounding, decay,
   regret siblings, Pareto risks, and tripwires.
-- [`pepsi-output.md`](./pepsi-output.md) - what a Pepsi is, how to segment one
-  vs many, and the packet every output must expose.
+- [`pepsi-output.md`](./pepsi-output.md) - what a Pepsi is, the public output
+  projection, generator boundary, and the packet every output must expose.
 - [`assay-corpus.md`](./assay-corpus.md) - case-study roles, withheld solutions,
   source radar, validation, and the human verdict loop.
 - [`artifacts-deploy.md`](./artifacts-deploy.md) - serve/publish/static surfaces

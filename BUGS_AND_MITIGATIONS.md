@@ -113,6 +113,23 @@ still only being watched.
   answer key.
 - **Carry forward:** signals can be input; synthesis targets cannot.
 
+### Fixture answer-key marker - 2026-06-22
+
+- **Mistake:** letting seed-visible fixture evidence carry a `known-solution`
+  label.
+- **Symptom:** the Assay surface can look like the kernel discovered the exact
+  answer when it actually projected contaminated candidate evidence.
+- **Mitigation:** generator requests reject known-solution and known-answer
+  markers; public Pepsi fallback filters restricted markers; publish fails if
+  evaluator markers appear in public HTML.
+- **Tripwire:** `pnpm pepsi:generator-check` must reject the contaminated Jack
+  drone request before spawning the configured generator.
+- **Pass condition:** clean fixtures can use a valid generator, contaminated
+  fixtures fall back with `request-rejected`, and static output contains no
+  evaluator-only markers.
+- **Carry forward:** answer-key labels are poison even when the surrounding
+  evidence is otherwise seed-visible.
+
 ### Contract drift - 2026-06-21
 
 - **Mistake:** letting docs, generated artifacts, and code disagree about what

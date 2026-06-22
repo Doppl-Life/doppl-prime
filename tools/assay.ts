@@ -1,4 +1,4 @@
-// Runs a discovery-first outcome assay over selected kernel case fixtures.
+// Renders the Pepsi-first assay surface over selected kernel case fixtures.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,11 +9,19 @@ import { loadCaseStudyPublicView, loadCaseStudySeedView } from './case-study-cor
 import type { CaseStudyPublicView } from './case-study-corpus.ts';
 import { runMain } from './cli.ts';
 import { capstoneDemoLens } from './lens-config.ts';
+import {
+  assertPepsiSegmentation,
+  buildPepsiOutput,
+  PEPSI_OUTPUT_SCHEMA_VERSION,
+  type PepsiOutput,
+  type PepsiPacket,
+  type PepsiSegmentation,
+} from './pepsi-output.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
-const ASSAY_SCHEMA_VERSION = 'kernel.discovery-assay.v1';
-const FEEDBACK_SCHEMA_VERSION = 'kernel.assay-feedback.v1';
+const ASSAY_SCHEMA_VERSION = 'kernel.discovery-assay.v2';
+const FEEDBACK_SCHEMA_VERSION = 'kernel.assay-feedback.v2';
 const STATIC_RENDER_SEED = 'fixed-default';
 const STATIC_RENDER_GENERATED_AT = '1970-01-01T00:00:00.000Z';
 
@@ -67,10 +75,11 @@ type AssayResult = {
     seedMarkdownBytes: number;
   };
   trace: RunTrace;
+  pepsiOutput: PepsiOutput;
   candidates: AssayCandidate[];
   convergence: ConvergenceGroup[];
   control?: CleanControl;
-  pepsi?: PepsiSegmentation;
+  pepsiReference?: PepsiSegmentation;
   bestConclusion?: AssayCandidate;
   bestOutlier?: AssayCandidate;
   gen2: string;
@@ -107,7 +116,12 @@ type FeedbackTemplate = {
     label: string;
     caseVerdict: Verdict | null;
     controlVerdict: Verdict | null;
-    pepsiVerdict: Verdict | null;
+    pepsis: Array<{
+      id: string;
+      title: string;
+      verdict: Verdict | null;
+      notes: string;
+    }>;
     notes: string;
     candidates: Array<{
       id: string;
@@ -133,46 +147,6 @@ type CleanControl = {
     detail: string;
   }>;
   nextTests: string[];
-};
-
-type PepsiStatus = 'candidate' | 'pepsi' | 'rejected' | 'alias' | 'tactic-only' | 'lens';
-type PepsiCount = 'zero' | 'one' | 'many';
-type PepsiCheckStatus = 'pass' | 'warn' | 'fail';
-
-type PossiblePepsi = {
-  name: string;
-  status: PepsiStatus;
-  logic: string;
-  rationale: string;
-  linkedCandidateIds: string[];
-};
-
-type PepsiTactic = {
-  pepsi: string;
-  name: string;
-  howItPursues: string;
-  hardConstraints: string[];
-  softAxes: string[];
-  linkedCandidateIds: string[];
-};
-
-type PepsiCheck = {
-  id: string;
-  label: string;
-  status: PepsiCheckStatus;
-  detail: string;
-};
-
-type PepsiSegmentation = {
-  schemaVersion: 'kernel.pepsi-segmentation.v1';
-  caseSlug: string;
-  surfaceComplaint: string;
-  promotedProblem: string;
-  expectedCount: PepsiCount;
-  implications: string[];
-  possiblePepsis: PossiblePepsi[];
-  tactics: PepsiTactic[];
-  checks: PepsiCheck[];
 };
 
 const registry: AssayCaseDefinition[] = [
@@ -349,30 +323,10 @@ async function loadControl(definition: AssayCaseDefinition): Promise<CleanContro
   return raw;
 }
 
-function assertStringArray(value: unknown, field: string): string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw new Error(`Bad Pepsi segmentation ${field}`);
-  }
-  return value;
-}
-
-function assertPepsiSegmentation(value: unknown, definition: AssayCaseDefinition): PepsiSegmentation {
-  const packet = value as PepsiSegmentation;
-  if (!packet || typeof packet !== 'object') throw new Error(`Bad Pepsi segmentation packet for ${definition.slug}.`);
-  if (packet.schemaVersion !== 'kernel.pepsi-segmentation.v1') throw new Error(`Bad Pepsi segmentation schema for ${definition.slug}.`);
-  if (packet.caseSlug !== definition.slug) throw new Error(`Pepsi segmentation ${definition.pepsiPath} is for ${packet.caseSlug}, not ${definition.slug}.`);
-  if (!['zero', 'one', 'many'].includes(packet.expectedCount)) throw new Error(`Bad Pepsi expectedCount for ${definition.slug}.`);
-  assertStringArray(packet.implications, 'implications');
-  if (!Array.isArray(packet.possiblePepsis) || !packet.possiblePepsis.length) throw new Error(`Pepsi segmentation needs possiblePepsis for ${definition.slug}.`);
-  if (!Array.isArray(packet.tactics)) throw new Error(`Pepsi segmentation needs tactics for ${definition.slug}.`);
-  if (!Array.isArray(packet.checks)) throw new Error(`Pepsi segmentation needs checks for ${definition.slug}.`);
-  return packet;
-}
-
 async function loadPepsi(definition: AssayCaseDefinition): Promise<PepsiSegmentation | undefined> {
   if (!definition.pepsiPath) return undefined;
   const raw = JSON.parse(await readFile(path.join(root, definition.pepsiPath), 'utf8'));
-  return assertPepsiSegmentation(raw, definition);
+  return assertPepsiSegmentation(raw, { caseSlug: definition.slug, source: definition.pepsiPath });
 }
 
 async function loadCaseStudy(definition: AssayCaseDefinition): Promise<AssayResult['caseStudy']> {
@@ -478,23 +432,52 @@ function assayResult(
   definition: AssayCaseDefinition,
   caseStudy: AssayResult['caseStudy'],
   trace: RunTrace,
+  pepsiOutput: PepsiOutput,
   control?: CleanControl,
-  pepsi?: PepsiSegmentation,
+  pepsiReference?: PepsiSegmentation,
 ): AssayResult {
   const candidates = allSelectedCandidates(trace).map((candidate) => toAssayCandidate(trace, candidate));
   return {
     definition,
     caseStudy,
     trace,
+    pepsiOutput,
     candidates,
     convergence: convergenceGroups(candidates),
     control,
-    pepsi,
+    pepsiReference,
     bestConclusion: bestConclusion(candidates),
     bestOutlier: bestOutlier(candidates),
     gen2: generationLine(trace),
     failedChecks: trace.goalChecks.filter((check) => !check.passed).map((check) => check.id),
   };
+}
+
+async function buildAssayResult(
+  definition: AssayCaseDefinition,
+  caseStudy: AssayResult['caseStudy'],
+  trace: RunTrace,
+  control: CleanControl | undefined,
+  pepsiReference: PepsiSegmentation | undefined,
+  generatedAt: string,
+): Promise<AssayResult> {
+  const pepsiOutput = await buildPepsiOutput({
+    caseSlug: definition.slug,
+    caseLabel: definition.label,
+    caseStudyPath: definition.caseStudyPath,
+    caseStudy: {
+      title: caseStudy.publicView.title,
+      subtype: caseStudy.publicView.subtype,
+      status: caseStudy.publicView.status,
+      paths: {
+        caseStudy: caseStudy.publicView.paths.caseStudy,
+      },
+    },
+    seedMarkdownBytes: caseStudy.seedMarkdownBytes,
+    trace,
+    generatedAt,
+  });
+  return assayResult(definition, caseStudy, trace, pepsiOutput, control, pepsiReference);
 }
 
 function controlCaseResults(results: AssayResult[]): ControlCaseResult[] {
@@ -536,7 +519,10 @@ function renderConsole(results: AssayResult[], args: Args): string {
     const convergence = result.convergence.length
       ? result.convergence.map((group) => `${group.label} x${group.count}`).join('; ')
       : 'none';
-    const pepsi = result.pepsi ? `${pepsiCountLabel(result.pepsi.expectedCount)}: ${result.pepsi.promotedProblem}` : 'none';
+    const primary = primaryPacket(result.pepsiOutput);
+    const pepsi = primary
+      ? `${packetCountLabel(result.pepsiOutput)}: ${primary.title} (${result.pepsiOutput.status.generator})`
+      : `none (${result.pepsiOutput.status.generator})`;
     lines.push(`| ${tableCell(result.definition.label)} | kernel | ${tableCell(result.bestConclusion?.title || 'none')} | ${tableCell(pepsi)} | ${tableCell(convergence)} | ${tableCell(result.bestOutlier?.title || 'none')} | ${tableCell(result.gen2)} | ${tableCell(result.failedChecks.join(', ') || 'none')} |`);
   }
   return lines.join('\n');
@@ -556,7 +542,12 @@ function feedbackTemplate(results: AssayResult[], args: Args): FeedbackTemplate 
       label: result.definition.label,
       caseVerdict: null,
       controlVerdict: null,
-      pepsiVerdict: null,
+      pepsis: result.pepsiOutput.packets.map((packet) => ({
+        id: packet.id,
+        title: packet.title,
+        verdict: null,
+        notes: '',
+      })),
       notes: '',
       candidates: result.candidates.map((candidate) => ({
         id: candidate.id,
@@ -597,8 +588,8 @@ function statusLabel(candidate: AssayCandidate): string {
 
 function caseVerdictButtons(caseSlug: string, label: string): string {
   return `
-    <div class="verdict-row case-verdict" aria-label="Case verdict for ${escapeHtml(label)}">
-      ${verdictScale.map((verdict) => `<button type="button" title="${escapeHtml(verdictHelp[verdict])}" data-case-verdict="${verdict}" data-case-slug="${escapeHtml(caseSlug)}" data-target-title="${escapeHtml(label)}">${verdict}</button>`).join('')}
+    <div class="verdict-row case-verdict" role="group" aria-label="Case verdict for ${escapeHtml(label)}">
+      ${verdictScale.map((verdict) => `<button type="button" aria-label="${verdict} for ${escapeHtml(label)}" title="${escapeHtml(verdictHelp[verdict])}" data-case-verdict="${verdict}" data-case-slug="${escapeHtml(caseSlug)}" data-target-title="${escapeHtml(label)}">${verdict}</button>`).join('')}
     </div>`;
 }
 
@@ -629,23 +620,23 @@ function candidateCard(result: AssayResult, candidate: AssayCandidate): string {
         <summary>Why it rated this way</summary>
         <p>${escapeHtml(candidate.ratingReason)}</p>
       </details>
-      <div class="verdict-row" aria-label="Human verdict for ${escapeHtml(candidate.title)}">
-        ${verdictScale.map((verdict) => `<button type="button" title="${escapeHtml(verdictHelp[verdict])}" data-case="${escapeHtml(result.definition.slug)}" data-candidate="${escapeHtml(candidate.id)}" data-target-title="${escapeHtml(candidate.title)}" data-verdict="${verdict}">${verdict}</button>`).join('')}
+      <div class="verdict-row" role="group" aria-label="Human verdict for ${escapeHtml(candidate.title)}">
+        ${verdictScale.map((verdict) => `<button type="button" aria-label="${verdict} for ${escapeHtml(candidate.title)}" title="${escapeHtml(verdictHelp[verdict])}" data-case="${escapeHtml(result.definition.slug)}" data-candidate="${escapeHtml(candidate.id)}" data-target-title="${escapeHtml(candidate.title)}" data-verdict="${verdict}">${verdict}</button>`).join('')}
       </div>
     </article>`;
 }
 
 function controlVerdictButtons(caseSlug: string, label: string): string {
   return `
-    <div class="verdict-row control-verdict" aria-label="Control verdict for ${escapeHtml(label)}">
-      ${verdictScale.map((verdict) => `<button type="button" title="${escapeHtml(verdictHelp[verdict])}" data-control-case="${escapeHtml(caseSlug)}" data-control-target="control:${escapeHtml(caseSlug)}" data-target-title="${escapeHtml(label)}" data-control-verdict="${verdict}">${verdict}</button>`).join('')}
+    <div class="verdict-row control-verdict" role="group" aria-label="Control verdict for ${escapeHtml(label)}">
+      ${verdictScale.map((verdict) => `<button type="button" aria-label="${verdict} for ${escapeHtml(label)}" title="${escapeHtml(verdictHelp[verdict])}" data-control-case="${escapeHtml(caseSlug)}" data-control-target="control:${escapeHtml(caseSlug)}" data-target-title="${escapeHtml(label)}" data-control-verdict="${verdict}">${verdict}</button>`).join('')}
     </div>`;
 }
 
-function pepsiVerdictButtons(caseSlug: string, label: string): string {
+function pepsiVerdictButtons(caseSlug: string, targetId: string, label: string): string {
   return `
-    <div class="verdict-row pepsi-verdict" aria-label="Pepsi segmentation verdict for ${escapeHtml(label)}">
-      ${verdictScale.map((verdict) => `<button type="button" title="${escapeHtml(verdictHelp[verdict])}" data-pepsi-case="${escapeHtml(caseSlug)}" data-pepsi-target="pepsi:${escapeHtml(caseSlug)}" data-target-title="${escapeHtml(label)}" data-pepsi-verdict="${verdict}">${verdict}</button>`).join('')}
+    <div class="verdict-row pepsi-verdict" role="group" aria-label="Pepsi verdict for ${escapeHtml(label)}">
+      ${verdictScale.map((verdict) => `<button type="button" aria-label="${verdict} for ${escapeHtml(label)}" title="${escapeHtml(verdictHelp[verdict])}" data-pepsi-case="${escapeHtml(caseSlug)}" data-pepsi-target="${escapeHtml(targetId)}" data-target-title="${escapeHtml(label)}" data-pepsi-verdict="${verdict}">${verdict}</button>`).join('')}
     </div>`;
 }
 
@@ -701,7 +692,7 @@ function controlCaseSection(result: ControlCaseResult): string {
         <div class="headline-grid">
           <div class="has-control"><span>${help('row type', 'This row is not a kernel run. It is a clean-context baseline for comparison.')}</span><strong>clean-context sub-agent</strong><em>baseline</em></div>
           <div><span>${help('actual problem', 'The clean agent’s problem framing before seeing kernel output.')}</span><strong>${escapeHtml(compact(result.control.actualProblem, 82))}</strong></div>
-          <div><span>${help('paired kernel run', 'The kernel case directly below this control row.')}</span><strong>${escapeHtml(result.pairedCaseLabel)}</strong></div>
+          <div><span>${help('paired kernel run', 'The kernel case directly above this control row.')}</span><strong>${escapeHtml(result.pairedCaseLabel)}</strong></div>
           <div><span>${help('why compare', 'Use this to ask whether the kernel created anything better, faster, or easier to judge than a clean sub-agent.')}</span><strong>baseline before machinery</strong></div>
         </div>
       </summary>
@@ -710,12 +701,12 @@ function controlCaseSection(result: ControlCaseResult): string {
           <article>
             <div class="kicker">${help('control case', 'A baseline answer from one sub-agent with no kernel, assay, scoring, recursion, or trace context.')}</div>
             <h3>not a kernel run</h3>
-            <p>Isolated clean-agent answer for the drone paparazzi case. It is shown first so the next row can be judged against it.</p>
+            <p>Isolated clean-agent answer for the drone paparazzi case. It follows the paired Pepsi row so it can be judged as a baseline.</p>
           </article>
           <article>
             <div class="kicker">paired kernel case</div>
             <h3>${escapeHtml(result.pairedCaseLabel)}</h3>
-            <p>Open the next row to compare generation, scoring, convergence, and selected candidates against this baseline.</p>
+            <p>Open the previous row to compare generation, scoring, convergence, and Pepsi packets against this baseline.</p>
           </article>
         </div>
         ${controlBlock(result.control, result.pairedCaseSlug, result.label)}
@@ -742,16 +733,28 @@ function rejectedBlock(trace: RunTrace): string {
     </article>`).join('');
 }
 
-function pepsiStatusLabel(status: PepsiStatus): string {
-  if (status === 'pepsi') return 'Pepsi';
-  if (status === 'tactic-only') return 'tactic only';
-  return status;
+function packetCountLabel(output: PepsiOutput): string {
+  if (output.packets.length === 1) return '1 Pepsi packet';
+  return `${output.packets.length} Pepsi packets`;
 }
 
-function pepsiCountLabel(count: PepsiCount): string {
-  if (count === 'zero') return '0 Pepsis';
-  if (count === 'one') return '1 Pepsi';
-  return 'many Pepsis';
+function primaryPacket(output: PepsiOutput): PepsiPacket | undefined {
+  if (!output.primaryPacketId) return undefined;
+  return output.packets.find((packet) => packet.id === output.primaryPacketId);
+}
+
+function implicationItems(items: string[]): string {
+  return items.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+}
+
+function packetMeta(packet: PepsiPacket): string {
+  return `
+    <div class="packet-meta">
+      <span>subtype <strong>${escapeHtml(packet.subtype)}</strong></span>
+      <span>lineage <strong>${escapeHtml(packet.lineage.candidateIds.join(', ') || packet.lineage.parent)}</strong></span>
+      <span>generation <strong>${packet.lineage.generation}</strong></span>
+      <span>operator <strong>${escapeHtml(packet.lineage.operator)}</strong></span>
+    </div>`;
 }
 
 function linkedCandidateCodes(ids: string[], result: AssayResult): string {
@@ -763,54 +766,105 @@ function linkedCandidateCodes(ids: string[], result: AssayResult): string {
   }).join(' ');
 }
 
-function pepsiBlock(result: AssayResult): string {
-  const packet = result.pepsi;
-  if (!packet) return '';
+function packetCard(result: AssayResult, packet: PepsiPacket, primary = false): string {
   return `
-    <section class="pepsi-panel" data-pepsi-card="${escapeHtml(result.definition.slug)}">
-      <div class="pepsi-head">
+    <article class="packet-card ${primary ? 'primary' : ''}" data-pepsi-card="${escapeHtml(packet.id)}" data-pepsi-card-case="${escapeHtml(result.definition.slug)}">
+      <div class="packet-head">
         <div>
-          <div class="kicker">${help('Pepsi Map', 'Evaluator-side solution segmentation readout. It is loaded after the kernel trace and is not part of the generation prompt.')}</div>
-          <h3>${escapeHtml(pepsiCountLabel(packet.expectedCount))}</h3>
+          <div class="kicker">${primary ? 'primary pepsi packet' : 'alternate pepsi packet'}</div>
+          <h4>${escapeHtml(packet.title)}</h4>
         </div>
-        ${pepsiVerdictButtons(result.definition.slug, `${result.definition.label} Pepsi lane`)}
+        ${pepsiVerdictButtons(result.definition.slug, packet.id, packet.title)}
       </div>
-      <div class="pepsi-chain" aria-label="Pepsi reasoning chain">
+      <p class="packet-claim">${escapeHtml(packet.claim)}</p>
+      ${packetMeta(packet)}
+      <div class="pepsi-chain" aria-label="Problem recovery chain for ${escapeHtml(packet.title)}">
         <article>
           <span>surface complaint</span>
-          <strong>${escapeHtml(packet.surfaceComplaint)}</strong>
+          <strong>${escapeHtml(packet.problemRecovery.surfaceComplaint)}</strong>
         </article>
         <article>
-          <span>promoted problem</span>
-          <strong>${escapeHtml(packet.promotedProblem)}</strong>
+          <span>deleted assumption</span>
+          <strong>${escapeHtml(packet.problemRecovery.deletedAssumption)}</strong>
         </article>
         <article>
-          <span>implications</span>
-          <ul>${packet.implications.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+          <span>actual problem</span>
+          <strong>${escapeHtml(packet.problemRecovery.actualProblem)}</strong>
+        </article>
+        <article>
+          <span>candidate response</span>
+          <strong>${escapeHtml(packet.problemRecovery.candidateResponse)}</strong>
         </article>
       </div>
-      <div class="pepsi-grid">
+      <div class="packet-grid">
+        <article>
+          <span>why it matters</span>
+          <ul>${implicationItems(packet.implicationMap.secondOrderEffects)}</ul>
+        </article>
+        <article>
+          <span>falsifier</span>
+          <p>${escapeHtml(packet.falsifier)}</p>
+        </article>
+        <article>
+          <span>novelty</span>
+          <p>${escapeHtml(packet.noveltyBasis)}</p>
+        </article>
+        <article>
+          <span>grounding</span>
+          <p>${escapeHtml(packet.groundingBasis)}</p>
+        </article>
+      </div>
+      <details>
+        <summary>Implication map and provenance</summary>
+        <div class="implication-map">
+          <div><span>disappears</span><ul>${implicationItems(packet.implicationMap.disappears)}</ul></div>
+          <div><span>gets cheaper</span><ul>${implicationItems(packet.implicationMap.getsCheaper)}</ul></div>
+          <div><span>winners</span><ul>${implicationItems(packet.implicationMap.winners)}</ul></div>
+          <div><span>losers</span><ul>${implicationItems(packet.implicationMap.losers)}</ul></div>
+        </div>
+        <div class="packet-provenance">
+          <p><strong>Mechanism cost:</strong> ${escapeHtml(packet.mechanismCost)}</p>
+          <p><strong>Lens fit:</strong> ${escapeHtml(packet.lensFit)}</p>
+          <p><strong>Lineage:</strong> ${escapeHtml(`${packet.lineage.parent} -> ${packet.lineage.candidateIds.join(', ') || packet.id}`)}</p>
+          <p><strong>Source context:</strong> ${escapeHtml(packet.sourceContext)}</p>
+        </div>
+      </details>
+    </article>`;
+}
+
+function pepsiBlock(result: AssayResult): string {
+  const primary = primaryPacket(result.pepsiOutput);
+  if (!primary) return '';
+  const alternatives = result.pepsiOutput.packets.filter((packet) => packet.id !== primary.id);
+  const tactics = result.pepsiOutput.tactics;
+  return `
+    <section class="pepsi-panel" data-pepsi-output="${escapeHtml(result.definition.slug)}">
+      <div class="pepsi-head">
         <div>
-          <h3>${help('Possible Pepsis', 'Candidate strategy clusters/logics of winning. Status shows whether each survives as a Pepsi, remains a candidate, or collapses.')}</h3>
+          <div class="kicker">${help('Pepsi Output', 'Canonical human-facing projection derived from RunTrace or an optional executable generator.')}</div>
+          <h3>${escapeHtml(primary.title)}</h3>
+          <p>${escapeHtml(primary.claim)}</p>
+        </div>
+        <div class="output-status">
+          <span>${escapeHtml(result.pepsiOutput.schemaVersion)}</span>
+          <span>${escapeHtml(result.pepsiOutput.status.source)}</span>
+          <span>generator ${escapeHtml(result.pepsiOutput.status.generator)}</span>
+        </div>
+      </div>
+      ${packetCard(result, primary, true)}
+      <div class="pepsi-grid packet-secondary">
+        <div>
+          <h3>${help('Other Pepsis', 'Other complete Pepsi packets from the same run. These are separate inspectable claims, not raw candidates.')}</h3>
           <div class="pepsi-list">
-            ${packet.possiblePepsis.map((item) => `
-              <article class="pepsi-item ${escapeHtml(item.status)}">
-                <div class="pepsi-item-head">
-                  <h4>${escapeHtml(item.name)}</h4>
-                  <span>${escapeHtml(pepsiStatusLabel(item.status))}</span>
-                </div>
-                <p><strong>Logic:</strong> ${escapeHtml(item.logic)}</p>
-                <p>${escapeHtml(item.rationale)}</p>
-                <div class="linked-candidates">${linkedCandidateCodes(item.linkedCandidateIds, result)}</div>
-              </article>`).join('')}
+            ${alternatives.map((packet) => packetCard(result, packet)).join('') || '<p class="empty">No alternate Pepsi packets.</p>'}
           </div>
         </div>
         <div>
-          <h3>${help('Tactics', 'Concrete ways to pursue a Pepsi. Evaluate hard constraints and soft efficiency axes here, not at the Pepsi level.')}</h3>
+          <h3>${help('Tactics', 'Concrete pressure tests or pursuit moves tied to exact Pepsi packet IDs.')}</h3>
           <div class="tactic-list">
-            ${packet.tactics.map((item) => `
+            ${tactics.map((item) => `
               <article class="tactic-item">
-                <div class="kicker">${escapeHtml(item.pepsi)}</div>
+                <div class="kicker">${escapeHtml(item.pepsiId)}</div>
                 <h4>${escapeHtml(item.name)}</h4>
                 <p>${escapeHtml(item.howItPursues)}</p>
                 <div class="constraint-grid">
@@ -838,8 +892,9 @@ function caseSection(result: AssayResult): string {
     ? result.convergence.map((group) => `${group.label} x${group.count}`).join('; ')
     : 'none';
   const hasControl = Boolean(result.control);
-  const controlProblem = result.control ? 'control case shown above' : 'no clean-agent control yet';
-  const pepsiHeadline = result.pepsi ? `${pepsiCountLabel(result.pepsi.expectedCount)}: ${result.pepsi.promotedProblem}` : 'none';
+  const controlProblem = result.control ? 'control case follows this row' : 'no clean-agent control yet';
+  const primary = primaryPacket(result.pepsiOutput);
+  const pepsiHeadline = primary ? `${packetCountLabel(result.pepsiOutput)}: ${primary.title}` : 'none';
   return `
     <details class="case-section" id="${escapeHtml(result.definition.slug)}">
       <summary class="case-head">
@@ -848,23 +903,23 @@ function caseSection(result: AssayResult): string {
           <h2>${escapeHtml(result.definition.label)}</h2>
         </div>
         <div class="headline-grid">
-          <div><span>${help('kernel', 'The kernel result from this assay run.')}</span><strong>${escapeHtml(result.bestConclusion?.title || 'none')}</strong></div>
+          <div class="${primary ? 'has-pepsi' : ''}"><span>${help('primary pepsi', 'The first complete Pepsi packet from the canonical output projection.')}</span><strong>${escapeHtml(compact(pepsiHeadline, 82))}</strong></div>
           <div class="${hasControl ? 'has-control' : ''}"><span>${help('control', 'A clean-context agent answer for comparison, when available.')}</span><strong>${escapeHtml(compact(controlProblem, 82))}</strong>${hasControl ? '<em>clean-agent attached</em>' : ''}</div>
-          <div class="${result.pepsi ? 'has-pepsi' : ''}"><span>${help('Pepsi lane', 'Optional segmentation board: promoted problem, implications, Pepsis, and tactics.')}</span><strong>${escapeHtml(compact(pepsiHeadline, 82))}</strong></div>
+          <div><span>${help('output status', 'Generator status for this Pepsi output. If no generator is configured, deterministic fallback uses selected candidates.')}</span><strong>${escapeHtml(`${result.pepsiOutput.status.source}; ${result.pepsiOutput.status.generator}`)}</strong></div>
           <div><span>${help('gen2', 'Whether generation-2 children improved, drifted, duplicated, or did not run.')}</span><strong>${escapeHtml(compact(result.gen2, 82))}</strong></div>
         </div>
       </summary>
       <div class="case-body">
       <div class="case-summary">
         <article>
-          <div class="kicker">${help('strongest conclusion', 'The current best kernel-nominated discovery for this case. Human verdict can override it.')}</div>
-          <h3>${escapeHtml(result.bestConclusion?.title || 'none')}</h3>
-          <p>${escapeHtml(result.bestConclusion?.thesis || 'No candidates generated.')}</p>
+          <div class="kicker">${help('primary pepsi', 'The current best human-facing output packet for this case.')}</div>
+          <h3>${escapeHtml(primary?.title || 'none')}</h3>
+          <p>${escapeHtml(primary?.claim || 'No Pepsi packets generated.')}</p>
           ${caseVerdictButtons(result.definition.slug, result.definition.label)}
         </article>
         <article>
           <div class="kicker">${help('clean-agent control', 'A single clean-context answer produced without kernel machinery. It is a baseline, not a judge.')}</div>
-          <h3>${hasControl ? 'shown above' : 'none attached'}</h3>
+          <h3>${hasControl ? 'shown below' : 'none attached'}</h3>
           <p>${escapeHtml(controlProblem)}</p>
         </article>
         <article>
@@ -899,6 +954,110 @@ function caseSection(result: AssayResult): string {
     </details>`;
 }
 
+function firstPagePepsi(results: AssayResult[]): { result: AssayResult; packet: PepsiPacket } | undefined {
+  for (const result of results) {
+    const packet = primaryPacket(result.pepsiOutput);
+    if (packet) return { result, packet };
+  }
+  return undefined;
+}
+
+function heroBlock(results: AssayResult[], args: Args, rowCount: number, controlCaseCount: number, failed: number): string {
+  const match = firstPagePepsi(results);
+  if (!match) {
+    return `
+    <section class="hero">
+      <h1>Pepsi Output</h1>
+      <p>No complete Pepsi packets were produced for this assay run.</p>
+      <div class="facts">
+        <span>schema ${escapeHtml(PEPSI_OUTPUT_SCHEMA_VERSION)}</span>
+        <span>rows ${rowCount}</span>
+        <span>kernel cases ${results.length}</span>
+        <span>control cases ${controlCaseCount}</span>
+        <span>seed ${escapeHtml(args.seed)}</span>
+        <span>failed checks ${failed}</span>
+      </div>
+      ${saveStrip()}
+    </section>`;
+  }
+
+  const { result, packet } = match;
+  return `
+    <section class="hero pepsi-hero" data-pepsi-card="${escapeHtml(packet.id)}" data-pepsi-card-case="${escapeHtml(result.definition.slug)}">
+      <div class="hero-top">
+        <div>
+          <div class="kicker">Pepsi Packet / ${escapeHtml(result.definition.label)}</div>
+          <h1>${escapeHtml(packet.title)}</h1>
+          <p class="hero-claim">${escapeHtml(packet.claim)}</p>
+        </div>
+        ${pepsiVerdictButtons(result.definition.slug, packet.id, packet.title)}
+      </div>
+      <div class="pepsi-chain hero-chain" aria-label="Primary Pepsi recovery chain">
+        <article>
+          <span>surface complaint</span>
+          <strong>${escapeHtml(packet.problemRecovery.surfaceComplaint)}</strong>
+        </article>
+        <article>
+          <span>deleted assumption</span>
+          <strong>${escapeHtml(packet.problemRecovery.deletedAssumption)}</strong>
+        </article>
+        <article>
+          <span>actual problem</span>
+          <strong>${escapeHtml(packet.problemRecovery.actualProblem)}</strong>
+        </article>
+        <article>
+          <span>candidate response</span>
+          <strong>${escapeHtml(packet.problemRecovery.candidateResponse)}</strong>
+        </article>
+      </div>
+      <div class="hero-grid">
+        <article class="hero-card">
+          <h3>Why It Matters</h3>
+          <ul>${implicationItems(packet.implicationMap.secondOrderEffects)}</ul>
+        </article>
+        <article class="hero-card">
+          <h3>Falsifier</h3>
+          <p>${escapeHtml(packet.falsifier)}</p>
+        </article>
+        <article class="hero-card">
+          <h3>Provenance</h3>
+          <p>${escapeHtml(`${packet.lineage.parent} -> ${packet.lineage.candidateIds.join(', ') || packet.id}`)}</p>
+        </article>
+        <article class="hero-card">
+          <h3>Output Status</h3>
+          <p>${escapeHtml(`${result.pepsiOutput.status.source}; generator ${result.pepsiOutput.status.generator}`)}</p>
+        </article>
+      </div>
+      <div class="facts">
+        <span>schema ${escapeHtml(result.pepsiOutput.schemaVersion)}</span>
+        <span>${escapeHtml(packetCountLabel(result.pepsiOutput))}</span>
+        <span>rows ${rowCount}</span>
+        <span>kernel cases ${results.length}</span>
+        <span>control cases ${controlCaseCount}</span>
+        <span>seed ${escapeHtml(args.seed)}</span>
+        <span>failed checks ${failed}</span>
+      </div>
+      ${saveStrip()}
+    </section>`;
+}
+
+function saveStrip(): string {
+  return `
+      <div class="save-strip" aria-label="local review status">
+        <span id="save-mode" class="offline">checking save path</span>
+        <span id="save-reviewer">reviewer local</span>
+        <span id="save-ledger">ledger unavailable</span>
+        <a id="review-link" class="action-link is-disabled" href="#feedback" aria-disabled="true">Review Digest unavailable</a>
+      </div>
+      <div class="review-snapshot" id="review-snapshot">
+        <span><strong>0</strong> latest</span>
+        <span><strong>0</strong> useful</span>
+        <span><strong>0</strong> strong</span>
+        <span><strong>0</strong> reviewers</span>
+      </div>
+      <p id="review-copy" class="review-copy">Run <code>pnpm serve</code>, then open <code>http://127.0.0.1:4317/assay</code>.</p>`;
+}
+
 function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Args): string {
   const failed = results.reduce((sum, result) => sum + result.failedChecks.length, 0);
   const controlCases = controlCaseResults(results);
@@ -908,7 +1067,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Discovery Assay</title>
+  <title>Pepsi Output</title>
   <style>
     :root {
       color-scheme: light;
@@ -1114,12 +1273,6 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       margin: 0 0 16px;
       background: #fbfdf9;
     }
-    .pepsi-panel[data-marked="keeper"], .pepsi-panel[data-marked="investigate"] {
-      outline: 3px solid rgba(70,148,92,.35);
-    }
-    .pepsi-panel[data-marked="dead"], .pepsi-panel[data-marked="obvious"] {
-      opacity: .84;
-    }
     .pepsi-head {
       display: flex;
       justify-content: space-between;
@@ -1140,7 +1293,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       gap: 8px;
       margin-bottom: 10px;
     }
-    .pepsi-chain article, .pepsi-item, .tactic-item {
+    .pepsi-chain article, .tactic-item {
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 10px;
@@ -1172,28 +1325,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       display: grid;
       gap: 8px;
     }
-    .pepsi-item { border-left-width: 5px; }
-    .pepsi-item.pepsi { border-color: var(--good-line); background: var(--good); }
-    .pepsi-item.candidate, .pepsi-item.lens { border-color: var(--odd-line); background: var(--odd); }
-    .pepsi-item.rejected, .pepsi-item.alias, .pepsi-item.tactic-only { border-color: var(--warn-line); background: var(--warn); }
-    .pepsi-item-head {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .pepsi-item-head h4 { margin-bottom: 6px; }
-    .pepsi-item-head span {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 3px 7px;
-      background: #fff;
-      color: #34443b;
-      white-space: nowrap;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .pepsi-item p, .tactic-item p {
+    .tactic-item p {
       margin-bottom: 7px;
     }
     .constraint-grid {
@@ -1328,10 +1460,11 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       border-radius: 999px;
       background: #fff;
       color: #26362d;
-      padding: 5px 8px;
+      min-height: 44px;
+      padding: 7px 11px;
       cursor: pointer;
       font: inherit;
-      font-size: 12px;
+      font-size: 13px;
     }
     button.active {
       border-color: #26362d;
@@ -1467,8 +1600,97 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       color: var(--muted);
       background: #fbfcfa;
     }
+    .hero-top, .packet-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      flex-wrap: wrap;
+    }
+    .hero-claim, .packet-claim {
+      color: #26362d;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+    .hero-chain {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+    .packet-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+    .packet-card.primary {
+      border: 2px solid #25362c;
+      background: #fbfdf9;
+    }
+    .packet-card[data-marked="keeper"], .packet-card[data-marked="investigate"] {
+      outline: 3px solid rgba(70,148,92,.35);
+    }
+    .packet-card[data-marked="dead"], .packet-card[data-marked="obvious"] {
+      opacity: .82;
+    }
+    .packet-head h4 {
+      margin-bottom: 4px;
+      font-size: 20px;
+    }
+    .packet-meta, .output-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .packet-meta span, .output-status span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 7px;
+      background: #f8faf6;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .packet-meta strong {
+      color: #26362d;
+      font-weight: 700;
+    }
+    .packet-grid, .implication-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .packet-grid article, .implication-map div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf6;
+      padding: 9px;
+    }
+    .packet-grid span, .implication-map span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .packet-grid ul, .implication-map ul {
+      margin: 5px 0 0;
+      padding-left: 18px;
+      color: #34443b;
+    }
+    .packet-grid p, .packet-provenance p {
+      margin-bottom: 0;
+    }
+    .packet-secondary {
+      margin-top: 12px;
+    }
+    .review-copy {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
     @media (max-width: 900px) {
-      .hero-grid, .case-head, .headline-grid, .case-summary, .scan-grid, .mini-grid, .idea-list, dl, .control-grid, .pepsi-chain, .pepsi-grid, .constraint-grid {
+      .hero-grid, .hero-chain, .case-head, .headline-grid, .case-summary, .scan-grid, .mini-grid, .idea-list, dl, .control-grid, .pepsi-chain, .pepsi-grid, .constraint-grid, .packet-grid, .implication-map {
         grid-template-columns: 1fr;
       }
       .review-snapshot {
@@ -1479,52 +1701,12 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
 </head>
 <body>
   <main>
-    <section class="hero">
-      <h1>Discovery Assay</h1>
-      <p>This view shows isolated controls, kernel case runs, and Pepsi Segmentation lanes where available. It asks whether the machinery makes the cases more fertile and easier to judge.</p>
-      <div class="facts">
-        <span>schema ${escapeHtml(ASSAY_SCHEMA_VERSION)}</span>
-        <span>rows ${rowCount}</span>
-        <span>kernel cases ${results.length}</span>
-        <span>control cases ${controlCases.length}</span>
-        <span>mode ${escapeHtml(args.random ? 'random fill' : 'deterministic fill')}</span>
-        <span>seed ${escapeHtml(args.seed)}</span>
-        <span>failed checks ${failed}</span>
-      </div>
-      <div class="save-strip" aria-label="local review status">
-        <span id="save-mode" class="offline">checking save path</span>
-        <span id="save-reviewer">reviewer local</span>
-        <span id="save-ledger">ledger unavailable</span>
-        <a id="review-link" class="action-link is-disabled" href="#feedback" aria-disabled="true">Review Digest unavailable</a>
-      </div>
-      <div class="hero-grid">
-        <article class="hero-card">
-          <h3>Outcome Gate</h3>
-          <p>After these cases, did the run surface at least 3-5 entries you would mark ${help('interesting', verdictHelp.interesting)}, ${help('investigate', verdictHelp.investigate)}, or ${help('keeper', verdictHelp.keeper)}?</p>
-        </article>
-        <article class="hero-card">
-          <h3>Read Order</h3>
-          <p>Open a row. Scan the promoted problem first, then the Pepsi lane, then tactics. Mark the surface that changed your judgment.</p>
-        </article>
-        <article class="hero-card">
-          <h3>Controls</h3>
-          <p>The first row is the control case: one clean-context sub-agent answer for the drone paparazzi scenario. It is a baseline, not a judge. The next row is the paired kernel run.</p>
-        </article>
-        <article class="hero-card">
-          <h3>Review Digest</h3>
-          <div class="review-snapshot" id="review-snapshot">
-            <span><strong>0</strong> latest</span>
-            <span><strong>0</strong> useful</span>
-            <span><strong>0</strong> strong</span>
-            <span><strong>0</strong> reviewers</span>
-          </div>
-        <p id="review-copy">Run <code>pnpm serve</code>, then open <code>http://127.0.0.1:4317/assay</code>.</p>
-        </article>
-      </div>
-    </section>
+    ${heroBlock(results, args, rowCount, controlCases.length, failed)}
 
-    ${controlCases.map(controlCaseSection).join('')}
-    ${results.map(caseSection).join('')}
+    ${results.map((result) => {
+      const control = controlCases.find((item) => item.pairedCaseSlug === result.definition.slug);
+      return caseSection(result) + (control ? controlCaseSection(control) : '');
+    }).join('')}
 
     <section class="feedback-panel" id="feedback">
       <h2>Feedback</h2>
@@ -1558,6 +1740,12 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
 
     function findCase(caseSlug) {
       return feedback.cases.find((item) => item.slug === caseSlug);
+    }
+
+    function findPepsi(caseSlug, pepsiId) {
+      const foundCase = findCase(caseSlug);
+      if (!foundCase) return undefined;
+      return foundCase.pepsis.find((packet) => packet.id === pepsiId);
     }
 
     function setSaveMode(kind, text) {
@@ -1617,7 +1805,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       return feedback.cases.reduce((sum, item) => {
         const caseCount = item.caseVerdict ? 1 : 0;
         const controlCount = item.controlVerdict ? 1 : 0;
-        const pepsiCount = item.pepsiVerdict ? 1 : 0;
+        const pepsiCount = item.pepsis.filter((packet) => packet.verdict).length;
         const candidateCount = item.candidates.filter((candidate) => candidate.verdict).length;
         return sum + caseCount + controlCount + pepsiCount + candidateCount;
       }, 0);
@@ -1657,15 +1845,19 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       });
     }
 
-    function markPepsi(caseSlug, verdict) {
-      const foundCase = findCase(caseSlug);
-      if (!foundCase) return;
-      foundCase.pepsiVerdict = verdict;
-      document.querySelectorAll('[data-pepsi-card="' + caseSlug + '"]').forEach((card) => {
-        card.dataset.marked = verdict;
+    function markPepsi(caseSlug, pepsiId, verdict) {
+      const packet = findPepsi(caseSlug, pepsiId);
+      if (!packet) return;
+      packet.verdict = verdict;
+      document.querySelectorAll('[data-pepsi-card]').forEach((card) => {
+        if (card.dataset.pepsiCard === pepsiId && card.dataset.pepsiCardCase === caseSlug) {
+          card.dataset.marked = verdict;
+        }
       });
-      document.querySelectorAll('[data-pepsi-case="' + caseSlug + '"]').forEach((button) => {
-        button.classList.toggle('active', button.dataset.pepsiVerdict === verdict);
+      document.querySelectorAll('[data-pepsi-target]').forEach((button) => {
+        if (button.dataset.pepsiTarget === pepsiId && button.dataset.pepsiCase === caseSlug) {
+          button.classList.toggle('active', button.dataset.pepsiVerdict === verdict);
+        }
       });
     }
 
@@ -1678,7 +1870,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
       } else if (event.targetKind === 'control') {
         markControl(event.caseSlug, event.verdict);
       } else if (event.targetKind === 'pepsi') {
-        markPepsi(event.caseSlug, event.verdict);
+        markPepsi(event.caseSlug, event.targetId, event.verdict);
       } else if (event.targetKind === 'case') {
         markCase(event.caseSlug, event.verdict);
       }
@@ -1801,7 +1993,7 @@ function renderHtml(results: AssayResult[], template: FeedbackTemplate, args: Ar
 
     document.querySelectorAll('[data-pepsi-verdict]').forEach((button) => {
       button.addEventListener('click', () => {
-        markPepsi(button.dataset.pepsiCase, button.dataset.pepsiVerdict);
+        markPepsi(button.dataset.pepsiCase, button.dataset.pepsiTarget, button.dataset.pepsiVerdict);
         renderFeedback();
         void saveJudgment({
           caseSlug: button.dataset.pepsiCase,
@@ -1845,7 +2037,7 @@ async function writeOutputs(args: Args, results: AssayResult[]): Promise<void> {
   await writeFile(path.join(args.outDir, 'feedback-template.json'), JSON.stringify(template, null, 2), 'utf8');
   await writeFile(path.join(args.outDir, 'assay-summary.json'), JSON.stringify({
     schemaVersion: ASSAY_SCHEMA_VERSION,
-    generatedAt: new Date().toISOString(),
+    generatedAt: args.generatedAt || new Date().toISOString(),
     rowCount: results.length + controlCases.length,
     controlCases: controlCases.map((result) => ({
       slug: result.slug,
@@ -1875,16 +2067,31 @@ async function writeOutputs(args: Args, results: AssayResult[]): Promise<void> {
       },
       controlPath: result.definition.controlPath || null,
       controlActualProblem: result.control?.actualProblem || null,
-      pepsiPath: result.definition.pepsiPath || null,
-      pepsiSegmentation: result.pepsi ? {
-        expectedCount: result.pepsi.expectedCount,
-        promotedProblem: result.pepsi.promotedProblem,
-        possiblePepsis: result.pepsi.possiblePepsis.map((item) => ({
-          name: item.name,
-          status: item.status,
-          linkedCandidateIds: item.linkedCandidateIds,
+      pepsiReferencePath: result.definition.pepsiPath || null,
+      pepsiReference: result.pepsiReference ? {
+        expectedCount: result.pepsiReference.expectedCount,
+        checkStatuses: result.pepsiReference.checks.map((check) => ({
+          id: check.id,
+          status: check.status,
         })),
       } : null,
+      pepsiOutput: {
+        schemaVersion: result.pepsiOutput.schemaVersion,
+        source: result.pepsiOutput.status.source,
+        generator: result.pepsiOutput.status.generator,
+        primaryPacketId: result.pepsiOutput.primaryPacketId,
+        packets: result.pepsiOutput.packets.map((packet) => ({
+          id: packet.id,
+          title: packet.title,
+          subtype: packet.subtype,
+          candidateIds: packet.lineage.candidateIds,
+        })),
+        tactics: result.pepsiOutput.tactics.map((tactic) => ({
+          id: tactic.id,
+          pepsiId: tactic.pepsiId,
+          linkedCandidateIds: tactic.linkedCandidateIds,
+        })),
+      },
       bestConclusion: result.bestConclusion?.title || null,
       bestOutlier: result.bestOutlier?.title || null,
       convergence: result.convergence,
@@ -1904,7 +2111,9 @@ export async function renderAssayPage(): Promise<string> {
     Promise.all(definitions.map(loadControl)),
     Promise.all(definitions.map(loadPepsi)),
   ]);
-  const results = definitions.map((definition, index) => assayResult(definition, caseStudies[index], traces[index], controls[index], pepsis[index]));
+  const results = await Promise.all(definitions.map((definition, index) => (
+    buildAssayResult(definition, caseStudies[index], traces[index], controls[index], pepsis[index], args.generatedAt || STATIC_RENDER_GENERATED_AT)
+  )));
   const template = feedbackTemplate(results, args);
   return renderHtml(results, template, args);
 }
@@ -1921,13 +2130,16 @@ async function main(): Promise<void> {
   }
 
   const definitions = selectCases(args);
+  args.generatedAt = args.generatedAt || new Date().toISOString();
   const [caseStudies, traces, controls, pepsis] = await Promise.all([
     Promise.all(definitions.map(loadCaseStudy)),
     Promise.all(definitions.map(loadTrace)),
     Promise.all(definitions.map(loadControl)),
     Promise.all(definitions.map(loadPepsi)),
   ]);
-  const results = definitions.map((definition, index) => assayResult(definition, caseStudies[index], traces[index], controls[index], pepsis[index]));
+  const results = await Promise.all(definitions.map((definition, index) => (
+    buildAssayResult(definition, caseStudies[index], traces[index], controls[index], pepsis[index], args.generatedAt || new Date().toISOString())
+  )));
   await writeOutputs(args, results);
   console.log(renderConsole(results, args));
   console.log(`html: ${path.relative(root, path.join(args.outDir, 'index.html'))}`);

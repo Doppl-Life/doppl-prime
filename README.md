@@ -5,7 +5,8 @@ diverge, converge, or oscillate; fitness is novelty x grounding; decay lives in
 the engine; lenses apply after selection.
 
 The current artifact is a runnable proof board, trace contract, fixture corpus,
-and local/deploy views that make selection behavior visible against real ideas.
+Pepsi output projection, and local/deploy views that make selection behavior
+visible against real ideas.
 
 ## Read order
 
@@ -56,22 +57,38 @@ Runnable TypeScript prototype started. Current slice proves:
 - bounded generation 2 expands fixture-authored child packets from selected candidates under caps
 - decay is an engine time factor; feasibility is a post-selection lens
 - the same generated pool supports diverge vs. converge selection
+- `kernel.pepsi-output.v1` projects selected trace candidates into human-facing
+  Pepsi packets without changing `RunTrace` semantics
 
 ## What To Do
 
-Run `pnpm build` when you want the default proof. It typechecks and prints the compact
+Run `pnpm build` when you want the default proof. It typechecks, checks repo
+contracts, exercises the Pepsi generator boundary, and prints the compact
 multi-seed board:
 `seed -> generated -> rejected -> Explore keeps -> Proof keeps -> swap -> failed checks`.
 
 Run `pnpm proof:export` only when you need replay artifacts under `out/proof-board/**`.
 
 Run `pnpm serve` when you want the local front door. It builds the trace once
-per fixture, renders Assay, Microscope, Architecture, and the static
-Architecture v2 artifact from one localhost surface, and saves verdict clicks
-automatically to `records/assay-judgments/judgments.jsonl`.
+per fixture, renders Pepsi-first Assay, Microscope, Architecture, Review, and
+the static Architecture v2 artifact from one localhost surface, and saves verdict
+clicks automatically to `records/assay-judgments/judgments.jsonl`.
+
+Set `DOPPL_PEPSI_GENERATOR` only when you want an optional local executable to
+generate `kernel.pepsi-output.v1` from stdin JSON. If it is absent, slow, or
+invalid, Assay falls back to deterministic Pepsi packets from selected
+`RunTrace` candidates.
+
+Run `pnpm pepsi:generator-check` when changing the Pepsi output boundary. It
+checks absent, failed, malformed, timed-out, valid, and contaminated generator
+paths, including the rule that known-solution markers never reach the generator.
 
 Run `pnpm case-study:lint` after editing case packets. It verifies seed-visible
 case material does not leak evaluator-only solution language.
+
+Run `pnpm clear:run-data` when you want a clean local slate. It removes
+`out/**` and local Assay judgment records, but leaves committed
+`published/**`, fixtures, and specs alone.
 
 `pnpm serve` is the only local UI entry point. Assay, Microscope, Architecture,
 Architecture v2, and Review are renderers behind that server, not separate
@@ -81,9 +98,9 @@ package scripts.
 
 `out/**` is ephemeral and gitignored, so those pages never reach the deploy. To
 surface the HTML views on the live site, run `pnpm publish:html`: it renders the
-same Assay, Microscope, Architecture, and static Architecture v2 surfaces used by
-`pnpm serve` directly into committed `published/*.html`, and writes an ignored
-`published/index.html` deploy hub.
+same Pepsi-first Assay, Microscope, Architecture, and static Architecture v2
+surfaces used by `pnpm serve` directly into committed `published/*.html`, and
+writes an ignored `published/index.html` deploy hub.
 
 Deployment config should run `pnpm publish:html` and serve only `published/**`
 through `pnpm serve:static`. Local judgment consensus is intentionally

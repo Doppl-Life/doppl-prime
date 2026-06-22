@@ -1,3 +1,4 @@
+// Publishes static HTML snapshots for the committed kernel viewer surfaces.
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,11 +61,21 @@ function assertNav(html: string, dest: string): void {
   }
 }
 
+function assertPublicOutputClean(html: string, dest: string): void {
+  const forbidden = [
+    /known[- ]solution/i,
+    /evaluator[- ]only/i,
+    /solution\.md/i,
+  ];
+  const hit = forbidden.find((pattern) => pattern.test(html));
+  if (hit) throw new Error(`Published page contains evaluator-only marker ${hit}: ${dest}`);
+}
+
 async function pages(): Promise<Page[]> {
   const trace = await defaultTrace();
   const fixtureCount = await countFixtures();
   return [
-    { to: 'assay.html', view: 'assay', title: 'Assay', blurb: 'cases, controls, feedback, and local judgment capture', render: renderAssayPage },
+    { to: 'assay.html', view: 'assay', title: 'Pepsi Output', blurb: 'Pepsi-first output packets, controls, and feedback JSON export', render: renderAssayPage },
     { to: 'microscope.html', view: 'microscope', title: 'Trace microscope', blurb: 'single RunTrace projection with generation and selection lanes', render: async () => renderMicroscope(trace) },
     { to: 'architecture.html', view: 'architecture', title: 'Architecture', blurb: 'trace-derived system map and contract view', render: async () => renderArchitecture(trace, fixtureCount) },
     { to: 'architecture-v2.html', view: 'architecture-v2', title: 'Architecture v2', blurb: 'static design artifact; /api/trace remains live truth', render: async () => readFile(architectureV2Path, 'utf8') },
@@ -116,6 +127,7 @@ async function main(): Promise<void> {
     const dest = path.join(publishedDir, page.to);
     const output = injectNav(await page.render(), page.view);
     assertNav(output, path.relative(root, dest));
+    assertPublicOutputClean(output, path.relative(root, dest));
     await writeFile(dest, output, 'utf8');
     published.push(page.to);
   }

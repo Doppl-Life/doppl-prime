@@ -3,14 +3,16 @@
 ## Contract
 
 The kernel has one local viewer, one deploy publisher, one static deploy server,
-one nav source, and one trace source.
+one nav source, and one trace source. Disposable run data has one cleanup command.
 
 Canonical commands:
 
 ```bash
+pnpm build
 pnpm serve
 pnpm publish:html
 pnpm serve:static
+pnpm clear:run-data
 ```
 
 ## Local Viewer
@@ -20,7 +22,7 @@ pnpm serve:static
 It:
 
 - builds each trace once through `buildRunTrace()`.
-- renders Assay, Microscope, Architecture, Review, and API routes from one
+- renders Pepsi-first Assay, Microscope, Architecture, Review, and API routes from one
   server.
 - injects the canonical nav from `tools/view-nav.ts`.
 - saves local verdict clicks to `records/assay-judgments/judgments.jsonl`.
@@ -46,12 +48,22 @@ It:
 
 - renders Assay, Microscope, and Architecture through the same exported render
   functions used by `pnpm serve`.
+- snapshots `kernel.pepsi-output.v1` into `published/assay.html`; no public page
+  makes runtime provider calls.
 - reads the static Architecture v2 artifact.
 - injects the canonical nav once.
 - writes committed `published/*.html` pages.
 - writes ignored `published/index.html` as the deploy hub.
 
 It must not depend on `out/**`.
+
+If `DOPPL_PEPSI_GENERATOR` is configured during publish, its validated output is
+snapshotted. If it is absent or invalid, publish uses deterministic Pepsi output
+from selected `RunTrace` candidates.
+
+`pnpm pepsi:generator-check` is the generator-boundary harness used by
+`pnpm build`. It does not publish HTML; it proves that clean generator output is
+accepted and contaminated requests are rejected before a command is spawned.
 
 ## Static Deploy Server
 
@@ -78,6 +90,9 @@ Required static routes:
 | `tools/publish.ts` | deploy publisher | yes |
 | `tools/static-server.ts` | deploy static server | yes |
 | `tools/view-nav.ts` | nav source of truth | yes |
+| `tools/pepsi-output.ts` | public Pepsi output contract and generator adapter | yes |
+| `tools/pepsi-generator-check.ts` | generator-boundary harness | yes |
+| `tools/clear-run-data.ts` | disposable run-data cleanup | yes |
 | `published/*.html` | committed deploy pages | yes |
 | `published/index.html` | generated deploy hub | no, ignored |
 | `out/**` | generated inspection output | no |
@@ -109,11 +124,16 @@ Cut or ignore:
 - `.DS_Store`.
 - ad hoc HTML reports not reached from `pnpm serve` or `pnpm publish:html`.
 
+Use `pnpm clear:run-data` to remove local `out/**` and
+`records/assay-judgments/**` before a fresh run inspection.
+
 ## Tripwires
 
 - `publish:html` copies from `out/**`.
 - a second server appears.
 - a view ships its own nav.
 - a route assembles a second trace.
+- a public page renders `kernel.pepsi-segmentation.v1` as canonical output.
+- generator input accepts known-solution markers.
 - deploy needs a second hub script.
 - a generated artifact becomes required but is not named in this spec.
