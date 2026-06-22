@@ -30,3 +30,20 @@ export {
   CANDIDATE_TRANSITIONS,
   CANDIDATE_TERMINALS,
 } from './state/candidateStateMachine';
+
+// Seeded RNG + outcome-persistence bridge (P3.6 — KEY SAFETY RULE #7 determinism substrate). One
+// deterministic mulberry32 PRNG derived from RunConfig.rngSeed + the LIVE/REPLAY outcome sources (LIVE
+// records each draw to a JSON-safe ordered log for the open-JSONB mutation/fusion/cull payloads; REPLAY
+// reconstructs from that log and is PRNG-free by construction — replay never re-samples). First consumers
+// P3.9/P3.10/reproduction-dispatch construct LIVE from createSeededRng(readRngSeed(config)); emission
+// wiring lands in P3.10/P3.12.
+export { createSeededRng, readRngSeed, type SeededRng } from './rng/seededRng';
+export {
+  createLiveOutcomeSource,
+  createReplayOutcomeSource,
+  ReplayOutcomeError,
+  type OutcomeSource,
+  type OutcomeEntry,
+  type OutcomeValue,
+  type RngDraws,
+} from './rng/persistOutcomes';
