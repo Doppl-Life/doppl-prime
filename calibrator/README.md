@@ -29,6 +29,8 @@ npm --prefix calibrator run export:static
 
 Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, problem recoveries, solutions, and score history; saving ratings requires the local dev API or a future hosted backend.
 
+The future hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps markdown as the durable source of truth while allowing a signed-in server deployment to validate, write, and index rating submissions.
+
 ## Calibration History
 
 The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching problem recovery or solution in the generated index. Review panels show the current human average, rating count, judge-score delta when applicable, and recent notes so reviewers can see calibration evidence without leaving the workbench.
@@ -104,6 +106,8 @@ The importer writes `calibration-vault/cases/<case_id>/runs/<run_artifact_id>.md
 Apples-to-apples comparison is represented explicitly in markdown. Comparison sets live under `calibration-vault/comparison-sets/` and solution frontmatter records the shared input hash, input paths, source status, source branch, source commit, and source mapping version.
 
 The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, Melissa-, and Michael-labeled artifacts are useful for testing the calibration workflow, but they are not presented as live kernel outputs. Future importers should promote a solution to `imported` or `live_run` only when they can record the branch, commit, source artifact or run id, and the exact shared comparison input hash.
+
+The review queue defaults to primary artifacts only: `source_status: imported` or `source_status: live_run`. Fixture, pending, unavailable, and unknown-status artifacts are audit-only by default. Reviewers can include them with the audit toggle for provenance inspection, but they are not valid rating targets.
 
 ## Review Controls
 

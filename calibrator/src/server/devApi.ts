@@ -3,6 +3,7 @@ import { readVaultIndex } from "./vaultReader";
 import { defaultVaultRoot } from "./vaultPaths";
 import { writeRatingMarkdown } from "./ratingWriter";
 import { RatingSubmission } from "./vaultSchemas";
+import { canSubmitRating } from "../reviewability";
 
 async function readJsonBody(req: import("node:http").IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
@@ -16,6 +17,24 @@ function sendJson(res: import("node:http").ServerResponse, status: number, body:
   res.statusCode = status;
   res.setHeader("content-type", "application/json");
   res.end(JSON.stringify(body));
+}
+
+async function assertRateableTarget(submission: RatingSubmission): Promise<void> {
+  const index = await readVaultIndex(defaultVaultRoot);
+  const caseItem = index.cases.find((item) => item.case_id === submission.case_id);
+  if (!caseItem) throw new Error(`Unknown case_id "${submission.case_id}"`);
+
+  const artifact =
+    submission.rating_target === "problem_recovery"
+      ? caseItem.problem_recoveries.find((item) => item.problem_recovery_id === submission.problem_recovery_id)
+      : caseItem.solutions.find((item) => item.solution_id === submission.solution_id);
+
+  if (!artifact) {
+    throw new Error(`Unknown ${submission.rating_target} target for case "${submission.case_id}"`);
+  }
+  if (!canSubmitRating(artifact)) {
+    throw new Error("Audit-only artifacts cannot be rated");
+  }
 }
 
 export function createCalibratorDevApi(): Plugin {
@@ -32,6 +51,7 @@ export function createCalibratorDevApi(): Plugin {
           if (req.method === "POST" && req.url === "/api/ratings") {
             const body = await readJsonBody(req);
             const submission = RatingSubmission.parse(body);
+            await assertRateableTarget(submission);
             const result = await writeRatingMarkdown({
               vaultRoot: defaultVaultRoot,
               submission,

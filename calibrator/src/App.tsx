@@ -6,9 +6,14 @@ import type {
   CalibratorSolution,
   RatingSubmitResponse,
 } from "./types";
+import {
+  canSubmitRating,
+  reviewMode,
+  reviewModeLabel,
+  type ReviewArtifact,
+} from "./reviewability";
 
 type RatingTarget = "problem_recovery" | "solution";
-type ReviewArtifact = CalibratorProblemRecovery | CalibratorSolution;
 type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
   | { target: "solution"; id: string; artifact: CalibratorSolution; solutionIndex: number };
@@ -148,6 +153,7 @@ export function App() {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [blindMode, setBlindMode] = useState(false);
+  const [includeAuditArtifacts, setIncludeAuditArtifacts] = useState(false);
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
@@ -180,9 +186,15 @@ export function App() {
         setIndex(data);
         const firstCase = data.cases[0];
         if (firstCase) {
+          const firstPrimaryProblemRecovery =
+            firstCase.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
+            firstCase.problem_recoveries[0];
+          const firstPrimarySolution =
+            firstCase.solutions.find((artifact) => reviewMode(artifact) === "primary") ?? firstCase.solutions[0];
           setSelectedCaseId(firstCase.case_id);
-          setSelectedProblemRecoveryId(firstCase.problem_recoveries[0]?.problem_recovery_id ?? null);
-          setSelectedSolutionId(firstCase.solutions[0]?.solution_id ?? null);
+          setSelectedProblemRecoveryId(firstPrimaryProblemRecovery?.problem_recovery_id ?? null);
+          setSelectedSolutionId(firstPrimarySolution?.solution_id ?? null);
+          setRatingTarget(firstPrimaryProblemRecovery ? "problem_recovery" : "solution");
         }
       })
       .catch((err: unknown) => {
@@ -194,10 +206,13 @@ export function App() {
     () => index?.cases.find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
     [index, selectedCaseId],
   );
+  const allProblemRecoveries = useMemo(() => selectedCase?.problem_recoveries ?? [], [selectedCase]);
+  const allSolutions = useMemo(() => selectedCase?.solutions ?? [], [selectedCase]);
   const visibleSolutions = useMemo(() => {
     if (!selectedCase) return [];
-    return selectedCase.solutions;
-  }, [selectedCase]);
+    if (includeAuditArtifacts) return allSolutions;
+    return allSolutions.filter((artifact) => reviewMode(artifact) === "primary");
+  }, [allSolutions, includeAuditArtifacts, selectedCase]);
   const selectedSolution = useMemo(
     () =>
       visibleSolutions.find((solution) => solution.solution_id === selectedSolutionId) ??
@@ -210,8 +225,9 @@ export function App() {
     : -1;
   const visibleProblemRecoveries = useMemo(() => {
     if (!selectedCase) return [];
-    return selectedCase.problem_recoveries;
-  }, [selectedCase]);
+    if (includeAuditArtifacts) return allProblemRecoveries;
+    return allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "primary");
+  }, [allProblemRecoveries, includeAuditArtifacts, selectedCase]);
   const selectedProblemRecovery = useMemo(
     () =>
       visibleProblemRecoveries.find((recovery) => recovery.problem_recovery_id === selectedProblemRecoveryId) ??
@@ -238,6 +254,10 @@ export function App() {
   const activeSolutionIndex = ratingTarget === "solution" ? selectedSolutionIndex : -1;
   const activeTitle = artifactTitle(activeReviewArtifact, blindMode, activeSolutionIndex);
   const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
+  const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
+  const hiddenAuditCount =
+    allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "audit").length +
+    allSolutions.filter((artifact) => reviewMode(artifact) === "audit").length;
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
       ? `problem_recovery:${selectedProblemRecovery?.problem_recovery_id ?? ""}`
@@ -259,8 +279,42 @@ export function App() {
     return (index?.comparison_sets ?? []).find((set) => set.comparison_set_id === comparisonSetId) ?? null;
   }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
 
+  useEffect(() => {
+    if (!selectedCase) return;
+
+    const nextProblemRecovery = visibleProblemRecoveries[0]?.problem_recovery_id ?? null;
+    const nextSolution = visibleSolutions[0]?.solution_id ?? null;
+
+    if (
+      selectedProblemRecoveryId &&
+      !visibleProblemRecoveries.some((artifact) => artifact.problem_recovery_id === selectedProblemRecoveryId)
+    ) {
+      setSelectedProblemRecoveryId(nextProblemRecovery);
+    }
+    if (selectedSolutionId && !visibleSolutions.some((artifact) => artifact.solution_id === selectedSolutionId)) {
+      setSelectedSolutionId(nextSolution);
+    }
+    if (ratingTarget === "problem_recovery" && !nextProblemRecovery && nextSolution) {
+      setRatingTarget("solution");
+    }
+    if (ratingTarget === "solution" && !nextSolution && nextProblemRecovery) {
+      setRatingTarget("problem_recovery");
+    }
+  }, [
+    ratingTarget,
+    selectedCase,
+    selectedProblemRecoveryId,
+    selectedSolutionId,
+    visibleProblemRecoveries,
+    visibleSolutions,
+  ]);
+
   async function submitRating() {
     if (!selectedCase || !activeReviewArtifact || score === null) return;
+    if (!activeIsSubmittable) {
+      setError("This artifact is audit-only. Inspect it for provenance, but rate imported or live run outputs.");
+      return;
+    }
     if (!isWritable) {
       setError("Static preview is read-only. Run the local calibrator dev server to save ratings.");
       return;
@@ -359,10 +413,16 @@ export function App() {
             value={selectedCaseId}
             onChange={(event) => {
               const nextCase = index.cases.find((item) => item.case_id === event.target.value);
+              const nextPrimaryProblemRecovery =
+                nextCase?.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
+                nextCase?.problem_recoveries[0];
+              const nextPrimarySolution =
+                nextCase?.solutions.find((artifact) => reviewMode(artifact) === "primary") ??
+                nextCase?.solutions[0];
               setSelectedCaseId(event.target.value);
-              setSelectedProblemRecoveryId(nextCase?.problem_recoveries[0]?.problem_recovery_id ?? null);
-              setSelectedSolutionId(nextCase?.solutions[0]?.solution_id ?? null);
-              setRatingTarget(nextCase?.problem_recoveries[0] ? "problem_recovery" : "solution");
+              setSelectedProblemRecoveryId(nextPrimaryProblemRecovery?.problem_recovery_id ?? null);
+              setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
+              setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
@@ -374,6 +434,20 @@ export function App() {
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="toggle-field audit-toggle">
+          <input
+            type="checkbox"
+            checked={includeAuditArtifacts}
+            onChange={(event) => {
+              setIncludeAuditArtifacts(event.target.checked);
+              setScore(null);
+              setSavedPath("");
+              setSourceDetailsOpen(false);
+            }}
+          />
+          <span>Include audit artifacts</span>
         </label>
 
         <label className="field artifact-select-field">
@@ -397,12 +471,13 @@ export function App() {
           >
             {visibleProblemRecoveries.map((recovery) => (
               <option key={recovery.problem_recovery_id} value={`problem_recovery:${recovery.problem_recovery_id}`}>
-                {recovery.title} ({recovery.human_ratings.length} ratings)
+                {recovery.title} [{reviewModeLabel(recovery)}] ({recovery.human_ratings.length} ratings)
               </option>
             ))}
             {visibleSolutions.map((solution, index) => (
               <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
-                {blindMode ? blindSolutionLabel(index) : solution.title} ({solution.human_ratings.length} ratings)
+                {blindMode ? blindSolutionLabel(index) : solution.title} [{reviewModeLabel(solution)}] (
+                {solution.human_ratings.length} ratings)
               </option>
             ))}
           </select>
@@ -410,8 +485,10 @@ export function App() {
 
         <div className="review-status" aria-label="Current review status">
           <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Solution"}</span>
+          {activeReviewArtifact ? <strong>{reviewModeLabel(activeReviewArtifact)}</strong> : null}
           <strong>{activeRatingCount} ratings</strong>
           <strong>{unratedCount} unrated</strong>
+          {!includeAuditArtifacts && hiddenAuditCount > 0 ? <em>{hiddenAuditCount} audit hidden</em> : null}
           {!isWritable ? <em>Static preview</em> : null}
           <button
             type="button"
@@ -536,12 +613,15 @@ export function App() {
         <button
           className="submit-button"
           type="button"
-          disabled={score === null || isSubmitting || !isWritable || !activeReviewArtifact}
+          disabled={score === null || isSubmitting || !isWritable || !activeIsSubmittable}
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem" : "solution"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
+        {activeReviewArtifact && !activeIsSubmittable ? (
+          <p className="mode-note">Audit-only artifacts are visible for provenance but are not rateable.</p>
+        ) : null}
         {error ? (
           <p role="alert" className="error">
             {error}

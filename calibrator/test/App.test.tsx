@@ -51,6 +51,16 @@ const fixture: CalibratorIndex = {
       solutions: [
         {
           case_id: "fsd-accident-economy",
+          solution_id: "dalton-fsd-accident-economy-001__solution",
+          title: "Accident-Economy Transition Ledger",
+          source_type: "kernel",
+          source_status: "imported",
+          kernel: "dalton",
+          body: "# Imported solution body",
+          human_ratings: [],
+        },
+        {
+          case_id: "fsd-accident-economy",
           solution_id: "cody-accident-economy-map",
           title: "Crash Substrate Exposure Map",
           source_type: "kernel",
@@ -125,30 +135,36 @@ describe("App", () => {
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident Economy Dependency Shock");
     expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash Substrate Exposure Map");
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident-Economy Transition Ledger");
+    expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Stated Context");
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit problem rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Submit problem rating" })).toBeEnabled();
   });
 
   it("moves to the next unrated artifact in the review queue", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByRole("heading", { name: "Crash Substrate Exposure Map" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
-    expect(screen.getByRole("heading", { name: "Michael Branch Pending Solution" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Review artifact")).toHaveValue("solution:michael-branch-solution-import");
+    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Review artifact")).toHaveValue(
+      "solution:dalton-fsd-accident-economy-001__solution",
+    );
   });
 
   it("submits a rating and shows the saved path", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.selectOptions(
+      screen.getByLabelText("Review artifact"),
+      "solution:dalton-fsd-accident-economy-001__solution",
+    );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
     await userEvent.click(screen.getByRole("button", { name: "Submit solution rating" }));
@@ -163,9 +179,9 @@ describe("App", () => {
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     await userEvent.selectOptions(
       screen.getByLabelText("Review artifact"),
-      "problem_recovery:pr_fsd_accident_economy_fixture",
+      "problem_recovery:dalton-fsd-accident-economy-001__problem_recovery",
     );
-    expect(screen.getByText("Accident Economy Dependency Shock")).toBeInTheDocument();
+    expect(screen.getByText("Crash-Volume Revenue Dependency")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.click(screen.getByRole("button", { name: "Submit problem rating" }));
     await waitFor(() => {
@@ -180,7 +196,9 @@ describe("App", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/ratings",
       expect.objectContaining({
-        body: expect.stringContaining('"problem_recovery_id":"pr_fsd_accident_economy_fixture"'),
+        body: expect.stringContaining(
+          '"problem_recovery_id":"dalton-fsd-accident-economy-001__problem_recovery"',
+        ),
       }),
     );
   });
@@ -199,6 +217,10 @@ describe("App", () => {
 
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    await userEvent.selectOptions(
+      screen.getByLabelText("Review artifact"),
+      "solution:dalton-fsd-accident-economy-001__solution",
+    );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
     expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
@@ -206,6 +228,9 @@ describe("App", () => {
 
   it("keeps source details collapsed behind one toggle", async () => {
     render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByLabelText("Include audit artifacts"));
+    await userEvent.selectOptions(screen.getByLabelText("Review artifact"), "solution:cody-accident-economy-map");
     expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Comparison set provenance")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
@@ -215,14 +240,21 @@ describe("App", () => {
     );
     expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
     expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
+    expect(screen.getByText("Audit-only artifacts are visible for provenance but are not rateable.")).toBeInTheDocument();
   });
 
   it("masks source labels in blind review mode", async () => {
     render(<App />);
-    expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
+    await userEvent.selectOptions(
+      await screen.findByLabelText("Review artifact"),
+      "solution:dalton-fsd-accident-economy-001__solution",
+    );
+    expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
     await userEvent.click(screen.getByLabelText("Blind"));
     expect(screen.getAllByText("Solution A").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
+    expect(screen.queryByText("Accident-Economy Transition Ledger")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
     expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();
   });

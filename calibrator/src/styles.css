@@ -121,6 +121,14 @@ p {
   width: 18px;
 }
 
+.audit-toggle {
+  align-self: end;
+  border: 1px solid #40566c;
+  border-radius: 4px;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
 select,
 input,
 textarea {
@@ -485,7 +493,7 @@ textarea {
   }
 
   .review-controls {
-    grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.4fr) max-content;
+    grid-template-columns: minmax(210px, 0.78fr) minmax(300px, 1.22fr) max-content max-content;
     padding: 0 20px 12px;
   }
 
