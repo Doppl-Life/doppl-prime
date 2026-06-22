@@ -22,6 +22,10 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - `node-template-draft.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).
 - `stock-template-draft.md` — the stock field.
 - `rating-model-draft.md` — the single source of truth for scoring.
+- `rating-inventory-draft.md` — every scoring system, garden + jungle, and the conflicts to settle.
+- `discovery-skill-draft.md` — kernel function: gather context (round trip).
+- `compiler-skill-draft.md` — kernel function: render a stage's output into a node.
+- `flow.svg` — the flow diagram.
 
 ## Known divergences from the kernel (reconcile later, deliberately)
 

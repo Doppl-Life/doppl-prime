@@ -10,7 +10,7 @@ stage** — the content of `## Growth`, and the leaf action surface. The seed is
 | -------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
 | Growth content                               | the recovery chain (surface → … → actual problem) | `### Claim` + `### Implications` + `### Opportunities` |
 | leaf action surface (only if it is the leaf) | `### Skin in the Game`                            | Opportunities already is it                            |
-| `next`                                       | usually `doppl`                                   | usually `terminal`                                     |
+| `next`                                       | usually `doppl`                                   | usually `null`                                     |
 
 
 Both variants are shown in full below, so the writer knows exactly what each must contain.
@@ -25,7 +25,7 @@ root: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44     # the seed case_study id
 prev: [7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44]
 kernel: melissa                  # [optional] Cody | Melissa | Michael | Dalton | prime
 temporal: false                  # true = zeitgeist (decays) · false = transfer (timeless)
-next: doppl                      # or terminal, if this problem is the leaf
+next: doppl                      # or null, if this problem is the leaf
 scores: { judge: 3, human: -2, n: 4 }   # single -5..+5 each. projection of the ratings ledger.
 ---
 

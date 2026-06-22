@@ -62,7 +62,7 @@ field.
 problem's recovery chain, or a doppl's `### Claim` + `### Implications` + `### Opportunities`), the
 leaf action surface (`### Skin in the Game` for a problem leaf), and `### Evaluation` — the judge's
 ground truth (per-axis score + reasoning, boiled down into the single `scores`).
-- `## Path` — names the next stage, or `terminal`.
+- `## Path` — names the next stage, or `null`.
 
 Both stage variants are written out in full in `node-template-draft.md`.
 
