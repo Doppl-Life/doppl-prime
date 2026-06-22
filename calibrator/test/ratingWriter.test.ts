@@ -32,5 +32,16 @@ describe("writeRatingMarkdown", () => {
     expect(written).toContain("phase: solution_discovery");
     expect(written).toContain("target_kind: solution");
     expect(written).toContain("Strong map of second-order effects.");
+
+    const ledgerRaw = await readFile(result.ledgerAbsolutePath, "utf8");
+    const ledgerEvent = JSON.parse(ledgerRaw.trim()) as Record<string, unknown>;
+    expect(result.ledgerRelativePath).toBe("calibration-vault/ratings-ledger.jsonl");
+    expect(ledgerEvent.schema_version).toBe("calibrator.human-rating.v1");
+    expect(ledgerEvent.rating_markdown_path).toBe(result.relativePath);
+    expect(ledgerEvent.case_id).toBe("fsd-accident-economy");
+    expect(ledgerEvent.solution_id).toBe("cody-accident-economy-map");
+    expect(ledgerEvent.score).toBe(4);
+    expect(ledgerEvent.verdict).toBe("investigate");
+    expect(ledgerEvent.reviewer_email).toBe("reviewer@gauntletai.com");
   });
 });

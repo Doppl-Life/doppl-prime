@@ -75,4 +75,23 @@ describe("App", () => {
       expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();
     });
   });
+
+  it("falls back to the static index in read-only preview mode", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response("not found", { status: 404 });
+      }
+      if (url === "calibration-index.json") {
+        return new Response(JSON.stringify(fixture), { status: 200 });
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "+4" }));
+    expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
+    expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
+  });
 });

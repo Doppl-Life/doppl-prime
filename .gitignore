@@ -39,6 +39,9 @@ pnpm-debug.log*
 pgdata/
 *.sqlite
 *.sqlite3
+calibration-vault/ratings-ledger.jsonl
+calibration-vault/cases/*/ratings/*.md
+!calibration-vault/cases/*/ratings/.gitkeep
 
 # ---- Caches ----
 .cache/

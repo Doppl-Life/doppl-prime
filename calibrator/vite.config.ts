@@ -3,5 +3,6 @@ import { defineConfig } from "vite";
 import { createCalibratorDevApi } from "./src/server/devApi";
 
 export default defineConfig({
+  base: "./",
   plugins: [react(), createCalibratorDevApi()],
 });

@@ -74,14 +74,28 @@ export function App() {
   const [reviewerEmail, setReviewerEmail] = useState("");
   const [savedPath, setSavedPath] = useState("");
   const [error, setError] = useState("");
+  const [isWritable, setIsWritable] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/index")
-      .then((response) => {
-        if (!response.ok) throw new Error("Failed to load vault index");
-        return response.json() as Promise<CalibratorIndex>;
-      })
+    async function loadIndex() {
+      try {
+        const apiResponse = await fetch("/api/index");
+        if (apiResponse.ok) {
+          setIsWritable(true);
+          return (await apiResponse.json()) as CalibratorIndex;
+        }
+      } catch {
+        // Static previews do not expose the local Vite write API.
+      }
+
+      const staticResponse = await fetch("calibration-index.json");
+      if (!staticResponse.ok) throw new Error("Failed to load vault index");
+      setIsWritable(false);
+      return (await staticResponse.json()) as CalibratorIndex;
+    }
+
+    loadIndex()
       .then((data) => {
         setIndex(data);
         const firstCase = data.cases[0];
@@ -109,6 +123,10 @@ export function App() {
 
   async function submitRating() {
     if (!selectedCase || !selectedSolution || score === null) return;
+    if (!isWritable) {
+      setError("Static preview is read-only. Run the local calibrator dev server to save ratings.");
+      return;
+    }
     setError("");
     setSavedPath("");
     setIsSubmitting(true);
@@ -210,6 +228,7 @@ export function App() {
             </button>
           ))}
         </section>
+        {!isWritable ? <p className="mode-note">Static preview: browsing only.</p> : null}
       </aside>
 
       <section className="review-surface" aria-label="Case and solution review">
@@ -303,11 +322,12 @@ export function App() {
         <button
           className="submit-button"
           type="button"
-          disabled={score === null || isSubmitting}
+          disabled={score === null || isSubmitting || !isWritable}
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : "Submit rating"}
         </button>
+        {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
         {error ? (
           <p role="alert" className="error">
             {error}

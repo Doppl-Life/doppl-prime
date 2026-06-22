@@ -30,10 +30,12 @@ Current MVP behavior:
 - The seeded fixture includes `fsd-accident-economy` plus Cody- and Melissa-labeled solution artifacts.
 - Michael's `fsd-accident-economy` assay fixture has been added as a third solution artifact, and the rating contract now supports Michael-style verdicts: `dead`, `obvious`, `interesting`, `investigate`, and `keeper`.
 - Solution frontmatter now allows `output_class`, `phase`, and `subtype` so the vault can distinguish final solution candidates from assay branches, Pepsis, and many-Pepsis outputs.
+- Each local rating submit writes both a human-readable markdown rating and an append-only `calibration-vault/ratings-ledger.jsonl` event for downstream ingestion.
+- The Vite app can build as a read-only static preview by falling back to `calibration-index.json`; live rating writes still require the local dev API or a future hosted backend.
 
 Verification as of June 22, 2026:
 
-- `npm --prefix calibrator run test`: 4 files, 6 tests passing.
+- `npm --prefix calibrator run test`: 4 files, 7 tests passing.
 - `npm --prefix calibrator run build`: passing.
 - Browser visual QA at `http://127.0.0.1:5178`: no horizontal overflow at mobile or 1280x800 desktop; desktop rating submit is visible in the left rail.
 

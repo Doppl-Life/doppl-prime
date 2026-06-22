@@ -347,6 +347,13 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.mode-note {
+  color: #c6d3e1;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 12px;
+}
+
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;

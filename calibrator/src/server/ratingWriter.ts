@@ -1,18 +1,40 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { basename, join, relative } from "node:path";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { basename, dirname, join, relative } from "node:path";
 import { RatingFrontmatter, RatingSubmission } from "./vaultSchemas";
-import { ratingsRoot } from "./vaultPaths";
+import { ratingsLedgerPath, ratingsRoot } from "./vaultPaths";
 
 export interface WriteRatingInput {
   vaultRoot: string;
   submission: RatingSubmission;
   now?: Date;
+  ledgerPath?: string;
 }
 
 export interface WriteRatingResult {
   ratingId: string;
   absolutePath: string;
   relativePath: string;
+  ledgerAbsolutePath: string;
+  ledgerRelativePath: string;
+}
+
+export interface RatingLedgerEvent {
+  schema_version: "calibrator.human-rating.v1";
+  event_id: string;
+  observed_at: string;
+  artifact_type: "human_rating_event";
+  rating_id: string;
+  rating_markdown_path: string;
+  case_id: string;
+  solution_id: string;
+  phase: "solution_discovery";
+  target_kind: "solution";
+  score: number;
+  verdict?: "dead" | "obvious" | "interesting" | "investigate" | "keeper";
+  reviewer_email?: string;
+  reviewer_name?: string;
+  notes_present: boolean;
+  app_version: "calibrator-v0";
 }
 
 function safeIdPart(value: string): string {
@@ -79,11 +101,37 @@ export async function writeRatingMarkdown(input: WriteRatingInput): Promise<Writ
   await mkdir(dir, { recursive: true });
   const absolutePath = join(dir, `${ratingId}.md`);
   await writeFile(absolutePath, body, "utf8");
+  const relativePath = join("calibration-vault", relative(input.vaultRoot, absolutePath));
+
+  const ledgerAbsolutePath = input.ledgerPath ?? ratingsLedgerPath(input.vaultRoot);
+  const ledgerRelativePath = join("calibration-vault", relative(input.vaultRoot, ledgerAbsolutePath));
+  const ledgerEvent: RatingLedgerEvent = {
+    schema_version: "calibrator.human-rating.v1",
+    event_id: `hre_${ratingId}`,
+    observed_at: now.toISOString(),
+    artifact_type: "human_rating_event",
+    rating_id: ratingId,
+    rating_markdown_path: relativePath,
+    case_id: submission.case_id,
+    solution_id: submission.solution_id,
+    phase: "solution_discovery",
+    target_kind: "solution",
+    score: submission.score,
+    verdict: submission.verdict,
+    reviewer_email: submission.reviewer_email || undefined,
+    reviewer_name: submission.reviewer_name || undefined,
+    notes_present: Boolean(submission.notes.trim()),
+    app_version: "calibrator-v0",
+  };
+  await mkdir(dirname(ledgerAbsolutePath), { recursive: true });
+  await appendFile(ledgerAbsolutePath, `${JSON.stringify(ledgerEvent)}\n`, "utf8");
 
   return {
     ratingId,
     absolutePath,
-    relativePath: join("calibration-vault", relative(input.vaultRoot, absolutePath)),
+    relativePath,
+    ledgerAbsolutePath,
+    ledgerRelativePath,
   };
 }
 

@@ -1,6 +1,6 @@
 # Doppl Calibrator
 
-Calibrator is a vault-first review workbench for rating Doppl solution artifacts. The markdown files under `../calibration-vault/` are the source of truth; the React app reads those files through a local Vite middleware and writes submitted human ratings back as markdown.
+Calibrator is a vault-first review workbench for rating Doppl solution artifacts. The markdown files under `../calibration-vault/` are the source of truth; the React app reads those files through a local Vite middleware and writes submitted human ratings back as markdown plus an append-only JSONL ledger.
 
 ## Run Locally
 
@@ -18,6 +18,17 @@ Open `http://127.0.0.1:5178`.
 npm --prefix calibrator run test
 npm --prefix calibrator run build
 ```
+
+## Static Preview
+
+The app can run as a read-only static build because it falls back from `/api/index` to `calibration-index.json`.
+
+```bash
+npm --prefix calibrator run generate:index
+npm --prefix calibrator run build
+```
+
+Host `calibrator/dist/` to show the calibrator online. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
 
 ## Vault Shape
 
@@ -41,7 +52,10 @@ Rating submissions are written to:
 
 ```text
 calibration-vault/cases/<case_id>/ratings/rating_<timestamp>_<solution_id>.md
+calibration-vault/ratings-ledger.jsonl
 ```
+
+Generated local rating files and the JSONL ledger are ignored by git by default. Promote them deliberately when a review should become shared project evidence.
 
 Future auth can add reviewer identity enforcement, but the MVP already preserves an optional `reviewer_email` field so Gauntlet-email sign-in can map cleanly onto the vault contract later.
 

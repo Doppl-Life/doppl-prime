@@ -12,3 +12,7 @@ export function caseRoot(vaultRoot: string, caseId: string): string {
 export function ratingsRoot(vaultRoot: string, caseId: string): string {
   return join(caseRoot(vaultRoot, caseId), "ratings");
 }
+
+export function ratingsLedgerPath(vaultRoot: string): string {
+  return join(vaultRoot, "ratings-ledger.jsonl");
+}
