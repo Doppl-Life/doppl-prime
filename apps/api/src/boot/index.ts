@@ -4,3 +4,5 @@
  */
 export { composeRunWorkerDeps } from './composeRuntime';
 export type { ComposeRuntimeInput } from './composeRuntime';
+export { createStartRun } from './startRun';
+export type { StartRunInfra } from './startRun';

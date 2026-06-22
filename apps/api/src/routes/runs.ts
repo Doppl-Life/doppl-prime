@@ -34,6 +34,12 @@ export interface RunRoutesDeps {
   defaultConfig: RunConfig;
   /** Injected unique-id generator (UUID in prod boot; deterministic in tests). */
   newId: () => string;
+  /**
+   * P5.11 — additive optional execution trigger, fired AFTER the authoritative `run.configured` append
+   * (fire-and-forget; the 201 does NOT block on the run). Default ABSENT → today's behavior (append-only,
+   * no execution) unchanged. Wired to the boot composition (`createStartRun`) in `buildServer`.
+   */
+  onRunConfigured?: (runId: string) => void;
 }
 
 /** The cap field that exceeds its maximum (lowering-only rule), or null if every cap is within ceiling. */
@@ -124,6 +130,9 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
     });
     activeRunId = runId;
     if (idemKey !== null) idempotency.set(idemKey, runId);
+    // P5.11 — fire the execution trigger AFTER the authoritative run.configured append (fire-and-forget;
+    // the 201 does not block on the run). Absent → no execution (append-only, today's behavior).
+    deps.onRunConfigured?.(runId);
     return reply.status(201).send({ runId });
   });
 
