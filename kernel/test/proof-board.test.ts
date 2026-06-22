@@ -25,6 +25,35 @@ test('renders proof board with recovery, parents, fitness, and fused child', asy
   assert.match(html, /knowledge\.packet_selected/);
 });
 
+test('renders model output health when lifecycle events are present', async () => {
+  const run = await fixtureRun();
+  run.events.push(
+    {
+      index: run.events.length,
+      type: 'model.output_accepted',
+      payload: { callId: 'call_1', purpose: 'problem_recovery', status: 'accepted' },
+    },
+    {
+      index: run.events.length + 1,
+      type: 'model.output_repaired',
+      payload: { callId: 'call_2', purpose: 'candidate_generation.repair', status: 'repaired' },
+    },
+    {
+      index: run.events.length + 2,
+      type: 'model.output_rejected',
+      payload: { callId: 'call_3', purpose: 'critic_judgment.repair', status: 'rejected' },
+    },
+  );
+
+  const html = renderProofBoard(run);
+
+  assert.match(html, /Model Output Health/);
+  assert.match(html, /accepted/);
+  assert.match(html, /repaired/);
+  assert.match(html, /rejected/);
+  assert.match(html, /candidate_generation\.repair/);
+});
+
 test('writes proof board html to disk', async () => {
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-board-'));
   const filePath = await writeProofBoard(await fixtureRun(), outDir);

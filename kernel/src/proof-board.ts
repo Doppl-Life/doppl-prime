@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CandidateSolution, FitnessRecord, KernelRun } from './contracts.ts';
+import { replayRunProjection } from './event-store.ts';
 
 function escapeHtml(value: string): string {
   return value
@@ -44,6 +45,37 @@ function renderTrace(run: KernelRun): string {
       </li>`,
     )
     .join('');
+}
+
+function renderModelHealth(run: KernelRun): string {
+  const modelOutputs = replayRunProjection(run.events).modelOutputs;
+  const total =
+    modelOutputs.accepted +
+    modelOutputs.repairRequested +
+    modelOutputs.repaired +
+    modelOutputs.rejected;
+  if (total === 0) return '';
+  const byPurpose = Object.entries(modelOutputs.byPurpose)
+    .map(
+      ([purpose, counts]) => `<li>
+        <code>${escapeHtml(purpose)}</code>
+        <span>${counts.accepted} accepted</span>
+        <span>${counts.repairRequested} repair requested</span>
+        <span>${counts.repaired} repaired</span>
+        <span>${counts.rejected} rejected</span>
+      </li>`,
+    )
+    .join('');
+  return `<section id="model-health">
+        <h2>Model Output Health</h2>
+        <div class="summary">
+          <div class="metric"><strong>${modelOutputs.accepted}</strong><span>accepted</span></div>
+          <div class="metric"><strong>${modelOutputs.repairRequested}</strong><span>repair requested</span></div>
+          <div class="metric"><strong>${modelOutputs.repaired}</strong><span>repaired</span></div>
+          <div class="metric"><strong>${modelOutputs.rejected}</strong><span>rejected</span></div>
+        </div>
+        <ol class="health">${byPurpose}</ol>
+      </section>`;
 }
 
 function css(): string {
@@ -172,6 +204,25 @@ function css(): string {
       color: var(--muted);
       font-variant-numeric: tabular-nums;
     }
+    .health {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 10px;
+      padding: 0;
+      list-style: none;
+    }
+    .health li {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcff;
+    }
+    .health span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
     @media (max-width: 820px) {
       main { grid-template-columns: 1fr; }
       nav { position: static; }
@@ -182,6 +233,9 @@ function css(): string {
 
 export function renderProofBoard(run: KernelRun): string {
   const child = run.fusion?.child;
+  const modelHealth = renderModelHealth(run);
+  const modelHealthNav = modelHealth ? '      <a href="#model-health">Model health</a>\n' : '';
+  const modelHealthSection = modelHealth ? `${modelHealth}\n      ` : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -208,7 +262,7 @@ export function renderProofBoard(run: KernelRun): string {
       <a href="#memory">Knowledge packet</a>
       <a href="#parents">Parents and fitness</a>
       <a href="#fusion">Fusion child</a>
-      <a href="#trace">Trace</a>
+${modelHealthNav}      <a href="#trace">Trace</a>
     </nav>
     <div>
       <section id="recovery">
@@ -258,7 +312,7 @@ export function renderProofBoard(run: KernelRun): string {
             : '<p>No child was produced.</p>'
         }
       </section>
-      <section id="trace">
+      ${modelHealthSection}<section id="trace">
         <h2>Trace</h2>
         <ol class="trace">${renderTrace(run)}</ol>
       </section>
