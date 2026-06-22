@@ -4,7 +4,7 @@
 **Track:** demo · **Area:** backend (`apps/api`) + `packages/observability` · **Phase:** 6 (projections, API & observability)
 **Role:** implementer (demo-observability-implementer)
 **Predecessor:** [demo-002](demo-002-2026-06-21-run-health-endpoint.md) (round-2 — P6.8 run-health)
-**Successor:** _(next backend obs session)_
+**Successor:** [demo-004](demo-004-2026-06-22-sv5-projection-reconcile.md) (round-4 — sv5 projection reconcile)
 **Round:** 3 (continuous-roll; sealed at this `/session-end` + the orchestrator's `/orchestrate-end`)
 
 ## Why this session existed
