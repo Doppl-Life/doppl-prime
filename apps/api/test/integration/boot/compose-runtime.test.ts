@@ -9,6 +9,7 @@ import {
   validCandidateIdeaCrossDomain,
   validProviderMeta,
 } from '@doppl/contracts';
+import type { RunConfig } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../src/event-store';
 import { createGateway, type ProviderCallFn } from '../../../src/model-gateway';
 import { loadConfig } from '../../../src/runtime/config/loadConfig';
@@ -103,7 +104,7 @@ afterAll(async () => {
   await pool.end();
 });
 
-function compose(runId: string, onCall?: () => void) {
+function compose(runId: string, onCall?: () => void, perRunConfig?: RunConfig) {
   let n = 0;
   return composeRunWorkerDeps({
     config: buildConfig(),
@@ -116,6 +117,7 @@ function compose(runId: string, onCall?: () => void) {
     listRunIds: () => Promise.resolve([runId]),
     newId: () => `${runId}-sid-${n++}`,
     runId,
+    ...(perRunConfig !== undefined ? { perRunConfig } : {}),
   });
 }
 
@@ -221,5 +223,60 @@ describe('composeRunWorkerDeps — boot composition root function-level e2e (rea
     const rows2 = await store.readByRun(runId);
     expect(calls).toBe(afterRun); // re-reading the log re-calls no provider.
     expect(rows2.length).toBe(rows1.length);
+  });
+
+  // spec(§8/§11) W3b-2c — composeRunWorkerDeps merges a per-run RunConfig over the boot AppConfig:
+  // caps/rngSeed/enabledSubtypes come from the per-run config, the immutables (scoringPolicy/seedSet) stay
+  // boot. (The judge rubric is wired from DEFAULT_JUDGE_RUBRIC, never the per-run config — rule #6.)
+  test('test_merge_keeps_boot_immutables', () => {
+    const boot = buildConfig();
+    const perRun: RunConfig = {
+      ...boot.runConfig,
+      rngSeed: 999,
+      enabledSubtypes: ['cross_domain_transfer'],
+      caps: { ...boot.caps, maxGenerations: 1 },
+    };
+    const deps = compose('merge-immutables', undefined, perRun);
+    // boot immutables retained (value-equal — compose builds its own boot instance, so not ref-equal):
+    expect(deps.config.scoringPolicy).toEqual(boot.scoringPolicy);
+    expect(deps.config.seedSet).toEqual(boot.seedSet);
+    expect(deps.config.runConfig.scoringPolicyVersion).toBe(boot.runConfig.scoringPolicyVersion);
+    // per-run overrides applied:
+    expect(deps.config.runConfig.rngSeed).toBe(999);
+    expect(deps.config.runConfig.enabledSubtypes).toEqual(['cross_domain_transfer']);
+    expect(deps.config.caps.maxGenerations).toBe(1);
+  });
+
+  // spec(§5/§8) rule #1 (load-bearing) — a per-run cap ABOVE the boot ceiling is CLAMPED to the boot
+  // ceiling (a posted config LOWERS, never RAISES) — defense-in-depth beyond the route's 422.
+  test('test_posted_cap_clamped_to_boot_ceiling', () => {
+    const boot = buildConfig();
+    const overCeiling: RunConfig = {
+      ...boot.runConfig,
+      caps: { ...boot.caps, maxPopulation: boot.caps.maxPopulation + 100 },
+    };
+    const deps = compose('merge-clamp', undefined, overCeiling);
+    expect(deps.config.caps.maxPopulation).toBe(boot.caps.maxPopulation); // clamped, never raised.
+    expect(deps.config.runConfig.caps.maxPopulation).toBe(boot.caps.maxPopulation); // both caps fields.
+  });
+
+  // spec(§8) recorded == executed — the worker runs the RECORDED per-run config, not the boot default:
+  // a per-run maxGenerations:1 → exactly ONE generation runs (the boot default is 2).
+  test('test_worker_runs_recorded_config_not_boot_default', async () => {
+    const runId = 'merge-recorded';
+    const boot = buildConfig();
+    const perRun: RunConfig = { ...boot.runConfig, caps: { ...boot.caps, maxGenerations: 1 } };
+    await seedConfigured(runId);
+    await runWorker(compose(runId, undefined, perRun));
+    const rows = await store.readByRun(runId);
+    expect(rows.filter((r) => r.type === 'generation.started')).toHaveLength(1); // maxGenerations:1.
+  });
+
+  // spec — absent per-run config → boot defaults (defensive; composeRunWorkerDeps without perRunConfig
+  // uses the boot AppConfig unchanged).
+  test('test_absent_perRunConfig_uses_boot', () => {
+    const boot = buildConfig();
+    const deps = compose('merge-absent'); // no perRunConfig.
+    expect(deps.config.caps.maxGenerations).toBe(boot.caps.maxGenerations); // boot (2), not merged.
   });
 });

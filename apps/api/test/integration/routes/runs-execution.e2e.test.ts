@@ -39,15 +39,21 @@ const CANDIDATE_CONTENT = {
   subtypePayload: validCandidateIdeaCrossDomain.subtypePayload,
 };
 
-// The boot AppConfig (caps maxGenerations/maxPopulation = 2 so the run evolves in ≥2 bounded generations).
-// HONESTY: the POST body IS this boot config's runConfig, so the operator's recorded run.configured EXACTLY
-// matches what the worker executes (recorded == executed — no boot-default divergence masked). Per-run
-// config driving the worker is a documented future-TODO (see Step 9); this test exhibits no divergence.
+// The boot AppConfig (top-level caps maxGenerations/maxPopulation = 2 — the ceiling the loop enforces).
+// W3b-2c: the worker now EXECUTES the recorded run.configured config, clamped to the boot ceiling. So the
+// POST body carries the boot TOP-LEVEL caps (recorded == executed under the clamp: maxGenerations:2 ==
+// min(2, boot 2) → ≥2 generations evolve, no divergence). A custom-config test below posts maxGenerations:1.
 const BOOT_CONFIG = loadConfig({
   env: VALID_ENV,
   fileSources: { caps: { maxGenerations: 2, maxPopulation: 2 } },
 });
-const POST_BODY = BOOT_CONFIG.runConfig;
+const POST_BODY = { ...BOOT_CONFIG.runConfig, caps: BOOT_CONFIG.caps };
+// A CUSTOM operator config — maxGenerations lowered to 1 (within the boot ceiling): the worker must run
+// EXACTLY 1 generation (recorded == executed), not the boot default of 2.
+const CUSTOM_BODY = {
+  ...BOOT_CONFIG.runConfig,
+  caps: { ...BOOT_CONFIG.caps, maxGenerations: 1 },
+};
 
 // Multi-role fake providerCall (§24) → injected into the REAL createGateway. `failPopulation` forces the
 // population_generator to terminally reject (→ the run fails); `onCall` counts provider invocations.
@@ -264,6 +270,28 @@ describe('POST /runs → runWorker — the production entry point (HTTP e2e, rea
     await store.readByRun(runId);
     await store.readByRun(runId);
     expect(calls).toBe(afterRun); // re-reading the log re-calls no provider.
+    await app.close();
+  });
+
+  // spec(§8/§11) W3b-2c recorded == executed — POST a CUSTOM config (maxGenerations:1); startRun reads
+  // run.configured → the worker runs under it (exactly 1 generation), NOT the boot default of 2. The
+  // recorded run.configured.caps.maxGenerations == the executed generation count.
+  test('test_http_e2e_custom_config_recorded_equals_executed', async () => {
+    const { onSettled, settled } = settledLatch();
+    const app = makeApp({ onSettled });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/runs', payload: CUSTOM_BODY });
+    expect(res.statusCode).toBe(201);
+    const { runId } = res.json() as { runId: string };
+    await settled;
+    const rows = await store.readByRun(runId);
+    // executed: exactly 1 generation (the recorded maxGenerations:1 drove the worker, not the boot 2).
+    expect(rows.filter((r) => r.type === 'generation.started')).toHaveLength(1);
+    // recorded: the run.configured payload carries maxGenerations:1 == what executed.
+    const configured = rows.find((r) => r.type === 'run.configured');
+    expect(
+      (configured?.payload as { caps?: { maxGenerations?: number } }).caps?.maxGenerations,
+    ).toBe(1);
     await app.close();
   });
 });

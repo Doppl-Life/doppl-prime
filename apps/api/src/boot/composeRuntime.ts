@@ -1,4 +1,9 @@
-import type { CheckRunnerRegistry, ModelGatewayRequest } from '@doppl/contracts';
+import type {
+  CheckRunnerRegistry,
+  ModelGatewayRequest,
+  RunCaps,
+  RunConfig,
+} from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { EventStore } from '../event-store';
 import type { ModelGateway } from '../model-gateway';
@@ -36,6 +41,44 @@ export interface ComposeRuntimeInput {
   readonly listRunIds: () => Promise<readonly string[]>;
   readonly newId: () => string;
   readonly runId: string;
+  /**
+   * W3b-2c — the operator's RECORDED per-run config (from `run.configured`). When present, its
+   * `caps`/`rngSeed`/`enabledSubtypes` are merged over the boot `AppConfig` (CLAMPED — caps can only lower
+   * within the boot ceiling, rule #1); the immutables (scoringPolicy/rubric/seedSet) stay boot. Absent →
+   * the boot config drives the run.
+   */
+  readonly perRunConfig?: RunConfig;
+}
+
+/**
+ * mergePerRunConfig — overlay the operator's recorded per-run config on the boot `AppConfig` so the worker
+ * EXECUTES what was recorded (recorded == executed, the log-is-truth thesis). The OPERATOR-tunable fields
+ * (`caps`/`rngSeed`/`enabledSubtypes`) come from the per-run config; the immutables (scoringPolicy, the
+ * judge rubric, seedSet, infra) stay boot (rule #6 for the rubric; scope of the override). Rule #1: each
+ * cap is CLAMPED to `min(posted, boot ceiling)` — a posted config (even a directly-appended `run.configured`
+ * bypassing the route's 422) can LOWER a cap but NEVER raise it above the boot maximum. The loop enforces
+ * the TOP-LEVEL `config.caps` (generationLoop.ts:230), so both the top-level and `runConfig.caps` are set
+ * to the clamped value (consistency). The boot immutables ride through by reference (the `...boot` spread).
+ */
+function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
+  const caps: RunCaps = {
+    maxPopulation: Math.min(perRun.caps.maxPopulation, boot.caps.maxPopulation),
+    maxGenerations: Math.min(perRun.caps.maxGenerations, boot.caps.maxGenerations),
+    energyBudget: Math.min(perRun.caps.energyBudget, boot.caps.energyBudget),
+    maxSpawnDepth: Math.min(perRun.caps.maxSpawnDepth, boot.caps.maxSpawnDepth),
+    maxToolCalls: Math.min(perRun.caps.maxToolCalls, boot.caps.maxToolCalls),
+    wallClockTimeoutMs: Math.min(perRun.caps.wallClockTimeoutMs, boot.caps.wallClockTimeoutMs),
+  };
+  return {
+    ...boot,
+    caps,
+    runConfig: {
+      ...boot.runConfig,
+      rngSeed: perRun.rngSeed,
+      enabledSubtypes: perRun.enabledSubtypes,
+      caps,
+    },
+  };
 }
 
 /**
@@ -68,7 +111,13 @@ function toGenerationGateway(modelGateway: ModelGateway): GenerationGateway {
 }
 
 export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps {
-  const { config, modelGateway, eventStore, checkRegistry, listRunIds, newId, runId } = input;
+  const { modelGateway, eventStore, checkRegistry, listRunIds, newId, runId } = input;
+  // W3b-2c — the worker executes the RECORDED per-run config (merged + clamped over boot), or the boot
+  // config when no per-run config is supplied.
+  const config =
+    input.perRunConfig === undefined
+      ? input.config
+      : mergePerRunConfig(input.config, input.perRunConfig);
 
   const verify = createVerifySeam({
     gateway: modelGateway,

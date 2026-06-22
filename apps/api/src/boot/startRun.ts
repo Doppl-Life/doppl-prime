@@ -1,9 +1,27 @@
+import { RunConfig } from '@doppl/contracts';
 import type { CheckRunnerRegistry } from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { EventStore } from '../event-store';
 import type { ModelGateway } from '../model-gateway';
 import { runWorker } from '../runtime';
 import { composeRunWorkerDeps } from './composeRuntime';
+
+/**
+ * readRecordedConfig — read the operator's RECORDED `RunConfig` from the run's authoritative
+ * `run.configured` event (the route appended the validated config there). Returns `undefined` when absent
+ * or unparseable → the caller falls back to the boot config (defensive; the worker's idempotency already
+ * requires `run.configured` to exist, so the normal path always finds it). Read-only; no provider call.
+ */
+async function readRecordedConfig(
+  store: Pick<EventStore, 'readByRun'>,
+  runId: string,
+): Promise<RunConfig | undefined> {
+  const rows = await store.readByRun(runId);
+  const configured = rows.find((row) => row.type === 'run.configured');
+  if (configured === undefined) return undefined;
+  const parsed = RunConfig.safeParse(configured.payload);
+  return parsed.success ? parsed.data : undefined;
+}
 
 /**
  * The infra a run trigger closes over at boot — built ONCE (config/gateway/store/registry/listRunIds/newId);
@@ -35,17 +53,23 @@ export interface StartRunInfra {
  */
 export function createStartRun(infra: StartRunInfra): (runId: string) => void {
   return (runId: string): void => {
-    void runWorker(
-      composeRunWorkerDeps({
-        config: infra.config,
-        modelGateway: infra.modelGateway,
-        eventStore: infra.eventStore,
-        checkRegistry: infra.checkRegistry,
-        listRunIds: infra.listRunIds,
-        newId: infra.newId,
-        runId,
-      }),
-    )
+    // W3b-2c — read the RECORDED per-run config from run.configured (async) then run the worker under the
+    // merged+clamped config, so recorded == executed. The read + run ride one fire-and-forget chain.
+    void (async (): Promise<void> => {
+      const perRunConfig = await readRecordedConfig(infra.eventStore, runId);
+      await runWorker(
+        composeRunWorkerDeps({
+          config: infra.config,
+          modelGateway: infra.modelGateway,
+          eventStore: infra.eventStore,
+          checkRegistry: infra.checkRegistry,
+          listRunIds: infra.listRunIds,
+          newId: infra.newId,
+          runId,
+          ...(perRunConfig !== undefined ? { perRunConfig } : {}),
+        }),
+      );
+    })()
       // The hook bodies are wrapped so a throwing onError/onSettled can NEVER escape as an unhandled
       // rejection that crashes the HTTP server — the fire-and-forget guarantee holds even for a bad hook.
       .catch((err: unknown) => {
