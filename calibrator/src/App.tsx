@@ -208,6 +208,11 @@ export function App() {
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const activeSolutionIndex = ratingTarget === "solution" ? selectedSolutionIndex : -1;
   const activeTitle = artifactTitle(activeReviewArtifact, blindMode, activeSolutionIndex);
+  const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
+  const activeArtifactValue =
+    ratingTarget === "problem_recovery"
+      ? `problem_recovery:${selectedProblemRecovery?.problem_recovery_id ?? ""}`
+      : `solution:${selectedSolution?.solution_id ?? ""}`;
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -318,42 +323,42 @@ export function App() {
           </select>
         </label>
 
-        <section className="artifact-chooser" aria-label="Review artifact">
-          <h2>Choose what to review</h2>
-          {selectedProblemRecovery ? (
-            <button
-              type="button"
-              className={ratingTarget === "problem_recovery" ? "selected" : ""}
-              onClick={() => {
+        <label className="field artifact-select-field">
+          <span>Review artifact</span>
+          <select
+            aria-label="Review artifact"
+            value={activeArtifactValue}
+            onChange={(event) => {
+              const [nextTarget, nextId] = event.target.value.split(":");
+              if (nextTarget === "problem_recovery") {
                 setRatingTarget("problem_recovery");
-                setScore(null);
-                setSavedPath("");
-                setSourceDetailsOpen(false);
-              }}
-            >
-              <span>Problem Recovery</span>
-              <small>{selectedProblemRecovery.human_ratings.length} ratings</small>
-            </button>
-          ) : null}
-          {visibleSolutions.map((solution, index) => (
-            <button
-              className={ratingTarget === "solution" && solution.solution_id === selectedSolution?.solution_id ? "selected" : ""}
-              key={solution.solution_id}
-              type="button"
-              onClick={() => {
+              } else {
                 setRatingTarget("solution");
-                setSelectedSolutionId(solution.solution_id);
-                setScore(null);
-                setSavedPath("");
-                setSourceDetailsOpen(false);
-              }}
-            >
-              <span>{blindMode ? blindSolutionLabel(index) : solution.title}</span>
-              <small>{solution.human_ratings.length} ratings</small>
-            </button>
-          ))}
-        </section>
-        {!isWritable ? <p className="mode-note">Static preview: browsing only.</p> : null}
+                setSelectedSolutionId(nextId);
+              }
+              setScore(null);
+              setSavedPath("");
+              setSourceDetailsOpen(false);
+            }}
+          >
+            {selectedProblemRecovery ? (
+              <option value={`problem_recovery:${selectedProblemRecovery.problem_recovery_id}`}>
+                Problem Recovery ({selectedProblemRecovery.human_ratings.length} ratings)
+              </option>
+            ) : null}
+            {visibleSolutions.map((solution, index) => (
+              <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
+                {blindMode ? blindSolutionLabel(index) : solution.title} ({solution.human_ratings.length} ratings)
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="review-status" aria-label="Current review status">
+          <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Solution"}</span>
+          <strong>{activeRatingCount} ratings</strong>
+          {!isWritable ? <em>Static preview</em> : null}
+        </div>
       </section>
 
       <section className="trace-surface" aria-label="Case and selected artifact review">
@@ -369,9 +374,7 @@ export function App() {
         </article>
 
         <article className="trace-step selected-step">
-          <p className="trace-label">
-            {ratingTarget === "problem_recovery" ? "Problem Recovery" : "Solution"}
-          </p>
+          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Problem Recovery" : "Solution"}</p>
           <h2>{activeTitle}</h2>
           {blindMode ? (
             <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>

@@ -141,7 +141,10 @@ describe("App", () => {
     const fetchMock = vi.mocked(fetch);
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.click(screen.getByRole("button", { name: /Problem Recovery/ }));
+    await userEvent.selectOptions(
+      screen.getByLabelText("Review artifact"),
+      "problem_recovery:pr_fsd_accident_economy_fixture",
+    );
     expect(screen.getByText("Accident Economy Dependency Shock")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.click(screen.getByRole("button", { name: "Submit problem rating" }));
