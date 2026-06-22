@@ -177,6 +177,12 @@ export function createLiveProcessRun(
     let lastReason: string | undefined;
 
     for (let i = 0; i < caps.maxGenerations; i++) {
+      // Wrap each generation so an uncaught hook error (e.g. a gateway
+      // 5xx mid-council, an embedding 429) doesn't bubble all the way
+      // up before run.failed lands — and so we can attach the real
+      // root-cause message to the run.failed payload instead of just
+      // "generation failed".
+      try {
       const getCurrentGenerationIndex = (): number => i;
       const verifyHook = makeVerifyHook({
         db,
@@ -239,6 +245,17 @@ export function createLiveProcessRun(
         next.length > 0
           ? next
           : materializeGen0Bundle({ runId, generationId: `gen_${i + 1}`, caps });
+      } catch (err) {
+        // Surface the underlying error message (hook crash, gateway
+        // 5xx, embedding rate-limit) on the run.failed event so the
+        // dashboard shows what really went wrong instead of a generic
+        // "generation failed".
+        const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        process.stderr.write(`liveProcessRun(${runId}) gen ${i} threw: ${reason}\n`);
+        lastOutcome = "failed";
+        lastReason = reason;
+        break;
+      }
     }
 
     if (lastOutcome === "completed") {
@@ -261,7 +278,10 @@ export function createLiveProcessRun(
         runId,
         type: "run.stopped",
         actor: "runtime",
-        payload: { reason: lastReason ?? "kill switch" },
+        payload: {
+          completedAt: new Date().toISOString(),
+          reason: lastReason ?? "kill switch",
+        },
       });
     } else {
       await markRunStatus(db, runId, "failed");
@@ -269,7 +289,10 @@ export function createLiveProcessRun(
         runId,
         type: "run.failed",
         actor: "runtime",
-        payload: { reason: lastReason ?? "generation failed" },
+        payload: {
+          completedAt: new Date().toISOString(),
+          reason: lastReason ?? "generation failed",
+        },
       });
     }
   };
