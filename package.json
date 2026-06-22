@@ -1,0 +1,13 @@
+{
+  "name": "doppl-prime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
+    "kernel:run": "node --experimental-strip-types kernel/src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
