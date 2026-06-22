@@ -49,12 +49,19 @@ function meanCosineDistance(
   target: readonly number[],
   comparison: readonly ComparisonEntry[],
 ): number {
-  if (comparison.length === 0) return 0;
+  // Skip comparators whose dimension doesn't match the target. The
+  // lexical-fallback path below emits a placeholder vector of [0]
+  // (dimension 1) when embedding fails; that entry would crash
+  // cosine with "dimension mismatch" the moment the next candidate
+  // succeeds with a real 1536-dim embedding. Filtering here keeps
+  // novelty scoring resilient to any mixed-dim comparison set.
+  const sameDim = comparison.filter((c) => c.vector.length === target.length);
+  if (sameDim.length === 0) return 0;
   let sum = 0;
-  for (const entry of comparison) {
+  for (const entry of sameDim) {
     sum += cosineDistance(target, entry.vector);
   }
-  return sum / comparison.length;
+  return sum / sameDim.length;
 }
 
 function meanJaccardDistance(target: string, comparison: readonly ComparisonEntry[]): number {

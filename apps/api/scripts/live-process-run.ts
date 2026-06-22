@@ -1,9 +1,4 @@
-import type {
-  Agenome,
-  CriticMandate,
-  FitnessScoredPayload,
-  RunConfig,
-} from "@doppl/contracts";
+import type { Agenome, CriticMandate, RunConfig } from "@doppl/contracts";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ALL_ADAPTERS, buildCheckRegistry } from "../src/check-runners/index.js";
@@ -106,7 +101,8 @@ async function findRunChampion(
   let best: { candidateId: string; total: number } | null = null;
   for await (const env of replayReader(db).events(runId)) {
     if (env.type !== "fitness.scored") continue;
-    const fitness = (env.payload as FitnessScoredPayload).fitness;
+    const fitness = (env.payload as { fitness?: { candidateId: string; total: number } })
+      .fitness;
     if (!fitness) continue;
     if (best === null || fitness.total > best.total) {
       best = { candidateId: fitness.candidateId, total: fitness.total };

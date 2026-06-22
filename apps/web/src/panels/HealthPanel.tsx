@@ -125,9 +125,34 @@ export function HealthPanel(): JSX.Element | null {
     health.lastHeartbeatMs !== null &&
     health.lastHeartbeatMs > STALE_HEARTBEAT_MS &&
     state.serverRunMode !== "replay";
+  // When the run is in a terminal failure/stop state, surface the
+  // reason the runtime captured on the run.failed / run.stopped event
+  // so the operator doesn't have to dig into the Activity tab to see
+  // what went wrong.
+  const terminalReason = state.run?.terminalReason;
+  const isTerminalFail = health.status === "failed" || health.status === "stopped";
   return (
     <section aria-label="Run health" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <h3 style={{ fontSize: 16, margin: 0 }}>Run health · {health.status}</h3>
+      {isTerminalFail && terminalReason && (
+        <div
+          role="alert"
+          data-testid="health-terminal-reason"
+          style={{
+            padding: "6px 8px",
+            background: "rgba(248, 113, 113, 0.10)",
+            color: "var(--doppl-status-error, #f87171)",
+            border: "1px solid var(--doppl-status-error, #f87171)",
+            borderRadius: 4,
+            fontSize: 12,
+            fontFamily: "var(--doppl-font-mono, monospace)",
+            wordBreak: "break-word",
+          }}
+          title={terminalReason}
+        >
+          {terminalReason}
+        </div>
+      )}
       <Metric
         label="generation"
         value={health.currentGeneration}
