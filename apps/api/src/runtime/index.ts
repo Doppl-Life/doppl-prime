@@ -47,3 +47,27 @@ export {
   type OutcomeValue,
   type RngDraws,
 } from './rng/persistOutcomes';
+
+// RunCaps enforcement + kill switch (P3.4 — KEY SAFETY RULE #1: caps kernel-enforced, never prompt). PURE
+// fail-closed decisions (caps only from RunConfig.caps; an external hint can't raise a ceiling by shape) +
+// the per-state kill-switch plan (validated through the P3.2 guards; emits nothing) + the queryable cap
+// ledger. DECIDE only — the loop (P3.10) appends the named cap-breach events + the worker (P3.12) halts
+// scheduling + drains the excluded/in-flight states (§5 ownership split).
+export {
+  enforceCap,
+  enforceWallClock,
+  type CapDecision,
+  type CapAllowed,
+  type CapDenied,
+  type CapDimension,
+} from './caps/capEnforcer';
+export {
+  planKillSwitch,
+  type KillTrigger,
+  type KillPlan,
+  type RunTransitionPlan,
+  type GenerationTransitionPlan,
+  type GenerationRef,
+  type KillPlanSummary,
+} from './caps/killSwitch';
+export { capLedger, type CapLedgerView } from './caps/capLedger';
