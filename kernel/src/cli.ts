@@ -1,8 +1,25 @@
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
+import { createModelGenerationProviders } from './generation-providers.ts';
+import { createReplayModelClient, readModelCallRecords } from './model-gateway.ts';
 
-export const defaultKernelArgs = {
+export type KernelCliArgs = {
+  runId: string;
+  casePath: string;
+  fixturePath: string;
+  knowledgePacketPath: string;
+  memoryMode: 'auto';
+  generations: number;
+  evolutionBudget: { maxUnits: number };
+  outDir: string;
+  proofBoardDir: string;
+  publishDir: string;
+  replayModelCallsPath?: string;
+  model?: string;
+};
+
+export const defaultKernelArgs: KernelCliArgs = {
   runId: 'run_fsd_ownership_fixture',
   casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
   fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
@@ -14,8 +31,6 @@ export const defaultKernelArgs = {
   proofBoardDir: 'kernel/out/proof-board',
   publishDir: 'published/kernel',
 };
-
-type KernelCliArgs = typeof defaultKernelArgs;
 
 function readFlagValue(argv: string[], index: number, flag: string): string {
   const value = argv[index + 1];
@@ -65,16 +80,35 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
     } else if (flag === '--publish-dir') {
       args.publishDir = readFlagValue(argv, index, flag);
       index += 1;
+    } else if (flag === '--replay-model-calls') {
+      args.replayModelCallsPath = readFlagValue(argv, index, flag);
+      index += 1;
+    } else if (flag === '--model') {
+      args.model = readFlagValue(argv, index, flag);
+      index += 1;
     } else {
       throw new Error(`unknown CLI flag: ${flag}`);
     }
   }
+  if (args.replayModelCallsPath && !args.model) {
+    throw new Error('--model is required when --replay-model-calls is set');
+  }
   return args;
+}
+
+async function generationProvidersFromCliArgs(args: KernelCliArgs) {
+  if (!args.replayModelCallsPath) return undefined;
+  const records = await readModelCallRecords(args.replayModelCallsPath);
+  return createModelGenerationProviders({
+    client: createReplayModelClient(records),
+    model: args.model!,
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cliArgs = parseKernelCliArgs(process.argv.slice(2));
-  const run = await runKernel(cliArgs);
+  const generationProviders = await generationProvidersFromCliArgs(cliArgs);
+  const run = await runKernel({ ...cliArgs, generationProviders });
   const manifest = await exportRunToVault(run, cliArgs.outDir);
   const proofBoard = await writeProofBoard(run, cliArgs.proofBoardDir);
   console.log(

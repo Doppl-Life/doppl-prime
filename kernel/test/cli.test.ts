@@ -31,7 +31,26 @@ test('CLI args can configure generations and evolution budget', () => {
   assert.equal(args.publishDir, defaultKernelArgs.publishDir);
 });
 
+test('CLI args can configure replayed model calls', () => {
+  const args = parseKernelCliArgs([
+    '--replay-model-calls',
+    'kernel/fixtures/model-calls.jsonl',
+    '--model',
+    'fixture-model',
+  ]);
+
+  assert.equal(args.replayModelCallsPath, 'kernel/fixtures/model-calls.jsonl');
+  assert.equal(args.model, 'fixture-model');
+});
+
 test('CLI args reject invalid numeric values', () => {
   assert.throws(() => parseKernelCliArgs(['--generations', '0']), /--generations must be an integer >= 1/);
   assert.throws(() => parseKernelCliArgs(['--budget', '-1']), /--budget must be an integer >= 0/);
+});
+
+test('CLI args require a model when replaying model calls', () => {
+  assert.throws(
+    () => parseKernelCliArgs(['--replay-model-calls', 'kernel/fixtures/model-calls.jsonl']),
+    /--model is required when --replay-model-calls is set/,
+  );
 });
