@@ -6,6 +6,8 @@ import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
 import { registerRunHealthRoutes } from './routes/run-health';
+import { registerRunStreamRoutes } from './routes/run-stream';
+import type { EventBridgeOptions } from './sse/event-bridge';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -49,6 +51,11 @@ export interface BuildServerDeps {
   bodyLimit?: number;
   /** The configured ModelRoute set served by GET /model-routes (defaults to empty). */
   modelRoutes?: readonly ModelRoute[];
+  /**
+   * SSE bridge poll options for GET /runs/:id/stream (P6.9). Defaults to a live stream (real
+   * abort-aware sleep + unbounded idle polls); tests inject a no-op sleep + bounded maxIdlePolls.
+   */
+  sse?: EventBridgeOptions;
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
@@ -74,6 +81,10 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
   });
   registerRunReadRoutes(app, { store: deps.store, db: deps.db });
   registerRunHealthRoutes(app, { store: deps.store });
+  registerRunStreamRoutes(app, {
+    store: deps.store,
+    ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
+  });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   return app;
 }
