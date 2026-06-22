@@ -1,0 +1,494 @@
+{
+  "id": "run_fsd_ownership_fixture",
+  "caseStudy": {
+    "id": "fsd-ownership-unwind",
+    "title": "Problem Statement: The Ownership Unwind / Car-as-a-Service After Autonomy",
+    "sourcePath": "case-studies/fsd-ownership-unwind/problem-statement.md",
+    "markdown": "# Problem Statement: The Ownership Unwind / Car-as-a-Service After Autonomy\n\n> **Doppl subtype:** `zeitgeist_synthesis` (see `../subtype-index.md`).\n> **Cluster:** **Sub-cluster D** of the `full-self-driving-unlock` family (the\n> \"perfect Pepsis\" — see `../zeitgeist-synthesis-notes.md`). Sibling to the accident\n> economy (A), mobility & time (B), and the enforcement economy (C); governed by the\n> adoption-asymmetry lens.\n\nAutonomy's obvious framing is \"robotaxi vs. Uber.\" The fertile, non-obvious one is\nthat it attacks not the car but the **premise of owning one**. A private car is idle\n~95% of the time, depreciates from the moment it's bought, and exists in the driveway\nfor one reason: *you* had to be there to drive it. Remove that, and a depreciating,\nidle, self-driven asset stops making sense for a large share of households — personal\nmobility shifts from **ownership to service**. And around *ownership* sits a vast,\nlegally entrenched economy: a **$1.69T** US auto-loan book (NY Fed, 2026Q1), **16,972\nfranchised dealerships** ($645B in sales, **1.13M** employees, protected by state\nfranchise laws), a used-car/residual-value market, the automaker unit-sales model,\nfuel retail, and a continent's worth of parking.\n\nThe substrate here is **the privately-owned car as the unit of mobility** — distinct\nfrom the crash (A), the driver-as-labor/distance (B), and the driver-as-legal-subject\n(C). When the premise of ownership goes, the value chain reorganizes around **miles,\nnot units**, and around **fleets, not households**: dealerships contract (and the\n**state franchise-law fight** — Tesla's direct-sales battles are the leading\nindicator — turns into another incumbent-won't-go-down war); the auto-credit complex\n(F&I, leasing, GAP, subprime, dealer floorplan) shrinks or mutates; fleets and\nautonomy crush used-car **residual values**, breaking lease math and auto-ABS;\nautomakers flip to selling availability per mile (a fleet car does the work of many\nprivate ones, so unit volumes fall structurally); aftermarket parts and independent\nrepair (137M repair orders, $81B service/parts) shrink as standardized fleets\nself-maintain; fuel retail hollows (compounding with EV); and parking demand\ncollapses.\n\nThe decisive, gameable fork: **pure service** (you don't own — Uber/Waymo → ownership\n*dies*, value accrues to fleet operators + platform) vs. the **owned-autonomous-fleet\nhybrid** (Tesla — you own one and it *earns* as a robotaxi while you sleep, so\nownership doesn't die, it becomes an **income-producing asset**). Tesla's whole bet is\nthe hybrid, and which world arrives — governed by the adoption-asymmetry lens —\ndecides who captures the value.\n\nThis is `zeitgeist_synthesis` because the timing is load-bearing: the trigger is\nautonomy crossing to legal deployment in 2025–2026 (the umbrella case). Five years ago\nowning was the only option and there was no service substitute at scale; five years\nout the ownership-vs-service reorganization is consensus.\n\nFor evaluation, withhold the synthesis. Ask the system to recover the actual problem\n(removal of the *ownership* premise, not \"robotaxi vs. Uber\"), map the value chain\n(breadth), game out the depth chains and the ownership fork, and synthesize what it\nconverges to.\n\n## Source Notes\n\n- Synthetic case built from public reporting; the thesis is an analytical projection\n  for use as an eval fixture, not an audited forecast.\n- Fidelity: heavily synthesized. The auto-loan, dealer, and employment figures are\n  real/cited; the ~95%-idle figure is a commonly-modeled estimate (lower fidelity);\n  the ownership-collapse thesis and predictions are bets.\n- Signal sources (cited in the with-solution file and `../sources.md` Signal Set D10):\n  NY Fed Household Debt (auto-loan balance); NADA (dealer count, sales, employment,\n  service/parts); Tesla direct-sales-vs-franchise-law reporting; idle-vehicle\n  estimates. Autonomy deployment/legality: Signal Set D4.\n",
+    "statedProblem": "> **Doppl subtype:** `zeitgeist_synthesis` (see `../subtype-index.md`).\n> **Cluster:** **Sub-cluster D** of the `full-self-driving-unlock` family (the\n> \"perfect Pepsis\" — see `../zeitgeist-synthesis-notes.md`). Sibling to the accident\n> economy (A), mobility & time (B), and the enforcement economy (C); governed by the\n> adoption-asymmetry lens.\nAutonomy's obvious framing is \"robotaxi vs. Uber.\" The fertile, non-obvious one is\nthat it attacks not the car but the **premise of owning one**. A private car is idle\n~95% of the time, depreciates from the moment it's bought, and exists in the driveway"
+  },
+  "memoryMode": "auto",
+  "knowledgePacket": {
+    "id": "packet:fixture:fsd-ownership-unwind",
+    "targetCase": "fsd-ownership-unwind",
+    "items": [
+      {
+        "recordId": "knowledge_residual_values",
+        "citeHandle": "K1",
+        "text": "Residual values, lease math, floorplan lending, and auto ABS become pressure points when fleet utilization reduces household demand for privately owned vehicles.",
+        "sourceCase": "fsd-accident-economy",
+        "citation": "case-studies/fsd-accident-economy/problem-statement.md",
+        "trustTier": "case-sibling",
+        "visibility": "public"
+      },
+      {
+        "recordId": "knowledge_liability_subject",
+        "citeHandle": "K2",
+        "text": "Autonomy changes who is treated as the legal subject of driving: driver, OEM, fleet operator, insurer, or software provider.",
+        "sourceCase": "fsd-enforcement-economy",
+        "citation": "case-studies/fsd-enforcement-economy/problem-statement.md",
+        "trustTier": "case-sibling",
+        "visibility": "public"
+      },
+      {
+        "recordId": "knowledge_dealer_floorplan",
+        "citeHandle": "K3",
+        "text": "Dealer floorplan economics depend on inventory velocity and unit sales; both are exposed if mobility reorganizes around fleet miles.",
+        "sourceCase": "fsd-mobility-and-time",
+        "citation": "case-studies/fsd-mobility-and-time/problem-statement.md",
+        "trustTier": "case-sibling",
+        "visibility": "public"
+      }
+    ],
+    "excluded": [
+      {
+        "recordId": "withheld_solution_target",
+        "case": "fsd-ownership-unwind",
+        "reason": "target case solution material withheld from retrieval"
+      }
+    ]
+  },
+  "problemRecovery": {
+    "id": "recovery_fsd-ownership-unwind",
+    "caseId": "fsd-ownership-unwind",
+    "title": "Recover The Ownership Premise",
+    "recoveredProblem": "The case is not mainly robotaxi versus Uber. The load-bearing problem is that autonomy removes the human-driver reason for household car ownership, exposing every business model that depends on privately owned idle vehicles.",
+    "hiddenConstraint": "The decisive fork is whether autonomous miles become pure service inventory or whether owned cars become revenue assets in a hybrid fleet.",
+    "falsifier": "If households keep buying private autonomous cars at current replacement rates while fleet miles remain marginal, the ownership-unwind thesis weakens.",
+    "citedKnowledge": [
+      "K1",
+      "K2",
+      "K3"
+    ]
+  },
+  "candidates": [
+    {
+      "id": "cand_liability_clock",
+      "agenomeId": "ag_blindside",
+      "title": "Liability Clock Transfer",
+      "summary": "Treat legal liability milestones as the earliest public clock for ownership unwind rather than waiting for unit sales to fall.",
+      "mechanism": "Track insurer filings, state deployment permissions, and OEM liability assumptions as the moment the driver stops being the legal subject.",
+      "claimedDelta": "Moves the forecast upstream from visible car sales decline to the first point where risk ownership shifts away from households.",
+      "citedKnowledge": [
+        "K1",
+        "K2"
+      ],
+      "caseId": "fsd-ownership-unwind",
+      "generation": 0
+    },
+    {
+      "id": "cand_recovery_market",
+      "agenomeId": "ag_first_principles",
+      "title": "Residual Value Stress Map",
+      "summary": "Map the ownership unwind through residual values, lease math, floorplan lending, and auto ABS exposure.",
+      "mechanism": "Start with the idle depreciating asset and follow who is holding residual risk when autonomous fleet utilization rises.",
+      "claimedDelta": "Turns a consumer adoption story into a balance-sheet stress story with concrete early indicators.",
+      "citedKnowledge": [
+        "K1"
+      ],
+      "caseId": "fsd-ownership-unwind",
+      "generation": 0
+    },
+    {
+      "id": "cand_lender_residual",
+      "agenomeId": "ag_constraint_injection",
+      "title": "Auto Credit Exposure Ladder",
+      "summary": "Prioritize the lenders and dealers whose inventory economics break first under declining private ownership demand.",
+      "mechanism": "Rank floorplan lenders, lease-heavy captives, and subprime auto ABS cohorts by exposure to residual-value compression.",
+      "claimedDelta": "Converts the thesis into a practical watchlist for capital-market stress and dealership contraction.",
+      "citedKnowledge": [
+        "K1",
+        "K3"
+      ],
+      "caseId": "fsd-ownership-unwind",
+      "generation": 0
+    }
+  ],
+  "criticVerdicts": [
+    {
+      "candidateId": "cand_liability_clock",
+      "criticId": "grounding",
+      "score": 86,
+      "pressure": "Strong because liability regime changes can be observed before sales data moves.",
+      "revisionMandate": "Name the exact filings and state permissions that would count as the clock."
+    },
+    {
+      "candidateId": "cand_liability_clock",
+      "criticId": "novelty",
+      "score": 78,
+      "pressure": "Less obvious than robotaxi economics and distinct from residual-value consensus.",
+      "revisionMandate": "Keep the ownership-fork link explicit so it does not become generic insurance analysis."
+    },
+    {
+      "candidateId": "cand_liability_clock",
+      "criticId": "mechanism",
+      "score": 76,
+      "pressure": "The mechanism connects legal subject transfer to ownership demand, but needs a measurable threshold.",
+      "revisionMandate": "Add a threshold for when insurer/OEM assumptions imply household ownership is no longer primary."
+    },
+    {
+      "candidateId": "cand_recovery_market",
+      "criticId": "grounding",
+      "score": 44,
+      "pressure": "Residual values and lease math are grounded in existing auto-credit structures.",
+      "revisionMandate": "Separate fleet-utilization pressure from ordinary used-car cyclicality."
+    },
+    {
+      "candidateId": "cand_recovery_market",
+      "criticId": "novelty",
+      "score": 40,
+      "pressure": "Good balance-sheet reframing, but residual-value stress is closer to the obvious ownership thesis.",
+      "revisionMandate": "Find one hidden counterparty that is not already in the stated case."
+    },
+    {
+      "candidateId": "cand_recovery_market",
+      "criticId": "mechanism",
+      "score": 36,
+      "pressure": "Mechanism is credible but broad.",
+      "revisionMandate": "Choose the first market that breaks and identify its leading metric."
+    },
+    {
+      "candidateId": "cand_lender_residual",
+      "criticId": "grounding",
+      "score": 24,
+      "pressure": "The watchlist is practical but depends on data access not shown in the artifact.",
+      "revisionMandate": "State which public filings or datasets support the ladder."
+    },
+    {
+      "candidateId": "cand_lender_residual",
+      "criticId": "novelty",
+      "score": 20,
+      "pressure": "The exposure ladder is useful but reads like an implementation of the residual-value map.",
+      "revisionMandate": "Add a sharper blindside or remove it from the parent pool."
+    },
+    {
+      "candidateId": "cand_lender_residual",
+      "criticId": "mechanism",
+      "score": 16,
+      "pressure": "Mechanism is clear enough, but narrower than the top candidates.",
+      "revisionMandate": "Tie lender exposure back to the pure-service versus owned-hybrid fork."
+    }
+  ],
+  "fitnessRecords": [
+    {
+      "candidateId": "cand_liability_clock",
+      "total": 80,
+      "components": {
+        "novelty": 80,
+        "grounding": 80,
+        "mechanismClarity": 80,
+        "mechanismCost": 72,
+        "criticPressure": 80,
+        "evidenceQuality": 80
+      },
+      "rationale": "Strong because liability regime changes can be observed before sales data moves. | Less obvious than robotaxi economics and distinct from residual-value consensus. | The mechanism connects legal subject transfer to ownership demand, but needs a measurable threshold."
+    },
+    {
+      "candidateId": "cand_recovery_market",
+      "total": 40,
+      "components": {
+        "novelty": 40,
+        "grounding": 40,
+        "mechanismClarity": 40,
+        "mechanismCost": 86,
+        "criticPressure": 40,
+        "evidenceQuality": 40
+      },
+      "rationale": "Residual values and lease math are grounded in existing auto-credit structures. | Good balance-sheet reframing, but residual-value stress is closer to the obvious ownership thesis. | Mechanism is credible but broad."
+    },
+    {
+      "candidateId": "cand_lender_residual",
+      "total": 20,
+      "components": {
+        "novelty": 20,
+        "grounding": 20,
+        "mechanismClarity": 20,
+        "mechanismCost": 93,
+        "criticPressure": 20,
+        "evidenceQuality": 20
+      },
+      "rationale": "The watchlist is practical but depends on data access not shown in the artifact. | The exposure ladder is useful but reads like an implementation of the residual-value map. | Mechanism is clear enough, but narrower than the top candidates."
+    }
+  ],
+  "selectedParents": [
+    {
+      "id": "cand_liability_clock",
+      "agenomeId": "ag_blindside",
+      "title": "Liability Clock Transfer",
+      "summary": "Treat legal liability milestones as the earliest public clock for ownership unwind rather than waiting for unit sales to fall.",
+      "mechanism": "Track insurer filings, state deployment permissions, and OEM liability assumptions as the moment the driver stops being the legal subject.",
+      "claimedDelta": "Moves the forecast upstream from visible car sales decline to the first point where risk ownership shifts away from households.",
+      "citedKnowledge": [
+        "K1",
+        "K2"
+      ],
+      "caseId": "fsd-ownership-unwind",
+      "generation": 0
+    },
+    {
+      "id": "cand_recovery_market",
+      "agenomeId": "ag_first_principles",
+      "title": "Residual Value Stress Map",
+      "summary": "Map the ownership unwind through residual values, lease math, floorplan lending, and auto ABS exposure.",
+      "mechanism": "Start with the idle depreciating asset and follow who is holding residual risk when autonomous fleet utilization rises.",
+      "claimedDelta": "Turns a consumer adoption story into a balance-sheet stress story with concrete early indicators.",
+      "citedKnowledge": [
+        "K1"
+      ],
+      "caseId": "fsd-ownership-unwind",
+      "generation": 0
+    }
+  ],
+  "fusion": {
+    "child": {
+      "id": "child_cand_liability_clock_cand_recovery_market",
+      "caseId": "fsd-ownership-unwind",
+      "agenomeId": "fused_ag_blindside_ag_first_principles",
+      "generation": 1,
+      "title": "Liability Clock Transfer / Residual Value Stress Map fusion",
+      "summary": "Treat legal liability milestones as the earliest public clock for ownership unwind rather than waiting for unit sales to fall. The child imports the secondary constraint from Residual Value Stress Map.",
+      "mechanism": "Track insurer filings, state deployment permissions, and OEM liability assumptions as the moment the driver stops being the legal subject. It is tempered by Start with the idle depreciating asset and follow who is holding residual risk when autonomous fleet utilization rises.",
+      "claimedDelta": "Moves the forecast upstream from visible car sales decline to the first point where risk ownership shifts away from households. + Turns a consumer adoption story into a balance-sheet stress story with concrete early indicators.",
+      "citedKnowledge": [
+        "K1",
+        "K2"
+      ]
+    },
+    "parentCandidateIds": [
+      "cand_liability_clock",
+      "cand_recovery_market"
+    ],
+    "compatibility": {
+      "parentA": "cand_liability_clock",
+      "parentB": "cand_recovery_market",
+      "score": 76,
+      "rationale": "Parents preserve distinct mechanisms while sharing enough case grounding to fuse."
+    },
+    "inheritanceWeights": {
+      "parentA": 0.667,
+      "parentB": 0.333
+    },
+    "inheritedTraits": [
+      "cand_liability_clock: primary mechanism at 0.667",
+      "cand_recovery_market: constraint and failure-mode pressure at 0.333"
+    ],
+    "mutationNotes": [
+      "Combined mechanisms only after separate parent scoring and compatibility check."
+    ]
+  },
+  "events": [
+    {
+      "index": 0,
+      "type": "run.started",
+      "payload": {
+        "runId": "run_fsd_ownership_fixture",
+        "caseId": "fsd-ownership-unwind"
+      }
+    },
+    {
+      "index": 1,
+      "type": "knowledge.packet_requested",
+      "payload": {
+        "targetCase": "fsd-ownership-unwind",
+        "memoryMode": "auto"
+      }
+    },
+    {
+      "index": 2,
+      "type": "knowledge.packet_selected",
+      "payload": {
+        "packetId": "packet:fixture:fsd-ownership-unwind",
+        "items": 3
+      }
+    },
+    {
+      "index": 3,
+      "type": "knowledge.item_injected",
+      "payload": {
+        "citeHandle": "K1",
+        "recipientRole": "problem_recovery"
+      }
+    },
+    {
+      "index": 4,
+      "type": "knowledge.item_injected",
+      "payload": {
+        "citeHandle": "K2",
+        "recipientRole": "problem_recovery"
+      }
+    },
+    {
+      "index": 5,
+      "type": "knowledge.item_injected",
+      "payload": {
+        "citeHandle": "K3",
+        "recipientRole": "problem_recovery"
+      }
+    },
+    {
+      "index": 6,
+      "type": "problem_recovery.created",
+      "payload": {
+        "recoveryId": "recovery_fsd-ownership-unwind"
+      }
+    },
+    {
+      "index": 7,
+      "type": "candidate.created",
+      "payload": {
+        "candidateId": "cand_liability_clock",
+        "agenomeId": "ag_blindside"
+      }
+    },
+    {
+      "index": 8,
+      "type": "candidate.created",
+      "payload": {
+        "candidateId": "cand_recovery_market",
+        "agenomeId": "ag_first_principles"
+      }
+    },
+    {
+      "index": 9,
+      "type": "candidate.created",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "agenomeId": "ag_constraint_injection"
+      }
+    },
+    {
+      "index": 10,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_liability_clock",
+        "criticId": "grounding",
+        "score": 86
+      }
+    },
+    {
+      "index": 11,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_liability_clock",
+        "criticId": "novelty",
+        "score": 78
+      }
+    },
+    {
+      "index": 12,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_liability_clock",
+        "criticId": "mechanism",
+        "score": 76
+      }
+    },
+    {
+      "index": 13,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_recovery_market",
+        "criticId": "grounding",
+        "score": 44
+      }
+    },
+    {
+      "index": 14,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_recovery_market",
+        "criticId": "novelty",
+        "score": 40
+      }
+    },
+    {
+      "index": 15,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_recovery_market",
+        "criticId": "mechanism",
+        "score": 36
+      }
+    },
+    {
+      "index": 16,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "criticId": "grounding",
+        "score": 24
+      }
+    },
+    {
+      "index": 17,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "criticId": "novelty",
+        "score": 20
+      }
+    },
+    {
+      "index": 18,
+      "type": "critic.verdict_recorded",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "criticId": "mechanism",
+        "score": 16
+      }
+    },
+    {
+      "index": 19,
+      "type": "fitness.scored",
+      "payload": {
+        "candidateId": "cand_liability_clock",
+        "total": 80
+      }
+    },
+    {
+      "index": 20,
+      "type": "fitness.scored",
+      "payload": {
+        "candidateId": "cand_recovery_market",
+        "total": 40
+      }
+    },
+    {
+      "index": 21,
+      "type": "fitness.scored",
+      "payload": {
+        "candidateId": "cand_lender_residual",
+        "total": 20
+      }
+    },
+    {
+      "index": 22,
+      "type": "pair.compatibility_checked",
+      "payload": {
+        "parentA": "cand_liability_clock",
+        "parentB": "cand_recovery_market",
+        "score": 76,
+        "rationale": "Parents preserve distinct mechanisms while sharing enough case grounding to fuse."
+      }
+    },
+    {
+      "index": 23,
+      "type": "candidate.fused",
+      "payload": {
+        "childId": "child_cand_liability_clock_cand_recovery_market",
+        "inheritanceWeights": {
+          "parentA": 0.667,
+          "parentB": 0.333
+        }
+      }
+    },
+    {
+      "index": 24,
+      "type": "run.completed",
+      "payload": {
+        "runId": "run_fsd_ownership_fixture",
+        "childId": "child_cand_liability_clock_cand_recovery_market"
+      }
+    }
+  ]
+}

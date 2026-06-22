@@ -10,6 +10,7 @@ export const defaultKernelArgs = {
   memoryMode: 'auto' as const,
   outDir: 'kernel/out/vault',
   proofBoardDir: 'kernel/out/proof-board',
+  publishDir: 'published/kernel',
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {

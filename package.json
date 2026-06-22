@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
-    "kernel:run": "node --experimental-strip-types kernel/src/cli.ts"
+    "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
+    "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts"
   },
   "engines": {
     "node": ">=22"

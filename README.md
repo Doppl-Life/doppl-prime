@@ -25,6 +25,14 @@ npm run kernel:run
 The command writes markdown-vault artifacts and `trace.json` under `kernel/out/vault/`.
 It also writes a browser-readable proof board to `kernel/out/proof-board/index.html`.
 
+Refresh the committed static preview:
+
+```bash
+npm run kernel:publish
+```
+
+The static preview is written to `published/kernel/` for GitHub-Pages-style hosting.
+
 ## Status
 
 Early. This README is a placeholder — add to it as the project takes shape.

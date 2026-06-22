@@ -1,0 +1,14 @@
+{
+  "rootDir": "published/kernel",
+  "indexHtml": "published/kernel/index.html",
+  "files": [
+    "published/kernel/index.html",
+    "published/kernel/published-vault/problem-recovery.md",
+    "published/kernel/published-vault/cand_liability_clock.md",
+    "published/kernel/published-vault/cand_recovery_market.md",
+    "published/kernel/published-vault/cand_lender_residual.md",
+    "published/kernel/published-vault/child_cand_liability_clock_cand_recovery_market.md",
+    "published/kernel/published-vault/trace.json",
+    "published/kernel/manifest.json"
+  ]
+}
