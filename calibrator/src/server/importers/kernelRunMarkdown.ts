@@ -44,7 +44,7 @@ export function renderKernelRunMarkdown(input: KernelRunImportArtifactInput): st
     ...section("Case Study", artifact.case_study),
     ...section("Discovery", artifact.discovery),
     ...section("Problem Recovery", artifact.problem_recovery.body),
-    ...section("Solution", artifact.solution?.body),
+    ...section("Doppl", artifact.solution?.body),
   ].join("\n");
 
   return ["---", frontmatterYaml(frontmatter), "---", "", body.trim(), ""].join("\n");

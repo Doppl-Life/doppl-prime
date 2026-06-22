@@ -3,6 +3,9 @@ artifact_type: solution
 case_id: fsd-accident-economy
 solution_id: cody-accident-economy-map
 title: Crash Substrate Exposure Map
+stage: doppl
+temporal: true
+next: terminal
 source_type: kernel
 comparison_set_id: fsd-accident-economy-v0
 comparison_input_hash: sha256:fixture-fsd-accident-economy-v0
@@ -14,6 +17,7 @@ source_branch: cody
 source_commit: unavailable-for-fixture
 adapter_version: calibrator-comparison-v0
 adapter_notes: "Seeded representative artifact; not yet imported from a live Cody run."
+output_class: doppl
 kernel: cody
 branch: cody
 run_id: run_fixture_cody_001

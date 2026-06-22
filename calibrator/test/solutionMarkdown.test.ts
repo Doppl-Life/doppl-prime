@@ -24,7 +24,7 @@ describe("writeImportedSolution", () => {
       adapter_notes: "Imported from branch markdown.",
       kernel: "michael",
       branch: "michael",
-      output_class: "candidate",
+      output_class: "doppl",
       phase: "solution_discovery",
       created_at: "2026-06-22T00:00:00.000Z",
       body: "# Imported\n\nBody.",
@@ -32,6 +32,9 @@ describe("writeImportedSolution", () => {
 
     const written = await readFile(path, "utf8");
     expect(written).toContain("artifact_type: solution");
+    expect(written).toContain("stage: doppl");
+    expect(written).toContain("next: terminal");
+    expect(written).toContain("output_class: doppl");
     expect(written).toContain("comparison_set_id: fsd-case-v0");
     expect(written).toContain("source_status: imported");
     expect(written).toContain("source_commit: abc123");

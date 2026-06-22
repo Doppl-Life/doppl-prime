@@ -3,6 +3,9 @@ artifact_type: problem_recovery
 case_id: fsd-accident-economy
 problem_recovery_id: pr_fsd_accident_economy_fixture
 title: Accident Economy Dependency Shock
+stage: problem_recovery
+temporal: true
+next: doppl
 source_type: manual
 source_status: fixture
 created_at: 2026-06-22T00:00:00.000Z

@@ -9,6 +9,13 @@ const RatingTarget = z.enum(["solution", "problem_recovery"]);
 const Verdict = z.enum(["dead", "obvious", "interesting", "investigate", "keeper"]);
 const SourceType = z.enum(["kernel", "manual", "unknown"]);
 const SourceStatus = z.enum(["fixture", "imported", "live_run", "pending", "unavailable"]);
+const ScoresProjection = z
+  .object({
+    judge: z.number().min(-5).max(5).optional(),
+    human: z.number().min(-5).max(5).optional(),
+    n: z.number().int().min(0).optional(),
+  })
+  .optional();
 
 export const CaseFrontmatter = z.object({
   artifact_type: z.literal("case"),
@@ -27,10 +34,14 @@ export const ProblemFrontmatter = z.object({
 });
 
 export const SolutionFrontmatter = z.object({
-  artifact_type: z.literal("solution"),
+  artifact_type: z.enum(["solution", "doppl"]).default("solution"),
   case_id: z.string().min(1),
   solution_id: z.string().min(1),
   title: z.string().min(1),
+  stage: z.literal("doppl").optional(),
+  temporal: z.boolean().optional(),
+  next: z.enum(["terminal"]).nullable().optional(),
+  scores: ScoresProjection,
   source_type: SourceType,
   comparison_set_id: z.string().min(1).optional(),
   comparison_input_hash: z.string().min(1).optional(),
@@ -41,7 +52,7 @@ export const SolutionFrontmatter = z.object({
   source_mapping_version: z.string().min(1).optional(),
   adapter_version: z.string().min(1).optional(),
   adapter_notes: z.string().min(1).optional(),
-  output_class: z.enum(["candidate", "pepsi", "possible_pepsi", "many_pepsis"]).optional(),
+  output_class: z.enum(["candidate", "doppl", "pepsi", "possible_pepsi", "many_pepsis"]).optional(),
   phase: z.enum(["research_discovery", "problem_discovery", "solution_discovery"]).optional(),
   subtype: z.string().min(1).optional(),
   kernel: z.string().min(1).optional(),
@@ -60,6 +71,10 @@ export const ProblemRecoveryFrontmatter = z.object({
   case_id: z.string().min(1),
   problem_recovery_id: z.string().min(1),
   title: z.string().min(1),
+  stage: z.literal("problem_recovery").optional(),
+  temporal: z.boolean().optional(),
+  next: z.enum(["doppl", "terminal"]).nullable().optional(),
+  scores: ScoresProjection,
   source_type: SourceType,
   source_status: SourceStatus.optional(),
   source_branch: z.string().min(1).optional(),
@@ -112,7 +127,6 @@ export const RatingSubmission = z
     solution_id: z.string().min(1).optional(),
     problem_recovery_id: z.string().min(1).optional(),
     score: z.number().int().min(-5).max(5),
-    verdict: Verdict.optional(),
     notes: z.string().default(""),
     reviewer_email: z.string().email().optional().or(z.literal("")),
     reviewer_name: z.string().optional(),

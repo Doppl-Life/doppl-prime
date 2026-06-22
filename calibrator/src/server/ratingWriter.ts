@@ -32,7 +32,6 @@ export interface RatingLedgerEvent {
   phase: "problem_discovery" | "solution_discovery";
   target_kind: "solution" | "problem_recovery";
   score: number;
-  verdict?: "dead" | "obvious" | "interesting" | "investigate" | "keeper";
   reviewer_email?: string;
   reviewer_name?: string;
   notes_present: boolean;
@@ -81,7 +80,6 @@ export async function writeRatingMarkdown(input: WriteRatingInput): Promise<Writ
     problem_recovery_id:
       submission.rating_target === "problem_recovery" ? submission.problem_recovery_id : undefined,
     score: submission.score,
-    verdict: submission.verdict,
     phase,
     target_kind: submission.rating_target,
     scale_min: -5,
@@ -132,7 +130,6 @@ export async function writeRatingMarkdown(input: WriteRatingInput): Promise<Writ
     phase,
     target_kind: submission.rating_target,
     score: submission.score,
-    verdict: submission.verdict,
     reviewer_email: submission.reviewer_email || undefined,
     reviewer_name: submission.reviewer_name || undefined,
     notes_present: Boolean(submission.notes.trim()),

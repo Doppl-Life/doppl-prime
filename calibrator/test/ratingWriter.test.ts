@@ -19,7 +19,6 @@ describe("writeRatingMarkdown", () => {
         rating_target: "solution",
         solution_id: "cody-accident-economy-map",
         score: 4,
-        verdict: "investigate",
         notes: "Strong map of second-order effects.",
         reviewer_email: "reviewer@gauntletai.com",
       },
@@ -29,7 +28,6 @@ describe("writeRatingMarkdown", () => {
     expect(result.relativePath).toContain("ratings/rating_20260622T120000000Z_");
     expect(written).toContain("artifact_type: human_rating");
     expect(written).toContain("score: 4");
-    expect(written).toContain("verdict: investigate");
     expect(written).toContain("phase: solution_discovery");
     expect(written).toContain("target_kind: solution");
     expect(written).toContain("Strong map of second-order effects.");
@@ -42,7 +40,7 @@ describe("writeRatingMarkdown", () => {
     expect(ledgerEvent.case_id).toBe("fsd-accident-economy");
     expect(ledgerEvent.solution_id).toBe("cody-accident-economy-map");
     expect(ledgerEvent.score).toBe(4);
-    expect(ledgerEvent.verdict).toBe("investigate");
+    expect(ledgerEvent.verdict).toBeUndefined();
     expect(ledgerEvent.reviewer_email).toBe("reviewer@gauntletai.com");
   });
 

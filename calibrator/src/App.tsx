@@ -22,8 +22,8 @@ function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
 }
 
-function blindSolutionLabel(index: number): string {
-  return `Solution ${String.fromCharCode(65 + (index % 26))}`;
+function blindDopplLabel(index: number): string {
+  return `Doppl ${String.fromCharCode(65 + (index % 26))}`;
 }
 
 function maskProvenanceText(text: string): string {
@@ -137,7 +137,7 @@ function CalibrationHistory({
 
 function artifactTitle(artifact: ReviewArtifact | null, blindMode: boolean, solutionIndex: number): string {
   if (!artifact) return "No artifact selected";
-  if ("solution_id" in artifact && blindMode && solutionIndex >= 0) return blindSolutionLabel(solutionIndex);
+  if ("solution_id" in artifact && blindMode && solutionIndex >= 0) return blindDopplLabel(solutionIndex);
   return artifact.title;
 }
 
@@ -476,7 +476,7 @@ export function App() {
             ))}
             {visibleSolutions.map((solution, index) => (
               <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
-                {blindMode ? blindSolutionLabel(index) : solution.title} [{reviewModeLabel(solution)}] (
+                {blindMode ? blindDopplLabel(index) : solution.title} [{reviewModeLabel(solution)}] (
                 {solution.human_ratings.length} ratings)
               </option>
             ))}
@@ -484,7 +484,7 @@ export function App() {
         </label>
 
         <div className="review-status" aria-label="Current review status">
-          <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Solution"}</span>
+          <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl leaf"}</span>
           {activeReviewArtifact ? <strong>{reviewModeLabel(activeReviewArtifact)}</strong> : null}
           <strong>{activeRatingCount} ratings</strong>
           <strong>{unratedCount} unrated</strong>
@@ -503,6 +503,21 @@ export function App() {
         </div>
       </section>
 
+      <section className="garden-model" aria-label="Garden model">
+        <div>
+          <span>Garden flow</span>
+          <strong>{"case_study -> problem_recovery -> doppl"}</strong>
+        </div>
+        <div>
+          <span>Discovery</span>
+          <strong>evidence, not a rated stage</strong>
+        </div>
+        <div>
+          <span>Human rating</span>
+          <strong>one -5 to +5 score</strong>
+        </div>
+      </section>
+
       <section className="trace-surface" aria-label="Case and selected artifact review">
         <article className="trace-step case-step">
           <p className="trace-label">Case Study</p>
@@ -511,12 +526,12 @@ export function App() {
         </article>
 
         <article className="trace-step">
-          <p className="trace-label">Stated Context</p>
+          <p className="trace-label">Discovery Context</p>
           <MarkdownBlock text={selectedCase.problem.body} />
         </article>
 
         <article className="trace-step selected-step">
-          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Problem Recovery" : "Solution"}</p>
+          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
           {blindMode ? (
             <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
@@ -586,7 +601,7 @@ export function App() {
             placeholder={
               ratingTarget === "problem_recovery"
                 ? "Optional note on the recovered problem"
-                : "Optional note on the solution"
+                : "Optional note on the doppl"
             }
           />
         </label>
@@ -616,7 +631,7 @@ export function App() {
           disabled={score === null || isSubmitting || !isWritable || !activeIsSubmittable}
           onClick={submitRating}
         >
-          {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem" : "solution"} rating`}
+          {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
         {activeReviewArtifact && !activeIsSubmittable ? (

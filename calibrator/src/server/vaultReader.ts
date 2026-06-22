@@ -167,13 +167,16 @@ async function readRunArtifacts(casePath: string, ratings: RatingMaps): Promise<
       });
     }
 
-    if (sections.solution) {
+    const dopplBody = sections.doppl ?? sections.solution;
+    if (dopplBody) {
       const solutionId = `${frontmatter.run_artifact_id}__solution`;
       solutions.push({
         ...common,
         solution_id: solutionId,
-        title: frontmatter.solution_title ?? "Solution",
-        body: sections.solution,
+        title: frontmatter.solution_title ?? "Doppl",
+        stage: "doppl",
+        next: "terminal",
+        body: dopplBody,
         human_ratings: ratings.bySolution.get(solutionId) ?? [],
       });
     }

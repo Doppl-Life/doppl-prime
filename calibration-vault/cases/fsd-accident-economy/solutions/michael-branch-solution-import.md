@@ -3,6 +3,9 @@ artifact_type: solution
 case_id: fsd-accident-economy
 solution_id: michael-branch-solution-import
 title: Michael Branch Pending Solution
+stage: doppl
+temporal: true
+next: terminal
 source_type: kernel
 comparison_set_id: fsd-accident-economy-v0
 comparison_input_hash: sha256:fixture-fsd-accident-economy-v0
@@ -14,7 +17,7 @@ source_branch: michael
 source_commit: ee3a60fecfe79129d5c898945209bd34682a42a0
 adapter_version: michael-markdown-adapter-v0
 adapter_notes: "Imported from Michael branch markdown; this case is explicitly pending and unsolved there."
-output_class: candidate
+output_class: doppl
 phase: solution_discovery
 subtype: branch_solution
 kernel: michael

@@ -4,6 +4,7 @@ export interface MarkdownSections {
   discovery?: string;
   problemRecovery?: string;
   solution?: string;
+  doppl?: string;
 }
 
 const sectionKeys: Record<string, keyof MarkdownSections> = {
@@ -12,6 +13,7 @@ const sectionKeys: Record<string, keyof MarkdownSections> = {
   discovery: "discovery",
   "problem recovery": "problemRecovery",
   solution: "solution",
+  doppl: "doppl",
 };
 
 export function parseMarkdownSections(markdown: string): MarkdownSections {

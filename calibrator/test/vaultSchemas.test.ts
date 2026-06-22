@@ -17,6 +17,27 @@ describe("vault schemas", () => {
     ).toMatchObject({ solution_id: "cody-accident-economy-map" });
   });
 
+  it("accepts a garden-native doppl frontmatter object", () => {
+    expect(
+      SolutionFrontmatter.parse({
+        artifact_type: "doppl",
+        case_id: "fsd-accident-economy",
+        solution_id: "dalton-doppl-leaf",
+        title: "Crash Transition Ledger",
+        stage: "doppl",
+        temporal: true,
+        next: "terminal",
+        scores: { judge: 4, human: 3, n: 2 },
+        source_type: "kernel",
+        output_class: "doppl",
+      }),
+    ).toMatchObject({
+      artifact_type: "doppl",
+      stage: "doppl",
+      output_class: "doppl",
+    });
+  });
+
   it("rejects ratings outside the -5 to +5 range", () => {
     expect(() =>
       RatingSubmission.parse({

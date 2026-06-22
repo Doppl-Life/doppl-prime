@@ -20,7 +20,7 @@ export interface ImportedSolutionArtifact {
   generation_id?: string;
   agenome_id?: string;
   candidate_id?: string;
-  output_class?: "candidate" | "pepsi" | "possible_pepsi" | "many_pepsis";
+  output_class?: "candidate" | "doppl" | "pepsi" | "possible_pepsi" | "many_pepsis";
   phase?: "research_discovery" | "problem_discovery" | "solution_discovery";
   subtype?: string;
   judge_score?: number;

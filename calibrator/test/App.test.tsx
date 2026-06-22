@@ -139,12 +139,13 @@ describe("App", () => {
     expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident-Economy Transition Ledger");
     expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
-    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Stated Context");
+    expect(screen.getByLabelText("Garden model")).toHaveTextContent("case_study -> problem_recovery -> doppl");
+    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit problem rating" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit problem rating" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
   });
 
   it("moves to the next unrated artifact in the review queue", async () => {
@@ -167,7 +168,7 @@ describe("App", () => {
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
-    await userEvent.click(screen.getByRole("button", { name: "Submit solution rating" }));
+    await userEvent.click(screen.getByRole("button", { name: "Submit doppl rating" }));
     await waitFor(() => {
       expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();
     });
@@ -183,7 +184,7 @@ describe("App", () => {
     );
     expect(screen.getByText("Crash-Volume Revenue Dependency")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem rating" }));
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/ratings",
@@ -222,7 +223,7 @@ describe("App", () => {
       "solution:dalton-fsd-accident-economy-001__solution",
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
     expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
   });
 
@@ -241,7 +242,7 @@ describe("App", () => {
     expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
     expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
     expect(screen.getByText("Audit-only artifacts are visible for provenance but are not rateable.")).toBeInTheDocument();
   });
 
@@ -253,7 +254,7 @@ describe("App", () => {
     );
     expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
     await userEvent.click(screen.getByLabelText("Blind"));
-    expect(screen.getAllByText("Solution A").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Doppl A").length).toBeGreaterThan(0);
     expect(screen.queryByText("Accident-Economy Transition Ledger")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
     expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();

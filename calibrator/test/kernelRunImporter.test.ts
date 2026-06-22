@@ -53,7 +53,7 @@ describe("kernel run importer", () => {
       branch: "dalton",
       run_id: "run_001",
       source_commit: "abc123",
-      trace: ["case loaded", "problem recovered", "solution drafted"],
+      trace: ["case loaded", "problem recovered", "doppl drafted"],
       discovery: "The crash economy has revenue dependencies that can break when crashes decline.",
       problem_recovery: {
         title: "Crash Economy Demand Shock",
@@ -72,7 +72,7 @@ describe("kernel run importer", () => {
     expect(written).toContain("# Trace");
     expect(written).toContain("1. case loaded");
     expect(written).toContain("# Problem Recovery");
-    expect(written).toContain("# Solution");
+    expect(written).toContain("# Doppl");
 
     const index = await readVaultIndex(vaultRoot);
     const importedCase = index.cases[0];
@@ -84,6 +84,7 @@ describe("kernel run importer", () => {
     expect(importedCase.solutions[0]).toMatchObject({
       solution_id: "dalton-fsd-run-001__solution",
       title: "Exposure Ledger",
+      stage: "doppl",
       kernel: "dalton",
     });
   });
@@ -110,6 +111,6 @@ describe("kernel run importer", () => {
     const written = await readFile(paths[0], "utf8");
     expect(written).toContain("run_artifact_id: dalton-fsd-run-002");
     expect(written).toContain("# Problem Recovery");
-    expect(written).not.toContain("# Solution");
+    expect(written).not.toContain("# Doppl");
   });
 });
