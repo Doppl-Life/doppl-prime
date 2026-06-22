@@ -12,3 +12,8 @@ docs/
 
 # Drizzle-generated migration artifacts (SQL chain + meta snapshots/journal) — generated, not prettier-managed
 **/event-store/migrations/
+
+# Playwright transient artifacts (P7.15 e2e) — generated, not prettier-managed
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/playwright/.cache/
