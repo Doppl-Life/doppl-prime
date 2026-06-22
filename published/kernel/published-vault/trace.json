@@ -305,6 +305,12 @@
       ]
     }
   ],
+  "budget": {
+    "maxUnits": 1,
+    "usedUnits": 1,
+    "remainingUnits": 0,
+    "exhausted": false
+  },
   "events": [
     {
       "index": 0,
@@ -540,7 +546,9 @@
       "type": "generation.completed",
       "payload": {
         "generation": 0,
-        "childId": "child_cand_liability_clock_cand_recovery_market"
+        "childId": "child_cand_liability_clock_cand_recovery_market",
+        "budgetUsedUnits": 1,
+        "budgetRemainingUnits": 0
       }
     },
     {

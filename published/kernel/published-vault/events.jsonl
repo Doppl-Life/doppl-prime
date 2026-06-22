@@ -23,5 +23,5 @@
 {"index":22,"type":"fitness.scored","payload":{"candidateId":"cand_lender_residual","total":20,"generation":0}}
 {"index":23,"type":"pair.compatibility_checked","payload":{"parentA":"cand_liability_clock","parentB":"cand_recovery_market","score":76,"rationale":"Parents preserve distinct mechanisms while sharing enough case grounding to fuse.","generation":0}}
 {"index":24,"type":"candidate.fused","payload":{"childId":"child_cand_liability_clock_cand_recovery_market","inheritanceWeights":{"parentA":0.667,"parentB":0.333},"generation":0}}
-{"index":25,"type":"generation.completed","payload":{"generation":0,"childId":"child_cand_liability_clock_cand_recovery_market"}}
+{"index":25,"type":"generation.completed","payload":{"generation":0,"childId":"child_cand_liability_clock_cand_recovery_market","budgetUsedUnits":1,"budgetRemainingUnits":0}}
 {"index":26,"type":"run.completed","payload":{"runId":"run_fsd_ownership_fixture","childId":"child_cand_liability_clock_cand_recovery_market"}}

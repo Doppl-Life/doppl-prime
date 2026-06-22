@@ -100,6 +100,13 @@ export type EvolutionGeneration = {
   fitnessTotals: Array<{ candidateId: string; total: number }>;
 };
 
+export type EvolutionBudget = {
+  maxUnits: number;
+  usedUnits: number;
+  remainingUnits: number;
+  exhausted: boolean;
+};
+
 export type RunEvent = {
   index: number;
   type: string;
@@ -123,6 +130,7 @@ export type KernelRun = {
   selectedParents: [CandidateSolution, CandidateSolution] | [];
   fusion?: FusionResult;
   evolution: EvolutionGeneration[];
+  budget: EvolutionBudget;
   events: RunEvent[];
   modelCallRecords?: ModelCallRecord[];
   vaultExport?: VaultExportManifest;
@@ -312,5 +320,9 @@ export function assertKernelRun(value: unknown): KernelRun {
   for (const fitness of run.fitnessRecords || []) assertFitnessRecord(fitness);
   if (run.fusion) assertFusionResult(run.fusion);
   if (!Array.isArray(run.evolution)) throw new Error('KernelRun.evolution is required');
+  const budget = assertObject(run.budget, 'KernelRun.budget');
+  assertIntegerMinField(budget, 'maxUnits', 'KernelRun.budget', 0);
+  assertIntegerMinField(budget, 'usedUnits', 'KernelRun.budget', 0);
+  assertIntegerMinField(budget, 'remainingUnits', 'KernelRun.budget', 0);
   return run as KernelRun;
 }

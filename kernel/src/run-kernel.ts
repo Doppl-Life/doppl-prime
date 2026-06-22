@@ -50,6 +50,7 @@ export async function runKernel(input: {
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
   generations?: number;
+  evolutionBudget?: { maxUnits: number };
 }): Promise<KernelRun> {
   const trace = createMemoryEventRecorder();
   const caseStudy = await loadCaseStudy(input.casePath);
@@ -79,6 +80,13 @@ export async function runKernel(input: {
   const generationProviders =
     input.generationProviders || (await createFixtureGenerationProviders(input.fixturePath));
   const generationCount = Math.max(1, Math.floor(input.generations ?? 1));
+  const maxBudgetUnits = Math.max(0, Math.floor(input.evolutionBudget?.maxUnits ?? generationCount));
+  const budget = {
+    maxUnits: maxBudgetUnits,
+    usedUnits: 0,
+    remainingUnits: maxBudgetUnits,
+    exhausted: maxBudgetUnits === 0,
+  };
 
   const problemRecovery = await generationProviders.problemRecovery.recover({
     runId: input.runId,
@@ -96,6 +104,15 @@ export async function runKernel(input: {
   let fusion: FusionResult | undefined;
 
   for (let generation = 0; generation < generationCount; generation += 1) {
+    if (budget.remainingUnits < 1) {
+      budget.exhausted = true;
+      trace.push('evolution.budget_exhausted', {
+        generation,
+        maxUnits: budget.maxUnits,
+        usedUnits: budget.usedUnits,
+      });
+      break;
+    }
     trace.push('generation.started', { generation });
     const freshCandidates = await generationProviders.candidateGenerator.generate({
       runId: input.runId,
@@ -178,9 +195,14 @@ export async function runKernel(input: {
         total: fitness.total,
       })),
     });
+    budget.usedUnits += 1;
+    budget.remainingUnits = Math.max(0, budget.maxUnits - budget.usedUnits);
+    budget.exhausted = budget.remainingUnits === 0 && generation + 1 < generationCount;
     trace.push('generation.completed', {
       generation,
       childId: fusion?.child.id || null,
+      budgetUsedUnits: budget.usedUnits,
+      budgetRemainingUnits: budget.remainingUnits,
     });
   }
   const modelCallRecords = modelCallRecordsFrom(generationProviders);
@@ -210,6 +232,7 @@ export async function runKernel(input: {
     selectedParents,
     fusion,
     evolution,
+    budget,
     events: trace.events,
     modelCallRecords,
   });

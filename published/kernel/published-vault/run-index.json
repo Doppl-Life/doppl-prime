@@ -85,6 +85,12 @@
       ]
     }
   ],
+  "budget": {
+    "maxUnits": 1,
+    "usedUnits": 1,
+    "remainingUnits": 0,
+    "exhausted": false
+  },
   "modelOutputs": {
     "accepted": 0,
     "repairRequested": 0,

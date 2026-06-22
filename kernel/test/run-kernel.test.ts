@@ -172,6 +172,88 @@ test('can evolve a child across multiple generations', async () => {
   assert.equal(run.fusion?.child.generation, 2);
 });
 
+test('stops evolution when the generation budget is exhausted', async () => {
+  let generateCalls = 0;
+  const run = await runKernel({
+    runId: 'run_budgeted_evolution',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+    generations: 3,
+    evolutionBudget: { maxUnits: 1 },
+    generationProviders: {
+      problemRecovery: {
+        async recover({ caseStudy }) {
+          return {
+            id: `budget_recovery_${caseStudy.id}`,
+            caseId: caseStudy.id,
+            title: 'Budget Recovery',
+            recoveredProblem: 'Recover once inside a bounded evolution run.',
+            hiddenConstraint: 'The budget must stop extra generations.',
+            falsifier: 'More generations run than the budget allows.',
+            citedKnowledge: [],
+          };
+        },
+      },
+      candidateGenerator: {
+        async generate({ caseStudy, generation }) {
+          generateCalls += 1;
+          return [
+            {
+              id: `budget_${generation}_a`,
+              caseId: caseStudy.id,
+              agenomeId: `ag_budget_${generation}_a`,
+              generation,
+              title: `Budget ${generation} A`,
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+            {
+              id: `budget_${generation}_b`,
+              caseId: caseStudy.id,
+              agenomeId: `ag_budget_${generation}_b`,
+              generation,
+              title: `Budget ${generation} B`,
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+          ];
+        },
+      },
+      criticCouncil: {
+        async judge({ candidates }) {
+          return candidates.map((candidate, index) => ({
+            candidateId: candidate.id,
+            criticId: 'budget',
+            score: 90 - index,
+            pressure: 'bounded',
+            revisionMandate: 'respect budget',
+          }));
+        },
+      },
+    },
+  });
+
+  assert.equal(generateCalls, 1);
+  assert.equal(run.evolution.length, 1);
+  assert.deepEqual(run.budget, {
+    maxUnits: 1,
+    usedUnits: 1,
+    remainingUnits: 0,
+    exhausted: true,
+  });
+  assert.ok(
+    run.events.some(
+      (event) => event.type === 'evolution.budget_exhausted' && event.payload.generation === 1,
+    ),
+  );
+});
+
 test('runs through replayed model generation providers', async () => {
   const prompts = {
     recovery: 'recover for run model',

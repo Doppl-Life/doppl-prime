@@ -80,6 +80,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       modelCallsPath: paths.modelCallsPath,
     },
     evolution: run.evolution,
+    budget: run.budget,
     modelOutputs: replayRunProjection(run.events).modelOutputs,
   };
 }
