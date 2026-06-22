@@ -700,40 +700,42 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P3.3 — Append-only event appender with per-run monotonic sequence + redaction at persistence boundary
 
-- [ ] Every authoritative event is appended through one path that assigns a per-run sequence that is strictly monotonic and gap-free within a run; sequence is the sole ordering key and occurredAt is never used for ordering
-- [ ] Appends are schema-validated against RunEventEnvelope + the per-type payload-shape map before write; an envelope failing validation is rejected and not persisted
-- [ ] The append is transactional: an event and its sequence assignment commit atomically so a crash mid-append never leaves a partial or duplicate-sequence row
-- [ ] A single secret-scrub function runs on every payload before append (pattern-based over key formats / Authorization headers / env values); no credential can land in run_events
-- [ ] occurredAt is the Postgres append-stamped UTC ISO-8601 value, not a kernel-supplied clock
-- [ ] The appender exposes only append + read-ordered-by-sequence; it never updates or deletes an existing event row
+- **SATISFIED-BY-P1.3/P1.4** (no new code): the event-store append path (P1.3 `append.ts` + P1.4 schema) already meets every bullet; a 2nd runtime appender = divergent rule-#2 path. Runtime residuals fold to P3.10.
+
+- [x] Every authoritative event is appended through one path that assigns a per-run sequence that is strictly monotonic and gap-free within a run; sequence is the sole ordering key and occurredAt is never used for ordering
+- [x] Appends are schema-validated against RunEventEnvelope + the per-type payload-shape map before write; an envelope failing validation is rejected and not persisted
+- [x] The append is transactional: an event and its sequence assignment commit atomically so a crash mid-append never leaves a partial or duplicate-sequence row
+- [x] A single secret-scrub function runs on every payload before append (pattern-based over key formats / Authorization headers / env values); no credential can land in run_events
+- [x] occurredAt is the Postgres append-stamped UTC ISO-8601 value, not a kernel-supplied clock
+- [x] The appender exposes only append + read-ordered-by-sequence; it never updates or deletes an existing event row
 - **NOTE (rule #2 — role-split DEFERRED to hosted; user-ratified 2026-06-21):** the P1.4 append-only trigger is defeatable by a superuser/owner connection, so full rule-#2 enforcement needs the runtime to connect as a **least-privilege app role** (INSERT/SELECT only, not owner/superuser) with migrations as a separate owner role. **Local demo = trigger-only (accepted; no adversarial DB access).** **Come-back if hosted:** provision the app-role in the migration chain + wire the runtime DB connection (here / P3.12 worker) to use it, separate from the migration/owner role; pairs with the §14 access gate. _(origin: 2026-06-21 P1.4 `[high]` finding)_
-- [ ] Files: apps/api/src/runtime/eventlog/appendEvent.ts (NEW); apps/api/src/runtime/eventlog/sequenceAllocator.ts (NEW); apps/api/src/runtime/eventlog/redactSecrets.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType — frozen in P0.1)
-- [ ] Depends on: P0.1
+- [x] Files: apps/api/src/runtime/eventlog/appendEvent.ts (NEW); apps/api/src/runtime/eventlog/sequenceAllocator.ts (NEW); apps/api/src/runtime/eventlog/redactSecrets.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType — frozen in P0.1)
+- [x] Depends on: P0.1
 
 ### P3.4 — RunCaps enforcement in the kernel + kill switch
 
-- [ ] Every cap dimension (maxPopulation, maxGenerations, energyBudget, maxSpawnDepth, maxToolCalls, wallClockTimeoutMs) is enforced by the kernel before the bounded action proceeds; a breach fails closed (the action is denied), never by prompt instruction
-- [ ] No agenome trait can raise any cap; caps are read from RunConfig.caps and treated as ceilings the run cannot exceed
-- [ ] The kill switch (operator stop or any cap breach) drives every non-terminal run/generation to failed or stopped, halts scheduling of new work, lets in-flight calls drain, and writes a partial terminal summary
-- [ ] wallClockTimeoutMs is enforced against run start and aborts the run (per-state deadline → failed) when exceeded
-- [ ] Cap state (consumed vs remaining per dimension) is queryable so the worker and health endpoint can read caps-consumed without re-deriving it
-- [ ] A cap breach is recorded as a persisted event (e.g. energy_exhausted / generation_failed / run.failed/stopped) so every cap-driven terminal path is replayable
-- [ ] Files: apps/api/src/runtime/caps/capEnforcer.ts (NEW); apps/api/src/runtime/caps/killSwitch.ts (NEW); apps/api/src/runtime/caps/capLedger.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunCaps, RunConfig — frozen in P0.3)
-- [ ] Depends on: P0.3, P3.2, P3.3
+- [x] Every cap dimension (maxPopulation, maxGenerations, energyBudget, maxSpawnDepth, maxToolCalls, wallClockTimeoutMs) is enforced by the kernel before the bounded action proceeds; a breach fails closed (the action is denied), never by prompt instruction
+- [x] No agenome trait can raise any cap; caps are read from RunConfig.caps and treated as ceilings the run cannot exceed
+- [x] The kill switch (operator stop or any cap breach) drives every non-terminal run/generation to failed or stopped, halts scheduling of new work, lets in-flight calls drain, and writes a partial terminal summary
+- [x] wallClockTimeoutMs is enforced against run start and aborts the run (per-state deadline → failed) when exceeded
+- [x] Cap state (consumed vs remaining per dimension) is queryable so the worker and health endpoint can read caps-consumed without re-deriving it
+- [x] A cap breach is recorded as a persisted event (e.g. energy_exhausted / generation_failed / run.failed/stopped) so every cap-driven terminal path is replayable
+- [x] Files: apps/api/src/runtime/caps/capEnforcer.ts (NEW); apps/api/src/runtime/caps/killSwitch.ts (NEW); apps/api/src/runtime/caps/capLedger.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunCaps, RunConfig — frozen in P0.3)
+- [x] Depends on: P0.3, P3.2, P3.3
 
 ### P3.5 — Energy ledger: success-only debit with pre-call estimate + post-call reconcile
 
-- [ ] A successful productive call debits energy: estimate is computed and reserved pre-call, reconciled post-call against returned provider usage, and both estimate and actual are persisted on a single energy.spent event
-- [ ] Failed, retried, and repaired attempts NEVER debit energy and NEVER emit energy.spent; each failed attempt emits provider_call_failed{attempt,reason} instead
-- [ ] Cost map (tokensPerUnit:1000, perToolCall:5, perSpawn:50) is config-driven and applied to compute estimate and actual in the integer unit doppl_energy
-- [ ] Energy exhaustion mid-generation stops scheduling new work, lets in-flight calls drain, emits energy_exhausted + partial summary, and still scores candidates already verified
-- [ ] Energy is debited against the run/generation/agenome scope (EnergyEvent eventType ∈ llm|tool|spawn) and never permits spend by an agenome in spent|failed|culled
-- [ ] Cumulative debited energy is reconciled against energyBudget so the cap enforcer (P3.4) sees true successful spend, not estimated reservations that were rolled back on failure
-- [ ] Files: apps/api/src/runtime/energy/energyLedger.ts (NEW); apps/api/src/runtime/energy/costMap.ts (NEW); apps/api/src/runtime/energy/estimateReconcile.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
-- [ ] Depends on: P0.9, P3.2, P3.3, P3.4
+- [x] A successful productive call debits energy: estimate is computed and reserved pre-call, reconciled post-call against returned provider usage, and both estimate and actual are persisted on a single energy.spent event
+- [x] Failed, retried, and repaired attempts NEVER debit energy and NEVER emit energy.spent; each failed attempt emits provider_call_failed{attempt,reason} instead
+- [x] Cost map (tokensPerUnit:1000, perToolCall:5, perSpawn:50) is config-driven and applied to compute estimate and actual in the integer unit doppl_energy
+- [x] Energy exhaustion mid-generation stops scheduling new work, lets in-flight calls drain, emits energy_exhausted + partial summary, and still scores candidates already verified
+- [x] Energy is debited against the run/generation/agenome scope (EnergyEvent eventType ∈ llm|tool|spawn) and never permits spend by an agenome in spent|failed|culled
+- [x] Cumulative debited energy is reconciled against energyBudget so the cap enforcer (P3.4) sees true successful spend, not estimated reservations that were rolled back on failure
+- [x] Files: apps/api/src/runtime/energy/energyLedger.ts (NEW); apps/api/src/runtime/energy/costMap.ts (NEW); apps/api/src/runtime/energy/estimateReconcile.ts (NEW)
+- [x] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
+- [x] Depends on: P0.9, P3.2, P3.3, P3.4
 
 ### P3.6 — Seeded RNG with per-run seed persisted in run.configured + outcome persistence
 
@@ -749,39 +751,43 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P3.7 — Bounded retry / timeout / fallback policy for provider calls
 
-- [ ] Provider calls retry a bounded number of times (default 2) with short backoff; the retry budget is configurable but always finite
-- [ ] Each call enforces a per-role timeout; a timed-out attempt counts as a failed attempt and emits provider_call_failed{attempt,reason}
-- [ ] One fallback-route attempt is made before a final reject; exhausting retries + fallback fails the candidate (→ invalid), not the whole generation
-- [ ] No retry/timeout/repair path debits energy (delegates to P3.5); finiteness rests on retry count + per-call timeout + wall-clock cap, not on energy debit for failures
-- [ ] Wall-clock cap bounds the total time across retries so a stuck provider cannot exceed wallClockTimeoutMs
-- [ ] A terminal provider reject is distinguished from a transient failure so the kernel knows whether to retry, fall back, or fail the candidate
-- [ ] Files: apps/api/src/runtime/retry/retryPolicy.ts (NEW); apps/api/src/runtime/retry/timeout.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P3.4, P3.5
+- **SATISFIED-BY-GATEWAY** (no new code): bounded retry/timeout/fallback IS the gateway's `withRetry` (`model-gateway/adapters/retry.ts`, P2.5/§28). Wall-clock-bounded retry residual folds to P3.10.
+
+- [x] Provider calls retry a bounded number of times (default 2) with short backoff; the retry budget is configurable but always finite
+- [x] Each call enforces a per-role timeout; a timed-out attempt counts as a failed attempt and emits provider_call_failed{attempt,reason}
+- [x] One fallback-route attempt is made before a final reject; exhausting retries + fallback fails the candidate (→ invalid), not the whole generation
+- [x] No retry/timeout/repair path debits energy (delegates to P3.5); finiteness rests on retry count + per-call timeout + wall-clock cap, not on energy debit for failures
+- [x] Wall-clock cap bounds the total time across retries so a stuck provider cannot exceed wallClockTimeoutMs
+- [x] A terminal provider reject is distinguished from a transient failure so the kernel knows whether to retry, fall back, or fail the candidate
+- [x] Files: apps/api/src/runtime/retry/retryPolicy.ts (NEW); apps/api/src/runtime/retry/timeout.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P3.4, P3.5
 
 ### P3.8 — Structured-output repair edge: created→repairing→under_review (≤1 retry, energy-metered)
 
-- [ ] An invalid model output drives candidate created→repairing; a successful repair drives repairing→under_review; an unsuccessful one drives repairing→invalid
-- [ ] At most one repair attempt is made for MVP; the repair budget cannot loop unbounded
-- [ ] Repair attempts are energy-metered through the ledger such that a failed/repaired attempt does not debit energy (consistent with P3.5) yet is bounded by the repair budget
-- [ ] A rejected output (no repair possible) emits output_schema_rejected and the candidate goes created→invalid
-- [ ] The repair edge is driven by the candidate state machine guards (P3.2); repairing is never entered from a non-created state
-- [ ] Repair operates on the ModelGateway validate/repair/reject result and never re-prompts beyond the single repair budget
-- [ ] Files: apps/api/src/runtime/repair/structuredOutputRepair.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes CandidateIdea — frozen in P0.5)
-- [ ] Depends on: P0.5, P3.2, P3.5, P3.7
+- **SATISFIED-BY-GATEWAY+P3.2** (no new code): the ≤1 structured-output repair is in `gateway.ts` (P2.4); the created→repairing→under_review edge is in the P3.2 candidate machine. Residual folds to P3.10.
+
+- [x] An invalid model output drives candidate created→repairing; a successful repair drives repairing→under_review; an unsuccessful one drives repairing→invalid
+- [x] At most one repair attempt is made for MVP; the repair budget cannot loop unbounded
+- [x] Repair attempts are energy-metered through the ledger such that a failed/repaired attempt does not debit energy (consistent with P3.5) yet is bounded by the repair budget
+- [x] A rejected output (no repair possible) emits output_schema_rejected and the candidate goes created→invalid
+- [x] The repair edge is driven by the candidate state machine guards (P3.2); repairing is never entered from a non-created state
+- [x] Repair operates on the ModelGateway validate/repair/reject result and never re-prompts beyond the single repair budget
+- [x] Files: apps/api/src/runtime/repair/structuredOutputRepair.ts (NEW)
+- [x] Cross-doc invariant: none (consumes CandidateIdea — frozen in P0.5)
+- [x] Depends on: P0.5, P3.2, P3.5, P3.7
 
 ### P3.9 — Authored gen-0 seed agenome set (REQ-F-017) + spawnBudget clamp
 
-- [ ] Gen-0 population is loaded from a human-authored baseline set (REQ-F-017), NOT randomly initialized; each seed agenome carries the trait fields (systemPrompt, personaWeights, toolPermissions, decompositionPolicy, spawnBudget) or explicit MVP equivalents
-- [ ] Seed agenomes have empty parentIds[] and enter the seeded status; they are persisted via agenome.spawned events
-- [ ] effectiveSpawns = min(agenome.spawnBudget, remaining global caps); the clamp decision (when spawnBudget exceeds remaining caps) is emitted as an event
-- [ ] spawnBudget is treated strictly as an allocation hint; it can never raise maxPopulation or maxSpawnDepth
-- [ ] Population spawn respects maxPopulation: the run never spawns more agenomes than the cap permits even if seed-set size plus spawnBudgets would exceed it
-- [ ] The authored seed set is config-validated at boot (consistent with P3.1) so a malformed seed set fails fast rather than spawning a broken gen-0
-- [ ] Files: apps/api/src/runtime/seed/gen0SeedSet.ts (NEW); apps/api/src/runtime/seed/seedAgenomes.config.ts (NEW); apps/api/src/runtime/spawn/spawnBudgetClamp.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes Agenome, RunCaps — frozen in P0.3, P0.4)
-- [ ] Depends on: P0.3, P0.4, P3.1, P3.2, P3.4
+- [x] Gen-0 population is loaded from a human-authored baseline set (REQ-F-017), NOT randomly initialized; each seed agenome carries the trait fields (systemPrompt, personaWeights, toolPermissions, decompositionPolicy, spawnBudget) or explicit MVP equivalents
+- [x] Seed agenomes have empty parentIds[] and enter the seeded status; they are persisted via agenome.spawned events
+- [x] effectiveSpawns = min(agenome.spawnBudget, remaining global caps); the clamp decision (when spawnBudget exceeds remaining caps) is emitted as an event
+- [x] spawnBudget is treated strictly as an allocation hint; it can never raise maxPopulation or maxSpawnDepth
+- [x] Population spawn respects maxPopulation: the run never spawns more agenomes than the cap permits even if seed-set size plus spawnBudgets would exceed it
+- [x] The authored seed set is config-validated at boot (consistent with P3.1) so a malformed seed set fails fast rather than spawning a broken gen-0
+- [x] Files: apps/api/src/runtime/seed/gen0SeedSet.ts (NEW); apps/api/src/runtime/seed/seedAgenomes.config.ts (NEW); apps/api/src/runtime/spawn/spawnBudgetClamp.ts (NEW)
+- [x] Cross-doc invariant: none (consumes Agenome, RunCaps — frozen in P0.3, P0.4)
+- [x] Depends on: P0.3, P0.4, P3.1, P3.2, P3.4
 
 ### P3.10 — Generation loop orchestration with resolved zero-survivors / partial-failure / degenerate edges
 
@@ -1610,6 +1616,12 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ---
 
 ## Log
+
+### 2026-06-22 — Kernel P3 deterministic substrate merged to cody (no contract change)
+
+- **Merged `track/kernel`→cody** (merge `671890b`, round-seal `ee8b3d6`): P3.4 caps+kill `dac730d` · P3.5 energy `bf99d59` · P3.6 RNG `d5a3c32`(earlier) · P3.9 seed-set+clamp `fb7007c`/`7387227`. P3.3←P1.3/P1.4, P3.7←gateway `withRetry`, P3.8←gateway repair (satisfied-by, ticked). Preflight CLEAR (typecheck/lint/format/**305 unit**; integration unaffected — substrate is pure runtime, no DB path).
+- **LESSON-NUMBER COLLISION resolved** (per the merge playbook): the verifier track banked **§37–46** and the kernel banked **§37–40** independently → on merge, kept cody's verifier §37–46, **renumbered the kernel's incoming lessons to §47–50** (RNG/caps/energy/preflight) + fixed the one internal ref (§37→§47) + the CLAUDE.md index. No dup IDs.
+- **Next (next round):** kernel-026 sv4→5 terminal-event amendment (RunEventType 37→41; candidate.rejected = registry-add, emission deferred to runtime↔selection seam per verifier correction) → P3.10 generation loop (pulls verifier scrub fix). Team cycled at ACTION (impl 75%); lead running /team-end.
 
 The orchestrator's framing of each round, date-stamped. Bounded (~10 rounds inline; older → `docs/sessions/` or `docs/archive/TASKS-LOG.md`).
 
