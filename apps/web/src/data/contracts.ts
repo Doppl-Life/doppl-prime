@@ -17,6 +17,8 @@ export {
   RunEventEnvelope,
   RunEventType,
   CandidateIdea,
+  CriticMandate,
+  CriticReview,
   EnergyEvent,
   FitnessScore,
   NoveltyScore,
