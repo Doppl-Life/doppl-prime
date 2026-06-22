@@ -159,7 +159,8 @@ test('kernel HTTP server serves a visible production page', async () => {
   assert.equal(response.contentType, 'text/html; charset=utf-8');
   assert.match(response.bodyText, /Doppl Evolution Graph/);
   assert.match(response.bodyText, /Real case studies/);
-  assert.match(response.bodyText, /window\.DOPPL_DASHBOARD_API_KEY = "dashboard-test-key"/);
+  assert.doesNotMatch(response.bodyText, /dashboard-test-key/);
+  assert.doesNotMatch(response.bodyText, /DOPPL_DASHBOARD_API_KEY/);
   assert.match(response.bodyText, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(response.bodyText, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.match(response.bodyText, /id="lineage-graph"/);
@@ -381,6 +382,87 @@ test('kernel HTTP server runs a requested case study path with live model reques
   assert.equal(response.body.child, 'child_glp_reward_budget_glp_channel_exposure');
   assert.equal(indexResponse.status, 200);
   assert.equal(indexResponse.body.caseTitle, 'Problem Statement: GLP-1 and the Packaged-Food Demand Regime');
+});
+
+test('kernel dashboard route runs approved cases without exposing the kernel API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-case-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'Dashboard GLP-1 Recovery',
+      recoveredProblem:
+        'The GLP-1 case is about impulse demand destruction across the household basket.',
+      hiddenConstraint: 'Reward suppression changes occasions rather than preferences.',
+      falsifier: 'Impulse basket add-ons grow in GLP-1 households.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'dashboard_reward',
+          agenomeId: 'ag_blindside',
+          title: 'Reward Suppression Index',
+          summary: 'Track impulse categories as one reward-linked demand pool.',
+          mechanism: 'Compare treated household baskets before and after GLP-1 adoption.',
+          claimedDelta: 'Escapes the reformulation-only consensus.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'dashboard_basket',
+          agenomeId: 'ag_first_principles',
+          title: 'Basket Shock Map',
+          summary: 'Rank categories by dependence on unplanned eating occasions.',
+          mechanism: 'Map basket share from grazing, checkout, and convenience trips.',
+          claimedDelta: 'Identifies first revenue lines to miss.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'dashboard_reward',
+          criticId: 'grounding',
+          score: 90,
+          pressure: 'The mechanism captures the cross-category effect.',
+          revisionMandate: 'Define the household panel.',
+        },
+        {
+          candidateId: 'dashboard_basket',
+          criticId: 'grounding',
+          score: 82,
+          pressure: 'The basket readout is concrete.',
+          revisionMandate: 'Separate grocery and convenience channels.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_glp1_live',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        KERNEL_API_KEY: 'must-not-be-in-browser',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runId, 'dashboard_glp1_live');
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(response.body.child.id, 'child_dashboard_reward_dashboard_basket');
+  assert.match(response.body.dashboardArtifact, /GLP-1 case is about impulse demand destruction/);
+  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
 });
 
 test('kernel HTTP server requires an API key when configured', async () => {

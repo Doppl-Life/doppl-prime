@@ -77,20 +77,8 @@ function writeHttpResponse(response: ServerResponse, result: KernelHttpResponse)
   response.end(result.bodyText ?? JSON.stringify(result.body));
 }
 
-function dashboardApiKey(options: KernelHttpOptions): string {
-  return (
-    options.env?.KERNEL_DASHBOARD_API_KEY ??
-    options.env?.KERNEL_API_KEY ??
-    process.env.KERNEL_DASHBOARD_API_KEY ??
-    process.env.KERNEL_API_KEY ??
-    ''
-  );
-}
-
 function productionPage(options: KernelHttpOptions = {}): string {
-  const dashboardKey = dashboardApiKey(options);
   const caseStudiesJson = JSON.stringify(DASHBOARD_CASE_STUDIES);
-  const dashboardKeyJson = JSON.stringify(dashboardKey);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -178,7 +166,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
       <h1>Doppl Evolution Graph</h1>
       <p>Run the kernel, inspect selection pressure, and watch candidates fuse into the next child.</p>
       <label for="api-key-input">Kernel API key</label>
-      <input id="api-key-input" autocomplete="off" spellcheck="false" placeholder="Auto-filled demo token">
+      <input id="api-key-input" autocomplete="off" spellcheck="false" placeholder="Optional for protected readback">
       <h2>Real case studies</h2>
       <div id="case-list" class="case-list" aria-label="Real case studies"></div>
       <label for="run-id-input">Run ID</label>
@@ -188,7 +176,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
       <button id="live-button" class="primary">Run selected case</button>
       <button id="fixture-button" class="secondary">Run FSD fixture</button>
       <button id="fetch-button" class="secondary">Fetch run graph</button>
-      <p id="status" class="status">Demo token loaded. Choose a case and run Doppl.</p>
+      <p id="status" class="status">Choose a case and run Doppl. Secrets stay server-side.</p>
     </aside>
     <section class="workspace" aria-label="Kernel run graph workspace">
       <div class="topline">
@@ -252,7 +240,6 @@ function productionPage(options: KernelHttpOptions = {}): string {
     </section>
   </main>
   <script>
-    window.DOPPL_DASHBOARD_API_KEY = ${dashboardKeyJson};
     const dashboardCases = ${caseStudiesJson};
     const sampleRun = {
       runId: 'sample',
@@ -273,7 +260,6 @@ function productionPage(options: KernelHttpOptions = {}): string {
     const runIdInput = document.getElementById('run-id-input');
     const modelInput = document.getElementById('model-input');
     const artifactPreview = document.getElementById('artifact-preview');
-    apiKeyInput.value = window.DOPPL_DASHBOARD_API_KEY || '';
     function slugTime() {
       return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
     }
@@ -331,9 +317,9 @@ function productionPage(options: KernelHttpOptions = {}): string {
       const selectedCase = liveModel ? state.selectedCase : dashboardCases[0];
       const runId = runIdInput.value.trim() || ('dashboard_' + Date.now());
       status.textContent = liveModel ? 'Running ' + selectedCase.title + ' through Doppl...' : 'Running FSD fixture...';
-      const response = await fetch('/kernel/runs', {
+      const response = await fetch('/kernel/dashboard/runs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           runId,
           casePath: selectedCase.path,
@@ -346,8 +332,9 @@ function productionPage(options: KernelHttpOptions = {}): string {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'run failed');
       runIdInput.value = body.runId;
-      status.textContent = 'Run complete. Fetching graph...';
-      await fetchRunGraph();
+      renderGraph(body);
+      if (body.dashboardArtifact) artifactPreview.textContent = body.dashboardArtifact;
+      status.textContent = 'Graph loaded for ' + body.runId + '.';
     }
     async function fetchRunGraph() {
       const runId = runIdInput.value.trim();
@@ -444,6 +431,12 @@ function casePathFromRequest(value: unknown): string {
     throw new Error('casePath must point at a case-studies problem-statement.md file');
   }
   return normalized;
+}
+
+function approvedDashboardCase(casePath: string): (typeof DASHBOARD_CASE_STUDIES)[number] {
+  const match = DASHBOARD_CASE_STUDIES.find((caseStudy) => caseStudy.path === casePath);
+  if (!match) throw new Error('dashboard case is not approved');
+  return match;
 }
 
 async function findRunDir(rootDir: string, runId: string): Promise<string | undefined> {
@@ -556,6 +549,40 @@ async function runFromRequestBody(
   };
 }
 
+async function runDashboardCaseFromRequestBody(
+  body: string | undefined,
+  options: KernelHttpOptions,
+): Promise<Record<string, unknown>> {
+  const parsed = JSON.parse(body || '{}') as KernelRunRequest;
+  const casePath = casePathFromRequest(parsed.casePath);
+  const dashboardCase = approvedDashboardCase(casePath);
+  const outDir = parsed.outDir || defaultKernelArgs.outDir;
+  const liveModel = dashboardCase.mode === 'live';
+  const summary = await runFromRequestBody(
+    JSON.stringify({
+      runId: parsed.runId || `${dashboardCase.id}_${Date.now()}`,
+      casePath,
+      generations: 1,
+      budget: 1,
+      liveModel,
+      model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
+      outDir,
+      proofBoardDir: parsed.proofBoardDir || defaultKernelArgs.proofBoardDir,
+    }),
+    options,
+  );
+  const runId = String(summary.runId);
+  const runIndex = await readRunIndex(runId, outDir);
+  const problemRecovery = runIndex.problemRecovery as { path?: string } | undefined;
+  const artifact = problemRecovery?.path
+    ? await readRunArtifact(runId, outDir, problemRecovery.path)
+    : undefined;
+  return {
+    ...runIndex,
+    dashboardArtifact: artifact?.content,
+  };
+}
+
 export async function handleKernelHttpRequest(
   request: KernelHttpRequest,
   options: KernelHttpOptions = {},
@@ -571,6 +598,9 @@ export async function handleKernelHttpRequest(
     }
     if (request.method === 'GET' && url.pathname === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
+    }
+    if (request.method === 'POST' && url.pathname === '/kernel/dashboard/runs') {
+      return { status: 200, body: await runDashboardCaseFromRequestBody(request.body, options) };
     }
     if (request.method === 'GET' && url.pathname.startsWith('/kernel/runs/')) {
       if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
