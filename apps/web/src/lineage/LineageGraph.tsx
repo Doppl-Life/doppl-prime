@@ -126,6 +126,13 @@ export function LineageGraph(): JSX.Element {
       keptEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
       { rankdir: "LR", nodesep: 50, ranksep: 220, defaultWidth: 200, defaultHeight: 88 },
     );
+    // Lookup: for each scoring node, which candidate does it score?
+    // The projection emits a "scores" edge from scoring_node → candidate
+    // alongside the scoring node itself, so this map is exact.
+    const scoringToCandidate = new Map<string, string>();
+    for (const e of keptEdges) {
+      if (e.type === "scores") scoringToCandidate.set(e.source, e.target);
+    }
     const rfNodes: Node[] = laid.nodes.map((node) => {
       const orig = keptNodes.find((n) => n.id === node.id);
       // Replace the raw-UUID label with a human-readable derived label by
@@ -133,6 +140,7 @@ export function LineageGraph(): JSX.Element {
       // applies (rare — only when the original entity hasn't been folded
       // into runStore yet).
       let friendly: string | undefined;
+      let scoredCandidateId: string | undefined;
       if (orig?.type === "agenome") {
         friendly = personaByAgenome[node.id];
       } else if (orig?.type === "candidate") {
@@ -141,6 +149,7 @@ export function LineageGraph(): JSX.Element {
         const total = orig.metrics?.total;
         friendly =
           typeof total === "number" ? `Fitness ${total.toFixed(2)}` : "Fitness";
+        scoredCandidateId = scoringToCandidate.get(node.id);
       } else if (orig?.type === "critic_review") {
         friendly = `Critic: ${orig.label}`;
       } else if (orig?.type === "check_result") {
@@ -156,6 +165,7 @@ export function LineageGraph(): JSX.Element {
           rawId: node.id,
           status: orig?.status,
           metrics: orig?.metrics,
+          ...(scoredCandidateId !== undefined ? { scoredCandidateId } : {}),
         },
       };
     });
@@ -238,6 +248,12 @@ function LineageCanvas({
             dispatch({ kind: "SELECT_CANDIDATE", candidateId: node.id });
           } else if (node.type === "agenome") {
             dispatch({ kind: "SELECT_AGENOME", agenomeId: node.id });
+          } else if (node.type === "scoring") {
+            // A score belongs to exactly one candidate — selecting the
+            // score is the same intent as selecting that candidate.
+            const candidateId = (node.data as { scoredCandidateId?: string } | undefined)
+              ?.scoredCandidateId;
+            if (candidateId) dispatch({ kind: "SELECT_CANDIDATE", candidateId });
           }
         }}
         fitView
