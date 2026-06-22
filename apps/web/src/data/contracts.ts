@@ -17,6 +17,7 @@ export {
   RunEventEnvelope,
   RunEventType,
   CandidateIdea,
+  EnergyEvent,
   FitnessScore,
   NoveltyScore,
   LineageGraphProjection,
