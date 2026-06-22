@@ -75,6 +75,23 @@ kernel owner must not accidentally undo.
 - **Revisit if:** a source file is legally or scientifically required as
   provenance for a promoted fixture; then make that provenance boundary explicit.
 
+### This branch is Doppel Prime - 2026-06-22
+
+- **Chose:** treat this branch as Doppel Prime without migration,
+  compatibility, comparison, or derivative labels. `my-docs/**` belongs to this
+  branch.
+- **Over:** qualifying this branch, or letting original Prime docs under
+  `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/planning/**`,
+  `docs/prds/**`, and `docs/gap-audits/**` guide current architecture,
+  requirements, repo shape, or implementation order by default.
+- **Because:** this branch must be understood by what it is building now.
+  Original Prime docs may be canonical elsewhere, but here they are quarantined
+  reference material. Only promoted specs, memory decisions, `my-docs/**`, and
+  current kernel behavior are authority.
+- **Revisit if:** an inherited doc is deliberately promoted into an active
+  contract; then move the specific claim into the owning spec or register rather
+  than making the old doc authoritative again.
+
 ### Product comparison is demoted - 2026-06-21
 
 - **Chose:** keep kernel contracts local and remove ongoing comparison docs.

@@ -9,8 +9,15 @@
 - `published/**` is the committed deploy page surface; `published/index.html`
   is generated at build time and ignored.
 - `out/**` is disposable drill-down output.
-- Specs live under `specs/**`; memory lives in `MEMORY.md`. Historical source is
-  not authority unless a named kernel artifact still needs it.
+- Specs live under `specs/**`; memory lives in `MEMORY.md`.
+- This branch is Doppel Prime. Do not qualify it with migration tracks,
+  compatibility branches, or derivative paths.
+- Original Prime docs are quarantined historical input, not operating authority.
+  Treat `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`,
+  `docs/planning/**`, `docs/prds/**`, and `docs/gap-audits/**` as reference-only
+  unless a specific claim has been promoted into `specs/**`, `MEMORY.md`, or the
+  current kernel code.
+- `my-docs/**` belongs to this branch; it is not part of the old-doc quarantine.
 - After a cleanup pass, remove the cleanup machinery unless it enforces a
   durable contract. Temporary scans, lists of dead names, and one-off guards do
   not survive the cleanup they enabled.
@@ -25,6 +32,19 @@ instruction files that compete with the named surfaces above.
 Do not import product application architecture, docs, or repository assumptions
 unless the user explicitly asks.
 
+## Original Prime quarantine
+
+The inherited original Prime docs under `docs/**` are allowed to exist as
+quarantined source material. They may be canonical elsewhere. Here they do not
+define product direction, architecture, requirements, repo shape, or
+implementation order.
+
+If an old-doc claim should constrain current work, promote the claim into its
+own home first: `specs/**` for contracts or evaluation doctrine, `MEMORY.md` for
+fork or ownership decisions, or the current kernel code/tests for behavior. Do
+not cite old docs as the reason for a change. Do not give this branch a
+qualifier.
+
 ## Registers
 
 Log durable findings in one home:
@@ -37,7 +57,7 @@ Log durable findings in one home:
 | Portable move or trap | `HEURISTICS.md` |
 | Reward hack or confirmed failure | `BUGS_AND_MITIGATIONS.md` |
 | Operational watch item | `OPERATIONAL_WATCHLIST.md` |
-| Lineage/delta schema change | `docs/lineage-ledger.schema.md` |
+| Lineage/delta schema change | `my-docs/lineage-ledger.schema.md` |
 | Term definition | `GLOSSARY.md` |
 | How to run/use the kernel | `README.md` or `tools/README.md` |
 
