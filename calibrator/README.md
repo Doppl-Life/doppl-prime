@@ -27,11 +27,11 @@ The app can run as a read-only static build because it falls back from `/api/ind
 npm --prefix calibrator run export:static
 ```
 
-Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, problem recoveries, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, problem recoveries, solutions, and score history; saving ratings requires the local dev API or a future hosted backend.
 
 ## Calibration History
 
-The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching problem recovery or solution in the generated index. Review panels show the current human average, rating count, judge-score delta when applicable, and verdict distribution so reviewers can see calibration evidence without leaving the workbench.
+The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching problem recovery or solution in the generated index. Review panels show the current human average, rating count, judge-score delta when applicable, and recent notes so reviewers can see calibration evidence without leaving the workbench.
 
 In local writable mode, submitting a rating writes markdown plus the JSONL ledger event, then refreshes the vault index so the new rating appears immediately. In static preview mode, the same history is visible from the committed export, but the submit button stays disabled.
 
@@ -72,11 +72,11 @@ The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, M
 
 ## Review Controls
 
-Reviewers can filter the solution list by source status: fixture, imported, live run, pending, or unavailable. This prevents calibration sessions from mixing true candidate outputs with provenance-only artifacts unless the reviewer chooses to see all records.
+Reviewers first choose a case study, then choose whether they are rating the recovered problem or one of the proposed solutions. The review surface is a single-column trace: case context, stated context, selected artifact, then hidden provenance details for audits.
 
-Reviewers can switch the rating target between `Problem Recovery` and `Solution`. Both targets use the same `-5` to `+5` score and optional verdict.
+Problem recovery and solution artifacts both use the same bottom-docked `-5` to `+5` score slider plus optional notes. The active reviewer should be able to move through a calibration session without managing separate verdict categories or provenance filters.
 
-Blind review mode masks kernel/source labels, provenance metadata, source mapping notes, and obvious branch names in review text. It is intended for lower-bias human rating sessions; reviewers can turn it off when they need audit context.
+Blind review mode masks kernel/source labels, provenance metadata, source mapping notes, and obvious branch names in review text. Source details are collapsed by default and can be revealed with one audit toggle when reviewers need traceability.
 
 ## Vault Shape
 
@@ -115,6 +115,6 @@ The `michael` branch frames calibration as an outcome assay over kernel branches
 
 - Michael's `fsd-accident-economy` assay fixture is represented as a third solution artifact.
 - Solution artifacts can declare `output_class`, `phase`, and `subtype` fields so candidates can later become Pepsis, many-Pepsis packets, or solution-discovery records.
-- Human ratings can include both a `-5` to `+5` score and a categorical verdict: `dead`, `obvious`, `interesting`, `investigate`, or `keeper`.
+- Human ratings focus on a shared `-5` to `+5` scale so kernels can be compared across recovered problems and proposed solutions.
 
-The score says how strong the artifact is. The verdict says what Doppl should do with it next.
+The score says how strong the artifact is. Notes capture the reviewer rationale without forcing a second categorical decision.

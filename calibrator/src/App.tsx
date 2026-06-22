@@ -7,10 +7,6 @@ import type {
   RatingSubmitResponse,
 } from "./types";
 
-const scores = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
-const verdicts = ["dead", "obvious", "interesting", "investigate", "keeper"];
-const sourceStatusOptions = ["all", "fixture", "imported", "live_run", "pending", "unavailable"] as const;
-type SourceStatusFilter = (typeof sourceStatusOptions)[number];
 type RatingTarget = "problem_recovery" | "solution";
 type ReviewArtifact = CalibratorProblemRecovery | CalibratorSolution;
 
@@ -38,19 +34,6 @@ function maskProvenanceText(text: string): string {
 function averageScore(ratings: CalibratorRating[]): number | null {
   if (ratings.length === 0) return null;
   return ratings.reduce((total, rating) => total + rating.score, 0) / ratings.length;
-}
-
-function verdictSummary(ratings: CalibratorRating[]): string {
-  const counts = ratings.reduce<Record<string, number>>((memo, rating) => {
-    if (rating.verdict) memo[rating.verdict] = (memo[rating.verdict] ?? 0) + 1;
-    return memo;
-  }, {});
-  const entries = Object.entries(counts);
-  if (entries.length === 0) return "No verdicts yet";
-  return entries
-    .sort((a, b) => b[1] - a[1])
-    .map(([verdict, count]) => `${verdict} ${count}`)
-    .join(" / ");
 }
 
 function MarkdownBlock({ text }: { text: string }) {
@@ -112,14 +95,6 @@ function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
   );
 }
 
-function sourceStatusLabel(status?: CalibratorSolution["source_status"]): string {
-  if (!status) return "Unknown";
-  return status
-    .split("_")
-    .map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
-    .join(" ");
-}
-
 function CalibrationHistory({
   judgeScore,
   ratings,
@@ -145,26 +120,32 @@ function CalibrationHistory({
         <p className="metric-value">{judgeDelta === null ? "n/a" : scoreLabel(Number(judgeDelta.toFixed(1)))}</p>
       </div>
       <div>
-        <p className="metric-label">Verdicts</p>
-        <p className="metric-value small">{verdictSummary(ratings)}</p>
+        <p className="metric-label">Last rating</p>
+        <p className="metric-value small">{ratings[0]?.submitted_at.slice(0, 10) ?? "none"}</p>
       </div>
     </section>
   );
+}
+
+function artifactTitle(artifact: ReviewArtifact | null, blindMode: boolean, solutionIndex: number): string {
+  if (!artifact) return "No artifact selected";
+  if ("solution_id" in artifact && blindMode && solutionIndex >= 0) return blindSolutionLabel(solutionIndex);
+  return artifact.title;
+}
+
+function artifactBody(artifact: ReviewArtifact | null, blindMode: boolean): string {
+  if (!artifact) return "";
+  return blindMode ? maskProvenanceText(artifact.body) : artifact.body;
 }
 
 export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
-  const [sourceStatusFilter, setSourceStatusFilter] = useState<SourceStatusFilter>("all");
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [blindMode, setBlindMode] = useState(false);
-  const [caseOpen, setCaseOpen] = useState(true);
-  const [problemOpen, setProblemOpen] = useState(true);
-  const [problemRecoveryOpen, setProblemRecoveryOpen] = useState(true);
-  const [solutionOpen, setSolutionOpen] = useState(true);
+  const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [score, setScore] = useState<number | null>(null);
-  const [verdict, setVerdict] = useState("");
   const [notes, setNotes] = useState("");
   const [reviewerEmail, setReviewerEmail] = useState("");
   const [savedPath, setSavedPath] = useState("");
@@ -210,9 +191,8 @@ export function App() {
   );
   const visibleSolutions = useMemo(() => {
     if (!selectedCase) return [];
-    if (sourceStatusFilter === "all") return selectedCase.solutions;
-    return selectedCase.solutions.filter((solution) => solution.source_status === sourceStatusFilter);
-  }, [selectedCase, sourceStatusFilter]);
+    return selectedCase.solutions;
+  }, [selectedCase]);
   const selectedSolution = useMemo(
     () =>
       visibleSolutions.find((solution) => solution.solution_id === selectedSolutionId) ??
@@ -226,6 +206,8 @@ export function App() {
   const selectedProblemRecovery = selectedCase?.problem_recoveries[0] ?? null;
   const activeReviewArtifact =
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
+  const activeSolutionIndex = ratingTarget === "solution" ? selectedSolutionIndex : -1;
+  const activeTitle = artifactTitle(activeReviewArtifact, blindMode, activeSolutionIndex);
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -253,7 +235,6 @@ export function App() {
           problem_recovery_id:
             ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
           score,
-          verdict: verdict || undefined,
           notes,
           reviewer_email: reviewerEmail,
         }),
@@ -268,7 +249,6 @@ export function App() {
       setSavedPath(body.relativePath ?? "");
       setNotes("");
       setScore(null);
-      setVerdict("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rating submission failed");
     } finally {
@@ -299,11 +279,23 @@ export function App() {
   }
 
   return (
-    <main className="workspace">
-      <aside className="sidebar" aria-label="Calibration controls">
-        <p className="eyebrow">Doppl Life</p>
-        <h1>Calibrator</h1>
+    <main className="review-app">
+      <header className="review-header">
+        <div>
+          <p className="eyebrow">Doppl Life</p>
+          <h1>Calibrator</h1>
+        </div>
+        <label className="toggle-field compact">
+          <input
+            type="checkbox"
+            checked={blindMode}
+            onChange={(event) => setBlindMode(event.target.checked)}
+          />
+          <span>Blind</span>
+        </label>
+      </header>
 
+      <section className="review-controls" aria-label="Review setup">
         <label className="field">
           <span>Case study</span>
           <select
@@ -312,9 +304,10 @@ export function App() {
               const nextCase = index.cases.find((item) => item.case_id === event.target.value);
               setSelectedCaseId(event.target.value);
               setSelectedSolutionId(nextCase?.solutions[0]?.solution_id ?? null);
+              setRatingTarget(nextCase?.problem_recoveries[0] ? "problem_recovery" : "solution");
               setScore(null);
-              setVerdict("");
               setSavedPath("");
+              setSourceDetailsOpen(false);
             }}
           >
             {index.cases.map((caseItem) => (
@@ -325,218 +318,113 @@ export function App() {
           </select>
         </label>
 
-        <label className="field">
-          <span>Source status</span>
-          <select
-            value={sourceStatusFilter}
-            onChange={(event) => {
-              setSourceStatusFilter(event.target.value as SourceStatusFilter);
-              setSelectedSolutionId(null);
-              setScore(null);
-              setVerdict("");
-              setSavedPath("");
-            }}
-          >
-            {sourceStatusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status === "all" ? "All" : sourceStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="toggle-field">
-          <input
-            type="checkbox"
-            checked={blindMode}
-            onChange={(event) => setBlindMode(event.target.checked)}
-          />
-          <span>Blind review</span>
-        </label>
-
-        <section className="solution-list" aria-label="Solutions">
-          <h2>Solutions</h2>
+        <section className="artifact-chooser" aria-label="Review artifact">
+          <h2>Choose what to review</h2>
+          {selectedProblemRecovery ? (
+            <button
+              type="button"
+              className={ratingTarget === "problem_recovery" ? "selected" : ""}
+              onClick={() => {
+                setRatingTarget("problem_recovery");
+                setScore(null);
+                setSavedPath("");
+                setSourceDetailsOpen(false);
+              }}
+            >
+              <span>Problem Recovery</span>
+              <small>{selectedProblemRecovery.human_ratings.length} ratings</small>
+            </button>
+          ) : null}
           {visibleSolutions.map((solution, index) => (
             <button
-              className={solution.solution_id === selectedSolution?.solution_id ? "selected" : ""}
+              className={ratingTarget === "solution" && solution.solution_id === selectedSolution?.solution_id ? "selected" : ""}
               key={solution.solution_id}
               type="button"
               onClick={() => {
+                setRatingTarget("solution");
                 setSelectedSolutionId(solution.solution_id);
                 setScore(null);
-                setVerdict("");
                 setSavedPath("");
+                setSourceDetailsOpen(false);
               }}
             >
               <span>{blindMode ? blindSolutionLabel(index) : solution.title}</span>
-              <small>
-                {blindMode
-                  ? `${solution.human_ratings.length} ratings`
-                  : `${solution.kernel ?? solution.source_type} / ${sourceStatusLabel(
-                      solution.source_status,
-                    )} / ${solution.human_ratings.length} ratings`}
-              </small>
+              <small>{solution.human_ratings.length} ratings</small>
             </button>
           ))}
-          {visibleSolutions.length === 0 ? <p className="empty-note">No solutions match this filter.</p> : null}
         </section>
         {!isWritable ? <p className="mode-note">Static preview: browsing only.</p> : null}
-      </aside>
-
-      <section className="review-surface" aria-label="Case and solution review">
-        <header className="surface-header">
-          <div>
-            <p className="eyebrow">Case Study</p>
-            <h2>{selectedCase.title}</h2>
-          </div>
-          <p>
-            {visibleSolutions.length} of {selectedCase.solutions.length} solutions visible
-          </p>
-        </header>
-
-        {selectedComparisonSet ? (
-          <section className="comparison-banner" aria-label="Comparison set provenance">
-            <div>
-              <p className="eyebrow">Comparison Set</p>
-              <h3>{selectedComparisonSet.title}</h3>
-            </div>
-            <dl>
-              <div>
-                <dt>Status</dt>
-                <dd>{selectedComparisonSet.status.replace("_", " ")}</dd>
-              </div>
-              <div>
-                <dt>Input hash</dt>
-                <dd>{selectedComparisonSet.input_hash}</dd>
-              </div>
-              <div>
-                <dt>Source mapping</dt>
-                <dd>{selectedComparisonSet.adapter_version}</dd>
-              </div>
-            </dl>
-          </section>
-        ) : null}
-
-        <section className="context-grid">
-          <article className="panel">
-            <button className="panel-toggle" type="button" onClick={() => setCaseOpen((open) => !open)}>
-              <span>Case details</span>
-              <span>{caseOpen ? "Collapse" : "Expand"}</span>
-            </button>
-            {caseOpen ? <MarkdownBlock text={selectedCase.body} /> : null}
-          </article>
-          <article className="panel">
-            <button className="panel-toggle" type="button" onClick={() => setProblemOpen((open) => !open)}>
-              <span>Stated problem context</span>
-              <span>{problemOpen ? "Collapse" : "Expand"}</span>
-            </button>
-            {problemOpen ? <MarkdownBlock text={selectedCase.problem.body} /> : null}
-          </article>
-        </section>
-
-        {selectedProblemRecovery ? (
-          <article className="solution-detail">
-            <button
-              className="panel-toggle"
-              type="button"
-              onClick={() => setProblemRecoveryOpen((open) => !open)}
-            >
-              <span>{selectedProblemRecovery.title}</span>
-              <span>{problemRecoveryOpen ? "Collapse" : "Expand"}</span>
-            </button>
-            {blindMode ? (
-              <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
-            ) : (
-              <KernelMeta artifact={selectedProblemRecovery} />
-            )}
-            {!blindMode && selectedProblemRecovery.adapter_notes ? (
-              <p className="adapter-note">{selectedProblemRecovery.adapter_notes}</p>
-            ) : null}
-            <CalibrationHistory ratings={selectedProblemRecovery.human_ratings} />
-            {problemRecoveryOpen ? (
-              <MarkdownBlock
-                text={
-                  blindMode
-                    ? maskProvenanceText(selectedProblemRecovery.body)
-                    : selectedProblemRecovery.body
-                }
-              />
-            ) : null}
-          </article>
-        ) : null}
-
-        {selectedSolution ? (
-          <article className="solution-detail">
-            <button className="panel-toggle" type="button" onClick={() => setSolutionOpen((open) => !open)}>
-              <span>
-                {blindMode && selectedSolutionIndex >= 0
-                  ? blindSolutionLabel(selectedSolutionIndex)
-                  : selectedSolution.title}
-              </span>
-              <span>{solutionOpen ? "Collapse" : "Expand"}</span>
-            </button>
-            {blindMode ? (
-              <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
-            ) : (
-              <KernelMeta artifact={selectedSolution} />
-            )}
-            {!blindMode && selectedSolution.adapter_notes ? (
-              <p className="adapter-note">{selectedSolution.adapter_notes}</p>
-            ) : null}
-            <CalibrationHistory ratings={selectedSolution.human_ratings} judgeScore={selectedSolution.judge_score} />
-            {solutionOpen ? (
-              <MarkdownBlock text={blindMode ? maskProvenanceText(selectedSolution.body) : selectedSolution.body} />
-            ) : null}
-          </article>
-        ) : (
-          <p>No solution selected.</p>
-        )}
       </section>
 
-      <aside className="rating-panel" aria-label="Rating controls">
-        <h2>{ratingTarget === "problem_recovery" ? "Problem recovery rating" : "Solution rating"}</h2>
-        <div className="target-switch" aria-label="Rating target">
-          <button
-            type="button"
-            className={ratingTarget === "problem_recovery" ? "active" : ""}
-            onClick={() => {
-              setRatingTarget("problem_recovery");
-              setScore(null);
-              setVerdict("");
-              setSavedPath("");
-            }}
-            disabled={!selectedProblemRecovery}
-          >
-            Problem Recovery
+      <section className="trace-surface" aria-label="Case and selected artifact review">
+        <article className="trace-step case-step">
+          <p className="trace-label">Case Study</p>
+          <h2>{selectedCase.title}</h2>
+          <MarkdownBlock text={selectedCase.body} />
+        </article>
+
+        <article className="trace-step">
+          <p className="trace-label">Stated Context</p>
+          <MarkdownBlock text={selectedCase.problem.body} />
+        </article>
+
+        <article className="trace-step selected-step">
+          <p className="trace-label">
+            {ratingTarget === "problem_recovery" ? "Problem Recovery" : "Solution"}
+          </p>
+          <h2>{activeTitle}</h2>
+          {blindMode ? (
+            <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
+          ) : null}
+          {activeReviewArtifact ? <MarkdownBlock text={artifactBody(activeReviewArtifact, blindMode)} /> : null}
+          {activeReviewArtifact ? (
+            <CalibrationHistory
+              ratings={activeReviewArtifact.human_ratings}
+              judgeScore={"judge_score" in activeReviewArtifact ? activeReviewArtifact.judge_score : undefined}
+            />
+          ) : null}
+        </article>
+
+        <section className="source-disclosure">
+          <button type="button" onClick={() => setSourceDetailsOpen((open) => !open)}>
+            <span>{sourceDetailsOpen ? "Hide source details" : "Show source details"}</span>
+            <span>{sourceDetailsOpen ? "−" : "+"}</span>
           </button>
-          <button
-            type="button"
-            className={ratingTarget === "solution" ? "active" : ""}
-            onClick={() => {
-              setRatingTarget("solution");
-              setScore(null);
-              setVerdict("");
-              setSavedPath("");
-            }}
-            disabled={!selectedSolution}
-          >
-            Solution
-          </button>
-        </div>
-        <div className="score-row" aria-label="Score">
-          {scores.map((value) => (
-            <button
-              className={score === value ? "score selected" : "score"}
-              key={value}
-              type="button"
-              onClick={() => setScore(value)}
-              aria-pressed={score === value}
-            >
-              {scoreLabel(value)}
-            </button>
-          ))}
-        </div>
-        <label className="field">
+          {sourceDetailsOpen && activeReviewArtifact ? (
+            <div>
+              {selectedComparisonSet && ratingTarget === "solution" ? (
+                <section className="comparison-banner" aria-label="Comparison set provenance">
+                  <div>
+                    <p className="eyebrow">Comparison Set</p>
+                    <h3>{selectedComparisonSet.title}</h3>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>{selectedComparisonSet.status.replace("_", " ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Input hash</dt>
+                      <dd>{selectedComparisonSet.input_hash}</dd>
+                    </div>
+                    <div>
+                      <dt>Source mapping</dt>
+                      <dd>{selectedComparisonSet.adapter_version}</dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : null}
+              <KernelMeta artifact={activeReviewArtifact} />
+              {!blindMode && activeReviewArtifact.adapter_notes ? (
+                <p className="adapter-note">{activeReviewArtifact.adapter_notes}</p>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      </section>
+
+      <footer className="rating-dock" aria-label="Rating controls">
+        <label className="field reviewer-field">
           <span>Reviewer email</span>
           <input
             type="email"
@@ -545,41 +433,45 @@ export function App() {
             placeholder="name@gauntletai.com"
           />
         </label>
-        <div className="field">
-          <span>Verdict</span>
-          <div className="verdict-row" aria-label="Verdict">
-            {verdicts.map((value) => (
-              <button
-                className={verdict === value ? "verdict selected" : "verdict"}
-                key={value}
-                type="button"
-                onClick={() => setVerdict((current) => (current === value ? "" : value))}
-                aria-pressed={verdict === value}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        </div>
-        <label className="field">
+        <label className="field notes-field">
           <span>Notes</span>
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             placeholder={
               ratingTarget === "problem_recovery"
-                ? "What made this recovered problem useful or weak?"
-                : "What made this solution useful or weak?"
+                ? "Optional note on the recovered problem"
+                : "Optional note on the solution"
             }
           />
         </label>
+        <div className="slider-row">
+          <label htmlFor="score-slider">
+            <span>Score</span>
+            <strong>{score === null ? "No score selected" : scoreLabel(score)}</strong>
+          </label>
+          <input
+            id="score-slider"
+            type="range"
+            min="-5"
+            max="5"
+            step="1"
+            value={score ?? 0}
+            onChange={(event) => setScore(Number(event.target.value))}
+          />
+          <div className="slider-scale" aria-hidden="true">
+            <span>-5</span>
+            <span>0</span>
+            <span>+5</span>
+          </div>
+        </div>
         <button
           className="submit-button"
           type="button"
           disabled={score === null || isSubmitting || !isWritable || !activeReviewArtifact}
           onClick={submitRating}
         >
-          {isSubmitting ? "Saving..." : "Submit rating"}
+          {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem" : "solution"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
         {error ? (
@@ -588,7 +480,7 @@ export function App() {
           </p>
         ) : null}
         {savedPath ? <p className="saved-path">Saved to {savedPath}</p> : null}
-      </aside>
+      </footer>
     </main>
   );
 }

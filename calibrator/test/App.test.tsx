@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -112,30 +112,26 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
-  it("loads the case and disables submit until score is selected", async () => {
+  it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent(
-      "FSD Accident Economy Kernel Comparison v0",
-    );
-    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
-    expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
-    const histories = screen.getAllByLabelText("Human calibration history");
-    expect(histories[1]).toHaveTextContent("Human avg");
-    expect(histories[1]).toHaveTextContent("+4");
-    expect(histories[1]).toHaveTextContent("investigate 1");
-    expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
-    await userEvent.click(screen.getByRole("button", { name: "+4" }));
-    expect(screen.getByRole("button", { name: "Submit rating" })).toBeEnabled();
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Problem Recovery");
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash Substrate Exposure Map");
+    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
+    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Stated Context");
+    expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
+    expect(screen.queryByText("investigate")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeEnabled();
   });
 
   it("submits a rating and shows the saved path", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.click(screen.getByRole("button", { name: "+4" }));
-    await userEvent.click(screen.getByRole("button", { name: "investigate" }));
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
-    await userEvent.click(screen.getByRole("button", { name: "Submit rating" }));
+    await userEvent.click(screen.getByRole("button", { name: "Submit solution rating" }));
     await waitFor(() => {
       expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();
     });
@@ -145,10 +141,10 @@ describe("App", () => {
     const fetchMock = vi.mocked(fetch);
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.click(screen.getByRole("button", { name: "Problem Recovery" }));
+    await userEvent.click(screen.getByRole("button", { name: /Problem Recovery/ }));
     expect(screen.getByText("Accident Economy Dependency Shock")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "+4" }));
-    await userEvent.click(screen.getByRole("button", { name: "Submit rating" }));
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem rating" }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/ratings",
@@ -180,28 +176,31 @@ describe("App", () => {
 
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "+4" }));
-    expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    expect(screen.getByRole("button", { name: "Submit solution rating" })).toBeDisabled();
     expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
   });
 
-  it("filters solutions by source status", async () => {
+  it("keeps source details collapsed behind one toggle", async () => {
     render(<App />);
     expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
-    await userEvent.selectOptions(screen.getByLabelText("Source status"), "pending");
-    expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Michael Branch Pending Solution").length).toBeGreaterThan(0);
-    await userEvent.selectOptions(screen.getByLabelText("Source status"), "live_run");
-    expect(screen.getByText("No solutions match this filter.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Comparison set provenance")).not.toBeInTheDocument();
+    expect(screen.queryByText("source status")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Show source details +" }));
+    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent(
+      "FSD Accident Economy Kernel Comparison v0",
+    );
+    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
+    expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
   });
 
   it("masks source labels in blind review mode", async () => {
     render(<App />);
     expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
-    await userEvent.click(screen.getByLabelText("Blind review"));
+    await userEvent.click(screen.getByLabelText("Blind"));
     expect(screen.getAllByText("Solution A").length).toBeGreaterThan(0);
     expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Source labels, branch names, and provenance metadata are hidden.").length).toBe(2);
+    expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();
   });
 });
