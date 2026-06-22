@@ -29,6 +29,12 @@ npm --prefix calibrator run export:static
 
 Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
 
+## Calibration History
+
+The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching solution in the generated index. The solution panel shows the current human average, rating count, judge-score delta, and verdict distribution so reviewers can see calibration evidence without leaving the workbench.
+
+In local writable mode, submitting a rating writes markdown plus the JSONL ledger event, then refreshes the vault index so the new rating appears immediately. In static preview mode, the same history is visible from the committed export, but the submit button stays disabled.
+
 ## Vault Shape
 
 Seed case:

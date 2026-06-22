@@ -1,11 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CalibratorIndex, CalibratorSolution, RatingSubmitResponse } from "./types";
+import type { CalibratorIndex, CalibratorRating, CalibratorSolution, RatingSubmitResponse } from "./types";
 
 const scores = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 const verdicts = ["dead", "obvious", "interesting", "investigate", "keeper"];
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
+}
+
+function averageScore(ratings: CalibratorRating[]): number | null {
+  if (ratings.length === 0) return null;
+  return ratings.reduce((total, rating) => total + rating.score, 0) / ratings.length;
+}
+
+function verdictSummary(ratings: CalibratorRating[]): string {
+  const counts = ratings.reduce<Record<string, number>>((memo, rating) => {
+    if (rating.verdict) memo[rating.verdict] = (memo[rating.verdict] ?? 0) + 1;
+    return memo;
+  }, {});
+  const entries = Object.entries(counts);
+  if (entries.length === 0) return "No verdicts yet";
+  return entries
+    .sort((a, b) => b[1] - a[1])
+    .map(([verdict, count]) => `${verdict} ${count}`)
+    .join(" / ");
 }
 
 function MarkdownBlock({ text }: { text: string }) {
@@ -61,6 +79,33 @@ function KernelMeta({ solution }: { solution: CalibratorSolution }) {
   );
 }
 
+function CalibrationHistory({ solution }: { solution: CalibratorSolution }) {
+  const average = averageScore(solution.human_ratings);
+  const judgeDelta =
+    average !== null && solution.judge_score !== undefined ? average - solution.judge_score : null;
+
+  return (
+    <section className="calibration-history" aria-label="Human calibration history">
+      <div>
+        <p className="metric-label">Human avg</p>
+        <p className="metric-value">{average === null ? "none" : scoreLabel(Number(average.toFixed(1)))}</p>
+      </div>
+      <div>
+        <p className="metric-label">Ratings</p>
+        <p className="metric-value">{solution.human_ratings.length}</p>
+      </div>
+      <div>
+        <p className="metric-label">Judge delta</p>
+        <p className="metric-value">{judgeDelta === null ? "n/a" : scoreLabel(Number(judgeDelta.toFixed(1)))}</p>
+      </div>
+      <div>
+        <p className="metric-label">Verdicts</p>
+        <p className="metric-value small">{verdictSummary(solution.human_ratings)}</p>
+      </div>
+    </section>
+  );
+}
+
 export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
@@ -77,24 +122,24 @@ export function App() {
   const [isWritable, setIsWritable] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    async function loadIndex() {
-      try {
-        const apiResponse = await fetch("/api/index");
-        if (apiResponse.ok) {
-          setIsWritable(true);
-          return (await apiResponse.json()) as CalibratorIndex;
-        }
-      } catch {
-        // Static previews do not expose the local Vite write API.
+  async function loadIndex() {
+    try {
+      const apiResponse = await fetch("/api/index");
+      if (apiResponse.ok) {
+        setIsWritable(true);
+        return (await apiResponse.json()) as CalibratorIndex;
       }
-
-      const staticResponse = await fetch("calibration-index.json");
-      if (!staticResponse.ok) throw new Error("Failed to load vault index");
-      setIsWritable(false);
-      return (await staticResponse.json()) as CalibratorIndex;
+    } catch {
+      // Static previews do not expose the local Vite write API.
     }
 
+    const staticResponse = await fetch("calibration-index.json");
+    if (!staticResponse.ok) throw new Error("Failed to load vault index");
+    setIsWritable(false);
+    return (await staticResponse.json()) as CalibratorIndex;
+  }
+
+  useEffect(() => {
     loadIndex()
       .then((data) => {
         setIndex(data);
@@ -149,6 +194,8 @@ export function App() {
         setError(body.error ?? "Rating submission failed");
         return;
       }
+      const refreshed = await loadIndex();
+      setIndex(refreshed);
       setSavedPath(body.relativePath ?? "");
       setNotes("");
       setScore(null);
@@ -224,7 +271,9 @@ export function App() {
               }}
             >
               <span>{solution.title}</span>
-              <small>{solution.kernel ?? solution.source_type}</small>
+              <small>
+                {solution.kernel ?? solution.source_type} / {solution.human_ratings.length} ratings
+              </small>
             </button>
           ))}
         </section>
@@ -264,6 +313,7 @@ export function App() {
               <span>{solutionOpen ? "Collapse" : "Expand"}</span>
             </button>
             <KernelMeta solution={selectedSolution} />
+            <CalibrationHistory solution={selectedSolution} />
             {solutionOpen ? <MarkdownBlock text={selectedSolution.body} /> : null}
           </article>
         ) : (

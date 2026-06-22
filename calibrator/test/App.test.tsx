@@ -22,7 +22,21 @@ const fixture: CalibratorIndex = {
           title: "Crash Substrate Exposure Map",
           source_type: "kernel",
           kernel: "cody",
+          judge_score: 3.7,
           body: "# Solution body",
+          human_ratings: [
+            {
+              rating_id: "rating_fixture",
+              rating_target: "solution",
+              case_id: "fsd-accident-economy",
+              solution_id: "cody-accident-economy-map",
+              score: 4,
+              verdict: "investigate",
+              submitted_at: "2026-06-22T12:00:00.000Z",
+              app_version: "calibrator-v0",
+              body: "## Notes\n\nUseful.",
+            },
+          ],
         },
       ],
     },
@@ -59,6 +73,9 @@ describe("App", () => {
   it("loads the case and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("Human avg");
+    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("+4");
+    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("investigate 1");
     expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "+4" }));
     expect(screen.getByRole("button", { name: "Submit rating" })).toBeEnabled();

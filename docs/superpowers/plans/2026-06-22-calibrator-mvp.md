@@ -32,11 +32,16 @@ Current MVP behavior:
 - Solution frontmatter now allows `output_class`, `phase`, and `subtype` so the vault can distinguish final solution candidates from assay branches, Pepsis, and many-Pepsis outputs.
 - Each local rating submit writes both a human-readable markdown rating and an append-only `calibration-vault/ratings-ledger.jsonl` event for downstream ingestion.
 - The Vite app can build as a read-only static preview by falling back to `calibration-index.json`; live rating writes still require the local dev API or a future hosted backend.
+- Existing rating markdown is now ingested back into the vault index and attached to matching solutions.
+- Each solution displays human calibration history: rating count, average human score, judge-score delta, and verdict distribution.
+- After a local submit, the app refreshes the vault index so the saved rating appears in the workbench immediately.
+- GitHub Pages is enabled for the `calibration` branch and publishes the static preview from the committed `published/` folder.
 
 Verification as of June 22, 2026:
 
-- `npm --prefix calibrator run test`: 4 files, 7 tests passing.
+- `npm --prefix calibrator run test`: 4 files, 8 tests passing.
 - `npm --prefix calibrator run build`: passing.
+- `npm --prefix calibrator run export:static`: passing.
 - Browser visual QA at `http://127.0.0.1:5178`: no horizontal overflow at mobile or 1280x800 desktop; desktop rating submit is visible in the left rail.
 
 ---

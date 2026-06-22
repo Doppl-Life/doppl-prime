@@ -1,3 +1,17 @@
+export interface CalibratorRating {
+  rating_id: string;
+  rating_target: "solution";
+  case_id: string;
+  solution_id: string;
+  score: number;
+  verdict?: "dead" | "obvious" | "interesting" | "investigate" | "keeper";
+  reviewer_email?: string;
+  reviewer_name?: string;
+  submitted_at: string;
+  app_version: "calibrator-v0";
+  body: string;
+}
+
 export interface CalibratorSolution {
   case_id: string;
   solution_id: string;
@@ -16,6 +30,7 @@ export interface CalibratorSolution {
   fitness_score?: number;
   created_at?: string;
   body: string;
+  human_ratings: CalibratorRating[];
 }
 
 export interface CalibratorCase {
