@@ -210,4 +210,142 @@ test('runs through replayed model generation providers', async () => {
     run.modelCallRecords?.map((record) => record.purpose),
     ['problem_recovery', 'candidate_generation', 'critic_judgment'],
   );
+  assert.deepEqual(
+    run.events
+      .filter((event) => event.type.startsWith('model.output_'))
+      .map((event) => [event.type, event.payload.purpose]),
+    [
+      ['model.output_accepted', 'problem_recovery'],
+      ['model.output_accepted', 'candidate_generation'],
+      ['model.output_accepted', 'critic_judgment'],
+    ],
+  );
+});
+
+test('emits model lifecycle trace events for repaired outputs', async () => {
+  const prompts = {
+    recovery: 'recover repair trace',
+    candidates: 'generate repair trace',
+    critics: 'judge repair trace',
+  };
+  const records: ModelCallRecord[] = [
+    {
+      id: 'call_bad_recovery',
+      runId: 'run_model_repair_trace',
+      purpose: 'problem_recovery',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.recovery,
+      outputText: '{"title":',
+      metadata: {},
+    },
+    {
+      id: 'call_repaired_recovery',
+      runId: 'run_model_repair_trace',
+      purpose: 'problem_recovery.repair',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: [
+        prompts.recovery,
+        '',
+        'Repair the previous output into valid JSON only.',
+        'Previous output:',
+        '{"title":',
+      ].join('\n'),
+      outputText: JSON.stringify({
+        title: 'Repaired Recovery',
+        recoveredProblem: 'Recovered through repair.',
+        hiddenConstraint: 'Repair lifecycle should be visible.',
+        falsifier: 'Repair events are absent.',
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_candidates',
+      runId: 'run_model_repair_trace',
+      purpose: 'candidate_generation',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.candidates,
+      outputText: JSON.stringify({
+        candidates: [
+          {
+            id: 'repair_a',
+            agenomeId: 'ag_gateway',
+            title: 'Repair A',
+            summary: 'summary',
+            mechanism: 'mechanism',
+            claimedDelta: 'delta',
+            citedKnowledge: ['K1'],
+          },
+          {
+            id: 'repair_b',
+            agenomeId: 'ag_gateway',
+            title: 'Repair B',
+            summary: 'summary',
+            mechanism: 'mechanism',
+            claimedDelta: 'delta',
+            citedKnowledge: ['K2'],
+          },
+        ],
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_critics',
+      runId: 'run_model_repair_trace',
+      purpose: 'critic_judgment',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.critics,
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'repair_a',
+            criticId: 'grounding',
+            score: 80,
+            pressure: 'strong',
+            revisionMandate: 'keep',
+          },
+          {
+            candidateId: 'repair_b',
+            criticId: 'grounding',
+            score: 40,
+            pressure: 'weaker',
+            revisionMandate: 'revise',
+          },
+        ],
+      }),
+      metadata: {},
+    },
+  ];
+
+  const run = await runKernel({
+    runId: 'run_model_repair_trace',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+    generationProviders: createModelGenerationProviders({
+      client: createReplayModelClient(records),
+      model: 'fixture-model',
+      prompts: {
+        problemRecovery: () => prompts.recovery,
+        candidateGeneration: () => prompts.candidates,
+        criticJudgment: () => prompts.critics,
+      },
+    }),
+  });
+
+  assert.deepEqual(
+    run.events
+      .filter((event) => event.type.startsWith('model.output_'))
+      .map((event) => [event.type, event.payload.purpose]),
+    [
+      ['model.output_repair_requested', 'problem_recovery'],
+      ['model.output_repaired', 'problem_recovery.repair'],
+      ['model.output_accepted', 'candidate_generation'],
+      ['model.output_accepted', 'critic_judgment'],
+    ],
+  );
 });

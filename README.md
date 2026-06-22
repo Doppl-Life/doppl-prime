@@ -31,6 +31,7 @@ Those providers can be fixture-backed, hand-injected, or backed by the provider-
 `ModelClient` boundary with replayable JSONL call records.
 Runs with model-backed providers export prompt/response evidence as `model-calls.jsonl`.
 Invalid structured outputs get one repair attempt before being rejected with evidence metadata.
+Model output lifecycle statuses are mirrored into the run event stream for replay projections.
 
 Refresh the committed static preview:
 

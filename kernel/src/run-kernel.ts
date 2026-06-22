@@ -26,6 +26,13 @@ function modelCallRecordsFrom(providers: GenerationProviders): ModelCallRecord[]
   return records && records.length > 0 ? records : undefined;
 }
 
+function modelOutputEventType(record: ModelCallRecord): string {
+  if (record.metadata.status === 'repair_requested') return 'model.output_repair_requested';
+  if (record.metadata.status === 'repaired') return 'model.output_repaired';
+  if (record.metadata.status === 'rejected') return 'model.output_rejected';
+  return 'model.output_accepted';
+}
+
 export async function runKernel(input: {
   runId: string;
   casePath: string;
@@ -126,6 +133,16 @@ export async function runKernel(input: {
       inheritanceWeights: fusion.inheritanceWeights,
     });
   }
+  const modelCallRecords = modelCallRecordsFrom(generationProviders);
+  for (const record of modelCallRecords || []) {
+    trace.push(modelOutputEventType(record), {
+      callId: record.id,
+      purpose: record.purpose,
+      provider: record.provider,
+      model: record.model,
+      status: record.metadata.status || 'accepted',
+    });
+  }
   trace.push('run.completed', {
     runId: input.runId,
     childId: fusion?.child.id || null,
@@ -143,6 +160,6 @@ export async function runKernel(input: {
     selectedParents,
     fusion,
     events: trace.events,
-    modelCallRecords: modelCallRecordsFrom(generationProviders),
+    modelCallRecords,
   });
 }
