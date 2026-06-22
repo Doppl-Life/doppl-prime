@@ -290,3 +290,104 @@ test('model generation providers expose default prompts and captured call record
   assert.match(providers.modelCallRecords[0]?.prompt || '', /Return JSON only/);
   assert.match(providers.modelCallRecords[0]?.prompt || '', /FSD|ownership|unwind/i);
 });
+
+test('model generation providers repair invalid structured outputs once', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_repair',
+    targetCase: caseStudy.id,
+    maxItems: 1,
+  });
+  const calls: string[] = [];
+  const providers = createModelGenerationProviders({
+    model: 'fixture-model',
+    client: {
+      async complete(request) {
+        calls.push(request.purpose);
+        if (request.purpose === 'problem_recovery') {
+          return {
+            id: 'call_bad',
+            runId: request.runId,
+            purpose: request.purpose,
+            provider: 'stub',
+            model: request.model,
+            prompt: request.prompt,
+            outputText: '{"title":',
+            metadata: {},
+          };
+        }
+        return {
+          id: 'call_repaired',
+          runId: request.runId,
+          purpose: request.purpose,
+          provider: 'stub',
+          model: request.model,
+          prompt: request.prompt,
+          outputText: JSON.stringify({
+            title: 'Repaired Recovery',
+            recoveredProblem: 'Recovered after repair.',
+            hiddenConstraint: 'One repair is allowed.',
+            falsifier: 'The repair output is ignored.',
+          }),
+          metadata: {},
+        };
+      },
+    },
+  });
+
+  const recovery = await providers.problemRecovery.recover({
+    runId: 'run_model_repair',
+    caseStudy,
+    knowledgePacket,
+  });
+
+  assert.equal(recovery.title, 'Repaired Recovery');
+  assert.deepEqual(calls, ['problem_recovery', 'problem_recovery.repair']);
+  assert.equal(providers.modelCallRecords.length, 2);
+  assert.equal(providers.modelCallRecords[0]?.metadata.status, 'repair_requested');
+  assert.equal(providers.modelCallRecords[1]?.metadata.status, 'repaired');
+});
+
+test('model generation providers reject output after one failed repair', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_reject',
+    targetCase: caseStudy.id,
+    maxItems: 1,
+  });
+  const providers = createModelGenerationProviders({
+    model: 'fixture-model',
+    client: {
+      async complete(request) {
+        return {
+          id: `call_${request.purpose}`,
+          runId: request.runId,
+          purpose: request.purpose,
+          provider: 'stub',
+          model: request.model,
+          prompt: request.prompt,
+          outputText: '{"still":',
+          metadata: {},
+        };
+      },
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      providers.problemRecovery.recover({
+        runId: 'run_model_reject',
+        caseStudy,
+        knowledgePacket,
+      }),
+    /model output rejected after repair/,
+  );
+  assert.equal(providers.modelCallRecords.length, 2);
+  assert.equal(providers.modelCallRecords[1]?.metadata.status, 'rejected');
+});

@@ -166,56 +166,101 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
     return response;
   }
 
+  async function parseWithRepair<T>(
+    request: Parameters<ModelClient['complete']>[0],
+    validate: (parsed: Record<string, unknown>) => T,
+  ): Promise<T> {
+    const response = await complete(request);
+    try {
+      return validate(parseJsonObjectResponse(response.outputText));
+    } catch (error) {
+      response.metadata = {
+        ...response.metadata,
+        status: 'repair_requested',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    const repairResponse = await complete({
+      ...request,
+      purpose: `${request.purpose}.repair`,
+      prompt: [
+        request.prompt,
+        '',
+        'Repair the previous output into valid JSON only.',
+        'Previous output:',
+        response.outputText,
+      ].join('\n'),
+    });
+    try {
+      const repaired = validate(parseJsonObjectResponse(repairResponse.outputText));
+      repairResponse.metadata = { ...repairResponse.metadata, status: 'repaired' };
+      return repaired;
+    } catch (error) {
+      repairResponse.metadata = {
+        ...repairResponse.metadata,
+        status: 'rejected',
+        error: error instanceof Error ? error.message : String(error),
+      };
+      throw new Error(`model output rejected after repair: ${repairResponse.metadata.error}`);
+    }
+  }
+
   return {
     modelCallRecords,
     problemRecovery: {
       async recover(providerInput) {
-        const response = await complete({
-          runId: providerInput.runId,
-          purpose: 'problem_recovery',
-          prompt: prompts.problemRecovery(providerInput),
-          model: input.model,
-          responseFormat: 'json_object',
-        });
-        const parsed = parseJsonObjectResponse(response.outputText);
-        return assertProblemRecovery({
-          id: `recovery_${providerInput.caseStudy.id}`,
-          caseId: providerInput.caseStudy.id,
-          ...parsed,
-          citedKnowledge: providerInput.knowledgePacket.items.map((item) => item.citeHandle),
-        });
+        return parseWithRepair(
+          {
+            runId: providerInput.runId,
+            purpose: 'problem_recovery',
+            prompt: prompts.problemRecovery(providerInput),
+            model: input.model,
+            responseFormat: 'json_object',
+          },
+          (parsed) =>
+            assertProblemRecovery({
+              id: `recovery_${providerInput.caseStudy.id}`,
+              caseId: providerInput.caseStudy.id,
+              ...parsed,
+              citedKnowledge: providerInput.knowledgePacket.items.map((item) => item.citeHandle),
+            }),
+        );
       },
     },
     candidateGenerator: {
       async generate(providerInput) {
-        const response = await complete({
-          runId: providerInput.runId,
-          purpose: 'candidate_generation',
-          prompt: prompts.candidateGeneration(providerInput),
-          model: input.model,
-          responseFormat: 'json_object',
-        });
-        const parsed = parseJsonObjectResponse(response.outputText);
-        return arrayField(parsed, 'candidates').map((candidate) =>
-          assertCandidateSolution({
-            ...(candidate as Record<string, unknown>),
-            caseId: providerInput.caseStudy.id,
-            generation: providerInput.generation,
-          }),
+        return parseWithRepair(
+          {
+            runId: providerInput.runId,
+            purpose: 'candidate_generation',
+            prompt: prompts.candidateGeneration(providerInput),
+            model: input.model,
+            responseFormat: 'json_object',
+          },
+          (parsed) =>
+            arrayField(parsed, 'candidates').map((candidate) =>
+              assertCandidateSolution({
+                ...(candidate as Record<string, unknown>),
+                caseId: providerInput.caseStudy.id,
+                generation: providerInput.generation,
+              }),
+            ),
         );
       },
     },
     criticCouncil: {
       async judge(providerInput) {
-        const response = await complete({
-          runId: providerInput.runId,
-          purpose: 'critic_judgment',
-          prompt: prompts.criticJudgment(providerInput),
-          model: input.model,
-          responseFormat: 'json_object',
-        });
-        const parsed = parseJsonObjectResponse(response.outputText);
-        return arrayField(parsed, 'verdicts').map(assertCriticVerdict);
+        return parseWithRepair(
+          {
+            runId: providerInput.runId,
+            purpose: 'critic_judgment',
+            prompt: prompts.criticJudgment(providerInput),
+            model: input.model,
+            responseFormat: 'json_object',
+          },
+          (parsed) => arrayField(parsed, 'verdicts').map(assertCriticVerdict),
+        );
       },
     },
   };

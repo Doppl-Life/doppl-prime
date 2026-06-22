@@ -30,6 +30,7 @@ The deterministic fixture path now runs through provider-neutral generation boun
 Those providers can be fixture-backed, hand-injected, or backed by the provider-agnostic
 `ModelClient` boundary with replayable JSONL call records.
 Runs with model-backed providers export prompt/response evidence as `model-calls.jsonl`.
+Invalid structured outputs get one repair attempt before being rejected with evidence metadata.
 
 Refresh the committed static preview:
 
