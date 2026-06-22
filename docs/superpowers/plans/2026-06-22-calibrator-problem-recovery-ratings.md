@@ -216,7 +216,7 @@ npm --prefix calibrator run test -- vaultSchemas ratingWriter
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Run the established secret and commit-identity scan first. It should check for OpenRouter key patterns and disallowed author identity strings, and it should print no matches.
 
@@ -241,7 +241,7 @@ git commit -m "feat: support problem recovery ratings"
 - Create: `calibration-vault/cases/fsd-accident-economy/problem-recoveries/fsd-accident-economy-recovered-problem.md`
 - Test: `calibrator/test/vaultReader.test.ts`
 
-- [ ] **Step 1: Add section parser tests through vault reader**
+- [x] **Step 1: Add section parser tests through vault reader**
 
 In `vaultReader.test.ts`, create a temporary case with `runs/run.md`:
 
@@ -289,7 +289,7 @@ expect(index.cases[0]?.problem_recoveries[0]).toMatchObject({
 expect(index.cases[0]?.solutions.some((solution) => solution.solution_id === "run_fixture__solution")).toBe(true);
 ```
 
-- [ ] **Step 2: Run reader tests to verify failure**
+- [x] **Step 2: Run reader tests to verify failure**
 
 Run:
 
@@ -299,7 +299,7 @@ npm --prefix calibrator run test -- vaultReader
 
 Expected: FAIL because the reader does not parse canonical run markdown or expose `problem_recoveries`.
 
-- [ ] **Step 3: Create section parser**
+- [x] **Step 3: Create section parser**
 
 Create `sectionParser.ts`:
 
@@ -337,15 +337,15 @@ export function parseMarkdownSections(markdown: string): MarkdownSections {
 }
 ```
 
-- [ ] **Step 4: Extend vault schemas and types**
+- [x] **Step 4: Extend vault schemas and types**
 
 Add `ProblemRecoveryFrontmatter` and `KernelCaseRunFrontmatter`. Add `problem_recoveries: CalibratorProblemRecovery[]` to `CalibratorCase`.
 
-- [ ] **Step 5: Read problem recovery files**
+- [x] **Step 5: Read problem recovery files**
 
 In `vaultReader.ts`, add `readProblemRecoveries(casePath)`. It should read `problem-recoveries/*.md`, parse frontmatter, attach ratings by `problem_recovery_id`, and return sorted records.
 
-- [ ] **Step 6: Read canonical run files**
+- [x] **Step 6: Read canonical run files**
 
 In `vaultReader.ts`, add `readRunArtifacts(casePath)`. It should read `runs/*.md`, use `parseMarkdownSections`, and synthesize:
 
@@ -361,7 +361,7 @@ In `vaultReader.ts`, add `readRunArtifacts(casePath)`. It should read `runs/*.md
 
 If `sections.solution` exists, synthesize a solution with `solution_id: ${run_artifact_id}__solution`.
 
-- [ ] **Step 7: Seed first problem recovery fixture**
+- [x] **Step 7: Seed first problem recovery fixture**
 
 Create `calibration-vault/cases/fsd-accident-economy/problem-recoveries/fsd-accident-economy-recovered-problem.md` with:
 
@@ -383,7 +383,7 @@ The recovered problem is that crash reduction removes a recurring event stream t
 The quality question is whether a kernel saw this as a dependency-unwind problem rather than only a safer-roads or cheaper-transportation story.
 ```
 
-- [ ] **Step 8: Run reader tests**
+- [x] **Step 8: Run reader tests**
 
 Run:
 

@@ -24,6 +24,7 @@ export interface CalibratorSolution {
   source_status?: "fixture" | "imported" | "live_run" | "pending" | "unavailable";
   source_branch?: string;
   source_commit?: string;
+  source_mapping_version?: string;
   adapter_version?: string;
   adapter_notes?: string;
   output_class?: "candidate" | "pepsi" | "possible_pepsi" | "many_pepsis";
@@ -42,6 +43,29 @@ export interface CalibratorSolution {
   human_ratings: CalibratorRating[];
 }
 
+export interface CalibratorProblemRecovery {
+  case_id: string;
+  problem_recovery_id: string;
+  title: string;
+  source_type: "kernel" | "manual" | "unknown";
+  source_status?: "fixture" | "imported" | "live_run" | "pending" | "unavailable";
+  source_branch?: string;
+  source_commit?: string;
+  source_mapping_version?: string;
+  adapter_version?: string;
+  adapter_notes?: string;
+  kernel?: string;
+  branch?: string;
+  run_id?: string;
+  run_artifact_id?: string;
+  created_at?: string;
+  trace?: string;
+  discovery?: string;
+  case_study?: string;
+  body: string;
+  human_ratings: CalibratorRating[];
+}
+
 export interface CalibratorCase {
   case_id: string;
   title: string;
@@ -52,6 +76,7 @@ export interface CalibratorCase {
     body: string;
     source: string;
   };
+  problem_recoveries: CalibratorProblemRecovery[];
   solutions: CalibratorSolution[];
 }
 

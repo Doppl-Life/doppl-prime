@@ -7,6 +7,8 @@ const IsoDateString = z.preprocess((value) => {
 
 const RatingTarget = z.enum(["solution", "problem_recovery"]);
 const Verdict = z.enum(["dead", "obvious", "interesting", "investigate", "keeper"]);
+const SourceType = z.enum(["kernel", "manual", "unknown"]);
+const SourceStatus = z.enum(["fixture", "imported", "live_run", "pending", "unavailable"]);
 
 export const CaseFrontmatter = z.object({
   artifact_type: z.literal("case"),
@@ -29,13 +31,14 @@ export const SolutionFrontmatter = z.object({
   case_id: z.string().min(1),
   solution_id: z.string().min(1),
   title: z.string().min(1),
-  source_type: z.enum(["kernel", "manual", "unknown"]),
+  source_type: SourceType,
   comparison_set_id: z.string().min(1).optional(),
   comparison_input_hash: z.string().min(1).optional(),
   comparison_input_paths: z.array(z.string().min(1)).default([]),
-  source_status: z.enum(["fixture", "imported", "live_run", "pending", "unavailable"]).optional(),
+  source_status: SourceStatus.optional(),
   source_branch: z.string().min(1).optional(),
   source_commit: z.string().min(1).optional(),
+  source_mapping_version: z.string().min(1).optional(),
   adapter_version: z.string().min(1).optional(),
   adapter_notes: z.string().min(1).optional(),
   output_class: z.enum(["candidate", "pepsi", "possible_pepsi", "many_pepsis"]).optional(),
@@ -49,6 +52,42 @@ export const SolutionFrontmatter = z.object({
   candidate_id: z.string().min(1).optional(),
   judge_score: z.number().optional(),
   fitness_score: z.number().optional(),
+  created_at: IsoDateString.optional(),
+});
+
+export const ProblemRecoveryFrontmatter = z.object({
+  artifact_type: z.literal("problem_recovery"),
+  case_id: z.string().min(1),
+  problem_recovery_id: z.string().min(1),
+  title: z.string().min(1),
+  source_type: SourceType,
+  source_status: SourceStatus.optional(),
+  source_branch: z.string().min(1).optional(),
+  source_commit: z.string().min(1).optional(),
+  source_mapping_version: z.string().min(1).optional(),
+  adapter_version: z.string().min(1).optional(),
+  adapter_notes: z.string().min(1).optional(),
+  kernel: z.string().min(1).optional(),
+  branch: z.string().min(1).optional(),
+  run_id: z.string().min(1).optional(),
+  run_artifact_id: z.string().min(1).optional(),
+  created_at: IsoDateString.optional(),
+});
+
+export const KernelCaseRunFrontmatter = z.object({
+  artifact_type: z.literal("kernel_case_run"),
+  case_id: z.string().min(1),
+  run_artifact_id: z.string().min(1),
+  source_type: SourceType,
+  source_status: SourceStatus.optional(),
+  source_branch: z.string().min(1).optional(),
+  source_commit: z.string().min(1).optional(),
+  source_mapping_version: z.string().min(1).optional(),
+  adapter_version: z.string().min(1).optional(),
+  adapter_notes: z.string().min(1).optional(),
+  kernel: z.string().min(1).optional(),
+  branch: z.string().min(1).optional(),
+  run_id: z.string().min(1).optional(),
   created_at: IsoDateString.optional(),
 });
 
@@ -132,6 +171,8 @@ export const RatingFrontmatter = z
 export type CaseFrontmatter = z.infer<typeof CaseFrontmatter>;
 export type ProblemFrontmatter = z.infer<typeof ProblemFrontmatter>;
 export type SolutionFrontmatter = z.infer<typeof SolutionFrontmatter>;
+export type ProblemRecoveryFrontmatter = z.infer<typeof ProblemRecoveryFrontmatter>;
+export type KernelCaseRunFrontmatter = z.infer<typeof KernelCaseRunFrontmatter>;
 export type ComparisonSetFrontmatter = z.infer<typeof ComparisonSetFrontmatter>;
 export type RatingSubmission = z.infer<typeof RatingSubmission>;
 export type RatingFrontmatter = z.infer<typeof RatingFrontmatter>;
