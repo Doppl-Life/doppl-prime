@@ -38,6 +38,8 @@ export interface ExportEdge {
 }
 
 export interface LineageExport {
+  /** The run this export belongs to — so a multi-run notebook export identifies each run. */
+  runId: string;
   nodes: ExportNode[];
   edges: ExportEdge[];
   /** The per-run sequence watermark, carried through from the projection (never re-folded). */
@@ -63,5 +65,5 @@ export function lineageToExport(projection: LineageGraphProjection): LineageExpo
     return { id: edge.id, source: edge.source, target: edge.target, type: edge.type, props };
   });
 
-  return { nodes, edges, sequenceThrough: projection.sequenceThrough };
+  return { runId: projection.runId, nodes, edges, sequenceThrough: projection.sequenceThrough };
 }

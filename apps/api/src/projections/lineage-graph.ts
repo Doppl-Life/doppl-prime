@@ -99,11 +99,14 @@ export function buildLineageGraph(
     });
   }
 
-  // Structural connectivity (guarded) — emit only when both endpoint nodes exist.
+  // Structural connectivity (guarded) — emit only when both endpoint nodes exist. Edge ids are
+  // KIND-PREFIXED (`struct:` here, `repro:` below) so a structural and a reproduction edge sharing the
+  // same `${source}->${target}` (possible when a reproduction child id coincides with a candidate id
+  // under the opaque-id space) never collide on id — React Flow breaks on duplicate edge ids.
   const nodeIds = new Set(nodes.map((node) => node.id));
   const linkStructural = (source: string, target: string, type: string): void => {
     if (nodeIds.has(source) && nodeIds.has(target)) {
-      edges.push({ id: `${source}->${target}`, source, target, type });
+      edges.push({ id: `struct:${source}->${target}`, source, target, type });
     }
   };
   for (const agenome of Object.values(state.agenomes)) {
@@ -122,9 +125,10 @@ export function buildLineageGraph(
     linkStructural(fitness.candidateId, fitness.id, 'scored_by');
   }
 
-  // Reproduction genealogy — the authoritative parent→child edges (emitted as-is).
+  // Reproduction genealogy — the authoritative parent→child edges, `repro:`-prefixed (see above) so
+  // they never collide on id with a structural edge; the authoritative `edge.id` is carried verbatim.
   for (const edge of Object.values(state.lineageEdges)) {
-    edges.push({ id: edge.id, source: edge.source, target: edge.target, type: edge.type });
+    edges.push({ id: `repro:${edge.id}`, source: edge.source, target: edge.target, type: edge.type });
   }
 
   return { runId, nodes, edges, sequenceThrough };

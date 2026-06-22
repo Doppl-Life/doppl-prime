@@ -21,12 +21,15 @@ export interface RunStreamRoutesDeps {
   sse?: EventBridgeOptions;
 }
 
-/** `-1` = from sequence 0 (absent cursor). `'invalid'` = present-but-unparseable → 400. */
+/** `-1` = from sequence 0 (absent OR empty cursor). `'invalid'` = present-but-unparseable → 400. */
 function parseCursor(request: FastifyRequest): number | 'invalid' {
   const header = request.headers['last-event-id'];
   const query = (request.query as { lastEventId?: string }).lastEventId;
   const raw = Array.isArray(header) ? header[0] : (header ?? query);
-  if (raw === undefined) return -1;
+  // An ABSENT or EMPTY/whitespace Last-Event-ID = "no cursor" (SSE spec) → deliver from the start
+  // (sequence 0), the same as the no-header path. This is distinct from a real numeric `0` (which
+  // resumes AFTER seq 0): `Number('') === 0` would otherwise silently skip seq 0 (run.configured).
+  if (raw === undefined || raw.trim() === '') return -1;
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 0) return 'invalid';
   return parsed;
@@ -55,6 +58,8 @@ export function registerRunStreamRoutes(app: FastifyInstance, deps: RunStreamRou
     raw.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-cache',
+      // TODO(hosted): drop `connection` under HTTP/2 — it's a forbidden connection-specific header on
+      // h2 (harmless under the local h1 demo server). Revisit when fronting the API with an h2 proxy.
       connection: 'keep-alive',
     });
 

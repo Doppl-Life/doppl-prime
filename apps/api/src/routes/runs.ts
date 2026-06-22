@@ -22,6 +22,9 @@ const TERMINAL_RUN_STATUSES: ReadonlySet<string> = new Set([
   'completed',
   'stopped',
   'failed',
+  // forward-compat: 'cancelled' is a valid terminal RunStatus (§3) but no `run.cancelled` event exists
+  // in the closed 36-member registry yet, so it's currently unreachable here — kept for when the kernel
+  // emits cancellation (P3). Harmless: a status that never occurs simply never matches.
   'cancelled',
 ]);
 

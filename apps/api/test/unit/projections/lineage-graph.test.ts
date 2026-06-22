@@ -175,6 +175,45 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     }
   });
 
+  // §10/§11 [med gate-fix] — edge ids are unique across the graph: a structural edge and a reproduction
+  // edge sharing the same (source,target) must NOT collide on `id` (React Flow breaks on duplicate edge
+  // ids). Here a reproduction child id equals a candidate id, so BOTH kinds yield source→target
+  // agn_1→shared_id; the kind-prefixed ids (struct: vs repro:) keep them distinct.
+  test('test_edge_ids_unique', () => {
+    const events = [
+      makeRow('generation.started', { runId: 'run_dup', generationId: 'gen_1', sequence: 0 }),
+      makeRow('agenome.spawned', {
+        runId: 'run_dup',
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        sequence: 1,
+      }),
+      makeRow('candidate.created', {
+        runId: 'run_dup',
+        sequence: 2,
+        payload: { ...validCandidateIdeaCrossDomain, id: 'shared_id', agenomeId: 'agn_1' },
+      }),
+      makeRow('agenome.reproduced', {
+        runId: 'run_dup',
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        sequence: 3,
+        payload: {
+          ...validReproductionEvent,
+          parentAgenomeIds: ['agn_1'],
+          childAgenomeId: 'shared_id',
+        },
+      }),
+    ];
+    const graph = buildLineageGraph(buildCurrentState(events));
+    const ids = graph.edges.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length); // no duplicate edge ids (React Flow dup-edge guard)
+    // both the structural (generated) and reproduction agn_1→shared_id edges survive as DISTINCT edges.
+    expect(
+      graph.edges.filter((e) => e.source === 'agn_1' && e.target === 'shared_id'),
+    ).toHaveLength(2);
+  });
+
   // §10 robustness (APPROVED guard #2) — node ids are unique across the graph (entity-ids-globally-
   // unique assumption; a P3-reconcile flag covers namespacing if the kernel allows cross-type id
   // collisions).

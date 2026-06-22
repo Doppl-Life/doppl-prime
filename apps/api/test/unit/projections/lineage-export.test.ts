@@ -79,6 +79,12 @@ describe('lineageToExport — derived read-only Neo4j export (spec §10 / §9)',
     expect(exported.sequenceThrough).toBe(8); // watermark carried through
   });
 
+  // [low gate-fix] — the export carries the projection's runId so a multi-run notebook export can
+  // identify which run each node/edge belongs to.
+  test('test_lineage_export_carries_run_id', () => {
+    expect(lineageToExport(multiNodeLineage).runId).toBe('run_e');
+  });
+
   // §10 — the export retains genealogy edges + node labels/status/metrics so all four query shapes are
   // expressible (ancestors-of-winner, parent-contribution, critic-kill, lineage distance/diversity).
   test('test_export_preserves_query_shape_data', () => {

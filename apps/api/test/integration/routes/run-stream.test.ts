@@ -151,6 +151,32 @@ describe('GET /runs/:id/stream — SSE run-event stream (spec §11/§4)', () => 
     }
   });
 
+  // §11 [med gate-fix] — an EMPTY `Last-Event-ID` = "no cursor" (SSE spec): deliver from sequence 0
+  // (`Number('') === 0` must NOT silently skip seq 0 / `run.configured`); a real `Last-Event-ID: 0`
+  // resumes AFTER seq 0.
+  test('test_empty_last_event_id_delivers_from_start', async () => {
+    await seedStreamRun('stream-empty-cursor');
+    const app = makeApp();
+    await app.ready();
+    try {
+      const empty = await app.inject({
+        method: 'GET',
+        url: '/runs/stream-empty-cursor/stream',
+        headers: { 'Last-Event-ID': '' },
+      });
+      expect(parseSse(empty.payload).map((f) => f.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]); // from start
+
+      const zero = await app.inject({
+        method: 'GET',
+        url: '/runs/stream-empty-cursor/stream',
+        headers: { 'Last-Event-ID': '0' },
+      });
+      expect(parseSse(zero.payload).map((f) => f.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]); // resume after 0
+    } finally {
+      await app.close();
+    }
+  });
+
   // §4/§12 — the stream carries operation-start MARKERS and COMPLETIONS (not only completions).
   test('test_stream_carries_markers_and_completions', async () => {
     await seedStreamRun('stream-markers');

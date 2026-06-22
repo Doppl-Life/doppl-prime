@@ -13,9 +13,9 @@ import { createEmitBoundary } from '../src/emit';
 
 const SECRET = 'S3cr3t-Langfuse-P4ss-xyz';
 
-describe('createEmitBoundary — scrub-before-emit + fail-safe (spec §14 / §13)', () => {
-  // 9 — the injected emitter receives a SCRUBBED payload; a secret in the input (value, key, or array
-  // element) never reaches the emitter (before-emit reachability, rule #4). Positive-guarded.
+describe('createEmitBoundary — scrub-before-emit + fail-safe (spec(§14) / spec(§13))', () => {
+  // 9 spec(§14) — the injected emitter receives a SCRUBBED payload; a secret in the input (value, key,
+  // or array element) never reaches the emitter (before-emit reachability, rule #4). Positive-guarded.
   test('test_scrub_runs_before_emit', async () => {
     let received: unknown;
     const boundary = createEmitBoundary({
@@ -29,9 +29,9 @@ describe('createEmitBoundary — scrub-before-emit + fail-safe (spec §14 / §13
     expect(JSON.stringify(received)).not.toContain(SECRET);
   });
 
-  // 10 — a failed export logs a local-only warning and writes NO authoritative-log entry (§13). The
+  // 10 spec(§13) — a failed export logs a local-only warning and writes NO authoritative-log entry. The
   // boundary swallows the failure (does not reject), and structurally imports nothing from the event
-  // store / DB, so it CANNOT append to the authoritative log.
+  // store / DB, so it CANNOT append to the authoritative log (Langfuse is non-authoritative, §13).
   test('test_failed_export_local_warning_no_event_write', async () => {
     const warn = vi.fn();
     const boundary = createEmitBoundary({

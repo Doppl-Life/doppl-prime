@@ -21,7 +21,15 @@ export interface CapUsage {
   ceiling: number;
 }
 
-/** Named per-cap usage (not a Record) so consumers access fields without an undefined index check. */
+/**
+ * Named per-cap usage (not a Record) so consumers access fields without an undefined index check.
+ *
+ * Exposes 4 of the 6 RunCaps. `maxSpawnDepth` and `wallClockTimeoutMs` are intentionally OMITTED here:
+ * neither is reconstructible from the projected event stream as a monotonic "consumed" counter —
+ * spawn-depth is a per-lineage tree property (not a running total) and wall-clock elapsed is derived
+ * from the live clock (out of band of the log-derived projection). They surface at P3/integration when
+ * the live worker reports them; the health signal stays a pure projection of the persisted log.
+ */
 export interface CapsConsumed {
   generations: CapUsage;
   population: CapUsage;
