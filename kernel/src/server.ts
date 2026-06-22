@@ -136,27 +136,57 @@ function productionPage(options: KernelHttpOptions = {}): string {
     .metric { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px; }
     .metric strong { display: block; font-size: 24px; }
     .metric span { color: var(--muted); font-size: 12px; }
-    .graph-shell { border: 1px solid var(--line); border-radius: 8px; background: #0b1119; overflow: hidden; }
+    .graph-shell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background-color: #07111d;
+      background-image: radial-gradient(#17304b 1px, transparent 1px);
+      background-size: 12px 12px;
+      overflow: hidden;
+      position: relative;
+    }
     .graph-header { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
     .graph-header strong { display: block; }
     .graph-header span { color: var(--muted); font-size: 13px; }
-    svg { width: 100%; height: min(62vh, 620px); display: block; }
+    svg { width: 100%; height: min(70vh, 760px); display: block; }
     .edge { stroke: #536174; stroke-width: 2; marker-end: url(#arrow); }
+    .edge.survivor { stroke: var(--teal); stroke-width: 3; }
+    .edge.rejected { stroke-dasharray: 4 7; opacity: .5; }
     .node rect { stroke-width: 1.4; rx: 9; }
     .node text { fill: var(--ink); font-size: 12px; }
     .node .sub { fill: var(--muted); font-size: 11px; }
+    .node .tag { fill: var(--teal); font-size: 9px; text-transform: uppercase; }
     .node.recovery rect { fill: #152033; stroke: var(--blue); }
     .node.candidate rect { fill: #13201f; stroke: var(--teal); }
     .node.parent rect { fill: #262011; stroke: var(--gold); }
     .node.child rect { fill: #281724; stroke: var(--rose); }
-    .node { cursor: pointer; transition: opacity .18s ease, transform .18s ease; }
+    .node.survivor rect { stroke: #33f0b2; stroke-width: 2.4; }
+    .node.rejected rect { stroke: #ef5d84; fill: #23111b; }
+    .node.seeded rect { stroke: #3eb7ff; }
+    .node { cursor: pointer; transition: opacity .18s ease; }
     .node:hover { opacity: .82; }
     .node.entering { animation: node-in .34s ease both; }
-    @keyframes node-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes node-in { from { opacity: 0; } to { opacity: 1; } }
+    .generation-lane { fill: rgba(18, 35, 55, .34); stroke: rgba(99, 164, 255, .14); }
+    .generation-label { fill: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .flow-minimap {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 180px;
+      height: 118px;
+      border: 1px solid #1b2a3f;
+      background: rgba(5, 11, 18, .9);
+      box-shadow: 0 0 0 1px rgba(79, 209, 183, .12);
+    }
     .details { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; margin-top: 18px; }
     .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
     .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; min-width: 0; }
     .panel ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.7; }
+    .survivor-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 10px; }
+    .survivor-item { border: 1px solid #24435b; border-left: 3px solid var(--teal); border-radius: 6px; padding: 10px; background: #0d151f; }
+    .survivor-item strong { display: block; }
+    .survivor-item span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
     .event-stream { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 220px; overflow: auto; }
     .event-stream li { border-left: 2px solid var(--teal); padding: 6px 8px; background: #0d131c; color: var(--muted); font-size: 12px; }
     .event-stream li.active { color: var(--ink); border-color: var(--gold); }
@@ -224,19 +254,20 @@ function productionPage(options: KernelHttpOptions = {}): string {
           <g class="node recovery" data-node-kind="recovery" transform="translate(60 220)">
             <rect width="180" height="82"></rect><text x="14" y="28">Problem recovery</text><text class="sub" x="14" y="52">ownership premise</text>
           </g>
-          <g class="node candidate parent" data-node-kind="candidate" transform="translate(360 110)">
+          <g class="node candidate parent survivor" data-node-kind="candidate" data-node-status="survivor" transform="translate(360 110)">
             <rect width="210" height="82"></rect><text x="14" y="28">Liability clock</text><text class="sub" x="14" y="52">fitness 86.0 selected</text>
           </g>
-          <g class="node candidate parent" data-node-kind="candidate" transform="translate(360 220)">
+          <g class="node candidate parent survivor" data-node-kind="candidate" data-node-status="survivor" transform="translate(360 220)">
             <rect width="210" height="82"></rect><text x="14" y="28">Residual value stress</text><text class="sub" x="14" y="52">fitness 40.0 selected</text>
           </g>
-          <g class="node candidate" data-node-kind="candidate" transform="translate(360 330)">
+          <g class="node candidate rejected" data-node-kind="candidate" data-node-status="rejected" transform="translate(360 330)">
             <rect width="210" height="82"></rect><text x="14" y="28">Credit exposure</text><text class="sub" x="14" y="52">fitness 20.0 culled</text>
           </g>
-          <g class="node child" data-node-kind="child" transform="translate(720 210)">
+          <g class="node child survivor" data-node-kind="child" data-node-status="survivor" transform="translate(720 210)">
             <rect width="210" height="92"></rect><text x="14" y="30">Fused child</text><text class="sub" x="14" y="56">liability + residual</text>
           </g>
         </svg>
+        <svg id="flow-minimap" class="flow-minimap" viewBox="0 0 180 118" aria-label="Evolution graph minimap"></svg>
       </div>
       <div class="details">
         <article class="panel">
@@ -251,6 +282,10 @@ function productionPage(options: KernelHttpOptions = {}): string {
           <pre id="artifact-preview">Run an authenticated fixture/live model request, then click Fetch run graph to inspect exported artifacts.</pre>
         </article>
       </div>
+      <article class="panel">
+        <h2>Final surviving solutions</h2>
+        <div id="survivor-list" class="survivor-list"></div>
+      </article>
       <div class="live-grid">
         <article class="panel">
           <h2>Event stream</h2>
@@ -286,6 +321,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
     const artifactPreview = document.getElementById('artifact-preview');
     const eventStream = document.getElementById('event-stream');
     const nodeInspector = document.getElementById('node-inspector');
+    const survivorList = document.getElementById('survivor-list');
     function slugTime() {
       return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
     }
@@ -312,12 +348,74 @@ function productionPage(options: KernelHttpOptions = {}): string {
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
     }
-    function node(label, detail, kind, x, y) {
-      const classes = ['node', kind].join(' ');
-      return '<g class="' + classes + '" data-node-kind="' + kind + '" data-node-id="' + escapeHtml(label) + '" transform="translate(' + x + ' ' + y + ')"><rect width="210" height="86"></rect><text x="14" y="30">' + escapeHtml(label) + '</text><text class="sub" x="14" y="56">' + escapeHtml(detail) + '</text></g>';
+    function node(label, detail, kind, x, y, status) {
+      const nodeStatus = status || 'seeded';
+      const classes = ['node', kind, nodeStatus].join(' ');
+      return '<g class="' + classes + '" data-node-kind="' + kind + '" data-node-status="' + nodeStatus + '" data-node-id="' + escapeHtml(label) + '" transform="translate(' + x + ' ' + y + ')"><rect width="220" height="78"></rect><text class="tag" x="14" y="17">' + escapeHtml(kind + ' / ' + nodeStatus) + '</text><text x="14" y="38">' + escapeHtml(label) + '</text><text class="sub" x="14" y="60">' + escapeHtml(detail) + '</text></g>';
     }
-    function edge(x1, y1, x2, y2) {
-      return '<line class="edge" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"></line>';
+    function edge(x1, y1, x2, y2, status) {
+      return '<line class="edge ' + escapeHtml(status || '') + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"></line>';
+    }
+    function candidateById(run, id) {
+      return (run.candidates || []).find((candidate) => candidate.id === id);
+    }
+    function unique(values) {
+      return Array.from(new Set(values.filter(Boolean)));
+    }
+    function layoutEvolutionTree(run) {
+      const evolution = run.evolution && run.evolution.length > 0 ? run.evolution : [{
+        generation: 0,
+        candidateIds: (run.candidates || []).map((candidate) => candidate.id),
+        selectedParentIds: run.child?.parentCandidateIds || [],
+        childId: run.child?.id
+      }];
+      const width = Math.max(1260, 260 + evolution.length * 330);
+      const allRows = Math.max(4, ...evolution.map((generation) => unique([...(generation.candidateIds || []), generation.childId]).length + 1));
+      const height = Math.max(620, 130 + allRows * 104);
+      const nodes = [{ id: run.problemRecovery?.id || 'problem_recovery', kind: 'recovery', status: 'seeded', x: 54, y: height / 2 - 38, detail: 'problem recovery' }];
+      const edges = [];
+      const lanes = [];
+      let priorId = nodes[0].id;
+      let priorX = 274;
+      let priorY = height / 2;
+      evolution.forEach((generation, generationIndex) => {
+        const x = 350 + generationIndex * 330;
+        lanes.push({ generation: generation.generation ?? generationIndex, x: x - 28, width: 276 });
+        const selected = new Set(generation.selectedParentIds || run.child?.parentCandidateIds || []);
+        const candidateIds = unique(generation.candidateIds || []);
+        const top = Math.max(70, (height - candidateIds.length * 96) / 2);
+        candidateIds.forEach((candidateId, index) => {
+          const candidate = candidateById(run, candidateId) || { id: candidateId, fitnessTotal: 'unscored' };
+          const y = top + index * 96;
+          const status = selected.has(candidateId) ? 'survivor' : 'rejected';
+          nodes.push({ id: candidateId, kind: 'candidate', status, x, y, detail: 'fitness ' + (candidate.fitnessTotal ?? 'unscored') });
+          edges.push({ fromX: priorX, fromY: priorY, toX: x, toY: y + 39, status });
+        });
+        if (generation.childId || (generationIndex === evolution.length - 1 && run.child)) {
+          const childId = generation.childId || run.child.id;
+          const childY = Math.max(70, top + candidateIds.length * 96 + 18);
+          nodes.push({ id: childId, kind: 'child', status: 'survivor', x: x + 250, y: childY, detail: 'fused survivor' });
+          candidateIds.filter((candidateId) => selected.has(candidateId)).forEach((candidateId) => {
+            const parentNode = nodes.find((item) => item.id === candidateId && item.x === x);
+            if (parentNode) edges.push({ fromX: parentNode.x + 220, fromY: parentNode.y + 39, toX: x + 250, toY: childY + 39, status: 'survivor' });
+          });
+          priorId = childId;
+          priorX = x + 470;
+          priorY = childY + 39;
+        }
+      });
+      return { width, height, lanes, nodes, edges };
+    }
+    function renderMiniMap(layout) {
+      const sx = 180 / layout.width;
+      const sy = 118 / layout.height;
+      document.getElementById('flow-minimap').innerHTML = layout.nodes.map((item) => '<rect x="' + Math.round(item.x * sx) + '" y="' + Math.round(item.y * sy) + '" width="5" height="5" fill="' + (item.status === 'survivor' ? '#4fd1b7' : item.status === 'rejected' ? '#f27b9b' : '#63a4ff') + '"></rect>').join('');
+    }
+    function renderSurvivors(run) {
+      const survivorIds = new Set(run.child?.parentCandidateIds || []);
+      const survivors = (run.candidates || []).filter((candidate) => survivorIds.has(candidate.id));
+      if (run.child) survivors.push({ id: run.child.id, title: 'Fused child', fitnessTotal: 'final' });
+      survivorList.innerHTML = survivors.map((item) => '<div class="survivor-item"><strong>' + escapeHtml(item.title || item.id) + '</strong><span>' + escapeHtml(item.id) + ' / fitness ' + escapeHtml(item.fitnessTotal ?? 'survivor') + '</span></div>').join('') || '<p class="status">No survivors selected yet.</p>';
     }
     function renderGraph(run) {
       state.runId = run.runId;
@@ -328,17 +426,14 @@ function productionPage(options: KernelHttpOptions = {}): string {
       document.getElementById('metric-budget').textContent = String(run.budget?.usedUnits ?? 0);
       document.getElementById('metric-child').textContent = run.child ? '1' : '0';
       document.getElementById('run-summary').textContent = 'Run ' + run.runId + ' evolved ' + run.candidates.length + ' candidates across ' + run.evolution.length + ' generation(s).';
-      const selected = new Set(run.child?.parentCandidateIds || run.evolution[0]?.selectedParentIds || []);
-      const candidateY = [88, 214, 340];
+      const layout = layoutEvolutionTree(run);
+      document.getElementById('lineage-graph').setAttribute('viewBox', '0 0 ' + layout.width + ' ' + layout.height);
       let svg = '<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 Z" fill="#536174"></path></marker></defs>';
-      svg += node('Problem recovery', run.problemRecovery?.id || 'recovery', 'recovery', 58, 218);
-      run.candidates.forEach((candidate, index) => {
-        const y = candidateY[index] || 340 + (index - 2) * 104;
-        svg += edge(228, 260, 360, y + 42);
-        svg += node(candidate.id, 'fitness ' + (candidate.fitnessTotal ?? 'unscored') + (selected.has(candidate.id) ? ' selected' : ''), selected.has(candidate.id) ? 'candidate parent' : 'candidate', 360, y);
-        if (run.child && selected.has(candidate.id)) svg += edge(570, y + 42, 720, 252);
+      layout.lanes.forEach((lane) => {
+        svg += '<rect class="generation-lane" x="' + lane.x + '" y="42" width="' + lane.width + '" height="' + (layout.height - 84) + '"></rect><text class="generation-label" x="' + (lane.x + 14) + '" y="64">Generation ' + lane.generation + '</text>';
       });
-      if (run.child) svg += node(run.child.id, 'fused child', 'child', 720, 208);
+      layout.edges.forEach((item) => { svg += edge(item.fromX, item.fromY, item.toX, item.toY, item.status); });
+      layout.nodes.forEach((item) => { svg += node(item.id, item.detail, item.kind, item.x, item.y, item.status); });
       document.getElementById('lineage-graph').innerHTML = svg;
       document.getElementById('selected-run-list').innerHTML = (run.child?.parentCandidateIds || []).map((id) => '<li><code>' + id + '</code> contributes to the fused child.</li>').join('') || '<li>No child selected yet.</li>';
       document.querySelectorAll('#lineage-graph .node').forEach((nodeElement, index) => {
@@ -346,6 +441,8 @@ function productionPage(options: KernelHttpOptions = {}): string {
         nodeElement.style.animationDelay = String(index * 55) + 'ms';
         nodeElement.addEventListener('click', () => inspectNode(nodeElement.dataset.nodeId, nodeElement.dataset.nodeKind, run));
       });
+      renderMiniMap(layout);
+      renderSurvivors(run);
       renderEvents(run.dashboardEvents || []);
     }
     function inspectNode(nodeId, nodeKind, run) {
@@ -384,8 +481,8 @@ function productionPage(options: KernelHttpOptions = {}): string {
         body: JSON.stringify({
           runId,
           casePath: selectedCase.path,
-          generations: 1,
-          budget: 1,
+          generations: liveModel ? 1 : 4,
+          budget: liveModel ? 1 : 4,
           liveModel,
           model: liveModel ? modelInput.value.trim() || undefined : undefined
         })
@@ -674,12 +771,14 @@ async function runDashboardCaseFromRequestBody(
   const dashboardCase = approvedDashboardCase(casePath);
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = dashboardCase.mode === 'live';
+  const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
+  const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
   const summary = await runFromRequestBody(
     JSON.stringify({
       runId: parsed.runId || `${dashboardCase.id}_${Date.now()}`,
       casePath,
-      generations: 1,
-      budget: 1,
+      generations,
+      budget: generations,
       liveModel,
       model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
       outDir,

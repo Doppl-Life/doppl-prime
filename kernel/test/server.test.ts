@@ -175,6 +175,13 @@ test('kernel HTTP server serves a visible production page', async () => {
   assert.match(response.bodyText, /refreshRunHistory/);
   assert.match(response.bodyText, /animateProgress/);
   assert.match(response.bodyText, /data-node-id/);
+  assert.match(response.bodyText, /id="flow-minimap"/);
+  assert.match(response.bodyText, /id="survivor-list"/);
+  assert.match(response.bodyText, /generation-lane/);
+  assert.match(response.bodyText, /data-node-status="survivor"/);
+  assert.match(response.bodyText, /data-node-status="rejected"/);
+  assert.match(response.bodyText, /renderSurvivors/);
+  assert.match(response.bodyText, /layoutEvolutionTree/);
 });
 
 test('kernel HTTP server runs a fixture kernel request', async () => {
