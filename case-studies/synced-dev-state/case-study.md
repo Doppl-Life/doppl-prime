@@ -29,3 +29,7 @@ The question is what should be synchronized. Is the product a folder of bytes, a
 Git repository, a remote workspace, a handoff protocol, or something else? What
 should follow the work, what should stay machine-local, and who decides when two
 machines disagree?
+
+## Synopsis
+
+Developers work across laptops, remote boxes, sandboxes, and agent runtimes where the code matches but the state (branches, edits, caches, sessions) does not.

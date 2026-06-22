@@ -1,5 +1,13 @@
 # Lineage Ledger JSONL Contract
 
+> **Cross-line note (2026-06-22):** This is the *kernel-side* (jungle) lineage memory. The
+> flow/human-facing redesign lives in `my-docs/garden/` — start at `garden/SUMMARY.md`. The two
+> overlap and must be reconciled at "lineage plumbing": the garden's node links `prev` / `root` and
+> `cluster` are the same idea as this schema's `parent_candidate_ids` / `nearest_priors` /
+> `convergence_cluster_id`; `delta_class` is parked in the garden but lives here; and this schema's
+> `similarity` (0–1) is a *measurement* that maps into the garden's `−5…+5` novelty *rating*. Treat
+> this file as jungle until that reconciliation happens.
+
 The Lineage Ledger is the machine-readable memory of what the kernel tried, how
 it mutated, what changed, and whether the change was real. It starts as
 append-only JSONL and should later feed the durable knowledge-space boundary

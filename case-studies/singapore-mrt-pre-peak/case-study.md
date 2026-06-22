@@ -16,3 +16,7 @@ punish people whose schedules cannot move.
 
 What could shift enough flexible trips out of the most crowded window to make the
 system feel better, without building new track?
+
+## Synopsis
+
+Singapore's rail system is stressed in a narrow morning-peak window while adjacent time bands sit underused; some commuters can shift their travel, many cannot.

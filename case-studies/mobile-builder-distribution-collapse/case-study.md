@@ -30,3 +30,7 @@ The question is where an ambitious mobile builder should intervene. Is the
 opening a new mobile operating system, a better ROM, a sideloading helper, an app
 store, developer tooling, device support, payment flow, policy fight, or some
 combination that changes the user path?
+
+## Synopsis
+
+Mobile once welcomed builders who modified the platform itself, but app stores, signing chains, and device locks have closed off that distribution loop.

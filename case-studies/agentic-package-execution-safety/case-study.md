@@ -31,3 +31,7 @@ is remote code execution by default, what evidence should be assembled before a
 command runs? Which low-exposure releases should stay reversible? Which signals
 are strong enough to block an agent without making every install a manual
 security review?
+
+## Synopsis
+
+Package registries were built for dependency records, but agents and sandboxes now run unfamiliar packages as executable commands on a single prompt, shifting where the permission boundary sits.

@@ -27,3 +27,7 @@ not a technical diagram with more subscriptions on it.
 
 What would you recommend for the yacht's connectivity architecture, onboard
 operations, and guest-facing promise?
+
+## Synopsis
+
+A high-paying charter guest expects home-grade connectivity, but the yacht's link rides moving infrastructure at sea that drifts in and out of coverage.

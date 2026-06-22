@@ -51,3 +51,7 @@ around the road economy have updated.
 Which dependent systems deserve separate investigation first, and how would you tell
 which ones merely get cheaper, which ones lose the event they were built around,
 and which ones move from individual drivers to fleet-scale operators?
+
+## Synopsis
+
+Granting that Tesla-scale full self-driving works well enough, the binding question shifts from invention to permission, rollout, and adoption.

@@ -28,3 +28,7 @@ The question is how practitioners should turn lived failure into durable
 measurement. Which tasks deserve public prestige? Which tasks should stay held
 out? How often should the suite refresh? Who adjudicates ambiguous cases? What
 keeps the benchmark from becoming another saturated scoreboard?
+
+## Synopsis
+
+AI systems improve against visible benchmarks, but the hardest failures live in obscure practitioner workflows that no public benchmark captures.

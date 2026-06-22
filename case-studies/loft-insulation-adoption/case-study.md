@@ -16,3 +16,7 @@ still fail at the point where the home has to be made ready.
 
 What should the program change if completed installations, not stated interest,
 are the real measure?
+
+## Synopsis
+
+UK households under-adopt loft insulation despite favorable economics; interest exists, but the journey breaks down before installation completes.

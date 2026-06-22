@@ -47,3 +47,7 @@ Which gaps matter most: lived experience, regulation, vehicle fleet, weather,
 mapping, infrastructure, labor politics, insurance, or public trust? What changes at
 the boundary between places where autonomy is ordinary and places where it is still
 treated as speculation?
+
+## Synopsis
+
+Tesla-scale autonomy arrives as a patchwork, live in limited Texas areas and gated differently across states and countries, rather than everywhere at once.

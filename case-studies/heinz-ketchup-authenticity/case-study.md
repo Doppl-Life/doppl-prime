@@ -16,3 +16,7 @@ harder to hide during normal use.
 
 What could the bottle do, without asking the customer to scan, read, or perform
 an authentication ritual?
+
+## Synopsis
+
+Venues refill branded Heinz bottles with cheaper ketchup, and the brand cannot control or prove what is actually inside the bottle at the table.

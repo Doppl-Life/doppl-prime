@@ -13,7 +13,7 @@ kind: kernel function · markdown-as-code · a cheap model is enough
 # compiler
 
 Takes the kernel's raw stage output plus the judge's evaluation and writes a node that conforms to
-`node-template-draft.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM /
+`node-template.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM /
 a mini tier); save the strong models for generate→select and for the judge, not the rendering.
 
 ## Inputs
@@ -31,7 +31,7 @@ a mini tier); save the strong models for generate→select and for the judge, no
   judge's final output just before compile. The compiler never guesses it.
 - **Human scores are absent at birth.** A node is compiled judge-only:
   `scores: { judge, human: null, n: 0 }`. The human number is appended later from the ratings ledger
-  (`rating-model-draft.md`), never by the compiler.
+  (`rating-model.md`), never by the compiler.
 
 ## Procedure
 

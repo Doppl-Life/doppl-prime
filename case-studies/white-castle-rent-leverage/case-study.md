@@ -16,3 +16,7 @@ capital discipline of a lease-heavy rollout.
 
 How could White Castle make expansion less vulnerable to any single landlord's
 parcel, using materials and operations available at the time?
+
+## Synopsis
+
+White Castle's 1920s-30s expansion of standardized restaurants faces a real-estate hostage problem: buying ties up capital, while leasing exposes the investment to landlords.

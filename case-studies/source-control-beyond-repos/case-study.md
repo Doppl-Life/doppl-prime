@@ -26,3 +26,7 @@ The question is which object should carry trust and visibility. Is the repositor
 still the right boundary, or should policies attach to changes, files, snapshots,
 branches, and disclosure state? What would it take to run review and automation
 over hidden code without making secrecy a cosmetic layer?
+
+## Synopsis
+
+Git hosting treats visibility as a whole-repository property, but modern work needs finer secrecy boundaries, like a private security fix inside a public project.

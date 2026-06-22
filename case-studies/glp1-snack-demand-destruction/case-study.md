@@ -31,3 +31,7 @@ The team has to decide what it is seeing while the market is still moving. Is
 this a temporary diet wave, a product-mix shift, a household-level demand change,
 or something else? Which lost occasions can be replaced, which only shrink, and
 which disappear?
+
+## Synopsis
+
+With roughly 12% of US adults on a GLP-1 drug, household grocery spending (especially impulse categories) is starting to show measurable decline.

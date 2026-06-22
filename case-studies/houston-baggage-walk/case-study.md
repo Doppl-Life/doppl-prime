@@ -15,3 +15,7 @@ baggage-system rebuild for a process that is already close to normal.
 
 What could the airport change so the same baggage timing feels less like a
 failure, without pretending the bags are arriving materially faster?
+
+## Synopsis
+
+Baggage-claim complaints persist after operational fixes because passengers reach the carousel quickly, then stand waiting for the normal process to catch up.

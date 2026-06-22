@@ -46,3 +46,7 @@ You are advising a state that expects autonomous service to grow county by count
 
 Which enforcement, court, identity, revenue, and civil-liberties dependencies should
 it examine before the human traffic stop starts to shrink?
+
+## Synopsis
+
+Traffic enforcement assumes a human driver to cite; driverless autonomy removes that driver from the traffic stop.

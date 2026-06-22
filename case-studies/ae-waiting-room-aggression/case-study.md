@@ -18,3 +18,7 @@ clinical work to explain the system one person at a time.
 What could the department change in the waiting-room experience so ordinary
 confusion and frustration are less likely to harden into aggression, while
 preserving clinical triage and staff time?
+
+## Synopsis
+
+An emergency department wants to reduce waiting-room hostility toward staff; most conflict grows from pain, long waits, crowding, and a triage process patients cannot see.

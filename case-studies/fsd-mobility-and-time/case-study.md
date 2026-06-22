@@ -49,3 +49,7 @@ You are looking beyond cheap rides.
 If driver attention and driver labor stop being the binding costs, which travel,
 freight, labor, and geography systems change first, and which changes only arrive
 after the rollout becomes reliable enough for people to plan their lives around it?
+
+## Synopsis
+
+Granting that the technology works well enough, the case looks at what changes when the driver stops being the cost of mobility, beyond the visible ride-hailing layer.

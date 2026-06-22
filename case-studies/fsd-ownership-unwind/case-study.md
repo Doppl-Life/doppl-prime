@@ -47,3 +47,7 @@ You are looking at the ownership economy before the market settles.
 Which parts depend on households buying and maintaining privately used vehicles, and
 which parts can survive if mobility shifts toward fleets, subscriptions, or
 income-producing owned cars?
+
+## Synopsis
+
+American daily life is organized around owning a car (financing, insurance, repair, parking); the case examines how autonomy pressures that whole ownership pattern.

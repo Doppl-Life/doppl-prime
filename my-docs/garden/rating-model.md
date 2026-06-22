@@ -8,7 +8,7 @@ A node is scored on its **Growth** — the live work of its stage (the recovered
 doppl), not the whole document. A `problem_recovery` node and the `doppl` folded from it are scored
 separately, so a chain carries a score per stage and progress is the trajectory along the chain.
 
-**Discovery is not scored** — it is gated by a signal bar (`discovery-skill-draft.md`), not rated.
+**Discovery is not scored** — it is gated by a signal bar (`discovery-skill.md`), not rated.
 
 ## The scale: −5 to +5
 

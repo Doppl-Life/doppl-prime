@@ -3,7 +3,7 @@
 Every non-seed node has the same four parts: `## Trace` · `## Discovery` · `## Growth` (with
 `### Evaluation` inside) · `## Path`. The frontmatter is identical too. **Only two things change by
 stage** — the content of `## Growth`, and the leaf action surface. The seed is different and minimal
-(`case-study-template-draft.md`).
+(`case-study-template.md`).
 
 
 |                                              | `problem_recovery`                                | `doppl`                                                |

@@ -73,3 +73,7 @@ You are looking past the visible cheap-rides-and-driver-displacement story.
 What should the dependency map include, and which crash-linked businesses,
 public agencies, medical systems, legal systems, and household costs need the
 closest attention if human-caused crash volume falls sharply?
+
+## Synopsis
+
+With Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.

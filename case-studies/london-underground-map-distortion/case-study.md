@@ -17,3 +17,7 @@ change, and how stops connected.
 
 What kind of map would make the railway easier to use, even if it made a
 geographer uncomfortable?
+
+## Synopsis
+
+By the 1930s the London Underground was too sprawling for a geographically faithful map; the dense centre, where riders needed clarity most, was unreadable.

@@ -23,3 +23,7 @@ The question is where attention should attach. Should the important unit be a
 channel, a thread, a task, a document, a notification, or a separate object that
 borrows from all of them? Which old conversations should return to view, which
 should stay quiet, and how should an agent know the difference?
+
+## Synopsis
+
+Work chat is built for sending messages, so decisions and agent results land deep in old threads and never reliably resurface to the team's attention.

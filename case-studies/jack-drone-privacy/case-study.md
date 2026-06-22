@@ -52,3 +52,7 @@ would you tell the owner's team to do when paparazzi drones approach the yacht?
 Your proposal should account for detection, timing, crew behavior, legal exposure,
 false alarms, and the owner's desire to keep the night going. It can combine
 technology, procedure, crew training, or changes to how exposed areas are used.
+
+## Synopsis
+
+A celebrity's offshore yacht relied on being out of ordinary sight; that privacy assumption fails from above as paparazzi deploy drones.

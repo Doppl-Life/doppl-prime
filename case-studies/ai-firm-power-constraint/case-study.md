@@ -37,3 +37,7 @@ deliver it?
 The decision is not simply "buy more electricity." The question is which input
 actually slows deployment, how early it has to be secured, and who gains leverage
 when compute demand runs into infrastructure built on a slower clock.
+
+## Synopsis
+
+A frontier AI campus is no longer just a chip-procurement problem: the binding constraints are electrical load, cooling, permits, and grid connection on a schedule utilities are not built for.

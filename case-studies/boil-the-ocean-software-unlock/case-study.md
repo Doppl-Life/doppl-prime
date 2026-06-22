@@ -28,3 +28,7 @@ problems are newly approachable because implementation and coordination cost
 fell? Which are still blocked by non-code constraints? How should a builder tell
 the difference between a once-impossible project whose bottleneck moved and a
 classic overreach with better tools?
+
+## Synopsis
+
+Conventional software advice warned against rebuilding infrastructure (do not boil the ocean); the case probes whether that caution still holds once the hard part of these systems has shifted.

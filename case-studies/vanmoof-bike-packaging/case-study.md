@@ -14,3 +14,7 @@ Once the box enters the freight system, it is one large cardboard box among many
 
 What could VanMoof change so bikes arrive damaged less often, without making each
 shipment materially heavier or operationally special?
+
+## Synopsis
+
+VanMoof ships expensive bikes direct to customers through ordinary carriers, and too many arrive damaged, creating cost and a poor first-ownership moment.

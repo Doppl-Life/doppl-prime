@@ -3,7 +3,7 @@
 ## Two object classes
 
 - **Flow** — the chain of decisions, folded one step at a time into immutable nodes.
-- **Stock** — knowledge fields the flow draws from and writes back to (`stock-template-draft.md`).
+- **Stock** — knowledge fields the flow draws from and writes back to (`stock-template.md`).
 
 ## The seed
 
@@ -64,7 +64,7 @@ action surface (`### Skin in the Game` on a problem_recovery node, `### Opportun
 ground truth (one `#### <axis>` subsection per axis with full reasoning, boiled down into `scores.judge`).
 - `## Path` — names the next stage, or `null`.
 
-Both stage variants are written out in full in `node-template-draft.md`.
+Both stage variants are written out in full in `node-template.md`.
 
 The `# headline` is the one-line Growth result; on fold it becomes the next node's Trace synopsis.
 
@@ -82,7 +82,7 @@ change freely.
 
 Each node carries `temporal` — a **boolean**. `true` = zeitgeist (timing-bound: decays over time, can
 reinvigorate). `false` = transfer (timeless: solved or not, no decay). It is the one piece of the old
-`subtype` worth keeping. See `rating-model-draft.md`.
+`subtype` worth keeping. See `rating-model.md`.
 
 ## Kernel
 

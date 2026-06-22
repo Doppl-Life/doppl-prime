@@ -36,3 +36,7 @@ The publisher has to decide what kind of attention it is still earning, what
 kind it has lost, and what it should build for next. A recipe database, a local
 accountability investigation, a travel guide, a product review, and a breaking
 news live blog may not be the same business anymore.
+
+## Synopsis
+
+A publisher's classic search traffic is eroding, concentrated in the evergreen explainers, as AI Overviews and answer engines satisfy informational queries on the results page itself.

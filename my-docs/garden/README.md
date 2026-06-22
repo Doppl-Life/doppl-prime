@@ -17,14 +17,15 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 
 ## The files
 
-- `object-model-draft.md` — stages, the node, dependencies, the diagram.
-- `case-study-template-draft.md` — the seed node (minimal).
-- `node-template-draft.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).
-- `stock-template-draft.md` — the stock field.
-- `rating-model-draft.md` — the single source of truth for scoring.
-- `rating-inventory-draft.md` — every scoring system, garden + jungle, and the conflicts to settle.
-- `discovery-skill-draft.md` — kernel function: gather context (round trip).
-- `compiler-skill-draft.md` — kernel function: render a stage's output into a node.
+- `SUMMARY.md` — the whole model in one read. **Start here.**
+- `object-model.md` — stages, the node, dependencies, the diagram.
+- `case-study-template.md` — the seed node (minimal).
+- `node-template.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).
+- `stock-template.md` — the stock field.
+- `rating-model.md` — the single source of truth for scoring.
+- `rating-inventory.md` — every scoring system, garden + jungle, and the conflicts to settle.
+- `discovery-skill.md` — kernel function: gather context (round trip).
+- `compiler-skill.md` — kernel function: render a stage's output into a node.
 - `flow.svg` — the flow diagram.
 
 ## Known divergences from the kernel (reconcile later, deliberately)

@@ -36,3 +36,7 @@ already arrived. What changes first if Starship reaches reliable high-cadence
 reuse? What remains scarce even if kilograms to orbit become much cheaper? Which
 payloads, suppliers, and operating constraints matter only after launch cost
 stops dominating every spreadsheet?
+
+## Synopsis
+
+Starship is still developmental, but the case asks what opens up if its reusable design makes launch stop being the expensive part of reaching orbit.

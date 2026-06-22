@@ -20,3 +20,7 @@ but did not translate it into an action before reaching the belt.
 What could the airport change so fewer liquid problems reach the screening lane,
 without weakening inspection, adding a worse queue, or turning the rule into a
 long legal explanation?
+
+## Synopsis
+
+An airport checkpoint keeps stalling because non-compliant carry-on liquids are discovered late at the X-ray belt, minor per incident but costly in aggregate.

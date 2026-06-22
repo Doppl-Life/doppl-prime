@@ -22,3 +22,7 @@ spaces.
 
 What would you recommend for detecting and responding to a swimmer or diver
 approaching the yacht before they board?
+
+## Synopsis
+
+Despite crew, a night watch, and CCTV, an intruder swam out from shore, used the tender as a step, and reached the yacht's interior; the waterline perimeter was unguarded.
