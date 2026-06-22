@@ -1,0 +1,89 @@
+# Object Model — Stages, Dependencies, the Node
+
+## Two object classes
+
+- **Flow** — the chain of decisions, folded one step at a time into immutable nodes.
+- **Stock** — knowledge fields the flow draws from and writes back to (`stock-template-draft.md`).
+
+## The seed
+
+Everything grows from a **case study** — the inciting agenome, the core, the seed, the beginning of
+the vine. No node exists without a case study at its root. The case study node is minimal: an id, a
+name, `stage: case_study`, `next: problem_recovery`, and the case itself. No Trace, no rubric. It is
+just a start; it does not call discovery. Seeding it into the kernel is what turns it into the
+evolutionary crucible of the later stages.
+
+## Stages
+
+1. `case_study` — the seed.
+2. `problem_recovery` — the recovered actual problem.
+3. `doppl` — the amorphous leaf: the unlock, the solution, the idea, or all of them. **`doppl` is the
+  name** (amorphous, ours, no baggage). *Pepsi* stays as the **metaphor** we reason with — the
+   *perfect Pepsi vs. the perfect Pepsis*: one converged answer, or several distinct ones (a doppl
+   population).
+
+Any stage can be a leaf. After a doppl leaf, the flow points **out of the system** — into the open
+solution space, where the human's action is the theory.
+
+## Discovery is a tool, not a stage
+
+Discovery is a tool that `problem_recovery` and `doppl` call — **never the case study** (a seed
+doesn't search; it just starts). It is a **round trip**: the stage calls discovery, discovery works,
+control returns to the stage, which then finishes. It is not part of the spine — it happens off to
+the side, below the line.
+
+On a call, discovery reads the **web** for anything new (writing genuinely new finds into the
+**stock field**), reads the **stock field** for what is already known, and hands the pulled-together
+result back to the calling stage. Design it as a **modular tool interface**: one verb (`discover`),
+pluggable backends — a web-search tool now, a large-scale Karpathian deep-research skill later.
+Add-a-tool, don't hardcode. (Skill plumbing: thread #7.)
+
+**Discovery is what was found; Growth is what was concluded.**
+
+## Flow
+
+The doppl flow — one spine, discovery as a side process
+
+The solid line is the spine — the flow: `case_study → problem_recovery → doppl`, then a dotted
+pointer **out** into the open solution space (the human's action). **Each spine arrow is the kernel:**
+one pass of the generate→select crucible, plus the **compiler** that writes the result into the next
+node. The nodes are states; the edges are the kernel at work. Everything below the line is
+back-and-forth side process — `problem_recovery` and `doppl` call discovery and get control back;
+discovery reads the web and reads/writes the stock field. The spine does **not** run into the stock
+field.
+
+- No `doppl` without a recovered problem. No problem without a case study.
+
+## The node — four parts
+
+- `## Trace` — accretes. One `### <Stage> · synopsis` per completed prior stage, copied verbatim.
+- `## Discovery` — accretes. What discovery pulled in (web + stock field). Found, not concluded.
+- `## Growth` — the live work, the current stage at full fidelity. Holds the stage content (a
+problem's recovery chain, or a doppl's `### Claim` + `### Implications` + `### Opportunities`), the
+leaf action surface (`### Skin in the Game` for a problem leaf), and `### Evaluation` — the judge's
+ground truth (per-axis score + reasoning, boiled down into the single `scores`).
+- `## Path` — names the next stage, or `terminal`.
+
+Both stage variants are written out in full in `node-template-draft.md`.
+
+The `# headline` is the one-line Growth result; on fold it becomes the next node's Trace synopsis.
+
+## Portable synopsis
+
+Each stage authors its synopsis once. Downstream nodes copy it verbatim into Trace — never reworded,
+never merged. Only the synopsis travels; full thinking stays home.
+
+## Identity
+
+Every node and field has a **UUIDv4** `id` — the durable link key. Names/headlines are separate and
+change freely.
+
+## Temporal (decay)
+
+Each node carries `temporal` — a **boolean**. `true` = zeitgeist (timing-bound: decays over time, can
+reinvigorate). `false` = transfer (timeless: solved or not, no decay). It is the one piece of the old
+`subtype` worth keeping. See `rating-model-draft.md`.
+
+## Kernel
+
+Recorded for now: Cody, Melissa, Michael, Dalton. Collapses to `prime` once settled.
