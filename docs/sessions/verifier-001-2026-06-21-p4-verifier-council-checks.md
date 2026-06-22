@@ -4,7 +4,7 @@
 - **Phase:** Phase 4 (Verifier council & checks) — `ARCHITECTURE.md §7`
 - **Track:** `verifier` (worktree `Capstone-verifier`, branch `track/verifier`)
 - **Predecessor session:** `kernel-001-2026-06-21-freeze-bundle.md` (the kernel freeze bundle that forked this track)
-- **Successor session:** _(none yet)_
+- **Successor session:** `verifier-002-2026-06-21-p4-check-adapters-grounding-live-rerun.md` (P4.9/P4.10/grounding/P4.11)
 
 ## Why this session existed
 
