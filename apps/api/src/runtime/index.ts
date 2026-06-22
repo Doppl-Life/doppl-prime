@@ -98,3 +98,10 @@ export {
   type ScopeSelector,
   type EnergyScopeKind,
 } from './energy/energyLedger';
+
+// spawnBudget clamp (P3.9 — KEY SAFETY RULE #1: spawnBudget is an allocation hint, never cap-raising).
+// PURE clampSpawnBudget(spawnBudget, remainingPopulation) → {effectiveSpawns, clamped}; effectiveSpawns =
+// min(spawnBudget, max(0, remaining)) so the hint can't raise maxPopulation. Decision only — the spawn
+// caller (gen-0 seed spawn / P3.10 reproduction) emits the clamp-decision event when clamped; the
+// spawn-depth ceiling is a separate P3.4 enforceCap('maxSpawnDepth',…) gate.
+export { clampSpawnBudget, type SpawnClampResult } from './spawn/spawnBudgetClamp';
