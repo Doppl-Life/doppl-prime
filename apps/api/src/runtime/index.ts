@@ -184,3 +184,16 @@ export {
   type StepMatch,
   type StepDecision,
 } from './worker/idempotency';
+
+// Crash-forward recovery at boot (P3.13 — §5 crash recovery; KEY SAFETY RULES #2/#7). Forward-fails every
+// orphaned non-terminal run to its §3-legal crash terminal (running→run.failed{crash},
+// configured→run.cancelled{crash} — never a blanket →failed, LESSONS §48), via the P3.3 append path,
+// guard-validated through P3.2. Never resumes; already-terminal untouched; idempotent + deterministic. The
+// boot caller (crash-forward BEFORE the worker accepts work) is demo/Phase-D territory. Reuses P3.11
+// (classifyRunTerminal/runTerminalPath/buildPartialTerminalSummary) + P3.12 (isRunTerminal/listRunIds).
+export {
+  crashForward,
+  type CrashForwardDeps,
+  type CrashForwardResult,
+  type CrashRecovery,
+} from './recovery/crashForward';
