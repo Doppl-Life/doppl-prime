@@ -5,6 +5,7 @@ import type { EventStore } from './event-store';
 import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
+import { registerRunHealthRoutes } from './routes/run-health';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -72,6 +73,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     newId: deps.newId,
   });
   registerRunReadRoutes(app, { store: deps.store, db: deps.db });
+  registerRunHealthRoutes(app, { store: deps.store });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   return app;
 }

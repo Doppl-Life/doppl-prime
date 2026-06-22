@@ -12,3 +12,4 @@ export * from './lineage-graph';
 export * from './replay-reader';
 export * from './replay-summary';
 export * from './run-list';
+export * from './run-health';
