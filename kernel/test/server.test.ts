@@ -169,6 +169,12 @@ test('kernel HTTP server serves a visible production page', async () => {
   assert.match(response.bodyText, /Run selected case/);
   assert.match(response.bodyText, /api-key-input/);
   assert.match(response.bodyText, /renderGraph/);
+  assert.match(response.bodyText, /id="run-history-list"/);
+  assert.match(response.bodyText, /id="event-stream"/);
+  assert.match(response.bodyText, /id="node-inspector"/);
+  assert.match(response.bodyText, /refreshRunHistory/);
+  assert.match(response.bodyText, /animateProgress/);
+  assert.match(response.bodyText, /data-node-id/);
 });
 
 test('kernel HTTP server runs a fixture kernel request', async () => {
@@ -462,7 +468,35 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
   assert.equal(response.body.child.id, 'child_dashboard_reward_dashboard_basket');
   assert.match(response.body.dashboardArtifact, /GLP-1 case is about impulse demand destruction/);
+  assert.ok(Array.isArray(response.body.dashboardEvents));
+  assert.ok(response.body.dashboardEvents.length > 0);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
+});
+
+test('kernel dashboard route lists recent exported runs without an API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-history-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_history_fixture',
+      casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const response = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(response.body.runs));
+  assert.equal(response.body.runs[0].runId, 'dashboard_history_fixture');
+  assert.equal(response.body.runs[0].caseId, 'fsd-ownership-unwind');
+  assert.equal(response.body.runs[0].child, 'child_cand_liability_clock_cand_recovery_market');
 });
 
 test('kernel HTTP server requires an API key when configured', async () => {

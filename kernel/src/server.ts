@@ -127,6 +127,9 @@ function productionPage(options: KernelHttpOptions = {}): string {
     .case-button { text-align: left; background: var(--panel); font-weight: 600; margin: 0; }
     .case-button span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-top: 3px; }
     .case-button.active { border-color: var(--teal); background: #10201f; }
+    .run-history { display: grid; gap: 8px; margin-top: 12px; }
+    .run-button { text-align: left; margin: 0; background: #0f1722; }
+    .run-button span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
     .topline { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 18px; }
     .topline p { max-width: 720px; }
     .metrics { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
@@ -146,15 +149,24 @@ function productionPage(options: KernelHttpOptions = {}): string {
     .node.candidate rect { fill: #13201f; stroke: var(--teal); }
     .node.parent rect { fill: #262011; stroke: var(--gold); }
     .node.child rect { fill: #281724; stroke: var(--rose); }
+    .node { cursor: pointer; transition: opacity .18s ease, transform .18s ease; }
+    .node:hover { opacity: .82; }
+    .node.entering { animation: node-in .34s ease both; }
+    @keyframes node-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .details { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; margin-top: 18px; }
+    .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
     .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; min-width: 0; }
     .panel ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.7; }
+    .event-stream { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 220px; overflow: auto; }
+    .event-stream li { border-left: 2px solid var(--teal); padding: 6px 8px; background: #0d131c; color: var(--muted); font-size: 12px; }
+    .event-stream li.active { color: var(--ink); border-color: var(--gold); }
     code { color: var(--blue); overflow-wrap: anywhere; }
     pre { white-space: pre-wrap; color: var(--muted); margin: 0; max-height: 260px; overflow: auto; }
     @media (max-width: 880px) {
       main { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid var(--line); }
       .topline, .details { display: block; }
+      .live-grid { grid-template-columns: 1fr; }
       .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       svg { height: 540px; }
     }
@@ -177,6 +189,8 @@ function productionPage(options: KernelHttpOptions = {}): string {
       <button id="fixture-button" class="secondary">Run FSD fixture</button>
       <button id="fetch-button" class="secondary">Fetch run graph</button>
       <p id="status" class="status">Choose a case and run Doppl. Secrets stay server-side.</p>
+      <h2>Run history</h2>
+      <div id="run-history-list" class="run-history" aria-label="Recent Doppl runs"></div>
     </aside>
     <section class="workspace" aria-label="Kernel run graph workspace">
       <div class="topline">
@@ -237,6 +251,16 @@ function productionPage(options: KernelHttpOptions = {}): string {
           <pre id="artifact-preview">Run an authenticated fixture/live model request, then click Fetch run graph to inspect exported artifacts.</pre>
         </article>
       </div>
+      <div class="live-grid">
+        <article class="panel">
+          <h2>Event stream</h2>
+          <ul id="event-stream" class="event-stream"></ul>
+        </article>
+        <article class="panel">
+          <h2>Node inspector</h2>
+          <pre id="node-inspector">Select a graph node to inspect its role in the run.</pre>
+        </article>
+      </div>
     </section>
   </main>
   <script>
@@ -260,6 +284,8 @@ function productionPage(options: KernelHttpOptions = {}): string {
     const runIdInput = document.getElementById('run-id-input');
     const modelInput = document.getElementById('model-input');
     const artifactPreview = document.getElementById('artifact-preview');
+    const eventStream = document.getElementById('event-stream');
+    const nodeInspector = document.getElementById('node-inspector');
     function slugTime() {
       return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
     }
@@ -283,9 +309,12 @@ function productionPage(options: KernelHttpOptions = {}): string {
       const key = apiKeyInput.value.trim();
       return key ? { Authorization: 'Bearer ' + key } : {};
     }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    }
     function node(label, detail, kind, x, y) {
       const classes = ['node', kind].join(' ');
-      return '<g class="' + classes + '" data-node-kind="' + kind + '" transform="translate(' + x + ' ' + y + ')"><rect width="210" height="86"></rect><text x="14" y="30">' + label + '</text><text class="sub" x="14" y="56">' + detail + '</text></g>';
+      return '<g class="' + classes + '" data-node-kind="' + kind + '" data-node-id="' + escapeHtml(label) + '" transform="translate(' + x + ' ' + y + ')"><rect width="210" height="86"></rect><text x="14" y="30">' + escapeHtml(label) + '</text><text class="sub" x="14" y="56">' + escapeHtml(detail) + '</text></g>';
     }
     function edge(x1, y1, x2, y2) {
       return '<line class="edge" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"></line>';
@@ -312,11 +341,43 @@ function productionPage(options: KernelHttpOptions = {}): string {
       if (run.child) svg += node(run.child.id, 'fused child', 'child', 720, 208);
       document.getElementById('lineage-graph').innerHTML = svg;
       document.getElementById('selected-run-list').innerHTML = (run.child?.parentCandidateIds || []).map((id) => '<li><code>' + id + '</code> contributes to the fused child.</li>').join('') || '<li>No child selected yet.</li>';
+      document.querySelectorAll('#lineage-graph .node').forEach((nodeElement, index) => {
+        nodeElement.classList.add('entering');
+        nodeElement.style.animationDelay = String(index * 55) + 'ms';
+        nodeElement.addEventListener('click', () => inspectNode(nodeElement.dataset.nodeId, nodeElement.dataset.nodeKind, run));
+      });
+      renderEvents(run.dashboardEvents || []);
+    }
+    function inspectNode(nodeId, nodeKind, run) {
+      const candidate = (run.candidates || []).find((item) => item.id === nodeId);
+      const child = run.child && run.child.id === nodeId ? run.child : null;
+      nodeInspector.textContent = JSON.stringify({ nodeId, nodeKind, candidate, child }, null, 2);
+    }
+    function renderEvents(events) {
+      const visible = events.slice(-24);
+      eventStream.innerHTML = visible.map((event, index) => '<li class="' + (index === visible.length - 1 ? 'active' : '') + '">' + escapeHtml(event.type || event.eventType || 'event') + '</li>').join('') || '<li>No events loaded yet.</li>';
+    }
+    function animateProgress() {
+      const ticks = ['request accepted', 'recovering problem', 'generating candidates', 'scoring parents', 'fusing child'];
+      renderEvents(ticks.map((type) => ({ type })));
+    }
+    async function refreshRunHistory() {
+      const response = await fetch('/kernel/dashboard/runs');
+      const body = await response.json();
+      const runs = body.runs || [];
+      document.getElementById('run-history-list').innerHTML = runs.map((run) => '<button class="run-button" data-run-id="' + escapeHtml(run.runId) + '"><strong>' + escapeHtml(run.caseId) + '</strong><span>' + escapeHtml(run.runId) + ' / ' + escapeHtml(run.child || 'unfused') + '</span></button>').join('') || '<p class="status">No saved runs yet.</p>';
+      document.querySelectorAll('.run-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          runIdInput.value = button.dataset.runId || '';
+          fetchRunGraph().catch((error) => { status.textContent = error.message; });
+        });
+      });
     }
     async function runKernel(liveModel) {
       const selectedCase = liveModel ? state.selectedCase : dashboardCases[0];
       const runId = runIdInput.value.trim() || ('dashboard_' + Date.now());
       status.textContent = liveModel ? 'Running ' + selectedCase.title + ' through Doppl...' : 'Running FSD fixture...';
+      animateProgress();
       const response = await fetch('/kernel/dashboard/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -335,6 +396,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
       renderGraph(body);
       if (body.dashboardArtifact) artifactPreview.textContent = body.dashboardArtifact;
       status.textContent = 'Graph loaded for ' + body.runId + '.';
+      await refreshRunHistory();
     }
     async function fetchRunGraph() {
       const runId = runIdInput.value.trim();
@@ -350,6 +412,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
         const artifactBody = await artifactResponse.json();
         if (artifactResponse.ok) artifactPreview.textContent = artifactBody.content;
       }
+      renderEvents(body.dashboardEvents || []);
     }
     document.getElementById('live-button').addEventListener('click', () => runKernel(true).catch((error) => { status.textContent = error.message; }));
     document.getElementById('fixture-button').addEventListener('click', () => runKernel(false).catch((error) => { status.textContent = error.message; }));
@@ -357,6 +420,7 @@ function productionPage(options: KernelHttpOptions = {}): string {
     runIdInput.value = state.selectedCase.id + '_' + slugTime();
     renderCaseList();
     renderGraph(sampleRun);
+    refreshRunHistory().catch(() => {});
   </script>
 </body>
 </html>`;
@@ -492,6 +556,58 @@ async function readRunArtifact(
   };
 }
 
+async function readDashboardEvents(runId: string, rootDir: string): Promise<Array<Record<string, unknown>>> {
+  try {
+    const artifact = await readRunArtifact(runId, rootDir, 'events.jsonl');
+    return String(artifact.content)
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+  } catch {
+    return [];
+  }
+}
+
+async function listDashboardRuns(rootDir: string): Promise<Array<Record<string, unknown>>> {
+  const runs: Array<Record<string, unknown>> = [];
+  let caseEntries: Awaited<ReturnType<typeof readdir>>;
+  try {
+    caseEntries = await readdir(rootDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  for (const caseEntry of caseEntries) {
+    if (!caseEntry.isDirectory()) continue;
+    const caseDir = path.join(rootDir, caseEntry.name);
+    let runEntries: Awaited<ReturnType<typeof readdir>>;
+    try {
+      runEntries = await readdir(caseDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const runEntry of runEntries) {
+      if (!runEntry.isDirectory()) continue;
+      try {
+        const index = JSON.parse(
+          await readFile(path.join(caseDir, runEntry.name, 'run-index.json'), 'utf8'),
+        ) as Record<string, unknown>;
+        const child = index.child as { id?: string } | undefined;
+        runs.push({
+          runId: index.runId,
+          caseId: index.caseId,
+          caseTitle: index.caseTitle,
+          child: child?.id ?? null,
+          candidates: Array.isArray(index.candidates) ? index.candidates.length : 0,
+          generations: Array.isArray(index.evolution) ? index.evolution.length : 0,
+        });
+      } catch {
+        // Ignore partial run directories.
+      }
+    }
+  }
+  return runs.sort((left, right) => String(right.runId).localeCompare(String(left.runId))).slice(0, 12);
+}
+
 async function generationProvidersFromRequest(
   parsed: KernelRunRequest,
   options: KernelHttpOptions,
@@ -580,6 +696,7 @@ async function runDashboardCaseFromRequestBody(
   return {
     ...runIndex,
     dashboardArtifact: artifact?.content,
+    dashboardEvents: await readDashboardEvents(runId, outDir),
   };
 }
 
@@ -598,6 +715,9 @@ export async function handleKernelHttpRequest(
     }
     if (request.method === 'GET' && url.pathname === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
+    }
+    if (request.method === 'GET' && url.pathname === '/kernel/dashboard/runs') {
+      return { status: 200, body: { runs: await listDashboardRuns(outDirFromUrl(url)) } };
     }
     if (request.method === 'POST' && url.pathname === '/kernel/dashboard/runs') {
       return { status: 200, body: await runDashboardCaseFromRequestBody(request.body, options) };
