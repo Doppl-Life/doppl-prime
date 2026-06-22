@@ -11,6 +11,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import type { LineageGraphProjectionT } from "../data/contracts.js";
+import { normalizeFitness } from "../state/fitnessScale.js";
 import { useAgenomeDisplayNames, useRunStore } from "../state/runStore.js";
 import { layoutGraph } from "./layout.js";
 import { nodeTypes } from "./nodeTypes.js";
@@ -122,12 +123,18 @@ export function LineageGraph(): JSX.Element {
     // Build the candidate → fitness lookup BEFORE filtering scoring nodes
     // out — the score's "scores" edge points at the candidate it judged
     // and carries its `total` in metrics.
+    // Fitness emitted by SCORING_POLICY_V1 lives in [0, MAX_FITNESS_V1]
+    // (sum of policy weights ≈ 4.1). Normalize to [0, 1] here so every
+    // downstream consumer (CandidateNode metric line, band coloring,
+    // SELECTED/DROPPED visuals) is reading a 0–1 quality score.
     const candidateFitness = new Map<string, number>();
     for (const n of projection.nodes) {
       if (n.type !== "scoring") continue;
       const edge = projection.edges.find((e) => e.type === "scores" && e.source === n.id);
       const total = n.metrics?.total;
-      if (edge && typeof total === "number") candidateFitness.set(edge.target, total);
+      if (edge && typeof total === "number") {
+        candidateFitness.set(edge.target, normalizeFitness(total));
+      }
     }
     // Derive per-candidate survival from the genealogy alone:
     //   - "selected": this candidate's agenome appears as a parent of

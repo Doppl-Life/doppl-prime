@@ -1,4 +1,5 @@
 import { type JSX, useMemo, useState } from "react";
+import { normalizeFitness } from "../state/fitnessScale.js";
 import type { ActivityEventView } from "../state/reducer.js";
 import { type ActivityLane, useAgentActivityLanes, useRunState } from "../state/runStore.js";
 
@@ -45,7 +46,9 @@ export function describeEvent(ev: ActivityEventView): string {
     if (typeof r?.passed === "boolean") parts.push(r.passed ? "pass" : "fail");
   } else if (ev.type === "fitness.scored") {
     const f = (p as { fitness?: { total?: number } }).fitness;
-    if (typeof f?.total === "number") parts.push(`score=${f.total.toFixed(2)}`);
+    if (typeof f?.total === "number") {
+      parts.push(`score=${normalizeFitness(f.total).toFixed(2)}`);
+    }
   } else if (ev.type === "candidate.created") {
     const c = (p as { candidate?: { subtype?: string; status?: string } }).candidate;
     if (c?.subtype) parts.push(c.subtype);

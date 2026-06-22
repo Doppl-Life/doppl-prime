@@ -1,7 +1,8 @@
 import type { JSX } from "react";
 import { useMemo } from "react";
-import { useAgenomeDisplayNames, useRunState, useRunStore } from "../state/runStore.js";
+import { normalizeFitness } from "../state/fitnessScale.js";
 import type { CandidateView } from "../state/reducer.js";
+import { useAgenomeDisplayNames, useRunState, useRunStore } from "../state/runStore.js";
 import { PanelTitle } from "../ui/PanelTitle.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
 
@@ -52,8 +53,10 @@ export function AgenomeInspector(): JSX.Element {
   const bestFitness = useMemo(() => {
     let best: number | null = null;
     for (const c of candidates) {
-      const score = state.fitnessScores[c.id]?.total;
-      if (typeof score === "number" && (best === null || score > best)) best = score;
+      const raw = state.fitnessScores[c.id]?.total;
+      if (typeof raw !== "number") continue;
+      const score = normalizeFitness(raw);
+      if (best === null || score > best) best = score;
     }
     return best;
   }, [candidates, state.fitnessScores]);

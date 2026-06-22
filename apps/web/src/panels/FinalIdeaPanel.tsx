@@ -1,4 +1,5 @@
 import { type JSX, useMemo } from "react";
+import { normalizeFitness } from "../state/fitnessScale.js";
 import { useAgenomeDisplayNames, useRunState, useRunStore } from "../state/runStore.js";
 import { PanelTitle, PanelValue } from "../ui/PanelTitle.js";
 import { StatusIndicator } from "../ui/StatusIndicator.js";
@@ -216,8 +217,8 @@ export function FinalIdeaPanel(): JSX.Element {
         }}
       >
         <StatusIndicator domain="candidate" status={winnerCandidate?.status ?? "scored"} />
-        <span title="Combined critic + check score, on a 0–1 scale. Higher is better.">
-          Score {winnerFitness.total.toFixed(2)} / 1
+        <span title="Combined critic + check + novelty score, normalized to a 0–1 scale. Higher is better.">
+          Score {normalizeFitness(winnerFitness.total).toFixed(2)} / 1
         </span>
         {winnerNovelty && (
           <span title="How different this idea is from the others. 0–1 scale; higher = more original.">
