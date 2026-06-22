@@ -11,6 +11,18 @@ This is a two-week Gauntlet capstone (MVP/prototype). Showcase: **June 29, 2026*
 - `ARCHITECTURE.md` — the design contract / source of truth.
 - `IMPLEMENTATION_PLAN.md` — the spec-anchored build plan.
 - `docs/` — planning artifacts and gap audits.
+- `kernel/` — deterministic Dalton kernel fixture loop.
+
+## Dalton Kernel Fixture
+
+Run the deterministic fixture kernel:
+
+```bash
+npm test
+npm run kernel:run
+```
+
+The command writes markdown-vault artifacts and `trace.json` under `kernel/out/vault/`.
 
 ## Status
 
