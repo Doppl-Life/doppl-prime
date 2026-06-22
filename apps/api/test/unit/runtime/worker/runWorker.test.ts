@@ -184,6 +184,7 @@ function makeDeps(
     ...(over.minPopulationSurvival !== undefined
       ? { minPopulationSurvival: over.minPopulationSurvival }
       : {}),
+    ...(over.nextPopulation !== undefined ? { nextPopulation: over.nextPopulation } : {}),
   };
 }
 
@@ -286,5 +287,22 @@ describe('runWorker (P3.12 — in-process single-active-run worker)', () => {
     const minimalStore: EventStore = { append: fake.store.append, readByRun: fake.store.readByRun };
     const result = await runWorker(makeDeps(minimalStore));
     expect(result.started).toBe(true);
+  });
+
+  // spec(§5/§8) P5.11 — the worker FORWARDS its optional `nextPopulation` dep to the generation loop
+  // (additive, mirrors the operatorStop/onIteration conditional-spread forwarding) → the W3b boot root
+  // can inject the successor-threading impl. Observed via the fake hook being called by the driven loop.
+  test('test_runWorker_forwards_nextPopulation', async () => {
+    const fake = makeFakeStore([configuredEvent('run_w')]);
+    let calls = 0;
+    await runWorker(
+      makeDeps(fake.store, {
+        nextPopulation: (args) => {
+          calls += 1;
+          return args.prevPopulation;
+        },
+      }),
+    );
+    expect(calls).toBeGreaterThan(0);
   });
 });

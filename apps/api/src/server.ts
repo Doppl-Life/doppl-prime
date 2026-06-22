@@ -56,6 +56,9 @@ export interface BuildServerDeps {
    * abort-aware sleep + unbounded idle polls); tests inject a no-op sleep + bounded maxIdlePolls.
    */
   sse?: EventBridgeOptions;
+  /** P5.11 — additive optional execution trigger passed to POST /runs (the boot `createStartRun`). Absent
+   *  → append-only, no execution (today's behavior). Fire-and-forget; the 201 does not block on the run. */
+  onRunConfigured?: (runId: string) => void;
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
@@ -78,6 +81,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
     newId: deps.newId,
+    ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
   });
   registerRunReadRoutes(app, { store: deps.store, db: deps.db });
   registerRunHealthRoutes(app, { store: deps.store });

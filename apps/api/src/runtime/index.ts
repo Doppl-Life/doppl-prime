@@ -125,6 +125,7 @@ export {
   IllegalAgenomeTransitionError,
   type GenerationLoopDeps,
   type GenerationLoopResult,
+  type NextPopulationArgs,
   type GenerationGateway,
   type GenerateResult,
   type ToolCallObservation,

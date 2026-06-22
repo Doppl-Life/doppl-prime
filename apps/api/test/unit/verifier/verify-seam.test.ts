@@ -56,7 +56,9 @@ function verifyGateway(): ModelGateway {
         accepted: true,
         validationResult: 'accepted',
         output:
-          request.role === 'final_judge' ? PER_AXIS : { critique: 'stub critique', confidence: 0.5 },
+          request.role === 'final_judge'
+            ? PER_AXIS
+            : { critique: 'stub critique', confidence: 0.5 },
         providerMeta: validProviderMeta,
       }),
     capabilityFor: () => ({ structuredOutputs: true, embeddings: true }),
@@ -93,11 +95,9 @@ function makeCtxAppend() {
  * `generation.started{generationId,index}` row (the authoritative per-generation index source — Option A).
  */
 function makeDepsEventStore(opts: { generationId: string; index: number }) {
-  const appendSpy = vi.fn(
-    async (): Promise<AppendResult> => {
-      throw new Error('deps.eventStore.append must never be called — the seam emits via ctx.append');
-    },
-  );
+  const appendSpy = vi.fn(async (): Promise<AppendResult> => {
+    throw new Error('deps.eventStore.append must never be called — the seam emits via ctx.append');
+  });
   const genStarted = {
     type: 'generation.started',
     generationId: opts.generationId,
@@ -201,7 +201,9 @@ describe('createVerifySeam — composition over council/checks/judge behind the 
         .filter((c) => c.type === 'critic.reviewed')
         .map((c) => (c.payload as CriticReview).mandate),
     );
-    expect(actual).toEqual(new Set(selectCriticMandates({ rngSeed: RNG_SEED, generationIndex: 2 })));
+    expect(actual).toEqual(
+      new Set(selectCriticMandates({ rngSeed: RNG_SEED, generationIndex: 2 })),
+    );
     expect(actual).not.toEqual(
       new Set(selectCriticMandates({ rngSeed: RNG_SEED, generationIndex: 0 })),
     );

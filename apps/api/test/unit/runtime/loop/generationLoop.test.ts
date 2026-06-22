@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import type { ModelGatewayResponse, ProviderMeta, RunEventType } from '@doppl/contracts';
+import type { Agenome, ModelGatewayResponse, ProviderMeta, RunEventType } from '@doppl/contracts';
 import {
   CURRENT_SCHEMA_VERSION,
   HIGH_TRAFFIC_PAYLOAD_MAP,
   REDACTION_PLACEHOLDER,
   RunEventEnvelope,
   validateEventPayload,
+  validAgenome,
   validCandidateIdeaCrossDomain,
   validCriticReview,
   validFitnessScore,
@@ -29,6 +30,7 @@ import {
   IllegalAgenomeTransitionError,
   type GenerationGateway,
   type GenerationLoopDeps,
+  type NextPopulationArgs,
   type ReproduceSeam,
   type ScoreSeam,
   type VerifySeam,
@@ -281,6 +283,7 @@ function makeDeps(
       : {}),
     ...(over.now !== undefined ? { now: over.now } : {}),
     ...(over.operatorStop !== undefined ? { operatorStop: over.operatorStop } : {}),
+    ...(over.nextPopulation !== undefined ? { nextPopulation: over.nextPopulation } : {}),
   };
 }
 
@@ -872,5 +875,139 @@ describe('runGenerationLoop (P3.10e — kill/abort + drain + latching halt)', ()
     // a terminal run yields no run terminal event; a terminal generation yields no generation event.
     expect(k.types()).not.toContain('run.failed');
     expect(k.types()).not.toContain('generation_failed');
+  });
+});
+
+/**
+ * P5.11 — the additive `nextPopulation` successor-threading hook (ARCHITECTURE.md §8/§5; mirrors the
+ * `onIteration` precedent, LESSONS §71). Optional dep, default-absent → today's behavior (population
+ * persists across generations) byte-for-byte; present → the next generation's population is the hook's
+ * return. The hook RETURNS the population, appends nothing (the loop owns event-authorship, rule #2).
+ */
+const SENTINEL_A: Agenome = { ...validAgenome, id: 'sentinel_agn_1', status: 'seeded' };
+const SENTINEL_B: Agenome = { ...validAgenome, id: 'sentinel_agn_2', status: 'seeded' };
+
+function createdAgenomeIds(
+  rows: ReturnType<typeof makeFakeEventStore>['rows'],
+  generationId: string,
+) {
+  return new Set(
+    rows
+      .filter((r) => r.type === 'candidate.created' && r.generationId === generationId)
+      .map((r) => r.agenomeId),
+  );
+}
+
+describe('runGenerationLoop — P5.11 nextPopulation successor-threading hook', () => {
+  // spec(§5) LESSONS §71 — absent hook → current behavior: the gen-0 population PERSISTS into gen-1
+  // (today's deferred-threading behavior), proving the hook is purely additive.
+  test('test_nextPopulation_absent_is_current_behavior', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
+    );
+    const gen0 = createdAgenomeIds(fake.rows, 'run_loop-gen0');
+    const gen1 = createdAgenomeIds(fake.rows, 'run_loop-gen1');
+    expect(gen0.size).toBeGreaterThan(0);
+    expect(gen1).toEqual(gen0); // same population persists — no threading without the hook.
+  });
+
+  // spec(§5/§8) rule #1 — the hook's returned population is a HINT the KERNEL loop clamps to
+  // maxPopulation (the un-bypassable enforcer; an oversized hook return never raises the cap — mirrors
+  // gen-0's materialize clamp + spawnBudget). Human-authorized guardrail-#1 lift for rule-#1 compliance.
+  test('test_oversized_hook_population_clamped_to_maxPopulation', async () => {
+    const oversized: Agenome[] = Array.from({ length: 5 }, (_, i) => ({
+      ...validAgenome,
+      id: `sentinel_agn_${i}`,
+      status: 'seeded',
+    }));
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 2, maxPopulation: 2 },
+        nextPopulation: () => oversized,
+      }),
+    );
+    const gen1Created = fake.rows.filter(
+      (r) => r.type === 'candidate.created' && r.generationId === 'run_loop-gen1',
+    );
+    expect(gen1Created).toHaveLength(2); // clamped to maxPopulation (not 5).
+    // deterministic truncation — the FIRST maxPopulation agenomes of the hook's return.
+    expect(gen1Created.map((r) => r.agenomeId)).toEqual(['sentinel_agn_0', 'sentinel_agn_1']);
+  });
+
+  // spec(§8) P5.11 — present hook → the NEXT generation's candidates derive from the hook's agenomes,
+  // not gen-0's (gen N+1 from the reproduced offspring).
+  test('test_next_generation_uses_hook_population', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 2, maxPopulation: 2 },
+        nextPopulation: () => [SENTINEL_A, SENTINEL_B],
+      }),
+    );
+    const gen1 = createdAgenomeIds(fake.rows, 'run_loop-gen1');
+    expect(gen1).toEqual(new Set(['sentinel_agn_1', 'sentinel_agn_2']));
+  });
+
+  // spec(§8) — the hook is called once per completed generation with the context a reconstruct-children
+  // impl (W3b) needs: completedGenerationId + eligibleParents + the post-reproduce log + maxPopulation.
+  test('test_hook_receives_completed_generation_context', async () => {
+    const seen: NextPopulationArgs[] = [];
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+        nextPopulation: (args) => {
+          seen.push(args);
+          return args.prevPopulation; // no change — isolate the context assertion.
+        },
+      }),
+    );
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.completedGenerationId).toBe('run_loop-gen0');
+    expect(seen[0]!.eligibleParents.length).toBeGreaterThan(0);
+    expect(seen[0]!.maxPopulation).toBe(2);
+    // the log handed to the hook is the POST-reproduce snapshot (carries this generation's reproduction).
+    expect(seen[0]!.log.some((r) => r.type === 'agenome.reproduced')).toBe(true);
+  });
+
+  // spec(§5/§8) — an empty hook population is NOT fabricated into agenomes: the next generation produces
+  // zero candidates → the existing `< minSurvival` path drives generation_failed.
+  test('test_empty_hook_population_drives_generation_failed', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 2, maxPopulation: 2 },
+        nextPopulation: () => [],
+      }),
+    );
+    const gen1Failed = fake.rows.filter(
+      (r) => r.type === 'generation_failed' && r.generationId === 'run_loop-gen1',
+    );
+    expect(gen1Failed).toHaveLength(1);
+    expect(createdAgenomeIds(fake.rows, 'run_loop-gen1').size).toBe(0); // no fabricated agenomes.
+  });
+
+  // spec(§5) rule #2 — the hook is a SIDE seam: it returns the population and appends NOTHING; a hook
+  // returning prevPopulation yields the SAME appended event-type set as no hook (no new run_event type).
+  test('test_hook_appends_no_events', async () => {
+    const fakeNoHook = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fakeNoHook.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    const fakeHook = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fakeHook.store,
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+        nextPopulation: (args) => args.prevPopulation,
+      }),
+    );
+    expect(new Set(fakeHook.appendedTypes())).toEqual(new Set(fakeNoHook.appendedTypes()));
   });
 });

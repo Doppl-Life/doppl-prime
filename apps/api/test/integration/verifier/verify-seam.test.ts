@@ -76,7 +76,9 @@ function countingVerifyGateway() {
         accepted: true,
         validationResult: 'accepted',
         output:
-          request.role === 'final_judge' ? PER_AXIS : { critique: 'stub critique', confidence: 0.5 },
+          request.role === 'final_judge'
+            ? PER_AXIS
+            : { critique: 'stub critique', confidence: 0.5 },
         providerMeta: validProviderMeta,
       });
     },
@@ -89,7 +91,10 @@ const noopScore: ScoreSeam = () => Promise.resolve();
 const noopReproduce: ReproduceSeam = () => Promise.resolve();
 
 function loopConfig() {
-  return loadConfig({ env: VALID_ENV, fileSources: { caps: { maxGenerations: 1, maxPopulation: 2 } } });
+  return loadConfig({
+    env: VALID_ENV,
+    fileSources: { caps: { maxGenerations: 1, maxPopulation: 2 } },
+  });
 }
 
 let pool: pg.Pool;

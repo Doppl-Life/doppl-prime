@@ -1,0 +1,142 @@
+import { CandidateIdea, FitnessScore, NoveltyScore } from '@doppl/contracts';
+import type { Agenome } from '@doppl/contracts';
+import type { RunEventRow } from '../../event-store';
+import type { ModelGateway } from '../../model-gateway';
+import type { ReproduceContext, ReproduceSeam } from '../../runtime';
+import type { MutationBounds } from '../reproduction/mutate';
+import { assembleSuccessor, type SuccessorParent } from '../successor';
+
+/**
+ * createReproduceSeam (P5.10/P5.11, ARCHITECTURE.md §8) — selection's real impl of the kernel's injected
+ * `ReproduceSeam` port (`generationLoop.ts:466`). Given the loop's eligible `parents` + the generation's
+ * `scoredEvents`, it projects each parent's best-candidate heuristic weights from the persisted log, then
+ * runs `assembleSuccessor` (heuristic allocation, caps-clamped — rule #1) which reproduces per slot via
+ * `reproduce`: ≥2 distinct → two-level fusion through the gateway (`agenome.fused`); 1 → `mutation_only`
+ * (`agenome.reproduced`); 0 → abort (`reproduction_aborted_insufficient_parents`). Every event is appended
+ * through the injected `ctx.append` (rule #2/#4); the seam emits NO `energy.spent` (reproduction energy is
+ * the kernel's debit, rule #8).
+ *
+ * Replay-faithfulness is selection's own (rule #7): each child reconstructs from its frozen
+ * `ReproductionEvent` (`crossoverPoints`/`mutationSummary`) via `applyReproduction` with no gateway/rng
+ * (LESSONS §47). So the kernel's generic `ctx.outcomes` is UNUSED — selection's RNG outcomes live in the
+ * `ReproductionEvent`, not the loop's outcome log (which the loop never persists post-reproduce); the
+ * per-run RNG `seed` is injected via `ReproduceSeamDeps.seed` (from `RunConfig.rngSeed` at the boot root).
+ *
+ * Returns `void` — the successor population is persisted as events; THREADING the offspring into gen N+1's
+ * population is the W3 boot-root slice (`selection-013`), not this slice.
+ */
+export interface ReproduceSeamDeps {
+  readonly gateway: ModelGateway;
+  /** The rule-#1 clamp bound — gen N+1 starts empty, so `remainingPopulation = maxPopulation`. */
+  readonly maxPopulation: number;
+  readonly bounds: MutationBounds;
+  /** The per-run RNG seed (RunConfig.rngSeed); each slot derives a distinct seed, replay reads outcomes. */
+  readonly seed: number;
+  /** Injected id factory — keeps the seam free of `Math.random`/uuid (byte-deterministic, §24). */
+  readonly newId: () => string;
+}
+
+interface BestCandidate {
+  candidateId: string;
+  total: number;
+  energyEfficiency: number;
+  sequence: number;
+}
+
+/**
+ * projectSuccessorParents — projects each eligible parent's heuristic weights from the persisted
+ * `scoredEvents` (rule #7 — read back, never recompute). For each parent agenome: its BEST candidate
+ * (highest `fitness.scored.total`, tie-break LOWEST sequence — deterministic, mirrors LESSONS §68)
+ * supplies the fitness, energy-efficiency (`fitness.scored.components.energy_efficiency`), novelty
+ * (`NoveltyScore.score`) + novelty vector (`NoveltyScore.vector`). A degraded-novelty best candidate
+ * yields `noveltyVector: undefined` → `parentDistance` treats it as max-distant (never NaN/throw). A
+ * parent with no scored candidate is skipped (no heuristic basis).
+ */
+export function projectSuccessorParents(
+  parents: readonly Agenome[],
+  scoredEvents: readonly RunEventRow[],
+): SuccessorParent[] {
+  // candidateId → agenomeId (from candidate.created — fitness.scored carries only candidateId).
+  const candidateAgenome = new Map<string, string>();
+  // candidateId → best-by-lowest-sequence fitness {total, energyEfficiency, sequence}.
+  const fitnessByCandidate = new Map<string, BestCandidate>();
+  // candidateId → novelty {score, vector}.
+  const noveltyByCandidate = new Map<string, { score: number; vector: readonly number[] }>();
+
+  for (const row of scoredEvents) {
+    if (row.type === 'candidate.created') {
+      const parsed = CandidateIdea.safeParse(row.payload);
+      if (parsed.success) candidateAgenome.set(parsed.data.id, parsed.data.agenomeId);
+    } else if (row.type === 'fitness.scored' && row.candidateId !== null) {
+      const parsed = FitnessScore.safeParse(row.payload);
+      if (!parsed.success) continue;
+      const existing = fitnessByCandidate.get(row.candidateId);
+      if (existing === undefined || row.sequence < existing.sequence) {
+        fitnessByCandidate.set(row.candidateId, {
+          candidateId: row.candidateId,
+          total: parsed.data.total,
+          energyEfficiency: parsed.data.components.energy_efficiency ?? 0,
+          sequence: row.sequence,
+        });
+      }
+    } else if (row.type === 'novelty.scored' && row.candidateId !== null) {
+      const parsed = NoveltyScore.safeParse(row.payload);
+      if (parsed.success) {
+        noveltyByCandidate.set(row.candidateId, {
+          score: parsed.data.score,
+          vector: parsed.data.vector,
+        });
+      }
+    }
+  }
+
+  const result: SuccessorParent[] = [];
+  for (const parent of parents) {
+    let best: BestCandidate | undefined;
+    for (const [candidateId, agenomeId] of candidateAgenome) {
+      if (agenomeId !== parent.id) continue;
+      const fit = fitnessByCandidate.get(candidateId);
+      if (fit === undefined) continue;
+      if (
+        best === undefined ||
+        fit.total > best.total ||
+        (fit.total === best.total && fit.sequence < best.sequence)
+      ) {
+        best = fit;
+      }
+    }
+    if (best === undefined) continue; // no scored candidate → no heuristic basis (skip).
+    const novelty = noveltyByCandidate.get(best.candidateId);
+    // Omit noveltyVector when novelty degraded (exactOptionalPropertyTypes — never assign `undefined`);
+    // `parentDistance` treats a missing vector as max-distant.
+    const vectorPart = novelty === undefined ? {} : { noveltyVector: novelty.vector };
+    result.push({
+      agenome: parent,
+      ...vectorPart,
+      fitness: best.total,
+      novelty: novelty?.score ?? 0,
+      energyEfficiency: best.energyEfficiency,
+    });
+  }
+  return result;
+}
+
+export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
+  return async (ctx: ReproduceContext): Promise<void> => {
+    const { runId, generationId, append, parents, scoredEvents } = ctx;
+    const eligibleParents = projectSuccessorParents(parents, scoredEvents);
+    // assembleSuccessor runs allocate (caps-clamped, rule #1) → reproduce per slot (fusion/mutation_only/
+    // abort), appending the offspring events through `append`. The returned population is discarded — the
+    // successor is persisted as events; gen N+1 threading is the W3 boot root. `ctx.outcomes` is unused.
+    await assembleSuccessor(
+      {
+        runId,
+        generationId,
+        eligibleParents,
+        remainingPopulation: deps.maxPopulation,
+        seed: deps.seed,
+      },
+      { gateway: deps.gateway, emit: append, newId: deps.newId, bounds: deps.bounds },
+    );
+  };
+}

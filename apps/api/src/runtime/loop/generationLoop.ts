@@ -104,6 +104,21 @@ export interface GenerationSeams {
   readonly reproduce: ReproduceSeam;
 }
 
+/**
+ * P5.11 successor-threading hook context. Supplied to `nextPopulation` after a generation completes so a
+ * reconstruct-children impl (selection W3b) can derive gen N+1's population from this generation's
+ * reproduced offspring: `eligibleParents` + the post-reproduce `log` are exactly what `applyReproduction`
+ * needs; `maxPopulation` is the clamp bound (rule #1); `completedGenerationId` identifies the source
+ * generation; `prevPopulation` is the population that just ran (so an absent/degenerate impl can pass through).
+ */
+export interface NextPopulationArgs {
+  readonly prevPopulation: readonly Agenome[];
+  readonly completedGenerationId: string;
+  readonly eligibleParents: readonly Agenome[];
+  readonly log: readonly RunEventRow[];
+  readonly maxPopulation: number;
+}
+
 export interface GenerationLoopDeps {
   readonly runId: string;
   readonly config: AppConfig;
@@ -119,6 +134,13 @@ export interface GenerationLoopDeps {
   /** P3.12 — called once at the top of each generation iteration (the worker beats the §60 heartbeat here).
    *  Default undefined → no-op (zero behavior change; not a run_event — a side signal, rule #2). */
   readonly onIteration?: () => void;
+  /** P5.11 — additive successor-threading seam (mirrors `onIteration`): after a generation completes,
+   *  sources the NEXT generation's population from the reproduced offspring. Default ABSENT → population
+   *  persists across generations (today's behavior, byte-for-byte). The hook RETURNS the population; it
+   *  appends nothing (the loop owns all event appends — rule #2). The real impl is selection's W3b slice. */
+  readonly nextPopulation?: (
+    args: NextPopulationArgs,
+  ) => readonly Agenome[] | Promise<readonly Agenome[]>;
 }
 
 export interface GenerationLoopResult {
@@ -289,7 +311,15 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
   // agenome, each gated by enforceCap('maxPopulation', …) — belt-and-suspenders with the materialize
   // clamp). The population persists across generations (successor-population threading deferred).
   const gen0Id = `${runId}-gen0`;
-  const population = materializeGen0(config.seedSet, runId, gen0Id, caps.maxPopulation);
+  // `let` + `readonly` (P5.11): the optional `nextPopulation` hook re-sources this between generations
+  // (successor threading) and returns a `readonly Agenome[]`; the loop only ever READS the population
+  // (iterate to spawn, index to generate). Absent hook → never reassigned → gen-0 persists (today's behavior).
+  let population: readonly Agenome[] = materializeGen0(
+    config.seedSet,
+    runId,
+    gen0Id,
+    caps.maxPopulation,
+  );
   let spawned = 0;
   for (const agenome of population) {
     if (!enforceCap('maxPopulation', spawned, 1, caps).allowed) break;
@@ -480,6 +510,26 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       { generationId, survivors: eligibleParents.length },
       { generationId },
     );
+
+    // P5.11 successor-population threading — additive seam (guarded; absent → population unchanged, so the
+    // default path is byte-for-byte today's behavior + the extra readByRun fires only when a hook is wired).
+    // The hook reads this generation's reproduction events from the post-reproduce log to derive gen N+1's
+    // population; it RETURNS the population (the loop appends nothing on its behalf — rule #2).
+    if (deps.nextPopulation !== undefined) {
+      const postReproduceLog = await eventStore.readByRun(runId);
+      const threaded = await deps.nextPopulation({
+        prevPopulation: population,
+        completedGenerationId: generationId,
+        eligibleParents,
+        log: postReproduceLog,
+        maxPopulation: caps.maxPopulation,
+      });
+      // Rule #1 — the hook's returned population is a HINT; the KERNEL is the un-bypassable enforcer.
+      // Clamp to maxPopulation (deterministic truncation, mirrors gen-0's materialize clamp) so an
+      // oversized hook return can NEVER raise the cap. [Human-authorized guardrail-#1 lift for rule-#1
+      // compliance — threaded-gen population clamp; kernel-territory file on loan.]
+      population = threaded.slice(0, caps.maxPopulation);
+    }
 
     generationsRun += 1;
   }
