@@ -78,6 +78,38 @@ function renderModelHealth(run: KernelRun): string {
       </section>`;
 }
 
+function renderEvolution(run: KernelRun): string {
+  const generations = run.evolution
+    .map(
+      (generation) => `<li>
+        <h3>Generation ${generation.generation}</h3>
+        <dl>
+          <dt>Candidates</dt>
+          <dd>${generation.candidateIds.map((candidateId) => `<code>${escapeHtml(candidateId)}</code>`).join(' ')}</dd>
+          <dt>Selected parents</dt>
+          <dd>${
+            generation.selectedParentIds.length === 2
+              ? generation.selectedParentIds.map((candidateId) => `<code>${escapeHtml(candidateId)}</code>`).join(' ')
+              : 'none'
+          }</dd>
+          <dt>Child</dt>
+          <dd>${generation.childId ? `<code>${escapeHtml(generation.childId)}</code>` : 'none'}</dd>
+        </dl>
+      </li>`,
+    )
+    .join('');
+  return `<section id="evolution">
+        <h2>Evolution</h2>
+        <div class="summary">
+          <div class="metric"><strong>${run.evolution.length}</strong><span>generations run</span></div>
+          <div class="metric"><strong>${run.budget.usedUnits}</strong><span>budget used</span></div>
+          <div class="metric"><strong>${run.budget.remainingUnits}</strong><span>budget remaining</span></div>
+          <div class="metric"><strong>${run.budget.exhausted ? 'yes' : 'no'}</strong><span>budget exhausted</span></div>
+        </div>
+        <ol class="evolution">${generations}</ol>
+      </section>`;
+}
+
 function css(): string {
   return `<style>
     :root {
@@ -244,6 +276,24 @@ function css(): string {
       color: var(--muted);
       font-size: 13px;
     }
+    .evolution {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .evolution li {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+    .evolution dd code {
+      display: inline-block;
+      margin: 0 5px 5px 0;
+    }
     @media (max-width: 820px) {
       main { grid-template-columns: 1fr; }
       nav { position: static; }
@@ -255,6 +305,7 @@ function css(): string {
 export function renderProofBoard(run: KernelRun): string {
   const child = run.fusion?.child;
   const modelHealth = renderModelHealth(run);
+  const evolution = renderEvolution(run);
   const modelHealthNav = modelHealth ? '      <a href="#model-health">Model health</a>\n' : '';
   const modelHealthSection = modelHealth ? `${modelHealth}\n      ` : '';
   return `<!doctype html>
@@ -283,6 +334,7 @@ export function renderProofBoard(run: KernelRun): string {
       <a href="#memory">Knowledge packet</a>
       <a href="#parents">Parents and fitness</a>
       <a href="#fusion">Fusion child</a>
+      <a href="#evolution">Evolution</a>
 ${modelHealthNav}      <a href="#trace">Trace</a>
     </nav>
     <div>
@@ -333,6 +385,7 @@ ${modelHealthNav}      <a href="#trace">Trace</a>
             : '<p>No child was produced.</p>'
         }
       </section>
+      ${evolution}
       ${modelHealthSection}<section id="trace">
         <h2>Trace</h2>
         <ol class="trace">${renderTrace(run)}</ol>

@@ -25,6 +25,17 @@ test('renders proof board with recovery, parents, fitness, and fused child', asy
   assert.match(html, /knowledge\.packet_selected/);
 });
 
+test('renders evolution budget and generation lineage', async () => {
+  const html = renderProofBoard(await fixtureRun());
+
+  assert.match(html, /Evolution/);
+  assert.match(html, /budget used/);
+  assert.match(html, /budget remaining/);
+  assert.match(html, /Generation 0/);
+  assert.match(html, /cand_liability_clock/);
+  assert.match(html, /child_cand_liability_clock_cand_recovery_market/);
+});
+
 test('renders model output health when lifecycle events are present', async () => {
   const run = await fixtureRun();
   run.events.push(

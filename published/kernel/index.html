@@ -169,6 +169,24 @@
       color: var(--muted);
       font-size: 13px;
     }
+    .evolution {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .evolution li {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+    .evolution dd code {
+      display: inline-block;
+      margin: 0 5px 5px 0;
+    }
     @media (max-width: 820px) {
       main { grid-template-columns: 1fr; }
       nav { position: static; }
@@ -196,6 +214,7 @@
       <a href="#memory">Knowledge packet</a>
       <a href="#parents">Parents and fitness</a>
       <a href="#fusion">Fusion child</a>
+      <a href="#evolution">Evolution</a>
       <a href="#trace">Trace</a>
     </nav>
     <div>
@@ -307,6 +326,26 @@
                 <dt>Mutation notes</dt>
                 <dd>Combined mechanisms only after separate parent scoring and compatibility check.</dd>
               </dl>
+      </section>
+      <section id="evolution">
+        <h2>Evolution</h2>
+        <div class="summary">
+          <div class="metric"><strong>1</strong><span>generations run</span></div>
+          <div class="metric"><strong>1</strong><span>budget used</span></div>
+          <div class="metric"><strong>0</strong><span>budget remaining</span></div>
+          <div class="metric"><strong>no</strong><span>budget exhausted</span></div>
+        </div>
+        <ol class="evolution"><li>
+        <h3>Generation 0</h3>
+        <dl>
+          <dt>Candidates</dt>
+          <dd><code>cand_liability_clock</code> <code>cand_recovery_market</code> <code>cand_lender_residual</code></dd>
+          <dt>Selected parents</dt>
+          <dd><code>cand_liability_clock</code> <code>cand_recovery_market</code></dd>
+          <dt>Child</dt>
+          <dd><code>child_cand_liability_clock_cand_recovery_market</code></dd>
+        </dl>
+      </li></ol>
       </section>
       <section id="trace">
         <h2>Trace</h2>
