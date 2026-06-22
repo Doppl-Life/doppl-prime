@@ -2,6 +2,7 @@ import { writeImportedSolution } from "./solutionMarkdown";
 import type { ImportAdapter, ImportSource } from "./importTypes";
 import { defaultVaultRoot } from "../vaultPaths";
 import { importMichaelMarkdown } from "./michaelAdapter";
+import { importCodyRuntime, importMelissaRuntime } from "./runtimeBranchAdapters";
 
 interface CliOptions {
   caseId: string;
@@ -12,6 +13,8 @@ interface CliOptions {
 }
 
 const adapters: Partial<Record<ImportSource, ImportAdapter>> = {
+  cody: importCodyRuntime,
+  melissa: importMelissaRuntime,
   michael: importMichaelMarkdown,
 };
 

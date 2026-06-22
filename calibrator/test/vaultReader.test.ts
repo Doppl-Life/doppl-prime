@@ -6,14 +6,17 @@ import { defaultVaultRoot } from "../src/server/vaultPaths";
 import { readVaultIndex } from "../src/server/vaultReader";
 
 describe("readVaultIndex", () => {
-  it("loads fsd-accident-economy with three seed solutions", async () => {
+  it("loads fsd-accident-economy with seed and imported/provenance solutions", async () => {
     const index = await readVaultIndex(defaultVaultRoot);
     const item = index.cases.find((caseItem) => caseItem.case_id === "fsd-accident-economy");
     expect(item?.title).toBe("When the Crashes Don't Come");
     expect(item?.solutions.map((solution) => solution.solution_id).sort()).toEqual([
       "cody-accident-economy-map",
+      "cody-runtime-branch-import",
       "melissa-accident-economy-map",
+      "melissa-runtime-branch-import",
       "michael-accident-economy-assay",
+      "michael-branch-solution-import",
     ]);
     expect(index.comparison_sets[0]).toMatchObject({
       comparison_set_id: "fsd-accident-economy-v0",
