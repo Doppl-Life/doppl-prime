@@ -75,6 +75,10 @@ interface LineageNodeData {
   rawId?: string;
   status?: string;
   metrics?: Record<string, number>;
+  /** Candidate-only: fitness total projected from the run's scoring
+   *  node. Used to render an inline metric and to band the border
+   *  color so "which ideas survived" reads at a glance. */
+  fitness?: number;
 }
 
 export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
@@ -90,7 +94,21 @@ export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
   );
 }
 
+/**
+ * Three-band fitness color so the lineage graph reads at a glance:
+ * green for "survived well", amber for "marginal", dim for "weak or
+ * unscored". Hard thresholds are deliberate — a continuous gradient
+ * was harder to scan and made every node look slightly different.
+ */
+function fitnessBorderColor(fitness: number | undefined): string {
+  if (fitness === undefined) return "var(--doppl-status-pending)";
+  if (fitness >= 0.7) return "var(--doppl-status-ok)";
+  if (fitness >= 0.4) return "var(--doppl-status-warn)";
+  return "var(--doppl-status-pending)";
+}
+
 export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
+  const { fitness } = props.data;
   return (
     <NodeShell
       kind="Idea"
@@ -98,7 +116,8 @@ export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
       label={props.data.label}
       status={props.data.status}
       domain="candidate"
-      borderColor="var(--doppl-status-pending)"
+      metric={fitness !== undefined ? { label: "fitness", value: fitness } : undefined}
+      borderColor={fitnessBorderColor(fitness)}
     />
   );
 }
