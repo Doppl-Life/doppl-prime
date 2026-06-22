@@ -112,3 +112,24 @@ export { clampSpawnBudget, type SpawnClampResult } from './spawn/spawnBudgetClam
 // via clampSpawnBudget. The agenome.spawned emission is the loop's (P3.10/P3.12).
 export { SeedAgenomeTemplate, SeedAgenomeSet, DEFAULT_SEED_SET } from './seed/seedAgenomes.config';
 export { materializeGen0 } from './seed/gen0SeedSet';
+
+// Generation loop skeleton (P3.10b — the substrate's first real consumer; §5/§3/§4 ownership). Bounded
+// happy-path orchestration: guard-checked lifecycle → append-path emits (kernel-owned events only) →
+// gateway candidates → INJECTED verify/score/reproduce seams consumed as DATA (option-b, never authored).
+// The named caller is the P3.12 worker (deferred); energy/kill/edges/run-terminal are 10c/10d/10e/P3.11.
+export {
+  runGenerationLoop,
+  transitionGenerationOrThrow,
+  IllegalGenerationTransitionError,
+  type GenerationLoopDeps,
+  type GenerationLoopResult,
+  type GenerationGateway,
+  type GenerateResult,
+  type ToolCallObservation,
+  type GenerationSeams,
+  type VerifySeam,
+  type ScoreSeam,
+  type ReproduceSeam,
+  type SeamContext,
+  type ReproduceContext,
+} from './loop/generationLoop';
