@@ -77,6 +77,61 @@ function writeHttpResponse(response: ServerResponse, result: KernelHttpResponse)
   response.end(result.bodyText ?? JSON.stringify(result.body));
 }
 
+function dashboardFallbackPage(): string {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Doppl React Flow dashboard for inspecting kernel evolution runs.">
+    <title>Doppl React Flow dashboard</title>
+  </head>
+  <body>
+    <div id="root">Doppl React Flow dashboard</div>
+  </body>
+</html>`;
+}
+
+async function dashboardIndexPage(): Promise<string> {
+  try {
+    return await readFile(path.join(process.cwd(), 'kernel/web/dist/index.html'), 'utf8');
+  } catch {
+    return dashboardFallbackPage();
+  }
+}
+
+function dashboardAssetPath(urlPath: string): string | undefined {
+  const relativePath = decodeURIComponent(urlPath.replace(/^\/dashboard\//, ''));
+  const normalized = path.posix.normalize(relativePath);
+  if (normalized.startsWith('..') || path.isAbsolute(normalized)) return undefined;
+  return path.join(process.cwd(), 'kernel/web/dist', normalized);
+}
+
+function contentTypeForAsset(filePath: string): string {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === '.js') return 'text/javascript; charset=utf-8';
+  if (extension === '.css') return 'text/css; charset=utf-8';
+  if (extension === '.svg') return 'image/svg+xml';
+  if (extension === '.png') return 'image/png';
+  if (extension === '.jpg' || extension === '.jpeg') return 'image/jpeg';
+  if (extension === '.woff2') return 'font/woff2';
+  return 'application/octet-stream';
+}
+
+async function dashboardAssetResponse(urlPath: string): Promise<KernelHttpResponse> {
+  const filePath = dashboardAssetPath(urlPath);
+  if (!filePath) return { status: 404, body: { error: 'not_found' } };
+  try {
+    return {
+      status: 200,
+      contentType: contentTypeForAsset(filePath),
+      bodyText: await readFile(filePath, 'utf8'),
+    };
+  } catch {
+    return { status: 404, body: { error: 'not_found' } };
+  }
+}
+
 function productionPage(options: KernelHttpOptions = {}): string {
   const caseStudiesJson = JSON.stringify(DASHBOARD_CASE_STUDIES);
   return `<!doctype html>
@@ -809,8 +864,11 @@ export async function handleKernelHttpRequest(
       return {
         status: 200,
         contentType: 'text/html; charset=utf-8',
-        bodyText: productionPage(options),
+        bodyText: await dashboardIndexPage(),
       };
+    }
+    if (request.method === 'GET' && url.pathname.startsWith('/dashboard/')) {
+      return await dashboardAssetResponse(url.pathname);
     }
     if (request.method === 'GET' && url.pathname === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };

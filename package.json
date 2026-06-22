@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prestart": "npm run kernel:web:build",
     "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
+    "kernel:web:build": "vite build --config kernel/web/vite.config.js",
     "start": "npm run kernel:serve",
     "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
     "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts",
@@ -12,5 +14,12 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "@xyflow/react": "^12.11.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.0.16"
   }
 }

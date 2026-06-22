@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { handleKernelHttpRequest } from '../src/server.ts';
@@ -157,31 +157,32 @@ test('kernel HTTP server serves a visible production page', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(response.contentType, 'text/html; charset=utf-8');
-  assert.match(response.bodyText, /Doppl Evolution Graph/);
-  assert.match(response.bodyText, /Real case studies/);
+  assert.match(response.bodyText, /Doppl React Flow dashboard/);
+  assert.match(response.bodyText, /id="root"/);
   assert.doesNotMatch(response.bodyText, /dashboard-test-key/);
   assert.doesNotMatch(response.bodyText, /DOPPL_DASHBOARD_API_KEY/);
-  assert.match(response.bodyText, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
-  assert.match(response.bodyText, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
-  assert.match(response.bodyText, /id="lineage-graph"/);
-  assert.match(response.bodyText, /data-node-kind="candidate"/);
-  assert.match(response.bodyText, /data-node-kind="child"/);
-  assert.match(response.bodyText, /Run selected case/);
-  assert.match(response.bodyText, /api-key-input/);
-  assert.match(response.bodyText, /renderGraph/);
-  assert.match(response.bodyText, /id="run-history-list"/);
-  assert.match(response.bodyText, /id="event-stream"/);
-  assert.match(response.bodyText, /id="node-inspector"/);
-  assert.match(response.bodyText, /refreshRunHistory/);
-  assert.match(response.bodyText, /animateProgress/);
-  assert.match(response.bodyText, /data-node-id/);
-  assert.match(response.bodyText, /id="flow-minimap"/);
-  assert.match(response.bodyText, /id="survivor-list"/);
-  assert.match(response.bodyText, /generation-lane/);
-  assert.match(response.bodyText, /data-node-status="survivor"/);
-  assert.match(response.bodyText, /data-node-status="rejected"/);
-  assert.match(response.bodyText, /renderSurvivors/);
-  assert.match(response.bodyText, /layoutEvolutionTree/);
+  assert.doesNotMatch(response.bodyText, /id="lineage-graph"/);
+});
+
+test('kernel dashboard source is built on React Flow', async () => {
+  const source = await readFile('kernel/web/src/App.jsx', 'utf8');
+
+  assert.match(source, /@xyflow\/react/);
+  assert.match(source, /<ReactFlow/);
+  assert.match(source, /<MiniMap/);
+  assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
+  assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
+  assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
+  assert.doesNotMatch(source, /sk-or-v1/);
+});
+
+test('kernel HTTP server rejects missing dashboard assets', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'GET',
+    url: '/dashboard/assets/missing.js',
+  });
+
+  assert.equal(response.status, 404);
 });
 
 test('kernel HTTP server runs a fixture kernel request', async () => {
