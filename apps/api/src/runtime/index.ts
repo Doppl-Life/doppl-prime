@@ -71,3 +71,30 @@ export {
   type KillPlanSummary,
 } from './caps/killSwitch';
 export { capLedger, type CapLedgerView } from './caps/capLedger';
+
+// Success-only energy ledger (P3.5 — KEY SAFETY RULE #8: energy = successful productive spend only). PURE
+// compute: the config-driven doppl_energy cost map (DEFAULT_COST_MAP); estimate (pre-call) + reconcile
+// (post-call, llm actual from real ProviderMeta usage — never the estimate) building the frozen
+// EnergyEvent; and the cumulative fold over ACTUAL spend per scope (feeds the P3.4 capLedger energy dim).
+// COMPUTE only — the loop (P3.10) appends energy.spent (applying the scrub) + emits provider_call_failed
+// on a failure (no debit); emission/scrub/exhaustion are deferred to P3.10 (§5 ownership split).
+export {
+  energyForLlm,
+  energyForTool,
+  energyForSpawn,
+  DEFAULT_COST_MAP,
+  type CostMapConfig,
+} from './energy/costMap';
+export {
+  estimateEnergy,
+  reconcileEnergy,
+  type EnergyDraw,
+  type EnergyScope,
+  type ReconcileInput,
+} from './energy/estimateReconcile';
+export {
+  cumulativeSpend,
+  type LedgerEvent,
+  type ScopeSelector,
+  type EnergyScopeKind,
+} from './energy/energyLedger';
