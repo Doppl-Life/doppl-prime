@@ -47,6 +47,10 @@ export const STATUS_MAP: Record<StatusDomain, Record<string, StatusSpec>> = {
   },
   candidate: {
     created: { glyph: '·', label: 'created', colorToken: 'var(--status-created)' },
+    // [sv5] created→repairing→under_review structured-output repair edge (≤1 retry; rule #8 — a
+    // repair is not a failure). Active/pulsing, in-flight-toned like under_review; ↻ reads "self-heal
+    // in progress" (text-presentation glyph, shape-distinct from under_review's ◐).
+    repairing: { glyph: '↻', label: 'repairing', colorToken: 'var(--status-review)', pulse: true },
     under_review: {
       glyph: '◐',
       label: 'under review',
@@ -89,6 +93,10 @@ export const STATUS_MAP: Record<StatusDomain, Record<string, StatusSpec>> = {
   generation: {
     pending: { glyph: '○', label: 'pending', colorToken: 'var(--fg-muted)' },
     running: { glyph: '●', label: 'running', colorToken: 'var(--status-active)', pulse: true },
+    // [sv5] running→degraded→verifying partial-failure edge — NON-terminal, distinct from `failed`.
+    // ◓ (text-presentation, shape-distinct from △ failed) + amber --warning + NON-pulse mark it as
+    // "impaired but progressing", set apart from the teal/blue pulsing healthy phases and from danger.
+    degraded: { glyph: '◓', label: 'degraded', colorToken: 'var(--warning)' },
     verifying: { glyph: '◐', label: 'verifying', colorToken: 'var(--status-checked)', pulse: true },
     scoring: { glyph: '◑', label: 'scoring', colorToken: 'var(--status-scored)', pulse: true },
     reproducing: {
