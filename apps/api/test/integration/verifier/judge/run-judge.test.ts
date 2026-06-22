@@ -1,16 +1,17 @@
 import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { validCandidateIdeaCrossDomain, validProviderMeta } from '@doppl/contracts';
+import { JudgeResult, validCandidateIdeaCrossDomain, validProviderMeta } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../../src/event-store';
 import { createFakeGateway, type ModelGateway } from '../../../../src/model-gateway';
 import { runJudge } from '../../../../src/verifier/judge/judge-call';
 
 /**
- * P4.8 held-out judge runner — integration (testcontainers, real PG). Invariant-touching (rule #5
- * isolation + rule #6 immutable judge). spec(§4) the judge.review_started marker lands via the real P1.3
- * append path with NO energy debit; spec(§7) a rejected output emits output_schema_rejected. There is NO
- * judge.reviewed / fitness.scored here (selection P5 owns fitness.scored). Mirrors append.test.ts.
+ * P4.8 held-out judge runner — integration (testcontainers, real PG), reconciled to the P0.16 seam
+ * (verifier-010). spec(§4) the judge.review_started→judge.reviewed pair lands via the real append path;
+ * spec(§7/§8) the persisted judge.reviewed payload is the frozen JudgeResult (narrowed by the payload-map
+ * on append, fail-closed); spec(§9)/rule #7 axisScores + acceptance are persisted (replay reads them, no
+ * re-judge). A rejected output emits output_schema_rejected + NO judge.reviewed. Mirrors append.test.ts.
  */
 
 const PER_AXIS_OUTPUT = {
@@ -20,6 +21,7 @@ const PER_AXIS_OUTPUT = {
   falsification_survival: 2,
   subtype_check_pass: 4,
 };
+const EXPECTED_ACCEPTANCE = 18;
 
 let pool: pg.Pool;
 let db: NodePgDatabase;
@@ -52,39 +54,65 @@ afterAll(async () => {
   await pool.end();
 });
 
-describe('runJudge — events through the real append path', () => {
-  // spec(§4) rule #8 — the valid path emits exactly one judge.review_started (actor selection_controller,
-  // generic payload) and NO energy.spent / fitness.scored (the acceptance is RETURNED, not persisted here).
-  test('test_judge_review_started_emitted_no_energy', async () => {
-    const runId = 'run-judge-marker';
-    const acc = await runJudge({
+describe('runJudge — judge.review_started→judge.reviewed pair through the real append path', () => {
+  // spec(§4/§8) — an accepted judge run emits judge.review_started (seq N, actor selection_controller)
+  // then judge.reviewed (seq N+1); the judge.reviewed payload JudgeResult.safeParse-s (narrowed by the
+  // payload-map on append) and equals the produced result. NO energy / fitness.scored here.
+  test('test_review_started_then_reviewed_pair_persisted', async () => {
+    const runId = 'run-judge-pair';
+    const judged = await runJudge({
       gateway: judgeGateway(PER_AXIS_OUTPUT),
       store,
       candidate: validCandidateIdeaCrossDomain,
       runContext: runContext(runId),
     });
-    expect(acc?.acceptanceMetric).toBe(18);
+    expect(judged?.acceptance).toBe(EXPECTED_ACCEPTANCE);
     const rows = await store.readByRun(runId);
-    expect(rows.map((r) => r.type)).toEqual(['judge.review_started']);
-    expect(rows[0]?.actor).toBe('selection_controller');
+    expect(rows.map((r) => r.type)).toEqual(['judge.review_started', 'judge.reviewed']);
+    expect(rows.map((r) => r.sequence)).toEqual([0, 1]);
+    expect(rows.map((r) => r.actor)).toEqual(['selection_controller', 'selection_controller']);
+    const reviewed = rows.find((r) => r.type === 'judge.reviewed');
+    const parsed = JudgeResult.safeParse(reviewed?.payload);
+    expect(parsed.success).toBe(true);
+    expect(parsed.success ? parsed.data : null).toEqual(judged);
     const types = rows.map((r) => r.type);
     expect(types).not.toContain('energy.spent');
     expect(types).not.toContain('fitness.scored');
-    expect(types).not.toContain('judge.reviewed');
   });
 
-  // spec(§7) — a rejected judge output emits output_schema_rejected (after the started marker), no
-  // acceptance result (null) — never a silent pass or fabricated score.
-  test('test_rejection_emits_output_schema_rejected', async () => {
+  // spec(§9) rule #7 — judge.reviewed is the replay home: the persisted payload carries axisScores +
+  // acceptance, so replay reads the record and never re-judges.
+  test('test_judge_reviewed_is_replay_home', async () => {
+    const runId = 'run-judge-replay-home';
+    await runJudge({
+      gateway: judgeGateway(PER_AXIS_OUTPUT),
+      store,
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: runContext(runId),
+    });
+    const rows = await store.readByRun(runId);
+    const reviewed = rows.find((r) => r.type === 'judge.reviewed');
+    const parsed = JudgeResult.safeParse(reviewed?.payload);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.axisScores).toEqual(PER_AXIS_OUTPUT);
+      expect(parsed.data.acceptance).toBe(EXPECTED_ACCEPTANCE);
+    }
+  });
+
+  // spec(§7) — a rejected judge output emits output_schema_rejected (after the started marker), NO
+  // judge.reviewed, and returns null — never a fabricated record.
+  test('test_rejection_emits_rejected_no_reviewed', async () => {
     const runId = 'run-judge-reject';
-    const acc = await runJudge({
+    const judged = await runJudge({
       gateway: createFakeGateway({ mode: 'reject' }),
       store,
       candidate: validCandidateIdeaCrossDomain,
       runContext: runContext(runId),
     });
-    expect(acc).toBeNull();
+    expect(judged).toBeNull();
     const types = (await store.readByRun(runId)).map((r) => r.type);
     expect(types).toEqual(['judge.review_started', 'output_schema_rejected']);
+    expect(types).not.toContain('judge.reviewed');
   });
 });
