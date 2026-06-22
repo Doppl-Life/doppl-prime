@@ -89,6 +89,53 @@ function buildCheckSystem(adapterId: string, checkTemplate: string): string {
   return `You are running check adapter "${adapterId}" against a candidate idea.\n\nCheck description:\n${checkTemplate}\n\nReturn a JSON object describing pass/fail and a short explanation.`;
 }
 
+/**
+ * Strict json_schema sent to the critic so the model is forced into
+ * the exact CriticReview shape that pipeStructuredOutput expects.
+ * Without this the model returns its own interpretation (e.g.
+ * { factual_grounding: ..., reasoning: ... }) and every critic call
+ * fails schema validation.
+ *
+ * Per-mandate: the scores object is locked to the single mandate
+ * being evaluated by this call, so cross-mandate score leakage is
+ * impossible at the schema level.
+ */
+function buildCriticOutputSchema(mandate: CriticMandate): unknown {
+  return {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      scores: {
+        type: "object",
+        additionalProperties: false,
+        properties: { [mandate]: { type: "number" } },
+        required: [mandate],
+      },
+      critique: { type: "string" },
+      confidence: { type: "number" },
+      evidenceRefs: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            kind: {
+              type: "string",
+              enum: ["trace", "check_output", "prior_art", "signal", "raw_output", "other"],
+            },
+            eventId: { type: ["string", "null"] },
+            uri: { type: ["string", "null"] },
+            label: { type: ["string", "null"] },
+            langfuseObservationId: { type: ["string", "null"] },
+          },
+          required: ["kind", "eventId", "uri", "label", "langfuseObservationId"],
+        },
+      },
+    },
+    required: ["scores", "critique", "confidence", "evidenceRefs"],
+  };
+}
+
 export function assembleCriticRequest(opts: {
   mandate: CriticMandate;
   rubricTemplate: string;
@@ -97,7 +144,12 @@ export function assembleCriticRequest(opts: {
 }): ModelGatewayRequest {
   const wrapped = wrapCandidateAsData(opts.candidate);
   const system = buildCriticSystem(opts.mandate, opts.rubricTemplate);
-  return buildRequest("critic", system, wrapped, opts.common);
+  return buildRequest("critic", system, wrapped, {
+    ...opts.common,
+    // Use the built critic-output schema by default; a caller that
+    // already supplied one (e.g. a test) wins.
+    schemaForOutput: opts.common.schemaForOutput ?? buildCriticOutputSchema(opts.mandate),
+  });
 }
 
 export function assembleJudgeRequest(opts: {
