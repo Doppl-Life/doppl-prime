@@ -101,6 +101,10 @@ function bannerMode(mode: RunMode, runStatus: string | undefined): ModeBannerMod
   return 'live';
 }
 
+/** Module-stable default so the shell effect's deps don't churn every render (an inline default would
+ *  be a new function each render → effect re-run loop). Tests inject their own factory. */
+const defaultEventSourceFactory = (url: string): EventSourceLike => new EventSource(url);
+
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section style={panelCard}>
@@ -115,7 +119,7 @@ export function Dashboard({
   runClient,
   mode = 'live',
   baseUrl = '/api',
-  eventSourceFactory = (url) => new EventSource(url),
+  eventSourceFactory = defaultEventSourceFactory,
   createStream = createSseStream,
   store: injectedStore,
 }: DashboardProps) {

@@ -11,7 +11,8 @@
     "format:check": "prettier --check . --ignore-path ../../.prettierignore",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
@@ -22,6 +23,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.13.0",
     "@types/react": "^19.2.0",
