@@ -23,6 +23,7 @@ npm run kernel:run
 ```
 
 The command writes markdown-vault artifacts and `trace.json` under `kernel/out/vault/`.
+It also writes a browser-readable proof board to `kernel/out/proof-board/index.html`.
 
 ## Status
 

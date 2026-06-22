@@ -1,5 +1,6 @@
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
+import { writeProofBoard } from './proof-board.ts';
 
 export const defaultKernelArgs = {
   runId: 'run_fsd_ownership_fixture',
@@ -8,11 +9,13 @@ export const defaultKernelArgs = {
   knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
   memoryMode: 'auto' as const,
   outDir: 'kernel/out/vault',
+  proofBoardDir: 'kernel/out/proof-board',
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const run = await runKernel(defaultKernelArgs);
   const manifest = await exportRunToVault(run, defaultKernelArgs.outDir);
+  const proofBoard = await writeProofBoard(run, defaultKernelArgs.proofBoardDir);
   console.log(
     JSON.stringify(
       {
@@ -21,6 +24,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         problemRecovery: run.problemRecovery.id,
         candidates: run.candidates.length,
         child: run.fusion?.child.id || null,
+        proofBoard,
         files: manifest.files,
       },
       null,
