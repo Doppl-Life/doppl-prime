@@ -85,3 +85,5 @@ export type {
 } from './reproduction/mutate';
 export { createScoreSeam } from './seams/score-seam';
 export type { ScoreSeamDeps } from './seams/score-seam';
+export { createReproduceSeam } from './seams/reproduce-seam';
+export type { ReproduceSeamDeps } from './seams/reproduce-seam';
