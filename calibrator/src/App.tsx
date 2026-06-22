@@ -165,7 +165,7 @@ export function App() {
 
   async function loadIndex() {
     try {
-      const apiResponse = await fetch("/api/index");
+      const apiResponse = await fetch("/api/index", { cache: "no-store" });
       if (apiResponse.ok) {
         setIsWritable(true);
         return (await apiResponse.json()) as CalibratorIndex;
@@ -174,7 +174,7 @@ export function App() {
       // Static previews do not expose the local Vite write API.
     }
 
-    const staticResponse = await fetch("calibration-index.json");
+    const staticResponse = await fetch(`calibration-index.json?v=${Date.now()}`, { cache: "no-store" });
     if (!staticResponse.ok) throw new Error("Failed to load vault index");
     setIsWritable(false);
     return (await staticResponse.json()) as CalibratorIndex;

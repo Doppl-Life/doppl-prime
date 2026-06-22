@@ -209,7 +209,7 @@ describe("App", () => {
       if (url === "/api/index") {
         return new Response("not found", { status: 404 });
       }
-      if (url === "calibration-index.json") {
+      if (url.startsWith("calibration-index.json")) {
         return new Response(JSON.stringify(fixture), { status: 200 });
       }
       return new Response("not found", { status: 404 });
