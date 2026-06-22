@@ -16,6 +16,7 @@ describe("writeRatingMarkdown", () => {
       now: new Date("2026-06-22T12:00:00.000Z"),
       submission: {
         case_id: "fsd-accident-economy",
+        rating_target: "solution",
         solution_id: "cody-accident-economy-map",
         score: 4,
         verdict: "investigate",

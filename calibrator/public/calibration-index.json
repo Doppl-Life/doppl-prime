@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-22T17:34:58.947Z",
+  "generated_at": "2026-06-22T18:00:41.974Z",
   "comparison_sets": [
     {
       "comparison_set_id": "fsd-accident-economy-v0",
@@ -26,9 +26,22 @@
       ],
       "body": "# When the Crashes Don't Come\n\nAs of June 22, 2026, the case asks what happens if full self-driving reduces human-caused crash volume at scale. The visible story is cheaper rides and driver displacement, but the deeper question is whether crash-linked economic systems are prepared for a major demand shock.\n\n## Reviewer Context\n\nReviewers should judge whether a solution maps the dependency web created by crashes, identifies exposed institutions, and makes useful second- and third-order claims without trying to preserve the harm itself.\n\n## Source Notes\n\nThis normalized case is derived from the existing `fsd-accident-economy` case-study files. It is a review fixture for Calibrator MVP, not a new forecast.",
       "problem": {
-        "body": "# Problem Context\n\nThe problem is not simply that autonomous vehicles make ride-hailing cheaper. The deeper problem is that a large recurring source of harm also supports insurance pools, claims administration, collision repair, towing, storage, salvage, injury litigation, trauma care, rehabilitation, public cost recovery, and household disruption management.\n\nReviewers should use this context to evaluate solution quality, but the MVP does not collect a separate problem-recovery rating.",
+        "body": "# Stated Problem Context\n\nThe problem is not simply that autonomous vehicles make ride-hailing cheaper. The deeper problem is that a large recurring source of harm also supports insurance pools, claims administration, collision repair, towing, storage, salvage, injury litigation, trauma care, rehabilitation, public cost recovery, and household disruption management.\n\nReviewers should use this stated context to evaluate both the recovered problem and any downstream solution. Problem recovery is now a separate rateable output in Calibrator.",
         "source": "case-study"
       },
+      "problem_recoveries": [
+        {
+          "artifact_type": "problem_recovery",
+          "case_id": "fsd-accident-economy",
+          "problem_recovery_id": "pr_fsd_accident_economy_fixture",
+          "title": "Accident Economy Dependency Shock",
+          "source_type": "manual",
+          "source_status": "fixture",
+          "created_at": "2026-06-22T00:00:00.000Z",
+          "body": "# Accident Economy Dependency Shock\n\nThe recovered problem is that crash reduction removes a recurring event stream that many adjacent systems implicitly depend on: insurance acquisition, claims operations, repairs, towing, legal intake, trauma workflows, public cost recovery, media spend, and donor-supply edges.\n\nThe quality question is whether a kernel saw this as a dependency-unwind problem rather than only a safer-roads or cheaper-transportation story.",
+          "human_ratings": []
+        }
+      ],
       "solutions": [
         {
           "artifact_type": "solution",

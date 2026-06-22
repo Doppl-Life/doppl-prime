@@ -505,7 +505,7 @@ npm --prefix calibrator run test -- App
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Run the established secret and commit-identity scan first. It should check for OpenRouter key patterns and disallowed author identity strings, and it should print no matches. Then commit:
 
@@ -522,7 +522,7 @@ git commit -m "feat: add problem recovery review ui"
 - Modify: `calibrator/public/calibration-index.json`
 - Modify: `published/calibrator/`
 
-- [ ] **Step 1: Update README**
+- [x] **Step 1: Update README**
 
 Document:
 
@@ -530,7 +530,7 @@ Document:
 - Rating targets: `problem_recovery` and `solution`.
 - `source_mapping_version` replaces new uses of `adapter_version`; legacy files remain readable.
 
-- [ ] **Step 2: Update MVP plan status**
+- [x] **Step 2: Update MVP plan status**
 
 Add status lines:
 
@@ -541,7 +541,7 @@ Add status lines:
 
 Replace stale language saying the MVP intentionally does not collect problem recovery ratings.
 
-- [ ] **Step 3: Run full tests**
+- [x] **Step 3: Run full tests**
 
 Run:
 
@@ -551,7 +551,7 @@ npm --prefix calibrator run test
 
 Expected: PASS.
 
-- [ ] **Step 4: Export static preview**
+- [x] **Step 4: Export static preview**
 
 Run:
 
@@ -561,7 +561,7 @@ npm --prefix calibrator run export:static
 
 Expected: PASS and regenerated `calibrator/public/calibration-index.json` plus `published/calibrator/`.
 
-- [ ] **Step 5: Structural preview check**
+- [x] **Step 5: Structural preview check**
 
 Run:
 
@@ -571,7 +571,7 @@ rg -n "Problem Recovery|rating_target|source mapping" calibrator/public/calibrat
 
 Expected: output contains `Problem Recovery` and the new rating target text. `source mapping` may appear in bundled JS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run the established secret and commit-identity scan first. It should check for OpenRouter key patterns and disallowed author identity strings, and it should print no matches. Then commit:
 

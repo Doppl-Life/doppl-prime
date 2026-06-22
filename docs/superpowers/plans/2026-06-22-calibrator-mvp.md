@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a local vault-first calibrator web app where reviewers inspect `fsd-accident-economy` solutions and submit `-5` to `+5` solution ratings as markdown files.
+**Goal:** Build a local vault-first calibrator web app where reviewers inspect `fsd-accident-economy` outputs and submit `-5` to `+5` human ratings as markdown files.
 
 **Architecture:** Keep the markdown vault authoritative. A small root `calibrator/` Node/Vite app reads `calibration-vault/`, validates frontmatter, generates a JSON index for the browser, and exposes a local dev API that writes rating markdown back into the vault. The browser UI is derived from the generated index and never becomes storage truth.
 
@@ -23,31 +23,32 @@ Completed on the `calibration` branch and pushed to GitHub:
 
 Current MVP behavior:
 
-- The markdown vault under `calibration-vault/` is the source of truth for case, problem-context, solution, and human-rating artifacts.
+- The markdown vault under `calibration-vault/` is the source of truth for case, stated problem context, problem recovery, solution, and human-rating artifacts.
 - The local Vite app reads live vault content through `/api/index`.
-- Human solution ratings are submitted on a `-5` to `+5` scale and written back as markdown under the case `ratings/` folder.
-- The UI supports case selection, solution selection, expandable case/problem/solution details, optional reviewer email, notes, and saved-path feedback.
+- Human problem recovery and solution ratings are submitted on a `-5` to `+5` scale and written back as markdown under the case `ratings/` folder.
+- The UI supports case selection, solution selection, rating-target switching, expandable case/problem/problem-recovery/solution details, optional reviewer email, notes, and saved-path feedback.
 - The seeded fixture includes `fsd-accident-economy` plus Cody- and Melissa-labeled solution artifacts.
 - Michael's `fsd-accident-economy` assay fixture has been added as a third solution artifact, and the rating contract now supports Michael-style verdicts: `dead`, `obvious`, `interesting`, `investigate`, and `keeper`.
 - Solution frontmatter now allows `output_class`, `phase`, and `subtype` so the vault can distinguish final solution candidates from assay branches, Pepsis, and many-Pepsis outputs.
 - Each local rating submit writes both a human-readable markdown rating and an append-only `calibration-vault/ratings-ledger.jsonl` event for downstream ingestion.
 - The Vite app can build as a read-only static preview by falling back to `calibration-index.json`; live rating writes still require the local dev API or a future hosted backend.
 - Existing rating markdown is now ingested back into the vault index and attached to matching solutions.
-- Each solution displays human calibration history: rating count, average human score, judge-score delta, and verdict distribution.
+- Each problem recovery and solution displays human calibration history: rating count, average human score, judge-score delta when applicable, and verdict distribution.
 - After a local submit, the app refreshes the vault index so the saved rating appears in the workbench immediately.
 - GitHub Pages is enabled for the `calibration` branch and publishes the static preview from the committed `published/` folder.
 - Apples-to-apples comparison is now explicit in the vault through `calibration-vault/comparison-sets/fsd-accident-economy-v0.md`.
 - The current Cody-, Melissa-, and Michael-labeled artifacts are marked `source_status: fixture`; future adapters must promote them to `imported` or `live_run` only with branch, commit, source artifact/run id, and shared input hash.
-- The UI shows comparison-set status and per-solution adapter notes so reviewers can distinguish seeded fixtures from genuine kernel outputs.
+- The UI shows comparison-set status and per-output source mapping notes so reviewers can distinguish seeded fixtures from genuine kernel outputs.
 - The calibrator has an SVG favicon wired into the app and static export.
 - The import CLI now has adapters for Michael markdown and Cody/Melissa runtime branch provenance.
 - Michael's direct branch solution import is marked `pending` because the source branch explicitly says the case is unsolved.
 - Cody and Melissa provenance imports are marked `unavailable` because neither branch currently has a direct case-specific solution export.
-- Reviewers can filter solutions by source status and enable blind review mode to mask kernel/source labels before rating.
+- Reviewers can filter solutions by source status, switch between problem recovery and solution rating, and enable blind review mode to mask kernel/source labels before rating.
+- Canonical kernel case-run markdown can preserve `Trace`, `Case Study`, `Discovery`, `Problem Recovery`, and optional `Solution` sections in one artifact.
 
 Verification as of June 22, 2026:
 
-- `npm --prefix calibrator run test`: 4 files, 8 tests passing.
+- `npm --prefix calibrator run test`: 7 files, 19 tests passing.
 - `npm --prefix calibrator run build`: passing.
 - `npm --prefix calibrator run export:static`: passing.
 - Browser visual QA at `http://127.0.0.1:5178`: no horizontal overflow at mobile or 1280x800 desktop; desktop rating submit is visible in the left rail.
@@ -141,11 +142,11 @@ rating_target: context_only
 source: case-study
 ---
 
-# Problem Context
+# Stated Problem Context
 
 The problem is not simply that autonomous vehicles make ride-hailing cheaper. The deeper problem is that a large recurring source of harm also supports insurance pools, claims administration, collision repair, towing, storage, salvage, injury litigation, trauma care, rehabilitation, public cost recovery, and household disruption management.
 
-Reviewers should use this context to evaluate solution quality, but the MVP does not collect a separate problem-recovery rating.
+Reviewers should use this stated context to evaluate problem recovery and solution quality. Problem recovery is now a separate rateable output.
 ```
 
 - [ ] **Step 4: Add Cody-labeled sample solution**
@@ -1312,7 +1313,7 @@ export function App() {
         {caseOpen && (
           <article className="document">
             <pre>{selectedCase.body}</pre>
-            <h3>Problem Context</h3>
+            <h3>Stated Problem Context</h3>
             <pre>{selectedCase.problem.body}</pre>
           </article>
         )}
@@ -1730,7 +1731,7 @@ Expected: commit succeeds after the standard staged secret scan has been run sep
 
 ## Self-Review Checklist
 
-- Spec coverage: the plan covers vault seed artifacts, solution-only rating, local web UI, collapsible case/solution details, direct markdown rating persistence, hosted/auth-ready schema fields, provenance fields, validation, tests, and local verification.
+- Spec coverage: the plan covers vault seed artifacts, problem recovery and solution ratings, local web UI, collapsible case/problem-recovery/solution details, direct markdown rating persistence, hosted/auth-ready schema fields, provenance fields, validation, tests, and local verification.
 - Known deferrals: auth, hosted API, database indexes, problem-recovery scoring, and live kernel export ingestion remain deferred by design.
 - Placeholder scan: no unfinished markers or unspecified implementation steps should remain.
 - Type consistency: `case_id`, `solution_id`, `rating_id`, `rating_target`, `score`, `reviewer_email`, and `relativePath` are used consistently across schemas, writer, API, UI, and tests.

@@ -1,6 +1,6 @@
 # Doppl Calibrator
 
-Calibrator is a vault-first review workbench for rating Doppl solution artifacts. The markdown files under `../calibration-vault/` are the source of truth; the React app reads those files through a local Vite middleware and writes submitted human ratings back as markdown plus an append-only JSONL ledger.
+Calibrator is a vault-first review workbench for rating Doppl problem recovery and solution artifacts. The markdown files under `../calibration-vault/` are the source of truth; the React app reads those files through a local Vite middleware and writes submitted human ratings back as markdown plus an append-only JSONL ledger.
 
 ## Run Locally
 
@@ -27,17 +27,46 @@ The app can run as a read-only static build because it falls back from `/api/ind
 npm --prefix calibrator run export:static
 ```
 
-Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, problem recoveries, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
 
 ## Calibration History
 
-The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching solution in the generated index. The solution panel shows the current human average, rating count, judge-score delta, and verdict distribution so reviewers can see calibration evidence without leaving the workbench.
+The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching problem recovery or solution in the generated index. Review panels show the current human average, rating count, judge-score delta when applicable, and verdict distribution so reviewers can see calibration evidence without leaving the workbench.
 
 In local writable mode, submitting a rating writes markdown plus the JSONL ledger event, then refreshes the vault index so the new rating appears immediately. In static preview mode, the same history is visible from the committed export, but the submit button stays disabled.
 
+## Canonical Markdown Input
+
+The preferred input shape for future kernel exports is one markdown artifact with frontmatter followed by these top-level sections:
+
+```markdown
+---
+artifact_type: kernel_case_run
+case_id: fsd-accident-economy
+run_artifact_id: cody-fsd-accident-economy-001
+source_type: kernel
+source_status: imported
+kernel: cody
+source_mapping_version: cody-runtime-importer-v1
+created_at: 2026-06-22T00:00:00.000Z
+---
+
+# Trace
+
+# Case Study
+
+# Discovery
+
+# Problem Recovery
+
+# Solution
+```
+
+`Solution` is optional. Calibrator indexes `Problem Recovery` as its own rateable output because a kernel can recover the right problem and still propose a weak solution, or solve the wrong problem well.
+
 ## Comparison Provenance
 
-Apples-to-apples comparison is represented explicitly in markdown. Comparison sets live under `calibration-vault/comparison-sets/` and solution frontmatter records the shared input hash, input paths, source status, source branch, source commit, and adapter version.
+Apples-to-apples comparison is represented explicitly in markdown. Comparison sets live under `calibration-vault/comparison-sets/` and solution frontmatter records the shared input hash, input paths, source status, source branch, source commit, and source mapping version.
 
 The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, Melissa-, and Michael-labeled artifacts are useful for testing the calibration workflow, but they are not presented as live kernel outputs. Future importers should promote a solution to `imported` or `live_run` only when they can record the branch, commit, source artifact or run id, and the exact shared comparison input hash.
 
@@ -45,7 +74,9 @@ The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, M
 
 Reviewers can filter the solution list by source status: fixture, imported, live run, pending, or unavailable. This prevents calibration sessions from mixing true candidate outputs with provenance-only artifacts unless the reviewer chooses to see all records.
 
-Blind review mode masks kernel/source labels, provenance metadata, adapter notes, and obvious branch names in solution text. It is intended for lower-bias human rating sessions; reviewers can turn it off when they need audit context.
+Reviewers can switch the rating target between `Problem Recovery` and `Solution`. Both targets use the same `-5` to `+5` score and optional verdict.
+
+Blind review mode masks kernel/source labels, provenance metadata, source mapping notes, and obvious branch names in review text. It is intended for lower-bias human rating sessions; reviewers can turn it off when they need audit context.
 
 ## Vault Shape
 
@@ -57,6 +88,8 @@ calibration-vault/
     fsd-accident-economy/
       case.md
       problem.md
+      problem-recoveries/
+        fsd-accident-economy-recovered-problem.md
       solutions/
         cody-accident-economy-map.md
         michael-accident-economy-assay.md
@@ -68,7 +101,7 @@ calibration-vault/
 Rating submissions are written to:
 
 ```text
-calibration-vault/cases/<case_id>/ratings/rating_<timestamp>_<solution_id>.md
+calibration-vault/cases/<case_id>/ratings/rating_<timestamp>_<target_id>.md
 calibration-vault/ratings-ledger.jsonl
 ```
 
