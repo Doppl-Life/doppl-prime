@@ -67,7 +67,11 @@ test('replays events into an inspectable run projection', () => {
       type: 'candidate.fused',
       payload: { childId: 'child_cand_a_cand_b', inheritanceWeights: { parentA: 0.667, parentB: 0.333 } },
     },
-    { index: 8, type: 'run.completed', payload: { runId: 'run_test', childId: 'child_cand_a_cand_b' } },
+    { index: 8, type: 'model.output_accepted', payload: { callId: 'call_1', purpose: 'problem_recovery', status: 'accepted' } },
+    { index: 9, type: 'model.output_repair_requested', payload: { callId: 'call_2', purpose: 'candidate_generation', status: 'repair_requested' } },
+    { index: 10, type: 'model.output_repaired', payload: { callId: 'call_3', purpose: 'candidate_generation.repair', status: 'repaired' } },
+    { index: 11, type: 'model.output_rejected', payload: { callId: 'call_4', purpose: 'critic_judgment.repair', status: 'rejected' } },
+    { index: 12, type: 'run.completed', payload: { runId: 'run_test', childId: 'child_cand_a_cand_b' } },
   ]);
 
   assert.deepEqual(projection, {
@@ -79,6 +83,18 @@ test('replays events into an inspectable run projection', () => {
     fitnessTotals: { cand_a: 80, cand_b: 40 },
     childId: 'child_cand_a_cand_b',
     completed: true,
-    eventCount: 9,
+    eventCount: 13,
+    modelOutputs: {
+      accepted: 1,
+      repairRequested: 1,
+      repaired: 1,
+      rejected: 1,
+      byPurpose: {
+        problem_recovery: { accepted: 1, repairRequested: 0, repaired: 0, rejected: 0 },
+        candidate_generation: { accepted: 0, repairRequested: 1, repaired: 0, rejected: 0 },
+        'candidate_generation.repair': { accepted: 0, repairRequested: 0, repaired: 1, rejected: 0 },
+        'critic_judgment.repair': { accepted: 0, repairRequested: 0, repaired: 0, rejected: 1 },
+      },
+    },
   });
 });

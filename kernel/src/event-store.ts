@@ -14,9 +14,21 @@ export type RunProjection = {
   recoveryId?: string;
   candidateIds: string[];
   fitnessTotals: Record<string, number>;
+  modelOutputs: ModelOutputProjection;
   childId?: string;
   completed: boolean;
   eventCount: number;
+};
+
+export type ModelOutputCounts = {
+  accepted: number;
+  repairRequested: number;
+  repaired: number;
+  rejected: number;
+};
+
+export type ModelOutputProjection = ModelOutputCounts & {
+  byPurpose: Record<string, ModelOutputCounts>;
 };
 
 export function createMemoryEventRecorder(seedEvents: RunEvent[] = []): EventRecorder {
@@ -67,10 +79,23 @@ function numberPayloadValue(event: RunEvent, key: string): number | undefined {
   return typeof value === 'number' ? value : undefined;
 }
 
+function emptyModelOutputCounts(): ModelOutputCounts {
+  return { accepted: 0, repairRequested: 0, repaired: 0, rejected: 0 };
+}
+
+function modelOutputBucket(type: string): keyof ModelOutputCounts | undefined {
+  if (type === 'model.output_accepted') return 'accepted';
+  if (type === 'model.output_repair_requested') return 'repairRequested';
+  if (type === 'model.output_repaired') return 'repaired';
+  if (type === 'model.output_rejected') return 'rejected';
+  return undefined;
+}
+
 export function replayRunProjection(events: RunEvent[]): RunProjection {
   const projection: RunProjection = {
     candidateIds: [],
     fitnessTotals: {},
+    modelOutputs: { ...emptyModelOutputCounts(), byPurpose: {} },
     completed: false,
     eventCount: events.length,
   };
@@ -97,6 +122,13 @@ export function replayRunProjection(events: RunEvent[]): RunProjection {
     }
     if (event.type === 'candidate.fused') {
       projection.childId = stringPayloadValue(event, 'childId');
+    }
+    const modelBucket = modelOutputBucket(event.type);
+    if (modelBucket) {
+      const purpose = stringPayloadValue(event, 'purpose') || 'unknown';
+      projection.modelOutputs[modelBucket] += 1;
+      projection.modelOutputs.byPurpose[purpose] ||= emptyModelOutputCounts();
+      projection.modelOutputs.byPurpose[purpose][modelBucket] += 1;
     }
     if (event.type === 'run.completed') {
       projection.runId = stringPayloadValue(event, 'runId') || projection.runId;
