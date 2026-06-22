@@ -83,3 +83,5 @@ export type {
   MutationBounds,
   MutationSummary,
 } from './reproduction/mutate';
+export { createScoreSeam } from './seams/score-seam';
+export type { ScoreSeamDeps } from './seams/score-seam';
