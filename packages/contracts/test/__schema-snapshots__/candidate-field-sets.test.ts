@@ -1,5 +1,5 @@
 // P0.5 — §2.5 cross-track schema-snapshot gate for the candidate contracts. spec(§3) spec(§4)
-// spec(§2.5): each CandidateIdea variant's field-name set (11), the CandidateStatus member set (8),
+// spec(§2.5): each CandidateIdea variant's field-name set (11), the CandidateStatus member set (9),
 // the EvidenceRef field set (5) + EvidenceKind member set (6), and each subtype payload's field set
 // equal checked-in frozen snapshots — any add/remove/rename fails here BEFORE the runtime/verifier/
 // selection/projection tracks consume these models. Also pins the discriminant literal set.
@@ -30,6 +30,7 @@ const CANDIDATE_FIELD_SNAPSHOT = [
 
 const CANDIDATE_STATUS_SNAPSHOT = [
   'created',
+  'repairing', // [P0.5-amend] §3 created→repairing→under_review / repairing→invalid (schemaVersion 3→4)
   'under_review',
   'checked',
   'scored',
@@ -110,7 +111,7 @@ describe('schema snapshot — CandidateIdea / payloads / EvidenceRef (spec §3 /
     );
 
     expect(CANDIDATE_FIELD_SNAPSHOT).toHaveLength(11);
-    expect(CANDIDATE_STATUS_SNAPSHOT).toHaveLength(8);
+    expect(CANDIDATE_STATUS_SNAPSHOT).toHaveLength(9); // [P0.5-amend] 8→9 (+repairing)
     expect(EVIDENCE_REF_FIELD_SNAPSHOT).toHaveLength(5);
     expect(EVIDENCE_KIND_SNAPSHOT).toHaveLength(6);
     expect(CDT_PAYLOAD_FIELD_SNAPSHOT).toHaveLength(7);

@@ -80,12 +80,13 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
     }
   });
 
-  it('canonical_fixtures_still_valid_at_v3', () => {
-    // spec(§16) [judge-output amendment]: the canonical envelope fixture is re-recorded at schemaVersion
-    // 3 (it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
-    // (every_canonical_fixture_is_valid) stays green at v3 — the P0.14 surface survives the amendment.
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
-    expect(validRunEventEnvelope.schemaVersion).toBe(3);
+  it('canonical_fixtures_still_valid_at_current_version', () => {
+    // spec(§16) [kernel-020 reconcile]: the canonical envelope fixture is re-recorded at the CURRENT
+    // schema version (4 — it tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep
+    // (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives the reconciliation
+    // (judge=v3 + folded degraded/repairing=v4).
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(validRunEventEnvelope.schemaVersion).toBe(4);
   });
 
   it('types_are_single_source', () => {

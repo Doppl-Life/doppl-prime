@@ -82,9 +82,10 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(typeof RunEventType.parse).toBe('function');
     expect(typeof RunEventEnvelope.parse).toBe('function');
     expect(Number.isInteger(CURRENT_SCHEMA_VERSION)).toBe(true);
-    // judge-output amendment: deliberate schemaVersion bump 2 → 3 (P0.1-amend bumped 1 → 2), pinned
-    // by literal so it can't move silently.
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+    // Deliberate schemaVersion bumps pinned by literal so they can't move silently (kernel-020
+    // linearized): 1→2 (P0.1-amend RunEventType markers), 2→3 (P0.16 judge.reviewed + JudgeResult),
+    // 3→4 (kernel P0.15-amend GenerationStatus +degraded & P0.5-amend CandidateStatus +repairing, folded).
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {
