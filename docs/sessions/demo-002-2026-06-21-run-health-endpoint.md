@@ -5,7 +5,7 @@
 - **Role:** demo-observability-implementer (backend / `apps/api`)
 - **Branch:** `track/demo` (shared worktree with demo-web-implementer)
 - **Predecessor:** `demo-001-2026-06-21-projections-serve-layer.md`
-- **Successor session:** _(none yet)_
+- **Successor session:** `demo-003-2026-06-22-phase6-complete-sse-observability-neo4j.md`
 
 ## Why this session existed
 
