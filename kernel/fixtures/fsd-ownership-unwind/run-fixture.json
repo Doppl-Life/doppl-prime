@@ -61,42 +61,42 @@
     {
       "candidateId": "cand_recovery_market",
       "criticId": "grounding",
-      "score": 74,
+      "score": 44,
       "pressure": "Residual values and lease math are grounded in existing auto-credit structures.",
       "revisionMandate": "Separate fleet-utilization pressure from ordinary used-car cyclicality."
     },
     {
       "candidateId": "cand_recovery_market",
       "criticId": "novelty",
-      "score": 70,
+      "score": 40,
       "pressure": "Good balance-sheet reframing, but residual-value stress is closer to the obvious ownership thesis.",
       "revisionMandate": "Find one hidden counterparty that is not already in the stated case."
     },
     {
       "candidateId": "cand_recovery_market",
       "criticId": "mechanism",
-      "score": 66,
+      "score": 36,
       "pressure": "Mechanism is credible but broad.",
       "revisionMandate": "Choose the first market that breaks and identify its leading metric."
     },
     {
       "candidateId": "cand_lender_residual",
       "criticId": "grounding",
-      "score": 62,
+      "score": 24,
       "pressure": "The watchlist is practical but depends on data access not shown in the artifact.",
       "revisionMandate": "State which public filings or datasets support the ladder."
     },
     {
       "candidateId": "cand_lender_residual",
       "criticId": "novelty",
-      "score": 58,
+      "score": 20,
       "pressure": "The exposure ladder is useful but reads like an implementation of the residual-value map.",
       "revisionMandate": "Add a sharper blindside or remove it from the parent pool."
     },
     {
       "candidateId": "cand_lender_residual",
       "criticId": "mechanism",
-      "score": 60,
+      "score": 16,
       "pressure": "Mechanism is clear enough, but narrower than the top candidates.",
       "revisionMandate": "Tie lender exposure back to the pure-service versus owned-hybrid fork."
     }
