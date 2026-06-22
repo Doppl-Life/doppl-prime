@@ -13,12 +13,24 @@ function frontmatter(fields: Record<string, string>): string {
   ].join('\n');
 }
 
-function solutionMarkdown(solution: CandidateSolution): string {
+function calibrationFields(): Record<string, string> {
+  return {
+    calibration_status: 'unrated',
+    rating_scale: '-5_to_5',
+    human_rating: 'null',
+  };
+}
+
+function solutionMarkdown(
+  solution: CandidateSolution,
+  fields: Record<string, string> = {},
+): string {
   return `${frontmatter({
     artifact_type: 'solution',
     artifact_id: solution.id,
     case_id: solution.caseId,
     agenome_id: solution.agenomeId,
+    ...fields,
   })}
 # ${solution.title}
 
@@ -85,21 +97,13 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
   };
 }
 
-export async function exportRunToVault(
-  run: KernelRun,
-  rootDir: string,
-): Promise<VaultExportManifest> {
-  const runDir = path.join(rootDir, run.caseStudy.id, run.id);
-  await mkdir(runDir, { recursive: true });
-  const files: string[] = [];
-  const recoveryPath = path.join(runDir, 'problem-recovery.md');
-  await writeFile(
-    recoveryPath,
-    `${frontmatter({
-      artifact_type: 'problem_recovery',
-      artifact_id: run.problemRecovery.id,
-      case_id: run.caseStudy.id,
-    })}
+function problemRecoveryMarkdown(run: KernelRun, fields: Record<string, string> = {}): string {
+  return `${frontmatter({
+    artifact_type: 'problem_recovery',
+    artifact_id: run.problemRecovery.id,
+    case_id: run.caseStudy.id,
+    ...fields,
+  })}
 # ${run.problemRecovery.title}
 
 ${run.problemRecovery.recoveredProblem}
@@ -115,9 +119,48 @@ ${run.problemRecovery.falsifier}
 ## Knowledge Citations
 
 ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
-`,
-    'utf8',
-  );
+`;
+}
+
+function calibrationManifest(run: KernelRun): Record<string, unknown> {
+  return {
+    artifact_type: 'calibration_run_manifest',
+    runId: run.id,
+    caseId: run.caseStudy.id,
+    caseTitle: run.caseStudy.title,
+    problemRecovery: {
+      id: run.problemRecovery.id,
+      path: 'problem-recovery.md',
+    },
+    candidates: run.candidates.map((candidate) => ({
+      id: candidate.id,
+      path: solutionFilename(candidate),
+      rating: null,
+    })),
+    child: run.fusion
+      ? {
+          id: run.fusion.child.id,
+          path: solutionFilename(run.fusion.child),
+          rating: null,
+        }
+      : null,
+    ratings: {
+      problemRecovery: null,
+      candidates: Object.fromEntries(run.candidates.map((candidate) => [candidate.id, null])),
+      child: run.fusion ? { [run.fusion.child.id]: null } : {},
+    },
+  };
+}
+
+export async function exportRunToVault(
+  run: KernelRun,
+  rootDir: string,
+): Promise<VaultExportManifest> {
+  const runDir = path.join(rootDir, run.caseStudy.id, run.id);
+  await mkdir(runDir, { recursive: true });
+  const files: string[] = [];
+  const recoveryPath = path.join(runDir, 'problem-recovery.md');
+  await writeFile(recoveryPath, problemRecoveryMarkdown(run), 'utf8');
   files.push(recoveryPath);
 
   for (const solution of [...run.candidates, ...(run.fusion ? [run.fusion.child] : [])]) {
@@ -149,6 +192,31 @@ ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
     'utf8',
   );
   files.push(indexPath);
+
+  return { rootDir: runDir, files };
+}
+
+export async function exportRunToCalibrationVault(
+  run: KernelRun,
+  rootDir: string,
+): Promise<VaultExportManifest> {
+  const runDir = path.join(rootDir, run.caseStudy.id, run.id);
+  await mkdir(runDir, { recursive: true });
+  const files: string[] = [];
+
+  const recoveryPath = path.join(runDir, 'problem-recovery.md');
+  await writeFile(recoveryPath, problemRecoveryMarkdown(run, calibrationFields()), 'utf8');
+  files.push(recoveryPath);
+
+  for (const solution of [...run.candidates, ...(run.fusion ? [run.fusion.child] : [])]) {
+    const solutionPath = path.join(runDir, solutionFilename(solution));
+    await writeFile(solutionPath, solutionMarkdown(solution, calibrationFields()), 'utf8');
+    files.push(solutionPath);
+  }
+
+  const manifestPath = path.join(runDir, 'calibration-manifest.json');
+  await writeFile(manifestPath, JSON.stringify(calibrationManifest(run), null, 2), 'utf8');
+  files.push(manifestPath);
 
   return { rootDir: runDir, files };
 }
