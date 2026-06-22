@@ -4,7 +4,7 @@
 - **Phase:** 5 (Selection, scoring & reproduction) — the deferred-wiring + production-reachability pass
 - **Track:** `selection` (branch `track/selection`)
 - **Predecessor:** [selection-002](selection-002-2026-06-21-phase5-orchestration-roundclose.md)
-- **Successor:** _(next selection session — Phase-5 closes here; `/phase-exit P5` follows)_
+- **Successor:** [selection-004](selection-004-2026-06-22-P5.7-reachability-cleanup.md) — P5.7 reachability cleanup (remove dead exports → `/phase-exit P5` true-CLEAR)
 
 ## Why this session existed
 
