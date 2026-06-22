@@ -1,0 +1,162 @@
+{
+  "seed": {
+    "id": "seed-starship",
+    "title": "Starship launch-cost collapse",
+    "prompt": "Given the thesis that reusable heavy launch makes mass-to-orbit much cheaper, generate consequences and select under explore and proof.",
+    "thesis": "Reusable heavy-lift launch changes space economics by making mass, volume, replacement cadence, and orbital construction less scarce.",
+    "goals": [
+      "test a cross-domain transfer heavy seed",
+      "show launch-cost knock-ons without flat cascade",
+      "prove generation-2 lineage can sharpen a parent"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "substrate-removal",
+      "label": "Substrate removal",
+      "description": "Find the launch constraint that weakens.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "hidden-dependent",
+      "label": "Hidden dependent",
+      "description": "Find actors dependent on launch scarcity.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "infrastructure-inversion",
+      "label": "Infrastructure inversion",
+      "description": "Ask whether cheap mass-to-orbit creates infrastructure for another market.",
+      "defaultSubtype": "cross_domain_transfer"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "s1",
+      "operatorId": "substrate-removal",
+      "candidateId": "ss-c1",
+      "title": "Mass budget removal",
+      "substrate": "satellite mass budget",
+      "mechanism": "If launch mass is cheaper, spacecraft can use heavier shielding, redundancy, and simpler commodity parts instead of extreme miniaturization.",
+      "candidate": {
+        "title": "Space hardware gets less precious",
+        "thesis": "Cheap heavy launch moves spacecraft design from exquisite mass optimization toward heavier, redundant, serviceable hardware.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from cheaper launch to changed hardware design rules.",
+        "changes": [
+          "launch price -> mass budget",
+          "exquisite design -> redundancy"
+        ]
+      },
+      "claims": [
+        "Lower mass penalty changes design tradeoffs before it changes final markets.",
+        "Commodity redundancy becomes cheaper than extreme miniaturization."
+      ],
+      "evidence": [
+        "reusable launch cost trajectory",
+        "satellite mass-optimization history"
+      ],
+      "observedAt": "2026-05-10"
+    },
+    {
+      "id": "s2",
+      "operatorId": "infrastructure-inversion",
+      "candidateId": "ss-c2",
+      "title": "Orbital construction yard",
+      "substrate": "on-orbit assembly",
+      "mechanism": "Cheap volume and cadence can turn orbit from destination into construction site for platforms too large to launch whole.",
+      "candidate": {
+        "title": "Orbit becomes a construction yard",
+        "thesis": "Starship-class cadence could make orbital assembly an infrastructure business, where parts, fuel, and servicing create a construction supply chain above Earth.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from transportation cost to orbit as a construction substrate.",
+        "changes": [
+          "launch vehicle -> orbital supply chain",
+          "payload delivery -> construction yard"
+        ]
+      },
+      "claims": [
+        "Large structures become possible when parts can be launched repeatedly.",
+        "The transfer maps shipyard logic onto orbital assembly."
+      ],
+      "evidence": [
+        "heavy-lift cadence assumptions",
+        "space station assembly precedent"
+      ],
+      "observedAt": "2026-04-01"
+    },
+    {
+      "id": "s3",
+      "operatorId": "hidden-dependent",
+      "candidateId": "ss-c3",
+      "title": "Insurance and replacement cadence",
+      "substrate": "expensive single-shot asset",
+      "mechanism": "If satellites are cheaper to replace, the economics of insurance, qualification, and conservative lifetime design shift.",
+      "candidate": {
+        "title": "Replacement beats perfection",
+        "thesis": "Cheap heavy launch lets some orbital businesses replace hardware often instead of over-insuring and over-qualifying every asset for long life.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from launch cost to asset-lifecycle economics.",
+        "changes": [
+          "single-shot satellite -> replacement cadence",
+          "perfection -> turnover"
+        ]
+      },
+      "claims": [
+        "Lower replacement cost changes insurance and qualification incentives.",
+        "Some platforms can trade longevity for update cadence."
+      ],
+      "evidence": [
+        "satellite insurance and qualification norms",
+        "reusable launch cadence logic"
+      ],
+      "observedAt": "2026-05-01"
+    },
+    {
+      "id": "s4",
+      "operatorId": "substrate-removal",
+      "title": "Rockets get cheaper",
+      "substrate": "launch cost",
+      "mechanism": "Restates the seed as cheaper launch without a new market or mechanism.",
+      "noDeltaReason": "No delta beyond the seed launch-cost thesis."
+    },
+    {
+      "id": "s5",
+      "operatorId": "infrastructure-inversion",
+      "parentCandidateId": "ss-c2",
+      "generation": 2,
+      "candidateId": "ss-c2a",
+      "title": "Orbital dry dock",
+      "substrate": "serviceable orbital platform",
+      "mechanism": "If orbit becomes a construction yard, the next dependency is a dry-dock layer for inspection, repair, refueling, and standardized attachment.",
+      "candidate": {
+        "title": "Orbital construction needs dry docks",
+        "thesis": "The construction-yard thesis sharpens into orbital dry docks: reusable heavy launch is not enough unless platforms can be inspected, refueled, repaired, and mechanically standardized.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from orbital construction to the service infrastructure that makes construction repeatable.",
+        "changes": [
+          "orbital yard -> dry dock",
+          "one-off assembly -> service standard"
+        ]
+      },
+      "claims": [
+        "Shipyard-style construction requires maintenance and standard attachment points.",
+        "The same infrastructure supports inspection, repair, and refueling."
+      ],
+      "evidence": [
+        "shipyard and dry-dock analogy",
+        "orbital servicing mission precedents"
+      ],
+      "observedAt": "2026-06-01"
+    }
+  ]
+}

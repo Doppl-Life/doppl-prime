@@ -1,0 +1,26 @@
+import type { CandidateSubtype } from '../src/contracts/index.ts';
+
+export const caseStudySubtypes = {
+  'ae-waiting-room-aggression': 'cross_domain_transfer',
+  'ai-firm-power-constraint': 'zeitgeist_synthesis',
+  'ai-overviews-zero-click-publishing': 'zeitgeist_synthesis',
+  'airport-liquid-congestion': 'cross_domain_transfer',
+  'fsd-accident-economy': 'zeitgeist_synthesis',
+  'fsd-adoption-asymmetry': 'zeitgeist_synthesis',
+  'fsd-enforcement-economy': 'zeitgeist_synthesis',
+  'fsd-mobility-and-time': 'zeitgeist_synthesis',
+  'fsd-ownership-unwind': 'zeitgeist_synthesis',
+  'full-self-driving-unlock': 'zeitgeist_synthesis',
+  'glp1-snack-demand-destruction': 'zeitgeist_synthesis',
+  'heinz-ketchup-authenticity': 'cross_domain_transfer',
+  'houston-baggage-walk': 'cross_domain_transfer',
+  'jack-drone-privacy': 'cross_domain_transfer',
+  'jack-yacht-connectivity-continuity': 'cross_domain_transfer',
+  'jack-yacht-perimeter-intrusion': 'cross_domain_transfer',
+  'loft-insulation-adoption': 'cross_domain_transfer',
+  'london-underground-map-distortion': 'cross_domain_transfer',
+  'singapore-mrt-pre-peak': 'cross_domain_transfer',
+  'starship-launch-cost-collapse': 'zeitgeist_synthesis',
+  'vanmoof-bike-packaging': 'cross_domain_transfer',
+  'white-castle-rent-leverage': 'cross_domain_transfer',
+} as const satisfies Record<string, CandidateSubtype>;

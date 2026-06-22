@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "kernel.clean-control.v1",
+  "caseSlug": "jack-drone-privacy",
+  "label": "Clean-agent control: Jack drone privacy",
+  "source": "single clean-context sub-agent, no kernel or assay context",
+  "actualProblem": "The actual problem is not how to stop a drone. It is how to prevent a valuable image from existing before anyone has to touch the drone.",
+  "discoveryInsights": [
+    {
+      "title": "The attack is geometric",
+      "detail": "The drone only needs line of sight to an exposed deck, tender transfer, beach club, hot tub, heli deck, or glass-heavy cabin."
+    },
+    {
+      "title": "The perimeter is a camera cone",
+      "detail": "The real perimeter is not the hull; it is the camera cone from plausible launch points, chase boats, marinas, shorelines, cliffs, hotels, and public anchorages."
+    },
+    {
+      "title": "Time matters more than distance",
+      "detail": "If the guest is exposed briefly during boarding, swimming, tender transfer, or deck service, valuable footage may already exist."
+    },
+    {
+      "title": "Itinerary leaks create the window",
+      "detail": "Crew chatter, AIS patterns, marina staff, provisioning, tender schedules, pilots, restaurants, and predictable anchorages can create the attack window."
+    },
+    {
+      "title": "The yacht signature attracts the drone",
+      "detail": "A famous yacht, support vessel, helicopter, tender, or escort pattern can reveal the target even if the guest is hidden."
+    }
+  ],
+  "ideas": [
+    {
+      "title": "Build a privacy envelope",
+      "detail": "Pre-map camera cones around the vessel and expose the guest only in zones blocked by superstructure, screens, awnings, shore geometry, or backlighting."
+    },
+    {
+      "title": "Treat transfers as the critical event",
+      "detail": "Use covered tender docks, enclosed passerelles, privacy canopies, garage-to-garage tender movement, and timing that degrades useful footage."
+    },
+    {
+      "title": "Use passive early warning",
+      "detail": "Remote ID receiver, RF detection, visual observer, marine radar/operator reports, and acoustic/optical watch exist to move the guest before useful capture."
+    },
+    {
+      "title": "Shift intervention to the operator",
+      "detail": "Identify launch or control locations and use marina security, port authority, coast guard, police, or private investigators where lawful."
+    },
+    {
+      "title": "Design deck use like film blocking in reverse",
+      "detail": "Avoid exposed rail lines, celebrity-facing open decks near shore, uncovered transitions, and high-contrast hero angles."
+    }
+  ],
+  "nextTests": [
+    "Map plausible drone launch points and simulate camera lines to guest-use zones.",
+    "Run a red-team exercise with a legal consumer drone or long-lens camera from shore and chase-boat positions.",
+    "Time exposure windows for embarkation, tendering, swimming, deck dining, helicopter operations, and crew service.",
+    "Test passive detection range and false positives for Remote ID, RF, visual watch, marina, anchorage, and open-water conditions.",
+    "Audit the itinerary leak chain: AIS behavior, marina bookings, provisioning vendors, crew phones, social posts, tender patterns, and local gossip nodes."
+  ]
+}

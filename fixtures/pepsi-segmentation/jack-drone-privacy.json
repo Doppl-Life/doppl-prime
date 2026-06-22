@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "kernel.pepsi-segmentation.v1",
+  "caseSlug": "jack-drone-privacy",
+  "surfaceComplaint": "There is a paparazzi drone near the yacht.",
+  "promotedProblem": "Prevent viable footage from existing.",
+  "expectedCount": "one",
+  "implications": [
+    "The drone is not the real target; the footage is.",
+    "Action after useful visual contact may already be too late.",
+    "Destroying or disrupting the drone can be irrelevant, illegal, dangerous, or conspicuous."
+  ],
+  "possiblePepsis": [
+    {
+      "name": "Stop the drone",
+      "status": "rejected",
+      "logic": "Neutralize the aircraft before it captures anything useful.",
+      "rationale": "This addresses the promoted problem in theory, but jamming, takedown, and interception collide with hard legal, safety, timing, and spectacle constraints.",
+      "linkedCandidateIds": []
+    },
+    {
+      "name": "Deny visual value",
+      "status": "pepsi",
+      "logic": "Make the camera unable to capture a valuable private target.",
+      "rationale": "This changes the win condition from controlling the drone to preventing viable footage.",
+      "linkedCandidateIds": ["jdp-c1", "jdp-c2", "jdp-c3", "jdp-c4", "jdp-c1a"]
+    },
+    {
+      "name": "Devalue footage after capture",
+      "status": "candidate",
+      "logic": "Make captured footage less valuable to buyers or platforms.",
+      "rationale": "Plausible but weaker for this case because privacy has already failed once viable footage exists.",
+      "linkedCandidateIds": []
+    },
+    {
+      "name": "Raise capture or publication risk",
+      "status": "candidate",
+      "logic": "Increase legal, economic, or platform risk for operators and publishers.",
+      "rationale": "May deter repeat attempts, but does not by itself prevent the immediate footage event.",
+      "linkedCandidateIds": []
+    }
+  ],
+  "tactics": [
+    {
+      "pepsi": "Deny visual value",
+      "name": "Remove the target from frame",
+      "howItPursues": "Move the protected person out of useful sightline before the drone reaches filming range.",
+      "hardConstraints": [
+        "Requires detection before useful footage exists.",
+        "Fails if the protected person will not move."
+      ],
+      "softAxes": [
+        "Cheap relative to counter-drone hardware.",
+        "Discreet if the cue is private.",
+        "Operationally simple if rehearsed."
+      ],
+      "linkedCandidateIds": ["jdp-c2", "jdp-c1a"]
+    },
+    {
+      "pepsi": "Deny visual value",
+      "name": "Block the frame",
+      "howItPursues": "Use screens, blinds, glare, mist, lighting, or architecture to make the camera angle useless.",
+      "hardConstraints": [
+        "Still must happen before useful footage exists."
+      ],
+      "softAxes": [
+        "Can be expensive or obtrusive.",
+        "Hard to cover full altitude and angle space.",
+        "May reveal the defensive response."
+      ],
+      "linkedCandidateIds": ["jdp-c4"]
+    }
+  ],
+  "checks": [
+    {
+      "id": "pipes-carry-water",
+      "label": "Pipes carry water",
+      "status": "pass",
+      "detail": "The board exposes the complete reasoning chain from surface complaint to promoted problem to one surviving Pepsi and tactic split."
+    },
+    {
+      "id": "water-not-poisoned",
+      "label": "Water not poisoned",
+      "status": "warn",
+      "detail": "The solved tactic is evaluator-side calibration. Do not move it into withheld prompts or generation context."
+    },
+    {
+      "id": "shower-test",
+      "label": "Shower test",
+      "status": "pass",
+      "detail": "This is a single-Pepsi case; the board should not force fake plurality."
+    }
+  ]
+}

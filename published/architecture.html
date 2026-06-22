@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doppl Kernel System Architecture</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b09;
+      --panel: #101711;
+      --panel-2: #151d17;
+      --ink: #f1f5ee;
+      --muted: #a9b8ad;
+      --line: #334339;
+      --cyan: #35c2e5;
+      --green: #43d17d;
+      --yellow: #eec95c;
+      --orange: #e98a3c;
+      --red: #ef6d64;
+      --purple: #a991ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px) 0 0 / 18px 18px,
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px) 0 0 / 18px 18px,
+        var(--bg);
+      color: var(--ink);
+      font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1600px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+    h1, h2, h3, p, ol, ul { margin-top: 0; }
+    h1 { margin-bottom: 4px; font-size: 28px; letter-spacing: 0; }
+    h2 { margin-bottom: 10px; color: var(--muted); font-size: 14px; text-transform: uppercase; letter-spacing: 0; }
+    h3 { margin-bottom: 5px; font-size: 15px; letter-spacing: 0; }
+    p { color: var(--muted); }
+    code { color: #d5f2dc; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    .sub { max-width: 920px; margin-bottom: 0; color: var(--muted); }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(105px, 1fr));
+      gap: 8px;
+      min-width: 680px;
+    }
+    .fact, .zone, .command-card, .spine-step, .flow-card, .contract-card, .invariant-card, .pressure {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16,23,17,.92);
+    }
+    .fact { padding: 9px; }
+    .fact span, .kicker, .io-grid span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .fact strong { display: block; margin-top: 3px; font-size: 18px; }
+    .zone { padding: 12px; margin-bottom: 12px; }
+    .zone.system { border-color: rgba(53,194,229,.8); }
+    .zone.contracts { border-color: rgba(238,201,92,.72); }
+    .zone.invariants { border-color: rgba(169,145,255,.72); }
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .command-card { padding: 11px; min-height: 190px; }
+    .command-card ol {
+      display: grid;
+      gap: 4px;
+      margin: 9px 0;
+      padding-left: 18px;
+      color: #dbe6de;
+      font-size: 12px;
+    }
+    .command-card p { margin-bottom: 0; }
+    .spine {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .spine-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      padding: 10px;
+    }
+    .spine-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 36px;
+      bottom: -9px;
+      width: 2px;
+      height: 9px;
+      background: var(--cyan);
+    }
+    .spine-step.decision { border-color: var(--orange); }
+    .spine-step.artifact { border-color: var(--purple); }
+    .spine-step.warning { border-color: var(--red); }
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--cyan);
+      border-radius: 999px;
+      color: var(--cyan);
+      font: 700 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .spine-step.warning .step-num { border-color: var(--red); color: var(--red); }
+    .spine-step.decision .step-num { border-color: var(--orange); color: var(--orange); }
+    .spine-step.artifact .step-num { border-color: var(--purple); color: var(--purple); }
+    .step-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .step-top h3 { margin: 0; }
+    .io-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .io-grid div {
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 6px;
+      padding: 8px;
+      background: rgba(255,255,255,.025);
+      min-height: 72px;
+    }
+    .io-grid p { margin: 3px 0 0; color: #d6e2d9; font-size: 12px; }
+    .subflows {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .flow-card { padding: 12px; }
+    .flow-card ul {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding-left: 18px;
+      color: #dbe6de;
+      font-size: 12px;
+    }
+    .formula {
+      margin: 8px 0;
+      border: 1px solid rgba(238,201,92,.45);
+      border-radius: 6px;
+      padding: 8px;
+      color: var(--yellow);
+      background: rgba(35,29,12,.55);
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .contract-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .contract-card {
+      padding: 10px;
+      border-color: rgba(238,201,92,.65);
+      min-height: 165px;
+    }
+    .contract-card h3 {
+      color: var(--yellow);
+      font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .contract-arrow {
+      margin: 8px 0;
+      color: var(--muted);
+      font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .invariant-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .invariant-card { padding: 10px; min-height: 126px; }
+    .pressure {
+      margin-top: 12px;
+      padding: 12px;
+      border-color: var(--red);
+      background: rgba(45,18,16,.62);
+    }
+    .pressure h2 { color: #ffb2ab; }
+    .pressure p { margin-bottom: 0; color: #ffd1cc; }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .legend div {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      color: var(--muted);
+      background: rgba(16,23,17,.86);
+    }
+    .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 10px;
+      margin-right: 6px;
+      border-radius: 3px;
+      vertical-align: -1px;
+    }
+    .sw-normal { border: 2px solid var(--cyan); }
+    .sw-decision { border: 2px solid var(--orange); }
+    .sw-artifact { border: 2px solid var(--purple); }
+    .sw-warning { border: 2px solid var(--red); }
+    .sw-contract { border: 2px solid var(--yellow); }
+    .sw-check { border: 2px solid var(--green); }
+    @media (max-width: 1100px) {
+      .header, .facts, .command-grid, .io-grid, .subflows, .contract-grid, .invariant-grid, .legend {
+        grid-template-columns: 1fr;
+        min-width: 0;
+      }
+      .step-top { display: block; }
+    }
+  </style>
+</head>
+<body><!-- kernel-view-nav:start -->
+<style>
+.kernel-view-nav{position:sticky;top:0;z-index:2147483647;display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;padding:.55rem .8rem;background:#0b0e13;border-bottom:1px solid #2a3544;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:.85rem;line-height:1.2;}
+.kernel-view-nav strong{color:#8b9bb0;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;margin-right:.35rem;}
+.kernel-view-nav a,.kernel-view-nav summary{color:#e8edf4;text-decoration:none;border-radius:6px;padding:.34rem .62rem;white-space:nowrap;cursor:pointer;}
+.kernel-view-nav a small{margin-left:.35rem;color:#8b9bb0;font-weight:400;}
+.kernel-view-nav a:hover,.kernel-view-nav summary:hover{background:#1b232e;color:#c084fc;}
+.kernel-view-nav a:hover small{color:#c084fc;}
+.kernel-view-nav a.is-active{background:#c084fc;color:#0b0e13;font-weight:700;}
+.kernel-view-nav a.is-active small{color:#0b0e13;}
+.kernel-view-nav .kernel-view-hub{margin-left:auto;color:#8b9bb0;}
+.kernel-view-more{position:relative;}
+.kernel-view-more summary{list-style:none;color:#8b9bb0;}
+.kernel-view-more summary::-webkit-details-marker{display:none;}
+.kernel-view-more summary::after{content:"...";margin-left:.25rem;}
+.kernel-view-more[open] summary{background:#1b232e;color:#c084fc;}
+.kernel-view-more div{position:absolute;top:calc(100% + .35rem);left:0;display:grid;gap:.25rem;min-width:220px;padding:.35rem;border:1px solid #2a3544;border-radius:8px;background:#0b0e13;box-shadow:0 10px 25px rgba(0,0,0,.24);}
+.kernel-view-more div a{display:block;}
+@media (max-width:700px){.kernel-view-nav a small{display:none}.kernel-view-nav .kernel-view-hub{margin-left:0}.kernel-view-more{position:static}.kernel-view-more div{position:static;display:flex;flex-wrap:wrap;min-width:0;box-shadow:none}}
+</style>
+<nav class="kernel-view-nav" aria-label="Kernel view navigation">
+  <strong>Kernel</strong><a class="kernel-view-link" href="assay.html">Assay<small>work surface</small></a><details class="kernel-view-more"><summary>Advanced</summary><div><a class="kernel-view-link" href="microscope.html">Trace<small>single run</small></a><a class="kernel-view-link is-active" href="architecture.html">Architecture<small>system map</small></a><a class="kernel-view-link" href="architecture-v2.html">Architecture v2<small>engineer map</small></a></div></details><a class="kernel-view-hub" href="/">Hub</a>
+</nav>
+<!-- kernel-view-nav:end -->
+  <main>
+    <header class="header">
+      <div>
+        <h1>Doppl Kernel System Architecture</h1>
+        <p class="sub">Runtime architecture generated from one real <code>RunTrace</code> plus source-level contracts. Shows entrypoints, orchestration, recursion, scoring, selection, lensing, trace consumers, and failure surfaces.</p>
+      </div>
+      <div class="facts" aria-label="current run facts">
+        <div class="fact"><span>trace schema</span><strong>kernel.run-trace.v2</strong></div>
+        <div class="fact"><span>fixtures</span><strong>4</strong></div>
+        <div class="fact"><span>candidates</span><strong>9</strong></div>
+        <div class="fact"><span>events</span><strong>7</strong></div>
+        <div class="fact"><span>failed checks</span><strong>0</strong></div>
+      </div>
+    </header>
+
+    <section class="zone">
+      <h2>Entrypoints And Consumers</h2>
+      <div class="command-grid">
+        
+    <article class="command-card">
+      <div class="kicker">entrypoint</div>
+      <h3>pnpm build</h3>
+      <code>tools/run.ts</code>
+      <ol><li>read all fixtures/*.json</li><li>assert each SeedFixture</li><li>buildRunTrace for each fixture</li><li>summarize each trace into board rows</li></ol>
+      <p>stdout proof board; process exits nonzero when aggregate failedChecks &gt; 0</p>
+    </article>
+        
+    <article class="command-card">
+      <div class="kicker">entrypoint</div>
+      <h3>pnpm proof:export</h3>
+      <code>tools/run.ts</code>
+      <ol><li>same path as pnpm build</li><li>write proof-board.json</li><li>write one run-trace.json per seed</li></ol>
+      <p>out/proof-board/** replay artifacts</p>
+    </article>
+        
+    <article class="command-card">
+      <div class="kicker">entrypoint</div>
+      <h3>pnpm serve</h3>
+      <code>tools/serve.ts</code>
+      <ol><li>build one RunTrace per fixture</li><li>serve Assay, Microscope, Architecture, Review, and /api/trace</li><li>save local verdicts through one server</li></ol>
+      <p>the only local UI front door</p>
+    </article>
+        
+    <article class="command-card">
+      <div class="kicker">entrypoint</div>
+      <h3>pnpm publish:html / serve:static</h3>
+      <code>tools/publish.ts + tools/static-server.ts</code>
+      <ol><li>render deploy HTML directly from the same view functions</li><li>write committed published/*.html pages</li><li>smoke-test the static deploy surface</li></ol>
+      <p>published/** static deploy pages</p>
+    </article>
+      </div>
+    </section>
+
+    <section class="zone system">
+      <h2>Runtime Spine In buildRunTrace</h2>
+      <div class="spine">
+        
+    <article class="spine-step normal">
+      <div class="step-num">01</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>load fixture(s) and assert SeedFixture</h3>
+          <code>tools/run.ts, tools/microscope/*.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>fixtures/*.json</p></div>
+          <div><span>output</span><p>SeedFixture</p></div>
+          <div><span>why it exists</span><p>Every command starts from the same fixture contract before entering src/. Build loads all fixtures; microscopes load one.</p></div>
+          <div><span>trace visibility</span><p>no TraceEvent emitted</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step artifact">
+      <div class="step-num">02</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>buildRunTrace(fixture, dial, options)</h3>
+          <code>src/trace.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>SeedFixture + Dial + RunCaps + LensConfig[]</p></div>
+          <div><span>output</span><p>RunTrace</p></div>
+          <div><span>why it exists</span><p>Orchestration spine. The one kernel path all proof surfaces consume.</p></div>
+          <div><span>trace visibility</span><p>no TraceEvent emitted</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step normal">
+      <div class="step-num">03</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>generateCandidatePool(generation=1)</h3>
+          <code>src/generate.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>SeedFixture.sourcePackets without parentCandidateId</p></div>
+          <div><span>output</span><p>SeedFixture -&gt; CandidatePool</p></div>
+          <div><span>why it exists</span><p>Turns source packets into candidate deltas; no-delta packets become lineage rejects before scoring.</p></div>
+          <div><span>trace visibility</span><p>5/5 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step normal">
+      <div class="step-num">04</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>scoreCandidatePool(g1)</h3>
+          <code>src/fitness.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>CandidatePool(g1)</p></div>
+          <div><span>output</span><p>CandidatePool -&gt; ScoredCandidatePool</p></div>
+          <div><span>why it exists</span><p>Computes novelty, grounding, component provenance, and decay without collapsing the two axes.</p></div>
+          <div><span>trace visibility</span><p>3/3 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step warning">
+      <div class="step-num">05</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>compareSelections(scored g1) to choose parents</h3>
+          <code>src/select.ts via src/trace.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>ScoredCandidatePool(g1)</p></div>
+          <div><span>output</span><p>parent candidate ids [c1, c8]</p></div>
+          <div><span>why it exists</span><p>This internal selection decides which candidates are allowed to produce generation 2 children.</p></div>
+          <div><span>trace visibility</span><p>no TraceEvent emitted</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step decision">
+      <div class="step-num">06</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>generateCandidatePool(generation=2)</h3>
+          <code>src/generate.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>sourcePackets where parentCandidateId is in selected parents</p></div>
+          <div><span>output</span><p>1 child candidates, 0 rejects</p></div>
+          <div><span>why it exists</span><p>Bounded by maxGenerations=2, maxChildrenPerParent=2, maxPopulation=12.</p></div>
+          <div><span>trace visibility</span><p>5/5 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step decision">
+      <div class="step-num">07</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>score g2 and classify generation quality</h3>
+          <code>src/fitness.ts + src/trace.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>CandidatePool(g2)</p></div>
+          <div><span>output</span><p>drifted: Generation-2 children changed direction without improving combined novelty+grounding.</p></div>
+          <div><span>why it exists</span><p>Children are compared to parents as improved, drifted, duplicated, or not_run before final merge.</p></div>
+          <div><span>trace visibility</span><p>3/3 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step normal">
+      <div class="step-num">08</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>mergePools and mergeScoredPools</h3>
+          <code>src/trace.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>g1 pool + optional g2 pool</p></div>
+          <div><span>output</span><p>9 candidates in combined pool</p></div>
+          <div><span>why it exists</span><p>Final selection must see one shared pool, not generation-specific winners.</p></div>
+          <div><span>trace visibility</span><p>no TraceEvent emitted</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step normal">
+      <div class="step-num">09</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>compareSelections(combined pool)</h3>
+          <code>src/select.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>ScoredCandidatePool(all generations)</p></div>
+          <div><span>output</span><p>ScoredCandidatePool + SelectionSchedule -&gt; SelectionComparison</p></div>
+          <div><span>why it exists</span><p>Explore and Proof schedules run over the same scored candidates and emit stable/replaced/dropped contrasts.</p></div>
+          <div><span>trace visibility</span><p>4/4 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step normal">
+      <div class="step-num">10</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>applyLenses(selected candidates)</h3>
+          <code>src/lens.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>SelectionComparison + LensConfig[]</p></div>
+          <div><span>output</span><p>ScoredCandidatePool + SelectionComparison -&gt; LensResult[]</p></div>
+          <div><span>why it exists</span><p>Feasibility is applied after selection so observer fit does not contaminate FitnessScore.</p></div>
+          <div><span>trace visibility</span><p>1/1 passed</p></div>
+        </div>
+      </div>
+    </article>
+    <article class="spine-step artifact">
+      <div class="step-num">11</div>
+      <div class="step-main">
+        <div class="step-top">
+          <h3>assemble RunTrace</h3>
+          <code>src/trace.ts</code>
+        </div>
+        <div class="io-grid">
+          <div><span>input</span><p>events + goalChecks + lineage + generations + comparison + lensResults</p></div>
+          <div><span>output</span><p>KernelRun + LensResult[] -&gt; RunTrace</p></div>
+          <div><span>why it exists</span><p>All tools consume one machine artifact instead of re-implementing the kernel readout.</p></div>
+          <div><span>trace visibility</span><p>2/2 passed</p></div>
+        </div>
+      </div>
+    </article>
+      </div>
+    </section>
+
+    <section class="zone">
+      <h2>Core Algorithms Hidden Inside The Spine</h2>
+      <div class="subflows">
+        <article class="flow-card">
+          <h3>Generation And Recursion</h3>
+          <ul>
+            <li>Generation 1 reads source packets without <code>parentCandidateId</code>.</li>
+            <li>No-delta packets become lineage rejects, not scored candidates.</li>
+            <li>Generation 2 reads fixture-authored packets whose <code>parentCandidateId</code> matches selected gen-1 parents.</li>
+            <li>Caps stop unbounded expansion: max generations, children per parent, and total population.</li>
+            <li>Current gen-2 quality: <strong>drifted</strong>.</li>
+          </ul>
+        </article>
+        <article class="flow-card">
+          <h3>Fitness</h3>
+          <div class="formula">novelty = .50 sourceAbsence + .30 substrateDistance + .20 hiddenDependents</div>
+          <div class="formula">grounding = .40 signalStrength + .25 mechanismClarity + .25 falsifiability - .10 riskPenalty</div>
+          <ul>
+            <li>Inputs are seed text, candidate text, claims, evidence, substrate, mechanism, and source packet refs.</li>
+            <li>Legacy metric hints can exist, but do not author score totals.</li>
+            <li>Decay is attached as engine-time metadata with half-life by subtype.</li>
+          </ul>
+        </article>
+        <article class="flow-card">
+          <h3>Selection And Lens</h3>
+          <ul>
+            <li>Explore schedule prioritizes novelty with a grounding floor.</li>
+            <li>Proof schedule prioritizes grounding with a novelty floor.</li>
+            <li>Both run over the same scored candidate pool.</li>
+            <li>Selector uses Pareto fronts before directional ranking and decay-adjusted score.</li>
+            <li>Current final contrast: 3 stable, 0 replaced, 0 dropped.</li>
+            <li>Lens result: Capstone demo fit, 3 selected candidates scored.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="zone contracts">
+      <h2>Boundary Contracts</h2>
+      <div class="contract-grid">
+        
+    <article class="contract-card">
+      <div class="kicker">generate</div>
+      <h3>SeedFixture</h3>
+      <code>kernel.seed-fixture.v2</code>
+      <div class="contract-arrow">into generate</div>
+      <h3>CandidatePool</h3>
+      <code>kernel.candidate-pool.v2</code>
+    </article>
+    <article class="contract-card">
+      <div class="kicker">fitness</div>
+      <h3>CandidatePool</h3>
+      <code>kernel.candidate-pool.v2</code>
+      <div class="contract-arrow">into fitness</div>
+      <h3>ScoredCandidatePool</h3>
+      <code>kernel.scored-candidate-pool.v2</code>
+    </article>
+    <article class="contract-card">
+      <div class="kicker">select</div>
+      <h3>ScoredCandidatePool + SelectionSchedule</h3>
+      <code>kernel.selection-input.v2</code>
+      <div class="contract-arrow">into select</div>
+      <h3>SelectionComparison</h3>
+      <code>kernel.selection-comparison.v2</code>
+    </article>
+    <article class="contract-card">
+      <div class="kicker">lens</div>
+      <h3>ScoredCandidatePool + SelectionComparison</h3>
+      <code>kernel.lens-input.v1</code>
+      <div class="contract-arrow">into lens</div>
+      <h3>LensResult[]</h3>
+      <code>kernel.lens-result.v1</code>
+    </article>
+    <article class="contract-card">
+      <div class="kicker">trace</div>
+      <h3>KernelRun + LensResult[]</h3>
+      <code>kernel.run.v2</code>
+      <div class="contract-arrow">into trace</div>
+      <h3>RunTrace</h3>
+      <code>kernel.run-trace.v2</code>
+    </article>
+      </div>
+    </section>
+
+    <section class="zone invariants">
+      <h2>Engineering Invariants And Failure Surfaces</h2>
+      <div class="invariant-grid">
+        
+    <article class="invariant-card">
+      <h3>Kernel core is machine-clean</h3>
+      <p>src/ emits typed process facts. Human summaries live in tools/microscope and out/**.</p>
+      <code>src/contracts/index.ts, tools/microscope/*.ts</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>One shared scored pool</h3>
+      <p>Explore and Proof must select from the same ScoredCandidatePool so contrasts mean something.</p>
+      <code>kernel.selection-input.v2 -&gt; kernel.selection-comparison.v2</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>Two fitness axes survive selection</h3>
+      <p>Novelty and grounding remain separate; directional score is a selection view, not a new fitness truth.</p>
+      <code>src/fitness.ts, src/select.ts</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>Lens is not fitness</h3>
+      <p>Feasibility is emitted as LensResult after selection and never written into FitnessScore.</p>
+      <code>kernel.lens-input.v1 -&gt; kernel.lens-result.v1</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>Goal checks are cheap tripwires</h3>
+      <p>TraceEvents carry checks; tools flatten them into RunTrace.goalChecks and build exits nonzero on failures.</p>
+      <code>src/trace.ts, tools/run.ts</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>Fixture failures are hard stops</h3>
+      <p>Bad fixtures, unknown operators, incomplete candidate packets, or empty fixture dirs throw before proof output pretends success.</p>
+      <code>assertSeedFixture, operatorFor, fixturePaths</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>No-delta is not hidden</h3>
+      <p>Source packets that do not produce candidates stay visible as lineage rejected nodes.</p>
+      <code>LineageLedger.rejected</code>
+    </article>
+        
+    <article class="invariant-card">
+      <h3>Generated artifacts are disposable</h3>
+      <p>out/** is for inspection and replay, not durable architecture truth.</p>
+      <code>ARTIFACTS.md</code>
+    </article>
+      </div>
+      <div class="pressure">
+        <h2>Architecture Pressure Found While Drawing This</h2>
+        <p>The gen-1 parent selection is a real control edge: it determines which generation-2 packets can run. Today it is recorded in <code>GenerationSummary</code>, but it is not emitted as a standalone <code>TraceEvent</code>. That is not a styling problem; it is a trace visibility gap for engineers debugging recursion.</p>
+      </div>
+    </section>
+
+    <footer class="legend" aria-label="legend">
+      <div><span class="swatch sw-normal"></span>normal kernel transform</div>
+      <div><span class="swatch sw-decision"></span>bounded decision point</div>
+      <div><span class="swatch sw-artifact"></span>artifact assembly</div>
+      <div><span class="swatch sw-warning"></span>visibility pressure</div>
+      <div><span class="swatch sw-contract"></span>contract boundary</div>
+      <div><span class="swatch sw-check"></span>goal check surface</div>
+    </footer>
+  </main>
+</body>
+</html>

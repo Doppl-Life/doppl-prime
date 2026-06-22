@@ -1,0 +1,187 @@
+{
+  "seed": {
+    "id": "seed-jack-yacht-perimeter-intrusion",
+    "title": "Jack yacht waterline intrusion",
+    "prompt": "Given the superyacht swimmer intrusion case, discover the non-obvious terrain before proposing security responses.",
+    "thesis": "A yacht with guards, CCTV, and crew was breached because its security perimeter was defined above the waterline and around expected boarding points.",
+    "goals": [
+      "recover perimeter definition as the hidden variable",
+      "separate more staffing from better sensing and response geometry",
+      "surface discovery branches a human can judge for fertility"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "perimeter-redefinition",
+      "label": "Perimeter redefinition",
+      "description": "Find the boundary that was assumed instead of the boundary the attacker used.",
+      "defaultSubtype": "cross_domain_transfer"
+    },
+    {
+      "id": "hidden-dependent",
+      "label": "Hidden dependent",
+      "description": "Find the secondary asset, behavior, or weak surface that depends on the hidden boundary.",
+      "defaultSubtype": "cross_domain_transfer"
+    },
+    {
+      "id": "response-compression",
+      "label": "Response compression",
+      "description": "Move detection into an immediate preset response before a human can improvise too late.",
+      "defaultSubtype": "cross_domain_transfer"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "jyp1",
+      "operatorId": "perimeter-redefinition",
+      "candidateId": "jyp-c1",
+      "title": "Waterline as perimeter",
+      "substrate": "unwatched water surface and water column",
+      "mechanism": "If the breach starts in the water, the true perimeter begins before the hull and below the deck cameras.",
+      "candidate": {
+        "title": "The perimeter starts in the water",
+        "thesis": "The breach is not a staffing failure; it exposes a perimeter definition failure where the protected volume stops at the deck instead of covering the water approach.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from guards and boarding points to the water volume as the real boundary.",
+        "changes": [
+          "deck perimeter -> water column perimeter",
+          "staffing failure -> boundary definition failure"
+        ]
+      },
+      "claims": [
+        "A real perimeter must cover the approach path an intruder can actually use.",
+        "The yacht was protected at known human entry points, not at the swimmer route."
+      ],
+      "evidence": [
+        "problem statement: the intruder entered from shore and swam to the vessel",
+        "problem statement: the breach did not come through a guarded point"
+      ]
+    },
+    {
+      "id": "jyp2",
+      "operatorId": "hidden-dependent",
+      "candidateId": "jyp-c2",
+      "title": "Tender as step",
+      "substrate": "tender left in water",
+      "mechanism": "If the tender becomes a ladder, a convenience object becomes the attacker's boarding infrastructure.",
+      "candidate": {
+        "title": "The tender is part of the perimeter",
+        "thesis": "The tender is not just equipment; when it sits in the water it becomes a bridge from the swimmer perimeter to the deck and should be sensed or treated as an exposed boundary object.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from intruder path to the overlooked object that converted water access into boarding access.",
+        "changes": [
+          "swimmer route -> tender-as-step",
+          "equipment -> perimeter object"
+        ]
+      },
+      "claims": [
+        "The breach used the tender as a step.",
+        "Objects left at the boundary can become attack infrastructure."
+      ],
+      "evidence": [
+        "problem statement: the intruder used the tender in the water as a step",
+        "problem statement: stranger reached the interior corridors"
+      ]
+    },
+    {
+      "id": "jyp3",
+      "operatorId": "response-compression",
+      "candidateId": "jyp-c3",
+      "title": "Classify before boarding",
+      "substrate": "late human attention",
+      "mechanism": "If the water is noisy with crew, guests, and marine life, the response must classify human approach quickly enough to act before boarding.",
+      "candidate": {
+        "title": "Detection must classify the water",
+        "thesis": "The security problem is not only sensing motion; it is classifying human-vs-everything-else in water and triggering a preset response before a swimmer reaches the hull.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from cameras to classification and response timing.",
+        "changes": [
+          "motion detection -> human classification",
+          "alert after boarding -> preset response before contact"
+        ]
+      },
+      "claims": [
+        "False alarms can make water sensing useless unless classification is built in.",
+        "The response has to happen before boarding, not after discovery inside."
+      ],
+      "evidence": [
+        "problem statement: ask for a design that avoids false alarms",
+        "problem statement: works at night and intercepts before boarding"
+      ]
+    },
+    {
+      "id": "jyp4",
+      "operatorId": "response-compression",
+      "candidateId": "jyp-c4",
+      "title": "Preset lockdown",
+      "substrate": "ad hoc response delay",
+      "mechanism": "If a stranger reaching the interior is catastrophic, the first alert should trigger an immediate compartment and crew protocol rather than discussion.",
+      "candidate": {
+        "title": "Water alert becomes interior lockdown",
+        "thesis": "A waterline detection event should trigger a pre-rehearsed lockdown and intercept pattern, because the distance between water contact and interior access can be short.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from detection as awareness to detection as immediate control action.",
+        "changes": [
+          "alert -> preset lockdown",
+          "human review -> compressed response"
+        ]
+      },
+      "claims": [
+        "Detection without a fast preset response still loses to the swimmer's path.",
+        "Interior containment is part of perimeter defense once water contact is detected."
+      ],
+      "evidence": [
+        "problem statement: stranger reaching the interior is catastrophic",
+        "known-solution summary in problem statement: sensor fusion tied to lockdown protocol"
+      ]
+    },
+    {
+      "id": "jyp5",
+      "operatorId": "perimeter-redefinition",
+      "title": "Add more deck cameras",
+      "substrate": "existing above-water camera coverage",
+      "mechanism": "Scales the visible deck system without covering the water approach that created the breach.",
+      "noDeltaReason": "No discovery delta: it repeats the obvious answer the case marks as insufficient."
+    },
+    {
+      "id": "jyp6",
+      "operatorId": "hidden-dependent",
+      "parentCandidateId": "jyp-c2",
+      "generation": 2,
+      "candidateId": "jyp-c2a",
+      "title": "Tender contact trigger",
+      "substrate": "boundary object contact",
+      "mechanism": "If the tender is the bridge, contact with it can become a high-signal trigger that is less noisy than watching the whole water surface equally.",
+      "candidate": {
+        "title": "Instrument the bridge, not only the water",
+        "thesis": "The tender-as-step branch sharpens into a sensing strategy: instrument or procedurally control the objects that convert water approach into boarding access.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Sharpened the tender insight into a narrower detection surface.",
+        "changes": [
+          "tender as weak object -> tender as sensor trigger",
+          "wide water scan -> bridge-object monitoring"
+        ]
+      },
+      "claims": [
+        "Boundary objects can produce clearer signals than open-water motion.",
+        "The attacker needs a transition object; monitoring that object compresses the problem."
+      ],
+      "evidence": [
+        "problem statement: intruder used the tender as a step",
+        "problem statement: avoid false alarms while intercepting before boarding"
+      ],
+      "observedAt": "2026-06-18"
+    }
+  ]
+}

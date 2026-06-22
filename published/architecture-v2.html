@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doppl Kernel — Engineer's System Map (v2)</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg:#080b09; --panel:#101711; --panel-2:#151d17; --panel-3:#0d130e;
+      --ink:#f1f5ee; --muted:#a9b8ad; --line:#334339; --line-soft:#23302700;
+      --cyan:#35c2e5; --green:#43d17d; --yellow:#eec95c; --orange:#e98a3c;
+      --red:#ef6d64; --purple:#a991ff; --slate:#8ea3b0; --gray:#5b6b7a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      display:flex; flex-direction:column; height:100vh; overflow:hidden;
+    }
+    code{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#d5f2dc}
+    .chrome{padding:12px 16px 10px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0b110c,#080b09)}
+    .titlerow{display:flex;gap:18px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+    h1{margin:0 0 3px;font-size:20px;letter-spacing:-.2px}
+    .sub{margin:0;max-width:760px;color:var(--muted);font-size:12px}
+    .facts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .chip{border:1px solid var(--line);border-radius:999px;padding:4px 9px;font-size:11px;color:var(--muted);background:rgba(16,23,17,.7);white-space:nowrap}
+    .chip b{color:var(--ink);font-weight:600}
+    .toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:9px}
+    .legend{display:flex;gap:5px;flex-wrap:wrap}
+    .lg{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:6px;padding:3px 7px;font-size:11px;color:var(--muted);background:rgba(16,23,17,.6);cursor:pointer;user-select:none}
+    .lg:hover{border-color:var(--muted)}
+    .lg.off{opacity:.32}
+    .lg .ln{width:20px;height:0;border-top-width:2px;border-top-style:solid;display:inline-block}
+    .lg .sw{width:13px;height:11px;border-radius:3px;border:2px solid}
+    .lg .dia{width:11px;height:11px;transform:rotate(45deg);border:2px solid var(--red)}
+    .controls{display:flex;gap:6px;align-items:center;margin-left:auto}
+    .btn{border:1px solid var(--line);background:rgba(16,23,17,.8);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer}
+    .btn:hover{border-color:var(--cyan);color:var(--cyan)}
+    .hint{color:var(--muted);font-size:11px}
+    .stage{position:relative;flex:1;overflow:hidden;cursor:grab;background:
+      linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px) 0 0/26px 26px,
+      linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px) 0 0/26px 26px,var(--bg)}
+    .stage.grabbing{cursor:grabbing}
+    #canvas{width:100%;height:100%;display:block}
+    /* nodes */
+    .node rect,.node path.shell{transition:opacity .12s}
+    .n-title{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--ink)}
+    .n-sub{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:var(--muted)}
+    .n-tag{font:10px ui-monospace,monospace;fill:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .z-label{font:700 12px -apple-system,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+    .z-sub{font:11px -apple-system,"Segoe UI",sans-serif;fill:var(--muted)}
+    .e-label{font:10px ui-monospace,monospace;fill:#cde0d4}
+    .e-label.bg{stroke:#0b110c;stroke-width:4;paint-order:stroke}
+    .edge{fill:none}
+    .dim{opacity:.12 !important}
+    .hot{filter:drop-shadow(0 0 5px rgba(53,194,229,.55))}
+    /* minimap */
+    .minimap{position:absolute;right:12px;bottom:12px;width:236px;height:150px;border:1px solid var(--line);border-radius:8px;background:rgba(8,11,9,.86);overflow:hidden;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+    .minimap svg{width:100%;height:100%;display:block;cursor:pointer}
+    .mm-view{fill:rgba(53,194,229,.14);stroke:var(--cyan);stroke-width:6}
+    .badge{position:absolute;left:12px;bottom:12px;border:1px solid var(--line);border-radius:8px;background:rgba(8,11,9,.86);padding:7px 10px;font-size:11px;color:var(--muted);max-width:300px}
+    .badge b{color:var(--ink)}
+    .static-note{margin-top:8px;border:1px solid var(--yellow);border-radius:7px;background:rgba(238,201,92,.08);color:#f6df91;padding:7px 9px;font-size:11px;max-width:980px}
+  </style>
+</head>
+<body><!-- kernel-view-nav:start -->
+<style>
+.kernel-view-nav{position:sticky;top:0;z-index:2147483647;display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;padding:.55rem .8rem;background:#0b0e13;border-bottom:1px solid #2a3544;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:.85rem;line-height:1.2;}
+.kernel-view-nav strong{color:#8b9bb0;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;margin-right:.35rem;}
+.kernel-view-nav a,.kernel-view-nav summary{color:#e8edf4;text-decoration:none;border-radius:6px;padding:.34rem .62rem;white-space:nowrap;cursor:pointer;}
+.kernel-view-nav a small{margin-left:.35rem;color:#8b9bb0;font-weight:400;}
+.kernel-view-nav a:hover,.kernel-view-nav summary:hover{background:#1b232e;color:#c084fc;}
+.kernel-view-nav a:hover small{color:#c084fc;}
+.kernel-view-nav a.is-active{background:#c084fc;color:#0b0e13;font-weight:700;}
+.kernel-view-nav a.is-active small{color:#0b0e13;}
+.kernel-view-nav .kernel-view-hub{margin-left:auto;color:#8b9bb0;}
+.kernel-view-more{position:relative;}
+.kernel-view-more summary{list-style:none;color:#8b9bb0;}
+.kernel-view-more summary::-webkit-details-marker{display:none;}
+.kernel-view-more summary::after{content:"...";margin-left:.25rem;}
+.kernel-view-more[open] summary{background:#1b232e;color:#c084fc;}
+.kernel-view-more div{position:absolute;top:calc(100% + .35rem);left:0;display:grid;gap:.25rem;min-width:220px;padding:.35rem;border:1px solid #2a3544;border-radius:8px;background:#0b0e13;box-shadow:0 10px 25px rgba(0,0,0,.24);}
+.kernel-view-more div a{display:block;}
+@media (max-width:700px){.kernel-view-nav a small{display:none}.kernel-view-nav .kernel-view-hub{margin-left:0}.kernel-view-more{position:static}.kernel-view-more div{position:static;display:flex;flex-wrap:wrap;min-width:0;box-shadow:none}}
+</style>
+<nav class="kernel-view-nav" aria-label="Kernel view navigation">
+  <strong>Kernel</strong><a class="kernel-view-link" href="assay.html">Assay<small>work surface</small></a><details class="kernel-view-more"><summary>Advanced</summary><div><a class="kernel-view-link" href="microscope.html">Trace<small>single run</small></a><a class="kernel-view-link" href="architecture.html">Architecture<small>system map</small></a><a class="kernel-view-link is-active" href="architecture-v2.html">Architecture v2<small>engineer map</small></a></div></details><a class="kernel-view-hub" href="/">Hub</a>
+</nav>
+<!-- kernel-view-nav:end -->
+  <div class="chrome">
+    <div class="titlerow">
+      <div>
+        <h1>Doppl Kernel — Engineer's System Map</h1>
+        <p class="sub">Data flow, control flow and typed boundary contracts of the kernel as it actually runs in <code>src/</code>. One spine — <em>generation under selection</em> — wired from entrypoints, through the bounded 2-generation loop, out to disposable trace artifacts. Drag to pan, scroll to zoom, hover a box to trace its wires.</p>
+        <p class="static-note"><b>Static design artifact.</b> This map is hand-authored and not derived from the current <code>RunTrace</code>; use <code>/api/trace</code> for live trace truth.</p>
+      </div>
+      <div class="facts" aria-label="reference run facts">
+        <span class="chip"><b>kernel.run-trace.v2</b></span>
+        <span class="chip">fixtures <b>4</b></span>
+        <span class="chip">candidates <b>9</b></span>
+        <span class="chip">caps <b>2 / 2 / 12</b></span>
+        <span class="chip">dial <b>diverge</b></span>
+        <span class="chip">gen-2 <b>drifted</b></span>
+        <span class="chip">final <b>3 stable · 0 replaced · 0 dropped</b></span>
+        <span class="chip">failed checks <b>0</b></span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="legend" id="legend" aria-label="legend — click an edge type to isolate it"></div>
+      <div class="controls">
+        <span class="hint" id="zoomLabel">100%</span>
+        <button class="btn" id="zoomOut">–</button>
+        <button class="btn" id="zoomIn">+</button>
+        <button class="btn" id="fit">Fit</button>
+        <button class="btn" id="reset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="badge"><b>How to read:</b> solid = data &amp; contracts moving forward · green = orchestration/recursion control · dashed purple = injected config · red = hard-stop throws · dashed grey = future product scope, not here.</div>
+    <div class="minimap"><svg id="minimap" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  const SVGNS="http://www.w3.org/2000/svg";
+  const CONTENT_W=2700, CONTENT_H=1790;
+
+  const COLOR={data:"#35c2e5",contract:"#eec95c",control:"#43d17d",config:"#a991ff",
+    check:"#e98a3c",fail:"#ef6d64",consume:"#8ea3b0",planned:"#5b6b7a"};
+
+  // ----- ZONES -----
+  const zones=[
+    {id:"z_entry",label:"Canonical entrypoints",sub:"one front door per job; renderers stay internal",x:30,y:64,w:540,h:286,color:"#8ea3b0"},
+    {id:"z_config",label:"Run configuration (injected)",sub:"caps · dial · schedule · policy · lens · clock",x:600,y:64,w:1500,h:286,color:"#a991ff"},
+    {id:"z_store",label:"Fixture seed store",sub:"datastore",x:30,y:382,w:300,h:430,color:"#35c2e5"},
+    {id:"z_kernel",label:"Kernel — generation under selection",sub:"src/trace.ts orchestrates src/{generate,fitness,select,lens}.ts",x:360,y:382,w:1740,h:430,color:"#43d17d"},
+    {id:"z_consume",label:"Trace consumers · artifacts",sub:"out/** is disposable, regenerated from RunTrace",x:2130,y:382,w:540,h:430,color:"#a991ff"},
+    {id:"z_fail",label:"Failure surfaces — hard stops (throw / exit 1)",sub:"bad input never reaches a green proof",x:360,y:842,w:1740,h:118,color:"#ef6d64"},
+    {id:"z_life",label:"Lifecycle state machines",sub:"the states a run, a generation, a candidate and a selection move through",x:30,y:992,w:2640,h:368,color:"#35c2e5"},
+    {id:"z_future",label:"Out of scope here - full product system",sub:"kernel owns runtime, contracts, selection, scoring, reproduction, and deterministic fixture proof",x:30,y:1392,w:2640,h:372,color:"#5b6b7a"},
+  ];
+
+  // ----- NODES -----
+  const nodes=[
+    // entrypoints
+    {id:"e_build",zone:"z_entry",kind:"command",x:48,y:118,w:250,h:40,title:"pnpm build",sub:"typecheck + proof"},
+    {id:"e_proof",zone:"z_entry",kind:"command",x:48,y:166,w:250,h:40,title:"pnpm proof[:export]",sub:"tools/run.ts · all fixtures"},
+    {id:"e_micro",zone:"z_entry",kind:"command",x:48,y:214,w:250,h:40,title:"pnpm serve",sub:"serve.ts · only local UI"},
+    {id:"e_walk",zone:"z_entry",kind:"command",x:48,y:262,w:250,h:40,title:"pnpm case-study:lint",sub:"seed leakage gate"},
+    {id:"e_arch",zone:"z_entry",kind:"command",x:48,y:310,w:250,h:40,title:"pnpm publish:html",sub:"publish.ts → published/"},
+    {id:"e_assay",zone:"z_entry",kind:"command",x:312,y:118,w:242,h:40,title:"pnpm typecheck",sub:"tsc --noEmit"},
+    {id:"e_pub",zone:"z_entry",kind:"command",x:312,y:166,w:242,h:40,title:"pnpm serve:static",sub:"static-server.ts"},
+    {id:"e_kc",zone:"z_entry",kind:"command",x:312,y:214,w:242,h:40,title:"pnpm proof -- --fixture",sub:"single-fixture debug"},
+
+    // config
+    {id:"c_caps",zone:"z_config",kind:"config",x:628,y:120,w:300,h:96,title:"RunCaps",sub:"maxGenerations 2\nmaxChildrenPerParent 2\nmaxPopulation 12"},
+    {id:"c_policy",zone:"z_config",kind:"config",x:960,y:120,w:330,h:96,title:"ScoringPolicy",sub:"deterministic-text-source v1\nnov .50/.30/.20 · grnd .40/.25/.25/-.10"},
+    {id:"c_clock",zone:"z_config",kind:"config",x:960,y:230,w:330,h:60,title:"asOf clock",sub:"2026-06-21 · decay half-life by subtype"},
+    {id:"c_dial",zone:"z_config",kind:"config",x:1322,y:120,w:300,h:60,title:"Dial",sub:"diverge | converge"},
+    {id:"c_sched",zone:"z_config",kind:"config",x:1322,y:192,w:300,h:98,title:"SelectionSchedule",sub:"keep 3 · floor div grnd≥.35 / con nov≥.25\nPareto front → directional rank"},
+    {id:"c_lens",zone:"z_config",kind:"config",x:1654,y:120,w:300,h:96,title:"LensConfig",sub:"capstoneDemoLens\nobserver-relative feasibility"},
+
+    // store
+    {id:"d_store",zone:"z_store",kind:"datastore",x:54,y:432,w:252,h:120,title:"FixtureSeedStore",sub:"fixtures/*.json\nai-power · glp1 · starship · fsd"},
+    {id:"d_assert",zone:"z_store",kind:"gate",x:54,y:576,w:252,h:54,title:"assertSeedFixture",sub:"validate before src/ is entered"},
+    {id:"d_note",zone:"z_store",kind:"note",x:54,y:648,w:252,h:140,title:"SourcePacket",sub:"fixture-authored idea deltas.\ngen-1 = no parentCandidateId.\ngen-2 = parentCandidateId ∈\nselected gen-1 parents."},
+
+    // kernel
+    {id:"k_orch",zone:"z_kernel",kind:"orchestrator",x:382,y:470,w:196,h:128,title:"buildRunTrace",sub:"src/trace.ts\nthe one spine all\nproof surfaces consume"},
+    {id:"k_gen",zone:"z_kernel",kind:"module",x:640,y:470,w:228,h:128,title:"generate",sub:"generateCandidatePool\noperators · no-delta→reject\ncaps applied here"},
+    {id:"k_fit",zone:"z_kernel",kind:"module",x:952,y:470,w:228,h:128,title:"fitness",sub:"scoreCandidatePool\nnovelty ⟂ grounding\n+ decay (engine time)"},
+    {id:"k_sel",zone:"z_kernel",kind:"module",x:1264,y:470,w:228,h:128,title:"select",sub:"compareSelections\nrun 2×: parents(g1) +\nfinal(combined pool)"},
+    {id:"k_lens",zone:"z_kernel",kind:"module",x:1576,y:470,w:214,h:128,title:"lens",sub:"applyLenses\nfeasibility AFTER select\nnever in FitnessScore"},
+    {id:"k_trace",zone:"z_kernel",kind:"module",x:1858,y:470,w:214,h:128,title:"assemble",sub:"RunTrace\nlineage · generations ·\nchecks · comparison · lens"},
+    {id:"k_merge",zone:"z_kernel",kind:"join",x:1042,y:662,w:200,h:46,title:"mergePools",sub:"g1 + g2 → one pool"},
+
+    // consumers
+    {id:"a_rt",zone:"z_consume",kind:"artifact",x:2152,y:430,w:496,h:64,title:"RunTrace",sub:"kernel.run-trace.v2 — the single machine artifact"},
+    {id:"a_proof",zone:"z_consume",kind:"artifact",x:2152,y:520,w:240,h:54,title:"proof-board.json",sub:"+ <seed>/run-trace.json"},
+    {id:"a_micro",zone:"z_consume",kind:"artifact",x:2152,y:586,w:240,h:54,title:"served /microscope",sub:"view.ts renderer"},
+    {id:"a_arch",zone:"z_consume",kind:"artifact",x:2152,y:652,w:240,h:54,title:"served /architecture",sub:"architecture.ts renderer"},
+    {id:"a_walk",zone:"z_consume",kind:"artifact",x:2408,y:520,w:240,h:54,title:"served /review",sub:"assay-report.ts renderer"},
+    {id:"a_assay",zone:"z_consume",kind:"artifact",x:2408,y:586,w:240,h:54,title:"served /assay",sub:"assay.ts renderer"},
+    {id:"a_pub",zone:"z_consume",kind:"artifact",x:2408,y:652,w:240,h:54,title:"published/*.html",sub:"publish.ts"},
+
+    // failure surfaces
+    {id:"f_fixture",zone:"z_fail",kind:"fail",x:392,y:874,w:300,h:62,title:"bad / empty fixture dir",sub:"assertSeedFixture · fixturePaths"},
+    {id:"f_op",zone:"z_fail",kind:"fail",x:712,y:874,w:300,h:62,title:"unknown operator",sub:"operatorFor()"},
+    {id:"f_packet",zone:"z_fail",kind:"fail",x:1032,y:874,w:300,h:62,title:"incomplete packet",sub:"generateCandidate()"},
+    {id:"f_bound",zone:"z_fail",kind:"fail",x:1352,y:874,w:300,h:62,title:"unknown boundary",sub:"getBoundary()"},
+    {id:"f_check",zone:"z_fail",kind:"fail",x:1700,y:874,w:372,h:62,title:"failed goalCheck → exit 1",sub:"run.ts sets process.exitCode"},
+
+    // future product scope / out-of-scope
+    {id:"p_model",zone:"z_future",kind:"planned",x:54,y:1470,w:300,h:78,title:"Model gateway",sub:"real LLM generation.\nhere: fixture packets +\ndeterministic scoring"},
+    {id:"p_verify",zone:"z_future",kind:"planned",x:372,y:1470,w:300,h:78,title:"Verifier council",sub:"full checks.\nhere: cheap goalCheck\ntripwires only"},
+    {id:"p_persist",zone:"z_future",kind:"planned",x:690,y:1470,w:300,h:78,title:"Persistence",sub:"database + projections.\nhere: out/** JSON,\ndisposable"},
+    {id:"p_neo",zone:"z_future",kind:"planned",x:1008,y:1470,w:300,h:78,title:"Lineage graph",sub:"durable graph store.\nhere: in-memory\nLineageLedger"},
+    {id:"p_api",zone:"z_future",kind:"planned",x:1326,y:1470,w:300,h:78,title:"Backend API",sub:"served product flows.\nhere: CLI/server tools only"},
+    {id:"p_ui",zone:"z_future",kind:"planned",x:1644,y:1470,w:300,h:78,title:"Frontend dashboard",sub:"product dashboard.\nhere: static HTML\nmicroscope"},
+    {id:"p_obs",zone:"z_future",kind:"planned",x:1962,y:1470,w:300,h:78,title:"Observability",sub:"production telemetry.\nhere: goalChecks +\nRunTrace"},
+    {id:"p_sec",zone:"z_future",kind:"planned",x:2280,y:1470,w:300,h:78,title:"Security boundaries",sub:"auth + deploy policy.\nhere: local proof rules"},
+    {id:"p_built",zone:"z_future",kind:"builtnote",x:54,y:1592,w:2526,h:120,title:"BUILT HERE",sub:"runtime kernel (generate -> fitness -> select -> lens -> trace) · selection, scoring & reproduction · contracts and event model (the kernel.*.v2 schemas) · domain model and lifecycle state machines - all deterministic, fixture-driven, emitted as one RunTrace and rendered by static HTML tools."},
+  ];
+
+  // ----- EDGES -----
+  const edges=[
+    // entrypoints orchestrate buildRunTrace (bus)
+    {from:{id:"e_proof",side:"r"},to:{id:"k_orch",side:"l"},kind:"control",via:[{x:592,y:186},{x:592,y:534}]},
+    {from:{id:"e_micro",side:"r"},to:{id:"k_orch",side:"l"},kind:"control",via:[{x:584,y:234},{x:584,y:520}]},
+    {from:{id:"e_arch",side:"r"},to:{id:"k_orch",side:"l"},kind:"control",via:[{x:576,y:330},{x:576,y:548}]},
+
+    // store → generate (data + contract)
+    {from:{id:"d_store",side:"r"},to:{id:"k_gen",side:"t"},kind:"contract",label:"SeedFixture · kernel.seed-fixture.v2",via:[{x:754,y:492},{x:754,y:454}]},
+    {from:{id:"d_store",side:"b"},to:{id:"d_assert",side:"t"},kind:"data"},
+
+    // orchestrator control → modules
+    {from:{id:"k_orch",side:"r"},to:{id:"k_gen",side:"l"},kind:"control"},
+
+    // forward pipeline (typed contracts)
+    {from:{id:"k_gen",side:"r"},to:{id:"k_fit",side:"l"},kind:"contract",label:"CandidatePool · kernel.candidate-pool.v2"},
+    {from:{id:"k_fit",side:"r"},to:{id:"k_sel",side:"l"},kind:"contract",label:"ScoredCandidatePool · kernel.scored-candidate-pool.v2"},
+    {from:{id:"k_sel",side:"r"},to:{id:"k_lens",side:"l"},kind:"contract",label:"SelectionComparison · kernel.selection-comparison.v2"},
+    {from:{id:"k_lens",side:"r"},to:{id:"k_trace",side:"l"},kind:"contract",label:"LensResult[] · kernel.lens-result.v1"},
+
+    // recursion loop: select(parents g1) → generate(g2) → ... → merge → select(final)
+    {from:{id:"k_sel",side:"b"},to:{id:"k_gen",side:"b"},kind:"control",label:"gen-1 parents authorize gen-2 packets · bounded by caps",via:[{x:1378,y:636},{x:754,y:636}]},
+    {from:{id:"k_fit",side:"b"},to:{id:"k_merge",side:"l"},kind:"data",via:[{x:1066,y:636}]},
+    {from:{id:"k_merge",side:"r"},to:{id:"k_sel",side:"b"},kind:"data",label:"combined g1+g2",via:[{x:1322,y:685}]},
+
+    // config injections
+    {from:{id:"c_caps",side:"b"},to:{id:"k_gen",side:"t"},kind:"config"},
+    {from:{id:"c_policy",side:"b"},to:{id:"k_fit",side:"t"},kind:"config"},
+    {from:{id:"c_clock",side:"b"},to:{id:"k_fit",side:"t"},kind:"config",via:[{x:1090,y:330}]},
+    {from:{id:"c_dial",side:"b"},to:{id:"k_sel",side:"t"},kind:"config"},
+    {from:{id:"c_sched",side:"b"},to:{id:"k_sel",side:"t"},kind:"config",via:[{x:1444,y:300}]},
+    {from:{id:"c_lens",side:"b"},to:{id:"k_lens",side:"t"},kind:"config"},
+
+    // emit RunTrace + consumers
+    {from:{id:"k_trace",side:"r"},to:{id:"a_rt",side:"l"},kind:"contract",label:"kernel.run.v2 → run-trace.v2"},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_proof",side:"t"},kind:"consume"},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_micro",side:"t"},kind:"consume",via:[{x:2272,y:512}]},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_arch",side:"t"},kind:"consume",via:[{x:2272,y:506}]},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_walk",side:"t"},kind:"consume",via:[{x:2528,y:506}]},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_assay",side:"t"},kind:"consume",via:[{x:2528,y:512}]},
+    {from:{id:"a_rt",side:"b"},to:{id:"a_pub",side:"t"},kind:"consume",via:[{x:2560,y:506}]},
+
+    // failure tripwires
+    {from:{id:"d_assert",side:"b"},to:{id:"f_fixture",side:"t"},kind:"fail",via:[{x:180,y:820},{x:542,y:820}]},
+    {from:{id:"k_gen",side:"b"},to:{id:"f_op",side:"t"},kind:"fail",via:[{x:862,y:830}]},
+    {from:{id:"k_gen",side:"b"},to:{id:"f_packet",side:"t"},kind:"fail",via:[{x:1182,y:836}]},
+    {from:{id:"k_trace",side:"b"},to:{id:"f_check",side:"t"},kind:"fail",via:[{x:1886,y:840}]},
+  ];
+
+  // ----- LIFECYCLE LANES -----
+  const lanes=[
+    {label:"RUN",color:"#35c2e5",y:1036,seq:[
+      {t:"load fixture"},{t:"generate g1"},{t:"score g1"},{t:"select parents"},{t:"generate g2"},
+      {t:"score g2"},{t:"merge pools"},{t:"select final"},{t:"apply lens"},{t:"RunTrace"},{t:"✓ finite caps",c:"#43d17d"}]},
+    {label:"GENERATION",color:"#e98a3c",y:1132,seq:[
+      {t:"not_run"},{alt:[{t:"improved",c:"#43d17d"},{t:"drifted ◀ now",c:"#e98a3c"},{t:"duplicated",c:"#8ea3b0"}]},{t:"stoppedBy cap",c:"#8ea3b0"}]},
+    {label:"CANDIDATE",color:"#43d17d",y:1228,seq:[
+      {t:"source packet"},{alt:[{t:"generated",c:"#43d17d"},{t:"rejected · no-delta",c:"#ef6d64"}]},
+      {t:"scored\nnov+grnd+decay"},{alt:[{t:"selected",c:"#43d17d"},{t:"floored",c:"#e98a3c"},{t:"not-kept",c:"#8ea3b0"}]},{t:"lensed (if selected)",c:"#a991ff"}]},
+    {label:"SELECTION",color:"#a991ff",y:1324,seq:[
+      {t:"per selected"},{alt:[{t:"stable",c:"#43d17d"},{t:"replaced",c:"#e98a3c"},{t:"dropped",c:"#ef6d64"}]}]},
+  ];
+
+  // ====== build DOM ======
+  const svg=document.getElementById("canvas");
+  const mm=document.getElementById("minimap");
+  const N={}; nodes.forEach(n=>N[n.id]=n);
+
+  function el(tag,attrs,parent){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+  function anchor(id,side){const n=N[id];if(!n)return[0,0];const{x,y,w,h}=n;switch(side){
+    case"l":return[x,y+h/2];case"r":return[x+w,y+h/2];case"t":return[x+w/2,y];case"b":return[x+w/2,y+h];
+    case"tl":return[x,y];case"tr":return[x+w,y];case"bl":return[x,y+h];case"br":return[x+w,y+h];default:return[x+w/2,y+h/2];}}
+  function pathFor(e){
+    const fs=e.from.side||"r", ts=e.to.side||"l";
+    const[ax,ay]=anchor(e.from.id,fs), [bx,by]=anchor(e.to.id,ts);
+    let d="M "+ax+" "+ay;
+    if(e.via){e.via.forEach(p=>d+=" L "+p.x+" "+p.y); d+=" L "+bx+" "+by; return d;}
+    const horiz=s=>s==="l"||s==="r", vert=s=>s==="t"||s==="b";
+    if(horiz(fs)&&horiz(ts)){const mx=(ax+bx)/2; d+=" L "+mx+" "+ay+" L "+mx+" "+by+" L "+bx+" "+by;}
+    else if(vert(fs)&&vert(ts)){const my=(ay+by)/2; d+=" L "+ax+" "+my+" L "+bx+" "+my+" L "+bx+" "+by;}
+    else if(vert(fs)){d+=" L "+ax+" "+by+" L "+bx+" "+by;}
+    else{d+=" L "+bx+" "+ay+" L "+bx+" "+by;}
+    return d;}
+
+  // defs (arrow markers per kind)
+  const defs=el("defs",{},svg);
+  Object.keys(COLOR).forEach(k=>{
+    const m=el("marker",{id:"ar-"+k,viewBox:"0 0 10 10",refX:"8.5",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"},defs);
+    el("path",{d:"M0 0 L10 5 L0 10 z",fill:COLOR[k]},m);
+  });
+
+  const root=el("g",{id:"viewport"},svg);
+  const gZones=el("g",{},root), gEdges=el("g",{},root), gLife=el("g",{},root), gNodes=el("g",{},root);
+
+  // zones
+  zones.forEach(z=>{
+    el("rect",{x:z.x,y:z.y,width:z.w,height:z.h,rx:14,fill:"rgba(255,255,255,.012)",stroke:z.color,"stroke-opacity":".55","stroke-width":1.4,"stroke-dasharray":z.id==="z_future"?"7 6":"0"},gZones);
+    const t=el("text",{x:z.x+16,y:z.y+24,class:"z-label",fill:z.color},gZones);t.textContent=z.label;
+    const s=el("text",{x:z.x+16,y:z.y+42,class:"z-sub"},gZones);s.textContent=z.sub;
+  });
+
+  // edges
+  const edgeEls=[];
+  edges.forEach((e,i)=>{
+    const dash = e.kind==="config"?"2 5": e.kind==="fail"?"4 5": e.kind==="planned"?"6 6": e.kind==="control"&&e.label?"7 6":"0";
+    const p=el("path",{d:pathFor(e),class:"edge","stroke":COLOR[e.kind],"stroke-width":e.kind==="contract"?2.4:1.8,
+      "stroke-dasharray":dash,"marker-end":"url(#ar-"+e.kind+")","stroke-linejoin":"round","stroke-linecap":"round","data-kind":e.kind,"data-from":e.from.id,"data-to":e.to.id},gEdges);
+    edgeEls.push(p);
+    if(e.label){
+      const pts=[anchor(e.from.id,e.from.side||"r")].concat(e.via||[],[anchor(e.to.id,e.to.side||"l")]);
+      const mid=pts[Math.floor(pts.length/2)-(pts.length%2?0:1)]||pts[0];
+      let lx=mid[0]!==undefined?mid[0]:mid.x, ly=(mid[1]!==undefined?mid[1]:mid.y);
+      // for forward pipeline labels, place above midpoint of the straight run
+      const a=anchor(e.from.id,e.from.side||"r"), b=anchor(e.to.id,e.to.side||"l");
+      if(!e.via){lx=(a[0]+b[0])/2; ly=(a[1]+b[1])/2 - 9;}
+      const bg=el("text",{x:lx,y:ly,class:"e-label bg","text-anchor":"middle","data-kind":e.kind,"data-from":e.from.id,"data-to":e.to.id},gEdges);bg.textContent=e.label;
+      const tx=el("text",{x:lx,y:ly,class:"e-label","text-anchor":"middle","data-kind":e.kind,"data-from":e.from.id,"data-to":e.to.id},gEdges);tx.textContent=e.label;
+      edgeEls.push(bg,tx);
+    }
+  });
+
+  // node renderer
+  function wrap(textEl,sub,x,y,lh){
+    sub.split("\n").forEach((line,i)=>{
+      const ts=el("tspan",{x:x,dy:i===0?0:lh},textEl);ts.textContent=line;
+    });
+  }
+  const nodeEls={};
+  function drawNode(n){
+    const g=el("g",{class:"node","data-id":n.id,style:"cursor:pointer"},gNodes);
+    let stroke=COLOR.control, fill="var(--panel-2)", dash="0", rx=10;
+    if(n.kind==="command"){stroke=COLOR.consume;fill="rgba(20,26,21,.92)";rx=20;}
+    else if(n.kind==="config"){stroke=COLOR.config;fill="rgba(18,16,28,.6)";dash="2 4";}
+    else if(n.kind==="datastore"){stroke=COLOR.data;fill="rgba(12,24,28,.55)";}
+    else if(n.kind==="gate"){stroke=COLOR.yellow||"#eec95c";stroke="#eec95c";fill="rgba(28,24,10,.5)";}
+    else if(n.kind==="note"){stroke="#3a4a3f";fill="rgba(255,255,255,.02)";dash="3 4";}
+    else if(n.kind==="orchestrator"){stroke=COLOR.control;fill="rgba(16,30,21,.85)";}
+    else if(n.kind==="module"){stroke=COLOR.control;fill="rgba(16,26,18,.92)";}
+    else if(n.kind==="join"){stroke=COLOR.data;fill="rgba(12,22,26,.6)";rx=8;}
+    else if(n.kind==="artifact"){stroke=COLOR.config;fill="rgba(18,16,28,.55)";}
+    else if(n.kind==="fail"){stroke=COLOR.fail;fill="rgba(40,16,15,.55)";}
+    else if(n.kind==="planned"){stroke=COLOR.planned;fill="rgba(20,24,28,.4)";dash="6 6";}
+    else if(n.kind==="builtnote"){stroke=COLOR.control;fill="rgba(16,28,20,.4)";}
+
+    el("rect",{class:"shell",x:n.x,y:n.y,width:n.w,height:n.h,rx:rx,fill:fill,stroke:stroke,"stroke-width":(n.kind==="orchestrator"||n.kind==="module")?2:1.4,"stroke-dasharray":dash},g);
+    if(n.kind==="datastore"){el("rect",{x:n.x,y:n.y,width:5,height:n.h,rx:2,fill:COLOR.data},g);}
+    if(n.kind==="fail"){const cx=n.x+18,cy=n.y+n.h/2;el("rect",{x:cx-7,y:cy-7,width:14,height:14,fill:"none",stroke:COLOR.fail,"stroke-width":2,transform:"rotate(45 "+cx+" "+cy+")"},g);}
+
+    const padL = n.kind==="fail"?34:14;
+    const title=el("text",{x:n.x+padL,y:n.y+(n.sub?22:n.h/2+4),class:"n-title"},g);
+    title.textContent=n.title;
+    if(n.kind==="builtnote")title.setAttribute("fill",COLOR.control);
+    if(n.sub){
+      const sub=el("text",{x:n.x+padL,y:n.y+40,class:"n-sub"},g);
+      wrap(sub,n.sub,n.x+padL,n.y+40,14);
+    }
+    nodeEls[n.id]=g;
+  }
+  nodes.forEach(drawNode);
+
+  // lifecycle lanes
+  function chip(x,y,w,h,label,color){
+    const g=el("g",{},gLife);
+    el("rect",{x:x,y:y,width:w,height:h,rx:8,fill:"rgba(16,23,17,.9)",stroke:color||"#46586a","stroke-width":1.4},g);
+    const t=el("text",{x:x+w/2,y:y+(label.indexOf("\n")>=0?h/2-4:h/2+4),class:"n-sub","text-anchor":"middle",fill:"#e6efe8"},g);
+    label.split("\n").forEach((ln,i)=>{const ts=el("tspan",{x:x+w/2,dy:i===0?0:13},t);ts.textContent=ln;});
+    return {x,y,w,h};
+  }
+  lanes.forEach(lane=>{
+    const lbl=el("text",{x:50,y:lane.y+30,class:"z-label",fill:lane.color},gLife);lbl.textContent=lane.label;
+    let x=210; const h=44, gap=40, w=150;
+    let prevRightYs=[lane.y+30]; let prevX=x;
+    lane.seq.forEach((step,si)=>{
+      if(step.alt){
+        const cnt=step.alt.length, stackH=cnt*36, top=lane.y+30-stackH/2+10;
+        const ys=[];
+        step.alt.forEach((a,ai)=>{
+          const yy=top+ai*36;
+          chip(x,yy,w+10,30,a.t,a.c||lane.color);
+          ys.push(yy+15);
+          // connector from previous column
+          prevRightYs.forEach(py=>{el("path",{d:"M "+prevX+" "+py+" C "+(prevX+22)+" "+py+" "+(x-22)+" "+(yy+15)+" "+x+" "+(yy+15),class:"edge",stroke:lane.color,"stroke-width":1.3,fill:"none","stroke-opacity":.6,"marker-end":"url(#ar-data)"},gLife);});
+        });
+        prevRightYs=ys; prevX=x+w+10; x+=w+10+gap+14;
+      }else{
+        const yy=lane.y+30-15;
+        chip(x,yy,w,h,step.t,step.c||lane.color);
+        prevRightYs.forEach(py=>{el("path",{d:"M "+prevX+" "+py+" C "+(prevX+18)+" "+py+" "+(x-18)+" "+(yy+22)+" "+x+" "+(yy+22),class:"edge",stroke:lane.color,"stroke-width":1.3,fill:"none","stroke-opacity":.6,"marker-end":"url(#ar-data)"},gLife);});
+        prevRightYs=[yy+22]; prevX=x+w; x+=w+gap;
+      }
+    });
+  });
+
+  // ====== hover highlight ======
+  const adj={}; nodes.forEach(n=>adj[n.id]=new Set());
+  edges.forEach(e=>{adj[e.from.id]&&adj[e.from.id].add(e.to.id);adj[e.to.id]&&adj[e.to.id].add(e.from.id);});
+  function setHighlight(id){
+    const keep=new Set([id]); adj[id].forEach(x=>keep.add(x));
+    nodes.forEach(n=>{nodeEls[n.id].classList.toggle("dim",!keep.has(n.id));});
+    edgeEls.forEach(p=>{const f=p.getAttribute("data-from"),t=p.getAttribute("data-to");const on=(f===id||t===id);p.classList.toggle("dim",!on);if(on)p.classList.add("hot");else p.classList.remove("hot");});
+  }
+  function clearHighlight(){nodes.forEach(n=>nodeEls[n.id].classList.remove("dim"));edgeEls.forEach(p=>{p.classList.remove("dim");p.classList.remove("hot");});applyLegendFilter();}
+  nodes.forEach(n=>{const g=nodeEls[n.id];g.addEventListener("mouseenter",()=>setHighlight(n.id));g.addEventListener("mouseleave",clearHighlight);});
+
+  // ====== legend (edge kinds) + isolate filter ======
+  const legendDefs=[
+    {k:"data",t:"data flow"},{k:"contract",t:"typed contract"},{k:"control",t:"control / recursion"},
+    {k:"config",t:"config inject"},{k:"consume",t:"consume artifact"},{k:"fail",t:"hard stop"},{k:"planned",t:"future scope"}];
+  const legendBox=document.getElementById("legend");
+  const off=new Set();
+  legendDefs.forEach(d=>{
+    const b=document.createElement("span");b.className="lg";b.dataset.k=d.k;
+    if(d.k==="fail"){b.innerHTML='<span class="dia"></span>'+d.t;}
+    else{b.innerHTML='<span class="ln" style="border-top-color:'+COLOR[d.k]+';'+((d.k==="config"||d.k==="planned")?"border-top-style:dashed":"")+'"></span>'+d.t;}
+    b.addEventListener("click",()=>{if(off.has(d.k)){off.delete(d.k);b.classList.remove("off");}else{off.add(d.k);b.classList.add("off");}applyLegendFilter();});
+    legendBox.appendChild(b);
+  });
+  // node-kind legend (static swatches)
+  [["module","#43d17d"],["datastore","#35c2e5"],["artifact","#a991ff"],["command","#8ea3b0"]].forEach(([t,c])=>{
+    const b=document.createElement("span");b.className="lg";b.style.cursor="default";
+    b.innerHTML='<span class="sw" style="border-color:'+c+'"></span>'+t;legendBox.appendChild(b);
+  });
+  function applyLegendFilter(){
+    edgeEls.forEach(p=>{const k=p.getAttribute("data-kind");p.style.display=off.has(k)?"none":"";});
+  }
+
+  // ====== pan / zoom ======
+  const stage=document.getElementById("stage");
+  let scale=1,tx=0,ty=0;
+  function apply(){root.setAttribute("transform","translate("+tx+","+ty+") scale("+scale+")");document.getElementById("zoomLabel").textContent=Math.round(scale*100)+"%";updateMM();}
+  function size(){return stage.getBoundingClientRect();}
+  function fit(){const r=size();const s=Math.min(r.width/CONTENT_W,r.height/CONTENT_H)*0.97;scale=s;tx=(r.width-CONTENT_W*s)/2;ty=(r.height-CONTENT_H*s)/2;apply();}
+  function reset(){fit();}
+  svg.setAttribute("viewBox","0 0 "+ (size().width||1600) +" "+ (size().height||800));
+  function syncViewBox(){const r=size();svg.setAttribute("viewBox","0 0 "+r.width+" "+r.height);}
+
+  stage.addEventListener("wheel",ev=>{
+    ev.preventDefault();const r=size();const mx=ev.clientX-r.left,my=ev.clientY-r.top;
+    const f=Math.exp(-ev.deltaY*0.0014);const ns=Math.min(3.2,Math.max(0.18,scale*f));
+    tx=mx-(mx-tx)*(ns/scale);ty=my-(my-ty)*(ns/scale);scale=ns;apply();
+  },{passive:false});
+  let dragging=false,sx=0,sy=0,stx=0,sty=0;
+  stage.addEventListener("pointerdown",ev=>{if(ev.target.closest(".minimap"))return;dragging=true;stage.classList.add("grabbing");sx=ev.clientX;sy=ev.clientY;stx=tx;sty=ty;stage.setPointerCapture(ev.pointerId);});
+  stage.addEventListener("pointermove",ev=>{if(!dragging)return;tx=stx+(ev.clientX-sx);ty=sty+(ev.clientY-sy);apply();});
+  stage.addEventListener("pointerup",ev=>{dragging=false;stage.classList.remove("grabbing");});
+  stage.addEventListener("pointercancel",()=>{dragging=false;stage.classList.remove("grabbing");});
+
+  document.getElementById("zoomIn").onclick=()=>{const r=size();zoomTo(scale*1.25,r.width/2,r.height/2);};
+  document.getElementById("zoomOut").onclick=()=>{const r=size();zoomTo(scale/1.25,r.width/2,r.height/2);};
+  document.getElementById("fit").onclick=fit;
+  document.getElementById("reset").onclick=reset;
+  function zoomTo(ns,mx,my){ns=Math.min(3.2,Math.max(0.18,ns));tx=mx-(mx-tx)*(ns/scale);ty=my-(my-ty)*(ns/scale);scale=ns;apply();}
+
+  // ====== minimap ======
+  mm.setAttribute("viewBox","0 0 "+CONTENT_W+" "+CONTENT_H);
+  zones.forEach(z=>el("rect",{x:z.x,y:z.y,width:z.w,height:z.h,rx:14,fill:"rgba(255,255,255,.02)",stroke:z.color,"stroke-opacity":.5,"stroke-width":3},mm));
+  nodes.forEach(n=>{let c=COLOR.control;if(n.kind==="datastore")c=COLOR.data;else if(n.kind==="artifact"||n.kind==="config")c=COLOR.config;else if(n.kind==="command")c=COLOR.consume;else if(n.kind==="fail")c=COLOR.fail;else if(n.kind==="planned")c=COLOR.planned;else if(n.kind==="join")c=COLOR.data;else if(n.kind==="note"||n.kind==="builtnote")c="#3a4a3f";
+    el("rect",{x:n.x,y:n.y,width:n.w,height:n.h,rx:4,fill:c,"fill-opacity":.55},mm);});
+  const mmView=el("rect",{class:"mm-view",x:0,y:0,width:10,height:10},mm);
+  function updateMM(){const r=size();mmView.setAttribute("x",-tx/scale);mmView.setAttribute("y",-ty/scale);mmView.setAttribute("width",r.width/scale);mmView.setAttribute("height",r.height/scale);}
+  function mmTo(ev){const b=mm.getBoundingClientRect();const cx=(ev.clientX-b.left)/b.width*CONTENT_W;const cy=(ev.clientY-b.top)/b.height*CONTENT_H;const r=size();tx=r.width/2-cx*scale;ty=r.height/2-cy*scale;apply();}
+  mm.addEventListener("pointerdown",ev=>{ev.stopPropagation();mmDrag=true;mmTo(ev);});
+  let mmDrag=false;
+  mm.addEventListener("pointermove",ev=>{if(mmDrag)mmTo(ev);});
+  window.addEventListener("pointerup",()=>{mmDrag=false;});
+
+  window.addEventListener("resize",()=>{syncViewBox();fit();});
+  syncViewBox();fit();
+})();
+</script>
+</body>
+</html>

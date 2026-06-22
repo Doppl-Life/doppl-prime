@@ -1,0 +1,162 @@
+{
+  "seed": {
+    "id": "seed-ai-power",
+    "title": "AI datacenter power constraint",
+    "prompt": "Given the thesis that AI demand makes firm dispatchable power scarce, generate consequence candidates and select under explore and proof.",
+    "thesis": "AI datacenters turn electricity from a background utility into the gating substrate for compute growth, especially where firm power, interconnect queues, and cooling are constrained.",
+    "goals": [
+      "test the kernel on a non-transport zeitgeist seed",
+      "show hidden dependents and infrastructure inversions",
+      "keep novelty and grounding separate"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "substrate-removal",
+      "label": "Substrate removal",
+      "description": "Find the substrate that disappears or becomes scarce if the seed is true.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "hidden-dependent",
+      "label": "Hidden dependent",
+      "description": "Follow the scarcity into second-order actors whose business depends on it.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "infrastructure-inversion",
+      "label": "Infrastructure inversion",
+      "description": "Ask whether the constrained system becomes infrastructure for another market.",
+      "defaultSubtype": "cross_domain_transfer"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "ap1",
+      "operatorId": "hidden-dependent",
+      "candidateId": "ap-c1",
+      "title": "Transformer queues become strategy",
+      "substrate": "grid interconnect queue",
+      "mechanism": "If grid interconnection is the bottleneck, AI capacity shifts from model access to queue position, substation equipment, and secured megawatts.",
+      "candidate": {
+        "title": "Interconnect position becomes AI strategy",
+        "thesis": "AI winners may be decided by who owns queue position, transformers, and firm megawatts before model demand arrives.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from compute demand to the grid queue as the scarce strategic asset.",
+        "changes": [
+          "GPU scarcity -> interconnect scarcity",
+          "model strategy -> queue position"
+        ]
+      },
+      "claims": [
+        "Interconnect delay can bind deployment even when GPUs are available.",
+        "Transformer and substation access become hidden dependents of AI growth."
+      ],
+      "evidence": [
+        "current datacenter interconnect constraints",
+        "utility queue and transformer lead-time reports"
+      ],
+      "observedAt": "2026-05-01"
+    },
+    {
+      "id": "ap2",
+      "operatorId": "substrate-removal",
+      "candidateId": "ap-c2",
+      "title": "Firm power asset repricing",
+      "substrate": "dispatchable generation",
+      "mechanism": "AI load raises the value of firm power that can actually show up when the model cluster needs it.",
+      "candidate": {
+        "title": "Old firm power becomes AI land",
+        "thesis": "Gas peakers, nuclear sites, and industrial power campuses become AI land because firm megawatts are more scarce than generic acreage.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from datacenter real estate to firm power as the land-like asset.",
+        "changes": [
+          "land search -> firm megawatt search",
+          "energy cost -> site control"
+        ]
+      },
+      "claims": [
+        "Acreage without deliverable power cannot host the cluster.",
+        "Existing dispatchable sites carry latent option value."
+      ],
+      "evidence": [
+        "AI power procurement announcements",
+        "industrial campus redevelopment precedents"
+      ],
+      "observedAt": "2026-04-20"
+    },
+    {
+      "id": "ap3",
+      "operatorId": "infrastructure-inversion",
+      "candidateId": "ap-c3",
+      "title": "Waste heat as local utility",
+      "substrate": "datacenter waste heat",
+      "mechanism": "Dense compute turns heat from disposal problem into a possible local heating, industrial drying, or greenhouse input.",
+      "candidate": {
+        "title": "AI heat becomes neighborhood substrate",
+        "thesis": "AI campuses could become local thermal infrastructure if waste heat is routed into district heating, greenhouses, or industrial process loads.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from power draw to thermal byproduct as a second infrastructure market.",
+        "changes": [
+          "cooling burden -> heat product",
+          "compute campus -> thermal utility"
+        ]
+      },
+      "claims": [
+        "Heat is normally waste but becomes useful where nearby demand can absorb it.",
+        "The transfer maps district heating logic onto AI campuses."
+      ],
+      "evidence": [
+        "district heating datacenter precedents",
+        "thermal reuse projects"
+      ],
+      "observedAt": "2026-03-20"
+    },
+    {
+      "id": "ap4",
+      "operatorId": "hidden-dependent",
+      "title": "AI uses more electricity",
+      "substrate": "electricity demand",
+      "mechanism": "Restates the seed as load growth without naming a new dependent or mechanism.",
+      "noDeltaReason": "No delta beyond the seed's power-demand thesis."
+    },
+    {
+      "id": "ap5",
+      "operatorId": "hidden-dependent",
+      "parentCandidateId": "ap-c1",
+      "generation": 2,
+      "candidateId": "ap-c1a",
+      "title": "Transformer gray market",
+      "substrate": "long-lead electrical equipment",
+      "mechanism": "If queue position and transformers bind AI deployment, secondary markets for substations, spare transformers, and utility-grade equipment become strategic.",
+      "candidate": {
+        "title": "Transformer inventory becomes compute inventory",
+        "thesis": "The hidden AI inventory may be transformers and substation rights, not only GPUs, because electrical equipment decides when compute can come online.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from grid queue position to the physical equipment market underneath it.",
+        "changes": [
+          "interconnect queue -> transformer inventory",
+          "compute launch date -> equipment lead time"
+        ]
+      },
+      "claims": [
+        "Electrical equipment lead time can delay compute even after capital is committed.",
+        "Secondary equipment control becomes a deployment advantage."
+      ],
+      "evidence": [
+        "utility transformer lead-time reports",
+        "datacenter buildout bottleneck reports"
+      ],
+      "observedAt": "2026-06-01"
+    }
+  ]
+}

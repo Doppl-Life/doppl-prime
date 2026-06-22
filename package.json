@@ -1,0 +1,21 @@
+{
+  "name": "doppl-kernel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.5.3",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "proof": "node --experimental-strip-types tools/run.ts",
+    "build": "pnpm typecheck && node --experimental-strip-types tools/integrity.ts && pnpm proof",
+    "proof:export": "node --experimental-strip-types tools/run.ts --export-proof-board",
+    "case-study:lint": "node --experimental-strip-types tools/case-study-seed-lint.ts",
+    "serve": "node --experimental-strip-types tools/serve.ts",
+    "publish:html": "node --experimental-strip-types tools/publish.ts",
+    "serve:static": "node --experimental-strip-types tools/static-server.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "seed": {
+    "id": "seed-glp1",
+    "title": "GLP-1 appetite shock",
+    "prompt": "Given the thesis that GLP-1 drugs durably reduce appetite and food noise for a large population, generate consequences and select under explore and proof.",
+    "thesis": "GLP-1 adoption turns appetite from a fixed consumer substrate into a medically adjustable variable, pressuring food volume, snacks, alcohol, apparel sizing, and chronic-disease economics.",
+    "goals": [
+      "test a consumer-health zeitgeist seed",
+      "separate event disappearance from simple demand decline",
+      "surface generation-2 parent-to-child lineage"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "substrate-removal",
+      "label": "Substrate removal",
+      "description": "Find the removed consumer or institutional substrate.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "hidden-dependent",
+      "label": "Hidden dependent",
+      "description": "Find businesses that depend on the substrate continuing.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "adoption-boundary",
+      "label": "Adoption boundary",
+      "description": "Look for uneven adoption or access edges.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "g1",
+      "operatorId": "hidden-dependent",
+      "candidateId": "glp-c1",
+      "title": "Snack occasion removal",
+      "substrate": "impulse eating occasion",
+      "mechanism": "If food noise falls, the profitable impulse occasion disappears rather than merely becoming cheaper.",
+      "candidate": {
+        "title": "Snack shelf loses the impulse event",
+        "thesis": "GLP-1 pressure hits snacks hardest where profit depends on unplanned eating occasions, not staple calories.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from weight loss to disappearance of impulse eating events.",
+        "changes": [
+          "calorie reduction -> occasion disappearance",
+          "dieting -> food-noise substrate"
+        ]
+      },
+      "claims": [
+        "Impulse snacks monetize food noise and unplanned occasions.",
+        "Staples should prove more resilient than margin-rich impulse categories."
+      ],
+      "evidence": [
+        "GLP-1 food-noise patient reports",
+        "snack-company volume sensitivity"
+      ],
+      "observedAt": "2026-05-15"
+    },
+    {
+      "id": "g2",
+      "operatorId": "substrate-removal",
+      "candidateId": "glp-c2",
+      "title": "Alcohol craving link",
+      "substrate": "reward-loop consumption",
+      "mechanism": "If GLP-1s dampen reward-seeking, alcohol and other craving-driven categories face demand pressure outside calorie math.",
+      "candidate": {
+        "title": "Alcohol gets hit through craving, not calories",
+        "thesis": "The larger GLP-1 branch may be reward-loop dampening, where alcohol demand falls because craving quiets, not because drink calories are counted.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from appetite to reward-loop consumption.",
+        "changes": [
+          "food appetite -> craving dampening",
+          "calories -> reward substrate"
+        ]
+      },
+      "claims": [
+        "Craving reduction would affect alcohol even when food volume is not the direct mechanism.",
+        "The claim is checkable through category spend and clinical addiction signals."
+      ],
+      "evidence": [
+        "emerging GLP-1 alcohol-use research",
+        "consumer anecdotes on reduced cravings"
+      ],
+      "observedAt": "2026-04-10"
+    },
+    {
+      "id": "g3",
+      "operatorId": "adoption-boundary",
+      "candidateId": "glp-c3",
+      "title": "Access boundary",
+      "substrate": "insurance and cash-pay access",
+      "mechanism": "Uneven GLP-1 access creates visible consumer splits between covered, cash-pay, compounded, and excluded groups.",
+      "candidate": {
+        "title": "Appetite becomes an access class",
+        "thesis": "GLP-1 adoption turns appetite suppression into an access class, splitting consumer behavior by coverage, cash-pay capacity, and supply reliability.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from average weight-loss adoption to uneven access as the market edge.",
+        "changes": [
+          "average adoption -> access class",
+          "drug demand -> consumer segmentation"
+        ]
+      },
+      "claims": [
+        "Consumer spend shifts unevenly if only some groups sustain access.",
+        "The boundary between covered and uncovered users becomes a market signal."
+      ],
+      "evidence": [
+        "payer coverage variation",
+        "supply and compounding market behavior"
+      ],
+      "observedAt": "2026-05-01"
+    },
+    {
+      "id": "g4",
+      "operatorId": "substrate-removal",
+      "title": "People lose weight",
+      "substrate": "body weight",
+      "mechanism": "Restates the seed as weight loss without a new removed event or dependent.",
+      "noDeltaReason": "No new substrate beyond the GLP-1 weight-loss thesis."
+    },
+    {
+      "id": "g5",
+      "operatorId": "hidden-dependent",
+      "parentCandidateId": "glp-c1",
+      "generation": 2,
+      "candidateId": "glp-c1a",
+      "title": "Checkout aisle repricing",
+      "substrate": "checkout impulse shelf",
+      "mechanism": "If impulse occasions vanish, the checkout aisle changes from high-margin snack conversion into pickup, pharmacy, or loyalty real estate.",
+      "candidate": {
+        "title": "Checkout shelf becomes loyalty real estate",
+        "thesis": "The snack branch gets sharper at the checkout shelf: GLP-1s weaken the impulse slot, so retailers reprice that space toward pharmacy pickup, loyalty, or prepared essentials.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from snack volume to the physical retail shelf whose economics depend on impulse.",
+        "changes": [
+          "snack demand -> checkout shelf economics",
+          "food noise -> retail real estate"
+        ]
+      },
+      "claims": [
+        "Checkout snacks monetize unplanned craving at the last moment.",
+        "Retailers can observe the shift through basket mix and shelf yield."
+      ],
+      "evidence": [
+        "checkout impulse merchandising logic",
+        "GLP-1 category-volume pressure"
+      ],
+      "observedAt": "2026-06-01"
+    }
+  ]
+}

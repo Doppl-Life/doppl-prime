@@ -1,0 +1,34 @@
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# Node / TypeScript
+node_modules/
+**/node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.pnp.*
+*.tsbuildinfo
+.eslintcache
+
+# Generated output
+kernel-rebuild/out/
+kernel-rebuild/published/index.html
+kernel-rebuild/records/assay-judgments/*.jsonl
+*.log
+
+# Local tool indexes
+.codegraph/
+
+out/
+published/index.html
+records/assay-judgments/*.jsonl

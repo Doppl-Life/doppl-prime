@@ -1,0 +1,191 @@
+{
+  "seed": {
+    "id": "seed-fsd-accident-economy",
+    "title": "FSD accident economy collapse",
+    "prompt": "Given the thesis that autonomy removes a large share of human-caused crashes, discover the institutions and second-order dependencies built on the crash event.",
+    "thesis": "A crash is not only a safety failure; it is the substrate for insurance, repair, litigation, trauma workflows, advertising, and organ-supply edges.",
+    "goals": [
+      "recover accident volume as a substrate, not just a safety metric",
+      "map hidden dependents before jumping to solutions",
+      "surface non-obvious branches a human can judge for fertility"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "substrate-removal",
+      "label": "Substrate removal",
+      "description": "Find the event or institutional substrate that disappears if the seed is true.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "hidden-dependent",
+      "label": "Hidden dependent",
+      "description": "Follow the removed substrate into second- and third-order actors who depend on it.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    },
+    {
+      "id": "replacement-surface",
+      "label": "Replacement surface",
+      "description": "Find where pressure migrates when the old event stream dries up.",
+      "defaultSubtype": "zeitgeist_synthesis"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "fae1",
+      "operatorId": "substrate-removal",
+      "candidateId": "fae-c1",
+      "title": "Crash as economic event",
+      "substrate": "human-caused crash event",
+      "mechanism": "If autonomy removes crash volume, industries that price, litigate, repair, and treat crashes lose their event stream.",
+      "candidate": {
+        "title": "Accident volume is the substrate",
+        "thesis": "The non-obvious object is not safer cars; it is the drying-up of a recurring economic event that feeds insurance, legal, repair, medical, and media systems.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from safety improvement to crash event stream as the load-bearing substrate.",
+        "changes": [
+          "safer roads -> missing event stream",
+          "consumer benefit -> institutional substrate loss"
+        ]
+      },
+      "claims": [
+        "Insurance and collision repair depend on accident frequency.",
+        "The crash event feeds more systems than car service and premiums."
+      ],
+      "evidence": [
+        "case statement: personal-auto insurance, plaintiff law, trauma medicine, and collision repair exist to price, litigate, repair, and treat human error",
+        "case statement: remove the error and you remove their substrate"
+      ],
+      "observedAt": "2026-06-01"
+    },
+    {
+      "id": "fae2",
+      "operatorId": "hidden-dependent",
+      "candidateId": "fae-c2",
+      "title": "Insurer advertising dependency",
+      "substrate": "auto-insurance customer acquisition",
+      "mechanism": "If auto risk pools shrink, the advertising budgets used to compete for those pools lose part of their reason to exist.",
+      "candidate": {
+        "title": "Crash removal hits ad-supported media",
+        "thesis": "Auto insurers are large advertisers, so a shrinking accident-priced insurance pool can remove demand from media inventory that appears unrelated to road safety.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from insurer premiums to the ad markets insurers fund.",
+        "changes": [
+          "insurance pool -> customer acquisition spend",
+          "crash reduction -> media demand edge"
+        ]
+      },
+      "claims": [
+        "Advertising demand can be downstream of accident risk.",
+        "Media may feel a crash-economy unwind before consumers notice it."
+      ],
+      "evidence": [
+        "case statement: auto insurers are among the largest advertisers in America",
+        "case statement: ad-supported media is partly funded by the crash"
+      ],
+      "observedAt": "2026-06-01"
+    },
+    {
+      "id": "fae3",
+      "operatorId": "hidden-dependent",
+      "candidateId": "fae-c3",
+      "title": "Trauma donor edge",
+      "substrate": "young trauma organ supply",
+      "mechanism": "If fatal crashes decline, the transplant system loses a concentrated source of high-quality donor organs.",
+      "candidate": {
+        "title": "Organ supply loses a concentrated source",
+        "thesis": "Removing crashes can tighten the high-quality edge of organ supply because young trauma victims are disproportionately valuable donors.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from fewer deaths to a downstream shortage in a system that depends on some trauma deaths.",
+        "changes": [
+          "mortality reduction -> donor supply loss",
+          "public health win -> transplant constraint"
+        ]
+      },
+      "claims": [
+        "Some social systems depend on tragic events they would morally prefer to eliminate.",
+        "Organ supply may be affected at the concentrated edge, not just macro volume."
+      ],
+      "evidence": [
+        "case statement: trauma deaths are a declining but disproportionately high-quality source of donor organs",
+        "case statement: removing young crash victims tightens the best part of transplant supply"
+      ],
+      "observedAt": "2026-06-01"
+    },
+    {
+      "id": "fae4",
+      "operatorId": "replacement-surface",
+      "candidateId": "fae-c4",
+      "title": "Liability migrates to product stack",
+      "substrate": "human driver fault",
+      "mechanism": "If human fault stops being the ordinary cause, legal and insurance pressure shifts toward autonomy product liability, fleet operations, software logs, and manufacturer risk pools.",
+      "candidate": {
+        "title": "Fault moves from driver to stack",
+        "thesis": "The plaintiff and insurance systems do not vanish cleanly; some pressure migrates from individual driver fault to autonomy stack liability and fleet-level audit trails.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Moved from accident-economy collapse to the replacement surface for residual harm.",
+        "changes": [
+          "driver fault -> autonomy stack liability",
+          "individual claims -> fleet/manufacturer risk pool"
+        ]
+      },
+      "claims": [
+        "Residual accidents still need liability assignment.",
+        "The party exposed to claims changes when a machine is driving."
+      ],
+      "evidence": [
+        "case statement: plaintiff bar and insurance depend on human error behind the wheel",
+        "autonomy changes the locus of control from driver to stack"
+      ],
+      "observedAt": "2026-06-01"
+    },
+    {
+      "id": "fae5",
+      "operatorId": "substrate-removal",
+      "title": "Car insurance gets cheaper",
+      "substrate": "consumer premium reduction",
+      "mechanism": "Stops at the first-order consumer benefit without mapping hidden dependents or replacement surfaces.",
+      "noDeltaReason": "No discovery delta: the case explicitly names this as the obvious first move."
+    },
+    {
+      "id": "fae6",
+      "operatorId": "hidden-dependent",
+      "parentCandidateId": "fae-c2",
+      "generation": 2,
+      "candidateId": "fae-c2a",
+      "title": "Media demand sink",
+      "substrate": "insurance ad inventory",
+      "mechanism": "If insurer ad budgets fall, local and broadcast media lose a repeat buyer category and must replace a demand sink, not just a sponsor.",
+      "candidate": {
+        "title": "Insurer ads are a demand sink",
+        "thesis": "The advertising branch sharpens into a media-market problem: accident risk supports a repeat performance-marketing buyer that fills inventory across TV, sports, search, and local media.",
+        "subtype": "zeitgeist_synthesis"
+      },
+      "delta": {
+        "summary": "Sharpened insurer ad spend into a demand-sink thesis for media inventory.",
+        "changes": [
+          "insurer ad spend -> media demand sink",
+          "hidden dependent -> replacement buyer problem"
+        ]
+      },
+      "claims": [
+        "The effect is not only fewer mascots; it is missing demand for ad inventory.",
+        "A shrinking risk pool changes customer-acquisition economics."
+      ],
+      "evidence": [
+        "case statement: auto insurers are among the largest advertisers",
+        "case statement: ad-supported media is partly funded by the crash"
+      ],
+      "observedAt": "2026-06-01"
+    }
+  ]
+}

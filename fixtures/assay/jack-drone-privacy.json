@@ -1,0 +1,187 @@
+{
+  "seed": {
+    "id": "seed-jack-drone-privacy",
+    "title": "Jack drone privacy",
+    "prompt": "Given the superyacht drone privacy case, discover the non-obvious terrain before proposing responses.",
+    "thesis": "A paparazzi drone threatens privacy because it can capture valuable footage from outside the yacht; the real target is the footage, not the drone.",
+    "goals": [
+      "recover the real objective before naming countermeasures",
+      "separate illegal interference from constraint-aware privacy protection",
+      "surface discovery branches a human can judge for fertility"
+    ]
+  },
+  "asOf": "2026-06-21",
+  "operators": [
+    {
+      "id": "objective-shift",
+      "label": "Objective shift",
+      "description": "Find the object the adversary actually values, not the obvious object in motion.",
+      "defaultSubtype": "cross_domain_transfer"
+    },
+    {
+      "id": "constraint-transfer",
+      "label": "Constraint transfer",
+      "description": "Move the response into the legal, discreet, or operational space that remains available.",
+      "defaultSubtype": "cross_domain_transfer"
+    },
+    {
+      "id": "perimeter-redefinition",
+      "label": "Perimeter redefinition",
+      "description": "Redefine the defensive boundary around time, angle, visibility, or value instead of physical contact.",
+      "defaultSubtype": "cross_domain_transfer"
+    }
+  ],
+  "sourcePackets": [
+    {
+      "id": "jdp1",
+      "operatorId": "objective-shift",
+      "candidateId": "jdp-c1",
+      "title": "Footage is the target",
+      "substrate": "usable image capture",
+      "mechanism": "If the attacker wants footage, the defense can win by denying useful sightlines before capture rather than by stopping the aircraft.",
+      "candidate": {
+        "title": "Protect the footage window",
+        "thesis": "The drone is a delivery mechanism; the real defensive surface is the short window in which a camera can turn a private scene into valuable footage.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from anti-drone action to denying the value the drone is trying to extract.",
+        "changes": [
+          "drone as target -> footage as target",
+          "engagement range -> useful sightline window"
+        ]
+      },
+      "claims": [
+        "A response can succeed even if the drone remains airborne.",
+        "Privacy is preserved when the drone cannot capture the protected person or scene."
+      ],
+      "evidence": [
+        "problem statement: the drone only needs a camera angle",
+        "problem statement: jamming, takedown, and interceptors create legal or public-risk constraints"
+      ]
+    },
+    {
+      "id": "jdp2",
+      "operatorId": "constraint-transfer",
+      "candidateId": "jdp-c2",
+      "title": "Quiet protocol beats public engagement",
+      "substrate": "public counter-drone spectacle",
+      "mechanism": "If visible confrontation creates liability and publicity, the response should look like ordinary guest and crew choreography.",
+      "candidate": {
+        "title": "Drone response becomes choreography",
+        "thesis": "The highest-leverage response may be a discreet cue and sightline protocol that moves the protected person and preserves normal deck activity instead of escalating around the drone.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from technical interception to a low-signature operating protocol.",
+        "changes": [
+          "countermeasure hardware -> crew choreography",
+          "public drone fight -> private scene management"
+        ]
+      },
+      "claims": [
+        "A public confrontation can create the very spectacle the guest wanted to avoid.",
+        "Normal-looking movement can protect privacy without revealing panic or confirming the target."
+      ],
+      "evidence": [
+        "problem statement: physical takedown creates liability and public spectacle",
+        "known-solution summary in problem statement: early cue moves the protected person inside while visible activity continues"
+      ]
+    },
+    {
+      "id": "jdp3",
+      "operatorId": "perimeter-redefinition",
+      "candidateId": "jdp-c3",
+      "title": "Time-to-angle perimeter",
+      "substrate": "camera angle before response",
+      "mechanism": "If action starts only when the drone is close, the camera may already have captured the asset; the perimeter is time-to-useful-angle.",
+      "candidate": {
+        "title": "Privacy perimeter moves outward",
+        "thesis": "The yacht's defensive perimeter is not its hull or airspace; it is the detection distance needed to close sightlines before the drone reaches a useful camera angle.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from physical perimeter to time and angle as the defensive boundary.",
+        "changes": [
+          "hull/airspace boundary -> time-to-angle boundary",
+          "late engagement -> early scene transition"
+        ]
+      },
+      "claims": [
+        "Detection distance matters only because it buys time to deny useful footage.",
+        "The useful metric is time before valuable capture, not distance to the drone alone."
+      ],
+      "evidence": [
+        "problem statement: acting when the drone is close enough to engage is too late",
+        "problem statement: footage may already exist before engagement"
+      ]
+    },
+    {
+      "id": "jdp4",
+      "operatorId": "constraint-transfer",
+      "candidateId": "jdp-c4",
+      "title": "Legal quiet zone",
+      "substrate": "illegal radio or kinetic interference",
+      "mechanism": "If jamming or takedown is legally risky, the available action space is onboard visibility management and early warning.",
+      "candidate": {
+        "title": "Non-interference is the design constraint",
+        "thesis": "The response should be built around what the yacht can legally control: guest movement, shades, deck activity, sensor alerting, and cue discipline.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Moved from forbidden drone control to legal control over onboard exposure.",
+        "changes": [
+          "control the aircraft -> control the scene",
+          "law-risk tool -> legal operating envelope"
+        ]
+      },
+      "claims": [
+        "The yacht controls the scene more safely than it controls a third-party aircraft.",
+        "Legal quiet is part of the solution, not a caveat."
+      ],
+      "evidence": [
+        "problem statement: radio jamming is illegal and dangerous near port",
+        "problem statement: physical takedown creates liability"
+      ]
+    },
+    {
+      "id": "jdp5",
+      "operatorId": "objective-shift",
+      "title": "Shoot down the drone",
+      "substrate": "drone as physical target",
+      "mechanism": "Treats the drone itself as the whole problem and ignores legal, footage, and spectacle constraints.",
+      "noDeltaReason": "No discovery delta: it repeats the obvious countermeasure the case marks as tempting and wrong."
+    },
+    {
+      "id": "jdp6",
+      "operatorId": "perimeter-redefinition",
+      "parentCandidateId": "jdp-c1",
+      "generation": 2,
+      "candidateId": "jdp-c1a",
+      "title": "Useful-footage clock",
+      "substrate": "time before value extraction",
+      "mechanism": "If footage value is the target, the operating metric is seconds until useful capture, not whether the drone is neutralized.",
+      "candidate": {
+        "title": "Use the footage clock as the trigger",
+        "thesis": "The protocol should trigger on the estimated time until useful footage, turning sensor range into a countdown for moving people, closing sightlines, and preserving visible normalcy.",
+        "subtype": "cross_domain_transfer"
+      },
+      "delta": {
+        "summary": "Sharpened footage-as-target into an operating metric the crew can actually use.",
+        "changes": [
+          "footage denial -> countdown trigger",
+          "privacy idea -> operational threshold"
+        ]
+      },
+      "claims": [
+        "A time-to-footage threshold connects detection to action.",
+        "The countdown makes privacy protection auditable without touching the drone."
+      ],
+      "evidence": [
+        "problem statement: early detection triggers a private cue",
+        "problem statement: everything visible onboard continues unchanged"
+      ],
+      "observedAt": "2026-06-18"
+    }
+  ]
+}
