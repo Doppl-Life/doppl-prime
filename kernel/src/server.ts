@@ -25,6 +25,7 @@ type KernelRunRequest = {
 type KernelHttpRequest = {
   method: string;
   url: string;
+  headers?: Record<string, string | string[] | undefined>;
   body?: string;
 };
 
@@ -69,6 +70,25 @@ function parseBudget(value: unknown, fallback: number): number {
     throw new Error('budget must be an integer >= 0');
   }
   return value;
+}
+
+function headerValue(
+  headers: Record<string, string | string[] | undefined> | undefined,
+  name: string,
+): string | undefined {
+  if (!headers) return undefined;
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === name.toLowerCase());
+  const value = entry?.[1];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function authorized(request: KernelHttpRequest, options: KernelHttpOptions): boolean {
+  const configuredKey = options.env?.KERNEL_API_KEY ?? process.env.KERNEL_API_KEY ?? '';
+  if (!configuredKey.trim()) return true;
+  const bearer = headerValue(request.headers, 'authorization')?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const explicit = headerValue(request.headers, 'x-kernel-api-key');
+  return bearer === configuredKey || explicit === configuredKey;
 }
 
 async function generationProvidersFromRequest(
@@ -135,6 +155,7 @@ export async function handleKernelHttpRequest(
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
     }
     if (request.method === 'POST' && request.url === '/kernel/runs') {
+      if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
       return { status: 200, body: await runFromRequestBody(request.body, options) };
     }
     return { status: 404, body: { error: 'not_found' } };
@@ -152,6 +173,7 @@ export function createKernelHttpServer(): Server {
       const result = await handleKernelHttpRequest({
         method: request.method || 'GET',
         url: request.url || '/',
+        headers: request.headers,
         body: request.method === 'POST' ? await readBody(request) : undefined,
       });
       jsonResponse(response, result.status, result.body);

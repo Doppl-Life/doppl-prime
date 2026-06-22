@@ -276,3 +276,39 @@ test('kernel HTTP server runs live model requests with a server-side key', async
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
   assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
 });
+
+test('kernel HTTP server requires an API key when configured', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-auth-'));
+  const unauthorized = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_http_auth_missing',
+        outDir: path.join(root, 'unauthorized-vault'),
+        proofBoardDir: path.join(root, 'unauthorized-proof-board'),
+      }),
+    },
+    { env: { KERNEL_API_KEY: 'kernel-test-key' } },
+  );
+  const authorized = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      headers: { authorization: 'Bearer kernel-test-key' },
+      body: JSON.stringify({
+        runId: 'run_http_auth_ok',
+        generations: 1,
+        budget: 1,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    { env: { KERNEL_API_KEY: 'kernel-test-key' } },
+  );
+
+  assert.equal(unauthorized.status, 401);
+  assert.deepEqual(unauthorized.body, { error: 'unauthorized' });
+  assert.equal(authorized.status, 200);
+  assert.equal(authorized.body.runId, 'run_http_auth_ok');
+});
