@@ -9,6 +9,10 @@ export type ModelCallRequest = {
   prompt: string;
   model: string;
   responseFormat?: 'json_object' | 'text';
+  responseSchema?: {
+    name: string;
+    schema: Record<string, unknown>;
+  };
   metadata?: Record<string, unknown>;
 };
 
@@ -127,6 +131,20 @@ export function createOpenRouterModelClient(input: OpenRouterModelClientInput): 
   if (!fetchImpl) throw new Error('fetch is required to create an OpenRouter model client');
   const baseUrl = input.baseUrl || 'https://openrouter.ai/api/v1/chat/completions';
 
+  function responseFormatFor(request: ModelCallRequest): Record<string, unknown> | undefined {
+    if (request.responseSchema) {
+      return {
+        type: 'json_schema',
+        json_schema: {
+          name: request.responseSchema.name,
+          strict: true,
+          schema: request.responseSchema.schema,
+        },
+      };
+    }
+    return request.responseFormat === 'json_object' ? { type: 'json_object' } : undefined;
+  }
+
   return {
     async complete(request) {
       const response = await fetchImpl(baseUrl, {
@@ -138,8 +156,7 @@ export function createOpenRouterModelClient(input: OpenRouterModelClientInput): 
         body: JSON.stringify({
           model: request.model,
           messages: [{ role: 'user', content: request.prompt }],
-          response_format:
-            request.responseFormat === 'json_object' ? { type: 'json_object' } : undefined,
+          response_format: responseFormatFor(request),
           metadata: request.metadata,
         }),
       });

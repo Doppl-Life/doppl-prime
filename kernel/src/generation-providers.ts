@@ -122,6 +122,89 @@ function knowledgeSummary(packet: KnowledgePacket): string {
   return packet.items.map((item) => `${item.citeHandle}: ${item.text}`).join('\n');
 }
 
+function stringSchema(): Record<string, unknown> {
+  return { type: 'string' };
+}
+
+function stringArraySchema(): Record<string, unknown> {
+  return { type: 'array', items: stringSchema() };
+}
+
+const problemRecoveryResponseSchema = {
+  name: 'problem_recovery',
+  schema: {
+    type: 'object',
+    properties: {
+      title: stringSchema(),
+      recoveredProblem: stringSchema(),
+      hiddenConstraint: stringSchema(),
+      falsifier: stringSchema(),
+    },
+    required: ['title', 'recoveredProblem', 'hiddenConstraint', 'falsifier'],
+    additionalProperties: false,
+  },
+};
+
+const candidateSchema = {
+  type: 'object',
+  properties: {
+    id: stringSchema(),
+    agenomeId: stringSchema(),
+    title: stringSchema(),
+    summary: stringSchema(),
+    mechanism: stringSchema(),
+    claimedDelta: stringSchema(),
+    citedKnowledge: stringArraySchema(),
+  },
+  required: ['id', 'agenomeId', 'title', 'summary', 'mechanism', 'claimedDelta', 'citedKnowledge'],
+  additionalProperties: false,
+};
+
+const candidateGenerationResponseSchema = {
+  name: 'candidate_generation',
+  schema: {
+    type: 'object',
+    properties: {
+      candidates: {
+        type: 'array',
+        minItems: 2,
+        items: candidateSchema,
+      },
+    },
+    required: ['candidates'],
+    additionalProperties: false,
+  },
+};
+
+const criticVerdictSchema = {
+  type: 'object',
+  properties: {
+    candidateId: stringSchema(),
+    criticId: stringSchema(),
+    score: { type: 'number', minimum: 0, maximum: 100 },
+    pressure: stringSchema(),
+    revisionMandate: stringSchema(),
+  },
+  required: ['candidateId', 'criticId', 'score', 'pressure', 'revisionMandate'],
+  additionalProperties: false,
+};
+
+const criticJudgmentResponseSchema = {
+  name: 'critic_judgment',
+  schema: {
+    type: 'object',
+    properties: {
+      verdicts: {
+        type: 'array',
+        minItems: 1,
+        items: criticVerdictSchema,
+      },
+    },
+    required: ['verdicts'],
+    additionalProperties: false,
+  },
+};
+
 export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRenderers {
   return {
     problemRecovery({ caseStudy, knowledgePacket }) {
@@ -217,6 +300,7 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
             prompt: prompts.problemRecovery(providerInput),
             model: input.model,
             responseFormat: 'json_object',
+            responseSchema: problemRecoveryResponseSchema,
           },
           (parsed) =>
             assertProblemRecovery({
@@ -237,6 +321,7 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
             prompt: prompts.candidateGeneration(providerInput),
             model: input.model,
             responseFormat: 'json_object',
+            responseSchema: candidateGenerationResponseSchema,
           },
           (parsed) =>
             arrayField(parsed, 'candidates').map((candidate) =>
@@ -258,6 +343,7 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
             prompt: prompts.criticJudgment(providerInput),
             model: input.model,
             responseFormat: 'json_object',
+            responseSchema: criticJudgmentResponseSchema,
           },
           (parsed) => arrayField(parsed, 'verdicts').map(assertCriticVerdict),
         );

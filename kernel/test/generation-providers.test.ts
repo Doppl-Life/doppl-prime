@@ -291,6 +291,130 @@ test('model generation providers expose default prompts and captured call record
   assert.match(providers.modelCallRecords[0]?.prompt || '', /FSD|ownership|unwind/i);
 });
 
+test('model generation providers request schemas for structured outputs', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_schemas',
+    targetCase: caseStudy.id,
+    maxItems: 1,
+  });
+  const requestedSchemas: Array<string | undefined> = [];
+  const providers = createModelGenerationProviders({
+    model: 'fixture-model',
+    client: {
+      async complete(request) {
+        requestedSchemas.push(request.responseSchema?.name);
+        if (request.purpose === 'problem_recovery') {
+          return {
+            id: 'call_recovery',
+            runId: request.runId,
+            purpose: request.purpose,
+            provider: 'stub',
+            model: request.model,
+            prompt: request.prompt,
+            outputText: JSON.stringify({
+              title: 'Schema Recovery',
+              recoveredProblem: 'Recovered with a schema.',
+              hiddenConstraint: 'Schemas constrain model output.',
+              falsifier: 'No schema is attached.',
+            }),
+            metadata: {},
+          };
+        }
+        if (request.purpose === 'candidate_generation') {
+          return {
+            id: 'call_candidates',
+            runId: request.runId,
+            purpose: request.purpose,
+            provider: 'stub',
+            model: request.model,
+            prompt: request.prompt,
+            outputText: JSON.stringify({
+              candidates: [
+                {
+                  id: 'schema_a',
+                  agenomeId: 'ag_blindside',
+                  title: 'Schema Candidate A',
+                  summary: 'First schema candidate.',
+                  mechanism: 'Uses structured candidate output.',
+                  claimedDelta: 'Stable parsing.',
+                  citedKnowledge: ['K1'],
+                },
+                {
+                  id: 'schema_b',
+                  agenomeId: 'ag_first_principles',
+                  title: 'Schema Candidate B',
+                  summary: 'Second schema candidate.',
+                  mechanism: 'Uses structured candidate output.',
+                  claimedDelta: 'Stable parsing.',
+                  citedKnowledge: ['K1'],
+                },
+              ],
+            }),
+            metadata: {},
+          };
+        }
+        return {
+          id: 'call_critics',
+          runId: request.runId,
+          purpose: request.purpose,
+          provider: 'stub',
+          model: request.model,
+          prompt: request.prompt,
+          outputText: JSON.stringify({
+            verdicts: [
+              {
+                candidateId: 'schema_a',
+                criticId: 'grounding',
+                score: 88,
+                pressure: 'Grounded.',
+                revisionMandate: 'Keep it specific.',
+              },
+              {
+                candidateId: 'schema_b',
+                criticId: 'grounding',
+                score: 77,
+                pressure: 'Mostly grounded.',
+                revisionMandate: 'Tighten mechanism.',
+              },
+            ],
+          }),
+          metadata: {},
+        };
+      },
+    },
+  });
+
+  const recovery = await providers.problemRecovery.recover({
+    runId: 'run_model_schemas',
+    caseStudy,
+    knowledgePacket,
+  });
+  const candidates = await providers.candidateGenerator.generate({
+    runId: 'run_model_schemas',
+    caseStudy,
+    problemRecovery: recovery,
+    knowledgePacket,
+    generation: 0,
+  });
+  await providers.criticCouncil.judge({
+    runId: 'run_model_schemas',
+    caseStudy,
+    problemRecovery: recovery,
+    candidates,
+    knowledgePacket,
+  });
+
+  assert.deepEqual(requestedSchemas, [
+    'problem_recovery',
+    'candidate_generation',
+    'critic_judgment',
+  ]);
+});
+
 test('model generation providers repair invalid structured outputs once', async () => {
   const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
   const gateway = await createJsonKnowledgeGateway(

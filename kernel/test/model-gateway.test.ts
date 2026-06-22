@@ -161,6 +161,45 @@ test('openrouter model client sends server-side authenticated chat completions',
   assert.equal(record.metadata.requestId, 'req_123');
 });
 
+test('openrouter model client sends JSON schema structured output requests', async () => {
+  const requests: Array<{ body: string }> = [];
+  const client = createOpenRouterModelClient({
+    apiKey: 'test-api-key',
+    fetch: async (_url, init) => {
+      requests.push({ body: init.body as string });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"title":"Recovered"}' } }] };
+        },
+      };
+    },
+  });
+
+  await client.complete({
+    runId: 'run_schema',
+    purpose: 'problem_recovery',
+    prompt: 'recover',
+    model: 'openrouter/test-model',
+    responseSchema: {
+      name: 'problem_recovery',
+      schema: {
+        type: 'object',
+        properties: { title: { type: 'string' } },
+        required: ['title'],
+        additionalProperties: false,
+      },
+    },
+  });
+
+  const body = JSON.parse(requests[0]!.body);
+  assert.equal(body.response_format.type, 'json_schema');
+  assert.equal(body.response_format.json_schema.name, 'problem_recovery');
+  assert.equal(body.response_format.json_schema.strict, true);
+  assert.deepEqual(body.response_format.json_schema.schema.required, ['title']);
+});
+
 test('openrouter model client rejects missing server-side API keys', () => {
   assert.throws(() => createOpenRouterModelClient({ apiKey: '' }), /OPENROUTER_API_KEY is required/);
 });
