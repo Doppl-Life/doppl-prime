@@ -503,21 +503,6 @@ export function App() {
         </div>
       </section>
 
-      <section className="garden-model" aria-label="Garden model">
-        <div>
-          <span>Garden flow</span>
-          <strong>{"case_study -> problem_recovery -> doppl"}</strong>
-        </div>
-        <div>
-          <span>Discovery</span>
-          <strong>evidence, not a rated stage</strong>
-        </div>
-        <div>
-          <span>Human rating</span>
-          <strong>one -5 to +5 score</strong>
-        </div>
-      </section>
-
       <section className="trace-surface" aria-label="Case and selected artifact review">
         <article className="trace-step case-step">
           <p className="trace-label">Case Study</p>

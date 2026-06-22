@@ -139,7 +139,6 @@ describe("App", () => {
     expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident-Economy Transition Ledger");
     expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
-    expect(screen.getByLabelText("Garden model")).toHaveTextContent("case_study -> problem_recovery -> doppl");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
