@@ -19,6 +19,8 @@
 
 ## Currently in progress
 
+> **⏸ DEMO TEAM PAUSED 2026-06-21** — handoff: `docs/team-handoffs/demo-001-2026-06-21-round2-cycle-pause.md` · last round-seal: `e448b46` (round 2: P6.8 + P7.5; round 1 `79d73b7`: P6.1–6.7 + P7.1–7.4 + prototype). Next: round 3 = P6.9/P6.10/P6.11 (obs) · P7.6+ (web), continuous-roll. sv3/P0.16 reconcile = demo→cody-merge item. **This track/demo plan copy below is fork-state (dd69b36); the real demo round state lives in cody's plan (`d81a27e`) + `docs/sessions/demo-orch-001/002`.** Resume: `/team-start demo`.
+
 **Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
 **Round commits:** contract-002 round (P0.10→P0.14) sealed `bab92e1` (suite 160/160; per-type payload map `73289fd`, entities+lineage bundle `8bd9502`, FinalJudgeRubric `5058400`, contract-test surface `0180c5f`, P0.10 follow-up `c33eb2f`; impl session doc `7d60cc3`/contract-002). **P0.1-amend round** (operation-start markers + schemaVersion 2) `dc493a3` (suite 163/163); **re-seal: this `/orchestrate-end` commit (pushed to origin/track/contract)**. `/preflight` clean; `pnpm audit --prod` clean.
