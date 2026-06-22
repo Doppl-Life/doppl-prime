@@ -49,9 +49,21 @@ describe('planKillSwitch (P3.4 — rule #1 kill switch, decide-only)', () => {
   test('kill_cap_breach_plans_failed', () => {
     // spec(§5): a cap-breach / wall-clock drives a running run running→failed (legal direct terminal). An
     // ENERGY breach names `energy_exhausted`; other dimensions + wall-clock name `run.failed`. Replayable.
-    const energy = planKillSwitch({ kind: 'cap_breach', dimension: 'energyBudget' }, 'running', ACTIVE_GENS);
-    expect(energy.run).toEqual({ from: 'running', to: 'failed', terminalEvent: 'energy_exhausted' });
-    const tool = planKillSwitch({ kind: 'cap_breach', dimension: 'maxToolCalls' }, 'running', ACTIVE_GENS);
+    const energy = planKillSwitch(
+      { kind: 'cap_breach', dimension: 'energyBudget' },
+      'running',
+      ACTIVE_GENS,
+    );
+    expect(energy.run).toEqual({
+      from: 'running',
+      to: 'failed',
+      terminalEvent: 'energy_exhausted',
+    });
+    const tool = planKillSwitch(
+      { kind: 'cap_breach', dimension: 'maxToolCalls' },
+      'running',
+      ACTIVE_GENS,
+    );
     expect(tool.run).toEqual({ from: 'running', to: 'failed', terminalEvent: 'run.failed' });
     const wall = planKillSwitch({ kind: 'wall_clock' }, 'running', ACTIVE_GENS);
     expect(wall.run).toEqual({ from: 'running', to: 'failed', terminalEvent: 'run.failed' });
@@ -64,10 +76,14 @@ describe('planKillSwitch (P3.4 — rule #1 kill switch, decide-only)', () => {
     expect(configured.run).toEqual({ from: 'configured', to: 'cancelled', terminalEvent: null });
     // completing (→completed only) and stopping (→stopped only) are excluded — never mislabeled →failed.
     for (const s of ['completing', 'stopping'] as RunStatus[]) {
-      expect(planKillSwitch({ kind: 'cap_breach', dimension: 'maxPopulation' }, s, []).run).toBeNull();
+      expect(
+        planKillSwitch({ kind: 'cap_breach', dimension: 'maxPopulation' }, s, []).run,
+      ).toBeNull();
     }
     // already-terminal run → no transition (from_terminal, via the guard).
-    expect(planKillSwitch({ kind: 'cap_breach', dimension: 'maxPopulation' }, 'failed', []).run).toBeNull();
+    expect(
+      planKillSwitch({ kind: 'cap_breach', dimension: 'maxPopulation' }, 'failed', []).run,
+    ).toBeNull();
   });
 
   test('kill_generation_per_state_dispositions', () => {

@@ -61,7 +61,11 @@ describe('estimateReconcile (P3.5 — estimate + actual, rule #8)', () => {
   test('tool_and_spawn_estimate_equals_actual', () => {
     // spec(§4): flat per-event cost — no token variance → actual === estimate (no providerMeta needed).
     const tool = reconcileEnergy(
-      { scope: { ...SCOPE, reason: 'tool_call' }, eventType: 'tool', estimate: estimateEnergy({ eventType: 'tool' }, DEFAULT_COST_MAP) },
+      {
+        scope: { ...SCOPE, reason: 'tool_call' },
+        eventType: 'tool',
+        estimate: estimateEnergy({ eventType: 'tool' }, DEFAULT_COST_MAP),
+      },
       DEFAULT_COST_MAP,
     );
     expect(tool.estimate).toBe(5);
@@ -69,7 +73,11 @@ describe('estimateReconcile (P3.5 — estimate + actual, rule #8)', () => {
     expect(EnergyEvent.parse(tool)).toEqual(tool);
 
     const spawn = reconcileEnergy(
-      { scope: { ...SCOPE, reason: 'spawn' }, eventType: 'spawn', estimate: estimateEnergy({ eventType: 'spawn' }, DEFAULT_COST_MAP) },
+      {
+        scope: { ...SCOPE, reason: 'spawn' },
+        eventType: 'spawn',
+        estimate: estimateEnergy({ eventType: 'spawn' }, DEFAULT_COST_MAP),
+      },
       DEFAULT_COST_MAP,
     );
     expect(spawn.estimate).toBe(50);
@@ -105,8 +113,14 @@ describe('estimateReconcile (P3.5 — estimate + actual, rule #8)', () => {
       const estimate = estimateEnergy(draw, DEFAULT_COST_MAP);
       const ev =
         draw.eventType === 'llm'
-          ? reconcileEnergy({ scope: SCOPE, eventType: 'llm', estimate, providerMeta: PM }, DEFAULT_COST_MAP)
-          : reconcileEnergy({ scope: SCOPE, eventType: draw.eventType, estimate }, DEFAULT_COST_MAP);
+          ? reconcileEnergy(
+              { scope: SCOPE, eventType: 'llm', estimate, providerMeta: PM },
+              DEFAULT_COST_MAP,
+            )
+          : reconcileEnergy(
+              { scope: SCOPE, eventType: draw.eventType, estimate },
+              DEFAULT_COST_MAP,
+            );
       expect(['llm', 'tool', 'spawn']).toContain(ev.eventType);
     }
   });
