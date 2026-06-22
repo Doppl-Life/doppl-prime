@@ -2,7 +2,12 @@
 // REQ-S-004 / RISK-006-009 — secrets never enter event payloads or Langfuse traces; one pure scrub
 // runs before append AND before Langfuse emit. Tests pin the frozen scrubSecrets contract.
 import { describe, it, expect } from 'vitest';
-import { scrubSecrets, REDACTION_PLACEHOLDER } from '@doppl/contracts';
+import {
+  ProviderMeta,
+  scrubSecrets,
+  REDACTION_PLACEHOLDER,
+  validProviderMeta,
+} from '@doppl/contracts';
 
 describe('scrubSecrets — secret redaction at the persistence boundary (spec §14)', () => {
   it('redacts_provider_key_value', () => {
@@ -208,6 +213,38 @@ describe('scrubSecrets — secret redaction at the persistence boundary (spec §
     // spec(§14): numbers, booleans, null pass through untouched (a provider key is always a string).
     const input = { n: 42, b: true, z: null, nested: { m: 3.14, flag: false } };
     expect(scrubSecrets(input)).toEqual(input);
+  });
+
+  it('numeric_value_under_sensitive_key_passes_through', () => {
+    // spec(§14): a NUMBER under a sensitive key-name is never a credential (a count, not a token) and
+    // must round-trip its type — whole-redacting it to the STRING placeholder corrupts the value and
+    // breaks the persisted contract's round-trip (rule #7). `tokensIn`/`tokensOut` match "token".
+    const out = scrubSecrets({ tokensIn: 1200, tokensOut: 5, count: 7 }) as Record<string, unknown>;
+    expect(out.tokensIn).toBe(1200);
+    expect(out.tokensOut).toBe(5);
+    expect(out.count).toBe(7);
+  });
+
+  it('boolean_value_under_sensitive_key_passes_through', () => {
+    // spec(§14): a BOOLEAN under a sensitive key is never a credential — it round-trips its type.
+    const out = scrubSecrets({ secret_flag: true, token_present: false }) as Record<
+      string,
+      unknown
+    >;
+    expect(out.secret_flag).toBe(true);
+    expect(out.token_present).toBe(false);
+  });
+
+  it('provider_meta_round_trips_through_scrub', () => {
+    // spec(§14/§9) rule #7: a full ProviderMeta survives the scrub — tokensIn/tokensOut stay integers
+    // and the result ProviderMeta.safeParse-s (the bug surfaced by verifier-010's judge.reviewed persist).
+    const out = scrubSecrets(validProviderMeta);
+    const parsed = ProviderMeta.safeParse(out);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.tokensIn).toBe(validProviderMeta.tokensIn);
+      expect(parsed.data.tokensOut).toBe(validProviderMeta.tokensOut);
+    }
   });
 
   it('no_secret_in_output_corpus', () => {
