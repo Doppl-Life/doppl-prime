@@ -60,8 +60,8 @@ field.
 - `## Discovery` — accretes. What discovery pulled in (web + stock field). Found, not concluded.
 - `## Growth` — the live work, the current stage at full fidelity. Holds the stage content (a
 problem's recovery chain, or a doppl's `### Claim` + `### Implications` + `### Opportunities`), the
-leaf action surface (`### Skin in the Game` for a problem leaf), and `### Evaluation` — the judge's
-ground truth (per-axis score + reasoning, boiled down into the single `scores`).
+action surface (`### Skin in the Game` on a problem_recovery node, `### Opportunities` on a doppl), and `### Evaluation` — the judge's
+ground truth (one `#### <axis>` subsection per axis with full reasoning, boiled down into `scores.judge`).
 - `## Path` — names the next stage, or `null`.
 
 Both stage variants are written out in full in `node-template-draft.md`.

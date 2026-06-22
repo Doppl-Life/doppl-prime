@@ -1,8 +1,9 @@
 ---
 name: discovery
 description: >
-  Kernel function. A round trip a stage calls to gather context: read the stock field, reach the web,
-  score finds, promote the keepers into stock, and return the pulled-together context to the caller.
+  Kernel function with one job: gather high-signal context for a stage. Read the stock field, reach
+  the web, keep only what clears the signal bar, write the keepers to stock, and return the context
+  to the caller. It does not score, decay, or judge — it finds.
 trigger: >
   Called by problem_recovery or doppl when a stage needs more context, a missing fact, or a cost it
   can't yet estimate. Never called by case_study (a seed doesn't search; it just starts).
@@ -11,28 +12,29 @@ kind: kernel function · markdown-as-code · modular tool interface
 
 # discovery
 
-A round-trip tool. The calling stage hands discovery a focus; discovery returns context and (as a
-side effect) enriches the stock field. The stage then finishes. Discovery is what was *found*; the
-stage's Growth is what was *concluded*.
+One job: find high-signal context and put it where the stage and the stock can use it. Discovery is
+what was *found*; the stage's Growth is what was *concluded*.
+
+What discovery does NOT do — other functions own these:
+
+- it does **not score** finds — there is a bar to clear, not a number per item;
+- it does **not decay or expire** anything — that is a separate maintenance function over the stock;
+- it does **not care about temporal / zeitgeist** — that is a property of a node, not of a search.
 
 ## Inputs
 
 - `focus` — what the stage needs (the recovered problem, the doppl claim, or a specific gap).
-- `field_id` — the stock field for this domain (read what's known; write what's new).
-- `temporal` — whether the work is timing-bound (governs decay/expiry of zeitgeist finds).
+- `field_id` — the stock field to read from and write to.
+- `config` — where the stock lives and how to write it (see Config).
 
 ## Procedure
 
-1. **Read the stock field first.** Pull existing load-bearing facts for `field_id`. Free, and first.
+1. **Read the stock field first.** Pull what's already known for `field_id`. Free, and first.
 2. **Reach the web** through the modular backend (see Backends). Collect raw finds.
-3. **Score each find `−5…+5`** (novelty + grounding against the focus). A *find* is anything
-   retrieved; a *discovery* is a find that clears the bar (≥ **+3**). Below the bar = scratch, not
-   promoted. find → discovery is the flow→stock boundary.
-4. **Enrich, don't duplicate.** For each discovery, classify against the field: rehash → drop,
-   enrichment → merge, new → add. Never write the same fact twice; log why.
-5. **Decay / expire.** Zeitgeist finds decay over time and expire below the floor; transfers don't.
-6. **Return** the pulled-together context to the caller, and **write** new discoveries to the stock
-   field with provenance.
+3. **Clear the signal bar.** Keep only high-signal finds; drop noise and easy/light hits. This is a
+   gate (in or out), set high — not casual discovery, and not a rating.
+4. **Write keepers to the stock field** with provenance; don't duplicate what's already there.
+5. **Return** the kept context to the calling stage.
 
 ## Backends (modular — add a tool, don't hardcode)
 
@@ -40,13 +42,16 @@ stage's Growth is what was *concluded*.
 - later: a large-scale Karpathian deep-research skill for "go off and find it" runs.
 - The verb is `discover`; backends are swappable behind it.
 
-## Rules
+## Config
 
-- Discovery is **not** rated by humans. It is gated here, by the bar.
-- One verb, many backends. The calling stage doesn't know or care which backend ran.
+Discovery must be told where things live and how to write them:
+
+- `stock_location` — where the stock field / database is.
+- `write_method` — how a keeper is appended or merged.
+- `backend` — which discovery backend to use for this call.
 
 ## Reconcile later (jungle)
 
-`tools/source-radar.ts` already implements most of this: source recipes, three discovery lenses
-scored `−5…+5` (hit +3, trap −3), decay half-lives, expiry thresholds. That is the backend to wire
-in — after settling the scale/decay conflicts in `rating-inventory-draft.md`.
+`tools/source-radar.ts` already has the source recipes (the backends) and source-quality signals.
+Its −5…+5 lens scoring and its decay/expiry are **not** discovery's job here: scoring belongs to
+whatever filter sets the bar; decay/expiry belongs to the stock-maintenance function.

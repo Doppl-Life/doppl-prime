@@ -10,8 +10,10 @@ stage** — the content of `## Growth`, and the leaf action surface. The seed is
 | -------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
 | Growth content                               | the recovery chain (surface → … → actual problem) | `### Claim` + `### Implications` + `### Opportunities` |
 | leaf action surface (only if it is the leaf) | `### Skin in the Game`                            | Opportunities already is it                            |
-| `next`                                       | usually `doppl`                                   | usually `null`                                     |
+| `next`                                       | `doppl`                                   | `null`                                     |
 
+
+`next` is fixed by stage: `case_study → problem_recovery`, `problem_recovery → doppl`, `doppl → null`.
 
 Both variants are shown in full below, so the writer knows exactly what each must contain.
 
@@ -25,7 +27,7 @@ root: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44     # the seed case_study id
 prev: [7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44]
 kernel: melissa                  # [optional] Cody | Melissa | Michael | Dalton | prime
 temporal: false                  # true = zeitgeist (decays) · false = transfer (timeless)
-next: doppl                      # or null, if this problem is the leaf
+next: doppl                      # deterministic by stage: problem_recovery → doppl
 scores: { judge: 3, human: -2, n: 4 }   # single -5..+5 each. projection of the ratings ledger.
 ---
 
@@ -51,17 +53,31 @@ Yuan-denominated offtake pulls supply off the spot market.  → field: battery-s
 
 surface complaint → deleted assumption → hidden variable → actual problem → candidate response
 
-### Skin in the Game            <!-- only if this problem is the LEAF · real-world-first nudges -->
+### Skin in the Game            <!-- on a problem_recovery node · real-world-first validation nudges -->
 
 - who to talk to · the cheap quick real-world tests that risks time/money/ego · what would change your mind
 
 ### Evaluation                  <!-- judge's ground truth; humans get one slider, not this -->
 
-- Novelty +3 — reframes off the consensus scarcity story
-- Grounding +2 — sourced, mechanism plausible
-- Worth the squeeze +1 — needs primary research to confirm
-- Lens fit +3 — actionable for the allocator lens
-- Falsifiability +2 — falsifier named
+#### Novelty +3
+
+Reframes off the consensus scarcity story — from "raw lithium is scarce" to "refined-supply access is the bind." Room here to lay out why that reframe isn't already priced in.
+
+#### Grounding +2
+
+Sourced; mechanism plausible. Drop the refining-capacity and offtake receipts here as they firm up.
+
+#### Worth the squeeze +1
+
+Needs primary research to confirm the offtake lock; until then the cost of certainty is high.
+
+#### Lens fit +3
+
+Actionable for the allocator lens — it points at instruments, not just a thesis.
+
+#### Falsifiability +2
+
+Falsifier named: if refined-supply spreads don't widen as AV demand rises, the frame is wrong.
 
 ## Path
 
@@ -120,11 +136,25 @@ The unlock is refining capacity + offtake position, not extraction.
 
 ### Evaluation                  <!-- judge's ground truth; humans get one slider, not this -->
 
-- Novelty +2 — reframes off the consensus scarcity story
-- Grounding +3 — sourced, mechanism plausible
-- Worth the squeeze +4 — needs primary research to confirm
-- Lens fit +3 — actionable for the allocator lens
-- Falsifiability +1 — falsifier named
+#### Novelty +2
+
+The refining/offtake unlock is a real reframe, though parts are becoming visible to the market.
+
+#### Grounding +3
+
+Refining-capacity and yuan-offtake mechanics are sourced; one dated signal.
+
+#### Worth the squeeze +4
+
+Investable via liquid instruments — low ownership burden for the exposure it buys.
+
+#### Lens fit +3
+
+Fits a capital-allocator lens; points at deployable positions.
+
+#### Falsifiability +1
+
+Falsifier named but soft; tighten the dated test.
 
 ## Path
 
