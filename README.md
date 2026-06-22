@@ -27,7 +27,8 @@ It also writes a browser-readable proof board to `kernel/out/proof-board/index.h
 
 The deterministic fixture path now runs through provider-neutral generation boundaries:
 `ProblemRecoveryProvider`, `CandidateGenerator`, and `CriticCouncil`.
-Model calls are routed through the provider-agnostic `ModelClient` boundary with replayable JSONL call records.
+Those providers can be fixture-backed, hand-injected, or backed by the provider-agnostic
+`ModelClient` boundary with replayable JSONL call records.
 
 Refresh the committed static preview:
 
