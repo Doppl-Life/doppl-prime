@@ -4,7 +4,7 @@
 - **Track / area:** `demo` / `apps/web` (implementer: demo-web-implementer)
 - **Phase:** Phase 7 — Frontend dashboard
 - **Predecessor:** none for the web track (forked from the kernel freeze bundle — `kernel-001-2026-06-21-freeze-bundle.md`)
-- **Successor:** _(P7.5 run-config panel, next round)_
+- **Successor:** `demo-web-002-2026-06-21-p7.5-run-config-panel.md`
 
 > **Filename note:** the demo track has TWO implementers (web + observability), so the per-track `NNN`
 > counter would collide. This doc is **area-qualified** (`demo-web-NNN`) so the web + observability
