@@ -39,10 +39,20 @@ describe("createCapEnforcer — per-cap exhaustion", () => {
     expect(result).toEqual({ ok: false, cap: "maxGenerations", value: 5, limit: 5 });
   });
 
-  test("maxPopulation exhausted (>= triggers)", () => {
+  test("maxPopulation is inclusive — populationCount == maxPopulation is allowed", () => {
+    // The cap is the inclusive ceiling. Reproducing exactly
+    // maxPopulation children must still be a valid generation; a
+    // previous bug used `>=` and blocked every multi-generation run
+    // that hit the cap.
     const enforcer = createCapEnforcer(CAPS);
     const result = enforcer.enforceCaps(baseState({ populationCount: 8 }));
-    expect(result).toEqual({ ok: false, cap: "maxPopulation", value: 8, limit: 8 });
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("maxPopulation exhausted (> triggers)", () => {
+    const enforcer = createCapEnforcer(CAPS);
+    const result = enforcer.enforceCaps(baseState({ populationCount: 9 }));
+    expect(result).toEqual({ ok: false, cap: "maxPopulation", value: 9, limit: 8 });
   });
 
   test("maxSpawnDepth exhausted", () => {

@@ -56,7 +56,13 @@ export function createCapEnforcer(caps: RunCaps, options: CapEnforcerOptions = {
           limit: caps.maxGenerations,
         };
       }
-      if (state.populationCount >= caps.maxPopulation) {
+      // Strictly-greater-than: the cap is the inclusive ceiling, so
+      // populationCount === maxPopulation is allowed (the run config
+      // says "at most N agenomes per generation" — exactly N must
+      // still be processable). Previously `>=` rejected a fresh
+      // generation whose reproduce hook produced maxPopulation
+      // successors, blocking every multi-generation run cold.
+      if (state.populationCount > caps.maxPopulation) {
         return {
           ok: false,
           cap: "maxPopulation",

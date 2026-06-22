@@ -37,6 +37,29 @@ function formatZodError(error: z.ZodError): string {
   return error.errors.map((e) => `${e.path.join(".") || "(root)"}: ${e.message}`).join("; ");
 }
 
+/**
+ * Coerce model output into an object before schema validation. The
+ * OpenRouter/OpenAI adapter returns `completion.choices[0].message.content`
+ * verbatim — a JSON string when the model is asked to "return JSON".
+ * Zod object schemas reject strings ("Expected object, received string"),
+ * so without this step every critic / subtype_check / final_judge call
+ * fails validation despite the model returning valid JSON.
+ *
+ * Strips markdown code fences (```json ... ```) before parsing because
+ * some routes emit JSON wrapped in a markdown block.
+ */
+function coerceToObject(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  let text = raw.trim();
+  const fence = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  if (fence?.[1] !== undefined) text = fence[1].trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return raw;
+  }
+}
+
 export async function pipeStructuredOutput<S extends ZodTypeAny>(opts: {
   raw: unknown;
   schema: S;
@@ -45,7 +68,7 @@ export async function pipeStructuredOutput<S extends ZodTypeAny>(opts: {
 }): Promise<StructuredOutputResult<z.infer<S>>> {
   const { raw, schema, repair, ctx } = opts;
 
-  const first = schema.safeParse(raw);
+  const first = schema.safeParse(coerceToObject(raw));
   if (first.success) {
     return { ok: true, output: first.data, repairAttempts: 0 };
   }
@@ -55,7 +78,7 @@ export async function pipeStructuredOutput<S extends ZodTypeAny>(opts: {
   // (the gateway treats it as an adapter failure).
   const repaired = await repair();
 
-  const second = schema.safeParse(repaired);
+  const second = schema.safeParse(coerceToObject(repaired));
   if (second.success) {
     return { ok: true, output: second.data, repairAttempts: 1 };
   }
