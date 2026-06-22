@@ -158,3 +158,29 @@ export {
   type PartialTerminalSummary,
   type ScoredSurvivor,
 } from './terminal/partialSummary';
+
+// In-process single-active-run worker (P3.12 — §5 workers/concurrency; KEY SAFETY RULES #1/#2/#8). The
+// worker is runGenerationLoop's PRODUCTION caller: single-active-run guard (authoritative, over the log) →
+// run.started (configured→running, guard-validated) → drive the loop (terminalizes via P3.11) → §60
+// side-signal heartbeat (NOT a run_event). Idempotent off the persisted log (no double-append/debit). The
+// REST→worker trigger + stop→operatorStop wiring is demo/Phase-D territory (routes/ untouched here).
+export {
+  runWorker,
+  type RunWorkerDeps,
+  type RunWorkerResult,
+  type RunWorkerSkipReason,
+  type RunWorkerHeartbeat,
+} from './worker/runWorker';
+export {
+  activeRunGuard,
+  isRunTerminal,
+  type ActiveRunEntry,
+  type ActiveRunDecision,
+} from './worker/activeRunGuard';
+export {
+  sequenceWatermark,
+  stepAlreadyRecorded,
+  guardStep,
+  type StepMatch,
+  type StepDecision,
+} from './worker/idempotency';

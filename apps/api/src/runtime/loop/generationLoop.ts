@@ -116,6 +116,9 @@ export interface GenerationLoopDeps {
   readonly now?: () => number;
   /** Injected operator-stop signal — `true` triggers an operator_stop kill (§5). */
   readonly operatorStop?: () => boolean;
+  /** P3.12 — called once at the top of each generation iteration (the worker beats the §60 heartbeat here).
+   *  Default undefined → no-op (zero behavior change; not a run_event — a side signal, rule #2). */
+  readonly onIteration?: () => void;
 }
 
 export interface GenerationLoopResult {
@@ -306,6 +309,9 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
 
   let generationsRun = 0;
   for (let g = 0; enforceCap('maxGenerations', g, 1, caps).allowed; g += 1) {
+    // P3.12 — per-generation liveness hook (the worker beats the §60 heartbeat here). Side signal only.
+    deps.onIteration?.();
+
     // KILL CHECK (before scheduling the next generation): a cap breach / operator-stop aborts the run.
     // The kill is LATCHING — `break` schedules no new work; executeKillAndDrain terminalizes every
     // non-terminal under the kill (run is 'running' here; prior generations are completed = terminal).
