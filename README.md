@@ -11,6 +11,8 @@ This is a two-week Gauntlet capstone (MVP/prototype). Showcase: **June 29, 2026*
 - `ARCHITECTURE.md` — the design contract / source of truth.
 - `IMPLEMENTATION_PLAN.md` — the spec-anchored build plan.
 - `docs/` — planning artifacts and gap audits.
+- `calibrator/` — vault-first human calibration workbench.
+- `published/calibrator/` — read-only static export of the calibrator.
 
 ## Status
 

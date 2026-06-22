@@ -24,11 +24,10 @@ npm --prefix calibrator run build
 The app can run as a read-only static build because it falls back from `/api/index` to `calibration-index.json`.
 
 ```bash
-npm --prefix calibrator run generate:index
-npm --prefix calibrator run build
+npm --prefix calibrator run export:static
 ```
 
-Host `calibrator/dist/` to show the calibrator online. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
 
 ## Vault Shape
 
