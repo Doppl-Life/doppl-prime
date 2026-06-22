@@ -102,24 +102,26 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
     expect(() => RunEventEnvelope.parse({ ...validFull, occurredAt: '2026-06-20' })).toThrow();
   });
 
-  it('schema_version_required_positive_int', () => {
-    // spec(§4): schemaVersion is a required positive integer on every envelope. [kernel-020 reconcile]
-    // the linearized bumps don't break old-version validation at the contract level — 1 (oldest),
-    // 2 (P0.1-amend markers), 3 (P0.16 judge), and 4 (current — kernel degraded+repairing) all parse
-    // (the ≤-current reader logic is P1's; the contract just requires a positive int). This is the
-    // forward-compatible / non-breaking guarantee made concrete.
+  it('backward_compat_v1_to_v5_envelopes_validate', () => {
+    // spec(§4) §19 backward-compat: schemaVersion is a required positive integer on every envelope, and
+    // the terminal-event amendment (sv4→5) is purely ADDITIVE — every prior-version envelope still
+    // validates at the contract level — 1 (oldest), 2 (P0.1-amend markers), 3 (P0.16 judge), 4 (kernel
+    // degraded+repairing), and 5 (current — terminal-event amendment) all parse (the ≤-current reader
+    // logic is P1's; the contract just requires a positive int). The non-breaking guarantee made concrete.
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 1 }).schemaVersion).toBe(1);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 2 }).schemaVersion).toBe(2);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 3 }).schemaVersion).toBe(3);
     expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 4 }).schemaVersion).toBe(4);
+    expect(RunEventEnvelope.parse({ ...validFull, schemaVersion: 5 }).schemaVersion).toBe(5);
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 0 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: -1 })).toThrow();
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_4', () => {
-    // spec(§4) [P0.5-amend]: the registry-pinned current schema version is 4 (bumped 3→4 for the
-    // additive CandidateStatus +repairing amendment). The exported constant is the single source.
-    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+  it('current_schema_version_is_5', () => {
+    // spec(§4) [terminal-event amendment]: the registry-pinned current schema version is 5 (bumped 4→5
+    // for the additive run.cancelled/generation.skipped/agenome.failed/candidate.rejected terminal
+    // events). The exported constant is the single source the reader's ≤-current ceiling tracks.
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
   });
 });

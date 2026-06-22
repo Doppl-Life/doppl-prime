@@ -20,8 +20,9 @@ import type { CapDimension } from './capEnforcer';
  *    terminal → excluded.
  *
  * Named (replayable) terminal events: `run.stopped` / `run.failed` / `energy_exhausted` (energy dimension)
- * / `generation_failed`. `configured→cancelled` and `pending→skipped` are STATUS-ONLY (no `run.cancelled`
- * / generation-skip event exists in the closed registry) → `terminalEvent: null` (registry gap escalated).
+ * / `generation_failed`. The terminal-event amendment (sv4→5) closes the rule-#2 gap for the kill switch's
+ * two formerly status-only dispositions — `configured→cancelled` now names `run.cancelled` and
+ * `pending→skipped` now names `generation.skipped` (both previously `terminalEvent: null`).
  */
 
 export type KillTrigger =
@@ -79,15 +80,16 @@ function generationTarget(from: GenerationStatus): GenerationStatus | null {
   return null; // degraded (transient → verifying) or terminal
 }
 
-/** The replayable terminal event for a planned run transition (null = status-only, no registry event). */
+/** The replayable terminal event for a planned run transition (null = no §3-terminal event for this edge). */
 function runEventFor(trigger: KillTrigger, to: RunStatus): RunEventType | null {
   if (to === 'stopping') return 'run.stopped'; // terminal reached after drain
+  if (to === 'cancelled') return 'run.cancelled'; // terminal-event amendment (sv4→5): rule #2 replayable
   if (to === 'failed') {
     return trigger.kind === 'cap_breach' && trigger.dimension === 'energyBudget'
       ? 'energy_exhausted'
       : 'run.failed';
   }
-  return null; // cancelled — no run.cancelled event in the registry (status-only)
+  return null;
 }
 
 function reasonFor(trigger: KillTrigger): string {
@@ -127,7 +129,8 @@ export function planKillSwitch(
         id: generation.id,
         from: generation.status,
         to: gTarget,
-        terminalEvent: gTarget === 'failed' ? 'generation_failed' : null,
+        // terminal-event amendment (sv4→5): pending→skipped now names generation.skipped (rule #2).
+        terminalEvent: gTarget === 'failed' ? 'generation_failed' : 'generation.skipped',
       });
     }
   }
