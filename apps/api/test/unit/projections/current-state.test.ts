@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import {
   CURRENT_SCHEMA_VERSION,
+  RunEventType,
   validCandidateIdeaCrossDomain,
   validCriticReview,
   validCheckResult,
@@ -10,8 +11,14 @@ import {
   validFitnessScore,
   validReproductionEvent,
   validCullingEvent,
+  validJudgeResult,
 } from '@doppl/contracts';
-import { buildCurrentState, canonicalize, type RunEventRow } from '../../../src/projections';
+import {
+  buildCurrentState,
+  canonicalize,
+  currentStateReducer,
+  type RunEventRow,
+} from '../../../src/projections';
 
 /**
  * P6.2 — current-state projection (pure unit). spec(§9): a concrete reducer INJECTED into P6.1's
@@ -212,6 +219,109 @@ describe('buildCurrentState — concrete reducer over the P6.1 fold (spec §9)',
     ]);
     expect(state.candidateIdeas['cand_3']?.status).toBe('culled');
     expect(state.candidateIdeas['cand_4']?.status).toBe('culled');
+  });
+
+  // §4/§7 (sv5) — judge.reviewed projects its JudgeResult VERBATIM into a new judgeResults row keyed
+  // by JudgeResult.id (mirrors noveltyScores/fitnessScores); rule #7 read-back, never re-judged.
+  test('test_judge_reviewed_projects_judge_result', () => {
+    const { state } = buildCurrentState([
+      makeRow('judge.reviewed', { runId: 'run_1', sequence: 0, payload: validJudgeResult }),
+    ]);
+    expect(state.judgeResults['judge_1']).toEqual(validJudgeResult);
+  });
+
+  // §3/§9 (sv5) — the 4 new sv5 terminal events move the affected entity to its frozen terminal status
+  // (mirrors candidate_invalidated→'invalid'): run.cancelled / generation.skipped / agenome.failed /
+  // candidate.rejected.
+  test('test_sv5_terminals_set_terminal_status', () => {
+    const cancelled = buildCurrentState([
+      makeRow('run.configured', { runId: 'r_c', sequence: 0 }),
+      makeRow('run.cancelled', { runId: 'r_c', sequence: 1 }),
+    ]);
+    expect(cancelled.state.runs['r_c']?.status).toBe('cancelled');
+
+    const skipped = buildCurrentState([
+      makeRow('generation.started', { runId: 'r_g', generationId: 'g_1', sequence: 0 }),
+      makeRow('generation.skipped', { runId: 'r_g', generationId: 'g_1', sequence: 1 }),
+    ]);
+    expect(skipped.state.generations['g_1']?.status).toBe('skipped');
+
+    const agnFailed = buildCurrentState([
+      makeRow('agenome.spawned', {
+        runId: 'r_a',
+        generationId: 'g_1',
+        agenomeId: 'agn_1',
+        sequence: 0,
+      }),
+      makeRow('agenome.failed', {
+        runId: 'r_a',
+        generationId: 'g_1',
+        agenomeId: 'agn_1',
+        sequence: 1,
+      }),
+    ]);
+    expect(agnFailed.state.agenomes['agn_1']?.status).toBe('failed');
+
+    const candRejected = buildCurrentState([
+      makeRow('candidate.created', {
+        runId: 'r_r',
+        sequence: 0,
+        payload: validCandidateIdeaCrossDomain,
+      }),
+      makeRow('candidate.rejected', { runId: 'r_r', candidateId: 'cand_1', sequence: 1 }),
+    ]);
+    expect(candRejected.state.candidateIdeas['cand_1']?.status).toBe('rejected');
+  });
+
+  // §3 (sv5) — the sv4 statuses generation 'degraded' / candidate 'repairing' are kernel-internal
+  // state-machine states with NO RunEventType carrying them: NO event type folds an entity to those
+  // statuses through the projection (display coverage is the web status-map's job, demo-029). Exhaustive
+  // over the closed 41-member registry, folding each onto a running-generation + created-candidate seed.
+  test('test_degraded_repairing_have_no_event_transition', () => {
+    const { state: seed } = buildCurrentState([
+      makeRow('generation.started', { runId: 'run_1', generationId: 'gen_1', sequence: 0 }),
+      makeRow('candidate.created', {
+        runId: 'run_1',
+        sequence: 1,
+        payload: validCandidateIdeaCrossDomain,
+      }),
+    ]);
+    for (const type of RunEventType.options) {
+      const next = currentStateReducer(
+        seed,
+        makeRow(type, {
+          runId: 'run_1',
+          generationId: 'gen_1',
+          candidateId: 'cand_1',
+          sequence: 2,
+        }),
+      );
+      expect(
+        next.generations['gen_1']?.status,
+        `${type} must not drive generation to degraded`,
+      ).not.toBe('degraded');
+      expect(
+        next.candidateIdeas['cand_1']?.status,
+        `${type} must not drive candidate to repairing`,
+      ).not.toBe('repairing');
+    }
+  });
+
+  // §9 (sv5) — idempotent re-fold preserved for the new branches: re-applying the same judge.reviewed /
+  // terminal event sets the same keyed row (never double-counts); a rebuild is canonical-equal.
+  test('test_sv5_refold_idempotent', () => {
+    const runId = 'run_1';
+    const events: RunEventRow[] = [
+      makeRow('judge.reviewed', { runId, sequence: 0, payload: validJudgeResult }),
+      makeRow('judge.reviewed', { runId, sequence: 1, payload: validJudgeResult }),
+      makeRow('run.cancelled', { runId, sequence: 2 }),
+      makeRow('run.cancelled', { runId, sequence: 3 }),
+    ];
+    const first = buildCurrentState(events);
+    const second = buildCurrentState(events);
+    expect(canonicalize(first.state)).toBe(canonicalize(second.state));
+    expect(Object.keys(first.state.judgeResults)).toEqual(['judge_1']); // one row, no dupe
+    expect(first.state.runs[runId]?.status).toBe('cancelled');
   });
 
   // rule #7 — structural: the current-state reducer modules import no ModelGateway/provider/embedding.

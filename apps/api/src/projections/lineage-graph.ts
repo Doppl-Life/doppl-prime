@@ -99,6 +99,19 @@ export function buildLineageGraph(
     });
   }
 
+  // sv5 — the held-out judge's acceptance renders as a closed-set `score` node (the closed-6
+  // LineageNodeType has no `judge`; the judge is an acceptance score, like fitness — LESSONS §54). Its
+  // candidate→judge `judged_by` edge is emitted below, guarded like any other structural edge.
+  for (const judge of Object.values(state.judgeResults)) {
+    nodes.push({
+      id: judge.id,
+      type: 'score',
+      label: `Judge acceptance ${judge.acceptance}`,
+      metrics: { acceptance: judge.acceptance },
+      dataRef: judge.id,
+    });
+  }
+
   // Structural connectivity (guarded) — emit only when both endpoint nodes exist. Edge ids are
   // KIND-PREFIXED (`struct:` here, `repro:` below) so a structural and a reproduction edge sharing the
   // same `${source}->${target}` (possible when a reproduction child id coincides with a candidate id
@@ -123,6 +136,9 @@ export function buildLineageGraph(
   }
   for (const fitness of Object.values(state.fitnessScores)) {
     linkStructural(fitness.candidateId, fitness.id, 'scored_by');
+  }
+  for (const judge of Object.values(state.judgeResults)) {
+    linkStructural(judge.candidateId, judge.id, 'judged_by');
   }
 
   // Reproduction genealogy — the authoritative parent→child edges, `repro:`-prefixed (see above) so

@@ -11,6 +11,7 @@ import {
   validNoveltyScore,
   validFitnessScore,
   validReproductionEvent,
+  validJudgeResult,
 } from '@doppl/contracts';
 import {
   buildCurrentState,
@@ -221,6 +222,57 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     const graph = buildLineageGraph(buildCurrentState(fullRunEvents('run_1')));
     const ids = graph.nodes.map((n) => n.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  // §10 (sv5) — a JudgeResult renders as a closed-set 'score' node (the closed-6 LineageNodeType has no
+  // 'judge' — LESSONS §54, encode non-node concepts as status/metric): metrics.acceptance + dataRef=id.
+  test('test_judge_renders_as_score_node', () => {
+    const graph = buildLineageGraph(
+      buildCurrentState([
+        makeRow('candidate.created', {
+          runId: 'run_1',
+          sequence: 0,
+          payload: validCandidateIdeaCrossDomain,
+        }),
+        makeRow('judge.reviewed', { runId: 'run_1', sequence: 1, payload: validJudgeResult }),
+      ]),
+    );
+    const judgeNode = graph.nodes.find((n) => n.id === 'judge_1');
+    expect(judgeNode?.type).toBe('score');
+    expect(judgeNode?.metrics?.acceptance).toBe(validJudgeResult.acceptance);
+    expect(judgeNode?.dataRef).toBe('judge_1');
+    // no invented 7th node type — every node stays in the frozen closed-6 set.
+    for (const n of graph.nodes) expect(LineageNodeType.options).toContain(n.type);
+  });
+
+  // §10 (sv5) — a guarded structural candidate→judge 'judged_by' edge: emitted (struct:-prefixed id)
+  // only when the candidate node exists; dropped when it is absent (dangling-edge guard, LESSONS §54).
+  test('test_judge_edge_guarded_and_prefixed', () => {
+    const withCand = buildLineageGraph(
+      buildCurrentState([
+        makeRow('candidate.created', {
+          runId: 'run_1',
+          sequence: 0,
+          payload: validCandidateIdeaCrossDomain,
+        }),
+        makeRow('judge.reviewed', { runId: 'run_1', sequence: 1, payload: validJudgeResult }),
+      ]),
+    );
+    const edge = withCand.edges.find((e) => e.source === 'cand_1' && e.target === 'judge_1');
+    expect(edge?.type).toBe('judged_by');
+    expect(edge?.id.startsWith('struct:')).toBe(true);
+
+    // candidate absent → the judge node still exists, but NO dangling edge to a non-existent candidate.
+    const orphanJudge = { ...validJudgeResult, id: 'judge_orphan', candidateId: 'cand_absent' };
+    const noCand = buildLineageGraph(
+      buildCurrentState([
+        makeRow('judge.reviewed', { runId: 'run_1', sequence: 0, payload: orphanJudge }),
+      ]),
+    );
+    expect(noCand.nodes.some((n) => n.id === 'judge_orphan' && n.type === 'score')).toBe(true);
+    expect(
+      noCand.edges.some((e) => e.source === 'cand_absent' || e.target === 'judge_orphan'),
+    ).toBe(false);
   });
 
   // rule #7 — structural: the lineage builder imports no ModelGateway/provider/embedding.

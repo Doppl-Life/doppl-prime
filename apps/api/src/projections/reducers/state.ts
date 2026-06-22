@@ -5,6 +5,7 @@ import type {
   CriticReview,
   FitnessScore,
   GenerationStatus,
+  JudgeResult,
   NoveltyScore,
   RunStatus,
 } from '@doppl/contracts';
@@ -54,6 +55,7 @@ export interface CurrentState {
   checkResults: Record<string, CheckResult>;
   noveltyScores: Record<string, NoveltyScore>;
   fitnessScores: Record<string, FitnessScore>;
+  judgeResults: Record<string, JudgeResult>;
   lineageEdges: Record<string, LineageEdgeRow>;
 }
 
@@ -68,6 +70,7 @@ export function emptyCurrentState(): CurrentState {
     checkResults: {},
     noveltyScores: {},
     fitnessScores: {},
+    judgeResults: {},
     lineageEdges: {},
   };
 }

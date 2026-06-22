@@ -1,7 +1,12 @@
 import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { validRunCaps, validCandidateIdeaCrossDomain, validCriticReview } from '@doppl/contracts';
+import {
+  validRunCaps,
+  validCandidateIdeaCrossDomain,
+  validCriticReview,
+  validJudgeResult,
+} from '@doppl/contracts';
 import { createEventStore, type AppendInput, type EventStore } from '../../../src/event-store';
 import { buildServer, DEFAULT_RUN_CONFIG } from '../../../src/server';
 
@@ -106,6 +111,34 @@ describe('GET /runs/:id/health — runtime signal (spec §11/§12)', () => {
       const closed = await app.inject({ method: 'GET', url: `/runs/${runId}/health` });
       expect(
         (closed.json() as { operationsInFlight: { total: number } }).operationsInFlight.total,
+      ).toBe(0);
+    } finally {
+      await app.close();
+    }
+  });
+
+  // §11 (sv5) — judge.review_started↔judge.reviewed in-flight pairing: an unpaired judge.review_started
+  // counts 1 under byType.judge; appending judge.reviewed pairs it to 0 (sv3-reconcile now landed).
+  test('test_judge_in_flight_pairing', async () => {
+    const runId = 'health-judge';
+    await store.append(
+      ev(runId, 0, 'run.configured', { payload: { seed: 's', caps: validRunCaps } }),
+    );
+    await store.append(ev(runId, 1, 'judge.review_started'));
+    const app = makeApp();
+    await app.ready();
+    try {
+      const open = await app.inject({ method: 'GET', url: `/runs/${runId}/health` });
+      expect(
+        (open.json() as { operationsInFlight: { byType: Record<string, number> } })
+          .operationsInFlight.byType.judge,
+      ).toBe(1);
+
+      await store.append(ev(runId, 2, 'judge.reviewed', { payload: validJudgeResult }));
+      const closed = await app.inject({ method: 'GET', url: `/runs/${runId}/health` });
+      expect(
+        (closed.json() as { operationsInFlight: { byType: Record<string, number> } })
+          .operationsInFlight.byType.judge,
       ).toBe(0);
     } finally {
       await app.close();

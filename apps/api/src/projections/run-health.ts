@@ -11,9 +11,9 @@ import type { RunEventRow } from './projection-builder';
  * operations-in-flight = UNPAIRED operation-start markers (count(*_started) − count(completion),
  * clamped ≥0). NOTE: a failed/aborted op (start with no completion due to provider_call_failed/etc.)
  * stays counted under pure count-based pairing — acceptable for the rough signal + matches the literal
- * "unpaired" spec (a failure-decrement is a cheap future refinement). `judge.review_started`'s
- * completion is `judge.reviewed` (sv3, absent on track/demo) → judge is EXCLUDED here (sv3-reconcile).
- * generation.verifying/scoring/reproducing are durable GenerationStatus (in current-state), not ops.
+ * "unpaired" spec (a failure-decrement is a cheap future refinement). `judge.review_started` pairs to
+ * its sv5 completion `judge.reviewed` (the held-out-judge acceptance). generation.verifying/scoring/
+ * reproducing are durable GenerationStatus (in current-state), not ops.
  */
 
 export interface CapUsage {
@@ -60,7 +60,7 @@ const TERMINAL_CANDIDATE_STATUSES: ReadonlySet<string> = new Set([
   'invalid',
 ]);
 
-/** operation-start marker → its completion event (count-based pairing; judge excluded = sv3-reconcile). */
+/** operation-start marker → its completion event (count-based pairing). */
 const OPERATION_PAIRS: Readonly<Record<string, readonly [string, string]>> = {
   candidate_generation: ['candidate.generation_started', 'candidate.created'],
   critic: ['critic.review_started', 'critic.reviewed'],
@@ -68,6 +68,7 @@ const OPERATION_PAIRS: Readonly<Record<string, readonly [string, string]>> = {
   novelty: ['novelty.scoring_started', 'novelty.scored'],
   fusion: ['fusion.started', 'agenome.fused'],
   tool_call: ['tool_call.started', 'tool_call.finished'],
+  judge: ['judge.review_started', 'judge.reviewed'],
 };
 
 function plainObject(payload: unknown): Record<string, unknown> | null {

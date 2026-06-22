@@ -23,6 +23,7 @@ const RUN_TRANSITIONS: Readonly<Record<string, RunStatus>> = {
   'run.completed': 'completed',
   'run.failed': 'failed',
   'run.stopped': 'stopped',
+  'run.cancelled': 'cancelled', // sv5 terminal (configured→cancelled, kill switch)
 };
 
 const GENERATION_TRANSITIONS: Readonly<Record<string, GenerationStatus>> = {
@@ -32,6 +33,7 @@ const GENERATION_TRANSITIONS: Readonly<Record<string, GenerationStatus>> = {
   'generation.reproducing': 'reproducing',
   'generation.completed': 'completed',
   generation_failed: 'failed',
+  'generation.skipped': 'skipped', // sv5 terminal (pending→skipped, kill switch)
 };
 
 export function lifecycleReducer(state: CurrentState, event: RunEventRow): CurrentState {
@@ -78,6 +80,25 @@ export function lifecycleReducer(state: CurrentState, event: RunEventRow): Curre
           runId: event.runId,
           generationId: existing?.generationId ?? event.generationId,
           status: 'reproduced',
+        },
+      },
+    };
+  }
+
+  // sv5 terminal — an agenome moves to its frozen 'failed' status (active→failed; mirrors the
+  // reproduced branch: update-or-materialize, preserving the existing generation identity).
+  if (event.type === 'agenome.failed' && event.agenomeId !== null) {
+    const id = event.agenomeId;
+    const existing = state.agenomes[id];
+    return {
+      ...state,
+      agenomes: {
+        ...state.agenomes,
+        [id]: {
+          id,
+          runId: event.runId,
+          generationId: existing?.generationId ?? event.generationId,
+          status: 'failed',
         },
       },
     };

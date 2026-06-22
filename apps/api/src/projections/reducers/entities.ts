@@ -3,6 +3,7 @@ import type {
   CheckResult,
   CriticReview,
   FitnessScore,
+  JudgeResult,
   NoveltyScore,
 } from '@doppl/contracts';
 import type { RunEventRow } from '../projection-builder';
@@ -40,6 +41,21 @@ export function entitiesReducer(state: CurrentState, event: RunEventRow): Curren
         },
       };
     }
+    case 'candidate.rejected': {
+      // sv5 terminal — an existing candidate moves to the frozen 'rejected' status (mirrors
+      // candidate_invalidated→'invalid'; envelope candidateId; no-op if the candidate isn't materialized).
+      const id = event.candidateId;
+      if (id === null) return state;
+      const existing = state.candidateIdeas[id];
+      if (existing === undefined) return state;
+      return {
+        ...state,
+        candidateIdeas: {
+          ...state.candidateIdeas,
+          [id]: { ...existing, status: 'rejected' } as CandidateIdea,
+        },
+      };
+    }
     case 'critic.reviewed': {
       const id = payloadId(event.payload);
       if (id === null) return state;
@@ -70,6 +86,17 @@ export function entitiesReducer(state: CurrentState, event: RunEventRow): Curren
       return {
         ...state,
         fitnessScores: { ...state.fitnessScores, [id]: event.payload as FitnessScore },
+      };
+    }
+    case 'judge.reviewed': {
+      // sv5 — the held-out judge's authoritative acceptance output (JudgeResult, validated at the append
+      // boundary) stored VERBATIM keyed by its id, mirroring noveltyScores/fitnessScores (rule #7: read
+      // back, never re-judged — the judge is the immutable fitness anchor, rule #6).
+      const id = payloadId(event.payload);
+      if (id === null) return state;
+      return {
+        ...state,
+        judgeResults: { ...state.judgeResults, [id]: event.payload as JudgeResult },
       };
     }
     default:
