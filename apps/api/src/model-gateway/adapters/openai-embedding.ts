@@ -52,9 +52,19 @@ export function createOpenAIEmbeddingAdapter(options: OpenAIEmbeddingAdapterOpti
       "OpenAI embedding adapter: OPENAI_API_KEY is not set (required for the openai-embedding provider)",
     );
   }
+  // Per-request timeout: the embedding call is fast (<1s typical) so
+  // 30s is generously safe. The OpenAI SDK default is 10 minutes,
+  // which would stall novelty scoring for an entire generation if a
+  // single call hangs.
+  const REQUEST_TIMEOUT_MS = 30_000;
   const factory =
     options.openaiFactory ??
-    (((opts) => new OpenAI({ apiKey: opts.apiKey })) as (opts: {
+    (((opts) =>
+      new OpenAI({
+        apiKey: opts.apiKey,
+        timeout: REQUEST_TIMEOUT_MS,
+        maxRetries: 1,
+      })) as (opts: {
       apiKey: string;
     }) => OpenAILike);
   const client = factory({ apiKey });

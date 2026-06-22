@@ -63,9 +63,22 @@ export function createOpenRouterAdapter(options: OpenRouterAdapterOptions): Adap
       "OpenRouter adapter: OPENROUTER_API_KEY is not set (required for the openrouter provider)",
     );
   }
+  // Per-request timeout for the OpenRouter call. OpenAI SDK's default
+  // is 10 minutes, which means a single hung response stalls the whole
+  // sequential generation loop. 60s is well above any normal
+  // completion (gpt-4o-mini typically returns in 1-3s; sonnet 5-15s)
+  // but short enough that a stuck call dies fast and the next agenome
+  // can proceed.
+  const REQUEST_TIMEOUT_MS = 60_000;
   const factory =
     options.openaiFactory ??
-    (((opts) => new OpenAI({ apiKey: opts.apiKey, baseURL: opts.baseURL })) as (opts: {
+    (((opts) =>
+      new OpenAI({
+        apiKey: opts.apiKey,
+        baseURL: opts.baseURL,
+        timeout: REQUEST_TIMEOUT_MS,
+        maxRetries: 1,
+      })) as (opts: {
       apiKey: string;
       baseURL?: string;
     }) => OpenAILike);
