@@ -439,3 +439,25 @@ The per-axis breakdown is keyed by `z.record(FinalJudgeAxis, z.number())`, deriv
 **Rule:** Model a cross-subsystem acceptance/measurement OUTPUT as a first-class persisted contract shaped like its authoritative sibling (don't leave it as a producer-only "persist it" bullet); link the downstream consumer by join + named component, never a duplicate copy or dedicated id; key a closed-set breakdown with `z.record(ClosedEnum, …)` to derive the set from one source + pin completeness/closure (Zod-v4-dependent — gate a major bump), keeping numeric ranges as runtime concerns.
 
 _(P0.16; renumbered §32→§34 at the kernel↔cody reconciliation — its original §32 collided with the kernel's boot-config §32.)_
+
+## <a id="35"></a>35. A shared monotonic contract counter bumped independently in parallel tracks COLLIDES at merge — serialize cross-track version bumps, or number-by-track + linearize (extends §19)
+
+**Date:** 2026-06-21.
+**Source slice:** kernel track P0.16-reconcile (`kernel-020`, merge `117a0ec`); `packages/contracts/src/version.ts` + the member-set snapshots/fixtures.
+
+`CURRENT_SCHEMA_VERSION` is a single monotonic integer shared by every track (one `packages/contracts`). Two tracks that bump it INDEPENDENTLY off the same base collide at merge **even when their payload changes are disjoint**: the kernel forked at v2, added `degraded` (v3) + `repairing` (v4); cody independently added the judge seam (v2→v3) via P0.16. Both legitimately claimed v3 → 6 merge conflicts (version.ts, member-set snapshot, envelope test, fixtures, CLAUDE/LESSONS) — the §19 amendment playbook silently assumed a SINGLE bumping authority, which holds only before the tracks fork.
+
+Resolution = **UNION + version-linearize**: merge the other track in, keep BOTH sides' additive changes, and re-number onto one monotonic line by event/commit order (judge=v3 [first], kernel's two statuses fold to v4 [above judge]) — `CURRENT_SCHEMA_VERSION=4`, RunEventType 37 + GenerationStatus 9 + CandidateStatus 9 + JudgeResult all coexist. Backward-compat holds (readers accept ≤current; older fixtures untouched). Prevention: **serialize cross-track `CURRENT_SCHEMA_VERSION` bumps through the integration owner** (reserve the next integer before bumping), OR number-by-track (e.g. a track-prefixed pre-merge marker) and linearize at the integration merge. The same hazard applies to ANY shared monotonic/append-only counter across worktrees (lesson numbers — see §36 — are a doc-level instance).
+
+**Rule:** A shared monotonic contract counter (`CURRENT_SCHEMA_VERSION`) must not be bumped independently by two parallel tracks — serialize the bump through the integration owner, or number-by-track + linearize at merge; when a collision happens anyway, resolve by UNION + linearize (keep all additive members, re-number onto one line by commit order), never drop a side.
+
+## <a id="36"></a>36. A cross-track merge that conflicts in orchestrator-territory docs STALLS the impl by design — bake the impl→orch handoff into the merge brief up front
+
+**Date:** 2026-06-21.
+**Source slice:** kernel track P0.16-reconcile (`kernel-020`); the `git merge cody` conflicted in `apps/api/CLAUDE.md` + `apps/api/LESSONS.md`.
+
+A cross-track `git merge` conflicts wherever both sides diverged — including orchestrator-territory docs (`apps/api/CLAUDE.md`, `LESSONS.md`). The territory-guard PreToolUse hook blocks the IMPLEMENTER from writing those files BY DESIGN (working-as-intended, not a bug) — the auto-mode classifier correctly denies an agent's attempt to set its own monitoring aside. So a merge with conflicts there is **unresolvable by the impl** and stalls mid-merge (kernel-020 stalled with all 6 conflicts open until the division was set). A merge is atomic-ish in a SHARED worktree, so two sessions can't resolve different files concurrently without colliding on the index.
+
+The fix is a **sequenced impl→orch handoff baked into the cross-track-merge brief up front**: (1) impl runs `git merge`, resolves the CONTRACT/code conflicts (its scoped territory) + greens the suite, **holds the commit**; (2) impl pings the orch "code resolved + green; docs are yours"; (3) orch resolves the orchestrator-territory doc conflicts in-territory (UNION; renumber any lesson-number collision to the next free slot — here judge §32→§34, see §35); (4) orch pings back; (5) impl commits the single merge commit (staging the resolved files; NOT the orch's separate ledger). Without this handoff in the brief, the merge stalls and needs an ad-hoc rescue.
+
+**Rule:** A cross-track-merge brief MUST bake in the impl→orch handoff: impl resolves code/contract conflicts + greens + holds; hands orchestrator-territory doc conflicts (CLAUDE.md/LESSONS.md — territory-guard-blocked for the impl by design) to the orch; orch resolves in-territory (UNION + renumber any collided lesson); impl commits the single merge. Sequence it (no concurrent index edits in the shared worktree).
