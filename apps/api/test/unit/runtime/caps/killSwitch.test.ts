@@ -16,9 +16,10 @@ import { planKillSwitch } from '../../../../src/runtime/caps/killSwitch';
  *    completing/stopping → EXCLUDE.
  *  - GENERATION: pending→skipped · running/verifying/scoring/reproducing→failed · degraded → EXCLUDE.
  *
- * Named events: run.stopped / run.failed / energy_exhausted (energy dim) / generation_failed. The
- * configured→cancelled + pending→skipped dispositions are STATUS-ONLY (no run.cancelled / generation-skip
- * event in the closed registry) → terminalEvent null [flagged at Step 2.5].
+ * Named (replayable) events: run.stopped / run.failed / energy_exhausted (energy dim) / generation_failed.
+ * The terminal-event amendment (sv4→5) closes the rule-#2 gap for the kill switch's two STATUS-ONLY
+ * dispositions: configured→cancelled now names `run.cancelled`, pending→skipped now names
+ * `generation.skipped` (both previously terminalEvent null — no registry event existed).
  */
 
 const ACTIVE_GENS: ReadonlyArray<{ id: string; status: GenerationStatus }> = [
@@ -70,10 +71,15 @@ describe('planKillSwitch (P3.4 — rule #1 kill switch, decide-only)', () => {
   });
 
   test('kill_run_per_state_dispositions', () => {
-    // spec(§3): map each run state to its legal terminal; EXCLUDE already-terminalizing/terminal states
-    // (they drain through their in-flight edge). configured→cancelled is operator-only + STATUS-ONLY.
+    // spec(§3/§5): map each run state to its legal terminal; EXCLUDE already-terminalizing/terminal states
+    // (they drain through their in-flight edge). configured→cancelled is operator-only; the terminal-event
+    // amendment (sv4→5) names it `run.cancelled` (rule #2 — the cancel terminal is now replayable).
     const configured = planKillSwitch({ kind: 'operator_stop' }, 'configured', []);
-    expect(configured.run).toEqual({ from: 'configured', to: 'cancelled', terminalEvent: null });
+    expect(configured.run).toEqual({
+      from: 'configured',
+      to: 'cancelled',
+      terminalEvent: 'run.cancelled',
+    });
     // completing (→completed only) and stopping (→stopped only) are excluded — never mislabeled →failed.
     for (const s of ['completing', 'stopping'] as RunStatus[]) {
       expect(
@@ -87,17 +93,18 @@ describe('planKillSwitch (P3.4 — rule #1 kill switch, decide-only)', () => {
   });
 
   test('kill_generation_per_state_dispositions', () => {
-    // spec(§3): pending→skipped (STATUS-ONLY); active states→failed; degraded EXCLUDED (only legal edge is
+    // spec(§3/§5): pending→skipped now names `generation.skipped` (terminal-event amendment sv4→5, rule #2
+    // — the skip terminal is replayable); active states→failed; degraded EXCLUDED (only legal edge is
     // transient degraded→verifying — it drains to verifying→failed via the loop, P3.10); terminal excluded.
     const plan = planKillSwitch({ kind: 'cap_breach', dimension: 'maxToolCalls' }, 'running', [
       { id: 'g0', status: 'completed' }, // terminal — excluded
-      { id: 'g1', status: 'pending' }, // → skipped (status-only)
+      { id: 'g1', status: 'pending' }, // → skipped (now names generation.skipped)
       { id: 'g2', status: 'degraded' }, // excluded (transient → verifying)
       { id: 'g3', status: 'scoring' }, // → failed
       { id: 'g4', status: 'reproducing' }, // → failed
     ]);
     expect(plan.generations).toEqual([
-      { id: 'g1', from: 'pending', to: 'skipped', terminalEvent: null },
+      { id: 'g1', from: 'pending', to: 'skipped', terminalEvent: 'generation.skipped' },
       { id: 'g3', from: 'scoring', to: 'failed', terminalEvent: 'generation_failed' },
       { id: 'g4', from: 'reproducing', to: 'failed', terminalEvent: 'generation_failed' },
     ]);

@@ -13,7 +13,10 @@
  *    narrowing extended the registry + the per-type payload map (§7/§8 verifier→selection seam).
  *  - 3 → 4 (kernel P0.15-amend + P0.5-amend, folded): +`degraded` (`GenerationStatus`, §3
  *    partial-failure edge) and +`repairing` (`CandidateStatus`, §3 structured-output repair edge).
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1/2/3 envelopes still validate (the
+ *  - 4 → 5 (terminal-event amendment): +`run.cancelled` / `generation.skipped` / `agenome.failed` /
+ *    `candidate.rejected` `RunEventType` members — the 4 reachable §3/§5 terminals the registry was
+ *    missing, so every state-machine terminal is rule-#2 replayable (closes the audited gap).
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1/2/3/4 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
