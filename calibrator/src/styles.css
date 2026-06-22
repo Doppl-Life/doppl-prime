@@ -490,6 +490,35 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+@media (min-width: 560px) and (max-width: 759px) {
+  .review-header {
+    padding: 12px 18px 8px;
+  }
+
+  .review-header h1 {
+    font-size: 28px;
+  }
+
+  .review-controls {
+    align-items: start;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 0 18px 10px;
+  }
+
+  .audit-toggle {
+    min-height: 38px;
+  }
+
+  .review-status {
+    display: none;
+  }
+
+  .artifact-select-field {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (min-width: 760px) {
   body {
     background: #dce5eb;
