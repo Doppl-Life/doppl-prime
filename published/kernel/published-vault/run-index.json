@@ -1,0 +1,66 @@
+{
+  "artifact_type": "kernel_run_index",
+  "runId": "run_fsd_ownership_fixture",
+  "caseId": "fsd-ownership-unwind",
+  "caseTitle": "Problem Statement: The Ownership Unwind / Car-as-a-Service After Autonomy",
+  "memoryMode": "auto",
+  "problemRecovery": {
+    "id": "recovery_fsd-ownership-unwind",
+    "path": "problem-recovery.md"
+  },
+  "candidates": [
+    {
+      "id": "cand_liability_clock",
+      "path": "cand_liability_clock.md",
+      "agenomeId": "ag_blindside",
+      "generation": 0,
+      "fitnessTotal": 80,
+      "selectedParent": true
+    },
+    {
+      "id": "cand_recovery_market",
+      "path": "cand_recovery_market.md",
+      "agenomeId": "ag_first_principles",
+      "generation": 0,
+      "fitnessTotal": 40,
+      "selectedParent": true
+    },
+    {
+      "id": "cand_lender_residual",
+      "path": "cand_lender_residual.md",
+      "agenomeId": "ag_constraint_injection",
+      "generation": 0,
+      "fitnessTotal": 20,
+      "selectedParent": false
+    }
+  ],
+  "child": {
+    "id": "child_cand_liability_clock_cand_recovery_market",
+    "path": "child_cand_liability_clock_cand_recovery_market.md",
+    "parentCandidateIds": [
+      "cand_liability_clock",
+      "cand_recovery_market"
+    ],
+    "inheritanceWeights": {
+      "parentA": 0.667,
+      "parentB": 0.333
+    },
+    "compatibility": {
+      "parentA": "cand_liability_clock",
+      "parentB": "cand_recovery_market",
+      "score": 76,
+      "rationale": "Parents preserve distinct mechanisms while sharing enough case grounding to fuse."
+    }
+  },
+  "trace": {
+    "path": "trace.json",
+    "eventsPath": "events.jsonl"
+  },
+  "modelOutputs": {
+    "accepted": 0,
+    "repairRequested": 0,
+    "repaired": 0,
+    "rejected": 0,
+    "byPurpose": {}
+  }
+}

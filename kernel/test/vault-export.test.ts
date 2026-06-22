@@ -33,6 +33,30 @@ test('exports problem recovery and child solution markdown separately', async ()
   assert.equal(projection.childId, run.fusion?.child.id);
 });
 
+test('exports a calibrator-facing run index', async () => {
+  const run = await runKernel({
+    runId: 'run_export_index',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+  });
+  const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-index-'));
+  const manifest = await exportRunToVault(run, outDir);
+  const indexPath = manifest.files.find((file) => file.endsWith('run-index.json'))!;
+  const index = JSON.parse(await readFile(indexPath, 'utf8'));
+
+  assert.equal(index.artifact_type, 'kernel_run_index');
+  assert.equal(index.runId, 'run_export_index');
+  assert.equal(index.problemRecovery.path, 'problem-recovery.md');
+  assert.equal(index.candidates.length, run.candidates.length);
+  assert.equal(index.child.id, run.fusion?.child.id);
+  assert.deepEqual(index.child.parentCandidateIds, run.fusion?.parentCandidateIds);
+  assert.equal(index.trace.path, 'trace.json');
+  assert.equal(index.trace.eventsPath, 'events.jsonl');
+  assert.equal(index.modelOutputs.accepted, 0);
+});
+
 test('exports model call evidence when present on the run', async () => {
   const run = await runKernel({
     runId: 'run_export_model_calls',

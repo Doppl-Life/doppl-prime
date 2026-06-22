@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CandidateSolution, KernelRun, VaultExportManifest } from './contracts.ts';
-import { writeRunEvents } from './event-store.ts';
+import { replayRunProjection, writeRunEvents } from './event-store.ts';
 import { writeModelCallRecords } from './model-gateway.ts';
 
 function frontmatter(fields: Record<string, string>): string {
@@ -36,6 +36,51 @@ ${solution.claimedDelta}
 
 ${solution.citedKnowledge.join(', ') || 'none'}
 `;
+}
+
+function solutionFilename(solution: CandidateSolution): string {
+  return `${solution.id}.md`;
+}
+
+function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<string, unknown> {
+  const fitnessByCandidate = new Map(
+    run.fitnessRecords.map((fitness) => [fitness.candidateId, fitness.total]),
+  );
+  const selectedParentIds = new Set(run.selectedParents.map((parent) => parent.id));
+  return {
+    artifact_type: 'kernel_run_index',
+    runId: run.id,
+    caseId: run.caseStudy.id,
+    caseTitle: run.caseStudy.title,
+    memoryMode: run.memoryMode,
+    problemRecovery: {
+      id: run.problemRecovery.id,
+      path: 'problem-recovery.md',
+    },
+    candidates: run.candidates.map((candidate) => ({
+      id: candidate.id,
+      path: solutionFilename(candidate),
+      agenomeId: candidate.agenomeId,
+      generation: candidate.generation,
+      fitnessTotal: fitnessByCandidate.get(candidate.id) ?? null,
+      selectedParent: selectedParentIds.has(candidate.id),
+    })),
+    child: run.fusion
+      ? {
+          id: run.fusion.child.id,
+          path: solutionFilename(run.fusion.child),
+          parentCandidateIds: run.fusion.parentCandidateIds,
+          inheritanceWeights: run.fusion.inheritanceWeights,
+          compatibility: run.fusion.compatibility,
+        }
+      : null,
+    trace: {
+      path: 'trace.json',
+      eventsPath: 'events.jsonl',
+      modelCallsPath: paths.modelCallsPath,
+    },
+    modelOutputs: replayRunProjection(run.events).modelOutputs,
+  };
 }
 
 export async function exportRunToVault(
@@ -74,7 +119,7 @@ ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
   files.push(recoveryPath);
 
   for (const solution of [...run.candidates, ...(run.fusion ? [run.fusion.child] : [])]) {
-    const solutionPath = path.join(runDir, `${solution.id}.md`);
+    const solutionPath = path.join(runDir, solutionFilename(solution));
     await writeFile(solutionPath, solutionMarkdown(solution), 'utf8');
     files.push(solutionPath);
   }
@@ -87,10 +132,21 @@ ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
   await writeRunEvents(eventLogPath, run.events);
   files.push(eventLogPath);
 
+  let modelCallsRelativePath: string | undefined;
   if (run.modelCallRecords?.length) {
     const modelCallsPath = path.join(runDir, 'model-calls.jsonl');
     await writeModelCallRecords(modelCallsPath, run.modelCallRecords);
     files.push(modelCallsPath);
+    modelCallsRelativePath = 'model-calls.jsonl';
   }
+
+  const indexPath = path.join(runDir, 'run-index.json');
+  await writeFile(
+    indexPath,
+    JSON.stringify(runIndex(run, { modelCallsPath: modelCallsRelativePath }), null, 2),
+    'utf8',
+  );
+  files.push(indexPath);
+
   return { rootDir: runDir, files };
 }
