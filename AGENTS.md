@@ -32,6 +32,24 @@ instruction files that compete with the named surfaces above.
 Do not import product application architecture, docs, or repository assumptions
 unless the user explicitly asks.
 
+## First-principles guardrail
+
+For strategic, architectural, spec, product-direction, or abstraction-setting
+work, do not treat existing repo assumptions as bedrock. Treat them as evidence
+to test against current goals, kernel behavior, specs, and explicit user intent.
+
+Use the `first-principles` mutagen skill actively for this class of work: reduce
+the problem to invariants, name the provisional assumption you are rejecting or
+depending on, and only then branch into implementation or documentation.
+
+Do not trigger a full rethink for narrow mechanical edits unless the edit depends
+on an unvalidated product or architecture premise. If first-principles reasoning
+would send the work in a materially different direction than the repo appears to
+assume, pause and ask the user before continuing.
+
+Log only important, interesting, actionable, or actioned-on corrections in the
+appropriate register. Do not memorialize every merely true assumption.
+
 ## Original Prime quarantine
 
 The inherited original Prime docs under `docs/**` are allowed to exist as
