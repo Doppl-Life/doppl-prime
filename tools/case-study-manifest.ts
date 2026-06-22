@@ -2,9 +2,11 @@ import type { CandidateSubtype } from '../src/contracts/index.ts';
 
 export const caseStudySubtypes = {
   'ae-waiting-room-aggression': 'cross_domain_transfer',
+  'agentic-package-execution-safety': 'zeitgeist_synthesis',
   'ai-firm-power-constraint': 'zeitgeist_synthesis',
   'ai-overviews-zero-click-publishing': 'zeitgeist_synthesis',
   'airport-liquid-congestion': 'cross_domain_transfer',
+  'boil-the-ocean-software-unlock': 'zeitgeist_synthesis',
   'fsd-accident-economy': 'zeitgeist_synthesis',
   'fsd-adoption-asymmetry': 'zeitgeist_synthesis',
   'fsd-enforcement-economy': 'zeitgeist_synthesis',
@@ -19,8 +21,13 @@ export const caseStudySubtypes = {
   'jack-yacht-perimeter-intrusion': 'cross_domain_transfer',
   'loft-insulation-adoption': 'cross_domain_transfer',
   'london-underground-map-distortion': 'cross_domain_transfer',
+  'mobile-builder-distribution-collapse': 'zeitgeist_synthesis',
+  'post-primitive-team-comms': 'zeitgeist_synthesis',
+  'practitioner-benchmark-flywheel': 'zeitgeist_synthesis',
   'singapore-mrt-pre-peak': 'cross_domain_transfer',
+  'source-control-beyond-repos': 'zeitgeist_synthesis',
   'starship-launch-cost-collapse': 'zeitgeist_synthesis',
+  'synced-dev-state': 'zeitgeist_synthesis',
   'vanmoof-bike-packaging': 'cross_domain_transfer',
   'white-castle-rent-leverage': 'cross_domain_transfer',
 } as const satisfies Record<string, CandidateSubtype>;
