@@ -18,6 +18,15 @@ interface NodeShellProps {
   domain: StatusDomain;
   metric?: { label: string; value: number | string } | undefined;
   borderColor?: string | undefined;
+  /** Overrides the default 2px border. Survivor candidate nodes use a
+   *  thicker border so green pops at a scan-distance. */
+  borderWidth?: number | undefined;
+  /** Optional tint behind the node (e.g. a faint green wash on high-
+   *  fitness candidates). Layers under the default surface color. */
+  tintColor?: string | undefined;
+  /** Larger font for the metric value. Used to make fitness numbers
+   *  more scannable on candidate nodes. */
+  metricEmphasis?: boolean | undefined;
 }
 
 function NodeShell({
@@ -28,12 +37,15 @@ function NodeShell({
   domain,
   metric,
   borderColor,
+  borderWidth,
+  tintColor,
+  metricEmphasis,
 }: NodeShellProps): JSX.Element {
   return (
     <div
       style={{
-        background: "var(--doppl-bg-elevated)",
-        border: `2px solid ${borderColor ?? "var(--doppl-border)"}`,
+        background: tintColor ?? "var(--doppl-bg-elevated)",
+        border: `${borderWidth ?? 2}px solid ${borderColor ?? "var(--doppl-border)"}`,
         borderRadius: "var(--doppl-radius)",
         padding: "var(--doppl-sp-3)",
         minWidth: 160,
@@ -60,7 +72,15 @@ function NodeShell({
       <div style={{ fontWeight: 700 }}>{label}</div>
       {status && <StatusIndicator domain={domain} status={status} size="sm" />}
       {metric && (
-        <div style={{ fontSize: 12, color: "var(--doppl-text-secondary)" }}>
+        <div
+          style={{
+            fontSize: metricEmphasis ? 15 : 12,
+            fontWeight: metricEmphasis ? 700 : 400,
+            color: metricEmphasis
+              ? "var(--doppl-text-primary)"
+              : "var(--doppl-text-secondary)",
+          }}
+        >
           {metric.label}:{" "}
           {typeof metric.value === "number" ? metric.value.toFixed(2) : metric.value}
         </div>
@@ -95,20 +115,44 @@ export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
 }
 
 /**
- * Three-band fitness color so the lineage graph reads at a glance:
- * green for "survived well", amber for "marginal", dim for "weak or
- * unscored". Hard thresholds are deliberate — a continuous gradient
- * was harder to scan and made every node look slightly different.
+ * Three-band fitness treatment so the lineage graph reads at a glance:
+ *   green ≥ 0.7 → "survived well": thicker border + faint green tint
+ *   amber ≥ 0.4 → "marginal":      default border weight + faint amber tint
+ *   dim   < 0.4 or undefined: default border + no tint
+ *
+ * Hard thresholds are deliberate — a continuous gradient was harder
+ * to scan and made every node look slightly different. The tint is
+ * intentionally faint so the node still reads as the same shape
+ * across bands; the border + metric carry the contrast.
  */
-function fitnessBorderColor(fitness: number | undefined): string {
-  if (fitness === undefined) return "var(--doppl-status-pending)";
-  if (fitness >= 0.7) return "var(--doppl-status-ok)";
-  if (fitness >= 0.4) return "var(--doppl-status-warn)";
-  return "var(--doppl-status-pending)";
+function fitnessVisual(fitness: number | undefined): {
+  borderColor: string;
+  borderWidth: number;
+  tintColor: string | undefined;
+} {
+  if (fitness === undefined) {
+    return { borderColor: "var(--doppl-status-pending)", borderWidth: 2, tintColor: undefined };
+  }
+  if (fitness >= 0.7) {
+    return {
+      borderColor: "var(--doppl-status-ok)",
+      borderWidth: 4,
+      tintColor: "rgba(34, 197, 94, 0.08)",
+    };
+  }
+  if (fitness >= 0.4) {
+    return {
+      borderColor: "var(--doppl-status-warn)",
+      borderWidth: 2,
+      tintColor: "rgba(250, 204, 21, 0.06)",
+    };
+  }
+  return { borderColor: "var(--doppl-status-pending)", borderWidth: 2, tintColor: undefined };
 }
 
 export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
   const { fitness } = props.data;
+  const visual = fitnessVisual(fitness);
   return (
     <NodeShell
       kind="Idea"
@@ -117,7 +161,10 @@ export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
       status={props.data.status}
       domain="candidate"
       metric={fitness !== undefined ? { label: "fitness", value: fitness } : undefined}
-      borderColor={fitnessBorderColor(fitness)}
+      metricEmphasis={fitness !== undefined}
+      borderColor={visual.borderColor}
+      borderWidth={visual.borderWidth}
+      tintColor={visual.tintColor}
     />
   );
 }
