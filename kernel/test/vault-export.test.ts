@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { runKernel } from '../src/run-kernel.ts';
 import { exportRunToVault } from '../src/vault-export.ts';
 import { readRunEvents, replayRunProjection } from '../src/event-store.ts';
+import { readModelCallRecords } from '../src/model-gateway.ts';
 
 test('exports problem recovery and child solution markdown separately', async () => {
   const run = await runKernel({
@@ -30,4 +31,33 @@ test('exports problem recovery and child solution markdown separately', async ()
   assert.equal(projection.runId, 'run_export');
   assert.equal(projection.completed, true);
   assert.equal(projection.childId, run.fusion?.child.id);
+});
+
+test('exports model call evidence when present on the run', async () => {
+  const run = await runKernel({
+    runId: 'run_export_model_calls',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+  });
+  run.modelCallRecords = [
+    {
+      id: 'call_1',
+      runId: run.id,
+      purpose: 'problem_recovery',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: 'recover',
+      outputText: '{"title":"Recovered"}',
+      metadata: {},
+    },
+  ];
+
+  const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-model-'));
+  const manifest = await exportRunToVault(run, outDir);
+  const modelCallsPath = manifest.files.find((file) => file.endsWith('model-calls.jsonl'))!;
+
+  assert.ok(modelCallsPath);
+  assert.equal((await readModelCallRecords(modelCallsPath))[0]?.prompt, 'recover');
 });

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   createReplayModelClient,
+  createRecordingModelClient,
   parseJsonObjectResponse,
   readModelCallRecords,
   writeModelCallRecords,
@@ -90,4 +91,31 @@ test('model client interface can be implemented without provider SDKs', async ()
 
   assert.equal(response.provider, 'stub');
   assert.equal(response.metadata.traceId, 'trace_stub');
+});
+
+test('recording model client captures returned call records', async () => {
+  const wrapped = createRecordingModelClient({
+    async complete(request) {
+      return {
+        id: 'call_recorded',
+        runId: request.runId,
+        purpose: request.purpose,
+        provider: 'stub',
+        model: request.model,
+        prompt: request.prompt,
+        outputText: '{"ok":true}',
+        metadata: {},
+      };
+    },
+  });
+
+  await wrapped.complete({
+    runId: 'run_model',
+    purpose: 'problem_recovery',
+    prompt: 'recover',
+    model: 'stub-model',
+  });
+
+  assert.equal(wrapped.records.length, 1);
+  assert.equal(wrapped.records[0]?.prompt, 'recover');
 });

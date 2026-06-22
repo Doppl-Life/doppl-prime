@@ -9,7 +9,7 @@ import {
   type ProblemRecovery,
 } from './contracts.ts';
 import { loadKernelFixture } from './fixtures.ts';
-import { parseJsonObjectResponse, type ModelClient } from './model-gateway.ts';
+import { parseJsonObjectResponse, type ModelCallRecord, type ModelClient } from './model-gateway.ts';
 
 export type ProblemRecoveryInput = {
   runId: string;
@@ -60,7 +60,11 @@ export type ModelGenerationPromptRenderers = {
 export type ModelGenerationProviderInput = {
   client: ModelClient;
   model: string;
-  prompts: ModelGenerationPromptRenderers;
+  prompts?: ModelGenerationPromptRenderers;
+};
+
+export type ModelGenerationProviders = GenerationProviders & {
+  modelCallRecords: ModelCallRecord[];
 };
 
 export async function createFixtureGenerationProviders(
@@ -114,14 +118,62 @@ function arrayField(value: Record<string, unknown>, field: string): unknown[] {
   return array;
 }
 
-export function createModelGenerationProviders(input: ModelGenerationProviderInput): GenerationProviders {
+function knowledgeSummary(packet: KnowledgePacket): string {
+  return packet.items.map((item) => `${item.citeHandle}: ${item.text}`).join('\n');
+}
+
+export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRenderers {
   return {
+    problemRecovery({ caseStudy, knowledgePacket }) {
+      return [
+        'Return JSON only for a ProblemRecovery without id, caseId, or citedKnowledge.',
+        `Case: ${caseStudy.title}`,
+        `Stated problem: ${caseStudy.statedProblem}`,
+        'Knowledge:',
+        knowledgeSummary(knowledgePacket),
+      ].join('\n');
+    },
+    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation }) {
+      return [
+        'Return JSON only with a candidates array.',
+        `Case: ${caseStudy.title}`,
+        `Generation: ${generation}`,
+        `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
+        'Knowledge:',
+        knowledgeSummary(knowledgePacket),
+      ].join('\n');
+    },
+    criticJudgment({ caseStudy, problemRecovery, candidates }) {
+      return [
+        'Return JSON only with a verdicts array.',
+        `Case: ${caseStudy.title}`,
+        `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        `Candidates: ${candidates.map((candidate) => candidate.id).join(', ')}`,
+        'Each verdict must include candidateId, criticId, score, pressure, revisionMandate.',
+      ].join('\n');
+    },
+  };
+}
+
+export function createModelGenerationProviders(input: ModelGenerationProviderInput): ModelGenerationProviders {
+  const prompts = input.prompts || createDefaultModelGenerationPrompts();
+  const modelCallRecords: ModelCallRecord[] = [];
+
+  async function complete(request: Parameters<ModelClient['complete']>[0]): Promise<ModelCallRecord> {
+    const response = await input.client.complete(request);
+    modelCallRecords.push(response);
+    return response;
+  }
+
+  return {
+    modelCallRecords,
     problemRecovery: {
       async recover(providerInput) {
-        const response = await input.client.complete({
+        const response = await complete({
           runId: providerInput.runId,
           purpose: 'problem_recovery',
-          prompt: input.prompts.problemRecovery(providerInput),
+          prompt: prompts.problemRecovery(providerInput),
           model: input.model,
           responseFormat: 'json_object',
         });
@@ -136,10 +188,10 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
     },
     candidateGenerator: {
       async generate(providerInput) {
-        const response = await input.client.complete({
+        const response = await complete({
           runId: providerInput.runId,
           purpose: 'candidate_generation',
-          prompt: input.prompts.candidateGeneration(providerInput),
+          prompt: prompts.candidateGeneration(providerInput),
           model: input.model,
           responseFormat: 'json_object',
         });
@@ -155,10 +207,10 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
     },
     criticCouncil: {
       async judge(providerInput) {
-        const response = await input.client.complete({
+        const response = await complete({
           runId: providerInput.runId,
           purpose: 'critic_judgment',
-          prompt: input.prompts.criticJudgment(providerInput),
+          prompt: prompts.criticJudgment(providerInput),
           model: input.model,
           responseFormat: 'json_object',
         });

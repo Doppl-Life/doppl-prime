@@ -4,6 +4,7 @@ import { loadCaseStudy } from '../src/case-loader.ts';
 import { createJsonKnowledgeGateway } from '../src/knowledge-gateway.ts';
 import {
   createFixtureGenerationProviders,
+  createDefaultModelGenerationPrompts,
   createModelGenerationProviders,
   type CandidateGenerator,
   type CriticCouncil,
@@ -242,4 +243,50 @@ test('model generation providers parse replayed structured outputs', async () =>
   assert.equal(candidates[0]?.caseId, caseStudy.id);
   assert.equal(verdicts.length, 2);
   assert.equal(verdicts[0]?.score, 88);
+});
+
+test('model generation providers expose default prompts and captured call records', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_defaults',
+    targetCase: caseStudy.id,
+    maxItems: 1,
+  });
+  const prompts = createDefaultModelGenerationPrompts();
+  const recoveryPrompt = prompts.problemRecovery({ runId: 'run_model_defaults', caseStudy, knowledgePacket });
+  const records: ModelCallRecord[] = [
+    {
+      id: 'call_recovery',
+      runId: 'run_model_defaults',
+      purpose: 'problem_recovery',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: recoveryPrompt,
+      outputText: JSON.stringify({
+        title: 'Default Prompt Recovery',
+        recoveredProblem: 'Recovered from default prompt.',
+        hiddenConstraint: 'Prompts are generated centrally.',
+        falsifier: 'Prompt renderer is absent.',
+      }),
+      metadata: {},
+    },
+  ];
+  const providers = createModelGenerationProviders({
+    client: createReplayModelClient(records),
+    model: 'fixture-model',
+    prompts,
+  });
+
+  const recovery = await providers.problemRecovery.recover({
+    runId: 'run_model_defaults',
+    caseStudy,
+    knowledgePacket,
+  });
+
+  assert.equal(recovery.title, 'Default Prompt Recovery');
+  assert.match(providers.modelCallRecords[0]?.prompt || '', /Return JSON only/);
+  assert.match(providers.modelCallRecords[0]?.prompt || '', /FSD|ownership|unwind/i);
 });

@@ -1,3 +1,5 @@
+import type { ModelCallRecord } from './model-gateway.ts';
+
 export type MemoryMode = 'off' | 'auto' | 'pinned';
 
 export type CaseStudy = {
@@ -113,6 +115,7 @@ export type KernelRun = {
   selectedParents: [CandidateSolution, CandidateSolution] | [];
   fusion?: FusionResult;
   events: RunEvent[];
+  modelCallRecords?: ModelCallRecord[];
   vaultExport?: VaultExportManifest;
 };
 

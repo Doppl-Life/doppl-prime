@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CandidateSolution, KernelRun, VaultExportManifest } from './contracts.ts';
 import { writeRunEvents } from './event-store.ts';
+import { writeModelCallRecords } from './model-gateway.ts';
 
 function frontmatter(fields: Record<string, string>): string {
   return [
@@ -85,5 +86,11 @@ ${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
   const eventLogPath = path.join(runDir, 'events.jsonl');
   await writeRunEvents(eventLogPath, run.events);
   files.push(eventLogPath);
+
+  if (run.modelCallRecords?.length) {
+    const modelCallsPath = path.join(runDir, 'model-calls.jsonl');
+    await writeModelCallRecords(modelCallsPath, run.modelCallRecords);
+    files.push(modelCallsPath);
+  }
   return { rootDir: runDir, files };
 }

@@ -8,6 +8,7 @@ import {
   createFixtureGenerationProviders,
   type GenerationProviders,
 } from './generation-providers.ts';
+import type { ModelCallRecord } from './model-gateway.ts';
 
 function selectedCandidates(
   selectedIds: [string, string] | [],
@@ -17,6 +18,12 @@ function selectedCandidates(
   const parentA = candidates.find((candidate) => candidate.id === selectedIds[0]);
   const parentB = candidates.find((candidate) => candidate.id === selectedIds[1]);
   return parentA && parentB ? [parentA, parentB] : [];
+}
+
+function modelCallRecordsFrom(providers: GenerationProviders): ModelCallRecord[] | undefined {
+  const records = (providers as GenerationProviders & { modelCallRecords?: ModelCallRecord[] })
+    .modelCallRecords;
+  return records && records.length > 0 ? records : undefined;
 }
 
 export async function runKernel(input: {
@@ -136,5 +143,6 @@ export async function runKernel(input: {
     selectedParents,
     fusion,
     events: trace.events,
+    modelCallRecords: modelCallRecordsFrom(generationProviders),
   });
 }

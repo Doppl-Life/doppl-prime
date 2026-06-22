@@ -205,4 +205,9 @@ test('runs through replayed model generation providers', async () => {
     ['gateway_a', 'gateway_b'],
   );
   assert.equal(run.fusion?.inheritanceWeights.parentA, 0.667);
+  assert.equal(run.modelCallRecords?.length, 3);
+  assert.deepEqual(
+    run.modelCallRecords?.map((record) => record.purpose),
+    ['problem_recovery', 'candidate_generation', 'critic_judgment'],
+  );
 });

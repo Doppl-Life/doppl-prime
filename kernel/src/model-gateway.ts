@@ -27,6 +27,10 @@ export type ModelClient = {
   complete(request: ModelCallRequest): Promise<ModelCallRecord>;
 };
 
+export type RecordingModelClient = ModelClient & {
+  records: ModelCallRecord[];
+};
+
 function ensureObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('model response must be a JSON object');
@@ -63,6 +67,18 @@ export function createReplayModelClient(
     },
     freshCalls() {
       return 0;
+    },
+  };
+}
+
+export function createRecordingModelClient(client: ModelClient): RecordingModelClient {
+  const records: ModelCallRecord[] = [];
+  return {
+    records,
+    async complete(request) {
+      const record = await client.complete(request);
+      records.push(record);
+      return record;
     },
   };
 }
