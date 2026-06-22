@@ -8,6 +8,33 @@
 
 **Tech Stack:** Node 20+, TypeScript, Vite, React, Vitest, `gray-matter` for markdown frontmatter, `zod` for validation.
 
+## Implementation Status
+
+Completed on the `calibration` branch and pushed to GitHub:
+
+- `737cc08 docs: define calibrator vault design`
+- `23e0c00 docs: plan calibrator mvp`
+- `426cb05 feat: seed calibrator vault`
+- `a500b14 feat: scaffold calibrator app`
+- `22807d3 feat: add calibrator vault rating writer`
+- `908d4a5 feat: index calibrator vault`
+- `6af0ee7 feat: add calibrator local write api`
+- `a1c3f57 feat: build calibrator review workbench`
+
+Current MVP behavior:
+
+- The markdown vault under `calibration-vault/` is the source of truth for case, problem-context, solution, and human-rating artifacts.
+- The local Vite app reads live vault content through `/api/index`.
+- Human solution ratings are submitted on a `-5` to `+5` scale and written back as markdown under the case `ratings/` folder.
+- The UI supports case selection, solution selection, expandable case/problem/solution details, optional reviewer email, notes, and saved-path feedback.
+- The seeded fixture includes `fsd-accident-economy` plus Cody- and Melissa-labeled solution artifacts.
+
+Verification as of June 22, 2026:
+
+- `npm --prefix calibrator run test`: 4 files, 6 tests passing.
+- `npm --prefix calibrator run build`: passing.
+- Browser visual QA at `http://127.0.0.1:5178`: no horizontal overflow at mobile or 1280x800 desktop; desktop rating submit is visible in the left rail.
+
 ---
 
 ## File Structure
