@@ -106,8 +106,10 @@ export function DetailDrawer(): JSX.Element | null {
       </button>
       {/* Mutual exclusion in the reducer means only one of these is
           ever rendered at a time. Agenome wins the tie-break that
-          can't actually happen. */}
-      {agenomeOpen ? <AgenomeInspector /> : <CandidateDetailInspector />}
+          can't actually happen. The candidate inspector is rendered
+          embedded so it doesn't show its own × — the drawer's chrome
+          provides the dismiss control. */}
+      {agenomeOpen ? <AgenomeInspector /> : <CandidateDetailInspector embedded />}
     </aside>,
     document.body,
   );

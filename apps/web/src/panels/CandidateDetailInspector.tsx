@@ -24,7 +24,16 @@ const TABS: { key: DetailTab; label: string; tip: string }[] = [
   { key: "evidence", label: "Evidence", tip: "Verification checks run against this candidate" },
 ];
 
-export function CandidateDetailInspector(): JSX.Element | null {
+interface CandidateDetailInspectorProps {
+  /** When true, suppress the inner close button. The drawer host
+   *  already shows its own × in the panel chrome — rendering ours too
+   *  duplicates the dismiss control. */
+  embedded?: boolean;
+}
+
+export function CandidateDetailInspector({
+  embedded = false,
+}: CandidateDetailInspectorProps = {}): JSX.Element | null {
   const state = useRunState();
   const { dispatch } = useRunStore();
   const tab: DetailTab = state.selection.inspectorTab ?? "overview";
@@ -44,25 +53,27 @@ export function CandidateDetailInspector(): JSX.Element | null {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ fontSize: "var(--doppl-fs-lg)", margin: 0 }}>Inspector</h2>
-        <Tooltip label="Close the inspector (clears the lineage selection)" placement="left">
-        <button
-          type="button"
-          aria-label="Close inspector"
-          onClick={() => dispatch({ kind: "SELECT_CANDIDATE", candidateId: null })}
-          style={{
-            background: "var(--doppl-bg-input)",
-            color: "var(--doppl-text-primary)",
-            border: "1px solid var(--doppl-hairline)",
-            boxShadow: "none",
-            padding: "4px 10px",
-            fontSize: 14,
-            letterSpacing: 0,
-            textTransform: "none",
-          }}
-        >
-          ✕
-        </button>
-        </Tooltip>
+        {!embedded && (
+          <Tooltip label="Close the inspector (clears the lineage selection)" placement="left">
+            <button
+              type="button"
+              aria-label="Close inspector"
+              onClick={() => dispatch({ kind: "SELECT_CANDIDATE", candidateId: null })}
+              style={{
+                background: "var(--doppl-bg-input)",
+                color: "var(--doppl-text-primary)",
+                border: "1px solid var(--doppl-hairline)",
+                boxShadow: "none",
+                padding: "4px 10px",
+                fontSize: 14,
+                letterSpacing: 0,
+                textTransform: "none",
+              }}
+            >
+              ✕
+            </button>
+          </Tooltip>
+        )}
       </div>
 
       <div role="tablist" aria-label="Candidate detail" style={{ display: "flex", gap: 6 }}>
