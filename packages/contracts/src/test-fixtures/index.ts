@@ -39,6 +39,7 @@ import { Generation } from '../domain/generation';
 import { CullingEvent } from '../domain/culling-event';
 import { LineageGraphProjection, LineageNode, LineageEdge } from '../projections/lineage-graph';
 import { FinalJudgeRubric } from '../verifier/final-judge-rubric';
+import { JudgeResult } from '../verifier/judge-result';
 
 export const validRunCaps: RunCaps = {
   maxPopulation: 10,
@@ -317,9 +318,46 @@ export const validFinalJudgeRubric: FinalJudgeRubric = {
   immutableToAgents: true,
 };
 
+export const validJudgeResult: JudgeResult = {
+  id: 'judge_1',
+  candidateId: 'cand_1',
+  axisScores: {
+    grounding: 4,
+    novelty: 5,
+    feasibility: 3,
+    falsification_survival: 4,
+    subtype_check_pass: 5,
+  },
+  acceptance: 0.82,
+  // ties to validFinalJudgeRubric.policyVersion (immutability-via-versioning, lesson §12/§17).
+  rubricPolicyVersion: 'judge-v1',
+  providerMeta: validProviderMeta,
+  langfuseTraceId: 'trace_judge_1',
+};
+
+/**
+ * A canonical `judge.reviewed` envelope — the persisted held-out-judge acceptance event. `actor` is
+ * `runtime` (the kernel orchestrates the held-out judge OUTSIDE the breeding loop — deliberately NOT
+ * `critic`, which is reserved for the rotating council); the actor↔type pairing is a runtime rule
+ * (§6), so this is illustrative, not a contract constraint. `payload` carries the JudgeResult at the
+ * generic envelope level (per-type narrowing to JudgeResult is the payload-map layer, P0.10).
+ */
+export const validJudgeReviewedEnvelope: RunEventEnvelope = {
+  id: 'evt_judge_1',
+  runId: 'run_1',
+  generationId: 'gen_1',
+  candidateId: 'cand_1',
+  type: 'judge.reviewed',
+  sequence: 7,
+  occurredAt: '2026-06-21T12:00:00.000Z',
+  actor: 'runtime',
+  payload: { ...validJudgeResult },
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+};
+
 /**
  * CANONICAL_FIXTURES — the table-driven registry pairing each canonical fixture with its schema. The
- * 6 `payload:*` entries pair a high-traffic model fixture with its narrowed payload-map schema
+ * 7 `payload:*` entries pair a high-traffic model fixture with its narrowed payload-map schema
  * (`resolvePayloadSchema(type)`), proving the narrowing accepts the same canonical value as the model.
  */
 export const CANONICAL_FIXTURES: ReadonlyArray<{
@@ -377,7 +415,8 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
   { name: 'LineageNode', schema: LineageNode, value: validLineageNode },
   { name: 'LineageEdge', schema: LineageEdge, value: validLineageEdge },
   { name: 'FinalJudgeRubric', schema: FinalJudgeRubric, value: validFinalJudgeRubric },
-  // the 6 high-traffic payload-map narrowings — same canonical value, narrowed schema.
+  { name: 'JudgeResult', schema: JudgeResult, value: validJudgeResult },
+  // the 7 high-traffic payload-map narrowings — same canonical value, narrowed schema.
   {
     name: 'payload:energy.spent',
     schema: resolvePayloadSchema('energy.spent'),
@@ -407,5 +446,10 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
     name: 'payload:fitness.scored',
     schema: resolvePayloadSchema('fitness.scored'),
     value: validFitnessScore,
+  },
+  {
+    name: 'payload:judge.reviewed',
+    schema: resolvePayloadSchema('judge.reviewed'),
+    value: validJudgeResult,
   },
 ];

@@ -5,6 +5,11 @@ import { RunEventEnvelope, validateEventPayload } from '@doppl/contracts';
 import { runEvents } from './schema';
 import { scrubEventPayload } from './redaction';
 import { allocateSequence } from './sequence';
+import { summarizeZodIssues } from '../shared/zod-errors';
+
+// Single-sourced no-echo Zod summarizer (P3.1, LESSON 27). Re-exported under the historical name so the
+// event-store barrel + the kernel-014 tests keep their import surface stable.
+export { summarizeZodIssues as summarizeValidationIssues } from '../shared/zod-errors';
 
 /**
  * The single authoritative append path for `run_events` (KEY SAFETY RULES #2 + #4, ARCHITECTURE.md
@@ -60,9 +65,10 @@ export function createEventStore({ db, secretValues }: EventStoreDeps): EventSto
         //    schema-invalid envelope rejects with nothing written.
         const parsed = AppendInputSchema.safeParse(input);
         if (!parsed.success) {
+          // Path + code only — never Zod's `.message`/`.received` (no-value-echo, rule #4 / LESSON 26).
           throw new AppendError(
             'schema_invalid',
-            `envelope failed validation: ${parsed.error.message}`,
+            `envelope failed validation — ${summarizeZodIssues(parsed.error)}`,
           );
         }
         const env = parsed.data;

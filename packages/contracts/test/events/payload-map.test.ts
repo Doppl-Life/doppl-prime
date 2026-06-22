@@ -98,6 +98,27 @@ const validFitness = {
   explanation: 'Weighted sum across 5 signals under scoring-v1.',
 };
 
+const validJudge = {
+  id: 'judge_1',
+  candidateId: 'cand_1',
+  axisScores: {
+    grounding: 4,
+    novelty: 5,
+    feasibility: 3,
+    falsification_survival: 4,
+    subtype_check_pass: 5,
+  },
+  acceptance: 0.82,
+  rubricPolicyVersion: 'judge-v1',
+  providerMeta: {
+    provider: 'openrouter',
+    modelId: 'anthropic/claude-3.5',
+    gatewayRequestId: 'greq_1',
+    tokensIn: 1200,
+    tokensOut: 380,
+  },
+};
+
 const HIGH_TRAFFIC_KEYS = [
   'energy.spent',
   'candidate.created',
@@ -105,14 +126,15 @@ const HIGH_TRAFFIC_KEYS = [
   'check.completed',
   'novelty.scored',
   'fitness.scored',
+  'judge.reviewed',
 ] as const;
 
 describe('per-type payload map (spec §4)', () => {
-  it('payload_map_covers_exactly_six_high_traffic_types', () => {
-    // spec(§4): §4 names EXACTLY these six high-traffic types; each value is a usable Zod schema.
-    // Positive-guard-first (lesson §10): assert the present six before asserting absence.
+  it('payload_map_covers_exactly_seven_high_traffic_types', () => {
+    // spec(§4): §4 names EXACTLY these seven high-traffic types (6 frozen P0.5–P0.9 + the judge-output
+    // amendment's judge.reviewed); each value is a usable Zod schema. Positive-guard-first (lesson §10).
     expect(new Set(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP))).toEqual(new Set(HIGH_TRAFFIC_KEYS));
-    expect(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP)).toHaveLength(6);
+    expect(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP)).toHaveLength(7);
     for (const key of HIGH_TRAFFIC_KEYS) {
       expect(typeof HIGH_TRAFFIC_PAYLOAD_MAP[key]?.parse).toBe('function');
     }
@@ -127,6 +149,8 @@ describe('per-type payload map (spec §4)', () => {
     expect(resolvePayloadSchema('check.completed').parse(validCheck)).toEqual(validCheck);
     expect(resolvePayloadSchema('novelty.scored').parse(validNovelty)).toEqual(validNovelty);
     expect(resolvePayloadSchema('fitness.scored').parse(validFitness)).toEqual(validFitness);
+    // judge-output amendment: judge.reviewed narrows to JudgeResult (mirrors novelty.scored).
+    expect(resolvePayloadSchema('judge.reviewed').parse(validJudge)).toEqual(validJudge);
   });
 
   it('resolve_rejects_mismatched_high_traffic_payload', () => {
@@ -139,6 +163,16 @@ describe('per-type payload map (spec §4)', () => {
     // a critic.reviewed payload carrying a winner field is rejected (rule #6 — strict CriticReview).
     const criticSchema = resolvePayloadSchema('critic.reviewed');
     expect(criticSchema.safeParse({ ...validReview, winner: 'cand_1' }).success).toBe(false);
+    // a judge.reviewed payload carrying an invented axis OR a score-override is rejected (rule #6 —
+    // the judging axis set is closed + JudgeResult is strict, so the bedrock anchor can't be moved).
+    const judgeSchema = resolvePayloadSchema('judge.reviewed');
+    expect(
+      judgeSchema.safeParse({
+        ...validJudge,
+        axisScores: { ...validJudge.axisScores, vibes: 5 },
+      }).success,
+    ).toBe(false);
+    expect(judgeSchema.safeParse({ ...validJudge, scoreOverride: 1 }).success).toBe(false);
   });
 
   it('resolve_falls_back_to_generic_for_non_high_traffic', () => {
@@ -188,9 +222,23 @@ describe('per-type payload map (spec §4)', () => {
     ).toThrow();
   });
 
+  it('fitness_scored_payload_links_judge', () => {
+    // spec(§8) [judge-output amendment, P5.5]: fitness references the consumed judge.reviewed EXACTLY
+    // as it references novelty.scored — by the shared candidateId join + the named
+    // components.judge_acceptance signal, NOT by re-storing the per-axis JudgeResult. FitnessScore is
+    // UNCHANGED (no judgeResultId field) — judge.reviewed stays the authoritative judge home.
+    expect(resolvePayloadSchema('fitness.scored').parse(validFitness)).toEqual(validFitness);
+    expect(validFitness.candidateId).toBe(validJudge.candidateId);
+    expect(typeof validFitness.components.judge_acceptance).toBe('number');
+    // a judgeResultId field is NOT part of the frozen FitnessScore (strict reject — link is by join).
+    expect(() =>
+      resolvePayloadSchema('fitness.scored').parse({ ...validFitness, judgeResultId: 'judge_1' }),
+    ).toThrow();
+  });
+
   it('markers_resolve_to_generic_payload', () => {
     // spec(§4) lesson §15 [P0.1-amend]: the 11 operation-start markers carry envelope-level correlation
-    // only — each resolves to the GENERIC payload schema (no narrowed entry), and the 6 high-traffic
+    // only — each resolves to the GENERIC payload schema (no narrowed entry), and the 7 high-traffic
     // narrowings are unchanged.
     const MARKERS = [
       'generation.verifying',
@@ -209,9 +257,13 @@ describe('per-type payload map (spec §4)', () => {
       expect(resolvePayloadSchema(m), m).toBe(GENERIC_PAYLOAD_SCHEMA);
     }
     expect(MARKERS).toHaveLength(11);
-    // the 6 high-traffic narrowings still narrow (markers didn't disturb the map).
+    // the 7 high-traffic narrowings still narrow (markers didn't disturb the map).
     expect(resolvePayloadSchema('energy.spent')).not.toBe(GENERIC_PAYLOAD_SCHEMA);
     expect(resolvePayloadSchema('candidate.created')).not.toBe(GENERIC_PAYLOAD_SCHEMA);
+    // the judge marker/terminal SPLIT: judge.review_started (operation-start marker) is generic, but
+    // judge.reviewed (terminal acceptance result) NARROWS to JudgeResult — the two are not conflated.
+    expect(resolvePayloadSchema('judge.review_started')).toBe(GENERIC_PAYLOAD_SCHEMA);
+    expect(resolvePayloadSchema('judge.reviewed')).not.toBe(GENERIC_PAYLOAD_SCHEMA);
   });
 
   it('markers_are_not_energy_spent', () => {
@@ -225,6 +277,7 @@ describe('per-type payload map (spec §4)', () => {
         'check.completed',
         'novelty.scored',
         'fitness.scored',
+        'judge.reviewed',
       ]),
     );
     expect(HIGH_TRAFFIC_PAYLOAD_MAP['energy.spent']).toBe(EnergyEvent);

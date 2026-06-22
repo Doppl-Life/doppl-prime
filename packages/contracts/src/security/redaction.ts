@@ -7,8 +7,10 @@
  * legitimate text via a false positive.
  *
  * Defense in depth: value-pattern matching catches recognizable provider keys / Authorization
- * credentials anywhere in a string; a sensitive key-name redacts its ENTIRE value regardless of
- * type. Idempotent, structure-preserving, non-mutating (returns a deep copy).
+ * credentials anywhere in a string; a sensitive key-name redacts its ENTIRE value (strings AND
+ * objects/arrays) — EXCEPT a number/boolean, which is never a credential and must round-trip its
+ * contract type (e.g. `ProviderMeta.tokensIn`/`tokensOut`, whose keys merely contain "token").
+ * Idempotent, structure-preserving, non-mutating (returns a deep copy).
  */
 
 /** Stable token every redacted position holds. Matches no secret pattern, so re-scrub is a no-op. */
@@ -27,8 +29,9 @@ const VALUE_PATTERNS: readonly RegExp[] = [
 ];
 
 /**
- * Key-names whose value is redacted whole regardless of format (case-insensitive contains-match).
- * Err toward over-redaction: a false-positive redaction is safe; a missed secret is not.
+ * Key-names whose value is redacted whole (string/object/array value) regardless of format
+ * (case-insensitive contains-match). A number/boolean value is exempt (handled at the redact site —
+ * never a credential). Err toward over-redaction: a false-positive string/object redaction is safe.
  */
 const SENSITIVE_KEY_FRAGMENTS: readonly string[] = [
   'authorization',
@@ -84,8 +87,15 @@ function scrubValue(value: unknown): unknown {
         nextSuffix.set(base, n + 1);
       }
       usedKeys.add(outKey);
+      // A sensitive key whole-redacts its value EXCEPT a number/boolean — those are never credentials
+      // (a credential is always a string), so redacting them to the STRING placeholder would corrupt the
+      // value and break the persisted contract's round-trip (e.g. ProviderMeta.tokensIn/tokensOut, whose
+      // keys merely CONTAIN "token"). Strings AND objects/arrays still whole-redact (a non-format secret
+      // nested under a sensitive key must not escape via recursion — no weakening).
+      const redactWhole =
+        isSensitiveKey(key) && typeof child !== 'number' && typeof child !== 'boolean';
       Object.defineProperty(result, outKey, {
-        value: isSensitiveKey(key) ? REDACTION_PLACEHOLDER : scrubValue(child),
+        value: redactWhole ? REDACTION_PLACEHOLDER : scrubValue(child),
         enumerable: true,
         writable: true,
         configurable: true,

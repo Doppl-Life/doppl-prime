@@ -16,6 +16,7 @@ import {
   CheckResult,
   NoveltyScore,
   FitnessScore,
+  JudgeResult,
 } from '@doppl/contracts';
 
 const HIGH_TRAFFIC_SNAPSHOT = [
@@ -25,6 +26,8 @@ const HIGH_TRAFFIC_SNAPSHOT = [
   'check.completed',
   'novelty.scored',
   'fitness.scored',
+  // judge-output amendment: held-out judge acceptance result.
+  'judge.reviewed',
 ];
 
 const EXPECTED_MAPPING = {
@@ -34,15 +37,16 @@ const EXPECTED_MAPPING = {
   'check.completed': CheckResult,
   'novelty.scored': NoveltyScore,
   'fitness.scored': FitnessScore,
+  'judge.reviewed': JudgeResult,
 } as const;
 
 const sorted = (a: readonly string[]): string[] => [...a].sort();
 
 describe('schema snapshot — high-traffic payload map (spec §4 / §2.5)', () => {
   it('schema_snapshot_payload_map', () => {
-    // the high-traffic key-set is frozen to exactly six members
+    // the high-traffic key-set is frozen to exactly seven members
     expect(sorted(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP))).toEqual(sorted(HIGH_TRAFFIC_SNAPSHOT));
-    expect(HIGH_TRAFFIC_SNAPSHOT).toHaveLength(6);
+    expect(HIGH_TRAFFIC_SNAPSHOT).toHaveLength(7);
 
     // every high-traffic key is a valid RunEventType member (no orphan key outside the registry)
     for (const key of HIGH_TRAFFIC_SNAPSHOT) {

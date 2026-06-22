@@ -51,12 +51,14 @@ const EXPECTED_FIXTURE_NAMES = [
   'CullingEvent',
   'LineageGraphProjection',
   'FinalJudgeRubric',
+  'JudgeResult',
   'payload:energy.spent',
   'payload:candidate.created',
   'payload:critic.reviewed',
   'payload:check.completed',
   'payload:novelty.scored',
   'payload:fitness.scored',
+  'payload:judge.reviewed',
 ] as const;
 
 describe('contract-test surface — canonical fixtures (spec §16)', () => {
@@ -78,12 +80,14 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
     }
   });
 
-  it('canonical_fixtures_still_valid_at_v2', () => {
-    // spec(§16) [P0.1-amend]: the canonical envelope fixture is re-recorded at schemaVersion 2 (it
-    // tracks CURRENT_SCHEMA_VERSION); the full CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid)
-    // stays green at v2 — the P0.14 surface survives the amendment.
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
-    expect(validRunEventEnvelope.schemaVersion).toBe(2);
+  it('canonical_fixtures_still_valid_at_current_version', () => {
+    // spec(§16) [terminal-event amendment]: the canonical envelope fixture is re-recorded at the CURRENT
+    // schema version (5 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal pin); the full
+    // CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives
+    // the sv4→5 terminal-event amendment (additive: +run.cancelled/generation.skipped/agenome.failed/
+    // candidate.rejected).
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(validRunEventEnvelope.schemaVersion).toBe(5);
   });
 
   it('types_are_single_source', () => {

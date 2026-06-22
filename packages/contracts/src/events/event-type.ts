@@ -5,12 +5,25 @@ import { z } from 'zod';
  *
  * Enumerates every lifecycle event, every failure/terminal event, plus the operation-start /
  * in-flight observability markers (§4 live in-flight window) — so no failure path in §3/§5 is
- * unrepresentable (closes RISK-006). Any unlisted type is rejected. 36 members (25 + 11 markers).
+ * unrepresentable (closes RISK-006). Any unlisted type is rejected. 41 members (30 + 11 markers).
  *
  * Note: lifecycle types are dotted (`run.failed`, `run.stopped`, …) per the canonical
  * Appendix A typed registry — this is the authoritative spelling for the terminal events. The 11
  * markers (P0.1-amend) are persisted + replay-faithful (envelope-level correlation, no provider
  * call to replay) and debit NO energy (rule #8 — they are NOT `energy.spent`).
+ *
+ * The judge-output amendment adds ONE terminal type — `judge.reviewed` (36 → 37) — the held-out
+ * judge's persisted acceptance result (narrows to `JudgeResult`; the §2.5 verifier→selection seam).
+ * It is the terminal half of the existing `judge.review_started` operation-start marker. Additive +
+ * non-breaking: closure (rejects-unlisted, RISK-006) is preserved and `schemaVersion` bumps 2 → 3.
+ *
+ * The terminal-event amendment (sv4→5) adds the 4 reachable §3/§5 terminals the registry was missing,
+ * so every state-machine terminal is rule-#2 replayable (37 → 41): `run.cancelled` (configured→cancelled,
+ * kill switch) + `generation.skipped` (pending→skipped, kill switch) — both NAMED by the P3.4 killSwitch
+ * here — plus `agenome.failed` (active→failed; loop P3.10 emission, deferred) + `candidate.rejected`
+ * (under_review→rejected; runtime-on-SELECTION-verdict, P3↔P5 seam, deferred — the verifier is
+ * evidence-only, rule #6). All 4 are low-traffic → generic JSONB payload (no HIGH_TRAFFIC_PAYLOAD_MAP
+ * entry). Additive + non-breaking: closure (RISK-006) preserved, `schemaVersion` bumps 4 → 5.
  */
 export const RunEventType = z.enum([
   // lifecycle
@@ -19,8 +32,12 @@ export const RunEventType = z.enum([
   'run.completed',
   'run.failed',
   'run.stopped',
+  // terminal-event amendment (sv4→5): operator-cancel terminal of a configured (not-yet-running) run.
+  'run.cancelled',
   'generation.started',
   'generation.completed',
+  // terminal-event amendment (sv4→5): a pending generation skipped by the kill switch.
+  'generation.skipped',
   'agenome.spawned',
   'agenome.fused',
   'agenome.mutated',
@@ -28,6 +45,9 @@ export const RunEventType = z.enum([
   'candidate.created',
   'critic.reviewed',
   'check.completed',
+  // held-out judge acceptance result (judge-output amendment) — narrows to JudgeResult; terminal
+  // half of the `judge.review_started` marker; the §2.5 verifier→selection seam (NOT a marker).
+  'judge.reviewed',
   'novelty.scored',
   'fitness.scored',
   'lineage.culled',
@@ -40,6 +60,10 @@ export const RunEventType = z.enum([
   'generation_failed',
   'reproduction_aborted_insufficient_parents',
   'novelty_scoring_degraded',
+  // terminal-event amendment (sv4→5): agenome active→failed terminal (loop P3.10 emission, deferred) +
+  // candidate under_review→rejected terminal (runtime-on-SELECTION-verdict, P3↔P5 seam, deferred).
+  'agenome.failed',
+  'candidate.rejected',
   // operation-start / in-flight observability markers (P0.1-amend; §4 live in-flight window).
   // Generic payload (envelope-level correlation), NO energy debit (rule #8 — not `energy.spent`).
   'generation.verifying',
