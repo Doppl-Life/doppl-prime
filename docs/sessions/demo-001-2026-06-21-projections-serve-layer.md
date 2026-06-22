@@ -5,7 +5,7 @@
 - **Role:** demo-observability-implementer (backend / `apps/api`)
 - **Branch:** `track/demo` (shared worktree with demo-web-implementer)
 - **Predecessor:** `kernel-001-2026-06-21-freeze-bundle.md` (the kernel freeze bundle this track forked from)
-- **Successor session:** _(none yet)_
+- **Successor session:** `demo-002-2026-06-21-run-health-endpoint.md`
 
 ## Why this session existed
 
