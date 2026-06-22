@@ -39,11 +39,6 @@ function maskProvenanceText(text: string): string {
     .replace(/\bbranch markdown\b/gi, "source markdown");
 }
 
-function averageScore(ratings: CalibratorRating[]): number | null {
-  if (ratings.length === 0) return null;
-  return ratings.reduce((total, rating) => total + rating.score, 0) / ratings.length;
-}
-
 function MarkdownBlock({ text }: { text: string }) {
   return (
     <div className="markdown-block">
@@ -100,38 +95,6 @@ function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
         </div>
       ))}
     </dl>
-  );
-}
-
-function CalibrationHistory({
-  judgeScore,
-  ratings,
-}: {
-  judgeScore?: number;
-  ratings: CalibratorRating[];
-}) {
-  const average = averageScore(ratings);
-  const judgeDelta = average !== null && judgeScore !== undefined ? average - judgeScore : null;
-
-  return (
-    <section className="calibration-history" aria-label="Human calibration history">
-      <div>
-        <p className="metric-label">Human avg</p>
-        <p className="metric-value">{average === null ? "none" : scoreLabel(Number(average.toFixed(1)))}</p>
-      </div>
-      <div>
-        <p className="metric-label">Ratings</p>
-        <p className="metric-value">{ratings.length}</p>
-      </div>
-      <div>
-        <p className="metric-label">Judge delta</p>
-        <p className="metric-value">{judgeDelta === null ? "n/a" : scoreLabel(Number(judgeDelta.toFixed(1)))}</p>
-      </div>
-      <div>
-        <p className="metric-label">Last rating</p>
-        <p className="metric-value small">{ratings[0]?.submitted_at.slice(0, 10) ?? "none"}</p>
-      </div>
-    </section>
   );
 }
 
@@ -522,12 +485,6 @@ export function App() {
             <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
           ) : null}
           {activeReviewArtifact ? <MarkdownBlock text={artifactBody(activeReviewArtifact, blindMode)} /> : null}
-          {activeReviewArtifact ? (
-            <CalibrationHistory
-              ratings={activeReviewArtifact.human_ratings}
-              judgeScore={"judge_score" in activeReviewArtifact ? activeReviewArtifact.judge_score : undefined}
-            />
-          ) : null}
         </article>
 
         <section className="source-disclosure">

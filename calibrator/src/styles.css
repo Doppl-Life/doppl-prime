@@ -361,43 +361,6 @@ textarea {
   color: #0f4f49;
 }
 
-.calibration-history {
-  background: var(--line);
-  border: 1px solid var(--line);
-  display: grid;
-  gap: 1px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 12px;
-}
-
-.calibration-history div {
-  background: #f8fafc;
-  min-width: 0;
-  padding: 9px;
-}
-
-.metric-label {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 900;
-  margin: 0 0 3px;
-  text-transform: uppercase;
-}
-
-.metric-value {
-  color: var(--ink);
-  font-size: 16px;
-  font-weight: 900;
-  margin: 0;
-}
-
-.metric-value.small {
-  font-size: 11px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
-}
-
 .rating-dock {
   align-items: end;
   background: #fff;
@@ -573,26 +536,6 @@ textarea {
     grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
   }
 
-  .selected-step {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 0 18px;
-  }
-
-  .selected-step .trace-label,
-  .selected-step h2,
-  .selected-step .blind-note,
-  .selected-step .markdown-block {
-    grid-column: 1;
-  }
-
-  .selected-step .calibration-history {
-    align-self: start;
-    grid-column: 2;
-    grid-row: 1 / span 4;
-    grid-template-columns: 1fr;
-    margin-top: 0;
-  }
 }
 
 @media (max-width: 520px) {
@@ -618,10 +561,8 @@ textarea {
     font-size: 20px;
   }
 
-  .calibration-history,
   .comparison-banner dl,
   .meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 }
