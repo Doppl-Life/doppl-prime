@@ -33,7 +33,9 @@ type KernelHttpRequest = {
 
 type KernelHttpResponse = {
   status: number;
-  body: Record<string, unknown>;
+  body?: Record<string, unknown>;
+  bodyText?: string;
+  contentType?: string;
 };
 
 type KernelHttpOptions = {
@@ -41,9 +43,60 @@ type KernelHttpOptions = {
   fetch?: OpenRouterModelClientInput['fetch'];
 };
 
-function jsonResponse(response: ServerResponse, status: number, body: unknown): void {
-  response.writeHead(status, { 'Content-Type': 'application/json' });
-  response.end(JSON.stringify(body));
+function writeHttpResponse(response: ServerResponse, result: KernelHttpResponse): void {
+  const contentType = result.contentType || 'application/json';
+  response.writeHead(result.status, { 'Content-Type': contentType });
+  response.end(result.bodyText ?? JSON.stringify(result.body));
+}
+
+function productionPage(): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doppl Kernel</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f7f8fa; color: #17191c; }
+    main { max-width: 880px; margin: 0 auto; padding: 56px 24px; }
+    h1 { font-size: 38px; line-height: 1.05; margin: 0 0 12px; letter-spacing: 0; }
+    p { color: #515761; font-size: 16px; line-height: 1.6; margin: 0 0 28px; }
+    section { border-top: 1px solid #d8dde5; padding: 22px 0; }
+    h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; color: #69707d; letter-spacing: 0; }
+    code { background: #e9edf3; border-radius: 5px; padding: 2px 6px; font-size: 14px; }
+    ul { margin: 0; padding-left: 20px; color: #30343a; line-height: 1.8; }
+    a { color: #0b5cad; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111316; color: #f1f3f5; }
+      p, h2 { color: #a9b0bb; }
+      section { border-color: #2d333b; }
+      code { background: #252b33; }
+      ul { color: #dbe0e6; }
+      a { color: #8ab8ff; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Doppl Kernel</h1>
+    <p>Production kernel service for running, inspecting, and exporting Doppl synthesis runs.</p>
+    <section>
+      <h2>Status</h2>
+      <ul>
+        <li><a href="/health">/health</a> returns service health.</li>
+        <li><code>POST /kernel/runs</code> creates fixture, replayed, or live model runs.</li>
+        <li><code>GET /kernel/runs/:runId</code> returns an exported run index.</li>
+        <li><code>GET /kernel/runs/:runId/artifacts/:path</code> returns exported artifact content.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Access</h2>
+      <p>Run creation and artifact inspection use the configured kernel API key when enabled. Health stays public for deployment checks.</p>
+    </section>
+  </main>
+</body>
+</html>`;
 }
 
 function readBody(request: IncomingMessage): Promise<string> {
@@ -215,6 +268,13 @@ export async function handleKernelHttpRequest(
 ): Promise<KernelHttpResponse> {
   try {
     const url = parsedUrl(request.url);
+    if (request.method === 'GET' && url.pathname === '/') {
+      return {
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        bodyText: productionPage(),
+      };
+    }
     if (request.method === 'GET' && url.pathname === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
     }
@@ -251,7 +311,7 @@ export function createKernelHttpServer(): Server {
         headers: request.headers,
         body: request.method === 'POST' ? await readBody(request) : undefined,
       });
-      jsonResponse(response, result.status, result.body);
+      writeHttpResponse(response, result);
     })();
   });
 }

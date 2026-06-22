@@ -149,6 +149,16 @@ test('kernel HTTP server reports health', async () => {
   assert.deepEqual(response.body, { ok: true, service: 'doppl-kernel' });
 });
 
+test('kernel HTTP server serves a visible production page', async () => {
+  const response = await handleKernelHttpRequest({ method: 'GET', url: '/' });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.contentType, 'text/html; charset=utf-8');
+  assert.match(response.bodyText, /Doppl Kernel/);
+  assert.match(response.bodyText, /\/health/);
+  assert.match(response.bodyText, /\/kernel\/runs/);
+});
+
 test('kernel HTTP server runs a fixture kernel request', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-kernel-'));
   const response = await handleKernelHttpRequest({
