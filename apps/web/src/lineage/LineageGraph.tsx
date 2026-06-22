@@ -3,6 +3,7 @@ import ReactFlow, {
   Background,
   Controls,
   type Edge,
+  MarkerType,
   MiniMap,
   type Node,
   ReactFlowProvider,
@@ -202,15 +203,40 @@ export function LineageGraph(): JSX.Element {
     });
     const rfEdges: Edge[] = laid.edges.map((e) => {
       const orig = keptEdges.find((eo) => eo.id === e.id);
+      // Differentiate edges by type so the graph is readable when many
+      // generations + fusion events overlap:
+      //   owns_candidate  — agenome → its idea. Dim & thin so it
+      //                     doesn't compete visually with lineage.
+      //   lineage:fusion  — two parents → one child. Bright + thick +
+      //                     arrowhead. These are the rare cross-parent
+      //                     recombinations worth calling out.
+      //   lineage:*       — single-parent reproduction (mutation,
+      //                     mutation_only, etc). Default cyan with
+      //                     arrowhead and mode label.
+      const isOwns = orig?.type === "owns_candidate";
+      const isFusion = orig?.type === "lineage" && orig.label === "fusion";
+      const stroke = isOwns
+        ? "var(--doppl-hairline)"
+        : isFusion
+          ? "var(--doppl-status-warn)"
+          : "var(--doppl-status-info)";
+      const strokeWidth = isFusion ? 2.5 : isOwns ? 1 : 1.75;
       return {
         id: e.id,
         source: e.source,
         target: e.target,
         type: "smoothstep",
-        label: orig?.label,
+        // Only show labels on lineage edges (owns_candidate carries no
+        // useful label and shouting "owns_candidate" all over the graph
+        // is the kind of thing the dim styling is already saying).
+        ...(isOwns ? {} : orig?.label ? { label: orig.label } : {}),
+        style: { stroke, strokeWidth, opacity: isOwns ? 0.55 : 1 },
+        ...(isOwns
+          ? {}
+          : { markerEnd: { type: MarkerType.ArrowClosed, color: stroke, width: 18, height: 18 } }),
         // Animate edges that just appeared so the "flow" is visible.
         animated: animatingIds.edges.has(e.id),
-      };
+      } as Edge;
     });
     return { rfNodes, rfEdges };
   }, [
@@ -249,6 +275,62 @@ export function LineageGraph(): JSX.Element {
   );
 }
 
+/**
+ * Tiny legend overlaid on the lineage canvas so the operator can
+ * decode the edge styling without having to ask: thick warm-colored
+ * arrows are fusion (two parents → one child), thin cyan arrows are
+ * single-parent reproduction, dim hairlines connect an agenome to
+ * the ideas it produced.
+ */
+function LineageEdgeLegend(): JSX.Element {
+  const items: Array<{
+    label: string;
+    color: string;
+    width: number;
+    opacity: number;
+  }> = [
+    { label: "reproduction", color: "var(--doppl-status-info)", width: 1.75, opacity: 1 },
+    { label: "fusion (two parents)", color: "var(--doppl-status-warn)", width: 2.5, opacity: 1 },
+    { label: "owns idea", color: "var(--doppl-hairline)", width: 1, opacity: 0.55 },
+  ];
+  return (
+    <div
+      role="presentation"
+      style={{
+        position: "absolute",
+        top: 8,
+        left: 8,
+        zIndex: 4,
+        display: "flex",
+        gap: 14,
+        padding: "6px 10px",
+        background: "rgba(8, 12, 24, 0.7)",
+        border: "1px solid var(--doppl-border)",
+        borderRadius: 6,
+        fontSize: 11,
+        color: "var(--doppl-text-secondary)",
+        alignItems: "center",
+        pointerEvents: "none",
+      }}
+    >
+      {items.map((it) => (
+        <span key={it.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: 22,
+              borderTop: `${it.width}px solid ${it.color}`,
+              opacity: it.opacity,
+            }}
+          />
+          <span>{it.label}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function LineageCanvas({
   rfNodes,
   rfEdges,
@@ -274,9 +356,10 @@ function LineageCanvas({
   return (
     <div
       className="doppl-flow"
-      style={{ height: "100%", width: "100%" }}
+      style={{ height: "100%", width: "100%", position: "relative" }}
       aria-label="Lineage graph"
     >
+      <LineageEdgeLegend />
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
