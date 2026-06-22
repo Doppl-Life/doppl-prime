@@ -19,7 +19,7 @@
 
 ## Currently in progress
 
-> **Kernel team PAUSED 2026-06-22** (lead-cycle) — handoff: `docs/team-handoffs/kernel-001-2026-06-22-substrate-merged-pause.md` · last round-seal `ee8b3d6` (merged cody `8de6bbd`) · next-slice target: **kernel-026 sv4→5 terminal-event amendment** → P3.10 generation loop. Resume: `/team-start kernel`.
+> **Kernel team — round-4 sealed 2026-06-22, cycling** (impl WARN 73%) — **P3.10 (generation loop) COMPLETE** (10a/b/c/d/e = kernel-027…031, last code `201dfe3`) + the **kernel-026 sv5** terminal-event amendment + the **cody@bae1842 back-merge** (sv5 + verifier scrub fix + demo round-4; **P2.3/P2.8 now unblocked**, `packages/observability` in-tree). track/kernel sealed + pushed to origin this round; **kernel→cody merge DEFERRED to track-completion** (lead, user-approved) — track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE + the cody-bound §5/§6 arch notes (parked in ledger §I) reach cody at that merge. Orchestrator routing ledger: `docs/sessions/kernel-003-2026-06-21-orchestrator-routing-ledger.md` §I (full per-slice detail). **Next round:** P3.11 (run-terminal, consumes 10e killSummary) → P3.12 worker (SOLO) → P3.13 crash-forward (SOLO) → P2.3/P2.8 → /phase-exit P2 + /phase-exit P3 close the track. Resume: `/team-start kernel`.
 
 **Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
@@ -45,7 +45,6 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-- **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. **STATUS 2026-06-21 (carry-forward hygiene): HOMED in kernel P3.1 boot-config (`db4b045`) — kernel-orch confirms `validateRunConfig` is the boot entry (reachability) at next /orchestrate-end → then DELETE.** _(origin: 2026-06-20 P0.3; cross-track → kernel)_
 - **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. **Scrub-at-persist BUILT** (P1.2 boundary scrub → wired before append in P1.3 `append.ts`; P2.4 structured-output carries candidate text as data); **remaining: the P3 event-emission reachability pins** on these passthrough fields when the runtime emits gateway-carrying events. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P3 emission pins)_
 - **Held-out judge acceptance score must integrate into fitness via the persisted authoritative record (cross-track → selection P5).** The verifier-P4 half is CONSUMED — P4.3 loads the rubric from the immutable `DEFAULT_JUDGE_RUBRIC` (`loadJudgeRubric`, no agent-writable path, full-5-axis-set + `immutableToAgents:true` asserted) and P4.8 runs the held-out judge outside the breeding loop, persisting `judge.reviewed`←`JudgeResult` as the authoritative acceptance record (merged to cody `bff4325`/`fae1d46`). **Remaining selection-P5 obligation:** P5.5 MUST integrate the held-out-judge acceptance into `FitnessScore.components.judge_acceptance` by a candidateId JOIN into the persisted `judge.reviewed` record (rule #6 — never a duplicate authoritative copy, never re-derive/re-validate the rubric in selection; the judge sits outside selection's loop). _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; verifier-P4 half consumed @ P4.3/P4.8; cross-track → selection P5; DELETE after P5.5 consumes the persisted judge acceptance)_
 - **Wire `selectCriticMandates` into the P3 generation 'verifying' phase (cross-track → kernel/P3).** `selectCriticMandates({rngSeed: readRngSeed(runConfig), generationIndex: generation.index})` → `runCouncil({…, mandates})`. Same deferred-wiring as P4.6's `runCouncil` (both currently unwired). _(origin: verifier P4.7; cross-track → kernel/P3)_
@@ -792,17 +791,17 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P3.10 — Generation loop orchestration with resolved zero-survivors / partial-failure / degenerate edges
 
-- [ ] The loop drives a generation pending→running→verifying→scoring→reproducing→completed, emitting generation.started/completed and the per-stage transitions through the state machine guards
-- [ ] Partial failure: the generation proceeds running→degraded→verifying as long as ≥1 candidate reached created (configurable minPopulationSurvival), emitting a partial-failure event listing failed agenome IDs; running→failed only if all agenomes fail or provider failures exceed the run retry cap
-- [ ] Zero-survivors: a generation with no eligible parents takes scoring→completed (no offspring) and emits generation.completed{survivors:0}
-- [ ] Degenerate reproduction: <2 eligible parents → mutation-only reproduction from the single survivor emitting agenome.reproduced{mode:"mutation_only"}; 0 survivors routes to the zero-survivors path
-- [ ] Emits operation-start marker(s) on entering each generation phase — generation.verifying/scoring/reproducing — and relays tool_call.started/tool_call.finished from the gateway, all NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
-- [ ] The loop hands candidates to verifier/selection seams as DATA and consumes their events; it never itself critiques, checks, or scores
-- [ ] The loop repeats until caps (maxGenerations / energyBudget / wall-clock) are reached, then ends the run via terminal classification (P3.11)
-- [ ] Each per-stage deadline / wall-clock / kill aborts the current generation state to failed and is recorded as generation_failed
-- [ ] Files: apps/api/src/runtime/loop/generationLoop.ts (NEW); apps/api/src/runtime/loop/partialFailure.ts (NEW); apps/api/src/runtime/loop/reproductionDispatch.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes Generation, ReproductionEvent — frozen in P0.15, P0.9)
-- [ ] Depends on: P0.15, P0.9, P3.2, P3.3, P3.4, P3.5, P3.6, P3.9
+- [x] The loop drives a generation pending→running→verifying→scoring→reproducing→completed, emitting generation.started/completed and the per-stage transitions through the state machine guards
+- [x] Partial failure: the generation proceeds running→degraded→verifying as long as ≥1 candidate reached created (configurable minPopulationSurvival), emitting a partial-failure event listing failed agenome IDs; running→failed only if all agenomes fail or provider failures exceed the run retry cap
+- [x] Zero-survivors: a generation with no eligible parents takes scoring→completed (no offspring) and emits generation.completed{survivors:0}
+- [x] Degenerate reproduction: <2 eligible parents → mutation-only reproduction from the single survivor emitting agenome.reproduced{mode:"mutation_only"}; 0 survivors routes to the zero-survivors path
+- [x] Emits operation-start marker(s) on entering each generation phase — generation.verifying/scoring/reproducing — and relays tool_call.started/tool_call.finished from the gateway, all NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
+- [x] The loop hands candidates to verifier/selection seams as DATA and consumes their events; it never itself critiques, checks, or scores
+- [x] The loop repeats until caps (maxGenerations / energyBudget / wall-clock) are reached, then ends the run via terminal classification (P3.11)
+- [x] Each per-stage deadline / wall-clock / kill aborts the current generation state to failed and is recorded as generation_failed
+- [x] Files: apps/api/src/runtime/loop/generationLoop.ts (NEW); apps/api/src/runtime/loop/partialFailure.ts (NEW); apps/api/src/runtime/loop/reproductionDispatch.ts (NEW)
+- [x] Cross-doc invariant: none (consumes Generation, ReproductionEvent — frozen in P0.15, P0.9)
+- [x] Depends on: P0.15, P0.9, P3.2, P3.3, P3.4, P3.5, P3.6, P3.9
 
 ### P3.11 — Run terminal classification rule + partial terminal summary
 
@@ -1617,6 +1616,17 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ---
 
 ## Log
+
+### 2026-06-22 — Kernel round 4: kernel-026 sv5 amendment + P3.10 generation loop COMPLETE (10a–e) + cody@bae1842 back-merge
+
+- **kernel-026** sv4→5 terminal-event amendment: `RunEventType` 37→41 (+run.cancelled/generation.skipped/agenome.failed/candidate.rejected), `CURRENT_SCHEMA_VERSION` 4→5, killSwitch null→named. candidate.rejected = registry-add only (emission = runtime-on-SELECTION-verdict, the P3↔P5 seam, MVP-deferred). Merged to cody scoped (`06299c9`).
+- **P3.10 (generation loop) COMPLETE** — decomposed into 5 sub-slices (safety isolated from feature): 10a cost-map→AppConfig `e88bf6b` · 10b loop skeleton `6279526` · 10c edges `d369acb` · 10d merge+energy `d7fa661`+`8b79888` · 10e kill/abort/drain/latching `201dfe3`. Loop = pure orchestration over INJECTED seam ports (option-b: selection P5 unmerged, verifier retired → faked vs frozen contracts); appends only kernel-owned events; energy.spent success-only + provider_call_failed + scrub round-trip; full cap enforcement + planKillSwitch + drain-then-terminalize under a latching halt. (Files consolidated: generationLoop.ts + killDrain.ts; partialFailure/reproductionDispatch edges kept in-loop.)
+- **cody@bae1842 back-merge** (`d7fa661`): pulled sv5 (no-op) + the verifier scrub fix + demo round-4 (observability/web/projections). Doc reconcile (orch, LESSON-36 handoff): cody LESSONS §1–62 + kernel §63/§64; dropped track §37–40 dups; kept track's sv5 cross-doc rows over cody's stale. **P2.3/P2.8 UNBLOCKED** (`packages/observability` in-tree).
+- **Decisions made:** P3.10 inject-and-fake seams (no real verifier/selection wiring this round); kill granularity = per-generation-boundary (MVP; executeKillAndDrain handles mid-stage); energy_exhausted = named registry event (no amendment).
+- **Lessons:** §63 (audit-all-terminals-vs-registry), §64 (loop = pure orchestration / never authors seam events), §65 (scoped-merge doc-skew → back-merge per-field), §66 (gitleaks redaction-test fixture).
+- **Scope shifts:** P3.7/P3.8 ticked satisfied-by-gateway (residuals folded into P3.10, now done); **kernel→cody merge DEFERRED to track-completion** (lead, user-approved) — track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE + cody-bound §5/§6 arch notes reach cody then.
+- **New blockers:** none. **Next session target:** P3.11 (run-terminal classification — consumes 10e killSummary + terminal/selected history) → P3.12 worker → P3.13 crash-forward → P2.3/P2.8 → /phase-exit P2 + /phase-exit P3.
+- Reference: orchestrator routing ledger `docs/sessions/kernel-003-2026-06-21-orchestrator-routing-ledger.md` §I (full per-slice detail + cody-bound arch notes); implementer session doc kernel-007.
 
 ### 2026-06-22 — Demo→cody INTEGRATION (round 4): Phase 6 + Phase 7 COMPLETE · sv2→sv5 reconcile · /phase-exit P7 CLEAR
 
