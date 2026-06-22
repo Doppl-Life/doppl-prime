@@ -14,6 +14,15 @@ This is a two-week Gauntlet capstone (MVP/prototype). Showcase: **June 29, 2026*
 - `calibrator/` — vault-first human calibration workbench.
 - `published/calibrator/` — read-only static export of the calibrator.
 
+## Published preview
+
+The `calibration` branch can deploy the committed `published/` folder with GitHub Pages.
+
+- Preview index: `published/index.html`
+- Calibrator preview: `published/calibrator/index.html`
+
+Run `npm --prefix calibrator run export:static` before committing changes that should appear in the static preview.
+
 ## Status
 
 Early. This README is a placeholder — add to it as the project takes shape.

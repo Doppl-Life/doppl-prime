@@ -27,7 +27,7 @@ The app can run as a read-only static build because it falls back from `/api/ind
 npm --prefix calibrator run export:static
 ```
 
-Host `published/calibrator/` to show the calibrator online. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, solutions, scores, and verdict controls; saving ratings requires the local dev API or a future hosted backend.
 
 ## Vault Shape
 
