@@ -135,3 +135,4 @@ export {
   type SeamContext,
   type ReproduceContext,
 } from './loop/generationLoop';
+export { executeKillAndDrain, type KillAppend } from './loop/killDrain';

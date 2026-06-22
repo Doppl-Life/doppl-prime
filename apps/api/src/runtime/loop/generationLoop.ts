@@ -18,6 +18,10 @@ import { materializeGen0 } from '../seed/gen0SeedSet';
 import { createSeededRng, readRngSeed } from '../rng/seededRng';
 import { createLiveOutcomeSource, type OutcomeSource } from '../rng/persistOutcomes';
 import { estimateEnergy, reconcileEnergy, type ReconcileInput } from '../energy/estimateReconcile';
+import { enforceWallClock } from '../caps/capEnforcer';
+import { cumulativeSpend } from '../energy/energyLedger';
+import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
+import { executeKillAndDrain } from './killDrain';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
@@ -107,10 +111,17 @@ export interface GenerationLoopDeps {
   readonly seams: GenerationSeams;
   /** Min candidates that must reach `created` for a generation to proceed (else running→failed). Default 1. */
   readonly minPopulationSurvival?: number;
+  /** Injected wall-clock (replay-safe — no ambient clock; P3.6 discipline). Default `() => 0`. */
+  readonly now?: () => number;
+  /** Injected operator-stop signal — `true` triggers an operator_stop kill (§5). */
+  readonly operatorStop?: () => boolean;
 }
 
 export interface GenerationLoopResult {
   readonly generationsRun: number;
+  /** The partial kill summary if the loop was aborted by a cap breach / operator-stop (P3.10e). The
+   * run-terminal VERDICT (completed-vs-failed over the whole run) is P3.11, not this. */
+  readonly killSummary?: KillPlanSummary;
 }
 
 /** Thrown when the loop would drive a generation through an out-of-lifecycle transition (rule #2 + P3.2). */
@@ -192,6 +203,9 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
   const { runId, config, eventStore, gateway, seams } = deps;
   const { caps } = config;
   const minSurvival = deps.minPopulationSurvival ?? 1;
+  const now = deps.now ?? (() => 0); // injected wall-clock (replay-safe); default never breaches.
+  const startedAt = now();
+  let killSummary: KillPlanSummary | undefined;
 
   let eventSeq = 0;
   const appendEvent = (
@@ -252,6 +266,21 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     });
   };
 
+  // Full cap-set + operator-stop detection (rule #1, §5) — checked before scheduling new productive work.
+  // operator-stop first, then the energyBudget fold over energy.spent ACTUAL (the deferred 10d→10e item),
+  // then the wall-clock deadline (injected now(), exclusive). The count caps bound the loop separately (10b).
+  const detectKill = async (): Promise<KillTrigger | null> => {
+    if (deps.operatorStop?.() === true) return { kind: 'operator_stop' };
+    const log = await eventStore.readByRun(runId);
+    if (cumulativeSpend(log, { kind: 'run', id: runId }) >= caps.energyBudget) {
+      return { kind: 'cap_breach', dimension: 'energyBudget' };
+    }
+    if (!enforceWallClock(now() - startedAt, caps).allowed) {
+      return { kind: 'cap_breach', dimension: 'wallClockTimeoutMs' };
+    }
+    return null;
+  };
+
   // Gen-0 population: materialized ONCE, clamped to maxPopulation; spawned once (agenome.spawned per
   // agenome, each gated by enforceCap('maxPopulation', …) — belt-and-suspenders with the materialize
   // clamp). The population persists across generations (successor-population threading deferred).
@@ -276,6 +305,15 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
 
   let generationsRun = 0;
   for (let g = 0; enforceCap('maxGenerations', g, 1, caps).allowed; g += 1) {
+    // KILL CHECK (before scheduling the next generation): a cap breach / operator-stop aborts the run.
+    // The kill is LATCHING — `break` schedules no new work; executeKillAndDrain terminalizes every
+    // non-terminal under the kill (run is 'running' here; prior generations are completed = terminal).
+    const killTrigger = await detectKill();
+    if (killTrigger !== null) {
+      killSummary = await executeKillAndDrain(killTrigger, 'running', [], appendEvent);
+      break;
+    }
+
     const generationId = `${runId}-gen${g}`;
     let status: GenerationStatus = 'pending';
 
@@ -439,5 +477,5 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     generationsRun += 1;
   }
 
-  return { generationsRun };
+  return killSummary !== undefined ? { generationsRun, killSummary } : { generationsRun };
 }

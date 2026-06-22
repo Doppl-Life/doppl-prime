@@ -19,6 +19,7 @@ import type {
   RunEventRow,
 } from '../../../../src/event-store';
 import { scrubEventPayload } from '../../../../src/event-store';
+import { executeKillAndDrain } from '../../../../src/runtime/loop/killDrain';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
@@ -61,7 +62,13 @@ const CANDIDATE_CONTENT = {
   subtypePayload: validCandidateIdeaCrossDomain.subtypePayload,
 };
 
-function loadTestConfig(caps: { maxGenerations?: number; maxPopulation?: number }) {
+type TestCaps = {
+  maxGenerations?: number;
+  maxPopulation?: number;
+  energyBudget?: number;
+  wallClockTimeoutMs?: number;
+};
+function loadTestConfig(caps: TestCaps) {
   return loadConfig({ env: VALID_ENV, fileSources: { caps } });
 }
 
@@ -254,7 +261,7 @@ const noopReproduce: ReproduceSeam = async () => {};
 
 function makeDeps(
   over: Partial<GenerationLoopDeps> & {
-    caps?: { maxGenerations?: number; maxPopulation?: number };
+    caps?: TestCaps;
   } = {},
 ): GenerationLoopDeps {
   const fake = over.eventStore ? null : makeFakeEventStore();
@@ -268,10 +275,12 @@ function makeDeps(
       score: appendingScore,
       reproduce: appendingReproduce,
     },
-    // minPopulationSurvival present only when supplied (exactOptionalPropertyTypes).
+    // optional deps present only when supplied (exactOptionalPropertyTypes).
     ...(over.minPopulationSurvival !== undefined
       ? { minPopulationSurvival: over.minPopulationSurvival }
       : {}),
+    ...(over.now !== undefined ? { now: over.now } : {}),
+    ...(over.operatorStop !== undefined ? { operatorStop: over.operatorStop } : {}),
   };
 }
 
@@ -717,5 +726,151 @@ describe('runGenerationLoop (P3.10d — energy accounting, success-only)', () =>
     expect(tool.length).toBeGreaterThanOrEqual(1);
     expect((spawn[0]!.payload as { actual?: number }).actual).toBe(50);
     expect((tool[0]!.payload as { actual?: number }).actual).toBe(5);
+  });
+});
+
+// A fake KillAppend collector for the executeKillAndDrain direct tests (records the appended kernel events).
+function collectKillAppends() {
+  const events: { type: string; payload: Record<string, unknown> }[] = [];
+  return {
+    append: async (type: RunEventType, payload: Record<string, unknown>) => {
+      events.push({ type, payload });
+      return { id: 'k', runId: 'r', sequence: 0 };
+    },
+    types: () => events.map((e) => e.type),
+    events,
+  };
+}
+
+describe('runGenerationLoop (P3.10e — kill/abort + drain + latching halt)', () => {
+  test('energy_budget_breach_triggers_kill', async () => {
+    // spec(§5/rule #1): cumulativeSpend(energy.spent) reaching energyBudget → cap_breach kill (energy_exhausted)
+    // before scheduling new productive work; the generation never starts. (spawn debits 50 > budget 10.)
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 2, maxPopulation: 1, energyBudget: 10 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('energy_exhausted'); // energyBudget breach terminal
+    expect(fake.appendedTypes()).not.toContain('generation.started'); // no productive work scheduled
+  });
+
+  test('wall_clock_breach_triggers_kill', async () => {
+    // spec(§5/rule #1): injected now() past startedAt + wallClockTimeoutMs (exclusive) → cap_breach kill
+    // (run.failed); no generation scheduled. now() returns startedAt(0) first, then ≥ the deadline.
+    const fake = makeFakeEventStore();
+    let call = 0;
+    const now = () => (call++ === 0 ? 0 : 600_000); // startedAt=0, then == wallClockTimeoutMs (deadline)
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        now,
+        caps: { maxGenerations: 2, maxPopulation: 1, wallClockTimeoutMs: 600_000 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('run.failed');
+    expect(fake.appendedTypes()).not.toContain('generation.started');
+  });
+
+  test('operator_stop_triggers_kill', async () => {
+    // spec(§5): an injected operator-stop → operator_stop kill plan (running→stopping, run.stopped); no work.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        operatorStop: () => true,
+        caps: { maxGenerations: 2, maxPopulation: 1 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('run.stopped');
+    expect(fake.appendedTypes()).not.toContain('generation.started');
+  });
+
+  test('kill_plan_emits_named_sv5_terminals', async () => {
+    // spec(§4 + rule #2, kernel-026 sv5): the plan emits the NAMED terminals, not null — configured→cancelled
+    // → run.cancelled; pending generation → generation.skipped; running + breach → run.failed + active gen →
+    // generation_failed.
+    const cancel = collectKillAppends();
+    await executeKillAndDrain(
+      { kind: 'operator_stop' },
+      'configured',
+      [{ id: 'g0', status: 'pending' }],
+      cancel.append,
+    );
+    expect(cancel.types()).toContain('run.cancelled'); // sv5 — NOT null
+    expect(cancel.types()).toContain('generation.skipped'); // sv5 — NOT null
+
+    const breach = collectKillAppends();
+    await executeKillAndDrain(
+      { kind: 'cap_breach', dimension: 'maxToolCalls' },
+      'running',
+      [{ id: 'g1', status: 'scoring' }],
+      breach.append,
+    );
+    expect(breach.types()).toContain('run.failed');
+    expect(breach.types()).toContain('generation_failed');
+  });
+
+  test('drain_then_terminalize_excluded_states', async () => {
+    // spec(§H): planKillSwitch EXCLUDES completing/stopping/degraded — the drain terminalizes them so NO
+    // non-terminal is left: completing→completed, stopping→stopped, degraded→verifying→failed.
+    const completing = collectKillAppends();
+    await executeKillAndDrain({ kind: 'operator_stop' }, 'completing', [], completing.append);
+    expect(completing.types()).toContain('run.completed');
+
+    const stopping = collectKillAppends();
+    await executeKillAndDrain({ kind: 'operator_stop' }, 'stopping', [], stopping.append);
+    expect(stopping.types()).toContain('run.stopped');
+
+    const degraded = collectKillAppends();
+    await executeKillAndDrain(
+      { kind: 'cap_breach', dimension: 'maxToolCalls' },
+      'running',
+      [{ id: 'gd', status: 'degraded' }],
+      degraded.append,
+    );
+    expect(degraded.types()).toContain('generation_failed'); // degraded drained to failed
+  });
+
+  test('latching_halt_no_rearm', async () => {
+    // spec(latching, lead): a drained degraded goes verifying→failed under the still-active kill — it does
+    // NOT re-arm into new productive verify/score/reproduce work (no generation.scoring/reproducing/completed).
+    const drain = collectKillAppends();
+    await executeKillAndDrain(
+      { kind: 'operator_stop' },
+      'running',
+      [{ id: 'gd', status: 'degraded' }],
+      drain.append,
+    );
+    expect(drain.types()).toContain('generation_failed');
+    expect(drain.types()).not.toContain('generation.scoring');
+    expect(drain.types()).not.toContain('generation.reproducing');
+    expect(drain.types()).not.toContain('generation.completed');
+  });
+
+  test('generation_failed_on_per_stage_abort', async () => {
+    // spec(bullet 8): a kill mid-stage (the current generation in an active state) records generation_failed.
+    for (const status of ['running', 'verifying', 'scoring', 'reproducing'] as const) {
+      const k = collectKillAppends();
+      await executeKillAndDrain({ kind: 'wall_clock' }, 'running', [{ id: 'g', status }], k.append);
+      expect(k.types(), status).toContain('generation_failed');
+    }
+  });
+
+  test('all_transitions_guard_validated', async () => {
+    // spec(rule #2 / P3.2): planKillSwitch only emits §3-legal transitions; an already-terminal run/gen gets
+    // NO forced transition (no run terminal event, no generation event for a terminal generation).
+    const k = collectKillAppends();
+    await executeKillAndDrain(
+      { kind: 'cap_breach', dimension: 'maxToolCalls' },
+      'failed', // already terminal — no legal kill edge
+      [{ id: 'gt', status: 'completed' }], // already terminal generation — excluded
+      k.append,
+    );
+    // a terminal run yields no run terminal event; a terminal generation yields no generation event.
+    expect(k.types()).not.toContain('run.failed');
+    expect(k.types()).not.toContain('generation_failed');
   });
 });
