@@ -17,10 +17,42 @@ export type PublishedIndexInput = {
   runId: string;
 };
 
-function linkPublishedVault(html: string): string {
+function artifactLabel(relativePath: string): string {
+  if (relativePath === 'run-index.json') return 'Run index';
+  if (relativePath === 'problem-recovery.md') return 'Problem recovery';
+  if (relativePath === 'events.jsonl') return 'Events';
+  if (relativePath === 'trace.json') return 'Trace JSON';
+  if (relativePath === 'model-calls.jsonl') return 'Model calls';
+  if (relativePath.endsWith('.md')) return relativePath.replace(/\.md$/, '');
+  return relativePath;
+}
+
+function linkPublishedVault(html: string, artifactPaths: string[]): string {
+  const preferredOrder = [
+    'run-index.json',
+    'problem-recovery.md',
+    'trace.json',
+    'events.jsonl',
+    'model-calls.jsonl',
+  ];
+  const sorted = [...artifactPaths].sort((left, right) => {
+    const leftRank = preferredOrder.indexOf(left);
+    const rightRank = preferredOrder.indexOf(right);
+    if (leftRank !== -1 || rightRank !== -1) {
+      return (leftRank === -1 ? 99 : leftRank) - (rightRank === -1 ? 99 : rightRank);
+    }
+    return left.localeCompare(right);
+  });
+  const links = sorted
+    .map(
+      (relativePath) =>
+        `<a href="published-vault/${escapeHtml(relativePath)}">${escapeHtml(artifactLabel(relativePath))}</a>`,
+    )
+    .join('');
   return html.replace(
     '</header>',
     `<p><a href="published-vault/" aria-label="Published vault artifacts">published-vault/</a></p>
+    <div class="artifact-links" aria-label="Published artifact links">${links}</div>
   </header>`,
   );
 }
@@ -37,7 +69,8 @@ export async function publishStaticKernelRun(
   await cp(vaultManifest.rootDir, publishedVaultDir, { recursive: true });
 
   const indexHtml = path.join(rootDir, 'index.html');
-  await writeFile(indexHtml, linkPublishedVault(renderProofBoard(run)), 'utf8');
+  const artifactPaths = vaultManifest.files.map((file) => path.relative(vaultManifest.rootDir, file));
+  await writeFile(indexHtml, linkPublishedVault(renderProofBoard(run), artifactPaths), 'utf8');
 
   const files = [indexHtml];
   for (const file of vaultManifest.files) {

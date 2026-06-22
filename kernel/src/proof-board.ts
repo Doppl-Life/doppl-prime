@@ -109,6 +109,27 @@ function css(): string {
     h2 { font-size: 20px; margin-bottom: 14px; }
     h3 { font-size: 17px; margin-top: 12px; }
     p { margin: 10px 0 0; color: var(--muted); }
+    .artifact-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .artifact-links a {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 9px;
+      color: var(--ink);
+      background: var(--panel);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .artifact-links a:focus,
+    .artifact-links a:hover {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      outline: none;
+    }
     code {
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       font-size: 12px;

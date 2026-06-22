@@ -34,6 +34,27 @@
     h2 { font-size: 20px; margin-bottom: 14px; }
     h3 { font-size: 17px; margin-top: 12px; }
     p { margin: 10px 0 0; color: var(--muted); }
+    .artifact-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .artifact-links a {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 9px;
+      color: var(--ink);
+      background: var(--panel);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .artifact-links a:focus,
+    .artifact-links a:hover {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      outline: none;
+    }
     code {
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
       font-size: 12px;
@@ -167,6 +188,7 @@
       <div class="metric"><strong>0.667</strong><span>parent A inheritance</span></div>
     </div>
   <p><a href="published-vault/" aria-label="Published vault artifacts">published-vault/</a></p>
+    <div class="artifact-links" aria-label="Published artifact links"><a href="published-vault/run-index.json">Run index</a><a href="published-vault/problem-recovery.md">Problem recovery</a><a href="published-vault/trace.json">Trace JSON</a><a href="published-vault/events.jsonl">Events</a><a href="published-vault/cand_lender_residual.md">cand_lender_residual</a><a href="published-vault/cand_liability_clock.md">cand_liability_clock</a><a href="published-vault/cand_recovery_market.md">cand_recovery_market</a><a href="published-vault/child_cand_liability_clock_cand_recovery_market.md">child_cand_liability_clock_cand_recovery_market</a></div>
   </header>
   <main>
     <nav aria-label="Proof board sections">

@@ -27,6 +27,9 @@ test('publishes proof board and vault artifacts into a static directory', async 
   const html = await readFile(manifest.indexHtml, 'utf8');
   assert.match(html, /Doppl Kernel Proof Board/);
   assert.match(html, /published-vault/);
+  assert.match(html, /href="published-vault\/run-index\.json"/);
+  assert.match(html, /href="published-vault\/problem-recovery\.md"/);
+  assert.match(html, /href="published-vault\/events\.jsonl"/);
 });
 
 test('writes a top-level published index that links to the kernel preview', async () => {
