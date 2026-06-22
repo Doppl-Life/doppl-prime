@@ -109,6 +109,17 @@ function reconstructChild(
     ...added.sort(),
   ];
 
+  // mutationMeta is built from a CANONICAL (sorted-key) view of the summary so reconstruction is
+  // INVARIANT to the summary's key order (rule #7 / §31): the persisted `mutationSummary` round-trips
+  // through Postgres jsonb, which does NOT preserve object key order — a key-order-sensitive
+  // `mutatedFields`/`summary` would make applyMutation(persisted) diverge from applyMutation(live) and
+  // break state-equivalence for every mutated child. (Mirrors fuse.ts's fixed-order FUSED_FIELDS.)
+  const canonicalKeys = Object.keys(summary).sort();
+  const canonicalSummary: MutationSummary = {};
+  for (const key of canonicalKeys) {
+    canonicalSummary[key] = summary[key]!;
+  }
+
   return Agenome.parse({
     id: newId(),
     runId: parent.runId,
@@ -121,8 +132,8 @@ function reconstructChild(
     spawnBudget,
     mutationMeta: {
       mode: MUTATION_MODE,
-      mutatedFields: Object.keys(summary),
-      summary: JSON.stringify(summary),
+      mutatedFields: canonicalKeys,
+      summary: JSON.stringify(canonicalSummary),
     },
     status: 'seeded',
   });

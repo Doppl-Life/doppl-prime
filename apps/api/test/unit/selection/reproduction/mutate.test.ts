@@ -107,6 +107,26 @@ describe('mutate — bounded trait mutation + persisted RNG outcomes', () => {
     expect(replayed).toEqual(child);
   });
 
+  // 12b — KEY SAFETY RULE #7 / §31: reconstruction is INVARIANT to the mutationSummary's key ORDER. The
+  // persisted summary round-trips through Postgres jsonb, which does NOT preserve object key order; a
+  // key-order-sensitive mutationMeta (Object.keys / JSON.stringify) makes applyMutation(persisted)
+  // diverge from applyMutation(live) → breaks §31 state-equivalence for every mutated child crossing the
+  // real PG round-trip. The reconstructed child (incl. mutationMeta) must be identical regardless of the
+  // summary's key order. (Caught by the W2 reproduce-seam real-PG round-trip integration test.)
+  test('REPLAY_applyMutation_invariant_to_summary_key_order', () => {
+    const insertionOrder = mutate(parent, createRng(42), bounds, {
+      newId: fixedId(),
+    }).mutationSummary;
+    // A jsonb-style reordering of the SAME entries (reverse the insertion order).
+    const reordered: Record<string, string | number | boolean> = {};
+    for (const key of Object.keys(insertionOrder).reverse()) {
+      reordered[key] = insertionOrder[key]!;
+    }
+    const childFromInsertion = applyMutation(parent, insertionOrder, { newId: fixedId() });
+    const childFromReordered = applyMutation(parent, reordered, { newId: fixedId() });
+    expect(childFromReordered).toEqual(childFromInsertion);
+  });
+
   // 13 — replay-faithful + idempotent: same (parent, seed, bounds) → identical child + summary.
   test('mutate_deterministic_given_seed', () => {
     const a = mutate(parent, createRng(7), bounds, { newId: fixedId() });
