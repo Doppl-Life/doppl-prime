@@ -173,6 +173,32 @@ textarea {
   display: block;
 }
 
+.target-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.target-switch button {
+  border: 1px solid #40566c;
+  border-radius: 4px;
+  background: #1d3046;
+  color: #f8fafc;
+  min-height: 38px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.target-switch button.active {
+  background: #0f766e;
+  border-color: #8ff0df;
+}
+
+.target-switch button:disabled {
+  opacity: 0.45;
+}
+
 .score-row {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

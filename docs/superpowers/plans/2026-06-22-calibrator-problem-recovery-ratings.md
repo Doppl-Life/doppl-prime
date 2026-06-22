@@ -393,7 +393,7 @@ npm --prefix calibrator run test -- vaultReader
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Run the established secret and commit-identity scan first. It should check for OpenRouter key patterns and disallowed author identity strings, and it should print no matches. Then commit:
 
@@ -409,7 +409,7 @@ git commit -m "feat: index calibrator problem recovery artifacts"
 - Modify: `calibrator/src/styles.css`
 - Test: `calibrator/test/App.test.tsx`
 
-- [ ] **Step 1: Add failing UI tests**
+- [x] **Step 1: Add failing UI tests**
 
 In `App.test.tsx`, extend the fixture index with one `problem_recoveries` entry and test:
 
@@ -428,7 +428,7 @@ expect(fetchMock).toHaveBeenCalledWith(
 );
 ```
 
-- [ ] **Step 2: Run UI test to verify failure**
+- [x] **Step 2: Run UI test to verify failure**
 
 Run:
 
@@ -438,7 +438,7 @@ npm --prefix calibrator run test -- App
 
 Expected: FAIL because there is no target switch and no problem recovery payload.
 
-- [ ] **Step 3: Add rating target state**
+- [x] **Step 3: Add rating target state**
 
 In `App.tsx`, add:
 
@@ -454,7 +454,7 @@ const activeReviewTarget =
   ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
 ```
 
-- [ ] **Step 4: Render target switch**
+- [x] **Step 4: Render target switch**
 
 Add a compact two-button segmented control:
 
@@ -469,11 +469,11 @@ Add a compact two-button segmented control:
 </div>
 ```
 
-- [ ] **Step 5: Render problem recovery panel**
+- [x] **Step 5: Render problem recovery panel**
 
 Display selected problem recovery title, body, source status, and calibration history. The panel should use existing markdown rendering and collapse behavior.
 
-- [ ] **Step 6: Submit correct payload**
+- [x] **Step 6: Submit correct payload**
 
 Change the submit body:
 
@@ -491,11 +491,11 @@ body: JSON.stringify({
 }),
 ```
 
-- [ ] **Step 7: Remove reviewer-facing adapter labels**
+- [x] **Step 7: Remove reviewer-facing adapter labels**
 
 In `KernelMeta`, change the displayed label from `adapter` to `source mapping`. Keep reading `adapter_version` for legacy data, but do not render the word `adapter` in normal visible labels.
 
-- [ ] **Step 8: Run UI tests**
+- [x] **Step 8: Run UI tests**
 
 Run:
 

@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import type { CalibratorIndex, CalibratorRating, CalibratorSolution, RatingSubmitResponse } from "./types";
+import type {
+  CalibratorIndex,
+  CalibratorProblemRecovery,
+  CalibratorRating,
+  CalibratorSolution,
+  RatingSubmitResponse,
+} from "./types";
 
 const scores = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 const verdicts = ["dead", "obvious", "interesting", "investigate", "keeper"];
 const sourceStatusOptions = ["all", "fixture", "imported", "live_run", "pending", "unavailable"] as const;
 type SourceStatusFilter = (typeof sourceStatusOptions)[number];
+type RatingTarget = "problem_recovery" | "solution";
+type ReviewArtifact = CalibratorProblemRecovery | CalibratorSolution;
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -71,24 +79,25 @@ function MarkdownBlock({ text }: { text: string }) {
   );
 }
 
-function KernelMeta({ solution }: { solution: CalibratorSolution }) {
+function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
   const fields = [
-    ["source status", solution.source_status],
-    ["comparison", solution.comparison_set_id],
-    ["input hash", solution.comparison_input_hash],
-    ["adapter", solution.adapter_version],
-    ["kernel", solution.kernel],
-    ["class", solution.output_class],
-    ["phase", solution.phase],
-    ["subtype", solution.subtype],
-    ["branch", solution.source_branch ?? solution.branch],
-    ["commit", solution.source_commit],
-    ["run", solution.run_id],
-    ["generation", solution.generation_id],
-    ["agenome", solution.agenome_id],
-    ["candidate", solution.candidate_id],
-    ["judge", solution.judge_score?.toString()],
-    ["fitness", solution.fitness_score?.toString()],
+    ["source status", artifact.source_status],
+    ["comparison", "comparison_set_id" in artifact ? artifact.comparison_set_id : undefined],
+    ["input hash", "comparison_input_hash" in artifact ? artifact.comparison_input_hash : undefined],
+    ["source mapping", artifact.source_mapping_version ?? artifact.adapter_version],
+    ["kernel", artifact.kernel],
+    ["class", "output_class" in artifact ? artifact.output_class : undefined],
+    ["phase", "phase" in artifact ? artifact.phase : undefined],
+    ["subtype", "subtype" in artifact ? artifact.subtype : undefined],
+    ["branch", artifact.source_branch ?? artifact.branch],
+    ["commit", artifact.source_commit],
+    ["run", artifact.run_id],
+    ["run artifact", "run_artifact_id" in artifact ? artifact.run_artifact_id : undefined],
+    ["generation", "generation_id" in artifact ? artifact.generation_id : undefined],
+    ["agenome", "agenome_id" in artifact ? artifact.agenome_id : undefined],
+    ["candidate", "candidate_id" in artifact ? artifact.candidate_id : undefined],
+    ["judge", "judge_score" in artifact ? artifact.judge_score?.toString() : undefined],
+    ["fitness", "fitness_score" in artifact ? artifact.fitness_score?.toString() : undefined],
   ].filter(([, value]) => value);
 
   return (
@@ -111,10 +120,15 @@ function sourceStatusLabel(status?: CalibratorSolution["source_status"]): string
     .join(" ");
 }
 
-function CalibrationHistory({ solution }: { solution: CalibratorSolution }) {
-  const average = averageScore(solution.human_ratings);
-  const judgeDelta =
-    average !== null && solution.judge_score !== undefined ? average - solution.judge_score : null;
+function CalibrationHistory({
+  judgeScore,
+  ratings,
+}: {
+  judgeScore?: number;
+  ratings: CalibratorRating[];
+}) {
+  const average = averageScore(ratings);
+  const judgeDelta = average !== null && judgeScore !== undefined ? average - judgeScore : null;
 
   return (
     <section className="calibration-history" aria-label="Human calibration history">
@@ -124,7 +138,7 @@ function CalibrationHistory({ solution }: { solution: CalibratorSolution }) {
       </div>
       <div>
         <p className="metric-label">Ratings</p>
-        <p className="metric-value">{solution.human_ratings.length}</p>
+        <p className="metric-value">{ratings.length}</p>
       </div>
       <div>
         <p className="metric-label">Judge delta</p>
@@ -132,7 +146,7 @@ function CalibrationHistory({ solution }: { solution: CalibratorSolution }) {
       </div>
       <div>
         <p className="metric-label">Verdicts</p>
-        <p className="metric-value small">{verdictSummary(solution.human_ratings)}</p>
+        <p className="metric-value small">{verdictSummary(ratings)}</p>
       </div>
     </section>
   );
@@ -143,9 +157,11 @@ export function App() {
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [sourceStatusFilter, setSourceStatusFilter] = useState<SourceStatusFilter>("all");
+  const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [blindMode, setBlindMode] = useState(false);
   const [caseOpen, setCaseOpen] = useState(true);
   const [problemOpen, setProblemOpen] = useState(true);
+  const [problemRecoveryOpen, setProblemRecoveryOpen] = useState(true);
   const [solutionOpen, setSolutionOpen] = useState(true);
   const [score, setScore] = useState<number | null>(null);
   const [verdict, setVerdict] = useState("");
@@ -207,6 +223,9 @@ export function App() {
   const selectedSolutionIndex = selectedSolution
     ? visibleSolutions.findIndex((solution) => solution.solution_id === selectedSolution.solution_id)
     : -1;
+  const selectedProblemRecovery = selectedCase?.problem_recoveries[0] ?? null;
+  const activeReviewArtifact =
+    ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -214,7 +233,7 @@ export function App() {
   }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
 
   async function submitRating() {
-    if (!selectedCase || !selectedSolution || score === null) return;
+    if (!selectedCase || !activeReviewArtifact || score === null) return;
     if (!isWritable) {
       setError("Static preview is read-only. Run the local calibrator dev server to save ratings.");
       return;
@@ -229,7 +248,10 @@ export function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           case_id: selectedCase.case_id,
-          solution_id: selectedSolution.solution_id,
+          rating_target: ratingTarget,
+          solution_id: ratingTarget === "solution" ? selectedSolution?.solution_id : undefined,
+          problem_recovery_id:
+            ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
           score,
           verdict: verdict || undefined,
           notes,
@@ -388,7 +410,7 @@ export function App() {
                 <dd>{selectedComparisonSet.input_hash}</dd>
               </div>
               <div>
-                <dt>Adapter</dt>
+                <dt>Source mapping</dt>
                 <dd>{selectedComparisonSet.adapter_version}</dd>
               </div>
             </dl>
@@ -405,12 +427,43 @@ export function App() {
           </article>
           <article className="panel">
             <button className="panel-toggle" type="button" onClick={() => setProblemOpen((open) => !open)}>
-              <span>Problem context</span>
+              <span>Stated problem context</span>
               <span>{problemOpen ? "Collapse" : "Expand"}</span>
             </button>
             {problemOpen ? <MarkdownBlock text={selectedCase.problem.body} /> : null}
           </article>
         </section>
+
+        {selectedProblemRecovery ? (
+          <article className="solution-detail">
+            <button
+              className="panel-toggle"
+              type="button"
+              onClick={() => setProblemRecoveryOpen((open) => !open)}
+            >
+              <span>{selectedProblemRecovery.title}</span>
+              <span>{problemRecoveryOpen ? "Collapse" : "Expand"}</span>
+            </button>
+            {blindMode ? (
+              <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
+            ) : (
+              <KernelMeta artifact={selectedProblemRecovery} />
+            )}
+            {!blindMode && selectedProblemRecovery.adapter_notes ? (
+              <p className="adapter-note">{selectedProblemRecovery.adapter_notes}</p>
+            ) : null}
+            <CalibrationHistory ratings={selectedProblemRecovery.human_ratings} />
+            {problemRecoveryOpen ? (
+              <MarkdownBlock
+                text={
+                  blindMode
+                    ? maskProvenanceText(selectedProblemRecovery.body)
+                    : selectedProblemRecovery.body
+                }
+              />
+            ) : null}
+          </article>
+        ) : null}
 
         {selectedSolution ? (
           <article className="solution-detail">
@@ -425,12 +478,12 @@ export function App() {
             {blindMode ? (
               <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
             ) : (
-              <KernelMeta solution={selectedSolution} />
+              <KernelMeta artifact={selectedSolution} />
             )}
             {!blindMode && selectedSolution.adapter_notes ? (
               <p className="adapter-note">{selectedSolution.adapter_notes}</p>
             ) : null}
-            <CalibrationHistory solution={selectedSolution} />
+            <CalibrationHistory ratings={selectedSolution.human_ratings} judgeScore={selectedSolution.judge_score} />
             {solutionOpen ? (
               <MarkdownBlock text={blindMode ? maskProvenanceText(selectedSolution.body) : selectedSolution.body} />
             ) : null}
@@ -441,7 +494,35 @@ export function App() {
       </section>
 
       <aside className="rating-panel" aria-label="Rating controls">
-        <h2>Solution rating</h2>
+        <h2>{ratingTarget === "problem_recovery" ? "Problem recovery rating" : "Solution rating"}</h2>
+        <div className="target-switch" aria-label="Rating target">
+          <button
+            type="button"
+            className={ratingTarget === "problem_recovery" ? "active" : ""}
+            onClick={() => {
+              setRatingTarget("problem_recovery");
+              setScore(null);
+              setVerdict("");
+              setSavedPath("");
+            }}
+            disabled={!selectedProblemRecovery}
+          >
+            Problem Recovery
+          </button>
+          <button
+            type="button"
+            className={ratingTarget === "solution" ? "active" : ""}
+            onClick={() => {
+              setRatingTarget("solution");
+              setScore(null);
+              setVerdict("");
+              setSavedPath("");
+            }}
+            disabled={!selectedSolution}
+          >
+            Solution
+          </button>
+        </div>
         <div className="score-row" aria-label="Score">
           {scores.map((value) => (
             <button
@@ -485,13 +566,17 @@ export function App() {
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="What made this solution useful or weak?"
+            placeholder={
+              ratingTarget === "problem_recovery"
+                ? "What made this recovered problem useful or weak?"
+                : "What made this solution useful or weak?"
+            }
           />
         </label>
         <button
           className="submit-button"
           type="button"
-          disabled={score === null || isSubmitting || !isWritable}
+          disabled={score === null || isSubmitting || !isWritable || !activeReviewArtifact}
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : "Submit rating"}

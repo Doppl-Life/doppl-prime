@@ -27,6 +27,17 @@ const fixture: CalibratorIndex = {
       source_paths: [],
       body: "# Case body",
       problem: { body: "# Problem body", source: "case-study" },
+      problem_recoveries: [
+        {
+          case_id: "fsd-accident-economy",
+          problem_recovery_id: "pr_fsd_accident_economy_fixture",
+          title: "Accident Economy Dependency Shock",
+          source_type: "manual",
+          source_status: "fixture",
+          body: "# Recovered problem body",
+          human_ratings: [],
+        },
+      ],
       solutions: [
         {
           case_id: "fsd-accident-economy",
@@ -109,9 +120,10 @@ describe("App", () => {
     );
     expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
     expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("Human avg");
-    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("+4");
-    expect(screen.getByLabelText("Human calibration history")).toHaveTextContent("investigate 1");
+    const histories = screen.getAllByLabelText("Human calibration history");
+    expect(histories[1]).toHaveTextContent("Human avg");
+    expect(histories[1]).toHaveTextContent("+4");
+    expect(histories[1]).toHaveTextContent("investigate 1");
     expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "+4" }));
     expect(screen.getByRole("button", { name: "Submit rating" })).toBeEnabled();
@@ -127,6 +139,31 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();
     });
+  });
+
+  it("submits a problem recovery rating payload", async () => {
+    const fetchMock = vi.mocked(fetch);
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Problem Recovery" }));
+    expect(screen.getByText("Accident Economy Dependency Shock")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "+4" }));
+    await userEvent.click(screen.getByRole("button", { name: "Submit rating" }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/ratings",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"rating_target":"problem_recovery"'),
+        }),
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/ratings",
+      expect.objectContaining({
+        body: expect.stringContaining('"problem_recovery_id":"pr_fsd_accident_economy_fixture"'),
+      }),
+    );
   });
 
   it("falls back to the static index in read-only preview mode", async () => {
@@ -165,6 +202,6 @@ describe("App", () => {
     expect(screen.getAllByText("Solution A").length).toBeGreaterThan(0);
     expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
-    expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();
+    expect(screen.getAllByText("Source labels, branch names, and provenance metadata are hidden.").length).toBe(2);
   });
 });
