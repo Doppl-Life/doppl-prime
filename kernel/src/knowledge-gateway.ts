@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import type { KnowledgePacket } from './contracts.ts';
+import { assertKnowledgePacket, type KnowledgePacket } from './contracts.ts';
 
 export type KnowledgePacketRequest = {
   runId: string;
@@ -13,14 +13,15 @@ export type KnowledgeGateway = {
 
 export async function createJsonKnowledgeGateway(packetFile: string): Promise<KnowledgeGateway> {
   const packet = JSON.parse(await readFile(packetFile, 'utf8')) as KnowledgePacket;
+  assertKnowledgePacket(packet);
   return {
     async selectPacket(request) {
-      return {
+      return assertKnowledgePacket({
         ...packet,
         id: packet.id || `packet:${request.runId}:${request.targetCase}`,
         targetCase: request.targetCase,
         items: packet.items.slice(0, request.maxItems),
-      };
+      });
     },
   };
 }
@@ -30,7 +31,7 @@ export function createReplayKnowledgeGateway(
 ): KnowledgeGateway & { freshRetrievals(): number } {
   return {
     async selectPacket() {
-      return packet;
+      return assertKnowledgePacket(packet);
     },
     freshRetrievals() {
       return 0;

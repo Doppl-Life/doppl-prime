@@ -1,5 +1,12 @@
 import { readFile } from 'node:fs/promises';
-import type { CandidateSolution, CriticVerdict, ProblemRecovery } from './contracts.ts';
+import {
+  assertCandidateSolution,
+  assertCriticVerdict,
+  assertProblemRecovery,
+  type CandidateSolution,
+  type CriticVerdict,
+  type ProblemRecovery,
+} from './contracts.ts';
 
 export type KernelFixture = {
   caseId: string;
@@ -18,5 +25,18 @@ export async function loadKernelFixture(filePath: string): Promise<KernelFixture
   if (!Array.isArray(fixture.critics) || fixture.critics.length === 0) {
     throw new Error('fixture.critics must contain critic verdicts');
   }
+  assertProblemRecovery({
+    id: `fixture_recovery_${fixture.caseId}`,
+    caseId: fixture.caseId,
+    ...fixture.problemRecovery,
+  });
+  fixture.candidates.forEach((candidate) => {
+    assertCandidateSolution({
+      ...candidate,
+      caseId: fixture.caseId,
+      generation: 0,
+    });
+  });
+  fixture.critics.forEach(assertCriticVerdict);
   return fixture;
 }

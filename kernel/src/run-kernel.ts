@@ -1,4 +1,4 @@
-import type { CandidateSolution, KernelRun, MemoryMode } from './contracts.ts';
+import { assertKernelRun, type CandidateSolution, type KernelRun, type MemoryMode } from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
 import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
 import { loadKernelFixture } from './fixtures.ts';
@@ -115,7 +115,7 @@ export async function runKernel(input: {
     childId: fusion?.child.id || null,
   });
 
-  return {
+  return assertKernelRun({
     id: input.runId,
     caseStudy,
     memoryMode: input.memoryMode,
@@ -127,5 +127,5 @@ export async function runKernel(input: {
     selectedParents,
     fusion,
     events: trace.events,
-  };
+  });
 }
