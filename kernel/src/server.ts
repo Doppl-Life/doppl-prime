@@ -1,7 +1,12 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { defaultKernelArgs } from './cli.ts';
 import { createModelGenerationProviders, type GenerationProviders } from './generation-providers.ts';
-import { createReplayModelClient, readModelCallRecords } from './model-gateway.ts';
+import {
+  createOpenRouterModelClient,
+  createReplayModelClient,
+  readModelCallRecords,
+  type OpenRouterModelClientInput,
+} from './model-gateway.ts';
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
@@ -13,6 +18,7 @@ type KernelRunRequest = {
   outDir?: string;
   proofBoardDir?: string;
   replayModelCallsPath?: string;
+  liveModel?: boolean;
   model?: string;
 };
 
@@ -25,6 +31,11 @@ type KernelHttpRequest = {
 type KernelHttpResponse = {
   status: number;
   body: Record<string, unknown>;
+};
+
+type KernelHttpOptions = {
+  env?: Record<string, string | undefined>;
+  fetch?: OpenRouterModelClientInput['fetch'];
 };
 
 function jsonResponse(response: ServerResponse, status: number, body: unknown): void {
@@ -62,7 +73,21 @@ function parseBudget(value: unknown, fallback: number): number {
 
 async function generationProvidersFromRequest(
   parsed: KernelRunRequest,
+  options: KernelHttpOptions,
 ): Promise<GenerationProviders | undefined> {
+  if (parsed.liveModel && parsed.replayModelCallsPath) {
+    throw new Error('liveModel cannot be combined with replayModelCallsPath');
+  }
+  if (parsed.liveModel) {
+    if (!parsed.model) throw new Error('model is required when liveModel is set');
+    return createModelGenerationProviders({
+      client: createOpenRouterModelClient({
+        apiKey: options.env?.OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? '',
+        fetch: options.fetch,
+      }),
+      model: parsed.model,
+    });
+  }
   if (!parsed.replayModelCallsPath) return undefined;
   if (!parsed.model) throw new Error('model is required when replayModelCallsPath is set');
   const records = await readModelCallRecords(parsed.replayModelCallsPath);
@@ -72,11 +97,14 @@ async function generationProvidersFromRequest(
   });
 }
 
-async function runFromRequestBody(body: string | undefined): Promise<Record<string, unknown>> {
+async function runFromRequestBody(
+  body: string | undefined,
+  options: KernelHttpOptions,
+): Promise<Record<string, unknown>> {
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
-  const generationProviders = await generationProvidersFromRequest(parsed);
+  const generationProviders = await generationProvidersFromRequest(parsed, options);
   const run = await runKernel({
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
@@ -100,13 +128,14 @@ async function runFromRequestBody(body: string | undefined): Promise<Record<stri
 
 export async function handleKernelHttpRequest(
   request: KernelHttpRequest,
+  options: KernelHttpOptions = {},
 ): Promise<KernelHttpResponse> {
   try {
     if (request.method === 'GET' && request.url === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
     }
     if (request.method === 'POST' && request.url === '/kernel/runs') {
-      return { status: 200, body: await runFromRequestBody(request.body) };
+      return { status: 200, body: await runFromRequestBody(request.body, options) };
     }
     return { status: 404, body: { error: 'not_found' } };
   } catch (error) {

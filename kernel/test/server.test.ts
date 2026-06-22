@@ -122,6 +122,26 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
   await writeModelCallRecords(filePath, records);
 }
 
+function createOpenRouterFetch(outputs: string[]) {
+  const calls: Array<{ headers: Record<string, string>; body: Record<string, unknown> }> = [];
+  return {
+    calls,
+    async fetch(_url: string, init: { headers: Record<string, string>; body: string }) {
+      calls.push({ headers: init.headers, body: JSON.parse(init.body) as Record<string, unknown> });
+      const outputText = outputs.shift();
+      if (!outputText) throw new Error('unexpected extra model call');
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'test-request-id' },
+        async json() {
+          return { choices: [{ message: { content: outputText } }] };
+        },
+      };
+    },
+  };
+}
+
 test('kernel HTTP server reports health', async () => {
   const response = await handleKernelHttpRequest({ method: 'GET', url: '/health' });
 
@@ -175,5 +195,84 @@ test('kernel HTTP server runs from replayed model calls', async () => {
   assert.equal(response.body.runId, 'run_http_replay');
   assert.equal(response.body.child, 'child_http_replay_a_http_replay_b');
   assert.equal(response.body.candidates, 2);
+  assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
+});
+
+test('kernel HTTP server runs live model requests with a server-side key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-live-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'HTTP Live Recovery',
+      recoveredProblem:
+        'Autonomous service miles change car ownership from a household asset to fleet capacity.',
+      hiddenConstraint: 'The first break appears where risk and utilization accounting move together.',
+      falsifier: 'Households keep buying private autonomous vehicles at current replacement rates.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'http_live_a',
+          agenomeId: 'ag_blindside',
+          title: 'Risk Subject Flip',
+          summary: 'Watch when the insured subject becomes the autonomous vehicle operator.',
+          mechanism: 'Compare insurer filings and OEM liability assumptions by state.',
+          claimedDelta: 'Finds ownership unwind before car sales move.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'http_live_b',
+          agenomeId: 'ag_first_principles',
+          title: 'Utilization Carry Trade',
+          summary: 'Compare idle private depreciation with fleet utilization economics.',
+          mechanism: 'Track who finances high-utilization inventory and who holds residual risk.',
+          claimedDelta: 'Turns the thesis into a financing spread.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'http_live_a',
+          criticId: 'grounding',
+          score: 91,
+          pressure: 'Risk subject changes are observable and early.',
+          revisionMandate: 'Specify the filings that define the flip.',
+        },
+        {
+          candidateId: 'http_live_b',
+          criticId: 'grounding',
+          score: 83,
+          pressure: 'Utilization economics are strong but less directly observable.',
+          revisionMandate: 'Name the financing spread and source.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_http_live',
+        generations: 1,
+        budget: 1,
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: { OPENROUTER_API_KEY: 'test-key' },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.child, 'child_http_live_a_http_live_b');
+  assert.equal(fakeOpenRouter.calls.length, 3);
+  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
   assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
 });
