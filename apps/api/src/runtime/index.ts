@@ -105,3 +105,10 @@ export {
 // caller (gen-0 seed spawn / P3.10 reproduction) emits the clamp-decision event when clamped; the
 // spawn-depth ceiling is a separate P3.4 enforceCap('maxSpawnDepth',…) gate.
 export { clampSpawnBudget, type SpawnClampResult } from './spawn/spawnBudgetClamp';
+
+// Gen-0 authored seed set (P3.9, REQ-F-017). The boot-validated authored baseline (SeedAgenomeTemplate
+// traits-only; DEFAULT_SEED_SET) + the PURE materializeGen0 — authored templates → the run's gen-0
+// Agenome[] (empty parentIds, seeded status, deterministic positional ids), count clamped to maxPopulation
+// via clampSpawnBudget. The agenome.spawned emission is the loop's (P3.10/P3.12).
+export { SeedAgenomeTemplate, SeedAgenomeSet, DEFAULT_SEED_SET } from './seed/seedAgenomes.config';
+export { materializeGen0 } from './seed/gen0SeedSet';
