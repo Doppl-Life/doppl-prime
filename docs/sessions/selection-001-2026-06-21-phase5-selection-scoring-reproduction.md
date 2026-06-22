@@ -4,7 +4,7 @@
 - **Phase:** Phase 5 (selection / scoring / reproduction, `ARCHITECTURE.md §8` + §3/§5/§7/§14)
 - **Track:** `selection` (worktree `Capstone-selection`, branch `track/selection`)
 - **Predecessor session:** none — selection-track inception. Forked from cody freeze-merge `e638d81` (frozen contracts + gateway stub + fixtures) + the P0.16 judge-output-seam merge `19e0833` (mid-session, unblocked P5.5-judge onward).
-- **Successor session:** _TBD_
+- **Successor session:** `selection-002-2026-06-21-phase5-orchestration-roundclose.md` (orchestrator round close-out).
 
 ## Why this session existed
 
