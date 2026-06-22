@@ -157,4 +157,14 @@ describe("App", () => {
     await userEvent.selectOptions(screen.getByLabelText("Source status"), "live_run");
     expect(screen.getByText("No solutions match this filter.")).toBeInTheDocument();
   });
+
+  it("masks source labels in blind review mode", async () => {
+    render(<App />);
+    expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByLabelText("Blind review"));
+    expect(screen.getAllByText("Solution A").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
+    expect(screen.queryByText("source status")).not.toBeInTheDocument();
+    expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();
+  });
 });

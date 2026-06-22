@@ -10,6 +10,23 @@ function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
 }
 
+function blindSolutionLabel(index: number): string {
+  return `Solution ${String.fromCharCode(65 + (index % 26))}`;
+}
+
+function maskProvenanceText(text: string): string {
+  return text
+    .replace(/\bCody\b/g, "Kernel")
+    .replace(/\bcody\b/g, "kernel")
+    .replace(/\bMelissa\b/g, "Kernel")
+    .replace(/\bmelissa\b/g, "kernel")
+    .replace(/\bMichael\b/g, "Kernel")
+    .replace(/\bmichael\b/g, "kernel")
+    .replace(/\borigin\/kernel/g, "origin/kernel")
+    .replace(/\bbranch solution\b/gi, "source solution")
+    .replace(/\bbranch markdown\b/gi, "source markdown");
+}
+
 function averageScore(ratings: CalibratorRating[]): number | null {
   if (ratings.length === 0) return null;
   return ratings.reduce((total, rating) => total + rating.score, 0) / ratings.length;
@@ -126,6 +143,7 @@ export function App() {
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [sourceStatusFilter, setSourceStatusFilter] = useState<SourceStatusFilter>("all");
+  const [blindMode, setBlindMode] = useState(false);
   const [caseOpen, setCaseOpen] = useState(true);
   const [problemOpen, setProblemOpen] = useState(true);
   const [solutionOpen, setSolutionOpen] = useState(true);
@@ -186,6 +204,9 @@ export function App() {
       null,
     [visibleSolutions, selectedSolutionId],
   );
+  const selectedSolutionIndex = selectedSolution
+    ? visibleSolutions.findIndex((solution) => solution.solution_id === selectedSolution.solution_id)
+    : -1;
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -302,9 +323,18 @@ export function App() {
           </select>
         </label>
 
+        <label className="toggle-field">
+          <input
+            type="checkbox"
+            checked={blindMode}
+            onChange={(event) => setBlindMode(event.target.checked)}
+          />
+          <span>Blind review</span>
+        </label>
+
         <section className="solution-list" aria-label="Solutions">
           <h2>Solutions</h2>
-          {visibleSolutions.map((solution) => (
+          {visibleSolutions.map((solution, index) => (
             <button
               className={solution.solution_id === selectedSolution?.solution_id ? "selected" : ""}
               key={solution.solution_id}
@@ -316,10 +346,13 @@ export function App() {
                 setSavedPath("");
               }}
             >
-              <span>{solution.title}</span>
+              <span>{blindMode ? blindSolutionLabel(index) : solution.title}</span>
               <small>
-                {solution.kernel ?? solution.source_type} / {sourceStatusLabel(solution.source_status)} /{" "}
-                {solution.human_ratings.length} ratings
+                {blindMode
+                  ? `${solution.human_ratings.length} ratings`
+                  : `${solution.kernel ?? solution.source_type} / ${sourceStatusLabel(
+                      solution.source_status,
+                    )} / ${solution.human_ratings.length} ratings`}
               </small>
             </button>
           ))}
@@ -382,15 +415,25 @@ export function App() {
         {selectedSolution ? (
           <article className="solution-detail">
             <button className="panel-toggle" type="button" onClick={() => setSolutionOpen((open) => !open)}>
-              <span>{selectedSolution.title}</span>
+              <span>
+                {blindMode && selectedSolutionIndex >= 0
+                  ? blindSolutionLabel(selectedSolutionIndex)
+                  : selectedSolution.title}
+              </span>
               <span>{solutionOpen ? "Collapse" : "Expand"}</span>
             </button>
-            <KernelMeta solution={selectedSolution} />
-            {selectedSolution.adapter_notes ? (
+            {blindMode ? (
+              <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
+            ) : (
+              <KernelMeta solution={selectedSolution} />
+            )}
+            {!blindMode && selectedSolution.adapter_notes ? (
               <p className="adapter-note">{selectedSolution.adapter_notes}</p>
             ) : null}
             <CalibrationHistory solution={selectedSolution} />
-            {solutionOpen ? <MarkdownBlock text={selectedSolution.body} /> : null}
+            {solutionOpen ? (
+              <MarkdownBlock text={blindMode ? maskProvenanceText(selectedSolution.body) : selectedSolution.body} />
+            ) : null}
           </article>
         ) : (
           <p>No solution selected.</p>

@@ -41,6 +41,12 @@ Apples-to-apples comparison is represented explicitly in markdown. Comparison se
 
 The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, Melissa-, and Michael-labeled artifacts are useful for testing the calibration workflow, but they are not presented as live kernel outputs. Future importers should promote a solution to `imported` or `live_run` only when they can record the branch, commit, source artifact or run id, and the exact shared comparison input hash.
 
+## Review Controls
+
+Reviewers can filter the solution list by source status: fixture, imported, live run, pending, or unavailable. This prevents calibration sessions from mixing true candidate outputs with provenance-only artifacts unless the reviewer chooses to see all records.
+
+Blind review mode masks kernel/source labels, provenance metadata, adapter notes, and obvious branch names in solution text. It is intended for lower-bias human rating sessions; reviewers can turn it off when they need audit context.
+
 ## Vault Shape
 
 Seed case:

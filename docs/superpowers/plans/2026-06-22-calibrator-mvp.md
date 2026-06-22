@@ -40,6 +40,10 @@ Current MVP behavior:
 - The current Cody-, Melissa-, and Michael-labeled artifacts are marked `source_status: fixture`; future adapters must promote them to `imported` or `live_run` only with branch, commit, source artifact/run id, and shared input hash.
 - The UI shows comparison-set status and per-solution adapter notes so reviewers can distinguish seeded fixtures from genuine kernel outputs.
 - The calibrator has an SVG favicon wired into the app and static export.
+- The import CLI now has adapters for Michael markdown and Cody/Melissa runtime branch provenance.
+- Michael's direct branch solution import is marked `pending` because the source branch explicitly says the case is unsolved.
+- Cody and Melissa provenance imports are marked `unavailable` because neither branch currently has a direct case-specific solution export.
+- Reviewers can filter solutions by source status and enable blind review mode to mask kernel/source labels before rating.
 
 Verification as of June 22, 2026:
 
