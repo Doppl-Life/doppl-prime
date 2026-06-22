@@ -120,7 +120,9 @@ export { materializeGen0 } from './seed/gen0SeedSet';
 export {
   runGenerationLoop,
   transitionGenerationOrThrow,
+  transitionAgenomeOrThrow,
   IllegalGenerationTransitionError,
+  IllegalAgenomeTransitionError,
   type GenerationLoopDeps,
   type GenerationLoopResult,
   type GenerationGateway,

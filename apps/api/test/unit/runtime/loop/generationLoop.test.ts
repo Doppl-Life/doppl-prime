@@ -21,7 +21,9 @@ import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
   transitionGenerationOrThrow,
+  transitionAgenomeOrThrow,
   IllegalGenerationTransitionError,
+  IllegalAgenomeTransitionError,
   type GenerationGateway,
   type GenerationLoopDeps,
   type ReproduceSeam,
@@ -104,17 +106,29 @@ function makeFakeEventStore() {
 }
 
 function makeFakeGateway(
-  opts: { toolCalls?: readonly { toolName: string }[] } = {},
+  opts: { toolCalls?: readonly { toolName: string }[]; rejectFirst?: number } = {},
 ): GenerationGateway {
-  const response: ModelGatewayResponse = {
+  const accepted: ModelGatewayResponse = {
     accepted: true,
     validationResult: 'accepted',
     output: CANDIDATE_CONTENT,
     providerMeta: validProviderMeta,
   };
+  // A gateway REJECT (after the gateway's internal retry+repair) — the candidate never reaches `created`.
+  const rejected: ModelGatewayResponse = {
+    accepted: false,
+    validationResult: 'rejected',
+    providerMeta: validProviderMeta,
+    rejection: { reason: 'schema_rejected' },
+  };
+  let calls = 0;
   return {
-    // toolCalls present only when supplied (exactOptionalPropertyTypes — no present-but-undefined key).
-    generate: async () => (opts.toolCalls ? { response, toolCalls: opts.toolCalls } : { response }),
+    generate: async () => {
+      const response = calls < (opts.rejectFirst ?? 0) ? rejected : accepted;
+      calls += 1;
+      // toolCalls present only when supplied (exactOptionalPropertyTypes — no present-but-undefined key).
+      return opts.toolCalls ? { response, toolCalls: opts.toolCalls } : { response };
+    },
   };
 }
 
@@ -145,30 +159,51 @@ const appendingVerify: VerifySeam = async (candidates, ctx) => {
     });
   }
 };
-const appendingScore: ScoreSeam = async (candidates, ctx) => {
-  for (const c of candidates) {
-    await ctx.append({
-      id: `${ctx.generationId}-novelty-${c.id}`,
-      runId: ctx.runId,
-      generationId: ctx.generationId,
-      candidateId: c.id,
-      type: 'novelty.scored',
-      actor: 'selection_controller',
-      payload: validNoveltyScore as unknown as Record<string, unknown>,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-    });
-    await ctx.append({
-      id: `${ctx.generationId}-fitness-${c.id}`,
-      runId: ctx.runId,
-      generationId: ctx.generationId,
-      candidateId: c.id,
-      type: 'fitness.scored',
-      actor: 'selection_controller',
-      payload: validFitnessScore as unknown as Record<string, unknown>,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-    });
-  }
-};
+// Configurable score seam: the first `surviveCount` candidates get novelty.scored + fitness.scored
+// (eligible parents); the rest get lineage.culled (not eligible). The loop reads these back to determine
+// eligibility — it never scores itself. Default: all survive (the 10b happy path).
+function makeScoreSeam(opts: { surviveCount?: number } = {}): ScoreSeam {
+  return async (candidates, ctx) => {
+    const survive = opts.surviveCount ?? candidates.length;
+    for (let i = 0; i < candidates.length; i += 1) {
+      const c = candidates[i]!;
+      if (i < survive) {
+        await ctx.append({
+          id: `${ctx.generationId}-novelty-${c.id}`,
+          runId: ctx.runId,
+          generationId: ctx.generationId,
+          candidateId: c.id,
+          type: 'novelty.scored',
+          actor: 'selection_controller',
+          payload: validNoveltyScore as unknown as Record<string, unknown>,
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+        });
+        await ctx.append({
+          id: `${ctx.generationId}-fitness-${c.id}`,
+          runId: ctx.runId,
+          generationId: ctx.generationId,
+          candidateId: c.id,
+          type: 'fitness.scored',
+          actor: 'selection_controller',
+          payload: validFitnessScore as unknown as Record<string, unknown>,
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+        });
+      } else {
+        await ctx.append({
+          id: `${ctx.generationId}-culled-${c.id}`,
+          runId: ctx.runId,
+          generationId: ctx.generationId,
+          candidateId: c.id,
+          type: 'lineage.culled',
+          actor: 'selection_controller',
+          payload: { targetIds: [c.id], reason: 'low_score', scoreSnapshot: {} },
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+        });
+      }
+    }
+  };
+}
+const appendingScore: ScoreSeam = makeScoreSeam();
 // Reproduce seam — draws via the LIVE outcome source (so RNG outcomes are recorded into its payload,
 // replay-faithful rule #7) then appends agenome.mutated/reproduced (generic payloads).
 const appendingReproduce: ReproduceSeam = async (ctx) => {
@@ -189,7 +224,8 @@ const appendingReproduce: ReproduceSeam = async (ctx) => {
     generationId: ctx.generationId,
     type: 'agenome.reproduced',
     actor: 'agenome',
-    payload: {},
+    // the loop hints the mode by eligible-parent count (1 → mutation_only; ≥2 → fusion); the seam records it.
+    payload: { mode: ctx.mode },
     schemaVersion: CURRENT_SCHEMA_VERSION,
   });
 };
@@ -214,6 +250,10 @@ function makeDeps(
       score: appendingScore,
       reproduce: appendingReproduce,
     },
+    // minPopulationSurvival present only when supplied (exactOptionalPropertyTypes).
+    ...(over.minPopulationSurvival !== undefined
+      ? { minPopulationSurvival: over.minPopulationSurvival }
+      : {}),
   };
 }
 
@@ -356,5 +396,164 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
     // every kernel-owned event the loop produced is present in the store (no out-of-band write path).
     expect(kernelOwned.length).toBeGreaterThan(0);
     expect(fake.types().filter((t) => !SEAM_OWNED.includes(t))).toEqual(kernelOwned);
+  });
+});
+
+describe('runGenerationLoop (P3.10c — generation-loop edges)', () => {
+  test('partial_failure_drives_degraded_path', async () => {
+    // spec(§3/§5): some agenomes gateway-rejected (≥1 survives ≥ minPopulationSurvival) → the generation
+    // takes running→degraded→verifying; each failed agenome emits agenome.failed; the failed-agenome IDs
+    // ride the generation.verifying marker payload (degraded:true) — the partial-failure recording.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 1 }),
+        caps: { maxGenerations: 1, maxPopulation: 3 },
+      }),
+    );
+    expect(fake.rows.filter((r) => r.type === 'agenome.failed')).toHaveLength(1);
+    const verifying = fake.rows.find((r) => r.type === 'generation.verifying');
+    expect((verifying!.payload as { degraded?: boolean }).degraded).toBe(true);
+    expect((verifying!.payload as { failedAgenomeIds?: string[] }).failedAgenomeIds).toHaveLength(
+      1,
+    );
+    // the generation still completes through the degraded path (2 survivors); no generation_failed.
+    expect(fake.appendedTypes()).toContain('generation.completed');
+    expect(fake.appendedTypes()).not.toContain('generation_failed');
+  });
+
+  test('all_agenomes_fail_drives_generation_failed', async () => {
+    // spec(§5): every gateway call rejected (0 candidates created) → running→failed + generation_failed;
+    // verify/score/reproduce are never reached.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 2 }),
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    expect(fake.rows.filter((r) => r.type === 'agenome.failed')).toHaveLength(2);
+    expect(fake.appendedTypes()).toContain('generation_failed');
+    expect(fake.appendedTypes()).not.toContain('generation.verifying');
+    expect(fake.appendedTypes()).not.toContain('generation.completed');
+  });
+
+  test('zero_survivors_completes_without_reproduction', async () => {
+    // spec(§5/§8): a generation reaching scoring with 0 eligible parents (score seam culled all) takes
+    // scoring→completed (NO reproduction) + generation.completed payload survivors:0. Loop reads the
+    // score/cull events (readByRun) to decide eligibility — it does not score itself.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        seams: {
+          verify: appendingVerify,
+          score: makeScoreSeam({ surviveCount: 0 }),
+          reproduce: appendingReproduce,
+        },
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('generation.scoring');
+    expect(fake.appendedTypes()).not.toContain('generation.reproducing');
+    expect(fake.appendedTypes()).not.toContain('agenome.reproduced'); // reproduce seam not called
+    const completed = fake.rows.find((r) => r.type === 'generation.completed');
+    expect((completed!.payload as { survivors?: number }).survivors).toBe(0);
+  });
+
+  test('single_survivor_reproduces_mutation_only', async () => {
+    // spec(§8): exactly 1 eligible parent → the reproduce seam is invoked in mutation_only mode; the
+    // resulting agenome.reproduced carries mode:'mutation_only' (the loop hints the mode, the seam records).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        seams: {
+          verify: appendingVerify,
+          score: makeScoreSeam({ surviveCount: 1 }),
+          reproduce: appendingReproduce,
+        },
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('generation.reproducing');
+    const reproduced = fake.rows.find((r) => r.type === 'agenome.reproduced');
+    expect((reproduced!.payload as { mode?: string }).mode).toBe('mutation_only');
+  });
+
+  test('agenome_failed_emitted_and_guard_valid', async () => {
+    // spec(§3/§4) rule #2: a failed agenome appends agenome.failed (the kernel-026 sv5 event's FIRST
+    // emitter) via the append path; the active→failed transition is guard-validated; an illegal agenome
+    // transition is rejected (seeded→failed skips active; failed is terminal).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 1 }),
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    const failed = fake.rows.find((r) => r.type === 'agenome.failed');
+    expect(failed).toBeDefined();
+    expect((failed!.payload as { agenomeId?: string }).agenomeId).toBeDefined();
+    expect(transitionAgenomeOrThrow('active', 'failed')).toBe('failed');
+    expect(() => transitionAgenomeOrThrow('seeded', 'failed')).toThrow(
+      IllegalAgenomeTransitionError,
+    );
+    expect(() => transitionAgenomeOrThrow('failed', 'active')).toThrow(
+      IllegalAgenomeTransitionError,
+    );
+  });
+
+  test('minPopulationSurvival_threshold', async () => {
+    // spec(§5): the partial-survival gate is configurable. With minPopulationSurvival=2: 1 survivor (2 of 3
+    // rejected) → running→failed (below threshold); 2 survivors (1 of 3 rejected) → degraded→verifying.
+    const below = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: below.store,
+        gateway: makeFakeGateway({ rejectFirst: 2 }),
+        minPopulationSurvival: 2,
+        caps: { maxGenerations: 1, maxPopulation: 3 },
+      }),
+    );
+    expect(below.appendedTypes()).toContain('generation_failed');
+    expect(below.appendedTypes()).not.toContain('generation.verifying');
+
+    const ok = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: ok.store,
+        gateway: makeFakeGateway({ rejectFirst: 1 }),
+        minPopulationSurvival: 2,
+        caps: { maxGenerations: 1, maxPopulation: 3 },
+      }),
+    );
+    const verifying = ok.rows.find((r) => r.type === 'generation.verifying');
+    expect(verifying).toBeDefined();
+    expect((verifying!.payload as { degraded?: boolean }).degraded).toBe(true);
+    expect(ok.appendedTypes()).not.toContain('generation_failed');
+  });
+
+  test('happy_path_unaffected', async () => {
+    // regression: all accepted, ≥1 survivor, ≥2 eligible parents → the full lifecycle drives with NO
+    // degraded/failed branch (the edges are additive; the verifying marker carries no degraded flag).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    expect(fake.appendedTypes().filter((t) => t.startsWith('generation.'))).toEqual([
+      'generation.started',
+      'generation.verifying',
+      'generation.scoring',
+      'generation.reproducing',
+      'generation.completed',
+    ]);
+    expect(fake.appendedTypes()).not.toContain('agenome.failed');
+    expect(fake.appendedTypes()).not.toContain('generation_failed');
+    const verifying = fake.rows.find((r) => r.type === 'generation.verifying');
+    expect((verifying!.payload as { degraded?: boolean }).degraded).toBeUndefined();
   });
 });

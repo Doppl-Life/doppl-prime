@@ -1,5 +1,6 @@
 import type {
   Agenome,
+  AgenomeStatus,
   CandidateIdea,
   GenerationStatus,
   ModelGatewayRequest,
@@ -11,6 +12,7 @@ import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../e
 import type { AppConfig } from '../config/configSchema';
 import { enforceCap } from '../caps/capEnforcer';
 import { canTransitionGeneration } from '../state/generationStateMachine';
+import { canTransitionAgenome } from '../state/agenomeStateMachine';
 import { materializeGen0 } from '../seed/gen0SeedSet';
 import { createSeededRng, readRngSeed } from '../rng/seededRng';
 import { createLiveOutcomeSource, type OutcomeSource } from '../rng/persistOutcomes';
@@ -69,6 +71,8 @@ export interface ReproduceContext extends SeamContext {
   readonly parents: readonly Agenome[];
   readonly outcomes: OutcomeSource;
   readonly scoredEvents: readonly RunEventRow[];
+  /** The loop's mode hint by eligible-parent count: 1 → mutation_only (degenerate), ≥2 → fusion. */
+  readonly mode: 'mutation_only' | 'fusion';
 }
 
 /**
@@ -92,6 +96,8 @@ export interface GenerationLoopDeps {
   readonly eventStore: EventStore;
   readonly gateway: GenerationGateway;
   readonly seams: GenerationSeams;
+  /** Min candidates that must reach `created` for a generation to proceed (else running→failed). Default 1. */
+  readonly minPopulationSurvival?: number;
 }
 
 export interface GenerationLoopResult {
@@ -124,6 +130,51 @@ export function transitionGenerationOrThrow(
   return to;
 }
 
+/** Thrown when the loop would drive an agenome through an out-of-lifecycle transition (rule #2 + P3.2). */
+export class IllegalAgenomeTransitionError extends Error {
+  constructor(
+    public readonly from: AgenomeStatus,
+    public readonly to: AgenomeStatus,
+  ) {
+    super(`illegal agenome transition: ${from} → ${to}`);
+    this.name = 'IllegalAgenomeTransitionError';
+  }
+}
+
+/** Validate an agenome transition through the P3.2 guard BEFORE the loop appends (e.g. active→failed). */
+export function transitionAgenomeOrThrow(from: AgenomeStatus, to: AgenomeStatus): AgenomeStatus {
+  if (!canTransitionAgenome(from, to).allowed) {
+    throw new IllegalAgenomeTransitionError(from, to);
+  }
+  return to;
+}
+
+/**
+ * Eligible parents for reproduction, derived from the score seam's events (the loop never scores itself,
+ * §5/§8): a candidate is eligible iff its `fitness.scored` event is present this generation AND it was not
+ * `lineage.culled`; the surviving candidates map back to their agenomes (deduped). Pure projection.
+ */
+function resolveEligibleParents(
+  log: readonly RunEventRow[],
+  generationId: string,
+  candidateAgenome: ReadonlyMap<string, Agenome>,
+): Agenome[] {
+  const scored = new Set<string>();
+  const culled = new Set<string>();
+  for (const row of log) {
+    if (row.generationId !== generationId || !row.candidateId) continue;
+    if (row.type === 'fitness.scored') scored.add(row.candidateId);
+    else if (row.type === 'lineage.culled') culled.add(row.candidateId);
+  }
+  const parents = new Map<string, Agenome>();
+  for (const candidateId of scored) {
+    if (culled.has(candidateId)) continue;
+    const agenome = candidateAgenome.get(candidateId);
+    if (agenome) parents.set(agenome.id, agenome);
+  }
+  return [...parents.values()];
+}
+
 /**
  * Drive a run's generations (happy path). Returns the number of generations run (run-terminal
  * classification is P3.11, out of scope). BOUNDED by construction: an N-generation cap runs exactly N.
@@ -131,6 +182,7 @@ export function transitionGenerationOrThrow(
 export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<GenerationLoopResult> {
   const { runId, config, eventStore, gateway, seams } = deps;
   const { caps } = config;
+  const minSurvival = deps.minPopulationSurvival ?? 1;
 
   let eventSeq = 0;
   const appendEvent = (
@@ -179,11 +231,16 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     status = transitionGenerationOrThrow(status, 'running');
     await appendEvent('generation.started', { generationId, index: g }, { generationId });
 
-    // Produce candidates per agenome (happy path: all accepted). Each gateway call may surface tool calls,
-    // which the loop relays verbatim (no energy debit — markers, §4/§12).
+    // Produce candidates per agenome. Each agenome activates (seeded→active, guard-validated) to generate;
+    // a gateway REJECT drives it active→failed + appends `agenome.failed` (the kernel-026 sv5 event's FIRST
+    // emitter, the authoritative per-agenome failure record); an ACCEPT yields a candidate.created. Tool
+    // calls are relayed verbatim (no energy debit — markers, §4/§12). [provider_call_failed + energy = 10d.]
     const candidates: CandidateIdea[] = [];
+    const candidateAgenome = new Map<string, Agenome>();
+    const failedAgenomeIds: string[] = [];
     for (let a = 0; a < population.length; a += 1) {
       const agenome = population[a]!;
+      transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
       const { response, toolCalls } = await gateway.generate({
         role: 'population_generator',
         prompt: agenome.systemPrompt,
@@ -206,7 +263,17 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
           },
         );
       }
-      if (!response.accepted) continue; // happy path = accepted; repair/reject/failure → 10c/10d
+      if (!response.accepted) {
+        // Gateway rejected (after its internal retry+repair) — the agenome fails (active→failed terminal).
+        transitionAgenomeOrThrow('active', 'failed');
+        failedAgenomeIds.push(agenome.id);
+        await appendEvent(
+          'agenome.failed',
+          { agenomeId: agenome.id, reason: response.rejection?.reason ?? 'rejected' },
+          { generationId, agenomeId: agenome.id },
+        );
+        continue;
+      }
       const candidateId = `${generationId}-c${a}`;
       // Kernel assigns id/runId/generationId/agenomeId/status; the model owns the content. The append path
       // validates the assembled object as a real CandidateIdea (candidate.created high-traffic narrowing).
@@ -219,6 +286,7 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         status: 'created',
       };
       candidates.push(candidatePayload as unknown as CandidateIdea);
+      candidateAgenome.set(candidateId, agenome);
       await appendEvent('candidate.created', candidatePayload, {
         generationId,
         agenomeId: agenome.id,
@@ -226,36 +294,75 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       });
     }
 
-    // Verify phase — marker on ENTRY (before the seam work, so live observability sees "phase started"),
-    // then delegate to the injected seam (it appends critic.reviewed/check.completed; the loop never does).
-    status = transitionGenerationOrThrow(status, 'verifying');
-    await appendEvent('generation.verifying', { generationId }, { generationId });
+    // Below the survival threshold (incl. all-fail / 0 created) → running→failed + generation_failed; no
+    // verify/score/reproduce. Whether a failed generation ENDS the run is run-terminal classification (P3.11).
+    if (candidates.length < minSurvival) {
+      transitionGenerationOrThrow(status, 'failed');
+      await appendEvent(
+        'generation_failed',
+        { generationId, survivors: candidates.length, failedAgenomeIds },
+        { generationId },
+      );
+      generationsRun += 1;
+      continue;
+    }
+
+    // Partial failure (≥1 failed, ≥minSurvival survived) → running→degraded→verifying; the failed-agenome
+    // IDs ride the verifying marker (a single-writer observability denormalization — `agenome.failed` stays
+    // the authoritative failure record; "passed through degraded" is re-derivable from the failed events).
+    const degraded = failedAgenomeIds.length > 0;
+    if (degraded) {
+      status = transitionGenerationOrThrow(status, 'degraded');
+      status = transitionGenerationOrThrow(status, 'verifying');
+    } else {
+      status = transitionGenerationOrThrow(status, 'verifying');
+    }
+    await appendEvent(
+      'generation.verifying',
+      degraded ? { generationId, degraded: true, failedAgenomeIds } : { generationId },
+      { generationId },
+    );
     await seams.verify(candidates, { runId, generationId, append: eventStore.append });
 
-    // Score phase — marker on entry, then delegate (seam appends novelty.scored/fitness.scored).
+    // Score phase — marker on entry, then delegate (seam appends novelty.scored/fitness.scored/lineage.culled).
     status = transitionGenerationOrThrow(status, 'scoring');
     await appendEvent('generation.scoring', { generationId }, { generationId });
     await seams.score(candidates, { runId, generationId, append: eventStore.append });
 
-    // Consume the seam events as DATA — read the run log back (never re-authoring a seam-owned event).
+    // Consume the seam's score/cull events as DATA (readByRun) to determine eligible parents — the loop
+    // never scores itself (§5/§8); it maps surviving (scored ∧ ¬culled) candidates back to their agenomes.
     const scoredEvents = await eventStore.readByRun(runId);
+    const eligibleParents = resolveEligibleParents(scoredEvents, generationId, candidateAgenome);
 
-    // Reproduce phase — marker on entry, then delegate with the LIVE outcome source so RNG outcomes are
-    // recorded into the offspring payloads (happy path: the population are the eligible parents).
+    // Zero survivors (all culled) → scoring→completed with NO reproduction (survivors:0).
+    if (eligibleParents.length === 0) {
+      transitionGenerationOrThrow(status, 'completed');
+      await appendEvent('generation.completed', { generationId, survivors: 0 }, { generationId });
+      generationsRun += 1;
+      continue;
+    }
+
+    // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
+    // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
     status = transitionGenerationOrThrow(status, 'reproducing');
     await appendEvent('generation.reproducing', { generationId }, { generationId });
     await seams.reproduce({
       runId,
       generationId,
       append: eventStore.append,
-      parents: population,
+      parents: eligibleParents,
       outcomes,
       scoredEvents,
+      mode: eligibleParents.length === 1 ? 'mutation_only' : 'fusion',
     });
 
     // Complete — validate the terminal transition through the guard (no assign; status is not read after).
     transitionGenerationOrThrow(status, 'completed');
-    await appendEvent('generation.completed', { generationId }, { generationId });
+    await appendEvent(
+      'generation.completed',
+      { generationId, survivors: eligibleParents.length },
+      { generationId },
+    );
 
     generationsRun += 1;
   }
