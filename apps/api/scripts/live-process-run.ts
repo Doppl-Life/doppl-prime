@@ -1,12 +1,12 @@
-import { randomUUID } from "node:crypto";
 import type {
   Agenome,
-  ModelGatewayRequest,
-  ModelGatewayResponse,
+  CriticMandate,
+  FitnessScoredPayload,
   RunConfig,
 } from "@doppl/contracts";
 import { sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { ALL_ADAPTERS, buildCheckRegistry } from "../src/check-runners/index.js";
 import { appendEvent } from "../src/event-store/append.js";
 import { replayReader } from "../src/event-store/replay-reader.js";
 import type { ModelGateway } from "../src/model-gateway/gateway.js";
@@ -15,20 +15,17 @@ import { createEnergyLedger } from "../src/runtime/energy-ledger.js";
 import { runGeneration } from "../src/runtime/generation-loop.js";
 import { createSeededRng } from "../src/runtime/rng.js";
 import { materializeGen0Bundle } from "../src/runtime/seeds/gen-0-agenomes.js";
+import { makeReproduceHook } from "../src/selection/run-reproduction.js";
+import { makeScoreHook } from "../src/selection/run-scoring.js";
+import { makeVerifyHook } from "../src/verifier/run-verification.js";
 
 /**
- * Live processRun for the boot-demo MVP. Replaces the prior placeholder
- * that marked configured runs failed without emitting events — this one
- * walks the run through `run.started → generation.* (×N) → run.completed`
- * by driving the existing generation-loop orchestrator.
- *
- * Gateway: in the absence of provider keys the run uses an in-process
- * stub gateway that returns deterministic, schema-valid candidate
- * payloads. The whole event taxonomy (agenome.spawned via candidates,
- * generation.started/completed, energy.spent, candidate.created) flows
- * exactly as a real run would — only the LLM call is faked. Swap
- * `createStubGateway` for `createGateway({ … })` once OPENROUTER_API_KEY
- * / OPENAI_API_KEY are wired through model-gateway/dispatcher.
+ * Live processRun for the boot-demo. Drives a run from
+ * `run.started → generation.* (×N) → run.completed` using the real
+ * verify / score / reproduce hook factories — no stubs. The caller MUST
+ * pass a real `gateway`; without one, the script throws at construction
+ * rather than silently filling the event log with fake reviews and
+ * synthetic fitness numbers.
  */
 
 interface RunRow {
@@ -36,136 +33,36 @@ interface RunRow {
   config: RunConfig;
 }
 
-// A small library of synthetic cross-domain analogies so each stub
-// candidate has a distinct, readable title rather than all 20 candidates
-// in a run looking identical. Per-call index picks one — deterministic
-// given the same run / agenome / generation, so replay is byte-stable.
-const STUB_ANALOGIES: ReadonlyArray<{
-  sourceDomain: string;
-  sourceTechnique: string;
-  targetDomain: string;
-  targetProblem: string;
-  transferMapping: string;
-  expectedMechanism: string;
-  explanation: string;
-}> = [
-  {
-    sourceDomain: "hydraulic engineering",
-    sourceTechnique: "surge tanks",
-    targetDomain: "urban traffic",
-    targetProblem: "congestion shockwaves",
-    transferMapping: "pressure-equalization → buffered intersections",
-    expectedMechanism: "absorb spikes before they propagate upstream",
-    explanation:
-      "Imagine a water pipe: when flow suddenly stops, pressure shockwaves can rattle the whole system. Plumbing engineers fix this by adding small tanks that absorb the spike before it travels upstream. This idea borrows the trick for city streets — when a burst of cars hits an intersection, a 'buffer' area soaks up the shock so the jam doesn't cascade for miles. The same math that keeps water pipes from hammering could keep rush hour from collapsing.",
-  },
-  {
-    sourceDomain: "biology",
-    sourceTechnique: "selection pressure",
-    targetDomain: "ML training",
-    targetProblem: "mode collapse",
-    transferMapping: "fitness → diversity-weighted loss",
-    expectedMechanism: "preserve minority modes via novelty penalty",
-    explanation:
-      "An AI model that's trained too long sometimes gets stuck giving the same kinds of answers — like a chef who only ever makes pasta. Nature solved a similar problem millions of years ago: evolution doesn't just reward what works, it rewards what's rare and useful, so species stay diverse. This idea adds a 'diversity bonus' to AI training so the model is nudged to invent new answers instead of always falling back on the familiar ones. The hope is models trained this way stay creative even after very long training runs.",
-  },
-  {
-    sourceDomain: "ant colony foraging",
-    sourceTechnique: "pheromone evaporation",
-    targetDomain: "city logistics",
-    targetProblem: "stale delivery routes",
-    transferMapping: "evaporation rate → route-cost decay",
-    expectedMechanism: "stale routes lose weight, fresher ones win",
-    explanation:
-      "Ants don't have GPS. They leave scent trails to food, and those trails fade over time so old paths get forgotten. Delivery fleets have the same problem: a route that was great last month might be terrible today because of construction or a new traffic pattern. This idea borrows the ant trick — give every route a 'freshness' score that quietly decays each day, so the system naturally forgets stale routes and gravitates to ones that actually work now. No central planner has to micromanage; the system just gets out of its own way.",
-  },
-  {
-    sourceDomain: "immunology",
-    sourceTechnique: "clonal selection",
-    targetDomain: "fraud detection",
-    targetProblem: "novel-attack adaptation",
-    transferMapping: "antibody diversity → ensemble specialists",
-    expectedMechanism: "amplify detectors that catch fresh patterns",
-    explanation:
-      "Your immune system can't predict what new virus will show up, so it keeps a huge library of slightly-different antibodies, and when one happens to match an invader your body rapidly clones it. Fraud detection has the same predicament: attackers invent fresh tricks every week. This idea copies the immune-system strategy — keep many small specialist detectors instead of one big general one, and when one catches a fresh attack pattern, rapidly clone it to handle the surge. The rest stand by in case their own niche gets hit.",
-  },
-  {
-    sourceDomain: "fluid dynamics",
-    sourceTechnique: "laminar-to-turbulent transition",
-    targetDomain: "team scaling",
-    targetProblem: "communication-overhead onset",
-    transferMapping: "Reynolds threshold → headcount threshold",
-    expectedMechanism: "predict the size at which structure must change",
-    explanation:
-      "Water through a pipe is smooth at low speed and suddenly chaotic past a precise threshold — engineers have predicted that switch for a century with one number, the Reynolds number. This idea asks whether teams hit the same kind of threshold: at some headcount, coordination tips from a few quick chats into wall-to-wall meetings. If we can predict that threshold the way fluid dynamicists do, leaders can restructure proactively instead of waiting for the team to break.",
-  },
-];
+/**
+ * Critic council member identifiers. These are NOT real agenomes —
+ * they're string IDs used by the council rotation to deterministically
+ * pick which "voice" speaks for each mandate per generation. Three is
+ * enough for round-robin diversity without inflating the LLM call
+ * budget per generation.
+ */
+const CRITIC_AGENOME_IDS = ["crit_skeptic", "crit_grounded", "crit_practical"] as const;
 
-function makeValidCandidatePayload(agenomeId: string, idx: number): unknown {
-  const analogy = STUB_ANALOGIES[idx % STUB_ANALOGIES.length] ?? STUB_ANALOGIES[0];
-  if (!analogy) throw new Error("STUB_ANALOGIES is empty"); // unreachable
-  // Build a title from the analogy so each candidate reads like an idea,
-  // not a placeholder string. e.g. "Apply surge tanks to congestion shockwaves".
-  const title = `Apply ${analogy.sourceTechnique} to ${analogy.targetProblem}`;
-  const summary = `Cross-domain transfer from ${analogy.sourceDomain} (${analogy.sourceTechnique}) to ${analogy.targetDomain}: ${analogy.transferMapping}.`;
-  const { explanation, ...subtypePayload } = analogy;
-  return {
-    subtype: "cross_domain_transfer",
-    title,
-    summary,
-    explanation,
-    ...subtypePayload,
-  };
-}
+/**
+ * Council rubric — one short instruction per mandate. These are read
+ * verbatim into the critic prompt by `runCouncil`. Kept terse so the
+ * model has room for the candidate text and the JSON-schema response;
+ * tune as needed once you see what the live critique looks like.
+ */
+const RUBRIC_BY_MANDATE: Record<CriticMandate, string> = {
+  factual_grounding:
+    "Score factual_grounding 0-1. Reward claims tied to verifiable prior art, named techniques, or measurable evidence. Penalize vague gestures and unsupported assertions.",
+  novelty_prior_art:
+    "Score novelty_prior_art 0-1. Reward genuinely new combinations and underexplored mappings. Penalize ideas that restate well-known techniques without adding anything.",
+  feasibility:
+    "Score feasibility 0-1. Reward ideas that could plausibly be tried with realistic resources in months, not decades. Penalize ideas that require speculative infrastructure or perfect data.",
+  falsification:
+    "Score falsification 0-1. Reward ideas whose authors named concrete predictions that could prove the idea wrong. Penalize unfalsifiable framings and motte-and-bailey claims.",
+  subtype_specific:
+    "Score subtype_specific 0-1. For cross_domain_transfer, weigh the strength of the source→target mapping. For zeitgeist_synthesis, weigh how distinct the three streams are and whether the implication is actually implied by all three.",
+};
 
-/** Per-process stub gateway. Mirrors the real createGateway dispatcher's
- *  success-path invariant (gateway.ts:138-163): every successful invoke
- *  appends an `energy.spent` event so the EnergyLedger, energy panel, and
- *  capsConsumed.energy stay in sync. Without this, the run would show
- *  `energy: 0 / N` even after thousands of LLM-equivalent calls. */
-function createStubGateway(
-  // biome-ignore lint/suspicious/noExplicitAny: drizzle dialect-generic
-  db: NodePgDatabase<any>,
-): ModelGateway {
-  let callIndex = 0;
-  return {
-    async invoke(request: ModelGatewayRequest): Promise<ModelGatewayResponse> {
-      const idx = callIndex;
-      callIndex += 1;
-      const energy = 5;
-
-      await appendEvent(db, {
-        runId: request.runId,
-        type: "energy.spent",
-        actor: "runtime",
-        ...(request.generationId !== undefined ? { generationId: request.generationId } : {}),
-        ...(request.agenomeId !== undefined ? { agenomeId: request.agenomeId } : {}),
-        payload: {
-          energy: {
-            id: randomUUID(),
-            runId: request.runId,
-            ...(request.generationId !== undefined ? { generationId: request.generationId } : {}),
-            ...(request.agenomeId !== undefined ? { agenomeId: request.agenomeId } : {}),
-            eventType: "llm",
-            estimate: energy,
-            actual: energy,
-            unit: "doppl_energy",
-            reason: `stub.${request.role}`,
-            providerMeta: { provider: "stub", modelId: "stub-candidate-generator", isFallback: false },
-          },
-        },
-      });
-
-      return {
-        ok: true,
-        output: JSON.stringify(makeValidCandidatePayload(request.agenomeId ?? "ag", idx)),
-        repairAttempts: 0,
-        energyEstimate: energy,
-        energyActual: energy,
-      };
-    },
-  };
-}
+/** How often the council rotates assignments. 1 = re-pick every generation. */
+const EVERY_N_GENERATIONS = 1;
 
 async function loadRun(
   // biome-ignore lint/suspicious/noExplicitAny: drizzle dialect-generic
@@ -193,18 +90,50 @@ async function markRunStatus(
   `);
 }
 
+/**
+ * Replay the run's fitness.scored events at the end of a completed run
+ * and pick the candidate with the highest total. Used to populate the
+ * run.completed terminalSummary so the FinalIdeaPanel has a champion
+ * to show. Reads from the event log (not from any in-memory tracker)
+ * so the result is stable across restarts and matches what replay
+ * would compute.
+ */
+async function findRunChampion(
+  // biome-ignore lint/suspicious/noExplicitAny: drizzle dialect-generic
+  db: NodePgDatabase<any>,
+  runId: string,
+): Promise<{ candidateId: string; total: number } | null> {
+  let best: { candidateId: string; total: number } | null = null;
+  for await (const env of replayReader(db).events(runId)) {
+    if (env.type !== "fitness.scored") continue;
+    const fitness = (env.payload as FitnessScoredPayload).fitness;
+    if (!fitness) continue;
+    if (best === null || fitness.total > best.total) {
+      best = { candidateId: fitness.candidateId, total: fitness.total };
+    }
+  }
+  return best;
+}
+
 export interface CreateLiveProcessRunOptions {
   // biome-ignore lint/suspicious/noExplicitAny: drizzle dialect-generic
   db: NodePgDatabase<any>;
-  /** Override the gateway (e.g., real provider). Defaults to the stub. */
-  gateway?: ModelGateway;
+  /** Required. The live process refuses to start without a real gateway
+   *  — running with a stub would silently fill the event log with fake
+   *  critic reviews and synthetic fitness scores. */
+  gateway: ModelGateway;
 }
 
 export function createLiveProcessRun(
   options: CreateLiveProcessRunOptions,
 ): (runId: string) => Promise<void> {
-  const { db } = options;
-  const gateway = options.gateway ?? createStubGateway(db);
+  const { db, gateway } = options;
+  if (!gateway) {
+    throw new Error(
+      "createLiveProcessRun requires a real `gateway`. Set OPENROUTER_API_KEY + OPENAI_API_KEY at boot so buildRealGateway returns a non-null gateway.",
+    );
+  }
+  const checkRegistry = buildCheckRegistry([...ALL_ADAPTERS]);
 
   return async function liveProcessRun(runId: string): Promise<void> {
     const row = await loadRun(db, runId);
@@ -239,25 +168,43 @@ export function createLiveProcessRun(
       caps,
     });
 
-    // Synthetic per-candidate score: deterministic but varied so fitness-over-time
-    // and lineage selection have non-trivial signal to render. Uses a tiny hash of
-    // the candidate id so re-runs with the same rngSeed produce the same curve.
-    const syntheticScore = (candidateId: string): number => {
-      let h = 0;
-      for (let i = 0; i < candidateId.length; i++) h = (h * 31 + candidateId.charCodeAt(i)) | 0;
-      // Map to [0.30, 0.95] — visually distinguishable in the chart axis.
-      const x = (Math.abs(h) % 1000) / 1000;
-      return Number((0.3 + x * 0.65).toFixed(3));
-    };
-
+    // The verify/score/reproduce hooks need the current generation
+    // index. We rebuild the hook bundle each iteration with a tiny
+    // closure over `i` so each generation passes the right value into
+    // the council rotation, the scoring policy's generationId field,
+    // and the reproduce hook's gen-N+1 child stamping.
     let lastOutcome: "completed" | "failed" | "stopped" = "completed";
     let lastReason: string | undefined;
-    // Champion tracking for the run.completed terminalSummary so the
-    // FinalIdeaPanel can show a meaningful "surviving idea" line.
-    let bestCandidateId: string | null = null;
-    let bestTotal = Number.NEGATIVE_INFINITY;
 
     for (let i = 0; i < caps.maxGenerations; i++) {
+      const getCurrentGenerationIndex = (): number => i;
+      const verifyHook = makeVerifyHook({
+        db,
+        gateway,
+        registry: checkRegistry,
+        runId,
+        runSeed: config.seed,
+        enabledSubtypes: config.enabledSubtypes,
+        criticAgenomeIds: CRITIC_AGENOME_IDS,
+        everyNGenerations: EVERY_N_GENERATIONS,
+        rubricByMandate: RUBRIC_BY_MANDATE,
+        getCurrentGenerationIndex,
+      });
+      const scoreHook = makeScoreHook({
+        db,
+        gateway,
+        runId,
+        getCurrentGenerationIndex,
+      });
+      const reproduceHook = makeReproduceHook({
+        db,
+        gateway,
+        runId,
+        runSeed: config.seed,
+        runCaps: caps,
+        getCurrentGenerationIndex,
+      });
+
       const out = await runGeneration(
         {
           db,
@@ -266,131 +213,9 @@ export function createLiveProcessRun(
           capEnforcer,
           ledger,
           rng,
-          // Stub verify: each candidate gets one critic review per mandate
-          // and one check.completed envelope. Real critics would call the
-          // gateway here — for the demo this fills out the lifecycle.
-          verifyHook: async (candidates) => {
-            for (const c of candidates) {
-              const mandates = ["falsification", "feasibility"] as const;
-              for (const mandate of mandates) {
-                await appendEvent(db, {
-                  runId,
-                  type: "critic.reviewed",
-                  actor: "critic",
-                  generationId: `gen_${i}`,
-                  agenomeId: c.agenomeId,
-                  candidateId: c.candidateId,
-                  payload: {
-                    review: {
-                      id: `crit_${c.candidateId}_${mandate}`,
-                      candidateId: c.candidateId,
-                      mandate,
-                      scores: { [mandate]: syntheticScore(`${c.candidateId}:${mandate}`) },
-                      critique: `Stub critic (${mandate}) — synthetic review for demo`,
-                      confidence: 0.75,
-                      evidenceRefs: [],
-                    },
-                  },
-                });
-              }
-              await appendEvent(db, {
-                runId,
-                type: "check.completed",
-                actor: "runtime",
-                generationId: `gen_${i}`,
-                agenomeId: c.agenomeId,
-                candidateId: c.candidateId,
-                payload: {
-                  result: {
-                    id: `chk_${c.candidateId}`,
-                    candidateId: c.candidateId,
-                    checkType: "stub_verification",
-                    status: "passed",
-                    score: syntheticScore(`check:${c.candidateId}`),
-                    evidenceRefs: [],
-                  },
-                },
-              });
-            }
-          },
-          // Stub score: emit a fitness.scored envelope per candidate using
-          // the deterministic synthetic score. Tracks the run's champion.
-          scoreHook: async (candidates) => {
-            for (const c of candidates) {
-              const total = syntheticScore(c.candidateId);
-              await appendEvent(db, {
-                runId,
-                type: "fitness.scored",
-                actor: "runtime",
-                generationId: `gen_${i}`,
-                agenomeId: c.agenomeId,
-                candidateId: c.candidateId,
-                payload: {
-                  fitness: {
-                    id: `fit_${c.candidateId}`,
-                    candidateId: c.candidateId,
-                    total,
-                    components: {
-                      critic: syntheticScore(`crit:${c.candidateId}`),
-                      check: syntheticScore(`check:${c.candidateId}`),
-                      novelty: syntheticScore(`nov:${c.candidateId}`),
-                    },
-                    policyVersion: config.scoringPolicyVersion,
-                    explanation: "Synthetic fitness from boot-demo stub.",
-                  },
-                },
-              });
-              if (total > bestTotal) {
-                bestTotal = total;
-                bestCandidateId = c.candidateId;
-              }
-            }
-          },
-          // Stub reproduce: pick the top-N fitness candidates as parents
-          // and seed gen N+1 with their agenomes (cloned into fresh ids
-          // so lineage edges have something to walk). Without this the
-          // population would die off and no champion would ever land.
-          reproduceHook: async (parentAgenomes, candidates) => {
-            const ranked = [...candidates].sort(
-              (a, b) => syntheticScore(b.candidateId) - syntheticScore(a.candidateId),
-            );
-            const survivors = ranked.slice(0, Math.min(caps.maxPopulation, ranked.length));
-            const parentById = new Map(parentAgenomes.map((p) => [p.id, p] as const));
-            const nextAgenomes: Agenome[] = [];
-            for (const c of survivors) {
-              const parent = parentById.get(c.agenomeId);
-              if (!parent) continue;
-              const childId = randomUUID();
-              await appendEvent(db, {
-                runId,
-                type: "agenome.reproduced",
-                actor: "runtime",
-                generationId: `gen_${i + 1}`,
-                agenomeId: childId,
-                payload: {
-                  reproduction: {
-                    id: `repro_${childId}`,
-                    runId,
-                    parentAgenomeIds: [parent.id],
-                    childAgenomeId: childId,
-                    // Single-parent reproduction in the stub — schema's named
-                    // `mutation_only` for the degenerate <2-parent fallback.
-                    mode: "mutation_only",
-                    crossoverPoints: [],
-                    mutationSummary: `Stub mutation of ${parent.id.slice(0, 8)} (no real reproducer wired yet).`,
-                  },
-                },
-              });
-              nextAgenomes.push({
-                ...parent,
-                id: childId,
-                runId,
-                generationId: `gen_${i + 1}`,
-                parentIds: [parent.id],
-              });
-            }
-            return { nextAgenomes };
-          },
+          verifyHook,
+          scoreHook,
+          reproduceHook,
         },
         {
           runId,
@@ -405,16 +230,19 @@ export function createLiveProcessRun(
       lastOutcome = out.outcome;
       lastReason = out.reason;
       if (out.outcome !== "completed") break;
-      // Use the next-gen agenomes the reproduce hook returned. If for any
-      // reason it returned an empty list, fall back to a fresh seed bundle
-      // so the loop has population to work with rather than terminating.
+      // Use the next-gen agenomes the reproduce hook returned. If the
+      // reproduce hook returned no successors (everyone culled), fall
+      // back to a fresh seed bundle so the loop has population to work
+      // with instead of terminating mid-run.
       const next = out.nextAgenomes ?? [];
-      agenomes = next.length > 0
-        ? next
-        : materializeGen0Bundle({ runId, generationId: `gen_${i + 1}`, caps });
+      agenomes =
+        next.length > 0
+          ? next
+          : materializeGen0Bundle({ runId, generationId: `gen_${i + 1}`, caps });
     }
 
     if (lastOutcome === "completed") {
+      const champ = await findRunChampion(db, runId);
       await markRunStatus(db, runId, "completed");
       await appendEvent(db, {
         runId,
@@ -422,10 +250,9 @@ export function createLiveProcessRun(
         actor: "runtime",
         payload: {
           completedAt: new Date().toISOString(),
-          terminalSummary:
-            bestCandidateId !== null
-              ? `champion ${bestCandidateId} · fitness ${bestTotal.toFixed(3)} after ${caps.maxGenerations} generation(s)`
-              : `completed ${caps.maxGenerations} generation(s) — no champion (stub fitness produced no positive total)`,
+          terminalSummary: champ
+            ? `champion ${champ.candidateId} · fitness ${champ.total.toFixed(3)} after ${caps.maxGenerations} generation(s)`
+            : `completed ${caps.maxGenerations} generation(s) — no champion (no fitness events landed)`,
         },
       });
     } else if (lastOutcome === "stopped") {

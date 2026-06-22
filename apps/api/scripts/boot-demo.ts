@@ -13,6 +13,7 @@ import {
   seedDemo,
 } from "../src/event-store/scripts/seed-demo.js";
 import { createServer } from "../src/http/server.js";
+import { createOpenAIEmbeddingAdapter } from "../src/model-gateway/adapters/openai-embedding.js";
 import { createOpenRouterAdapter } from "../src/model-gateway/adapters/openrouter.js";
 import { defaultRoutes } from "../src/model-gateway/default-routes.js";
 import { createGateway } from "../src/model-gateway/gateway.js";
@@ -130,6 +131,14 @@ function buildRealGateway(
   const openrouter = createOpenRouterAdapter({
     env: { OPENROUTER_API_KEY: env.OPENROUTER_API_KEY },
   });
+  // OpenAI is the embedding provider for novelty scoring. Optional —
+  // when OPENAI_API_KEY isn't set, embedding routes throw at first use;
+  // the run can still complete if novelty scoring is unreachable, but
+  // any path that needs embeddings will fail loudly rather than silently
+  // using a stub.
+  const openaiEmbed = env.OPENAI_API_KEY
+    ? createOpenAIEmbeddingAdapter({ env: { OPENAI_API_KEY: env.OPENAI_API_KEY } })
+    : null;
   const registry = createRegistry(defaultRoutes);
   const langfuse = createLangfuseClient({
     env: {
@@ -143,6 +152,14 @@ function buildRealGateway(
     registry,
     adapterFor: (provider) => {
       if (provider === "openrouter") return openrouter;
+      if (provider === "openai-embedding") {
+        if (!openaiEmbed) {
+          throw new Error(
+            "boot-demo gateway: OPENAI_API_KEY not set; the openai-embedding provider is required for novelty scoring",
+          );
+        }
+        return openaiEmbed;
+      }
       throw new Error(`boot-demo gateway: no adapter registered for provider "${provider}"`);
     },
     eventStore: {
@@ -193,9 +210,25 @@ export async function bootDemo(options: BootDemoOptions = {}): Promise<BootDemoR
   const server = serve({ fetch: app.fetch, port });
 
   const realGateway = buildRealGateway(db, env);
-  const liveProcessRun = createLiveProcessRun(
-    realGateway ? { db, gateway: realGateway } : { db },
-  );
+  // The live processRun refuses to start without a real gateway —
+  // running with a stub would silently fill the event log with fake
+  // critic reviews and synthetic fitness numbers. When no key is set
+  // we still bring the server up so the dashboard can browse past
+  // runs, but any new run gets marked failed immediately with a clear
+  // message instead of looking like it succeeded.
+  const liveProcessRun = realGateway
+    ? createLiveProcessRun({ db, gateway: realGateway })
+    : async (runId: string): Promise<void> => {
+        await appendEvent(db, {
+          runId,
+          type: "run.failed",
+          actor: "runtime",
+          payload: {
+            reason:
+              "No model gateway configured. Set OPENROUTER_API_KEY (and OPENAI_API_KEY for embeddings) on the api service.",
+          },
+        });
+      };
   const worker = new Worker({
     db,
     processRun: (runId) =>
