@@ -22,6 +22,7 @@ import { enforceWallClock } from '../caps/capEnforcer';
 import { cumulativeSpend } from '../energy/energyLedger';
 import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
 import { executeKillAndDrain } from './killDrain';
+import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
@@ -475,6 +476,25 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     );
 
     generationsRun += 1;
+  }
+
+  // P3.11 — classify the run-terminal verdict over the persisted log (+ the captured killSummary) and append
+  // the SINGLE terminal event, guard-validated via `runTerminalPath` from the run's actual status (`running`
+  // at loop exit). On the operator-stop / non-energy cap-breach / wall-clock kill path the REAL terminal is
+  // ALREADY in the log (executeKillAndDrain) → the verdict is a no-op (terminalEvent null, never double-emits).
+  // The happy path + energy-exhaustion path emit run.completed{finalIdeaRef} or run.failed{no_scored_survivor}.
+  const finalLog = await eventStore.readByRun(runId);
+  const verdict = classifyRunTerminal(
+    killSummary !== undefined ? { log: finalLog, killSummary } : { log: finalLog },
+  );
+  if (verdict.terminalEvent !== null && runTerminalPath('running', verdict.status) !== null) {
+    await appendEvent(verdict.terminalEvent, {
+      from: 'running',
+      to: verdict.status,
+      ...(verdict.reason !== undefined ? { reason: verdict.reason } : {}),
+      ...(verdict.finalIdeaRef !== undefined ? { finalIdeaRef: verdict.finalIdeaRef } : {}),
+      ...(verdict.partialSummary !== undefined ? { partialSummary: verdict.partialSummary } : {}),
+    });
   }
 
   return killSummary !== undefined ? { generationsRun, killSummary } : { generationsRun };

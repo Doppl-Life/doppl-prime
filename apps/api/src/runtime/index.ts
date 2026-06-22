@@ -136,3 +136,25 @@ export {
   type ReproduceContext,
 } from './loop/generationLoop';
 export { executeKillAndDrain, type KillAppend } from './loop/killDrain';
+
+// Run-terminal classification (P3.11 — §3 terminal rule + §5 kill/crash + energy "score already-verified").
+// PURE classifyRunTerminal over the persisted log (completed iff a scored survivor — finalIdeaRef = the
+// best-so-far; else failed{no_scored_survivor}; stopped/cancelled from the P3.10e KillPlanSummary;
+// failed{crash} for P3.13) + the runTerminalPath guard helper + buildPartialTerminalSummary. The loop's exit
+// is the executor (appends the single terminal, guard-validated); P3.13 crash-forward reuses
+// classifyRunTerminal(crashed:true). energy_exhausted is mid-flight (NOT a terminal) — the real terminal
+// still follows.
+export {
+  classifyRunTerminal,
+  runTerminalPath,
+  type ClassifyRunTerminalInput,
+  type RunTerminalVerdict,
+  type RunTerminalStatus,
+} from './terminal/terminalClassifier';
+export {
+  buildPartialTerminalSummary,
+  scoredSurvivors,
+  bestScoredSurvivor,
+  type PartialTerminalSummary,
+  type ScoredSurvivor,
+} from './terminal/partialSummary';
