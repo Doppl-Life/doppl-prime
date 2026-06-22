@@ -3,6 +3,7 @@ import { RunCaps, ScoringPolicy } from '@doppl/contracts';
 import type { RegistryConfig } from '../../model-gateway/config.schema';
 import { DEFAULT_MODEL_REGISTRY } from '../../config/model-registry.config';
 import type { SeedAgenomeSet } from '../seed/seedAgenomes.config';
+import type { CostMapConfig } from '../energy/costMap';
 
 /**
  * Boot-config schemas + built-in defaults (P3.1, ARCHITECTURE.md §5/§15).
@@ -73,6 +74,9 @@ export interface AppConfig {
   readonly registry: RegistryConfig;
   readonly scoringPolicy: ScoringPolicy;
   readonly caps: RunCaps;
+  /** The `doppl_energy` cost map (the P3.10 loop reads it for energyForLlm/Tool/Spawn + reconcileEnergy).
+   * Single source: `CostMapConfig`/`DEFAULT_COST_MAP` in `../energy/costMap` (kernel-027). */
+  readonly costMap: CostMapConfig;
   readonly problemSets: ProblemSets;
   readonly seedSet: SeedAgenomeSet;
 }

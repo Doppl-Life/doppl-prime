@@ -14,6 +14,7 @@ import {
 import type { AppConfig } from './configSchema';
 import { projectEnvOverrides } from './envSchema';
 import { DEFAULT_SEED_SET, SeedAgenomeSet } from '../seed/seedAgenomes.config';
+import { CostMapConfigSchema, DEFAULT_COST_MAP } from '../energy/costMap';
 
 export type { AppConfig } from './configSchema';
 
@@ -34,6 +35,7 @@ export interface FileSources {
   registry?: Record<string, unknown>;
   scoringPolicy?: Record<string, unknown>;
   caps?: Record<string, unknown>;
+  costMap?: Record<string, unknown>;
   problemSets?: unknown;
   seedSet?: unknown;
 }
@@ -101,6 +103,12 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     ),
   );
 
+  const costMap = validateSource(
+    'cost-map',
+    CostMapConfigSchema,
+    deepMerge(DEFAULT_COST_MAP as unknown as Record<string, unknown>, fileSources.costMap ?? {}),
+  );
+
   const problemSets = validateSource(
     'problem-sets',
     ProblemSets,
@@ -114,5 +122,5 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
   );
 
   // 4. One composed, deep-frozen immutable handle — downstream kernel code cannot mutate boot config.
-  return deepFreeze({ runConfig, registry, scoringPolicy, caps, problemSets, seedSet });
+  return deepFreeze({ runConfig, registry, scoringPolicy, caps, costMap, problemSets, seedSet });
 }

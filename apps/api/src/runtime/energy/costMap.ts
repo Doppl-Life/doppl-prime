@@ -1,22 +1,26 @@
+import { z } from 'zod';
+
 /**
  * P3.5 — the `doppl_energy` cost map (ARCHITECTURE.md §4). One integer unit; the cost values
  * (`tokensPerUnit:1000, perToolCall:5, perSpawn:50`) are CONFIG-DRIVEN (tunable) — passed in, never
  * hard-coded in the logic. PURE: the loop (P3.10) emits `energy.spent`; this only computes the debit.
  *
- * `AppConfig` (P3.1) does not yet carry an energy cost-map section — `DEFAULT_COST_MAP` is the canonical
- * §4 default here; wiring it into `AppConfig` (so it's operator-tunable) is a P3.1/P3.10 follow-up.
+ * `CostMapConfigSchema` is the single source (LESSON 5): `CostMapConfig` derives from it via `z.infer`,
+ * and the boot-config loader (P3.1, `loadConfig`) validates the merged `defaults < file` cost-map
+ * through it into the deep-frozen `AppConfig.costMap` (kernel-027, P3.10a). `DEFAULT_COST_MAP` is the
+ * canonical §4 `defaults` layer.
  */
+export const CostMapConfigSchema = z.strictObject({
+  /** Tokens per 1 `doppl_energy` — the llm divisor (POSITIVE int; 0 illegal). */
+  tokensPerUnit: z.int().positive(),
+  /** Flat `doppl_energy` per tool call (nonnegative int; a free tool is conceivable). */
+  perToolCall: z.int().nonnegative(),
+  /** Flat `doppl_energy` per spawn (nonnegative int). */
+  perSpawn: z.int().nonnegative(),
+});
+export type CostMapConfig = z.infer<typeof CostMapConfigSchema>;
 
-export interface CostMapConfig {
-  /** Tokens per 1 `doppl_energy` (the llm divisor). */
-  readonly tokensPerUnit: number;
-  /** Flat `doppl_energy` per tool call. */
-  readonly perToolCall: number;
-  /** Flat `doppl_energy` per spawn. */
-  readonly perSpawn: number;
-}
-
-/** The §4 canonical defaults. */
+/** The §4 canonical defaults (the `defaults` layer of the boot-config merge — single source). */
 export const DEFAULT_COST_MAP: CostMapConfig = {
   tokensPerUnit: 1000,
   perToolCall: 5,

@@ -4,6 +4,7 @@ import {
   energyForTool,
   energyForSpawn,
   DEFAULT_COST_MAP,
+  CostMapConfigSchema,
   type CostMapConfig,
 } from '../../../../src/runtime/energy/costMap';
 
@@ -37,5 +38,28 @@ describe('costMap (P3.5 — §4 doppl_energy cost map)', () => {
     expect(energyForLlm(1000, tuned)).toBe(2); // 1000/500 = 2 (vs 1 with the default map)
     expect(energyForTool(tuned)).toBe(7);
     expect(energyForSpawn(tuned)).toBe(100);
+  });
+
+  test('default_cost_map_satisfies_schema', () => {
+    // spec(§4) [kernel-027]: CostMapConfigSchema is the single source for the type (z.infer) AND the
+    // boot-config validator. DEFAULT_COST_MAP must satisfy it (it's the `defaults` layer); the schema
+    // rejects the divisor-zero / negative / non-int cases the boot path must fail-fast on.
+    expect(CostMapConfigSchema.safeParse(DEFAULT_COST_MAP).success).toBe(true);
+    // tokensPerUnit is a divisor → positive (0 illegal); perToolCall/perSpawn nonnegative ints.
+    expect(
+      CostMapConfigSchema.safeParse({ tokensPerUnit: 0, perToolCall: 5, perSpawn: 50 }).success,
+    ).toBe(false);
+    expect(
+      CostMapConfigSchema.safeParse({ tokensPerUnit: 1000, perToolCall: -1, perSpawn: 50 }).success,
+    ).toBe(false);
+    expect(
+      CostMapConfigSchema.safeParse({ tokensPerUnit: 1000.5, perToolCall: 5, perSpawn: 50 })
+        .success,
+    ).toBe(false);
+    // strict: an unknown field is rejected (no silent extra cost knob).
+    expect(
+      CostMapConfigSchema.safeParse({ tokensPerUnit: 1000, perToolCall: 5, perSpawn: 50, extra: 1 })
+        .success,
+    ).toBe(false);
   });
 });
