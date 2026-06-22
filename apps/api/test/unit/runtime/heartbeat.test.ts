@@ -20,7 +20,11 @@ describe('worker heartbeat — injected clock + staleness predicate (spec §11/�
   test('test_heartbeat_emits_on_injected_interval', () => {
     const beats: Heartbeat[] = [];
     let clock = 1000;
-    const hb = createHeartbeat({ now: () => clock, intervalMs: 500, emit: (beat) => beats.push(beat) });
+    const hb = createHeartbeat({
+      now: () => clock,
+      intervalMs: 500,
+      emit: (beat) => beats.push(beat),
+    });
 
     hb.beat(); // t=1000 → first emit
     clock = 1200;

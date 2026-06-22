@@ -40,7 +40,9 @@ function ev(
 
 /** A run carrying operation-start MARKERS interleaved with COMPLETIONS (the §4/§12 in-flight window). */
 async function seedStreamRun(runId: string): Promise<void> {
-  await store.append(ev(runId, 0, 'run.configured', { payload: { seed: `scn-${runId}`, rngSeed: 1 } }));
+  await store.append(
+    ev(runId, 0, 'run.configured', { payload: { seed: `scn-${runId}`, rngSeed: 1 } }),
+  );
   await store.append(ev(runId, 1, 'generation.started', { generationId: 'gen_1' }));
   await store.append(
     ev(runId, 2, 'candidate.generation_started', { generationId: 'gen_1', agenomeId: 'agn_1' }), // marker
@@ -70,7 +72,10 @@ function parseSse(body: string): SseFrame[] {
       if (idLine === undefined || dataLine === undefined) {
         throw new Error(`malformed SSE frame: ${JSON.stringify(frame)}`);
       }
-      return { id: Number(idLine.slice('id:'.length)), data: JSON.parse(dataLine.slice('data:'.length)) };
+      return {
+        id: Number(idLine.slice('id:'.length)),
+        data: JSON.parse(dataLine.slice('data:'.length)),
+      };
     });
 }
 

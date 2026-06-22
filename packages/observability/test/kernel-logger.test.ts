@@ -74,13 +74,19 @@ describe('createKernelLogger — structured correlation-ID logger (spec §4 / §
   // rule #2 — the kernel-logger imports nothing from the event-store writer / run_events (it never
   // mutates the authoritative log; a structured log is a side signal, not an authoritative event).
   test('test_no_append_path_import', () => {
-    const src = readFileSync(fileURLToPath(new URL('../src/kernel-logger.ts', import.meta.url)), 'utf8');
+    const src = readFileSync(
+      fileURLToPath(new URL('../src/kernel-logger.ts', import.meta.url)),
+      'utf8',
+    );
     expect(FORBIDDEN_IMPORT.test(src)).toBe(false);
   });
 
   // §13 MVP — sinks are console + an injected sink only; no external metrics stack is introduced.
   test('test_no_external_metrics_stack', () => {
-    const src = readFileSync(fileURLToPath(new URL('../src/kernel-logger.ts', import.meta.url)), 'utf8');
+    const src = readFileSync(
+      fileURLToPath(new URL('../src/kernel-logger.ts', import.meta.url)),
+      'utf8',
+    );
     expect(METRICS_STACK_IMPORT.test(src)).toBe(false);
   });
 });
