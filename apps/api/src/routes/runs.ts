@@ -40,6 +40,12 @@ export interface RunRoutesDeps {
    * no execution) unchanged. Wired to the boot composition (`createStartRun`) in `buildServer`.
    */
   onRunConfigured?: (runId: string) => void;
+  /**
+   * PD.3 — latch an operator stop for `runId` (the boot `operatorStopRegistry.request`). `POST /runs/:id/stop`
+   * SIGNALS the in-flight worker through this; the worker drains + terminalizes `run.stopped` (rule #2 — the
+   * route appends NO terminal). `buildServer` supplies a no-op default when boot wires no registry.
+   */
+  requestStop: (runId: string) => void;
 }
 
 /** The cap field that exceeds its maximum (lowering-only rule), or null if every cap is within ceiling. */
@@ -143,20 +149,17 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
       return reply.status(404).send({ error: 'run_not_found', runId });
     }
     const status = buildCurrentState(events).state.runs[runId]?.status;
-    // Idempotent: stopping an already-terminal run is a no-op success (no second terminal append).
+    // Idempotent: stopping an already-terminal run is a no-op success (no signal, no second terminal append).
     if (status !== undefined && TERMINAL_RUN_STATUSES.has(status)) {
       return reply.status(200).send({ runId, status, stopped: false });
     }
-    // Append the terminal event — append-only, so prior events (partial evidence) are preserved.
-    await deps.store.append({
-      id: deps.newId(),
-      runId,
-      type: 'run.stopped',
-      actor: 'operator',
-      payload: {},
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-    });
-    if (activeRunId === runId) activeRunId = null;
-    return reply.status(200).send({ runId, status: 'stopped', stopped: true });
+    // Non-terminal: SIGNAL the in-flight worker (latch `operatorStop`) — the worker's loop picks it up at its
+    // next generation boundary, drains the current generation, and terminalizes `run.stopped` (running→
+    // stopping, actor `runtime`). The route appends NOTHING (the worker owns the terminal — rule #2). A direct
+    // in-route terminal append is buggy against a live worker (the loop polls the signal, not the log).
+    // Do NOT clear `activeRunId`: the run is still draining/non-terminal until the worker terminalizes, so a
+    // concurrent `POST /runs` still gets 409 (the `isActive()` log re-validation is the source of truth).
+    deps.requestStop(runId);
+    return reply.status(202).send({ runId, stopRequested: true });
   });
 }

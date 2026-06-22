@@ -11,6 +11,7 @@ import { CHECK_RUNNER_REGISTRY } from './check-runners/registry';
 import { listRunIds } from './projections/run-list';
 import { crashForward } from './runtime/recovery/crashForward';
 import { createStartRun, type StartRunInfra } from './boot/startRun';
+import { createOperatorStopRegistry } from './boot/operatorStop';
 import { buildServer } from './server';
 
 /**
@@ -28,8 +29,9 @@ import { buildServer } from './server';
  *
  * It introduces ZERO new contract surface and authors no event — every seam it composes is already shipped
  * and kernel-enforced (caps rule #1, append-only rule #2, success-only energy rule #8, replay rule #7 all
- * stay the seams' job). The stop route keeps its in-route `run.stopped` append this slice (the kernel
- * `operatorStop` kill-and-drain rewire is the next, isolated stop-path slice).
+ * stay the seams' job). `POST /runs/:id/stop` SIGNALS the kernel kill-and-drain through the in-memory
+ * `operatorStopRegistry` (PD.3): boot wires `request` → the route + `checker(runId)` → the worker, so the
+ * worker (not the route) terminalizes `run.stopped` — the route appends nothing (rule #2).
  *
  * Exported `bootApp` + a guarded entry runner: a test boots it with no process-level side effect and tears
  * down cleanly; production reaches it by executing the module (the `start` script).
@@ -116,7 +118,10 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
   //    forward-failed to their §3-legal terminal so the single-active-run guard starts from a clean slate.
   await crashForward({ eventStore, listRunIds: listRunIdsBound });
 
-  // 5. The §11 fire-and-forget run trigger — the only `onRunConfigured` (createStartRun composes the worker).
+  // 5. The operator-stop channel (PD.3): the route latches via `request`; the worker polls via `checker`.
+  const operatorStop = createOperatorStopRegistry();
+
+  // 6. The §11 fire-and-forget run trigger — the only `onRunConfigured` (createStartRun composes the worker).
   const infra: StartRunInfra = {
     config,
     modelGateway: gateway,
@@ -124,8 +129,14 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
     checkRegistry: CHECK_RUNNER_REGISTRY,
     listRunIds: listRunIdsBound,
     newId,
+    // The worker polls this latch at each generation boundary → drain-then-terminalize run.stopped (§5).
+    operatorStopFor: operatorStop.checker,
+    // onSettled ALWAYS drops the run's stop latch (bounds the registry), then forwards the optional test hook.
+    onSettled: (runId: string): void => {
+      operatorStop.clear(runId);
+      overrides.onSettled?.(runId);
+    },
     ...(overrides.onError !== undefined ? { onError: overrides.onError } : {}),
-    ...(overrides.onSettled !== undefined ? { onSettled: overrides.onSettled } : {}),
   };
 
   // The route cap-maxima == the boot ceiling (`config.caps` — what the worker clamps to, rule #1), so a
@@ -139,6 +150,7 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
     defaultConfig,
     newId,
     onRunConfigured: createStartRun(infra),
+    requestStop: operatorStop.request,
   });
 
   await app.listen({ host, port });

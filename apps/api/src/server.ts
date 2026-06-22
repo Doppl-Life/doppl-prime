@@ -59,6 +59,9 @@ export interface BuildServerDeps {
   /** P5.11 — additive optional execution trigger passed to POST /runs (the boot `createStartRun`). Absent
    *  → append-only, no execution (today's behavior). Fire-and-forget; the 201 does not block on the run. */
   onRunConfigured?: (runId: string) => void;
+  /** PD.3 — latch an operator stop (the boot `operatorStopRegistry.request`); `POST /runs/:id/stop` signals
+   *  the in-flight worker through it. Absent → a no-op default (the route still 202s; nothing drains). */
+  requestStop?: (runId: string) => void;
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
@@ -81,6 +84,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
     newId: deps.newId,
+    requestStop: deps.requestStop ?? ((): void => {}),
     ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
   });
   registerRunReadRoutes(app, { store: deps.store, db: deps.db });
