@@ -1,6 +1,7 @@
 import { writeImportedSolution } from "./solutionMarkdown";
 import type { ImportAdapter, ImportSource } from "./importTypes";
 import { defaultVaultRoot } from "../vaultPaths";
+import { importMichaelMarkdown } from "./michaelAdapter";
 
 interface CliOptions {
   caseId: string;
@@ -10,7 +11,9 @@ interface CliOptions {
   comparisonInputPaths: string[];
 }
 
-const adapters: Partial<Record<ImportSource, ImportAdapter>> = {};
+const adapters: Partial<Record<ImportSource, ImportAdapter>> = {
+  michael: importMichaelMarkdown,
+};
 
 function parseArgs(argv: string[]): CliOptions {
   const getValue = (name: string) => {
