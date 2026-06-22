@@ -1,0 +1,31 @@
+<!-- @dsCard group="Status" viewport="700x150" name="Lineage edges & subtypes" subtitle="Typed graph edges (fused = two→one, violet) and the two candidate subtype pills" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 18px 22px; font-family: var(--font-ui); }
+  .edges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 22px; margin-bottom: 16px; }
+  .edge { display: flex; align-items: center; gap: 10px; }
+  .stroke { width: 46px; height: 0; }
+  .k { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+  .pills { display: flex; gap: 12px; }
+  .pill { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 10px; border-radius: var(--radius-sm); }
+</style>
+</head>
+<body>
+  <div class="edges">
+    <div class="edge"><span class="stroke" style="border-top:2px solid var(--edge-spawned)"></span><span class="k">spawned</span></div>
+    <div class="edge"><span class="stroke" style="border-top:2px solid var(--edge-produced)"></span><span class="k">produced</span></div>
+    <div class="edge"><span class="stroke" style="border-top:2px dotted var(--edge-reviewed)"></span><span class="k">reviewed</span></div>
+    <div class="edge"><span class="stroke" style="border-top:4px solid var(--edge-fused);box-shadow:var(--glow-fusion)"></span><span class="k">fused (2→1)</span></div>
+    <div class="edge"><span class="stroke" style="border-top:2px dashed var(--edge-mutated)"></span><span class="k">mutated</span></div>
+    <div class="edge"><span class="stroke" style="border-top:3px solid var(--edge-selected);box-shadow:var(--glow-winner)"></span><span class="k">selected</span></div>
+  </div>
+  <div class="pills">
+    <span class="pill" style="color:var(--subtype-transfer);background:rgba(47,191,176,0.16);border:1px solid var(--subtype-transfer)">XFER · cross_domain_transfer</span>
+    <span class="pill" style="color:var(--subtype-zeitgeist);background:rgba(197,139,255,0.16);border:1px solid var(--subtype-zeitgeist)">ZEIT · zeitgeist_synthesis</span>
+  </div>
+</body>
+</html>

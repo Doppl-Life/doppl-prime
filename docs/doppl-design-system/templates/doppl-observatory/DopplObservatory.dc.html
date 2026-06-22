@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Doppl Observatory Screen" description="Live-run dashboard shell — run header, LIVE/REPLAY banner, lineage canvas slot, and the critic gauntlet + held-out judge, composed from Doppl components" -->
+<helmet>
+  <script src="./ds-base.js"></script>
+</helmet>
+<div style="min-height:100vh;box-sizing:border-box;background:var(--bg-void);color:var(--fg-default);font-family:var(--font-ui);padding:18px 22px;">
+
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:12px 16px;">
+    <span style="color:var(--accent);font-size:20px;filter:drop-shadow(0 0 6px rgba(59,227,208,0.6));">◆</span>
+    <div>
+      <div style="font-size:15px;font-weight:700;">Cross-domain: epidemiology → logistics</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--fg-faint);">run_7f3a · sp-v3 · balanced</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <x-import component-from-global-scope="DopplDesignSystem_352b49.ModeBanner" mode="live" generation-label="Gen 3/5" hint-size="180px,38px"></x-import>
+      <div style="width:200px;">
+        <x-import component-from-global-scope="DopplDesignSystem_352b49.Meter" kind="energy" value="{{ energyFrac }}" label="energy" value-label="{{ energyLabel }}" hint-size="200px,18px"></x-import>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start;">
+
+    <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 16px;min-height:380px;display:flex;flex-direction:column;">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-faint);">Lineage · the living family tree</div>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <x-import component-from-global-scope="DopplDesignSystem_352b49.StatusBadge" domain="agenome" status="active" hint-size="92px,20px"></x-import>
+        <x-import component-from-global-scope="DopplDesignSystem_352b49.StatusBadge" domain="agenome" status="reproduced" hint-size="110px,20px"></x-import>
+        <x-import component-from-global-scope="DopplDesignSystem_352b49.StatusBadge" domain="candidate" status="selected" hint-size="96px,20px"></x-import>
+        <x-import component-from-global-scope="DopplDesignSystem_352b49.StatusBadge" domain="subtype" status="cross_domain_transfer" hint-size="180px,22px"></x-import>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--fg-faint);font-size:13px;line-height:1.6;border:1px dashed var(--border-strong);border-radius:10px;margin-top:12px;padding:20px;">
+        Mount your live LineageGraph here.<br>See <span style="font-family:var(--font-mono);color:var(--fg-muted);">ui_kits/organism-view/</span> for the full React Flow build.
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <x-import component-from-global-scope="DopplDesignSystem_352b49.CriticGauntletPanel" reviews="{{ reviews }}" judge="{{ judge }}" mode="live" hint-size="360px,320px"></x-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      energyFrac: 0.535,
+      energyLabel: "54%",
+      reviews: [
+        { mandate: "factual_grounding", score: 0.81, confidence: 0.9, critique: "Signals well-sourced; one weak citation." },
+        { mandate: "novelty_prior_art", score: 0.77, confidence: 0.8, critique: "No direct prior art mapping SIR onto routing." },
+        { mandate: "feasibility", score: 0.69, confidence: 0.7, critique: "Forecast-data availability is the main risk." },
+        { mandate: "falsification", score: 0.78, confidence: 0.85 },
+        { mandate: "subtype_specific", score: 0.88, confidence: 0.9 },
+      ],
+      judge: { acceptance: 0.88 },
+    };
+  }
+}
+</script>
+</body>
+</html>

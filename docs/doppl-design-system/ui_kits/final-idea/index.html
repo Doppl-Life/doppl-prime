@@ -1,0 +1,194 @@
+<!-- @dsCard group="Final Idea" viewport="1040x860" name="S5 · Final Idea / Payoff" subtitle="The money shot: the winning idea, the generational climb, the gauntlet it survived, and the transfer check run live" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doppl · Final Idea</title>
+<link rel="stylesheet" href="../../styles.css" />
+<script>
+  try { if (localStorage.getItem("doppl-theme") === "light") document.documentElement.classList.add("light"); } catch (e) {}
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; background: var(--bg-void); color: var(--fg-default); font-family: var(--font-ui); }
+  #root { min-height: 100vh; }
+  .shell { max-width: 880px; margin: 0 auto; padding: 18px 22px 44px; }
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  .card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+  .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--bg-surface-2); border: 1px solid var(--border-strong); color: var(--fg-default); cursor: pointer; font-size: 15px; }
+  .sec { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-faint); margin: 0 0 12px; }
+  a.link { color: var(--fg-muted); text-decoration: none; font-size: 13px; }
+  .chip { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); background: var(--bg-surface-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 4px 9px; text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="../_shell/AppNav.js"></script>
+<script type="text/babel">
+const NS = window.DopplDesignSystem_352b49;
+const { StatusBadge, Meter, Button, CriticGauntletPanel, ModeBanner } = NS;
+
+const WINNER = {
+  id: "cand_g3_004", title: "Cold-chain routing via epidemic-curve forecasting",
+  subtype: "cross_domain_transfer", gen: 3, fitness: 0.84,
+  summary: "Treat vaccine demand like an infection curve; pre-position cold-chain stock at rural hubs using SIR-style forecasting.",
+  claims: ["Demand surges follow SIR-like curves", "Pre-positioning cuts last-mile miles", "A 14-day forecast horizon is sufficient"],
+};
+const SERIES = [{ gen: 0, best: 0.45 }, { gen: 1, best: 0.58 }, { gen: 2, best: 0.71 }, { gen: 3, best: 0.84 }];
+const AXES = [
+  { k: "grounding", g0: 0.40, w: 0.81 }, { k: "novelty", g0: 0.30, w: 0.74 },
+  { k: "feasibility", g0: 0.50, w: 0.69 }, { k: "falsification", g0: 0.20, w: 0.78 },
+  { k: "subtype check", g0: 0.10, w: 0.86 },
+];
+const REVIEWS = [
+  { mandate: "factual_grounding", score: 0.81, confidence: 0.9, critique: "Signals well-sourced; one weak citation." },
+  { mandate: "novelty_prior_art", score: 0.77, confidence: 0.8, critique: "No direct prior art mapping SIR onto routing." },
+  { mandate: "feasibility", score: 0.69, confidence: 0.7, critique: "Forecast-data availability is the main risk." },
+  { mandate: "falsification", score: 0.78, confidence: 0.85, critique: "Survives the 'demand is random' counter." },
+  { mandate: "subtype_specific", score: 0.88, confidence: 0.9, critique: "Mapping is tight and concrete." },
+];
+
+function ClimbChart() {
+  const W = 360, H = 120, pad = 22;
+  const x = (g) => pad + (g / 3) * (W - pad * 2);
+  const y = (v) => H - pad - v * (H - pad * 1.6);
+  const line = SERIES.map((p, i) => `${i ? "L" : "M"} ${x(p.gen)} ${y(p.best)}`).join(" ");
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+      <line x1={pad} y1={y(0.45)} x2={W - pad} y2={y(0.45)} stroke="var(--border-strong)" strokeDasharray="3 3" />
+      <text x={pad} y={y(0.45) - 6} fontSize="9" fill="var(--fg-faint)" fontFamily="var(--font-mono)">gen-0 baseline 0.45</text>
+      <path d={line} fill="none" stroke="var(--fitness-high)" strokeWidth="2.5" style={{ filter: "drop-shadow(0 0 4px rgba(63,209,122,0.5))" }} />
+      {SERIES.map((p) => (
+        <g key={p.gen}>
+          <circle cx={x(p.gen)} cy={y(p.best)} r={p.gen === 3 ? 5 : 3.5} fill={p.gen === 3 ? "var(--status-selected)" : "var(--fitness-high)"} />
+          <text x={x(p.gen)} y={H - 6} fontSize="9" fill="var(--fg-muted)" fontFamily="var(--font-mono)" textAnchor="middle">g{p.gen}</text>
+        </g>
+      ))}
+      <text x={x(3)} y={y(0.84) - 10} fontSize="10" fill="var(--status-selected)" fontFamily="var(--font-mono)" textAnchor="middle">♔ 0.84</text>
+    </svg>
+  );
+}
+
+function CompareRow({ axis }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 64px", gap: 12, alignItems: "center", marginBottom: 8 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-muted)" }}>{axis.k}</span>
+      <div style={{ position: "relative", height: 14, borderRadius: "var(--radius-full)", background: "var(--meter-track)" }}>
+        <div style={{ position: "absolute", inset: 0, width: `${axis.g0 * 100}%`, borderRadius: "var(--radius-full)", background: "var(--fg-faint)", opacity: 0.5 }} />
+        <div style={{ position: "absolute", inset: 0, width: `${axis.w * 100}%`, borderRadius: "var(--radius-full)", background: "var(--fitness-high)" }} />
+      </div>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fitness-high)", textAlign: "right" }}>▲ +{(axis.w - axis.g0).toFixed(2)}</span>
+    </div>
+  );
+}
+
+function App() {
+  const [light, setLight] = React.useState(() => document.documentElement.classList.contains("light"));
+  const [check, setCheck] = React.useState("idle"); // idle | running | passed
+  const toggleTheme = () => setLight((v) => { const nv = !v; document.documentElement.classList.toggle("light", nv); try { localStorage.setItem("doppl-theme", nv ? "light" : "dark"); } catch (e) {} return nv; });
+  const runLive = () => { setCheck("running"); setTimeout(() => setCheck("passed"), 1600); };
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <a className="link" href="../runs-home/index.html" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "var(--accent)", fontSize: 20, filter: "drop-shadow(0 0 6px rgba(59,227,208,0.6))" }}>◆</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--fg-default)" }}>Doppl</span>
+        </a>
+        <ModeBanner mode="complete" generationLabel="run_7f3a · final idea" />
+        <a className="link" href="../organism-view/index.html" style={{ marginLeft: 8 }}>← back to run</a>
+        <button className="iconbtn" style={{ marginLeft: "auto" }} onClick={toggleTheme} aria-label="Toggle theme">{light ? "☾" : "☀"}</button>
+      </div>
+
+      {/* hero */}
+      <div className="card" style={{ padding: "22px 24px", marginBottom: 16, borderColor: "var(--status-selected)", boxShadow: "var(--glow-winner)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+          <StatusBadge domain="candidate" status="selected" size="lg" />
+          <StatusBadge domain="subtype" status={WINNER.subtype} />
+          <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--status-selected)" }}>fitness {WINNER.fitness.toFixed(2)} · Gen {WINNER.gen}</span>
+        </div>
+        <h1 style={{ fontSize: 30, fontWeight: 700, margin: "0 0 10px", lineHeight: 1.2 }}>{WINNER.title}</h1>
+        <p style={{ fontSize: 16, color: "var(--fg-muted)", margin: "0 0 14px", lineHeight: 1.5 }}>{WINNER.summary}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {WINNER.claims.map((c, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, fontSize: 14, color: "var(--fg-default)" }}>
+              <span style={{ color: "var(--accent)" }}>•</span>{c}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* generational improvement */}
+      <div className="card" style={{ padding: "18px 22px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 14 }}>
+          <p className="sec" style={{ margin: 0 }}>Generational improvement — the proof it evolved</p>
+          <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fitness-high)" }}>Δ +0.39 over 3 generations</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 24, alignItems: "center" }}>
+          <ClimbChart />
+          <div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-faint)", marginBottom: 8, display: "flex", gap: 14 }}>
+              <span><span style={{ color: "var(--fg-faint)" }}>▬</span> gen-0</span>
+              <span><span style={{ color: "var(--fitness-high)" }}>▬</span> winner</span>
+            </div>
+            {AXES.map((a) => <CompareRow key={a.k} axis={a} />)}
+          </div>
+        </div>
+      </div>
+
+      {/* the gauntlet survived */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <p className="sec" style={{ margin: 0 }}>The gauntlet it survived</p>
+          <a className="link" href="../organism-view/index.html" style={{ color: "var(--accent)" }}>⏮ Replay the gauntlet</a>
+        </div>
+        <CriticGauntletPanel reviews={REVIEWS} judge={{ acceptance: 0.88 }} mode="replay" title="critic council + held-out judge" />
+      </div>
+
+      {/* executable transfer check */}
+      <div className="card" style={{ padding: "18px 22px", marginBottom: 16 }}>
+        <p className="sec">Executable transfer check — run it live</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <Button variant="primary" glyph={check === "running" ? "◐" : "▶"} disabled={check !== "idle"} onClick={runLive}>
+            {check === "idle" ? "Run the transfer live" : check === "running" ? "Executing toy routing sim…" : "Ran live"}
+          </Button>
+          {check === "passed" && (
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <StatusBadge domain="check" status="passed" />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg-default)" }}>−12% miles vs naive · 12 hubs · 1000 demand draws</span>
+            </span>
+          )}
+          {check === "idle" && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-faint)" }}>allowlisted check · replay-backed fallback if the sandbox is unavailable</span>
+          )}
+        </div>
+      </div>
+
+      {/* provenance / evidence links */}
+      <div className="card" style={{ padding: "16px 22px" }}>
+        <p className="sec">Provenance — every claim drills to evidence</p>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-muted)", marginBottom: 12 }}>
+          gen0·a0 ⨯ gen0·a2 →⚇ a3 →⚇ a7 →⚇ a9 ∿ → <span style={{ color: "var(--status-selected)" }}>♔ cand_g3_004</span>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {["⧉ lineage", "⧉ critics", "⧉ checks", "⧉ score components", "⧉ energy", "⧉ trace"].map((c) => (
+            <a key={c} className="chip" href="../organism-view/index.html">{c}</a>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, marginTop: 18, justifyContent: "flex-end" }}>
+        <a href="../runs-home/index.html" style={{ textDecoration: "none" }}><Button variant="ghost">Back to runs</Button></a>
+        <a href="../organism-view/index.html" style={{ textDecoration: "none" }}><Button variant="secondary">Back to run</Button></a>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

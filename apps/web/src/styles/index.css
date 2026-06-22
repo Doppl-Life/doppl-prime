@@ -1,0 +1,12 @@
+/* Doppl design-system token entry point — COPIED from the docs/doppl-design-system prototype
+   (per SKILL.md: copy assets + consume via var(); do NOT import the .jsx). @import order: fonts +
+   token definitions first, then base (resets + liveness keyframes that reference the tokens).
+   Imported once at the app root (main.tsx) so every token + the .hc / .light scopes are live
+   app-wide. */
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/elevation.css';
+@import './tokens/motion.css';
+@import './tokens/base.css';

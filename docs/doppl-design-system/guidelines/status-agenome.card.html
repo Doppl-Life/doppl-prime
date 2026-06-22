@@ -1,0 +1,28 @@
+<!-- @dsCard group="Status" viewport="700x300" name="Agenome status" subtitle="seeded→active→spent→eligible→reproduced/mutated/failed/culled · shape+icon+label+color, never color alone" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-base); padding: 18px 22px; font-family: var(--font-ui); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+  .badge { display: flex; align-items: center; gap: 10px; }
+  .glyph { font-size: 20px; width: 26px; text-align: center; line-height: 1; }
+  .label { font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .note { color: var(--fg-faint); font-size: 12px; margin-left: auto; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="badge"><span class="glyph" style="color:var(--status-seeded)">◌</span><span class="label" style="color:var(--status-seeded)">seeded</span><span class="note">dim ring</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-active);text-shadow:var(--glow-active)">◐</span><span class="label" style="color:var(--status-active)">active</span><span class="note">pulsing</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-spent)">○</span><span class="label" style="color:var(--status-spent)">spent</span><span class="note">glow drained</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-eligible)">★</span><span class="label" style="color:var(--status-eligible)">eligible_parent</span><span class="note">shimmer</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-reproduced)">⚇</span><span class="label" style="color:var(--status-reproduced)">reproduced</span><span class="note">two-parent fuse</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-mutated)">∿</span><span class="label" style="color:var(--status-mutated)">mutated</span><span class="note">amber shimmer</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-failed)">△</span><span class="label" style="color:var(--status-failed)">failed</span><span class="note">dashed</span></div>
+    <div class="badge"><span class="glyph" style="color:var(--status-culled)">✕</span><span class="label" style="color:var(--status-culled)">culled</span><span class="note">fade + sink</span></div>
+  </div>
+</body>
+</html>

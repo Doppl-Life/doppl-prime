@@ -1,0 +1,4 @@
+# Playwright (P7.15) e2e artifacts — transient, regenerated per run; never committed.
+/test-results/
+/playwright-report/
+/playwright/.cache/
