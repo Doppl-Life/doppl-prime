@@ -107,7 +107,9 @@ Apples-to-apples comparison is represented explicitly in markdown. Comparison se
 
 The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, Melissa-, and Michael-labeled artifacts are useful for testing the calibration workflow, but they are not presented as live kernel outputs. Future importers should promote a solution to `imported` or `live_run` only when they can record the branch, commit, source artifact or run id, and the exact shared comparison input hash.
 
-The review queue defaults to primary artifacts only: `source_status: imported` or `source_status: live_run`. Fixture, pending, unavailable, and unknown-status artifacts are audit-only by default. Reviewers can include them with the audit toggle for provenance inspection, but they are not valid rating targets.
+Importers should not create pseudo-solution artifacts when a branch has no case-specific output. Branch architecture/code provenance belongs in docs or importer logs, not in the review artifact selector.
+
+The review queue defaults to primary artifacts only: `source_status: imported` or `source_status: live_run`. Fixture, pending, and unknown-status artifacts are audit-only by default. Reviewers can include them with the audit toggle for provenance inspection, but they are not valid rating targets.
 
 ## Review Controls
 

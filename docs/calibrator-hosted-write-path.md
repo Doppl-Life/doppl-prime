@@ -70,8 +70,9 @@ Audit-only artifacts remain visible for provenance but are not human-rating targ
 
 - `source_status: fixture`
 - `source_status: pending`
-- `source_status: unavailable`
 - missing or unknown source status
+
+Importers should not emit review artifacts for branches that have no case-specific output. If an adapter only discovers runtime architecture or code capability evidence, preserve that finding in importer logs or project docs rather than creating an `unavailable` solution.
 
 ## Idempotency
 

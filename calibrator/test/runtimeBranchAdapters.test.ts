@@ -9,27 +9,15 @@ const input = {
 };
 
 describe("runtime branch adapters", () => {
-  it("imports Cody runtime provenance as unavailable when no direct case export exists", async () => {
+  it("does not create a Cody artifact when no direct case export exists", async () => {
     const result = await importCodyRuntime(input);
     expect(result.source).toBe("cody");
-    expect(result.artifacts[0]).toMatchObject({
-      solution_id: "cody-runtime-branch-import",
-      source_status: "unavailable",
-      adapter_version: "runtime-branch-provenance-adapter-v0",
-      kernel: "cody",
-    });
-    expect(result.artifacts[0]?.body).toContain("absence of a direct exported solution");
+    expect(result.artifacts).toEqual([]);
   });
 
-  it("imports Melissa runtime provenance as unavailable when no direct case export exists", async () => {
+  it("does not create a Melissa artifact when no direct case export exists", async () => {
     const result = await importMelissaRuntime(input);
     expect(result.source).toBe("melissa");
-    expect(result.artifacts[0]).toMatchObject({
-      solution_id: "melissa-runtime-branch-import",
-      source_status: "unavailable",
-      adapter_version: "runtime-branch-provenance-adapter-v0",
-      kernel: "melissa",
-    });
-    expect(result.artifacts[0]?.body).toContain("absence of a direct exported solution");
+    expect(result.artifacts).toEqual([]);
   });
 });
