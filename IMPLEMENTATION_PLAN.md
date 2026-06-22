@@ -19,6 +19,8 @@
 
 ## Currently in progress
 
+> **Kernel team PAUSED 2026-06-22** (lead-cycle) — handoff: `docs/team-handoffs/kernel-001-2026-06-22-substrate-merged-pause.md` · last round-seal `ee8b3d6` (merged cody `8de6bbd`) · next-slice target: **kernel-026 sv4→5 terminal-event amendment** → P3.10 generation loop. Resume: `/team-start kernel`.
+
 **Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
 **Round commits:** contract-002 round (P0.10→P0.14) sealed `bab92e1` (suite 160/160; per-type payload map `73289fd`, entities+lineage bundle `8bd9502`, FinalJudgeRubric `5058400`, contract-test surface `0180c5f`, P0.10 follow-up `c33eb2f`; impl session doc `7d60cc3`/contract-002). **P0.1-amend round** (operation-start markers + schemaVersion 2) `dc493a3` (suite 163/163); **re-seal: this `/orchestrate-end` commit (pushed to origin/track/contract)**. `/preflight` clean; `pnpm audit --prod` clean.
