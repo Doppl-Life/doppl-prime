@@ -7,6 +7,7 @@ import {
   RunEventEnvelope,
 } from './contracts';
 import type { RunConfig } from './contracts';
+import { RunHealth } from './health';
 import { parseOrThrow, TransportError } from './errors';
 
 export { PayloadValidationError, TransportError } from './errors';
@@ -53,6 +54,11 @@ export interface RunClient {
   listModelRoutes(): Promise<ModelRoute[]>;
   startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<Run>;
   stopRun(runId: string): Promise<Run>;
+  /**
+   * GET /runs/:id/health (P6.8) — validated through the WEB-LOCAL `RunHealth` schema (no frozen
+   * contract yet; reconcile/promote at the demo→cody merge).
+   */
+  getRunHealth(runId: string): Promise<RunHealth>;
 }
 
 const RunArray = z.array(Run);
@@ -108,5 +114,6 @@ export function createRunClient(options: RunClientOptions): RunClient {
     listModelRoutes: () => getJson('/model-routes', ModelRouteArray),
     startRun: (config, opts) => getJson('/runs', Run, postInit(config, opts?.idempotencyKey)),
     stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, Run, postInit()),
+    getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
   };
 }

@@ -75,6 +75,7 @@ describe('runClient — read-only REST seam', () => {
         'getLineage',
         'getReplay',
         'getRun',
+        'getRunHealth',
         'listModelRoutes',
         'listRuns',
         'startRun',

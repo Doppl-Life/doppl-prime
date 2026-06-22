@@ -1,13 +1,13 @@
+import { useMemo } from 'react';
+import { createRunClient } from './data/runClient';
+import { Dashboard } from './routes/Dashboard';
+
 /**
- * Dashboard shell — intentionally minimal + design-neutral this slice (P7.1 bootstrap). No design
- * system, theme tokens, or styling yet: the incoming `docs/doppl-design-system/` prototype is the
- * basis for the UI from P7.3 onward. This proves the React 19 + Vite toolchain mounts end-to-end;
- * panels (run-config, lineage, evidence) are wired in later P7 slices.
+ * App root — mounts the P7.14 Dashboard shell. The data-client baseUrl points at the API origin (the
+ * dev/demo server); the live SSE endpoint + real getLineage/getCandidate land at the demo→cody merge.
+ * The Dashboard opens with the run-launcher; starting a run switches the observed run id.
  */
 export function App() {
-  return (
-    <main>
-      <h1>Doppl — Run Observatory</h1>
-    </main>
-  );
+  const runClient = useMemo(() => createRunClient({ baseUrl: '/api' }), []);
+  return <Dashboard runId="" runClient={runClient} />;
 }
