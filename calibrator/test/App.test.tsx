@@ -58,6 +58,17 @@ const fixture: CalibratorIndex = {
             },
           ],
         },
+        {
+          case_id: "fsd-accident-economy",
+          solution_id: "michael-branch-solution-import",
+          title: "Michael Branch Pending Solution",
+          source_type: "kernel",
+          comparison_set_id: "fsd-accident-economy-v0",
+          source_status: "pending",
+          kernel: "michael",
+          body: "# Pending body",
+          human_ratings: [],
+        },
       ],
     },
   ],
@@ -135,5 +146,15 @@ describe("App", () => {
     await userEvent.click(screen.getByRole("button", { name: "+4" }));
     expect(screen.getByRole("button", { name: "Submit rating" })).toBeDisabled();
     expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
+  });
+
+  it("filters solutions by source status", async () => {
+    render(<App />);
+    expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
+    await userEvent.selectOptions(screen.getByLabelText("Source status"), "pending");
+    expect(screen.queryByText("Crash Substrate Exposure Map")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Michael Branch Pending Solution").length).toBeGreaterThan(0);
+    await userEvent.selectOptions(screen.getByLabelText("Source status"), "live_run");
+    expect(screen.getByText("No solutions match this filter.")).toBeInTheDocument();
   });
 });

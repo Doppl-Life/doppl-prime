@@ -438,6 +438,13 @@ textarea {
   margin-top: 12px;
 }
 
+.empty-note {
+  color: #c6d3e1;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 4px 0 0;
+}
+
 @media (max-width: 900px) {
   .workspace {
     grid-template-columns: 1fr;

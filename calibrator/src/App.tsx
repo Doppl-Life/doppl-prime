@@ -3,6 +3,8 @@ import type { CalibratorIndex, CalibratorRating, CalibratorSolution, RatingSubmi
 
 const scores = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 const verdicts = ["dead", "obvious", "interesting", "investigate", "keeper"];
+const sourceStatusOptions = ["all", "fixture", "imported", "live_run", "pending", "unavailable"] as const;
+type SourceStatusFilter = (typeof sourceStatusOptions)[number];
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -123,6 +125,7 @@ export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
+  const [sourceStatusFilter, setSourceStatusFilter] = useState<SourceStatusFilter>("all");
   const [caseOpen, setCaseOpen] = useState(true);
   const [problemOpen, setProblemOpen] = useState(true);
   const [solutionOpen, setSolutionOpen] = useState(true);
@@ -171,12 +174,17 @@ export function App() {
     () => index?.cases.find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
     [index, selectedCaseId],
   );
+  const visibleSolutions = useMemo(() => {
+    if (!selectedCase) return [];
+    if (sourceStatusFilter === "all") return selectedCase.solutions;
+    return selectedCase.solutions.filter((solution) => solution.source_status === sourceStatusFilter);
+  }, [selectedCase, sourceStatusFilter]);
   const selectedSolution = useMemo(
     () =>
-      selectedCase?.solutions.find((solution) => solution.solution_id === selectedSolutionId) ??
-      selectedCase?.solutions[0] ??
+      visibleSolutions.find((solution) => solution.solution_id === selectedSolutionId) ??
+      visibleSolutions[0] ??
       null,
-    [selectedCase, selectedSolutionId],
+    [visibleSolutions, selectedSolutionId],
   );
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
@@ -274,9 +282,29 @@ export function App() {
           </select>
         </label>
 
+        <label className="field">
+          <span>Source status</span>
+          <select
+            value={sourceStatusFilter}
+            onChange={(event) => {
+              setSourceStatusFilter(event.target.value as SourceStatusFilter);
+              setSelectedSolutionId(null);
+              setScore(null);
+              setVerdict("");
+              setSavedPath("");
+            }}
+          >
+            {sourceStatusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status === "all" ? "All" : sourceStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <section className="solution-list" aria-label="Solutions">
           <h2>Solutions</h2>
-          {selectedCase.solutions.map((solution) => (
+          {visibleSolutions.map((solution) => (
             <button
               className={solution.solution_id === selectedSolution?.solution_id ? "selected" : ""}
               key={solution.solution_id}
@@ -295,6 +323,7 @@ export function App() {
               </small>
             </button>
           ))}
+          {visibleSolutions.length === 0 ? <p className="empty-note">No solutions match this filter.</p> : null}
         </section>
         {!isWritable ? <p className="mode-note">Static preview: browsing only.</p> : null}
       </aside>
@@ -305,7 +334,9 @@ export function App() {
             <p className="eyebrow">Case Study</p>
             <h2>{selectedCase.title}</h2>
           </div>
-          <p>{selectedCase.solutions.length} solutions in vault</p>
+          <p>
+            {visibleSolutions.length} of {selectedCase.solutions.length} solutions visible
+          </p>
         </header>
 
         {selectedComparisonSet ? (
