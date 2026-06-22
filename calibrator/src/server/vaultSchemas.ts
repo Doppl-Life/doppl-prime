@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-const IsoDateString = z.string().min(1);
+const IsoDateString = z.preprocess((value) => {
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}, z.string().min(1));
 
 export const CaseFrontmatter = z.object({
   artifact_type: z.literal("case"),
