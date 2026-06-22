@@ -7,7 +7,7 @@
 - **Date:** 2026-06-21
 - **Track:** selection · **Branch:** `track/selection` · **Role:** orchestrator (`selection-ml-orchestrator`)
 - **Predecessor:** `selection-001-2026-06-21-phase5-selection-scoring-reproduction.md` (implementer, same round)
-- **Successor:** _TBD_
+- **Successor:** `selection-003-2026-06-22-phase5-selection-wiring.md` (implementer — the W1→W3b-2b wiring pass)
 
 ## Round shape
 
