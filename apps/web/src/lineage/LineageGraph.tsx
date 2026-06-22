@@ -128,6 +128,33 @@ export function LineageGraph(): JSX.Element {
       const total = n.metrics?.total;
       if (edge && typeof total === "number") candidateFitness.set(edge.target, total);
     }
+    // Derive per-candidate survival from the genealogy alone:
+    //   - "selected": this candidate's agenome appears as a parent of
+    //     some other agenome (it reproduced into the next generation).
+    //   - "dropped":  its agenome did NOT reproduce, AND a generation
+    //     past this candidate's has already started — so the cull
+    //     decision has been made.
+    //   - "pending":  its agenome hasn't reproduced yet AND no later
+    //     generation exists — still under evaluation in the live run.
+    // Derivation deliberately avoids new events: the existing
+    // agenome.reproduced lineage edges carry everything we need.
+    const survivingAgenomeIds = new Set<string>();
+    for (const a of Object.values(state.agenomes)) {
+      for (const parentId of a.parentIds) {
+        survivingAgenomeIds.add(parentId);
+      }
+    }
+    const genIndexes = Object.values(state.generations).map((g) => g.index);
+    const maxGenIndex = genIndexes.length > 0 ? Math.max(...genIndexes) : -1;
+    const candidateSurvives = (
+      candidateId: string,
+    ): "selected" | "dropped" | "pending" => {
+      const c = state.candidates[candidateId];
+      if (!c) return "pending";
+      if (survivingAgenomeIds.has(c.agenomeId)) return "selected";
+      const myIdx = c.generationId ? state.generations[c.generationId]?.index ?? -1 : -1;
+      return myIdx < maxGenIndex ? "dropped" : "pending";
+    };
     const keptNodes = projection.nodes.filter((n) => STORY_TYPES.has(n.type));
     const keptIds = new Set(keptNodes.map((n) => n.id));
     const keptEdges = projection.edges.filter(
@@ -146,11 +173,13 @@ export function LineageGraph(): JSX.Element {
       // into runStore yet).
       let friendly: string | undefined;
       let fitness: number | undefined;
+      let survives: "selected" | "dropped" | "pending" | undefined;
       if (orig?.type === "agenome") {
         friendly = personaByAgenome[node.id];
       } else if (orig?.type === "candidate") {
         friendly = candidateLabel(node.id);
         fitness = candidateFitness.get(node.id);
+        survives = candidateSurvives(node.id);
       } else if (orig?.type === "critic_review") {
         friendly = `Critic: ${orig.label}`;
       } else if (orig?.type === "check_result") {
@@ -167,6 +196,7 @@ export function LineageGraph(): JSX.Element {
           status: orig?.status,
           metrics: orig?.metrics,
           ...(fitness !== undefined ? { fitness } : {}),
+          ...(survives !== undefined ? { survives } : {}),
         },
       };
     });
@@ -183,7 +213,14 @@ export function LineageGraph(): JSX.Element {
       };
     });
     return { rfNodes, rfEdges };
-  }, [projection, personaByAgenome, animatingIds]);
+  }, [
+    projection,
+    personaByAgenome,
+    animatingIds,
+    state.agenomes,
+    state.candidates,
+    state.generations,
+  ]);
 
   if (!state.runId) {
     return <div style={{ padding: 24, color: "var(--doppl-text-secondary)" }}>No run loaded.</div>;

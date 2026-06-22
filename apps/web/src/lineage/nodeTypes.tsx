@@ -27,6 +27,9 @@ interface NodeShellProps {
   /** Larger font for the metric value. Used to make fitness numbers
    *  more scannable on candidate nodes. */
   metricEmphasis?: boolean | undefined;
+  /** Optional last row in the shell — e.g. a SELECTED/DROPPED badge
+   *  on candidate nodes. Rendered below the metric line. */
+  footer?: JSX.Element | undefined;
 }
 
 function NodeShell({
@@ -40,6 +43,7 @@ function NodeShell({
   borderWidth,
   tintColor,
   metricEmphasis,
+  footer,
 }: NodeShellProps): JSX.Element {
   return (
     <div
@@ -85,6 +89,7 @@ function NodeShell({
           {typeof metric.value === "number" ? metric.value.toFixed(2) : metric.value}
         </div>
       )}
+      {footer}
       <Handle type="source" position={Position.Right} />
     </div>
   );
@@ -99,6 +104,12 @@ interface LineageNodeData {
    *  node. Used to render an inline metric and to band the border
    *  color so "which ideas survived" reads at a glance. */
   fitness?: number;
+  /** Candidate-only: actual selection outcome derived from the
+   *  agenome lineage. "selected" = this candidate's agenome
+   *  reproduced into the next generation; "dropped" = it did not and
+   *  the cull decision has been made; "pending" = still being
+   *  evaluated in the current generation. */
+  survives?: "selected" | "dropped" | "pending";
 }
 
 export function AgenomeNode(props: NodeProps<LineageNodeData>): JSX.Element {
@@ -150,9 +161,61 @@ function fitnessVisual(fitness: number | undefined): {
   return { borderColor: "var(--doppl-status-pending)", borderWidth: 2, tintColor: undefined };
 }
 
+/**
+ * Survival badge — explicit "SELECTED" / "DROPPED" stamp shown on
+ * candidate nodes once the cull decision has been made (i.e., a later
+ * generation exists). Pending candidates show nothing so the latest
+ * generation stays visually quiet until evaluated.
+ */
+function SurvivalBadge({
+  survives,
+}: {
+  survives: "selected" | "dropped" | "pending";
+}): JSX.Element | null {
+  if (survives === "pending") return null;
+  const selected = survives === "selected";
+  return (
+    <div
+      style={{
+        alignSelf: "flex-start",
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        padding: "2px 8px",
+        borderRadius: 4,
+        background: selected
+          ? "rgba(34, 197, 94, 0.18)"
+          : "rgba(248, 113, 113, 0.16)",
+        color: selected ? "var(--doppl-status-ok)" : "var(--doppl-status-error, #f87171)",
+        border: `1px solid ${
+          selected ? "var(--doppl-status-ok)" : "var(--doppl-status-error, #f87171)"
+        }`,
+      }}
+    >
+      {selected ? "Selected" : "Dropped"}
+    </div>
+  );
+}
+
 export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
-  const { fitness } = props.data;
-  const visual = fitnessVisual(fitness);
+  const { fitness, survives } = props.data;
+  // The survival outcome supersedes the fitness band's border color:
+  // a dropped node should not look "amber, mostly fine" — it's gone.
+  const fitnessBand = fitnessVisual(fitness);
+  const borderColor =
+    survives === "selected"
+      ? "var(--doppl-status-ok)"
+      : survives === "dropped"
+        ? "var(--doppl-status-error, #f87171)"
+        : fitnessBand.borderColor;
+  const borderWidth = survives === "selected" ? 4 : fitnessBand.borderWidth;
+  const tintColor =
+    survives === "dropped"
+      ? "rgba(248, 113, 113, 0.08)"
+      : survives === "selected"
+        ? "rgba(34, 197, 94, 0.10)"
+        : fitnessBand.tintColor;
   return (
     <NodeShell
       kind="Idea"
@@ -162,9 +225,10 @@ export function CandidateNode(props: NodeProps<LineageNodeData>): JSX.Element {
       domain="candidate"
       metric={fitness !== undefined ? { label: "fitness", value: fitness } : undefined}
       metricEmphasis={fitness !== undefined}
-      borderColor={visual.borderColor}
-      borderWidth={visual.borderWidth}
-      tintColor={visual.tintColor}
+      borderColor={borderColor}
+      borderWidth={borderWidth}
+      tintColor={tintColor}
+      footer={survives ? <SurvivalBadge survives={survives} /> : undefined}
     />
   );
 }
