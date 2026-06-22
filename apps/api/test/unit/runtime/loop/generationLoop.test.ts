@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import type { ModelGatewayResponse, RunEventType } from '@doppl/contracts';
+import type { ModelGatewayResponse, ProviderMeta, RunEventType } from '@doppl/contracts';
 import {
   CURRENT_SCHEMA_VERSION,
   HIGH_TRAFFIC_PAYLOAD_MAP,
+  REDACTION_PLACEHOLDER,
   RunEventEnvelope,
   validateEventPayload,
   validCandidateIdeaCrossDomain,
@@ -17,6 +18,7 @@ import type {
   EventStore,
   RunEventRow,
 } from '../../../../src/event-store';
+import { scrubEventPayload } from '../../../../src/event-store';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
@@ -68,7 +70,10 @@ function loadTestConfig(caps: { maxGenerations?: number; maxPopulation?: number 
 // as the real append path (P1.3) would (the real-PG path is already integration-covered). Records every
 // append + readByRun call so the tests can assert the loop appends ONLY via this port (rule #2).
 const AppendEnvelope = RunEventEnvelope.omit({ sequence: true, occurredAt: true });
-function makeFakeEventStore() {
+// Mirrors the REAL P1.3 append path: envelope omit-parse → validateEventPayload narrowing →
+// scrubEventPayload (the cody-fixed scrub) → store. So the scrub round-trip test exercises the genuine
+// fix (number-exempt ProviderMeta) and the secret-redaction (env-value + frozen value-pattern) for real.
+function makeFakeEventStore(secretValues: readonly string[] = []) {
   const rows: Array<AppendInput & { sequence: number }> = [];
   const appendCalls: AppendInput[] = [];
   let readByRunCalls = 0;
@@ -87,7 +92,11 @@ function makeFakeEventStore() {
       const validated = validateEventPayload(input.type, input.payload);
       if (!validated.ok)
         throw new Error(`fake append: payload rejected (${input.type}) — ${validated.reason}`);
-      rows.push({ ...input, payload: validated.payload, sequence: seq });
+      const scrubbed = scrubEventPayload(validated.payload, secretValues) as Record<
+        string,
+        unknown
+      >;
+      rows.push({ ...input, payload: scrubbed, sequence: seq });
       seq += 1;
       return { id: input.id, runId: input.runId, sequence: seq - 1 };
     },
@@ -106,19 +115,24 @@ function makeFakeEventStore() {
 }
 
 function makeFakeGateway(
-  opts: { toolCalls?: readonly { toolName: string }[]; rejectFirst?: number } = {},
+  opts: {
+    toolCalls?: readonly { toolName: string }[];
+    rejectFirst?: number;
+    providerMeta?: ProviderMeta;
+    attemptFailures?: readonly { attempt: number; reason: string }[];
+  } = {},
 ): GenerationGateway {
   const accepted: ModelGatewayResponse = {
     accepted: true,
     validationResult: 'accepted',
     output: CANDIDATE_CONTENT,
-    providerMeta: validProviderMeta,
+    providerMeta: opts.providerMeta ?? validProviderMeta,
   };
   // A gateway REJECT (after the gateway's internal retry+repair) — the candidate never reaches `created`.
   const rejected: ModelGatewayResponse = {
     accepted: false,
     validationResult: 'rejected',
-    providerMeta: validProviderMeta,
+    providerMeta: opts.providerMeta ?? validProviderMeta,
     rejection: { reason: 'schema_rejected' },
   };
   let calls = 0;
@@ -126,8 +140,12 @@ function makeFakeGateway(
     generate: async () => {
       const response = calls < (opts.rejectFirst ?? 0) ? rejected : accepted;
       calls += 1;
-      // toolCalls present only when supplied (exactOptionalPropertyTypes — no present-but-undefined key).
-      return opts.toolCalls ? { response, toolCalls: opts.toolCalls } : { response };
+      // optional fields present only when supplied (exactOptionalPropertyTypes — no undefined keys).
+      return {
+        response,
+        ...(opts.toolCalls ? { toolCalls: opts.toolCalls } : {}),
+        ...(opts.attemptFailures ? { attemptFailures: opts.attemptFailures } : {}),
+      };
     },
   };
 }
@@ -288,8 +306,9 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
   });
 
   test('operation_markers_are_generic_no_debit', async () => {
-    // spec(§4): the 3 markers are appended on phase entry, NONE is in HIGH_TRAFFIC_PAYLOAD_MAP (generic
-    // payload), and NO energy.spent is appended (energy emission is 10d, not this slice).
+    // spec(§4): the 3 markers are appended on phase entry + NONE is in HIGH_TRAFFIC_PAYLOAD_MAP (generic
+    // payload). Markers carry no energy debit themselves — energy.spent is emitted only for productive
+    // spends (llm/spawn/tool, 10d), NEVER narrowed to/triggered by an operation-start marker.
     const fake = makeFakeEventStore();
     await runGenerationLoop(
       makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
@@ -303,7 +322,6 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
       expect(fake.appendedTypes()).toContain(m);
       expect(m in HIGH_TRAFFIC_PAYLOAD_MAP).toBe(false);
     }
-    expect(fake.appendedTypes()).not.toContain('energy.spent');
   });
 
   test('tool_call_relay', async () => {
@@ -555,5 +573,149 @@ describe('runGenerationLoop (P3.10c — generation-loop edges)', () => {
     expect(fake.appendedTypes()).not.toContain('generation_failed');
     const verifying = fake.rows.find((r) => r.type === 'generation.verifying');
     expect((verifying!.payload as { degraded?: boolean }).degraded).toBeUndefined();
+  });
+});
+
+// Energy.spent eventType helper for the energy tests.
+function energyEventsOfType(
+  fake: ReturnType<typeof makeFakeEventStore>,
+  eventType: 'llm' | 'tool' | 'spawn',
+) {
+  return fake.rows.filter(
+    (r) =>
+      r.type === 'energy.spent' && (r.payload as { eventType?: string }).eventType === eventType,
+  );
+}
+
+describe('runGenerationLoop (P3.10d — energy accounting, success-only)', () => {
+  test('energy_spent_on_accepted_llm_call', async () => {
+    // spec(§4/§8): an accepted gateway call appends energy.spent{llm}; `actual` derives from the REAL
+    // providerMeta (1200+380=1580 → ceil(1580/1000)=2 via appConfig.costMap), never the estimate.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 1 } }),
+    );
+    const llm = energyEventsOfType(fake, 'llm');
+    expect(llm.length).toBeGreaterThanOrEqual(1);
+    const ev = llm[0]!.payload as {
+      actual?: number;
+      unit?: string;
+      providerMeta?: { tokensIn?: number };
+    };
+    expect(ev.actual).toBe(2);
+    expect(ev.unit).toBe('doppl_energy');
+    expect(ev.providerMeta?.tokensIn).toBe(1200);
+  });
+
+  test('no_energy_debit_on_rejected_call', async () => {
+    // spec(rule #8): a rejected call appends provider_call_failed + debits ZERO energy.spent{llm}.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 1 }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    expect(fake.appendedTypes()).toContain('provider_call_failed');
+    expect(energyEventsOfType(fake, 'llm')).toHaveLength(0);
+  });
+
+  test('provider_call_failed_per_attempt', async () => {
+    // spec(§5): N surfaced attempt-failures → N provider_call_failed{attempt,reason}, no energy debit.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          rejectFirst: 1,
+          attemptFailures: [
+            { attempt: 1, reason: 'timeout' },
+            { attempt: 2, reason: 'schema_rejected' },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const failed = fake.rows.filter((r) => r.type === 'provider_call_failed');
+    expect(failed).toHaveLength(2);
+    expect((failed[0]!.payload as { attempt?: number }).attempt).toBe(1);
+    expect(energyEventsOfType(fake, 'llm')).toHaveLength(0);
+  });
+
+  test('scrub_round_trip_preserves_provider_meta', async () => {
+    // spec(rules #4/#2/#7, L21): energy.spent ProviderMeta tokensIn/tokensOut survive the scrub→append→read
+    // round-trip as the SAME NUMBERS (the cody fix; the OLD scrub corrupted them to '[REDACTED]' strings).
+    const fake = makeFakeEventStore();
+    const pm: ProviderMeta = {
+      provider: 'openrouter',
+      modelId: 'm',
+      gatewayRequestId: 'greq',
+      tokensIn: 4242,
+      tokensOut: 9999,
+      costEstimate: 0.01,
+    };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ providerMeta: pm }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const meta = (
+      energyEventsOfType(fake, 'llm')[0]!.payload as { providerMeta?: Record<string, unknown> }
+    ).providerMeta;
+    expect(meta?.tokensIn).toBe(4242);
+    expect(meta?.tokensOut).toBe(9999);
+    expect(typeof meta?.tokensIn).toBe('number');
+  });
+
+  test('secret_value_still_redacted', async () => {
+    // spec(rule #4): the scrub fix NARROWS (numbers survive) but does NOT disable — a planted secret in a
+    // scrubbable string field IS redacted on the same round-trip while tokensIn/tokensOut survive.
+    // A low-entropy injected VALUE (≥8 chars) — the env-value layer redacts by literal substring
+    // regardless of shape (a DB password need not look key-shaped), so this exercises the redaction
+    // without a realistic-looking key (var name kept keyword-free for the gitleaks secrets-guard).
+    const injectedValue = 'planted-redaction-marker-value';
+    const fake = makeFakeEventStore([injectedValue]);
+    const pm: ProviderMeta = {
+      provider: 'openrouter',
+      modelId: 'm',
+      gatewayRequestId: injectedValue,
+      tokensIn: 7,
+      tokensOut: 8,
+      costEstimate: 0,
+    };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ providerMeta: pm }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const meta = (
+      energyEventsOfType(fake, 'llm')[0]!.payload as { providerMeta?: Record<string, unknown> }
+    ).providerMeta;
+    expect(meta?.gatewayRequestId).toBe(REDACTION_PLACEHOLDER); // the planted secret IS redacted
+    expect(meta?.tokensIn).toBe(7); // numbers still survive (fix narrows, doesn't disable)
+  });
+
+  test('spawn_and_tool_energy_success_only', async () => {
+    // spec(§4): spawn energy on agenome.spawned (flat perSpawn=50); tool energy on tool_call.finished
+    // (flat perToolCall=5) — both from appConfig.costMap, success-only.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ toolCalls: [{ toolName: 'web_search' }] }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const spawn = energyEventsOfType(fake, 'spawn');
+    const tool = energyEventsOfType(fake, 'tool');
+    expect(spawn.length).toBeGreaterThanOrEqual(1);
+    expect(tool.length).toBeGreaterThanOrEqual(1);
+    expect((spawn[0]!.payload as { actual?: number }).actual).toBe(50);
+    expect((tool[0]!.payload as { actual?: number }).actual).toBe(5);
   });
 });

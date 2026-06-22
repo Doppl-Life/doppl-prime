@@ -5,6 +5,7 @@ import type {
   GenerationStatus,
   ModelGatewayRequest,
   ModelGatewayResponse,
+  ProviderMeta,
   RunEventType,
 } from '@doppl/contracts';
 import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
@@ -16,6 +17,11 @@ import { canTransitionAgenome } from '../state/agenomeStateMachine';
 import { materializeGen0 } from '../seed/gen0SeedSet';
 import { createSeededRng, readRngSeed } from '../rng/seededRng';
 import { createLiveOutcomeSource, type OutcomeSource } from '../rng/persistOutcomes';
+import { estimateEnergy, reconcileEnergy, type ReconcileInput } from '../energy/estimateReconcile';
+
+/** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
+ * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
+const LLM_EXPECTED_TOKENS = 1000;
 
 /**
  * P3.10b — the generation-loop SKELETON (ARCHITECTURE.md §5/§3/§4/§6, KEY SAFETY RULES #1/#2/#9).
@@ -52,6 +58,9 @@ export interface ToolCallObservation {
 export interface GenerateResult {
   readonly response: ModelGatewayResponse;
   readonly toolCalls?: readonly ToolCallObservation[];
+  /** Per-attempt provider failures the gateway surfaced (frozen ModelGatewayResponse can't carry them —
+   * same runtime-local channel as toolCalls). The loop relays one provider_call_failed per entry (no debit). */
+  readonly attemptFailures?: readonly { readonly attempt: number; readonly reason: string }[];
 }
 
 /** The runtime-local generation gateway port (composes the frozen ModelGateway; no vendor type, rule #9). */
@@ -203,6 +212,46 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     return eventStore.append(input);
   };
 
+  // Success-only energy debit (rule #8): append `energy.spent` for a PRODUCTIVE spend. `actual` for llm
+  // derives from the REAL providerMeta (never the estimate); tool/spawn are flat costs from the cost map.
+  // Failed attempts never reach here — they emit provider_call_failed (no EnergyEvent, by shape).
+  let energySeq = 0;
+  const debitEnergy = async (
+    eventType: 'llm' | 'tool' | 'spawn',
+    scope: { generationId: string; agenomeId: string; reason: string },
+    providerMeta?: ProviderMeta,
+  ): Promise<void> => {
+    const energyScope = {
+      id: `${runId}-energy-${energySeq}`,
+      runId,
+      generationId: scope.generationId,
+      agenomeId: scope.agenomeId,
+      reason: scope.reason,
+    };
+    energySeq += 1;
+    const reconcile: ReconcileInput =
+      eventType === 'llm'
+        ? {
+            scope: energyScope,
+            eventType,
+            estimate: estimateEnergy(
+              { eventType: 'llm', expectedTokens: LLM_EXPECTED_TOKENS },
+              config.costMap,
+            ),
+            providerMeta: providerMeta!,
+          }
+        : {
+            scope: energyScope,
+            eventType,
+            estimate: estimateEnergy({ eventType }, config.costMap),
+          };
+    const event = reconcileEnergy(reconcile, config.costMap);
+    await appendEvent('energy.spent', event as unknown as Record<string, unknown>, {
+      generationId: scope.generationId,
+      agenomeId: scope.agenomeId,
+    });
+  };
+
   // Gen-0 population: materialized ONCE, clamped to maxPopulation; spawned once (agenome.spawned per
   // agenome, each gated by enforceCap('maxPopulation', …) — belt-and-suspenders with the materialize
   // clamp). The population persists across generations (successor-population threading deferred).
@@ -216,6 +265,8 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       { agenome },
       { generationId: gen0Id, agenomeId: agenome.id },
     );
+    // spawn energy (flat perSpawn cost) — a productive spend (rule #8).
+    await debitEnergy('spawn', { generationId: gen0Id, agenomeId: agenome.id, reason: 'spawn' });
     spawned += 1;
   }
 
@@ -241,7 +292,7 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     for (let a = 0; a < population.length; a += 1) {
       const agenome = population[a]!;
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
-      const { response, toolCalls } = await gateway.generate({
+      const { response, toolCalls, attemptFailures } = await gateway.generate({
         role: 'population_generator',
         prompt: agenome.systemPrompt,
       });
@@ -262,9 +313,24 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
             agenomeId: agenome.id,
           },
         );
+        // tool energy (flat perToolCall cost) on the finished call — a productive spend (rule #8).
+        await debitEnergy('tool', { generationId, agenomeId: agenome.id, reason: 'tool_call' });
       }
       if (!response.accepted) {
-        // Gateway rejected (after its internal retry+repair) — the agenome fails (active→failed terminal).
+        // 10d: a failed provider call → one provider_call_failed per surfaced attempt + NO energy debit
+        // (rule #8 — a failed/retried attempt yields no EnergyEvent, by shape). Per-attempt info rides the
+        // runtime-local attemptFailures (frozen response can't carry it); fall back to a single attempt.
+        const attempts = attemptFailures ?? [
+          { attempt: 1, reason: response.rejection?.reason ?? 'rejected' },
+        ];
+        for (const failure of attempts) {
+          await appendEvent(
+            'provider_call_failed',
+            { attempt: failure.attempt, reason: failure.reason, agenomeId: agenome.id },
+            { generationId, agenomeId: agenome.id },
+          );
+        }
+        // 10c: the agenome fails (active→failed terminal).
         transitionAgenomeOrThrow('active', 'failed');
         failedAgenomeIds.push(agenome.id);
         await appendEvent(
@@ -292,6 +358,12 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         agenomeId: agenome.id,
         candidateId,
       });
+      // llm energy on the accepted call — actual derives from the REAL providerMeta usage (rule #8).
+      await debitEnergy(
+        'llm',
+        { generationId, agenomeId: agenome.id, reason: 'llm_generation' },
+        response.providerMeta,
+      );
     }
 
     // Below the survival threshold (incl. all-fail / 0 created) → running→failed + generation_failed; no
