@@ -37,7 +37,7 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 **Phase 4 — COMPLETE ✅ + `/phase-exit P4` CLEAR (verifier track); MERGED to cody (`fae1d46`).** P4.1–P4.11 + Acceptance(P4) all shipped: contracts (P4.1–P4.3), injection-isolation seam (P4.4), check-runner allowlist registry (P4.5), critic council orchestrator (P4.6), critic-set rotation `selectCriticMandates` (P4.7 — pure K-of-3 closed-form over the persisted run seed + generation index, re-derived on replay, rule #6/#7), held-out judge runner (P4.8), cross-domain-transfer + zeitgeist check adapters (P4.9/P4.10), live allowlisted-check re-run with replay-backed fallback (P4.11). `/phase-exit P4` CLEAR @ `2d4a12a` (arch-drift / reachability / security fan-out all clean). Integration preflight on merged cody GREEN (contracts 178 + apps/api 271 unit). Round also carried the P0.16 judge-output reconcile + the P0.2 scrub numeric/boolean fix. **Verifier lessons restored to the integration line as §38–46** (dropped from cody during an earlier `--ours` resolution; re-homed here). **Verifier team STOOD DOWN.** Deferred wiring (cross-track → kernel/P3, in Carry-forward): `selectCriticMandates`→`runCouncil` into the P3 generation `verifying` phase (both `runCouncil` and the rotation selector currently unwired); selection P5.5 consumes the persisted `judge.reviewed` acceptance by candidateId JOIN.
 
-**Demo track — round 1 sealed on `track/demo` (`79d73b7`, pushed to origin; NOT yet merged to cody).** Backend P6.1–P6.7 (projection builders P6.1–6.4 · observability redaction P6.5 · REST write P6.6/read P6.7) + web P7.1–P7.4 (data-client · run-store · status-primitive+tokens · mode-indicator) + design-system prototype vendored (`7c0d34c`). Two impls in one `track/demo` worktree, area-scoped staging; impl session docs `54f2258` (demo-001) / `697c139` (demo-web-001). **demo→cody merge needs the sv3/P0.16 projection reconcile** (Carry-forward, below). Phase 6/7 headings stay open (gated on `/phase-exit`); demo task ticks + Log + carry-forward DELETEs (bodyLimit/IDs-opaque/§14-env-value, all demo-consumed on track/demo) land at the demo→cody merge reconciliation. Next demo round (idle, awaiting user go): P6.8 health + P6.9 SSE (obs) · P7.5 run-config panel (web).
+**Demo track — Phase 6 + Phase 7 COMPLETE ✅; INTEGRATING into cody (round-4 demo→cody integration round).** Backend P6.1–P6.11 (projection-builder core · current-state · lineage-graph · replay-summary · observability redaction · REST write/read · run-health · SSE · runtime self-observability · Neo4j spike) + web P7.1–P7.15 (full §12 dashboard: data-client · run-store · status primitive · mode indicator · run-config · stop control · React-Flow lineage · fitness/generation charts · energy · candidate inspector · critic-gauntlet · subtype-check · final-idea · shell · Playwright smoke). Round 1 `79d73b7` (P6.1–6.7 + P7.1–4) · round 2 `e448b46` (P6.8 + P7.5) · round 3 `c3566b3` (P6.9–6.11 + P7.6–7.15; **`/phase-exit P6` CLEAR**). **Round 4 (this round) = the demo→cody integration:** (a) merged cody-sv5 INTO track/demo (`da6ef82`, `CURRENT_SCHEMA_VERSION` 2→5 + kernel/verifier substrate; LESSONS §27–37 renumbered §51–61 on union); (b) the sv2→sv5 projection + status-map reconcile — judge.reviewed reducer branch + judge→lineage `score` node + 4 new terminals + run-health judge pairing (`bb2d75c`, apps/api unit 365 / integration 79) and web status-map `degraded`/`repairing` (`87e90d3`, web 145); (c) **`/phase-exit P7` CLEAR** (the deferred round-3 4-auditor fan-out re-run — reachability/arch-drift/security/code-quality all CLEAR, reports `docs/audits/P7-*.md`; spec-lint tests 7 PASS §10/§12; `pnpm audit --prod` clean). demo→cody = **fast-forward** (cody `06299c9` ⊆ track/demo). Full track/demo preflight GREEN (contracts 183 · api 365 unit + 79 integration · web 145 · observability 16; lint/format/typecheck clean). **HOLD — the lead gates the cody push.** Remaining demo work after the push: **Phase D** (local demo path + prepared-replay fallback) + the merge-time follow-ups in Carry-forward (RunHealth promotion / per-category in-flight render, lineage `onSelect`, SSE connection-drop, dataRef confirms).
 
 ---
 
@@ -50,8 +50,7 @@ Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/
 - **Held-out judge acceptance score must integrate into fitness via the persisted authoritative record (cross-track → selection P5).** The verifier-P4 half is CONSUMED — P4.3 loads the rubric from the immutable `DEFAULT_JUDGE_RUBRIC` (`loadJudgeRubric`, no agent-writable path, full-5-axis-set + `immutableToAgents:true` asserted) and P4.8 runs the held-out judge outside the breeding loop, persisting `judge.reviewed`←`JudgeResult` as the authoritative acceptance record (merged to cody `bff4325`/`fae1d46`). **Remaining selection-P5 obligation:** P5.5 MUST integrate the held-out-judge acceptance into `FitnessScore.components.judge_acceptance` by a candidateId JOIN into the persisted `judge.reviewed` record (rule #6 — never a duplicate authoritative copy, never re-derive/re-validate the rubric in selection; the judge sits outside selection's loop). _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; verifier-P4 half consumed @ P4.3/P4.8; cross-track → selection P5; DELETE after P5.5 consumes the persisted judge acceptance)_
 - **Wire `selectCriticMandates` into the P3 generation 'verifying' phase (cross-track → kernel/P3).** `selectCriticMandates({rngSeed: readRngSeed(runConfig), generationIndex: generation.index})` → `runCouncil({…, mandates})`. Same deferred-wiring as P4.6's `runCouncil` (both currently unwired). _(origin: verifier P4.7; cross-track → kernel/P3)_
 - **Kernel P2.8 Langfuse adapter MUST import demo's canonical emit-boundary scrub — never reimplement (cross-track → kernel P2.8; safety §14 / rule #4).** **Kernel track ACCEPTED 2026-06-21: single scrub, demo-owned, kernel consumes it — agreement settled, pending P2.8 implementation.** Demo P6.5 shipped the canonical Langfuse-emit secret-scrub `scrubObservabilityPayload` + `createEmitBoundary` in `packages/observability` (committed `0e2f793` on track/demo). §14 mandates a SINGLE scrub function at all boundaries; a second divergent kernel-side copy is the L21 key-leak class (one boundary hardens, the other silently leaks secrets into Langfuse traces). When kernel builds P2.8, its adapter MUST `import` + call the demo-owned scrub before any emit, never write its own. Pairs with the "opaque gateway passthroughs → scrub before Langfuse emit" item above. _(origin: 2026-06-21 demo P6.5 Step-9 Finding, lead-routed per user [also relayed direct to kernel lead]; cross-track → kernel P2.8; DELETE after kernel P2.8 imports the canonical scrub)_
-- **Demo→cody merge needs a schemaVersion-skew (sv2→sv5) projection + status-map reconcile (cross-track → demo; surfaces AT the demo→cody merge).** **UPDATED 2026-06-21 (carry-forward hygiene; sv4→sv5 per kernel heads-up): cody has advanced past sv3/sv4 to `CURRENT_SCHEMA_VERSION` = 5** — P0.16 `JudgeResult`+`judge.reviewed`=v3, kernel `GenerationStatus` +`degraded` & `CandidateStatus` +`repairing`=v4 (`117a0ec`/`bff4325`), then a kernel terminal-event amendment (`RunEventType` 37→41 — 4 NEW terminal event types)=v5 — **ALL ADDITIVE (demo CONSUMES only, emits NONE of the new events)** — all merged AFTER demo forked @ dd69b36 (sv2); the demo round's projections + status-map were built against sv2. At the demo→cody merge: (a) the schemaVersion gate adapts automatically (reads `CURRENT_SCHEMA_VERSION`); (b) **add a `judge.reviewed` reducer branch to current-state (P6.2)** — else the held-out judge's output folds to no-op (not projected); (c) **map the judge into lineage (P6.3)** — `LineageNodeType` is closed-6 with no 'judge' (likely a 'score' node); (d) **NEW (sv4/sv5): handle `GenerationStatus:'degraded'` + `CandidateStatus:'repairing'` + the 4 new sv5 terminal event types, and RE-RECORD the member-set snapshots (additive)** in the current-state reducer AND in the apps/web `status-map.ts` (it is EXHAUSTIVE over the FROZEN enums — sv4 adds two values it currently renders as the neutral '?'; LESSONS apps/web §3) + the P6.8 judge-in-flight pairing (`judge.review_started`↔`judge.reviewed`); (e) replay older-schema fixture (P6.4) is fine (sv2 ≤ sv4) + re-record the demo status/version snapshots (additive). Do an sv-reconcile slice in the demo track before/at the merge. _(origin: 2026-06-21 demo round-1 close-out, orchestrator integration finding; UPDATED for cody's sv4 advance; lead-routed [surfaced to user]; cross-track → demo; DELETE after the sv-reconcile slice lands)_
-- **Demo→cody EARLY targeted merge of `packages/observability` (cross-track → demo; at the demo's NEXT merge point — round-3 seal / integration cadence, NOT mid-round).** The P6.5 scrub seam (`scrubObservabilityPayload` + `createEmitBoundary` + the P6.10 kernel-logger, demo-owned canonical, §14/rule #4) lives in `packages/observability` — **kernel P2.3 + P2.8 are blocked on consuming it** (kernel imports the canonical scrub, never reimplements — agreement settled, the related P2.8 carry-forward above). **`packages/observability` is sv-INDEPENDENT** (verified 2026-06-21: imports ONLY the pure version-agnostic `enforcePayloadCeiling` + `scrubSecrets`/`REDACTION_PLACEHOLDER` from `@doppl/contracts`; the lone `RunEventType` mention is a code comment — no `schemaVersion`/`GenerationStatus`/`CandidateStatus`/`JudgeResult` coupling), so it can merge **EARLY, SEPARATELY from the sv4 reconcile** above — without dragging in the reducer/status-map changes. Priority: NOT urgent, not on kernel's critical path; the lead coordinates the actual merge + push at the merge point. _(origin: 2026-06-21 kernel-track lead↔lead merge-coordination, relayed via the demo lead; cross-track → demo; DELETE after `packages/observability` merges to cody)_
+- **Demo post-integration follow-ups (demo track; fold into the next demo round / Phase D).** Surfaced at the round-4 demo→cody integration + the `/phase-exit P7` audit fan-out (all CLEAR; these are deferred polish/wiring, none blocking): (a) **RunHealth promotion + per-category in-flight render** — the backend `run-health.ts` already computes `operationsInFlight.byType` per category (incl. `judge`, round-4); the web renders only `candidatesInFlight` against a web-local UNFROZEN `RunHealth` Zod schema → promote `RunHealth` to a frozen `@doppl/contracts` model (contract-coordinated) + render the full per-category in-flight window (the P7.14 partial bullet; LESSONS apps/web §9 "promote at P7.14"); (b) **lineage `onSelect`** — `LineageGraph` exposes no `onSelect` prop → interactive node-click→inspector is unwired (the shell defaults to the winner); small P7.7 follow-up, NOT blocking (the e2e traverses the winner-default); (c) **SSE connection-drop fallback** — P7.14 `onError` wires the payload-validation hook only; add the EventSource `'error'` listener (the real connection-drop case) at live-SSE integration; (d) **dataRef↔entity-id bridge + `run.configured`-carries-`RunConfig.caps`** — confirm the P7.7 in-flight node-bridge + the P7.9 energy-budget source against the real producer at integration; (e) **chart mean-series** — `MEAN_FITNESS_SERIES`/`MEAN_NOVELTY_SERIES` are defined but unrendered (P7 reachability finding) — optional chart-polish overlay. _(origin: 2026-06-22 round-4 demo→cody integration + /phase-exit P7 audit; demo track; triage at the next demo /orchestrate-start)_
 - **STANDING (user, 2026-06-21): bundle slices where safe to speed the build.** Group dep-compatible, same-code-area, non-invariant slices into ONE atomic red→green→commit unit. **Safety-invariant slices NEVER bundle with feature work** (root `CLAUDE.md` TDD posture) — they stay solo. Applies to every track's remaining phases (kernel first; freeze bundle stays tight per the deps/safety/cross-area analysis). _(origin: 2026-06-21 lead relay of user direction; STANDING — keep through triage; re-issues the P0-era bundling directive deleted at contract-002 close)_
 
 ---
@@ -1162,142 +1161,142 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P6.1 — Projection-builder core: ordered fold + (runId, sequence) watermark + staleness rebuild
 
-- [ ] A projection builder folds run_events strictly ordered by (runId, sequence); occurredAt is never consulted for ordering
-- [ ] Every cached/materialized projection record persists the (runId, sequence) watermark it was built through
-- [ ] A cached projection is treated as stale and discarded/rebuilt whenever run_events exist with sequence greater than its watermark; the served result reflects the rebuild
-- [ ] Folding is a pure function of the persisted event log: replaying the same events yields a byte-stable projection (state-equivalence over a canonical serialization), with no model/web/embedding calls
-- [ ] Readers accept every envelope whose schemaVersion is <= current and reject (do not silently fold) a higher schemaVersion
-- [ ] A gap or non-monotonic sequence within a run is surfaced as an error rather than producing a partial projection silently
-- [ ] Files: apps/api/projections/projection-builder.ts (NEW); apps/api/projections/watermark.ts (NEW); packages/contracts/src/projections.ts (extended)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: none
+- [x] A projection builder folds run_events strictly ordered by (runId, sequence); occurredAt is never consulted for ordering
+- [x] Every cached/materialized projection record persists the (runId, sequence) watermark it was built through
+- [x] A cached projection is treated as stale and discarded/rebuilt whenever run_events exist with sequence greater than its watermark; the served result reflects the rebuild
+- [x] Folding is a pure function of the persisted event log: replaying the same events yields a byte-stable projection (state-equivalence over a canonical serialization), with no model/web/embedding calls
+- [x] Readers accept every envelope whose schemaVersion is <= current and reject (do not silently fold) a higher schemaVersion
+- [x] A gap or non-monotonic sequence within a run is surfaced as an error rather than producing a partial projection silently
+- [x] Files: apps/api/projections/projection-builder.ts (NEW); apps/api/projections/watermark.ts (NEW); packages/contracts/src/projections.ts (extended)
+- [x] Cross-doc invariant: none
+- [x] Depends on: none
 
 ### P6.2 — Current-state projection over the canonical table set
 
-- [ ] Folds the closed RunEventType stream into current-state rows for the canonical set: runs, generations, agenomes, candidate_ideas, critic_reviews, check_results, fitness_scores, novelty_scores, lineage_edges
-- [ ] novelty_scores current-state reads the persisted vector + embeddingModelId + dimension from the novelty.scored payload and never re-embeds; embeddings are authoritative-once-computed, not recomputed by this builder
-- [ ] Terminal/failure events (run.failed, run.stopped, energy_exhausted, generation_failed, etc.) move the affected run/generation/agenome into their correct terminal state in the projection
-- [ ] Idempotent re-fold: applying the same event twice (or rebuilding) does not double-count or duplicate rows
-- [ ] dashboard_snapshots, when materialized, is rebuildable from events and carries the watermark; it is never read as a source of truth
-- [ ] Files: apps/api/projections/current-state.ts (NEW); apps/api/projections/reducers/ (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.1
+- [x] Folds the closed RunEventType stream into current-state rows for the canonical set: runs, generations, agenomes, candidate_ideas, critic_reviews, check_results, fitness_scores, novelty_scores, lineage_edges
+- [x] novelty_scores current-state reads the persisted vector + embeddingModelId + dimension from the novelty.scored payload and never re-embeds; embeddings are authoritative-once-computed, not recomputed by this builder
+- [x] Terminal/failure events (run.failed, run.stopped, energy_exhausted, generation_failed, etc.) move the affected run/generation/agenome into their correct terminal state in the projection
+- [x] Idempotent re-fold: applying the same event twice (or rebuilding) does not double-count or duplicate rows
+- [x] dashboard_snapshots, when materialized, is rebuildable from events and carries the watermark; it is never read as a source of truth
+- [x] Files: apps/api/projections/current-state.ts (NEW); apps/api/projections/reducers/ (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.1
 
 ### P6.3 — LineageGraphProjection (typed Appendix-A model) with sequenceThrough
 
-- [ ] Produces a storage-agnostic LineageGraphProjection: runId, nodes[{id,type,label,status?,metrics?,dataRef}], edges[{id,source,target,type,label?}], sequenceThrough
-- [ ] Node types cover the rendered set: agenome, candidate, critic/check, score, selected winner; edges encode parent/lineage relationships derived from lineage_edges / reproduction events
-- [ ] sequenceThrough equals the highest run_events sequence folded into the projection and is the watermark for staleness/rebuild
-- [ ] dataRef on each node points only within the Postgres tier (an EvidenceRef-style pointer / eventId), never to a non-authoritative external store
-- [ ] Consumers depend on this projection shape, not on physical storage; the same projection feeds React Flow and the derived Neo4j export
-- [ ] Schema-snapshot test required: LineageGraphProjection is an Appendix-A shared contract (projection->frontend·neo4j)
-- [ ] Files: packages/contracts/src/lineage-graph-projection.ts (NEW); apps/api/projections/lineage-graph.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes LineageGraphProjection — frozen in P0.13)
-- [ ] Depends on: P0.13, P6.1, P6.2
+- [x] Produces a storage-agnostic LineageGraphProjection: runId, nodes[{id,type,label,status?,metrics?,dataRef}], edges[{id,source,target,type,label?}], sequenceThrough
+- [x] Node types cover the rendered set: agenome, candidate, critic/check, score, selected winner; edges encode parent/lineage relationships derived from lineage_edges / reproduction events
+- [x] sequenceThrough equals the highest run_events sequence folded into the projection and is the watermark for staleness/rebuild
+- [x] dataRef on each node points only within the Postgres tier (an EvidenceRef-style pointer / eventId), never to a non-authoritative external store
+- [x] Consumers depend on this projection shape, not on physical storage; the same projection feeds React Flow and the derived Neo4j export
+- [x] Schema-snapshot test required: LineageGraphProjection is an Appendix-A shared contract (projection->frontend·neo4j)
+- [x] Files: packages/contracts/src/lineage-graph-projection.ts (NEW); apps/api/projections/lineage-graph.ts (NEW)
+- [x] Cross-doc invariant: none (consumes LineageGraphProjection — frozen in P0.13)
+- [x] Depends on: P0.13, P6.1, P6.2
 
 ### P6.4 — Replay-summary projection (state-equivalence over persisted log, no model calls)
 
-- [ ] Builds a seed-to-summary replay projection purely from the persisted, ordered run_events with zero model/web/embedding calls
-- [ ] The rebuilt projection is state-equivalent to the projection captured at run end over the canonical serialization (the replay determinism contract)
-- [ ] RNG-driven outcomes are reconstructed from the persisted seed (run.configured) and persisted mutation/fusion/cull payloads; replay never re-samples
-- [ ] Persisted retrieval/web results and persisted embedding vectors are read back from their originating events; replay never re-calls the web or re-embeds
-- [ ] An older-schemaVersion fixture replays successfully (readers accept schemaVersion <= current)
-- [ ] Files: apps/api/projections/replay-summary.ts (NEW); apps/api/projections/replay-reader.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.1, P6.2
+- [x] Builds a seed-to-summary replay projection purely from the persisted, ordered run_events with zero model/web/embedding calls
+- [x] The rebuilt projection is state-equivalent to the projection captured at run end over the canonical serialization (the replay determinism contract)
+- [x] RNG-driven outcomes are reconstructed from the persisted seed (run.configured) and persisted mutation/fusion/cull payloads; replay never re-samples
+- [x] Persisted retrieval/web results and persisted embedding vectors are read back from their originating events; replay never re-calls the web or re-embeds
+- [x] An older-schemaVersion fixture replays successfully (readers accept schemaVersion <= current)
+- [x] Files: apps/api/projections/replay-summary.ts (NEW); apps/api/projections/replay-reader.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.1, P6.2
 
 ### P6.5 — Secret redaction at the persistence boundary (scrub before append / before Langfuse)
 
-- [ ] A single scrub function runs in event-store on every payload before append and in observability before any Langfuse emit
-- [ ] **Env-value layer (§14; human-ratified Option A 2026-06-20):** the observability/Langfuse-emit boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values (beyond the shared `scrubSecrets` key-format + key-name layers) — with a **reachability** assertion that it runs on the real before-emit path (origin: P0.2 security review)
-- [ ] Redaction is pattern-based over key formats, Authorization headers, and env-shaped values, covering over-persisted raw model outputs
-- [ ] Structural guarantee holds: credentials load only from env and are never threaded into persisted request/response objects
-- [ ] Scrubbing is applied before the bytes are durable, so projections/replay never observe an unredacted secret
-- [ ] A failed Langfuse export emits a local-only warning and does not write an event-log entry (Langfuse is non-authoritative)
-- [ ] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: none
+- [x] A single scrub function runs in event-store on every payload before append and in observability before any Langfuse emit
+- [x] **Env-value layer (§14; human-ratified Option A 2026-06-20):** the observability/Langfuse-emit boundary ALSO scrubs payload strings matching the actual loaded `process.env` secret values (beyond the shared `scrubSecrets` key-format + key-name layers) — with a **reachability** assertion that it runs on the real before-emit path (origin: P0.2 security review)
+- [x] Redaction is pattern-based over key formats, Authorization headers, and env-shaped values, covering over-persisted raw model outputs
+- [x] Structural guarantee holds: credentials load only from env and are never threaded into persisted request/response objects
+- [x] Scrubbing is applied before the bytes are durable, so projections/replay never observe an unredacted secret
+- [x] A failed Langfuse export emits a local-only warning and does not write an event-log entry (Langfuse is non-authoritative)
+- [x] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: none
 
 ### P6.6 — Idempotent mutating endpoints: POST /runs and POST /runs/:id/stop
 
-- [ ] POST /runs validates RunConfig/RunCaps (Zod) and rejects any cap override above the validated maxima; only lowering within ceilings is allowed
-- [ ] Mutations are idempotent via idempotency key and/or terminal-state guard: a repeated POST /runs with the same key returns the same run rather than starting a second run
-- [ ] POST /runs/:id/stop is idempotent: stopping an already-terminal run is a no-op success, and a successful stop moves the run to terminal while preserving partial evidence
-- [ ] Concurrency invariant respected: starting a run while one is active is refused (one active run at a time), not silently queued
-- [ ] REST is the sole write path; these endpoints append authoritative events and never mutate projections directly
-- [ ] Invalid config fails fast with a clear validation error and appends no run.configured event
-- [ ] Files: apps/api/routes/runs.ts (NEW); apps/api/middleware/idempotency.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.5
+- [x] POST /runs validates RunConfig/RunCaps (Zod) and rejects any cap override above the validated maxima; only lowering within ceilings is allowed
+- [x] Mutations are idempotent via idempotency key and/or terminal-state guard: a repeated POST /runs with the same key returns the same run rather than starting a second run
+- [x] POST /runs/:id/stop is idempotent: stopping an already-terminal run is a no-op success, and a successful stop moves the run to terminal while preserving partial evidence
+- [x] Concurrency invariant respected: starting a run while one is active is refused (one active run at a time), not silently queued
+- [x] REST is the sole write path; these endpoints append authoritative events and never mutate projections directly
+- [x] Invalid config fails fast with a clear validation error and appends no run.configured event
+- [x] Files: apps/api/routes/runs.ts (NEW); apps/api/middleware/idempotency.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.5
 
 ### P6.7 — Read endpoints: GET /runs, /runs/:id, /events, /lineage, /replay, /candidates/:cid, /model-routes
 
-- [ ] GET /runs/:id/events returns events ordered by sequence and supports resume from a given lastEventId/sequence cursor
-- [ ] GET /runs/:id/lineage returns the LineageGraphProjection (with sequenceThrough); GET /runs/:id/replay returns the replay summary / ordered export
-- [ ] GET /runs/:id/candidates/:cid returns the candidate projection including its evidenceRefs resolving within the Postgres tier
-- [ ] GET /model-routes returns the configured ModelRoute set (roles incl. retrieval/final_judge, capability flags, fallbackRouteIds)
-- [ ] All read endpoints are read-only, never mutate authoritative state, and serve freshly-rebuilt projections when the cache watermark is stale
-- [ ] Unknown runId/candidateId yields a clean not-found rather than a partial/empty success
-- [ ] Files: apps/api/routes/runs-read.ts (NEW); apps/api/routes/model-routes.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.2, P6.3, P6.4
+- [x] GET /runs/:id/events returns events ordered by sequence and supports resume from a given lastEventId/sequence cursor
+- [x] GET /runs/:id/lineage returns the LineageGraphProjection (with sequenceThrough); GET /runs/:id/replay returns the replay summary / ordered export
+- [x] GET /runs/:id/candidates/:cid returns the candidate projection including its evidenceRefs resolving within the Postgres tier
+- [x] GET /model-routes returns the configured ModelRoute set (roles incl. retrieval/final_judge, capability flags, fallbackRouteIds)
+- [x] All read endpoints are read-only, never mutate authoritative state, and serve freshly-rebuilt projections when the cache watermark is stale
+- [x] Unknown runId/candidateId yields a clean not-found rather than a partial/empty success
+- [x] Files: apps/api/routes/runs-read.ts (NEW); apps/api/routes/model-routes.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.2, P6.3, P6.4
 
 ### P6.8 — GET /runs/:id/health runtime-signal endpoint
 
-- [ ] Returns current generation, count of candidates in flight, last-event time, and caps consumed (vs. configured maxima)
-- [ ] Reports operations in flight — unpaired operation-start markers with no paired completion (agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) — derived from the live event projection for live in-flight observability (§4/§12)
-- [ ] Values are derived from the live event projection so the operator can decide continue vs. switch-to-replay within the 10-minute window
-- [ ] last-event time reflects the most recent appended run_event; a stalled run shows a stale last-event time the operator can act on
-- [ ] caps-consumed reflects energy/population/generation/tool-call usage against RunCaps and never reports a value exceeding the enforced ceiling
-- [ ] Health is a read-only projection-derived signal distinct from Langfuse and works without any external metrics stack
-- [ ] Files: apps/api/routes/run-health.ts (NEW); apps/api/projections/run-health.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.2
+- [x] Returns current generation, count of candidates in flight, last-event time, and caps consumed (vs. configured maxima)
+- [x] Reports operations in flight — unpaired operation-start markers with no paired completion (agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) — derived from the live event projection for live in-flight observability (§4/§12)
+- [x] Values are derived from the live event projection so the operator can decide continue vs. switch-to-replay within the 10-minute window
+- [x] last-event time reflects the most recent appended run_event; a stalled run shows a stale last-event time the operator can act on
+- [x] caps-consumed reflects energy/population/generation/tool-call usage against RunCaps and never reports a value exceeding the enforced ceiling
+- [x] Health is a read-only projection-derived signal distinct from Langfuse and works without any external metrics stack
+- [x] Files: apps/api/routes/run-health.ts (NEW); apps/api/projections/run-health.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.2
 
 ### P6.9 — SSE run-event stream: delivery-only, resume from lastEventId, polling fallback
 
-- [ ] GET /runs/:id/stream emits run events over SSE in sequence order; the SSE id is the event sequence (lastEventId)
-- [ ] The stream carries operation-start / in-flight markers (generation.verifying/scoring/reproducing, *_started, tool_call.started/finished), not only completion events, so the dashboard renders a live in-flight window (§4/§12)
-- [ ] SSE is delivery-only and non-authoritative: it never writes to or mutates the event log, and dropping the stream loses no authoritative state
-- [ ] On reconnect the client resumes strictly from its last seen sequence (Last-Event-ID), receiving no gap and no duplicate before the cursor
-- [ ] If streaming is unavailable the client can fall back to polling GET /runs/:id/events / replay and reconstruct the same ordered view
-- [ ] Disconnect/resync produces a projection identical to the uninterrupted stream (sequence is the sole ordering key)
-- [ ] Files: apps/api/routes/run-stream.ts (NEW); apps/api/sse/event-bridge.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.7
+- [x] GET /runs/:id/stream emits run events over SSE in sequence order; the SSE id is the event sequence (lastEventId)
+- [x] The stream carries operation-start / in-flight markers (generation.verifying/scoring/reproducing, *_started, tool_call.started/finished), not only completion events, so the dashboard renders a live in-flight window (§4/§12)
+- [x] SSE is delivery-only and non-authoritative: it never writes to or mutates the event log, and dropping the stream loses no authoritative state
+- [x] On reconnect the client resumes strictly from its last seen sequence (Last-Event-ID), receiving no gap and no duplicate before the cursor
+- [x] If streaming is unavailable the client can fall back to polling GET /runs/:id/events / replay and reconstruct the same ordered view
+- [x] Disconnect/resync produces a projection identical to the uninterrupted stream (sequence is the sole ordering key)
+- [x] Files: apps/api/routes/run-stream.ts (NEW); apps/api/sse/event-bridge.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.7
 
 ### P6.10 — Runtime self-observability: structured kernel logs + worker heartbeat
 
-- [ ] Kernel emits structured logs carrying run / generation / agenome correlation IDs (correlationId on the envelope is propagated)
-- [ ] A worker-alive heartbeat is emitted periodically while the in-process worker runs, observable to /health and the operator
-- [ ] Observability sinks are console + Postgres only for MVP; no external metrics stack is introduced
-- [ ] Heartbeat absence is detectable (stale last-heartbeat surfaces a not-alive signal) so a stalled/crashed worker is visible
-- [ ] Log/heartbeat emission never blocks or mutates the authoritative append path and is subject to the redaction filter before any external emit
-- [ ] Files: packages/observability/src/kernel-logger.ts (NEW); apps/api/runtime/heartbeat.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.5, P6.8
+- [x] Kernel emits structured logs carrying run / generation / agenome correlation IDs (correlationId on the envelope is propagated)
+- [x] A worker-alive heartbeat is emitted periodically while the in-process worker runs, observable to /health and the operator
+- [x] Observability sinks are console + Postgres only for MVP; no external metrics stack is introduced
+- [x] Heartbeat absence is detectable (stale last-heartbeat surfaces a not-alive signal) so a stalled/crashed worker is visible
+- [x] Log/heartbeat emission never blocks or mutates the authoritative append path and is subject to the redaction filter before any external emit
+- [x] Files: packages/observability/src/kernel-logger.ts (NEW); apps/api/runtime/heartbeat.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.5, P6.8
 
 ### P6.11 — Neo4j spike (timeboxed throwaway notebook over derived lineage export)
 
-- [ ] Runs in week 2 only after the React Flow demo path works, capped at ~1 engineer-day, as a throwaway notebook
-- [ ] Operates over a derived lineage export (from LineageGraphProjection), not a synced read model and not the authoritative store
-- [ ] Proves the four query shapes: ancestors-of-winner, parent-contribution, critic-kill patterns, lineage distance/diversity (plus dashboard export)
-- [ ] Is never a runtime dependency and must never block the demo loop; the runtime path works with the notebook absent
-- [ ] Export is derived-only and read-only; the spike never writes back into run_events or projections
-- [ ] Files: apps/api/projections/lineage-export.ts (NEW); spikes/neo4j/lineage-queries.ipynb (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P6.3
+- [x] Runs in week 2 only after the React Flow demo path works, capped at ~1 engineer-day, as a throwaway notebook
+- [x] Operates over a derived lineage export (from LineageGraphProjection), not a synced read model and not the authoritative store
+- [x] Proves the four query shapes: ancestors-of-winner, parent-contribution, critic-kill patterns, lineage distance/diversity (plus dashboard export)
+- [x] Is never a runtime dependency and must never block the demo loop; the runtime path works with the notebook absent
+- [x] Export is derived-only and read-only; the spike never writes back into run_events or projections
+- [x] Files: apps/api/projections/lineage-export.ts (NEW); spikes/neo4j/lineage-queries.ipynb (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P6.3
 
 ### Acceptance criteria (P6)
 
-- [ ] Projection builders fold run_events ordered solely by (runId, sequence) into current-state, the typed LineageGraphProjection (sequenceThrough), and replay summaries; occurredAt is never an ordering key.
-- [ ] Every cached projection records its (runId, sequence) watermark and is discarded/rebuilt when newer events exist; rebuilt projections are state-equivalent to the captured-at-run-end projection with no model/web/embedding calls.
-- [ ] REST surface implements POST/GET /runs, /runs/:id, /stop, /events, /stream(SSE), /lineage, /replay, /candidates/:cid, /model-routes, and /runs/:id/health; mutating endpoints are idempotent and reject cap overrides above validated maxima.
-- [ ] SSE is delivery-only and non-authoritative: clients resume from lastEventId/sequence with a polling fallback, and disconnect/resync yields an identical ordered projection.
-- [ ] GET /runs/:id/health exposes current generation, candidates in flight, last-event time, and caps consumed from the live projection, without an external metrics stack.
-- [ ] Secret redaction runs before append and before any Langfuse emit; projections and replay never observe an unredacted secret.
-- [ ] Runtime self-observability provides structured kernel logs with run/generation/agenome correlation IDs and a worker-alive heartbeat (console + Postgres only).
-- [ ] The Neo4j spike is a timeboxed throwaway notebook over a derived lineage export proving the named query shapes and is never a runtime dependency or demo blocker.
+- [x] Projection builders fold run_events ordered solely by (runId, sequence) into current-state, the typed LineageGraphProjection (sequenceThrough), and replay summaries; occurredAt is never an ordering key.
+- [x] Every cached projection records its (runId, sequence) watermark and is discarded/rebuilt when newer events exist; rebuilt projections are state-equivalent to the captured-at-run-end projection with no model/web/embedding calls.
+- [x] REST surface implements POST/GET /runs, /runs/:id, /stop, /events, /stream(SSE), /lineage, /replay, /candidates/:cid, /model-routes, and /runs/:id/health; mutating endpoints are idempotent and reject cap overrides above validated maxima.
+- [x] SSE is delivery-only and non-authoritative: clients resume from lastEventId/sequence with a polling fallback, and disconnect/resync yields an identical ordered projection.
+- [x] GET /runs/:id/health exposes current generation, candidates in flight, last-event time, and caps consumed from the live projection, without an external metrics stack.
+- [x] Secret redaction runs before append and before any Langfuse emit; projections and replay never observe an unredacted secret.
+- [x] Runtime self-observability provides structured kernel logs with run/generation/agenome correlation IDs and a worker-alive heartbeat (console + Postgres only).
+- [x] The Neo4j spike is a timeboxed throwaway notebook over a derived lineage export proving the named query shapes and is never a runtime dependency or demo blocker.
 
 ---
 
@@ -1311,173 +1310,173 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P7.1 — REST + SSE data client over typed contracts (read-only seam)
 
-- [ ] All projection reads and the SSE stream are parsed/validated through the Zod schemas re-exported from packages/contracts (z.infer types), so the UI never trusts an unvalidated server payload
-- [ ] The client exposes ONLY the contract-defined endpoints: GET /runs, GET /runs/:id, GET /runs/:id/events, GET /runs/:id/lineage, GET /runs/:id/replay, GET /runs/:id/health, GET /runs/:id/candidates/:cid, GET /model-routes, plus the SSE GET /runs/:id/stream — and the two idempotent mutating commands POST /runs and POST /runs/:id/stop
-- [ ] SSE events are ordered and de-duplicated by per-run monotonic sequence ALONE; an event whose sequence is <= the last applied sequence is dropped, never reordered by wall-clock occurredAt
-- [ ] The client carries lastEventId equal to the last applied sequence so a reconnect resumes from that watermark; SSE is treated as non-authoritative delivery only
-- [ ] A schema-validation failure on any payload surfaces as a typed error to the UI rather than corrupting view state, and the run remains inspectable via the REST projections
-- [ ] Files: apps/web/src/data/runClient.ts (NEW); apps/web/src/data/sseStream.ts (NEW); apps/web/src/data/contracts.ts (NEW — re-export of packages/contracts schemas); packages/contracts/src/index.ts (extended — ensure projection/event schemas exported for web consumption)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType, RunConfig, RunCaps, CandidateIdea, LineageGraphProjection, ModelRoute — frozen in P0.1, P0.11, P0.13, P0.3, P0.5)
-- [ ] Depends on: P0.1, P0.11, P0.13, P0.3, P0.5
+- [x] All projection reads and the SSE stream are parsed/validated through the Zod schemas re-exported from packages/contracts (z.infer types), so the UI never trusts an unvalidated server payload
+- [x] The client exposes ONLY the contract-defined endpoints: GET /runs, GET /runs/:id, GET /runs/:id/events, GET /runs/:id/lineage, GET /runs/:id/replay, GET /runs/:id/health, GET /runs/:id/candidates/:cid, GET /model-routes, plus the SSE GET /runs/:id/stream — and the two idempotent mutating commands POST /runs and POST /runs/:id/stop
+- [x] SSE events are ordered and de-duplicated by per-run monotonic sequence ALONE; an event whose sequence is <= the last applied sequence is dropped, never reordered by wall-clock occurredAt
+- [x] The client carries lastEventId equal to the last applied sequence so a reconnect resumes from that watermark; SSE is treated as non-authoritative delivery only
+- [x] A schema-validation failure on any payload surfaces as a typed error to the UI rather than corrupting view state, and the run remains inspectable via the REST projections
+- [x] Files: apps/web/src/data/runClient.ts (NEW); apps/web/src/data/sseStream.ts (NEW); apps/web/src/data/contracts.ts (NEW — re-export of packages/contracts schemas); packages/contracts/src/index.ts (extended — ensure projection/event schemas exported for web consumption)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType, RunConfig, RunCaps, CandidateIdea, LineageGraphProjection, ModelRoute — frozen in P0.1, P0.11, P0.13, P0.3, P0.5)
+- [x] Depends on: P0.1, P0.11, P0.13, P0.3, P0.5
 
 ### P7.2 — Run event store / view-state reducer with sequence-keyed resync
 
-- [ ] A single client-side reducer folds RunEventEnvelope events into view state keyed strictly by per-run sequence; folding is idempotent so re-applying an already-seen sequence is a no-op
-- [ ] On SSE disconnect the store resyncs by requesting events after the last applied sequence (lastEventId) and applies them in sequence order, reaching the same view state a fresh full load would produce
-- [ ] If live streaming stalls or fails, the store degrades to polling the REST projections / replay per §11 and §NF-005 without losing already-applied state
-- [ ] Failure events (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded) are retained and surfaced, not silently dropped — partial evidence stays visible (REQ-O-002)
-- [ ] Replay-sourced events and live events produce identical fold results; the store carries the mode (live vs replay) for downstream indicators without changing fold semantics
-- [ ] Files: apps/web/src/state/runStore.ts (NEW); apps/web/src/state/reducer.ts (NEW); apps/web/src/state/resync.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType — frozen in P0.1)
-- [ ] Depends on: P0.1, P7.1
+- [x] A single client-side reducer folds RunEventEnvelope events into view state keyed strictly by per-run sequence; folding is idempotent so re-applying an already-seen sequence is a no-op
+- [x] On SSE disconnect the store resyncs by requesting events after the last applied sequence (lastEventId) and applies them in sequence order, reaching the same view state a fresh full load would produce
+- [x] If live streaming stalls or fails, the store degrades to polling the REST projections / replay per §11 and §NF-005 without losing already-applied state
+- [x] Failure events (provider_call_failed, output_schema_rejected, candidate_invalidated, energy_exhausted, generation_failed, reproduction_aborted_insufficient_parents, novelty_scoring_degraded) are retained and surfaced, not silently dropped — partial evidence stays visible (REQ-O-002)
+- [x] Replay-sourced events and live events produce identical fold results; the store carries the mode (live vs replay) for downstream indicators without changing fold semantics
+- [x] Files: apps/web/src/state/runStore.ts (NEW); apps/web/src/state/reducer.ts (NEW); apps/web/src/state/resync.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventEnvelope, RunEventType — frozen in P0.1)
+- [x] Depends on: P0.1, P7.1
 
 ### P7.3 — Accessible status primitive (shape + label + icon + colorblind-safe color)
 
-- [ ] Every run/agenome/candidate/critic/check/score status is rendered with shape AND text label AND icon in addition to a colorblind-safe color — status is never conveyed by color alone (§12)
-- [ ] A single shared StatusBadge/StatusIndicator primitive maps each domain status enum (e.g. agenome 7-state, check passed/failed/skipped, run terminal states) to a fixed shape+icon+label so the same status looks identical everywhere
-- [ ] High-contrast theme tokens and projector-legible minimum font sizes are defined centrally and consumed by all panels (§12 projector robustness)
-- [ ] Unknown/unmapped status values render a distinct neutral indicator rather than throwing or rendering blank
-- [ ] The primitive exposes its label/role to assistive tech so status is programmatically determinable, not visual-only
-- [ ] Files: apps/web/src/ui/StatusIndicator.tsx (NEW); apps/web/src/ui/theme.ts (NEW — high-contrast tokens, font scale, colorblind-safe palette); apps/web/src/ui/status-map.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventType, CheckResult, CandidateIdea, Agenome — frozen in P0.1, P0.4, P0.5, P0.7)
-- [ ] Depends on: P0.1, P0.4, P0.5, P0.7
+- [x] Every run/agenome/candidate/critic/check/score status is rendered with shape AND text label AND icon in addition to a colorblind-safe color — status is never conveyed by color alone (§12)
+- [x] A single shared StatusBadge/StatusIndicator primitive maps each domain status enum (e.g. agenome 7-state, check passed/failed/skipped, run terminal states) to a fixed shape+icon+label so the same status looks identical everywhere
+- [x] High-contrast theme tokens and projector-legible minimum font sizes are defined centrally and consumed by all panels (§12 projector robustness)
+- [x] Unknown/unmapped status values render a distinct neutral indicator rather than throwing or rendering blank
+- [x] The primitive exposes its label/role to assistive tech so status is programmatically determinable, not visual-only
+- [x] Files: apps/web/src/ui/StatusIndicator.tsx (NEW); apps/web/src/ui/theme.ts (NEW — high-contrast tokens, font scale, colorblind-safe palette); apps/web/src/ui/status-map.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventType, CheckResult, CandidateIdea, Agenome — frozen in P0.1, P0.4, P0.5, P0.7)
+- [x] Depends on: P0.1, P0.4, P0.5, P0.7
 
 ### P7.4 — Live/replay mode indicator
 
-- [ ] The indicator unambiguously distinguishes live execution from replay using the shared accessible status primitive (shape+label+icon+color), not color alone (REQ-UX-002)
-- [ ] In replay mode the original timestamps/order are shown and the screen is clearly marked as replay (REQ-UX-002 acceptance signal)
-- [ ] Mode is derived from the run store's mode flag (P7.2) and updates if the operator falls back from live to replay mid-session (§17 fallback ladder)
-- [ ] The indicator is persistently visible across all panels so a room never mistakes a replay for a live run
-- [ ] Files: apps/web/src/panels/ModeIndicator.tsx (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P7.2, P7.3
+- [x] The indicator unambiguously distinguishes live execution from replay using the shared accessible status primitive (shape+label+icon+color), not color alone (REQ-UX-002)
+- [x] In replay mode the original timestamps/order are shown and the screen is clearly marked as replay (REQ-UX-002 acceptance signal)
+- [x] Mode is derived from the run store's mode flag (P7.2) and updates if the operator falls back from live to replay mid-session (§17 fallback ladder)
+- [x] The indicator is persistently visible across all panels so a room never mistakes a replay for a live run
+- [x] Files: apps/web/src/panels/ModeIndicator.tsx (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P7.2, P7.3
 
 ### P7.5 — Operator run-config panel with cap-max validation (fail-closed at the browser seam)
 
-- [ ] The form edits RunConfig/RunCaps fields (seed/rngSeed, enabledSubtypes[], maxPopulation, maxGenerations, energyBudget, maxSpawnDepth, maxToolCalls, wallClockTimeoutMs, modelProfile, scoringPolicyVersion) validated against the shared Zod RunConfig schema before submit
-- [ ] Any cap override above the validated ceiling is rejected client-side and never submitted — the demo override may only LOWER caps within validated maxima (§17, REQ-UX-004); the UI never bypasses hard maximums
-- [ ] Both candidate subtypes are selectable and the panel does not allow disabling all subtypes (both subtypes are equal must-ship)
-- [ ] Start issues the idempotent POST /runs command and the panel reflects the returned run identity; a duplicate submit does not create a second run (idempotency-key/terminal-state guard at the API is respected, not re-implemented)
-- [ ] Invalid settings produce inline, accessible field-level errors and block submission rather than failing silently
-- [ ] Files: apps/web/src/panels/RunConfigPanel.tsx (NEW); apps/web/src/panels/runConfigForm.ts (NEW — form-to-RunConfig mapping + cap-max guard)
-- [ ] Cross-doc invariant: none (consumes RunConfig, RunCaps — frozen in P0.3)
-- [ ] Depends on: P0.3, P7.1, P7.3
+- [x] The form edits RunConfig/RunCaps fields (seed/rngSeed, enabledSubtypes[], maxPopulation, maxGenerations, energyBudget, maxSpawnDepth, maxToolCalls, wallClockTimeoutMs, modelProfile, scoringPolicyVersion) validated against the shared Zod RunConfig schema before submit
+- [x] Any cap override above the validated ceiling is rejected client-side and never submitted — the demo override may only LOWER caps within validated maxima (§17, REQ-UX-004); the UI never bypasses hard maximums
+- [x] Both candidate subtypes are selectable and the panel does not allow disabling all subtypes (both subtypes are equal must-ship)
+- [x] Start issues the idempotent POST /runs command and the panel reflects the returned run identity; a duplicate submit does not create a second run (idempotency-key/terminal-state guard at the API is respected, not re-implemented)
+- [x] Invalid settings produce inline, accessible field-level errors and block submission rather than failing silently
+- [x] Files: apps/web/src/panels/RunConfigPanel.tsx (NEW); apps/web/src/panels/runConfigForm.ts (NEW — form-to-RunConfig mapping + cap-max guard)
+- [x] Cross-doc invariant: none (consumes RunConfig, RunCaps — frozen in P0.3)
+- [x] Depends on: P0.3, P7.1, P7.3
 
 ### P7.6 — Run stop control (idempotent kill path)
 
-- [ ] Stop issues the idempotent POST /runs/:id/stop command; repeated clicks or a click after the run already reached a terminal state do not error and do not change the terminal outcome (terminal-state guard, REQ-O-003)
-- [ ] The control is disabled/relabeled once the run is in a terminal state (completed/failed/stopped) based on store state, never on optimistic local guessing
-- [ ] After stop the dashboard continues to show preserved partial evidence up to the stop point (REQ-F-012, REQ-O-002) — stopping is non-destructive to the projections
-- [ ] The control surfaces command failure (network/API error) to the operator with an accessible message and remains retry-safe due to idempotency
-- [ ] Files: apps/web/src/panels/StopControl.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes RunEventType — frozen in P0.1)
-- [ ] Depends on: P0.1, P7.1, P7.2, P7.3
+- [x] Stop issues the idempotent POST /runs/:id/stop command; repeated clicks or a click after the run already reached a terminal state do not error and do not change the terminal outcome (terminal-state guard, REQ-O-003)
+- [x] The control is disabled/relabeled once the run is in a terminal state (completed/failed/stopped) based on store state, never on optimistic local guessing
+- [x] After stop the dashboard continues to show preserved partial evidence up to the stop point (REQ-F-012, REQ-O-002) — stopping is non-destructive to the projections
+- [x] The control surfaces command failure (network/API error) to the operator with an accessible message and remains retry-safe due to idempotency
+- [x] Files: apps/web/src/panels/StopControl.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes RunEventType — frozen in P0.1)
+- [x] Depends on: P0.1, P7.1, P7.2, P7.3
 
 ### P7.7 — React Flow lineage tree with five custom node types + layout helper
 
-- [ ] Renders the storage-agnostic LineageGraphProjection (nodes{id,type,label,status?,metrics?,dataRef} + edges{id,source,target,type,label?} + sequenceThrough) without assuming any physical store (§10)
-- [ ] Provides the five custom node types named in §10/§12 — agenome, candidate, critic/check, score, selected winner — each using the shared accessible status primitive (shape+label+icon+color)
-- [ ] Node positions come from a deterministic layout helper (Dagre/ELK) when the projection carries no coordinates, so the same projection lays out the same way each render
-- [ ] The graph updates incrementally as the projection's sequenceThrough advances, and a node's dataRef is the link target consumed by inspector/evidence panels and the final-idea panel
-- [ ] Derives a per-node working / in-flight sub-state when an operation-start marker is seen without its paired completion and clears it on the completion event, and surfaces a live activity feed (start→finish) so the audience sees what each agenome/critic/check/judge/fusion is doing in-flight — replay reproduces the same liveness (§4/§12)
-- [ ] The view makes spawn, survival, fusion, mutation, and generation improvement legible to an audience (REQ-UX-001, REQ-E-002)
-- [ ] Files: apps/web/src/lineage/LineageGraph.tsx (NEW); apps/web/src/lineage/nodeTypes.tsx (NEW — agenome/candidate/critic-check/score/selected); apps/web/src/lineage/layout.ts (NEW — Dagre/ELK helper)
-- [ ] Cross-doc invariant: none (consumes LineageGraphProjection — frozen in P0.13)
-- [ ] Depends on: P0.13, P7.1, P7.2, P7.3
+- [x] Renders the storage-agnostic LineageGraphProjection (nodes{id,type,label,status?,metrics?,dataRef} + edges{id,source,target,type,label?} + sequenceThrough) without assuming any physical store (§10)
+- [x] Provides the five custom node types named in §10/§12 — agenome, candidate, critic/check, score, selected winner — each using the shared accessible status primitive (shape+label+icon+color)
+- [x] Node positions come from a deterministic layout helper (Dagre/ELK) when the projection carries no coordinates, so the same projection lays out the same way each render
+- [x] The graph updates incrementally as the projection's sequenceThrough advances, and a node's dataRef is the link target consumed by inspector/evidence panels and the final-idea panel
+- [x] Derives a per-node working / in-flight sub-state when an operation-start marker is seen without its paired completion and clears it on the completion event, and surfaces a live activity feed (start→finish) so the audience sees what each agenome/critic/check/judge/fusion is doing in-flight — replay reproduces the same liveness (§4/§12)
+- [x] The view makes spawn, survival, fusion, mutation, and generation improvement legible to an audience (REQ-UX-001, REQ-E-002)
+- [x] Files: apps/web/src/lineage/LineageGraph.tsx (NEW); apps/web/src/lineage/nodeTypes.tsx (NEW — agenome/candidate/critic-check/score/selected); apps/web/src/lineage/layout.ts (NEW — Dagre/ELK helper)
+- [x] Cross-doc invariant: none (consumes LineageGraphProjection — frozen in P0.13)
+- [x] Depends on: P0.13, P7.1, P7.2, P7.3
 
 ### P7.8 — Fitness-over-time + generation-comparison charts
 
-- [ ] Fitness-over-time chart plots FitnessScore.total (and components when shown) across generations, making generation-over-generation improvement visible (REQ-E-001)
-- [ ] Generation-comparison chart contrasts generations on the scored metrics derived from fitness.scored / novelty.scored events, sourced from the run store / projections only
-- [ ] Charts encode series with patterns/markers/labels in addition to color so they remain readable on a projector and for colorblind viewers (§12)
-- [ ] Charts render meaningfully with zero/partial data (early in a run) and update as new fitness/novelty events fold in, never blocking on the full run completing
-- [ ] Files: apps/web/src/charts/FitnessOverTime.tsx (NEW); apps/web/src/charts/GenerationComparison.tsx (NEW); apps/web/src/charts/chartTheme.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore — frozen in P0.8)
-- [ ] Depends on: P0.8, P7.2, P7.3
+- [x] Fitness-over-time chart plots FitnessScore.total (and components when shown) across generations, making generation-over-generation improvement visible (REQ-E-001)
+- [x] Generation-comparison chart contrasts generations on the scored metrics derived from fitness.scored / novelty.scored events, sourced from the run store / projections only
+- [x] Charts encode series with patterns/markers/labels in addition to color so they remain readable on a projector and for colorblind viewers (§12)
+- [x] Charts render meaningfully with zero/partial data (early in a run) and update as new fitness/novelty events fold in, never blocking on the full run completing
+- [x] Files: apps/web/src/charts/FitnessOverTime.tsx (NEW); apps/web/src/charts/GenerationComparison.tsx (NEW); apps/web/src/charts/chartTheme.ts (NEW)
+- [x] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore — frozen in P0.8)
+- [x] Depends on: P0.8, P7.2, P7.3
 
 ### P7.9 — Energy-per-agenome panel (successful productive spend only)
 
-- [ ] Displays doppl_energy spend per agenome derived from EnergyEvent / energy.spent projections, making cost/energy scarcity visible as a selection pressure (REQ-E-004)
-- [ ] Reflects that energy debits ONLY successful productive spend — failed/retried/repaired attempts (provider_call_failed, output_schema_rejected) do not add to an agenome's energy total
-- [ ] Shows progress against the run's energyBudget cap and surfaces an energy_exhausted state distinctly when it occurs
-- [ ] Per-agenome rows link to that agenome's lineage node and candidate(s) so energy is traceable to outcome
-- [ ] Files: apps/web/src/panels/EnergyPanel.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes EnergyEvent, RunCaps — frozen in P0.3, P0.9)
-- [ ] Depends on: P0.3, P0.9, P7.2, P7.3, P7.7
+- [x] Displays doppl_energy spend per agenome derived from EnergyEvent / energy.spent projections, making cost/energy scarcity visible as a selection pressure (REQ-E-004)
+- [x] Reflects that energy debits ONLY successful productive spend — failed/retried/repaired attempts (provider_call_failed, output_schema_rejected) do not add to an agenome's energy total
+- [x] Shows progress against the run's energyBudget cap and surfaces an energy_exhausted state distinctly when it occurs
+- [x] Per-agenome rows link to that agenome's lineage node and candidate(s) so energy is traceable to outcome
+- [x] Files: apps/web/src/panels/EnergyPanel.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes EnergyEvent, RunCaps — frozen in P0.3, P0.9)
+- [x] Depends on: P0.3, P0.9, P7.2, P7.3, P7.7
 
 ### P7.10 — Candidate inspector
 
-- [ ] Loads a candidate via GET /runs/:id/candidates/:cid and renders CandidateIdea fields (subtype, title, summary, claims[], evidenceRefs[], status) for both subtypes (CrossDomainTransfer and ZeitgeistSynthesis payloads)
-- [ ] EvidenceRef links resolve WITHIN the Postgres tier only — eventId/uri pointers reference authoritative events/projections, never a non-authoritative external store (§9, §4)
-- [ ] Subtype-specific payload fields render per the subtype without one subtype crashing the other; an unknown/missing payload field degrades gracefully
-- [ ] Candidate status uses the shared accessible status primitive and the inspector is reachable from a lineage candidate node's dataRef
-- [ ] Files: apps/web/src/panels/CandidateInspector.tsx (NEW); apps/web/src/panels/evidenceRef.tsx (NEW — EvidenceRef resolver/link)
-- [ ] Cross-doc invariant: none (consumes CandidateIdea, EvidenceRef — frozen in P0.5)
-- [ ] Depends on: P0.5, P7.1, P7.3
+- [x] Loads a candidate via GET /runs/:id/candidates/:cid and renders CandidateIdea fields (subtype, title, summary, claims[], evidenceRefs[], status) for both subtypes (CrossDomainTransfer and ZeitgeistSynthesis payloads)
+- [x] EvidenceRef links resolve WITHIN the Postgres tier only — eventId/uri pointers reference authoritative events/projections, never a non-authoritative external store (§9, §4)
+- [x] Subtype-specific payload fields render per the subtype without one subtype crashing the other; an unknown/missing payload field degrades gracefully
+- [x] Candidate status uses the shared accessible status primitive and the inspector is reachable from a lineage candidate node's dataRef
+- [x] Files: apps/web/src/panels/CandidateInspector.tsx (NEW); apps/web/src/panels/evidenceRef.tsx (NEW — EvidenceRef resolver/link)
+- [x] Cross-doc invariant: none (consumes CandidateIdea, EvidenceRef — frozen in P0.5)
+- [x] Depends on: P0.5, P7.1, P7.3
 
 ### P7.11 — Critic-gauntlet panel
 
-- [ ] Renders CriticReview records (mandate, scores{}, critique, confidence, evidenceRefs[]) for a candidate, presenting the adversarial gauntlet the candidate faced (REQ-UX-003)
-- [ ] Displays candidate text strictly as DATA — critic critique/mandate is presented as the authoritative rubric output and the candidate content is clearly delimited as untrusted input (criticInput rubric-vs-candidate separation, §7/§14)
-- [ ] Each review's evidenceRefs resolve within the Postgres tier (reuse the EvidenceRef resolver) so critics are replayable evidence (REQ-E-003)
-- [ ] Critic outcomes use the shared accessible status primitive; held-out judge / critic rotation outputs are shown read-only and are never editable from the UI (immutable to agents)
-- [ ] Files: apps/web/src/panels/CriticGauntlet.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes CriticReview — frozen in P0.6)
-- [ ] Depends on: P0.6, P7.10, P7.3
+- [x] Renders CriticReview records (mandate, scores{}, critique, confidence, evidenceRefs[]) for a candidate, presenting the adversarial gauntlet the candidate faced (REQ-UX-003)
+- [x] Displays candidate text strictly as DATA — critic critique/mandate is presented as the authoritative rubric output and the candidate content is clearly delimited as untrusted input (criticInput rubric-vs-candidate separation, §7/§14)
+- [x] Each review's evidenceRefs resolve within the Postgres tier (reuse the EvidenceRef resolver) so critics are replayable evidence (REQ-E-003)
+- [x] Critic outcomes use the shared accessible status primitive; held-out judge / critic rotation outputs are shown read-only and are never editable from the UI (immutable to agents)
+- [x] Files: apps/web/src/panels/CriticGauntlet.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes CriticReview — frozen in P0.6)
+- [x] Depends on: P0.6, P7.10, P7.3
 
 ### P7.12 — Subtype-check evidence panel
 
-- [ ] Renders CheckResult records (checkType, status passed/failed/skipped, score?, output?, skipReason?, evidenceRefs[], error?) produced by the allowlisted non-executing check-runner adapters
-- [ ] A skipped check shows its skipReason and a failed check shows its error; status uses the shared accessible primitive (passed/failed/skipped distinguishable without color)
-- [ ] Check evidenceRefs resolve within the Postgres tier (reuse resolver) so check results are replayable evidence
-- [ ] The panel makes clear the checks are adapter outputs (no arbitrary code execution is implied or invoked from the UI), and it covers both candidate subtypes' checks equally
-- [ ] Files: apps/web/src/panels/CheckEvidence.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes CheckResult — frozen in P0.7)
-- [ ] Depends on: P0.7, P7.10, P7.3
+- [x] Renders CheckResult records (checkType, status passed/failed/skipped, score?, output?, skipReason?, evidenceRefs[], error?) produced by the allowlisted non-executing check-runner adapters
+- [x] A skipped check shows its skipReason and a failed check shows its error; status uses the shared accessible primitive (passed/failed/skipped distinguishable without color)
+- [x] Check evidenceRefs resolve within the Postgres tier (reuse resolver) so check results are replayable evidence
+- [x] The panel makes clear the checks are adapter outputs (no arbitrary code execution is implied or invoked from the UI), and it covers both candidate subtypes' checks equally
+- [x] Files: apps/web/src/panels/CheckEvidence.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes CheckResult — frozen in P0.7)
+- [x] Depends on: P0.7, P7.10, P7.3
 
 ### P7.13 — Final surviving-idea proof panel
 
-- [ ] Presents the final surviving idea with links resolving to its lineage node, critic reviews, check results, fitness score components, energy spend, and traces (§12, REQ-UX-003, REQ-E-003)
-- [ ] Every link target resolves against the loaded projections/inspector panels (lineage P7.7, critics P7.11, checks P7.12, fitness P7.8, energy P7.9, candidate P7.10) — a broken/unresolvable link is surfaced rather than silently dead (this is the Playwright smoke's assertion target)
-- [ ] Trace links carry the event's langfuseTraceId/langfuseObservationId when present and degrade cleanly to local trace metadata when Langfuse is disabled (§13)
-- [ ] The panel works identically in live and replay mode and is the demo's closing surface (REQ-E-003, demo path §17)
-- [ ] Files: apps/web/src/panels/FinalIdeaPanel.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes CandidateIdea, FitnessScore, CriticReview, CheckResult, EnergyEvent, LineageGraphProjection, EvidenceRef — frozen in P0.13, P0.5, P0.6, P0.7, P0.8, P0.9)
-- [ ] Depends on: P0.13, P0.5, P0.6, P0.7, P0.8, P0.9, P7.10, P7.11, P7.12, P7.7, P7.8, P7.9
+- [x] Presents the final surviving idea with links resolving to its lineage node, critic reviews, check results, fitness score components, energy spend, and traces (§12, REQ-UX-003, REQ-E-003)
+- [x] Every link target resolves against the loaded projections/inspector panels (lineage P7.7, critics P7.11, checks P7.12, fitness P7.8, energy P7.9, candidate P7.10) — a broken/unresolvable link is surfaced rather than silently dead (this is the Playwright smoke's assertion target)
+- [x] Trace links carry the event's langfuseTraceId/langfuseObservationId when present and degrade cleanly to local trace metadata when Langfuse is disabled (§13)
+- [x] The panel works identically in live and replay mode and is the demo's closing surface (REQ-E-003, demo path §17)
+- [x] Files: apps/web/src/panels/FinalIdeaPanel.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes CandidateIdea, FitnessScore, CriticReview, CheckResult, EnergyEvent, LineageGraphProjection, EvidenceRef — frozen in P0.13, P0.5, P0.6, P0.7, P0.8, P0.9)
+- [x] Depends on: P0.13, P0.5, P0.6, P0.7, P0.8, P0.9, P7.10, P7.11, P7.12, P7.7, P7.8, P7.9
 
 ### P7.14 — Dashboard shell + run health/diagnostics + secret-redaction trust pin
 
-- [ ] Composes all panels into one projector-legible layout using the high-contrast theme and large fonts (§12), with the mode indicator and stop control persistently visible
-- [ ] Surfaces GET /runs/:id/health (current generation, candidates in flight, last-event time, caps consumed) so the operator can decide continue vs. switch-to-replay during the demo window (§11)
-- [ ] Renders an operations-in-flight summary from /runs/:id/health (unpaired start markers — agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) as a real-time in-flight window, identical in live and replay (§4/§12)
-- [ ] The UI displays only redacted payloads — it relies on the persistence-boundary redaction filter and never reconstructs or renders a secret/API key from any event/trace/UI payload (§14 safety pin)
-- [ ] No panel issues any write other than the two idempotent commands (POST /runs, POST /runs/:id/stop); the dashboard never mutates authoritative state (§12 invariant)
-- [ ] The shell handles run-not-found / empty-run / failed-run states gracefully and keeps already-loaded evidence inspectable
-- [ ] Files: apps/web/src/App.tsx (NEW); apps/web/src/panels/HealthPanel.tsx (NEW); apps/web/src/layout/DashboardShell.tsx (NEW)
-- [ ] Cross-doc invariant: none (consumes RunConfig — frozen in P0.3)
-- [ ] Depends on: P0.3, P7.13, P7.4, P7.5, P7.6, P7.7, P7.8, P7.9
+- [x] Composes all panels into one projector-legible layout using the high-contrast theme and large fonts (§12), with the mode indicator and stop control persistently visible
+- [x] Surfaces GET /runs/:id/health (current generation, candidates in flight, last-event time, caps consumed) so the operator can decide continue vs. switch-to-replay during the demo window (§11)
+- [ ] Renders an operations-in-flight summary from /runs/:id/health (unpaired start markers — agenomes generating, critics reviewing, checks running, judge deliberating, fusions synthesizing) as a real-time in-flight window, identical in live and replay (§4/§12) _(partial: the web renders `candidatesInFlight` only; the backend `run-health.ts` already computes `operationsInFlight.byType` per category incl. `judge` — round-4 sv5 reconcile; the full per-category render + the web-local `RunHealth` schema promotion is deferred to the RunHealth-promotion carry-forward, P7 arch-drift audit re-confirmed)_
+- [x] The UI displays only redacted payloads — it relies on the persistence-boundary redaction filter and never reconstructs or renders a secret/API key from any event/trace/UI payload (§14 safety pin)
+- [x] No panel issues any write other than the two idempotent commands (POST /runs, POST /runs/:id/stop); the dashboard never mutates authoritative state (§12 invariant)
+- [x] The shell handles run-not-found / empty-run / failed-run states gracefully and keeps already-loaded evidence inspectable
+- [x] Files: apps/web/src/App.tsx (NEW); apps/web/src/panels/HealthPanel.tsx (NEW); apps/web/src/layout/DashboardShell.tsx (NEW)
+- [x] Cross-doc invariant: none (consumes RunConfig — frozen in P0.3)
+- [x] Depends on: P0.3, P7.13, P7.4, P7.5, P7.6, P7.7, P7.8, P7.9
 
 ### P7.15 — Playwright happy-path smoke (start → live events → final-idea links resolve)
 
-- [ ] One end-to-end smoke: configure & start a run, observe live SSE events fold into the dashboard, then open the final-idea panel and assert every evidence link (lineage, critics, checks, score components, energy, traces) RESOLVES (§16 UI test)
-- [ ] Runs against the local-first demo boot path (migrate → seed replay fixture → start API/web) so it is deterministic and provider-independent (§17)
-- [ ] Asserts the live/replay mode indicator reflects the actual source and that the stop control reaches a terminal state without error
-- [ ] Treated as the single must-pass UI gate (not an exhaustive suite); a broken final-idea link fails the smoke
-- [ ] Files: apps/web/tests/e2e/happy-path.spec.ts (NEW); apps/web/playwright.config.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P7.14
+- [x] One end-to-end smoke: configure & start a run, observe live SSE events fold into the dashboard, then open the final-idea panel and assert every evidence link (lineage, critics, checks, score components, energy, traces) RESOLVES (§16 UI test)
+- [x] Runs against the local-first demo boot path (migrate → seed replay fixture → start API/web) so it is deterministic and provider-independent (§17)
+- [x] Asserts the live/replay mode indicator reflects the actual source and that the stop control reaches a terminal state without error
+- [x] Treated as the single must-pass UI gate (not an exhaustive suite); a broken final-idea link fails the smoke
+- [x] Files: apps/web/tests/e2e/happy-path.spec.ts (NEW); apps/web/playwright.config.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P7.14
 
 ### Acceptance criteria (P7)
 
-- [ ] The dashboard issues NO writes to authoritative state other than the two idempotent contract commands POST /runs and POST /runs/:id/stop; all other interaction is read-only over REST projections + SSE (§12 invariant)
-- [ ] All server payloads (projections and SSE events) are parsed through the shared packages/contracts Zod schemas (z.infer); the web app defines no Appendix-A models of its own
-- [ ] SSE delivery is treated as non-authoritative: events apply idempotently keyed by per-run monotonic sequence ALONE, and a disconnect resyncs from the last seen sequence (lastEventId) with polling/replay fallback (§11, REQ-NF-005)
-- [ ] All §12 panels are present: operator run-config (with cap-max fail-closed validation), live/replay mode indicator, React Flow lineage tree with the five custom node types, fitness-over-time + generation-comparison charts, energy-per-agenome, candidate inspector, critic-gauntlet, subtype-check evidence, final-idea proof panel, run-health, and run stop control
-- [ ] Status everywhere is conveyed by shape + label + icon AND colorblind-safe color (never color alone), under a high-contrast, projector-legible theme (§12)
-- [ ] The final-idea proof panel links resolve to lineage, critics, checks, score components, energy, and traces (REQ-UX-003, REQ-E-003), and trace links degrade cleanly when Langfuse is disabled (§13)
-- [ ] EvidenceRef links resolve only within the Postgres tier; candidate text is presented as untrusted DATA in critic contexts; the UI renders only redacted payloads and never reconstructs a secret (§4/§9/§14)
-- [ ] Cap overrides may only LOWER caps within validated maxima and the UI rejects any value above the ceiling (§17, REQ-UX-004); both candidate subtypes are first-class
-- [ ] One Playwright happy-path smoke passes against the local-first demo boot path: start → live events fold → final-idea links resolve (§16)
+- [x] The dashboard issues NO writes to authoritative state other than the two idempotent contract commands POST /runs and POST /runs/:id/stop; all other interaction is read-only over REST projections + SSE (§12 invariant)
+- [x] All server payloads (projections and SSE events) are parsed through the shared packages/contracts Zod schemas (z.infer); the web app defines no Appendix-A models of its own
+- [x] SSE delivery is treated as non-authoritative: events apply idempotently keyed by per-run monotonic sequence ALONE, and a disconnect resyncs from the last seen sequence (lastEventId) with polling/replay fallback (§11, REQ-NF-005)
+- [x] All §12 panels are present: operator run-config (with cap-max fail-closed validation), live/replay mode indicator, React Flow lineage tree with the five custom node types, fitness-over-time + generation-comparison charts, energy-per-agenome, candidate inspector, critic-gauntlet, subtype-check evidence, final-idea proof panel, run-health, and run stop control
+- [x] Status everywhere is conveyed by shape + label + icon AND colorblind-safe color (never color alone), under a high-contrast, projector-legible theme (§12)
+- [x] The final-idea proof panel links resolve to lineage, critics, checks, score components, energy, and traces (REQ-UX-003, REQ-E-003), and trace links degrade cleanly when Langfuse is disabled (§13)
+- [x] EvidenceRef links resolve only within the Postgres tier; candidate text is presented as untrusted DATA in critic contexts; the UI renders only redacted payloads and never reconstructs a secret (§4/§9/§14)
+- [x] Cap overrides may only LOWER caps within validated maxima and the UI rejects any value above the ceiling (§17, REQ-UX-004); both candidate subtypes are first-class
+- [x] One Playwright happy-path smoke passes against the local-first demo boot path: start → live events fold → final-idea links resolve (§16)
 
 ---
 
@@ -1618,6 +1617,18 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ---
 
 ## Log
+
+### 2026-06-22 — Demo→cody INTEGRATION (round 4): Phase 6 + Phase 7 COMPLETE · sv2→sv5 reconcile · /phase-exit P7 CLEAR
+
+- **Brought cody-sv5 INTO track/demo** (merge `da6ef82`): `CURRENT_SCHEMA_VERSION` 2→5 + the kernel/verifier substrate. Conflict resolution: `IMPLEMENTATION_PLAN.md`→cody canonical; `apps/api/LESSONS.md` + `CLAUDE.md` index UNION (cody §1–50 authoritative; demo §27–37 collided with kernel/verifier → **renumbered §51–61**, internal refs remapped); cross-doc table UNION (cody `JudgeResult` + demo `ProjectionWatermark`); `package.json` union (fastify+openai); lock regenerated.
+- **sv2→sv5 projection + status-map reconcile** (ADDITIVE — demo CONSUMES, emits none): backend `bb2d75c` (`judge.reviewed`→`JudgeResult` reducer row + judge→lineage `score` node + the 4 new terminals `run.cancelled`/`generation.skipped`/`agenome.failed`/`candidate.rejected` + run-health `judge.review_started`↔`judge.reviewed` pairing; **`degraded`/`repairing` = NO reducer transition** — kernel-internal §3 states with no `RunEventType`, pinned by an exhaustive-over-41-types test) · web `87e90d3` (status-map `degraded`/`repairing`). apps/api unit 365 / integration 79 · web 145.
+- **`/phase-exit P7` CLEAR** (the deferred round-3 4-auditor fan-out re-run): reachability CLEAR (93/97 reachable; 4 non-blocking deferrals) · arch-drift CLEAR (0 drift; 2 stale-doc notes + the in-flight per-category render = tracked RunHealth-promotion deferment) · security CLEAR (rules #2/#4 + no-`apps/api`-import + color-not-alone all hold; 1 low) · code-quality CLEAR (4 low; sv5 specs sane). Reports `docs/audits/P7-*.md`. spec-lint tests 7 PASS (§10/§12); `pnpm audit --prod` clean. **Phase 6** (CLEAR round-3) + **Phase 7** (CLEAR now) task ticks landed this round.
+- **Lesson banked:** apps/api §62 (an sv-skew reconcile is additive when the downstream consumes-not-emits — new event type → keyed row / terminal transition; a new internal-only status with no event type → no reducer transition, pin the absence).
+- **Decisions made:** demo→cody = **fast-forward** (cody `06299c9` ⊆ track/demo); the §12 per-category in-flight render stays the RunHealth-promotion deferment (not new — re-confirmed by the P7 arch-drift audit; backend now exposes `byType` incl. judge).
+- **Scope shifts:** Carry-forward — deleted the sv5-reconcile + `packages/observability`-early-merge items (both consumed; observability rides the demo→cody ff to cody); added the demo post-integration follow-ups item.
+- **New blockers / open questions:** none. **HOLD — the lead gates the cody push** (do not push cody from the orch).
+- **Next session target:** lead gates the cody push → `/team-end` pause; next demo round = **Phase D** (local demo + prepared-replay fallback) + the demo post-integration follow-ups.
+- **Reference:** orchestrator session doc `demo-orch-004`; impl session docs `demo-004` (backend) / `demo-web-004` (web) at `/session-end`; briefs `demo-028`/`demo-029`; audits `docs/audits/P7-*.md`.
 
 ### 2026-06-22 — Kernel P3 deterministic substrate merged to cody (no contract change)
 
