@@ -1,4 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { defaultKernelArgs } from './cli.ts';
 import { createModelGenerationProviders, type GenerationProviders } from './generation-providers.ts';
 import {
@@ -91,6 +93,67 @@ function authorized(request: KernelHttpRequest, options: KernelHttpOptions): boo
   return bearer === configuredKey || explicit === configuredKey;
 }
 
+function parsedUrl(url: string): URL {
+  return new URL(url, 'http://doppl-kernel.local');
+}
+
+function outDirFromUrl(url: URL): string {
+  return url.searchParams.get('outDir') || defaultKernelArgs.outDir;
+}
+
+async function findRunDir(rootDir: string, runId: string): Promise<string | undefined> {
+  const caseEntries = await readdir(rootDir, { withFileTypes: true });
+  for (const caseEntry of caseEntries) {
+    if (!caseEntry.isDirectory()) continue;
+    const runDir = path.join(rootDir, caseEntry.name, runId);
+    try {
+      await readFile(path.join(runDir, 'run-index.json'), 'utf8');
+      return runDir;
+    } catch {
+      // Keep looking through case directories.
+    }
+  }
+  return undefined;
+}
+
+async function readRunIndex(runId: string, rootDir: string): Promise<Record<string, unknown>> {
+  const runDir = await findRunDir(rootDir, runId);
+  if (!runDir) throw new Error(`run not found: ${runId}`);
+  return JSON.parse(await readFile(path.join(runDir, 'run-index.json'), 'utf8')) as Record<
+    string,
+    unknown
+  >;
+}
+
+function safeArtifactPath(rawArtifactPath: string): string {
+  const decoded = decodeURIComponent(rawArtifactPath);
+  const normalized = path.normalize(decoded);
+  if (path.isAbsolute(normalized) || normalized.startsWith('..') || normalized.includes('/../')) {
+    throw new Error('artifact path is invalid');
+  }
+  return normalized;
+}
+
+async function readRunArtifact(
+  runId: string,
+  rootDir: string,
+  rawArtifactPath: string,
+): Promise<Record<string, unknown>> {
+  const runDir = await findRunDir(rootDir, runId);
+  if (!runDir) throw new Error(`run not found: ${runId}`);
+  const artifactPath = safeArtifactPath(rawArtifactPath);
+  const absoluteArtifactPath = path.join(runDir, artifactPath);
+  const relative = path.relative(runDir, absoluteArtifactPath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('artifact path is invalid');
+  }
+  return {
+    runId,
+    artifactPath,
+    content: await readFile(absoluteArtifactPath, 'utf8'),
+  };
+}
+
 async function generationProvidersFromRequest(
   parsed: KernelRunRequest,
   options: KernelHttpOptions,
@@ -151,10 +214,22 @@ export async function handleKernelHttpRequest(
   options: KernelHttpOptions = {},
 ): Promise<KernelHttpResponse> {
   try {
-    if (request.method === 'GET' && request.url === '/health') {
+    const url = parsedUrl(request.url);
+    if (request.method === 'GET' && url.pathname === '/health') {
       return { status: 200, body: { ok: true, service: 'doppl-kernel' } };
     }
-    if (request.method === 'POST' && request.url === '/kernel/runs') {
+    if (request.method === 'GET' && url.pathname.startsWith('/kernel/runs/')) {
+      if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
+      const match = url.pathname.match(/^\/kernel\/runs\/([^/]+)(?:\/artifacts\/(.+))?$/);
+      if (!match) return { status: 404, body: { error: 'not_found' } };
+      const runId = decodeURIComponent(match[1]!);
+      const rootDir = outDirFromUrl(url);
+      if (match[2]) {
+        return { status: 200, body: await readRunArtifact(runId, rootDir, match[2]) };
+      }
+      return { status: 200, body: await readRunIndex(runId, rootDir) };
+    }
+    if (request.method === 'POST' && url.pathname === '/kernel/runs') {
       if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
       return { status: 200, body: await runFromRequestBody(request.body, options) };
     }

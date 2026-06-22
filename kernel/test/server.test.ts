@@ -312,3 +312,36 @@ test('kernel HTTP server requires an API key when configured', async () => {
   assert.equal(authorized.status, 200);
   assert.equal(authorized.body.runId, 'run_http_auth_ok');
 });
+
+test('kernel HTTP server reads exported run indexes and artifacts', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-read-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_readback',
+      generations: 1,
+      budget: 1,
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_readback?outDir=${encodeURIComponent(outDir)}`,
+  });
+  const artifactResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_readback/artifacts/problem-recovery.md?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.runId, 'run_http_readback');
+  assert.equal(indexResponse.body.caseId, 'fsd-ownership-unwind');
+  assert.equal(indexResponse.body.problemRecovery.path, 'problem-recovery.md');
+  assert.equal(artifactResponse.status, 200);
+  assert.equal(artifactResponse.body.artifactPath, 'problem-recovery.md');
+  assert.match(artifactResponse.body.content, /Recover The Ownership Premise/);
+});
