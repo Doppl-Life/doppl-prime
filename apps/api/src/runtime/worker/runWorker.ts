@@ -7,6 +7,7 @@ import { createHeartbeat, type Heartbeat } from '../heartbeat';
 import {
   runGenerationLoop,
   type GenerationGateway,
+  type GenerationLoopDeps,
   type GenerationSeams,
 } from '../loop/generationLoop';
 import { activeRunGuard, isRunTerminal, type ActiveRunEntry } from './activeRunGuard';
@@ -58,6 +59,9 @@ export interface RunWorkerDeps {
   /** Injected heartbeat config (§60); absent → no heartbeat wired. */
   readonly heartbeat?: RunWorkerHeartbeat;
   readonly minPopulationSurvival?: number;
+  /** P5.11 — forwarded to the loop's successor-threading hook (additive; absent → no threading). The W3b
+   *  boot root injects the real impl here. */
+  readonly nextPopulation?: GenerationLoopDeps['nextPopulation'];
 }
 
 export type RunWorkerSkipReason =
@@ -137,6 +141,7 @@ export async function runWorker(deps: RunWorkerDeps): Promise<RunWorkerResult> {
     ...(deps.minPopulationSurvival !== undefined
       ? { minPopulationSurvival: deps.minPopulationSurvival }
       : {}),
+    ...(deps.nextPopulation !== undefined ? { nextPopulation: deps.nextPopulation } : {}),
   });
 
   return {
