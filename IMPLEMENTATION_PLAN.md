@@ -23,6 +23,8 @@
 
 > **Kernel team — round-5 SEALED 2026-06-22 — the kernel track is FEATURE-COMPLETE + GATED (the last of the 5 build tracks).** Phase 3 feature work COMPLETE: P3.11 run-terminal `62f80a1` → P3.12 worker `b9dfeda` → P3.13 crash-forward `307ada8` (all test-first, Step-2.5 reviewed, security-reviewer CLEAN). **`/phase-exit P2` CLEAR + `/phase-exit P3` CLEAR** (6-auditor fan-out all CLEAR — `docs/audits/{P2,P3}-*.md`; 0 drift / 0 dead code / 0 security findings; `/preflight` + `pnpm audit` clean). **P2.3 done** (scrub seam §21+§52); **P2.8 RE-HOMED to Phase D** (documented deferment, Option-B, rule #2 — Langfuse export = a bootstrap projection subscriber, not in the gateway write path). Round terminal commit pushed to origin/track/kernel. **REMAINING — LEAD-owned:** the **kernel→cody track-completion merge** (the cody-bound §5/§6 arch notes + the P2 §6 STALE-DOC reconcile + track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE land then — ledger §I). **No buildable kernel work remains** (P2.8 + the Phase-D bootstrap wiring are demo/Phase-D territory — Carry-forward). Kernel team STANDS DOWN after the merge. Orchestrator routing ledger: `docs/sessions/kernel-003-2026-06-21-orchestrator-routing-ledger.md` §I.
 
+> **Selection team — Phase 5 (selection / scoring / reproduction) COMPLETE ✅ + merged to cody (`31782d3`, --no-ff).** `/phase-exit P5` CLEAR (reachability re-run 0-unreachable + 2 accepted-deferred; arch-drift / security / code-quality CLEAR). Integration preflight on merged cody CLEAR (typecheck/lint/format + unit 947 + integration 125, Docker/real-PG). The operator-command-to-organism loop is closed end-to-end: POST /runs → verify → score → reproduce → successor-threading (gen N+1 evolves from reconstructed offspring, kernel-clamped) → per-run config honored (recorded==executed, caps clamped — rule #1). Selection track STANDS DOWN (its only/last phase; downstream items are Phase-D follow-ups in Carry-forward). Lessons §75–§83 banked. Selection-track seal `f026c76`.
+
 **Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
 **Round commits:** contract-002 round (P0.10→P0.14) sealed `bab92e1` (suite 160/160; per-type payload map `73289fd`, entities+lineage bundle `8bd9502`, FinalJudgeRubric `5058400`, contract-test surface `0180c5f`, P0.10 follow-up `c33eb2f`; impl session doc `7d60cc3`/contract-002). **P0.1-amend round** (operation-start markers + schemaVersion 2) `dc493a3` (suite 163/163); **re-seal: this `/orchestrate-end` commit (pushed to origin/track/contract)**. `/preflight` clean; `pnpm audit --prod` clean.
@@ -47,8 +49,6 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-- **Held-out judge acceptance score must integrate into fitness via the persisted authoritative record (cross-track → selection P5).** The verifier-P4 half is CONSUMED — P4.3 loads the rubric from the immutable `DEFAULT_JUDGE_RUBRIC` (`loadJudgeRubric`, no agent-writable path, full-5-axis-set + `immutableToAgents:true` asserted) and P4.8 runs the held-out judge outside the breeding loop, persisting `judge.reviewed`←`JudgeResult` as the authoritative acceptance record (merged to cody `bff4325`/`fae1d46`). **Remaining selection-P5 obligation:** P5.5 MUST integrate the held-out-judge acceptance into `FitnessScore.components.judge_acceptance` by a candidateId JOIN into the persisted `judge.reviewed` record (rule #6 — never a duplicate authoritative copy, never re-derive/re-validate the rubric in selection; the judge sits outside selection's loop). _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; verifier-P4 half consumed @ P4.3/P4.8; cross-track → selection P5; DELETE after P5.5 consumes the persisted judge acceptance)_
-- **Unified VerifySeam adapter — DONE + merged to cody (`9de3ef6`, verifier-013/P4.12).** `createVerifySeam(deps)` composes rotation+council+checks+judge behind the kernel loop's frozen `verify` port (rngSeed via `readRngSeed(config.runConfig)`, generationIndex from the persisted `generation.started{index}` — Option A); emits critic.reviewed/check.completed/judge.reviewed (keyed by candidateId) via `ctx.append`; integration-tested against the real `runGenerationLoop` (445 unit / 86 integration green, security 7/7, preflight clean). **Remaining selection-P5 obligation (the swap-the-stub the reopen was for):** inject `seams.verify = createVerifySeam({gateway, eventStore, registry: CHECK_RUNNER_REGISTRY, config})` at selection's boot composition root, then run `/phase-exit P5`. _(origin: verifier P4.7; verifier half DONE @ P4.12/verifier-013 merge `9de3ef6`; production wiring → selection P5; DELETE after selection P5 injects the seam)_
 - **`candidate.rejected` emitter is NOT verifier (cross-track → runtime P3 / selection P5).** The under_review→rejected lifecycle event is genuinely needed (not projectable from `critic.reviewed` — rule #6 evidence carries no verdict) but is NOT the verifier track's to emit: the council/judge are evidence-only (rule #6) and the candidate state machine is the kernel's own (`runtime/state/candidateStateMachine.ts`). Disposition (verifier lead, 2026-06-22, human-relayed kernel request): accept as **defined-but-not-yet-emitted** for MVP (kernel registers it); the emission belongs to the **runtime↔selection seam** — runtime drives the under_review→rejected transition on **selection's** verdict (which aggregates the verifier evidence + judge acceptance), mirroring the `lineage.culled` decision/record split. _(origin: 2026-06-22 kernel cross-track request; verifier OUT by rule #6; cross-track → runtime P3 / selection P5; DELETE after the rejection emitter is assigned + built)_
 - **[Finding — low-impact, cross-area] The fake-gateway `final_judge` ROLE_FIXTURE is stale (`{score:3}`) → fails the frozen P4.8 `JudgeModelOutput` (per-axis).** Any test using `createFakeGateway()` for the judge gets `output_schema_rejected`, never `judge.reviewed` — so judge tests (P4.8 `run-judge.test.ts`, P4.12 `verify-seam.test.ts`) use a test-local multi-role gateway. Production is unaffected (real gateway). Fix = update `apps/api/src/model-gateway/stub/fake-gateway.ts` `final_judge` fixture to the 5 per-axis scores (model-gateway/stub territory — owned by the gateway-stub/selection owner); makes `createFakeGateway` judge-capable for selection P5's boot-composition tests. _(origin: 2026-06-22 P4.12 verifier-013 Step-2.5; cross-area → gateway-stub / selection P5; DELETE after the fixture is fixed)_
 - **Retrieval-FETCH wiring for the grounding check adapters (cross-track → selection/demo retrieval wiring).** The unified VerifySeam (P4.12) threads NO `retrievalResults`, so the 3 retrieval-grounded adapters (`transfer.prior_art`, `zeitgeist.current_signal_grounding`, `zeitgeist.falsifiability`) record `check.completed{skipped, retrieval_unavailable}` — the shipped check set is honestly N-of-M, not N-of-N. The caller-fetches split (LESSONS §44) keeps the adapters pure: the wiring slice must (a) fetch the gateway `retrieval` source once per candidate, (b) persist the outcome (rule #7 replay home), (c) thread the results into the seam as `retrievalResults` DATA. Lands with the selection/demo retrieval wiring (the seam already accepts threaded results — `runCheck` passes `request.retrievalResults` through). _(origin: 2026-06-22 P4.12 verifier-013 Step-9; cross-track → selection/demo; DELETE after retrieval is wired into the verify path)_
@@ -56,6 +56,7 @@ Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/
 - **Phase-D bootstrap wiring: crash-forward → worker → REST trigger (cross-track → demo/Phase D).** P3.11–P3.13 delivered the kernel-territory pieces (`runWorker`, `crashForward`) but DEFERRED the boot sequence + REST surface (bootstrap/`routes/` is demo territory; kernel→cody merge deferred — `routes/runs.ts` untouched this round). The Phase-D bootstrap must: (a) run `crashForward({listRunIds, eventStore})` BEFORE the worker accepts work (P3.13 — so the single-active-run guard starts from a clean no-active-run state); (b) wire REST POST `/runs` → `runWorker` (fire-and-forget) trigger + POST `/runs/:id/stop` → injected `operatorStop`; (c) supply the real `listRunIds` impl (drizzle `selectDistinct`) + the worker's injected heartbeat sink + (P2.8) the real Langfuse `ObservabilityEmitter`; (d) **[security-reviewer medium, dispositioned NOT a current Finding]** the read-then-append TOCTOU on the active-run guard + run-level idempotency — out of scope for the serial single-in-process MVP (no concurrent caller reachable; the deterministic `${runId}-run-started` id + `unique(run_id,sequence)` fail a racing duplicate LOUD), BUT the Phase-D REST trigger MUST serialize worker invocations (in-memory single-flight re-validated vs the log, LESSONS §56) OR move guard+append under the per-run advisory lock (LESSONS §26). For the Phase-D wiring-slice owner (demo track). _(origin: 2026-06-22 P3.12 kernel-033 + P3.13 kernel-034 + the P3.12 security-reviewer; cross-track → demo/Phase D; DELETE after Phase D wires the bootstrap sequence + serializes the REST→worker trigger)_
 - **P2.8 Langfuse-export RE-HOMED to Phase D — documented deferment (lead + Option-B, 2026-06-22; cross-track → demo/Phase D).** Rationale **KEY SAFETY RULE #2**: Langfuse is a non-authoritative PROJECTION (named among the derived/rebuildable projections) → it is wired off the authoritative event log at the **bootstrap**, NEVER embedded in the gateway write path. The kernel/verifier contribution is DONE — LLM-event meta carries `langfuseTraceId`+`gatewayRequestId→correlationId` (LESSON §41), and the consumable scrub seam `createEmitBoundary`/`scrubObservabilityPayload` is built (demo P6.5/§52). **Phase D wires exactly:** (1) the real Langfuse client — demo territory `packages/observability/src/langfuse.ts` + `trace-metadata.ts`; (2) the export as a **projection subscriber off the event log** (rebuilds from the persisted LLM-event meta, never the gateway write path — rule #2); (3) **scrub-via-the-demo-seam before emit** (`createEmitBoundary`, rule #4 / §14 — never reimplement). Pairs with the Phase-D bootstrap (worker REST trigger + crash-forward boot call). _(origin: 2026-06-22 P2.8 reconcile, lead Option-B; cross-track → demo/Phase D; DELETE after Phase D wires the Langfuse export subscriber)_
 - **Generation-level drain on crash (follow-up, kernel/future).** P3.13 crash-forward terminalizes the RUN only (run.failed/cancelled{crash}); the crashed run's non-terminal GENERATIONS are left un-drained (run-level terminal is what gates the worker clean-slate + projections; replay derives from the run terminal — moot for the demo). If a future need arises, reuse `executeKillAndDrain`'s per-state generation disposition over the crashed run's generations. _(origin: 2026-06-22 P3.13 kernel-034 Q3; low-pri follow-up)_
+- **Selection P5 → Phase-D follow-ups (cross-track → demo/Phase D).** From the selection wiring round + `/phase-exit P5` (CLEAR): (a) **route-max residual** — align `buildServer.defaultConfig.caps` with the boot ceiling (`loadConfig` top-level caps) at the Phase-D production boot root (`main.ts`) so an above-ceiling route-accepted config doesn't clamp to recorded≠executed (the rule-#1 clamp is the safe backstop meanwhile); (b) **production boot root** — `main.ts` wiring `createStartRun(infra)` as `buildServer({onRunConfigured})` (the `createStartRun` export is the named Phase-D consumer; e2e-proven via injection); (c) **demo/PD replay consumer of `noveltyScoreOf`** (`selection/novelty/cosine.ts` — the rule-#7 replay-recompute helper's named consumer); (d) **4 minor P5 code-quality items** — reproduce-seam O(N×M) best-candidate scan (MVP-fine), `GENERATION_ID_PATTERN` coupling, `startRun` safeParse→boot fallback, `MVP_CULL_POLICY` minFitness:0 (cull never fires in prod default — tuning TODO). _(origin: 2026-06-22 selection P5 wiring + /phase-exit P5; cross-track → demo/Phase D)_
 - **STANDING (user, 2026-06-21): bundle slices where safe to speed the build.** Group dep-compatible, same-code-area, non-invariant slices into ONE atomic red→green→commit unit. **Safety-invariant slices NEVER bundle with feature work** (root `CLAUDE.md` TDD posture) — they stay solo. Applies to every track's remaining phases (kernel first; freeze bundle stays tight per the deps/safety/cross-area analysis). _(origin: 2026-06-21 lead relay of user direction; STANDING — keep through triage; re-issues the P0-era bundling directive deleted at contract-002 close)_
 
 ---
@@ -71,7 +72,7 @@ Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/
 | Provider-agnostic ModelGateway (OpenRouter / OpenAI / retrieval) | ✅ | Phase 2 (`/phase-exit P2` CLEAR; P2.8 Langfuse-export → Phase D) |
 | Runtime kernel — bounded evolution loop, caps, energy, RNG | ✅ | Phase 3 (`/phase-exit P3` CLEAR) |
 | Verifier council + held-out judge + critic rotation + checks | ✅ | Phase 4 (`/phase-exit P4` CLEAR; unified VerifySeam adapter merged `9de3ef6`) |
-| Selection / scoring / reproduction — gen N+1 beats gen N | ❌ | Phase 5 |
+| Selection / scoring / reproduction — gen N+1 beats gen N | ✅ | Phase 5 (`/phase-exit P5` CLEAR; merged `31782d3`) |
 | Projections + REST/SSE API + runtime self-observability | ❌ | Phase 6 |
 | React Flow lineage dashboard (live + replay, accessible) | ❌ | Phase 7 |
 | Local-first demo path + prepared-replay fallback | ❌ | Phase D |
@@ -1042,142 +1043,142 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P5.1 — Freeze ScoringPolicy + FitnessScore + NoveltyScore + ReproductionEvent contracts
 
-- [ ] ScoringPolicy = {version, weights{}, normalization?} with weights structure frozen but numeric values deferred-open (the only deferred values in the scoring contract) — schema accepts an arbitrary configurable weight map keyed by component name
-- [ ] FitnessScore = {id, candidateId, total, components{}, policyVersion, explanation}; components carry the per-component contributions (critic scores, subtype-check results, novelty, energy-efficiency, held-out-judge acceptance) so the total is reconstructable from components + policyVersion alone
-- [ ] NoveltyScore = {id, candidateId, vector(persisted float array), embeddingModelId, dimension, comparisonSet, method, score, explanation} — vector + embeddingModelId + dimension are mandatory (authoritative-once-computed, §9)
-- [ ] ReproductionEvent = {id, runId, parentAgenomeIds[], childAgenomeId, mode(fusion|crossover|output_synthesis|mutation_only), crossoverPoints, mutationSummary} with mutationSummary capturing concrete RNG outcomes
-- [ ] All schemas authored in Zod with TS types via z.infer; no parallel JSON-Schema definitions
-- [ ] policyVersion on FitnessScore matches a ScoringPolicy.version; fitness.scored references the novelty.scored it consumed (novelty is not duplicated inside FitnessScore as the authoritative copy)
-- [ ] Files: packages/contracts/src/scoring-policy.ts (NEW); packages/contracts/src/fitness-score.ts (NEW); packages/contracts/src/novelty-score.ts (NEW); packages/contracts/src/reproduction-event.ts (NEW); packages/contracts/src/index.ts (extended)
-- [ ] Cross-doc invariant: none (consumes FitnessScore, ScoringPolicy, NoveltyScore, ReproductionEvent — frozen in P0.8, P0.9)
-- [ ] Depends on: P0.8, P0.9
+- [x] ScoringPolicy = {version, weights{}, normalization?} with weights structure frozen but numeric values deferred-open (the only deferred values in the scoring contract) — schema accepts an arbitrary configurable weight map keyed by component name
+- [x] FitnessScore = {id, candidateId, total, components{}, policyVersion, explanation}; components carry the per-component contributions (critic scores, subtype-check results, novelty, energy-efficiency, held-out-judge acceptance) so the total is reconstructable from components + policyVersion alone
+- [x] NoveltyScore = {id, candidateId, vector(persisted float array), embeddingModelId, dimension, comparisonSet, method, score, explanation} — vector + embeddingModelId + dimension are mandatory (authoritative-once-computed, §9)
+- [x] ReproductionEvent = {id, runId, parentAgenomeIds[], childAgenomeId, mode(fusion|crossover|output_synthesis|mutation_only), crossoverPoints, mutationSummary} with mutationSummary capturing concrete RNG outcomes
+- [x] All schemas authored in Zod with TS types via z.infer; no parallel JSON-Schema definitions
+- [x] policyVersion on FitnessScore matches a ScoringPolicy.version; fitness.scored references the novelty.scored it consumed (novelty is not duplicated inside FitnessScore as the authoritative copy)
+- [x] Files: packages/contracts/src/scoring-policy.ts (NEW); packages/contracts/src/fitness-score.ts (NEW); packages/contracts/src/novelty-score.ts (NEW); packages/contracts/src/reproduction-event.ts (NEW); packages/contracts/src/index.ts (extended)
+- [x] Cross-doc invariant: none (consumes FitnessScore, ScoringPolicy, NoveltyScore, ReproductionEvent — frozen in P0.8, P0.9)
+- [x] Depends on: P0.8, P0.9
 
 ### P5.2 — Novelty embedding + app-level cosine with persisted authoritative vectors
 
-- [ ] Embeds candidate summaries via the ModelGateway embedding role (direct-OpenAI text-embedding-3-small behind the gateway port) — selection code sees only the gateway port, never a provider SDK
-- [ ] Computes app-level cosine / nearest-neighbour against the prior-candidate comparison set within the run/generation; comparisonSet recorded on the NoveltyScore so the comparison is auditable
-- [ ] The computed vector, embeddingModelId, and dimension are persisted into the novelty.scored event payload as JSONB (authoritative-once-computed) — pgvector is never the system of record
-- [ ] On replay the stored vector is read back and only the deterministic cosine math is recomputed — embeddings are never re-requested
-- [ ] emits the novelty.scoring_started operation-start marker (paired → novelty.scored) per candidate — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
-- [ ] Novelty is computed within the generation scoring state and emits exactly one novelty.scored per candidate scored
-- [ ] Cosine math is deterministic and order-independent over a fixed comparison set
-- [ ] Files: apps/api/src/selection/novelty/embed.ts (NEW); apps/api/src/selection/novelty/cosine.ts (NEW); apps/api/src/selection/novelty/score-novelty.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes NoveltyScore — frozen in P0.8)
-- [ ] Depends on: P0.8, P5.1
+- [x] Embeds candidate summaries via the ModelGateway embedding role (direct-OpenAI text-embedding-3-small behind the gateway port) — selection code sees only the gateway port, never a provider SDK
+- [x] Computes app-level cosine / nearest-neighbour against the prior-candidate comparison set within the run/generation; comparisonSet recorded on the NoveltyScore so the comparison is auditable
+- [x] The computed vector, embeddingModelId, and dimension are persisted into the novelty.scored event payload as JSONB (authoritative-once-computed) — pgvector is never the system of record
+- [x] On replay the stored vector is read back and only the deterministic cosine math is recomputed — embeddings are never re-requested
+- [x] emits the novelty.scoring_started operation-start marker (paired → novelty.scored) per candidate — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
+- [x] Novelty is computed within the generation scoring state and emits exactly one novelty.scored per candidate scored
+- [x] Cosine math is deterministic and order-independent over a fixed comparison set
+- [x] Files: apps/api/src/selection/novelty/embed.ts (NEW); apps/api/src/selection/novelty/cosine.ts (NEW); apps/api/src/selection/novelty/score-novelty.ts (NEW)
+- [x] Cross-doc invariant: none (consumes NoveltyScore — frozen in P0.8)
+- [x] Depends on: P0.8, P5.1
 
 ### P5.3 — Novelty degrade path (retry → lexical fallback → novelty_scoring_degraded)
 
-- [ ] Embedding/novelty failure retries within the bounded retry policy, then falls back to an app-level lexical/secondary novelty method, then emits novelty_scoring_degraded — and never blocks the generation scoring state
-- [ ] On the degraded path the NoveltyScore.method records the fallback method used and the novelty component is flagged estimated/absent rather than silently zeroed
-- [ ] Fitness is still computed when novelty is degraded, with the novelty component explicitly marked estimated/absent in the explanation
-- [ ] novelty_scoring_degraded is emitted at most once per affected candidate and carries the reason/exhausted-retry context
-- [ ] Lexical fallback is deterministic so replay reproduces the same degraded novelty value from persisted inputs
-- [ ] Files: apps/api/src/selection/novelty/lexical-fallback.ts (NEW); apps/api/src/selection/novelty/degrade.ts (NEW); apps/api/src/selection/novelty/score-novelty.ts (extended)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P5.2
+- [x] Embedding/novelty failure retries within the bounded retry policy, then falls back to an app-level lexical/secondary novelty method, then emits novelty_scoring_degraded — and never blocks the generation scoring state
+- [x] On the degraded path the NoveltyScore.method records the fallback method used and the novelty component is flagged estimated/absent rather than silently zeroed
+- [x] Fitness is still computed when novelty is degraded, with the novelty component explicitly marked estimated/absent in the explanation
+- [x] novelty_scoring_degraded is emitted at most once per affected candidate and carries the reason/exhausted-retry context
+- [x] Lexical fallback is deterministic so replay reproduces the same degraded novelty value from persisted inputs
+- [x] Files: apps/api/src/selection/novelty/lexical-fallback.ts (NEW); apps/api/src/selection/novelty/degrade.ts (NEW); apps/api/src/selection/novelty/score-novelty.ts (extended)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P5.2
 
 ### P5.4 — Energy-efficiency component (success-only spend)
 
-- [ ] Energy-efficiency derives only from successful productive spend (energy.spent estimate/actual) — failed/retried/repaired attempts (provider_call_failed) contribute zero to the denominator so a flaky provider never penalizes an agenome
-- [ ] The component reads energy from persisted energy.spent events for the candidate's agenome, not from live counters, so it is replay-reconstructable
-- [ ] Uses the reconciled actual energy unit (doppl_energy) where available, falling back to the persisted estimate per the energy contract
-- [ ] A candidate with zero successful spend is handled deterministically (no divide-by-zero; defined boundary value)
-- [ ] The efficiency contribution is emitted as a named entry in FitnessScore.components with an explanation referencing the energy events consumed
-- [ ] Files: apps/api/src/selection/components/energy-efficiency.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
-- [ ] Depends on: P0.9, P5.1
+- [x] Energy-efficiency derives only from successful productive spend (energy.spent estimate/actual) — failed/retried/repaired attempts (provider_call_failed) contribute zero to the denominator so a flaky provider never penalizes an agenome
+- [x] The component reads energy from persisted energy.spent events for the candidate's agenome, not from live counters, so it is replay-reconstructable
+- [x] Uses the reconciled actual energy unit (doppl_energy) where available, falling back to the persisted estimate per the energy contract
+- [x] A candidate with zero successful spend is handled deterministically (no divide-by-zero; defined boundary value)
+- [x] The efficiency contribution is emitted as a named entry in FitnessScore.components with an explanation referencing the energy events consumed
+- [x] Files: apps/api/src/selection/components/energy-efficiency.ts (NEW)
+- [x] Cross-doc invariant: none (consumes EnergyEvent — frozen in P0.9)
+- [x] Depends on: P0.9, P5.1
 
 ### P5.5 — Held-out-judge acceptance score integration into fitness
 
-- [ ] Fitness consumes the held-out final_judge acceptance score (5-axis 0–5 rubric output, §7) as an input component but never invokes or mutates the judge config/rubric (judge is immutable to selection)
-- [ ] The acceptance score is read from the persisted judge evidence/event, not recomputed, so the same value flows on replay
-- [ ] The held-out-judge component is a distinct named entry in FitnessScore.components separate from the rotating critic-council scores
-- [ ] Selection treats critic-council reviews as evidence inputs only and never lets them or candidate text alter the scoring policy
-- [ ] Absence of a judge score for a candidate is a defined boundary (the candidate is not scored as accepted by default)
-- [ ] Files: apps/api/src/selection/components/judge-acceptance.ts (NEW); apps/api/src/selection/components/critic-scores.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes CriticReview, CheckResult — frozen in P0.6, P0.7)
-- [ ] Depends on: P0.6, P0.7, P5.1
+- [x] Fitness consumes the held-out final_judge acceptance score (5-axis 0–5 rubric output, §7) as an input component but never invokes or mutates the judge config/rubric (judge is immutable to selection)
+- [x] The acceptance score is read from the persisted judge evidence/event, not recomputed, so the same value flows on replay
+- [x] The held-out-judge component is a distinct named entry in FitnessScore.components separate from the rotating critic-council scores
+- [x] Selection treats critic-council reviews as evidence inputs only and never lets them or candidate text alter the scoring policy
+- [x] Absence of a judge score for a candidate is a defined boundary (the candidate is not scored as accepted by default)
+- [x] Files: apps/api/src/selection/components/judge-acceptance.ts (NEW); apps/api/src/selection/components/critic-scores.ts (NEW)
+- [x] Cross-doc invariant: none (consumes CriticReview, CheckResult — frozen in P0.6, P0.7)
+- [x] Depends on: P0.6, P0.7, P5.1
 
 ### P5.6 — Policy-versioned fitness scorer (decomposed, fully explainable)
 
-- [ ] Combines critic scores, subtype-check results, novelty (from novelty.scored), energy-efficiency, and held-out-judge acceptance into a single FitnessScore using the active ScoringPolicy weights
-- [ ] total is a pure deterministic function of components + policyVersion weights (+ optional normalization) — recomputable from persisted events with no model calls
-- [ ] explanation enumerates every component, its raw value, its weight, and its weighted contribution so the decision is explainable from persisted events alone
-- [ ] Each candidate gets exactly one selected fitness score per scoring-policy version (per §3 relationship); re-scoring under the same policyVersion is idempotent
-- [ ] References (does not re-store as authoritative) the novelty value via the consumed novelty.scored, keeping NoveltyScore the authoritative novelty home
-- [ ] Emits fitness.scored carrying total, components, policyVersion, and explanation
-- [ ] Files: apps/api/src/selection/fitness/score-fitness.ts (NEW); apps/api/src/selection/fitness/policy.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes FitnessScore, ScoringPolicy — frozen in P0.8)
-- [ ] Depends on: P0.8, P5.1, P5.2, P5.3, P5.4, P5.5
+- [x] Combines critic scores, subtype-check results, novelty (from novelty.scored), energy-efficiency, and held-out-judge acceptance into a single FitnessScore using the active ScoringPolicy weights
+- [x] total is a pure deterministic function of components + policyVersion weights (+ optional normalization) — recomputable from persisted events with no model calls
+- [x] explanation enumerates every component, its raw value, its weight, and its weighted contribution so the decision is explainable from persisted events alone
+- [x] Each candidate gets exactly one selected fitness score per scoring-policy version (per §3 relationship); re-scoring under the same policyVersion is idempotent
+- [x] References (does not re-store as authoritative) the novelty value via the consumed novelty.scored, keeping NoveltyScore the authoritative novelty home
+- [x] Emits fitness.scored carrying total, components, policyVersion, and explanation
+- [x] Files: apps/api/src/selection/fitness/score-fitness.ts (NEW); apps/api/src/selection/fitness/policy.ts (NEW)
+- [x] Cross-doc invariant: none (consumes FitnessScore, ScoringPolicy — frozen in P0.8)
+- [x] Depends on: P0.8, P5.1, P5.2, P5.3, P5.4, P5.5
 
 ### P5.7 — Weak-lineage culling + explainable parent selection
 
-- [ ] Culls weak lineages and selects eligible parents using persisted fitness/novelty — an agenome is eligible_parent only once one of its candidates reached a fitness score (per §3 agenome state machine)
-- [ ] Culling emits lineage.culled with the explanation/criteria that drove the cull (decision explainable from persisted events)
-- [ ] Parent-selection tie-breaks are deterministic: drawn from the per-run persisted seed or have their concrete outcome persisted, so replay reproduces the identical parent set without re-sampling
-- [ ] Zero eligible parents leaves the path to the zero-survivors generation.completed{survivors:0} (no offspring) rather than fabricating parents
-- [ ] No energy is spent on culled/spent/failed agenomes (no scoring or reproduction work after those states)
-- [ ] Best-so-far selection that classifies a run as completed is grounded in a candidate having reached selected
-- [ ] Files: apps/api/src/selection/cull.ts (NEW); apps/api/src/selection/parent-selection.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore — frozen in P0.8)
-- [ ] Depends on: P0.8, P5.6
+- [x] Culls weak lineages and selects eligible parents using persisted fitness/novelty — an agenome is eligible_parent only once one of its candidates reached a fitness score (per §3 agenome state machine)
+- [x] Culling emits lineage.culled with the explanation/criteria that drove the cull (decision explainable from persisted events)
+- [x] Parent-selection tie-breaks are deterministic: drawn from the per-run persisted seed or have their concrete outcome persisted, so replay reproduces the identical parent set without re-sampling
+- [x] Zero eligible parents leaves the path to the zero-survivors generation.completed{survivors:0} (no offspring) rather than fabricating parents
+- [x] No energy is spent on culled/spent/failed agenomes (no scoring or reproduction work after those states)
+- [x] Best-so-far selection that classifies a run as completed is grounded in a candidate having reached selected
+- [x] Files: apps/api/src/selection/cull.ts (NEW); apps/api/src/selection/parent-selection.ts (NEW)
+- [x] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore — frozen in P0.8)
+- [x] Depends on: P0.8, P5.6
 
 ### P5.8 — Bounded mutation with persisted RNG outcomes
 
-- [ ] Mutation changes agenome traits only within allowed bounds (an agenome trait can never raise a cap; spawnBudget remains an allocation hint only)
-- [ ] Mutation field selection and magnitudes are either drawn from the per-run persisted seed and reproduced deterministically, or their concrete outcomes are persisted in the mutation metadata
-- [ ] agenome.mutated / the ReproductionEvent.mutationSummary persists the concrete RNG outcomes so replay reconstructs the mutated child without re-sampling
-- [ ] Child agenomes record parentage and mutation metadata and are schema-validated against the Agenome contract
-- [ ] Mutation is bounded and finite by construction (no unbounded trait drift)
-- [ ] Files: apps/api/src/selection/reproduction/mutate.ts (NEW); apps/api/src/selection/reproduction/rng.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ReproductionEvent, Agenome — frozen in P0.4, P0.9)
-- [ ] Depends on: P0.4, P0.9, P5.1
+- [x] Mutation changes agenome traits only within allowed bounds (an agenome trait can never raise a cap; spawnBudget remains an allocation hint only)
+- [x] Mutation field selection and magnitudes are either drawn from the per-run persisted seed and reproduced deterministically, or their concrete outcomes are persisted in the mutation metadata
+- [x] agenome.mutated / the ReproductionEvent.mutationSummary persists the concrete RNG outcomes so replay reconstructs the mutated child without re-sampling
+- [x] Child agenomes record parentage and mutation metadata and are schema-validated against the Agenome contract
+- [x] Mutation is bounded and finite by construction (no unbounded trait drift)
+- [x] Files: apps/api/src/selection/reproduction/mutate.ts (NEW); apps/api/src/selection/reproduction/rng.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ReproductionEvent, Agenome — frozen in P0.4, P0.9)
+- [x] Depends on: P0.4, P0.9, P5.1
 
 ### P5.9 — Two-level fusion with distant-lineage anti-collapse preference
 
-- [ ] Implements agenome-level crossover (splice parents' prompts/personas/toolsets) AND output-level synthesis (a model merges two parents' reasoning via the fusion_synthesis gateway role)
-- [ ] Fusion prefers distant lineages, measured by parent-distance over the idea-space/novelty embedding, as an explicit anti-collapse force
-- [ ] crossoverPoints and the fusion outcome (including any RNG choices) are persisted in agenome.fused / ReproductionEvent so replay reconstructs the child without re-sampling or re-calling the synthesis model
-- [ ] emits the fusion.started operation-start marker (paired → agenome.fused) per fusion — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
-- [ ] The synthesis model call goes only through the ModelGateway port and persists its provider metadata/output into the originating event
-- [ ] Child agenomes from fusion record both parentIds and fusion metadata and are schema-validated; mode is recorded as fusion/crossover/output_synthesis accordingly
-- [ ] Parent-distance computation reuses persisted embedding vectors (never re-embeds on replay)
-- [ ] Files: apps/api/src/selection/reproduction/fuse.ts (NEW); apps/api/src/selection/reproduction/parent-distance.ts (NEW); apps/api/src/selection/reproduction/crossover.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ReproductionEvent, Agenome, NoveltyScore — frozen in P0.4, P0.8, P0.9)
-- [ ] Depends on: P0.4, P0.8, P0.9, P5.7, P5.8
+- [x] Implements agenome-level crossover (splice parents' prompts/personas/toolsets) AND output-level synthesis (a model merges two parents' reasoning via the fusion_synthesis gateway role)
+- [x] Fusion prefers distant lineages, measured by parent-distance over the idea-space/novelty embedding, as an explicit anti-collapse force
+- [x] crossoverPoints and the fusion outcome (including any RNG choices) are persisted in agenome.fused / ReproductionEvent so replay reconstructs the child without re-sampling or re-calling the synthesis model
+- [x] emits the fusion.started operation-start marker (paired → agenome.fused) per fusion — NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
+- [x] The synthesis model call goes only through the ModelGateway port and persists its provider metadata/output into the originating event
+- [x] Child agenomes from fusion record both parentIds and fusion metadata and are schema-validated; mode is recorded as fusion/crossover/output_synthesis accordingly
+- [x] Parent-distance computation reuses persisted embedding vectors (never re-embeds on replay)
+- [x] Files: apps/api/src/selection/reproduction/fuse.ts (NEW); apps/api/src/selection/reproduction/parent-distance.ts (NEW); apps/api/src/selection/reproduction/crossover.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ReproductionEvent, Agenome, NoveltyScore — frozen in P0.4, P0.8, P0.9)
+- [x] Depends on: P0.4, P0.8, P0.9, P5.7, P5.8
 
 ### P5.10 — Degenerate <2-parent mutation_only fallback
 
-- [ ] With <2 eligible parents, reproduction falls back to mutation-only from the single survivor and emits agenome.reproduced{mode:"mutation_only"} / reproduction_aborted_insufficient_parents context per the closed event registry
-- [ ] With 0 survivors, control takes the zero-survivors path (generation.completed{survivors:0}) and no offspring are produced
-- [ ] mutation_only reuses the bounded, RNG-persisted mutation path so the degenerate child is still replay-reconstructable
-- [ ] No fusion/crossover/output_synthesis is attempted when fewer than two distinct eligible parents exist
-- [ ] The fallback decision and its trigger (insufficient parents) are explainable from persisted events
-- [ ] Files: apps/api/src/selection/reproduction/degenerate.ts (NEW); apps/api/src/selection/reproduction/reproduce.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes ReproductionEvent — frozen in P0.9)
-- [ ] Depends on: P0.9, P5.8, P5.9
+- [x] With <2 eligible parents, reproduction falls back to mutation-only from the single survivor and emits agenome.reproduced{mode:"mutation_only"} / reproduction_aborted_insufficient_parents context per the closed event registry
+- [x] With 0 survivors, control takes the zero-survivors path (generation.completed{survivors:0}) and no offspring are produced
+- [x] mutation_only reuses the bounded, RNG-persisted mutation path so the degenerate child is still replay-reconstructable
+- [x] No fusion/crossover/output_synthesis is attempted when fewer than two distinct eligible parents exist
+- [x] The fallback decision and its trigger (insufficient parents) are explainable from persisted events
+- [x] Files: apps/api/src/selection/reproduction/degenerate.ts (NEW); apps/api/src/selection/reproduction/reproduce.ts (NEW)
+- [x] Cross-doc invariant: none (consumes ReproductionEvent — frozen in P0.9)
+- [x] Depends on: P0.9, P5.8, P5.9
 
 ### P5.11 — Heuristic allocation + successor (gen N+1) population assembly
 
-- [ ] Allocation is heuristic for MVP (fitness × novelty × energy-efficiency); learned bandit/RL and a learned value model are out of scope and not implemented
-- [ ] Produces the gen N+1 successor population from selected parents via the reproduction path, respecting that allocation is a hint clamped by remaining global caps (effectiveSpawns never exceeds remaining caps)
-- [ ] Successor assembly hands off to the runtime kernel's next-generation integration point (a runtime handoff, not a build-time import into the kernel) and never raises a cap
-- [ ] The successor set is fully derivable from persisted fitness/novelty/energy events plus persisted RNG/fusion outcomes (explainable + replay-reconstructable)
-- [ ] When there are zero eligible parents the successor set is empty and the generation completes with survivors:0 (no fabricated next generation)
-- [ ] Files: apps/api/src/selection/allocation.ts (NEW); apps/api/src/selection/successor.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore, ReproductionEvent — frozen in P0.8, P0.9)
-- [ ] Depends on: P0.8, P0.9, P5.10, P5.7
+- [x] Allocation is heuristic for MVP (fitness × novelty × energy-efficiency); learned bandit/RL and a learned value model are out of scope and not implemented
+- [x] Produces the gen N+1 successor population from selected parents via the reproduction path, respecting that allocation is a hint clamped by remaining global caps (effectiveSpawns never exceeds remaining caps)
+- [x] Successor assembly hands off to the runtime kernel's next-generation integration point (a runtime handoff, not a build-time import into the kernel) and never raises a cap
+- [x] The successor set is fully derivable from persisted fitness/novelty/energy events plus persisted RNG/fusion outcomes (explainable + replay-reconstructable)
+- [x] When there are zero eligible parents the successor set is empty and the generation completes with survivors:0 (no fabricated next generation)
+- [x] Files: apps/api/src/selection/allocation.ts (NEW); apps/api/src/selection/successor.ts (NEW)
+- [x] Cross-doc invariant: none (consumes FitnessScore, NoveltyScore, ReproductionEvent — frozen in P0.8, P0.9)
+- [x] Depends on: P0.8, P0.9, P5.10, P5.7
 
 ### Acceptance criteria (P5)
 
-- [ ] FitnessScore / ScoringPolicy / NoveltyScore / ReproductionEvent are Zod-authored, frozen-structure shared contracts (numeric weights the only deferred-open values) with schema-snapshot coverage
-- [ ] Every selection decision (novelty, fitness total + per-component contributions, culling, parent selection, fusion mode, mutation) is fully explainable and reconstructable from persisted events alone
-- [ ] Novelty embedding vectors are persisted authoritative-once-computed in novelty.scored; novelty.scored is the single authoritative novelty home and fitness.scored references the novelty it consumed
-- [ ] The novelty degrade path (retry → lexical fallback → novelty_scoring_degraded) never blocks the generation scoring state and yields a flagged-estimated novelty component
-- [ ] Energy-efficiency uses success-only spend so failed/retried/repaired attempts never penalize an agenome
-- [ ] The held-out judge acceptance score and rotating critic evidence feed fitness as inputs only and are never mutated by selection
-- [ ] Reproduction implements two-level fusion (crossover + output synthesis) with distant-lineage preference, bounded mutation, the <2-parent mutation_only fallback, and zero-survivors no-offspring path
-- [ ] All RNG/fusion/mutation/tie-break non-determinism is reproduced from the persisted per-run seed or persisted outcomes; replay recomputes only deterministic math and never re-embeds, re-samples, or re-calls models
+- [x] FitnessScore / ScoringPolicy / NoveltyScore / ReproductionEvent are Zod-authored, frozen-structure shared contracts (numeric weights the only deferred-open values) with schema-snapshot coverage
+- [x] Every selection decision (novelty, fitness total + per-component contributions, culling, parent selection, fusion mode, mutation) is fully explainable and reconstructable from persisted events alone
+- [x] Novelty embedding vectors are persisted authoritative-once-computed in novelty.scored; novelty.scored is the single authoritative novelty home and fitness.scored references the novelty it consumed
+- [x] The novelty degrade path (retry → lexical fallback → novelty_scoring_degraded) never blocks the generation scoring state and yields a flagged-estimated novelty component
+- [x] Energy-efficiency uses success-only spend so failed/retried/repaired attempts never penalize an agenome
+- [x] The held-out judge acceptance score and rotating critic evidence feed fitness as inputs only and are never mutated by selection
+- [x] Reproduction implements two-level fusion (crossover + output synthesis) with distant-lineage preference, bounded mutation, the <2-parent mutation_only fallback, and zero-survivors no-offspring path
+- [x] All RNG/fusion/mutation/tie-break non-determinism is reproduced from the persisted per-run seed or persisted outcomes; replay recomputes only deterministic math and never re-embeds, re-samples, or re-calls models
 
 ---
 
@@ -1647,6 +1648,10 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ---
 
 ## Log
+
+### 2026-06-22 — Phase 5 (selection / scoring / reproduction) COMPLETE ✅ — merged to cody
+
+- **Phase 5 (selection / scoring / reproduction) — COMPLETE ✅.** Wiring pass merged to cody (merge `31782d3`, --no-ff; integration preflight CLEAR: typecheck/lint/format + unit 947 + integration 125). 10 functional slices wired selection's deferral seams to the P3 loop + verifier P4 (W1 score-seam `6194348` · W2 reproduce-seam `609a811` · W3a kernel nextPopulation hook `207a0a8` · W3b-1 successor-threading `3485220` · W3b-2a boot composition `5fdd59d` · W3b-2b POST /runs trigger `635c0ee` · W3b-2c per-run-config `beb36b2` · cleanup `f07367d`) + the P5.8 rule-#7 jsonb-reorder fix (`2a65c5a`) + verifier reformat (`f03a363`). `/phase-exit P5` CLEAR (reachability re-run 0-unreachable + 2 accepted-deferred; arch-drift/security/code-quality CLEAR). Operator-command-to-organism loop closed; gen N+1 evolves from gen N; per-run config honored. Lessons §75–§83 banked. Selection-track orch seal `f026c76`; cody absorption this entry.
 
 ### 2026-06-22 — Verifier round 6 (re-activation): P4.12 unified VerifySeam adapter — the kernel↔verifier composition seam
 

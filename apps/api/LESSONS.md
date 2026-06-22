@@ -948,3 +948,84 @@ The kernel generation loop (§5) is pure orchestration over injected seam ports 
 All safety is INHERITED from the composed runners (the adapter adds NO new safety logic): #3 allowlist + a STRICT subtype filter (`descriptor.subtype === candidate.subtype` — a subtype-less descriptor never auto-applies, so the P4.5 `prepared.*` placeholders can't pollute the authoritative log selection reads for fitness), #5 candidate-as-DATA, #6 immutable judge, #7 replay (no provider re-call on a re-read), #8 no energy. The seam authors ONLY its evidence events (`critic.*`/`check.*`/`judge.*`) — never a kernel lifecycle/energy event (§5 ownership). Production wiring (injecting the seam as `seams.verify`) is the CONSUMER's boot composition root (cross-track — here selection P5), proven in-track by an integration test driving the REAL `runGenerationLoop` with the real seam injected (events land via the real append path).
 
 **Rule:** A kernel↔subsystem seam adapter MATCHES the injected port (never edits it — a mismatch is a cross-track Finding) and COMPOSES the subsystem's existing runners behind it: writes route through a per-generation `{append: ctx.append, readByRun: deps.read}` shim (never a deps-closure write, rule #2), a per-gen derivation the port omits is read from the authoritative `*.started{index}` event (never the id string), run-level constants close over config; strict subtype match excludes subtype-less placeholders; all safety inherited from the composed runners (no new safety logic). _(extends §64 loop-is-pure-orchestration + §20 seam-over-frozen-contracts; pin: `apps/api/test/integration/verifier/verify-seam.test.ts` + `test/unit/verifier/verify-seam.test.ts`; accepted: convention.)_
+
+## <a id="75"></a>75. replay-split for stochastic + provider ops — live persists every outcome, apply* reconstructs zero-rng/zero-gateway
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — mutation/fusion/reproduction).
+
+Every selection op that draws RNG or calls a provider has TWO paths. The LIVE path persists every non-deterministic outcome (embedding vector, RNG index/choice, synthesis output) into its event; the `apply*` reconstructor (`applyMutation`/`applyFusion`/`applyReproduction`) rebuilds the child bit-exact from the persisted event with ZERO rng + ZERO gateway. This is enforced STRUCTURALLY — the `apply*` fns take no gateway/rng param, so a replay-path provider call is impossible by construction — which is stronger than a call-count assertion on a mock (rule #7).
+
+**Rule:** Split every stochastic/provider op into a LIVE path that persists all outcomes and an `apply*` reconstructor that takes no provider/rng parameter (structural zero-call), not a mock call-count assertion. _(rule #7; pin: `apps/api/test/unit/selection/reproduction/{mutate,fuse,reproduce}.test.ts`; accepted: convention.)_
+
+## <a id="76"></a>76. fail-loud replay-integrity — typed guards throw on a corrupt persisted event, never coerce
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — fusion reconstruction).
+
+Reconstructing a child from a persisted event uses TYPED guards that throw on a corrupt/missing field (e.g. a bad `synthesisOutput`/`childGenerationId`), never a `String()`-coercion that would fold a tampered log into a valid-looking child. A corrupt authoritative event must fail LOUD, not silently produce a plausible-but-wrong reconstruction (rule #7).
+
+**Rule:** Reconstruction from a persisted event type-guards each field and throws on corruption — never coerce; a tampered log fails loud, never folds into a valid-looking entity. _(rule #7; pin: `apps/api/test/unit/selection/reproduction/fuse.test.ts`; accepted: convention.)_
+
+## <a id="77"></a>77. selection-decides / kernel-emits-lifecycle — the §2.5 seam boundary as code shape
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — cull/parent-selection/successor).
+
+Selection emits its OWN domain events (`novelty.scored`/`fitness.scored`/`lineage.culled`/`agenome.fused`/`agenome.reproduced`) and RETURNS flags (e.g. `zeroSurvivors`); the KERNEL owns the lifecycle terminals (`generation.completed`), the agenome state transitions, the energy debit, the per-run RNG seed, and gen-N+1 minting. Selection decides; the kernel records the lifecycle. This is the §2.5 seam boundary expressed as code shape — selection never writes a kernel lifecycle/energy event.
+
+**Rule:** A subsystem emits its own domain events + returns decision flags; the kernel owns lifecycle terminals, state transitions, energy, seed, and id-minting. Selection decides, the kernel emits the lifecycle. _(rule #1/#2 alignment; accepted: convention (architecture).)_
+
+## <a id="78"></a>78. numeric-only fitness-component purity — components read scores, never candidate/critic text
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — critic-scores / judge-acceptance components).
+
+A fitness component reads ONLY the numeric scores/confidence of its evidence (critic scores, judge acceptance value), NEVER the free-text critique or candidate text. So no critic prose or candidate text can move a fitness component — the scoring surface is closed to text influence (rule #5 candidate-text-is-data + rule #6 immutable-anchor alignment).
+
+**Rule:** Fitness components read numeric evidence fields only — never free-text critique or candidate text — so text cannot move a score. _(rule #5/#6; pin: `apps/api/test/unit/selection/components/{critic-scores,judge-acceptance}.test.ts`; accepted: convention.)_
+
+## <a id="79"></a>79. consume-an-immutable-anchor (+ composition-root single-source)
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — judge-acceptance + boot composition).
+
+Selection READS the held-out judge's acceptance verbatim from the persisted `judge.reviewed` record and never recomputes it (rule #6); the LOAD path asserts the full 5-axis set + `immutableToAgents:true` + `policyVersion`, fail-closed (absence ⇒ not-accepted, never a fabricated default). At the composition root ONE immutable rubric (`DEFAULT_JUDGE_RUBRIC`) is single-sourced to BOTH the verifier (the judge producer) and selection (`judgeAcceptance`) so the candidateId-join's `rubricPolicyVersion` matches on both sides — a two-source rubric would silently mismatch versions and drop the acceptance.
+
+**Rule:** Read an immutable measurement verbatim, validate its anchor set-completeness + version at load (fail-closed, absence⇒negative), and single-source the anchor from the composition root to BOTH producer and consumer so the join key matches. _(rule #6; pin: `apps/api/test/unit/selection/components/judge-acceptance.test.ts` + `apps/api/test/integration/boot/compose-runtime.test.ts`; accepted: convention.)_
+
+## <a id="80"></a>80. clamp-as-hint — selection proposes, the kernel bounds
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — allocation; extended in the wiring round to the threading hook + per-run-config).
+
+Selection's allocation proposes Σ ≤ remaining caps and never raises a cap; the KERNEL is the authoritative enforcer (rule #1). The same principle extends to the successor-threading hook (the kernel clamps the hook's returned population to `maxPopulation`) and the per-run-config merge (each cap = `min(posted, boot ceiling)` — a posted config lowers, never raises, even from a directly-appended `run.configured`). A subsystem cap is ALWAYS a hint the kernel re-clamps.
+
+**Rule:** A subsystem proposes caps/allocations as HINTS (Σ ≤ remaining); the kernel re-clamps to `min(_, remaining caps)` and is the only authoritative enforcer — a hint never raises a cap. _(rule #1; pin: `apps/api/test/unit/selection/allocation.test.ts` + `apps/api/test/unit/runtime/loop/generationLoop.test.ts` + `apps/api/test/integration/boot/compose-runtime.test.ts`; accepted: convention.)_
+
+## <a id="81"></a>81. shared SelectionEmitter — one emitter type, imported never redefined
+
+**Date:** 2026-06-21.
+**Source slice:** selection track P5 (logic round — emitter seam).
+
+A type/util needed by ≥2 in-track emitters lives in one module and is imported, never redefined per call site. The `SelectionEmitter` (`Omit<RunEventEnvelope,'sequence'|'occurredAt'> → {sequence}`) is structurally identical to `EventStore.append`, so the P3 runtime supplies the real impl with no shim — the seam type IS the append contract minus the server-assigned fields.
+
+**Rule:** Define a shared emitter/util type once and import it; shape it as the real sink's contract minus server-assigned fields so the runtime supplies the impl with no adapter. _(single-source-of-truth; accepted: convention.)_
+
+## <a id="82"></a>82. seam-impl-factory wiring — create<Seam>(deps) composes unit-pinned fns + reads inputs from the log
+
+**Date:** 2026-06-22.
+**Source slice:** selection track P5 (wiring round — score-seam / reproduce-seam / successor-threading).
+
+A subsystem seam's real impl is a `create<Seam>(deps) → Seam` factory that COMPOSES the already-unit-pinned domain fns and reads its cross-subsystem inputs back from the persisted log via `readByRun` (never live counters — rule #7 replay-faithful), emitting ONLY through the injected `ctx.append` (rule #2/#4). Immutable anchors (scoring policy / judge rubric) are injected from the boot root — validated, not owned. Port conformance is pinned by `const s: <Seam> = create<Seam>(...)` plus a real-PG integration test driving the actual loop. (Extends §64 loop-is-pure-orchestration + §74 seam-composes-runners — the consumer side of the same seam.)
+
+**Rule:** Wire a subsystem into the kernel loop as a `create<Seam>(deps)` factory composing unit-pinned fns, reading inputs via `readByRun` (not live counters), emitting only via the injected `ctx.append`, with anchors injected-from-boot (validated-not-owned); pin conformance with a typed assignment + a real-PG integration test. _(rule #2/#4/#7; extends §64/§74; pin: `apps/api/test/integration/selection/{score-seam,reproduce-seam,successor-threading}.test.ts`; accepted: convention.)_
+
+## <a id="83"></a>83. jsonb-key-reorder breaks order-sensitive derived provenance
+
+**Date:** 2026-06-22.
+**Source slice:** selection track P5 (wiring round — caught a latent P5.8 defect via the integration round-trip test).
+
+Denormalized provenance built from a persisted-jsonb object via `Object.keys()` / `JSON.stringify()` is KEY-ORDER-SENSITIVE, but Postgres jsonb does NOT preserve object key order on store → `applyReproduction(persisted) ≠ applyReproduction(live)` → silent replay divergence (rule #7 / §31). Canonicalize (sort keys) before building such derived provenance. A unit test that never crosses the REAL jsonb round-trip MISSES this — the integration round-trip equality test is what caught it in already-landed P5.8 (the unit tests had stayed green through the original round AND the cody merge).
+
+**Rule:** Canonicalize (sort keys) before building any derived value from a persisted-jsonb object via `Object.keys()`/`JSON.stringify()`; jsonb drops key order, so an order-sensitive reconstruction diverges on replay. Pin with a key-reordered reconstruction test AND a real-PG round-trip equality test — unit-without-PG misses it. _(rule #7 / §31; pin: `apps/api/test/unit/selection/reproduction/mutate.test.ts` + `apps/api/test/integration/selection/reproduce-seam.test.ts`; accepted: convention.)_
