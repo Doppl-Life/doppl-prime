@@ -50,16 +50,24 @@ export const defaultRoutes: Record<ModelRole, ModelRoute> = {
   critic: {
     role: "critic",
     provider: "openrouter",
-    modelId: "anthropic/claude-3.5-sonnet",
+    // Was anthropic/claude-3.5-sonnet — that model id 404s on the
+    // current OpenRouter catalog ("No endpoints found"). Swap to
+    // openai/gpt-4o which is on OpenRouter, supports strict
+    // json_schema (the critic-output schema is strict), and has a
+    // gpt-4o-mini fallback that's already proven via
+    // population_generator.
+    modelId: "openai/gpt-4o",
     capabilities: GEN_CAPS,
-    fallbackRouteIds: ["openrouter:openai/gpt-4o"],
+    fallbackRouteIds: ["openrouter:openai/gpt-4o-mini"],
   },
   subtype_check: {
     role: "subtype_check",
     provider: "openrouter",
     modelId: "openai/gpt-4o-mini",
     capabilities: GEN_CAPS,
-    fallbackRouteIds: ["openrouter:anthropic/claude-3.5-haiku"],
+    // Was anthropic/claude-3.5-haiku — same 404 issue. gpt-4o is a
+    // strictly stronger fallback than the original mini→haiku chain.
+    fallbackRouteIds: ["openrouter:openai/gpt-4o"],
   },
   embedding: {
     role: "embedding",
@@ -71,16 +79,19 @@ export const defaultRoutes: Record<ModelRole, ModelRoute> = {
   final_judge: {
     role: "final_judge",
     provider: "openrouter",
-    modelId: "anthropic/claude-3.5-sonnet",
+    // Same anthropic 404 fix as critic.
+    modelId: "openai/gpt-4o",
     capabilities: GEN_CAPS,
-    fallbackRouteIds: ["openrouter:openai/gpt-4o"],
+    fallbackRouteIds: ["openrouter:openai/gpt-4o-mini"],
   },
   fusion_synthesis: {
     role: "fusion_synthesis",
     provider: "openrouter",
     modelId: "openai/gpt-4o",
     capabilities: GEN_CAPS,
-    fallbackRouteIds: ["openrouter:anthropic/claude-3.5-sonnet"],
+    // Was anthropic/claude-3.5-sonnet fallback — replaced with
+    // openai/gpt-4o-mini for the same 404 reason.
+    fallbackRouteIds: ["openrouter:openai/gpt-4o-mini"],
   },
 };
 

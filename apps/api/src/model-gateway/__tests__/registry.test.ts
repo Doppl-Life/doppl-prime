@@ -27,10 +27,10 @@ describe("defaultRoutes — covers every ModelRole", () => {
   });
 
   test("MVP primary picks match the plan matrix", () => {
-    expect(defaultRoutes.critic.modelId).toBe("anthropic/claude-3.5-sonnet");
+    expect(defaultRoutes.critic.modelId).toBe("openai/gpt-4o");
     expect(defaultRoutes.embedding.provider).toBe("openai-embedding");
     expect(defaultRoutes.embedding.modelId).toBe("text-embedding-3-small");
-    expect(defaultRoutes.final_judge.modelId).toBe("anthropic/claude-3.5-sonnet");
+    expect(defaultRoutes.final_judge.modelId).toBe("openai/gpt-4o");
   });
 
   test("every default route declares a fallback (≥1 fallbackRouteId)", () => {
@@ -43,7 +43,7 @@ describe("defaultRoutes — covers every ModelRole", () => {
 describe("createRegistry — resolution", () => {
   test("resolveRoute returns the matching primary route", () => {
     const registry = createRegistry(defaultRoutes);
-    expect(registry.resolveRoute("critic").modelId).toBe("anthropic/claude-3.5-sonnet");
+    expect(registry.resolveRoute("critic").modelId).toBe("openai/gpt-4o");
     expect(registry.resolveRoute("embedding").modelId).toBe("text-embedding-3-small");
   });
 
