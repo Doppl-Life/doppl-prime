@@ -736,15 +736,15 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P3.6 — Seeded RNG with per-run seed persisted in run.configured + outcome persistence
 
-- [ ] A per-run RNG seed is captured at configure time and persisted in the run.configured event payload (RunConfig.rngSeed); the kernel derives all sampling from this seed
-- [ ] All kernel non-determinism (mutation field selection + magnitudes, parent-selection tie-breaks, fusion crossover points, any sampling) is either reproduced deterministically from the persisted seed or has its concrete outcome persisted in agenome.mutated / agenome.fused / lineage.culled payloads
-- [ ] Two runs configured with the same seed and same inputs produce identical sampling sequences
-- [ ] Replay reconstructs from the persisted seed/outcomes and never re-samples; the RNG is not advanced during replay
-- [ ] The RNG is a single seeded source owned by the kernel; ad-hoc Math.random in lifecycle code paths is excluded from kernel decision-making
-- [ ] Seed handling preserves enough information that an agenome's traits and selection decisions are byte-reproducible on replay
-- [ ] Files: apps/api/src/runtime/rng/seededRng.ts (NEW); apps/api/src/runtime/rng/persistOutcomes.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes RunConfig — frozen in P0.3)
-- [ ] Depends on: P0.3, P3.3
+- [x] A per-run RNG seed is captured at configure time and persisted in the run.configured event payload (RunConfig.rngSeed); the kernel derives all sampling from this seed
+- [x] All kernel non-determinism (mutation field selection + magnitudes, parent-selection tie-breaks, fusion crossover points, any sampling) is either reproduced deterministically from the persisted seed or has its concrete outcome persisted in agenome.mutated / agenome.fused / lineage.culled payloads
+- [x] Two runs configured with the same seed and same inputs produce identical sampling sequences
+- [x] Replay reconstructs from the persisted seed/outcomes and never re-samples; the RNG is not advanced during replay
+- [x] The RNG is a single seeded source owned by the kernel; ad-hoc Math.random in lifecycle code paths is excluded from kernel decision-making
+- [x] Seed handling preserves enough information that an agenome's traits and selection decisions are byte-reproducible on replay
+- [x] Files: apps/api/src/runtime/rng/seededRng.ts (NEW); apps/api/src/runtime/rng/persistOutcomes.ts (NEW)
+- [x] Cross-doc invariant: none (consumes RunConfig — frozen in P0.3)
+- [x] Depends on: P0.3, P3.3
 
 ### P3.7 — Bounded retry / timeout / fallback policy for provider calls
 
