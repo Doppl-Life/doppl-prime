@@ -25,6 +25,9 @@ npm run kernel:run
 The command writes markdown-vault artifacts, `trace.json`, and replayable `events.jsonl` under `kernel/out/vault/`.
 It also writes a browser-readable proof board to `kernel/out/proof-board/index.html`.
 
+The deterministic fixture path now runs through provider-neutral generation boundaries:
+`ProblemRecoveryProvider`, `CandidateGenerator`, and `CriticCouncil`.
+
 Refresh the committed static preview:
 
 ```bash

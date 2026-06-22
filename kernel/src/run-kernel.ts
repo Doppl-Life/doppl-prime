@@ -1,10 +1,13 @@
 import { assertKernelRun, type CandidateSolution, type KernelRun, type MemoryMode } from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
 import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
-import { loadKernelFixture } from './fixtures.ts';
 import { scoreCandidates, selectParents, checkPairCompatibility } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
 import { createMemoryEventRecorder } from './event-store.ts';
+import {
+  createFixtureGenerationProviders,
+  type GenerationProviders,
+} from './generation-providers.ts';
 
 function selectedCandidates(
   selectedIds: [string, string] | [],
@@ -22,6 +25,7 @@ export async function runKernel(input: {
   fixturePath: string;
   knowledgePacketPath: string;
   memoryMode: MemoryMode;
+  generationProviders?: GenerationProviders;
 }): Promise<KernelRun> {
   const trace = createMemoryEventRecorder();
   const caseStudy = await loadCaseStudy(input.casePath);
@@ -48,24 +52,23 @@ export async function runKernel(input: {
     });
   }
 
-  const fixture = await loadKernelFixture(input.fixturePath);
-  if (fixture.caseId !== caseStudy.id) {
-    throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-  }
+  const generationProviders =
+    input.generationProviders || (await createFixtureGenerationProviders(input.fixturePath));
 
-  const problemRecovery = {
-    id: `recovery_${caseStudy.id}`,
-    caseId: caseStudy.id,
-    ...fixture.problemRecovery,
-    citedKnowledge: knowledgePacket.items.map((item) => item.citeHandle),
-  };
+  const problemRecovery = await generationProviders.problemRecovery.recover({
+    runId: input.runId,
+    caseStudy,
+    knowledgePacket,
+  });
   trace.push('problem_recovery.created', { recoveryId: problemRecovery.id });
 
-  const candidates = fixture.candidates.map((candidate) => ({
-    ...candidate,
-    caseId: caseStudy.id,
+  const candidates = await generationProviders.candidateGenerator.generate({
+    runId: input.runId,
+    caseStudy,
+    problemRecovery,
+    knowledgePacket,
     generation: 0,
-  }));
+  });
   for (const candidate of candidates) {
     trace.push('candidate.created', {
       candidateId: candidate.id,
@@ -73,7 +76,13 @@ export async function runKernel(input: {
     });
   }
 
-  const criticVerdicts = fixture.critics;
+  const criticVerdicts = await generationProviders.criticCouncil.judge({
+    runId: input.runId,
+    caseStudy,
+    problemRecovery,
+    candidates,
+    knowledgePacket,
+  });
   for (const verdict of criticVerdicts) {
     trace.push('critic.verdict_recorded', {
       candidateId: verdict.candidateId,
