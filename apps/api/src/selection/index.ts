@@ -32,6 +32,16 @@ export {
 export type { Contribution, ScoringResult } from './fitness/policy';
 export { scoreFitness } from './fitness/score-fitness';
 export type { FitnessEmitter, ScoreFitnessDeps, ScoreFitnessInput } from './fitness/score-fitness';
+export { allocate } from './allocation';
+export type { Allocation, AllocationParent } from './allocation';
+export { assembleSuccessor } from './successor';
+export type {
+  SuccessorChild,
+  SuccessorDeps,
+  SuccessorInput,
+  SuccessorParent,
+  SuccessorResult,
+} from './successor';
 export { cull } from './cull';
 export type {
   AgenomeFitness,
