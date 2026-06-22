@@ -112,3 +112,88 @@ export { clampSpawnBudget, type SpawnClampResult } from './spawn/spawnBudgetClam
 // via clampSpawnBudget. The agenome.spawned emission is the loop's (P3.10/P3.12).
 export { SeedAgenomeTemplate, SeedAgenomeSet, DEFAULT_SEED_SET } from './seed/seedAgenomes.config';
 export { materializeGen0 } from './seed/gen0SeedSet';
+
+// Generation loop skeleton (P3.10b — the substrate's first real consumer; §5/§3/§4 ownership). Bounded
+// happy-path orchestration: guard-checked lifecycle → append-path emits (kernel-owned events only) →
+// gateway candidates → INJECTED verify/score/reproduce seams consumed as DATA (option-b, never authored).
+// The named caller is the P3.12 worker (deferred); energy/kill/edges/run-terminal are 10c/10d/10e/P3.11.
+export {
+  runGenerationLoop,
+  transitionGenerationOrThrow,
+  transitionAgenomeOrThrow,
+  IllegalGenerationTransitionError,
+  IllegalAgenomeTransitionError,
+  type GenerationLoopDeps,
+  type GenerationLoopResult,
+  type GenerationGateway,
+  type GenerateResult,
+  type ToolCallObservation,
+  type GenerationSeams,
+  type VerifySeam,
+  type ScoreSeam,
+  type ReproduceSeam,
+  type SeamContext,
+  type ReproduceContext,
+} from './loop/generationLoop';
+export { executeKillAndDrain, type KillAppend } from './loop/killDrain';
+
+// Run-terminal classification (P3.11 — §3 terminal rule + §5 kill/crash + energy "score already-verified").
+// PURE classifyRunTerminal over the persisted log (completed iff a scored survivor — finalIdeaRef = the
+// best-so-far; else failed{no_scored_survivor}; stopped/cancelled from the P3.10e KillPlanSummary;
+// failed{crash} for P3.13) + the runTerminalPath guard helper + buildPartialTerminalSummary. The loop's exit
+// is the executor (appends the single terminal, guard-validated); P3.13 crash-forward reuses
+// classifyRunTerminal(crashed:true). energy_exhausted is mid-flight (NOT a terminal) — the real terminal
+// still follows.
+export {
+  classifyRunTerminal,
+  runTerminalPath,
+  type ClassifyRunTerminalInput,
+  type RunTerminalVerdict,
+  type RunTerminalStatus,
+} from './terminal/terminalClassifier';
+export {
+  buildPartialTerminalSummary,
+  scoredSurvivors,
+  bestScoredSurvivor,
+  type PartialTerminalSummary,
+  type ScoredSurvivor,
+} from './terminal/partialSummary';
+
+// In-process single-active-run worker (P3.12 — §5 workers/concurrency; KEY SAFETY RULES #1/#2/#8). The
+// worker is runGenerationLoop's PRODUCTION caller: single-active-run guard (authoritative, over the log) →
+// run.started (configured→running, guard-validated) → drive the loop (terminalizes via P3.11) → §60
+// side-signal heartbeat (NOT a run_event). Idempotent off the persisted log (no double-append/debit). The
+// REST→worker trigger + stop→operatorStop wiring is demo/Phase-D territory (routes/ untouched here).
+export {
+  runWorker,
+  type RunWorkerDeps,
+  type RunWorkerResult,
+  type RunWorkerSkipReason,
+  type RunWorkerHeartbeat,
+} from './worker/runWorker';
+export {
+  activeRunGuard,
+  isRunTerminal,
+  type ActiveRunEntry,
+  type ActiveRunDecision,
+} from './worker/activeRunGuard';
+export {
+  sequenceWatermark,
+  stepAlreadyRecorded,
+  guardStep,
+  type StepMatch,
+  type StepDecision,
+} from './worker/idempotency';
+
+// Crash-forward recovery at boot (P3.13 — §5 crash recovery; KEY SAFETY RULES #2/#7). Forward-fails every
+// orphaned non-terminal run to its §3-legal crash terminal (running→run.failed{crash},
+// configured→run.cancelled{crash} — never a blanket →failed, LESSONS §48), via the P3.3 append path,
+// guard-validated through P3.2. Never resumes; already-terminal untouched; idempotent + deterministic. The
+// boot caller (crash-forward BEFORE the worker accepts work) is demo/Phase-D territory. Reuses P3.11
+// (classifyRunTerminal/runTerminalPath/buildPartialTerminalSummary) + P3.12 (isRunTerminal/listRunIds).
+export {
+  crashForward,
+  type CrashForwardDeps,
+  type CrashForwardResult,
+  type CrashRecovery,
+} from './recovery/crashForward';

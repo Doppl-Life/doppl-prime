@@ -4,7 +4,7 @@
 - **Phase:** Phase 3 (Runtime kernel) — the pure decide/compute safety substrate (P3.4/P3.5/P3.6/P3.9); plus a cross-track Phase-0 contract reconciliation (P0.16).
 - **Track:** kernel · **Branch:** track/kernel · **HEAD at close:** `6cdde0c`
 - **Predecessor:** [kernel-005](kernel-005-2026-06-21-boot-config-state-machines-two-freeze-amendments.md)
-- **Successor:** _(next round — kernel-026 sv4→5 terminal-event amendment is the first slice)_
+- **Successor:** [kernel-007](kernel-007-2026-06-22-p3.10-generation-loop.md)
 
 ## Why this session existed
 

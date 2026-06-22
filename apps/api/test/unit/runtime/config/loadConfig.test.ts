@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import type { AppConfig, LoadConfigInput } from '../../../../src/runtime/config/loadConfig';
+import { DEFAULT_COST_MAP } from '../../../../src/runtime/energy/costMap';
 
 /**
  * P3.1 boot config loader (ARCHITECTURE.md §5/§15/§14, KEY SAFETY RULE #4 credential boundary).
@@ -150,6 +151,53 @@ describe('loadConfig — credential boundary (rule #4 / LESSON 26+27)', () => {
     })();
     expect(err).toBeDefined();
     expect(err?.message).toContain('weights'); // the field path — debuggable
+    expect(err?.message).not.toContain(leaky); // the value — never echoed
+  });
+});
+
+describe('loadConfig — cost map composition (§4/§5) [kernel-027]', () => {
+  // spec(§4/§5) — an empty file set boots on the DEFAULT_COST_MAP defaults layer; config.costMap
+  // deep-equals the canonical default (by value — Zod parse returns a fresh object, not the same ref).
+  test('loadConfig_composes_costmap_from_defaults', () => {
+    expect(load().costMap).toEqual(DEFAULT_COST_MAP);
+  });
+
+  // spec(§5) — defaults < file: a partial file override merges over the defaults (siblings preserved).
+  test('costmap_file_overrides_merge_over_defaults', () => {
+    const cfg = load({ fileSources: { costMap: { tokensPerUnit: 500 } } });
+    expect(cfg.costMap).toEqual({ tokensPerUnit: 500, perToolCall: 5, perSpawn: 50 });
+  });
+
+  // spec(§5) — the composed cost map is DEEP-frozen like the rest of AppConfig; mutation throws (ESM
+  // strict) — the loop (P3.10) gets one immutable handle.
+  test('costmap_is_deep_frozen', () => {
+    const cfg = load();
+    expect(cfg.costMap).toEqual(DEFAULT_COST_MAP); // positive guard — fails loud if costMap is absent
+    // (Object.isFrozen(undefined)===true + mutating undefined throws would otherwise pass vacuously).
+    expect(Object.isFrozen(cfg.costMap)).toBe(true);
+    expect(() => {
+      (cfg.costMap as { tokensPerUnit: number }).tokensPerUnit = 999;
+    }).toThrow();
+  });
+
+  // spec(§4/§15) rule #4 / LESSON 26 — an invalid cost-map aborts boot fast: tokensPerUnit is a divisor
+  // (0/negative illegal), perToolCall nonnegative; the error names the field path but NEVER echoes the
+  // value (a distinctive bad value stays out of the message).
+  test('invalid_costmap_rejected_at_boot', () => {
+    expect(load().costMap.tokensPerUnit).toBeGreaterThan(0); // positive guard
+    expect(() => load({ fileSources: { costMap: { tokensPerUnit: 0 } } })).toThrow(/cost-map/);
+    expect(() => load({ fileSources: { costMap: { perToolCall: -1 } } })).toThrow(/cost-map/);
+    // no-value-echo: a distinctive invalid value (non-int) names the path, not the value.
+    const leaky = 'costmap-secret-marker';
+    const err = (() => {
+      try {
+        load({ fileSources: { costMap: { tokensPerUnit: leaky } } });
+        return undefined;
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(err?.message).toContain('tokensPerUnit'); // the field path — debuggable
     expect(err?.message).not.toContain(leaky); // the value — never echoed
   });
 });

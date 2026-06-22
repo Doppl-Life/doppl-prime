@@ -19,7 +19,7 @@
 
 ## Currently in progress
 
-> **Kernel team PAUSED 2026-06-22** (lead-cycle) — handoff: `docs/team-handoffs/kernel-001-2026-06-22-substrate-merged-pause.md` · last round-seal `ee8b3d6` (merged cody `8de6bbd`) · next-slice target: **kernel-026 sv4→5 terminal-event amendment** → P3.10 generation loop. Resume: `/team-start kernel`.
+> **Kernel team — round-5 SEALED 2026-06-22 — the kernel track is FEATURE-COMPLETE + GATED (the last of the 5 build tracks).** Phase 3 feature work COMPLETE: P3.11 run-terminal `62f80a1` → P3.12 worker `b9dfeda` → P3.13 crash-forward `307ada8` (all test-first, Step-2.5 reviewed, security-reviewer CLEAN). **`/phase-exit P2` CLEAR + `/phase-exit P3` CLEAR** (6-auditor fan-out all CLEAR — `docs/audits/{P2,P3}-*.md`; 0 drift / 0 dead code / 0 security findings; `/preflight` + `pnpm audit` clean). **P2.3 done** (scrub seam §21+§52); **P2.8 RE-HOMED to Phase D** (documented deferment, Option-B, rule #2 — Langfuse export = a bootstrap projection subscriber, not in the gateway write path). Round terminal commit pushed to origin/track/kernel. **REMAINING — LEAD-owned:** the **kernel→cody track-completion merge** (the cody-bound §5/§6 arch notes + the P2 §6 STALE-DOC reconcile + track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE land then — ledger §I). **No buildable kernel work remains** (P2.8 + the Phase-D bootstrap wiring are demo/Phase-D territory — Carry-forward). Kernel team STANDS DOWN after the merge. Orchestrator routing ledger: `docs/sessions/kernel-003-2026-06-21-orchestrator-routing-ledger.md` §I.
 
 **Phase 0 (contract freeze) — COMPLETE ✅ (14/14 tasks; schemaVersion 2).** Re-sealed after the **P0.1-amend** operation-start-markers amendment (user-decided, before the kernel forks — `RunEventType` 25→36 + schemaVersion 1→2, closure + rule-#8 no-energy-debit preserved, non-breaking). `/phase-exit P0`: original verdict **CLEAR** at `bab92e1`; focused re-run **CLEAR** after the amendment (gate blocks under the Phase 0 section; auditor reports in `docs/audits/P0-*.md`). Phase 0 is the forced-serial bottleneck — its close is the **fork point** for the four parallel tracks (kernel, verifier, selection, demo). Lead reconciles the integration-checkout (cody) copies at merge.
 
@@ -29,7 +29,7 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 **Kernel freeze bundle — COMPLETE + MERGED to integration (cody merge `e638d81`).** 7 slices green: gateway P2.1/P2.4/P2.9 + event-store P1.1/P1.2/P1.4/P1.3 (round-seal `fd9459c`). Integration preflight on merged cody **CLEAR** (docker OK · typecheck · lint · format · 32 unit · 18 integration). **→ verifier / selection / demo can now FORK** from cody (frozen contracts + gateway stub + fixtures).
 
-**Phase 1 — COMPLETE ✅ + `/phase-exit P1` CLEAR (kernel track).** P1.1–P1.4 shipped; P1.5/P1.6 **satisfied-by-P0** (lead-confirmed); P1.7 evidence-resolver `d3a61ed`; P1.8 replay-reader `dca9bc4` + kernel-014 phase-exit `[medium]` fixes `86553c3`. Audit fan-out all CLEAR (reachability `docs/audits/P1-reachability.md` · arch-drift · security `docs/audits/P1-security.md` · deps). Round-seal `bd4068a` → **merged to cody** (merge `36836a1`); integration preflight CLEAR. **Phase 2 partial:** P2.1/P2.2/P2.4/P2.5/P2.6/P2.7/P2.9 done; **P2.3 + P2.8 OPEN — cross-track boundary** (both write `packages/observability`, demo-track territory; kernel coordinates through the lead before touching it).
+**Phase 1 — COMPLETE ✅ + `/phase-exit P1` CLEAR (kernel track).** P1.1–P1.4 shipped; P1.5/P1.6 **satisfied-by-P0** (lead-confirmed); P1.7 evidence-resolver `d3a61ed`; P1.8 replay-reader `dca9bc4` + kernel-014 phase-exit `[medium]` fixes `86553c3`. Audit fan-out all CLEAR (reachability `docs/audits/P1-reachability.md` · arch-drift · security `docs/audits/P1-security.md` · deps). Round-seal `bd4068a` → **merged to cody** (merge `36836a1`); integration preflight CLEAR. **Phase 2 — COMPLETE (kernel scope) as of 2026-06-22:** P2.1/P2.2/P2.4/P2.5/P2.6/P2.7/P2.9 done; **P2.3 done** (scrub seam built — event-store §21 + observability §52; ticked at the P3.13 round); **P2.8 RE-HOMED to Phase D** (documented deferment, lead Option-B — Langfuse is a non-authoritative projection wired off the event log at bootstrap, rule #2; the kernel's contribution — trace-id event meta §41 + the consumable scrub seam §52 — is in place; see Carry-forward). → `/phase-exit P2` clears with P2.8 re-homed.
 
 **Phase 3 — IN PROGRESS (kernel track).** P3.1 boot-config `db4b045` ✅ · P3.2 four state machines (Run/Generation/Candidate/Agenome incl. the resolved degraded/repairing edges) `087f2b1` ✅. Two **frozen-contract amendments** (user-ratified scoped exceptions, lesson-§19 playbook): GenerationStatus 8→9 (+`degraded`) + CandidateStatus 8→9 (+`repairing`) — the two §3 FIX-edge statuses the P0 freeze omitted. These collided with the verifier's independently-landed P0.16 judge seam (both claimed schemaVersion 3); **reconciled in kernel-020** (`117a0ec`) → linearized **`CURRENT_SCHEMA_VERSION` = 4** (judge=v3, degraded+repairing=v4), unioning RunEventType 37 + GenerationStatus 9 + CandidateStatus 9 + JudgeResult. **Merged to cody `bff4325`** alongside the verifier P4 — full integration preflight GREEN (contracts 178 · apps/api unit + 40 integration · kernel event-store/gateway + verifier council/judge/checks coexisting). **schemaVersion is now 4 cody-wide** — selection/demo re-record their status + version snapshots on next sync (additive).
 
@@ -45,12 +45,12 @@ Prior round (contract-001 session, P0.5→P0.12): round-seal `ef95485` — see L
 
 Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/orchestrate-end` (not append-only). Bound: under ~7 items.
 
-- **`validateRunConfig` is the canonical boot-config entry** — the P1/P3 boot path MUST call it (read file/env → `validateRunConfig({defaults,file,env})` → start-or-exit), not reinvent config parsing, with a reachability bullet pinning the call. **STATUS 2026-06-21 (carry-forward hygiene): HOMED in kernel P3.1 boot-config (`db4b045`) — kernel-orch confirms `validateRunConfig` is the boot entry (reachability) at next /orchestrate-end → then DELETE.** _(origin: 2026-06-20 P0.3; cross-track → kernel)_
-- **Opaque gateway passthroughs MUST be scrubbed at the persistence boundary (cross-track → kernel/model-gateway P2/P3).** `ModelGatewayRequest.schema?` + `ModelGatewayResponse.output?` are opaque `z.unknown()` passthroughs — the CONTRACT cannot scrub them. Any event payload carrying these MUST route through `scrubSecrets` (P0.2) before append AND before Langfuse emit (rule #4 / §14); the scrub already covers all payloads, so pin an explicit scrub-before-persist reachability bullet on these fields in the P2/P3 briefs. **Scrub-at-persist BUILT** (P1.2 boundary scrub → wired before append in P1.3 `append.ts`; P2.4 structured-output carries candidate text as data); **remaining: the P3 event-emission reachability pins** on these passthrough fields when the runtime emits gateway-carrying events. _(origin: 2026-06-20 P0.12 security review; cross-track → kernel; DELETE after P3 emission pins)_
 - **Held-out judge acceptance score must integrate into fitness via the persisted authoritative record (cross-track → selection P5).** The verifier-P4 half is CONSUMED — P4.3 loads the rubric from the immutable `DEFAULT_JUDGE_RUBRIC` (`loadJudgeRubric`, no agent-writable path, full-5-axis-set + `immutableToAgents:true` asserted) and P4.8 runs the held-out judge outside the breeding loop, persisting `judge.reviewed`←`JudgeResult` as the authoritative acceptance record (merged to cody `bff4325`/`fae1d46`). **Remaining selection-P5 obligation:** P5.5 MUST integrate the held-out-judge acceptance into `FitnessScore.components.judge_acceptance` by a candidateId JOIN into the persisted `judge.reviewed` record (rule #6 — never a duplicate authoritative copy, never re-derive/re-validate the rubric in selection; the judge sits outside selection's loop). _(origin: 2026-06-20 P0.15 FinalJudgeRubric Step-2.5; verifier-P4 half consumed @ P4.3/P4.8; cross-track → selection P5; DELETE after P5.5 consumes the persisted judge acceptance)_
 - **Wire `selectCriticMandates` into the P3 generation 'verifying' phase (cross-track → kernel/P3).** `selectCriticMandates({rngSeed: readRngSeed(runConfig), generationIndex: generation.index})` → `runCouncil({…, mandates})`. Same deferred-wiring as P4.6's `runCouncil` (both currently unwired). _(origin: verifier P4.7; cross-track → kernel/P3)_
-- **Kernel P2.8 Langfuse adapter MUST import demo's canonical emit-boundary scrub — never reimplement (cross-track → kernel P2.8; safety §14 / rule #4).** **Kernel track ACCEPTED 2026-06-21: single scrub, demo-owned, kernel consumes it — agreement settled, pending P2.8 implementation.** Demo P6.5 shipped the canonical Langfuse-emit secret-scrub `scrubObservabilityPayload` + `createEmitBoundary` in `packages/observability` (committed `0e2f793` on track/demo). §14 mandates a SINGLE scrub function at all boundaries; a second divergent kernel-side copy is the L21 key-leak class (one boundary hardens, the other silently leaks secrets into Langfuse traces). When kernel builds P2.8, its adapter MUST `import` + call the demo-owned scrub before any emit, never write its own. Pairs with the "opaque gateway passthroughs → scrub before Langfuse emit" item above. _(origin: 2026-06-21 demo P6.5 Step-9 Finding, lead-routed per user [also relayed direct to kernel lead]; cross-track → kernel P2.8; DELETE after kernel P2.8 imports the canonical scrub)_
 - **Demo post-integration follow-ups (demo track; fold into the next demo round / Phase D).** Surfaced at the round-4 demo→cody integration + the `/phase-exit P7` audit fan-out (all CLEAR; these are deferred polish/wiring, none blocking): (a) **RunHealth promotion + per-category in-flight render** — the backend `run-health.ts` already computes `operationsInFlight.byType` per category (incl. `judge`, round-4); the web renders only `candidatesInFlight` against a web-local UNFROZEN `RunHealth` Zod schema → promote `RunHealth` to a frozen `@doppl/contracts` model (contract-coordinated) + render the full per-category in-flight window (the P7.14 partial bullet; LESSONS apps/web §9 "promote at P7.14"); (b) **lineage `onSelect`** — `LineageGraph` exposes no `onSelect` prop → interactive node-click→inspector is unwired (the shell defaults to the winner); small P7.7 follow-up, NOT blocking (the e2e traverses the winner-default); (c) **SSE connection-drop fallback** — P7.14 `onError` wires the payload-validation hook only; add the EventSource `'error'` listener (the real connection-drop case) at live-SSE integration; (d) **dataRef↔entity-id bridge + `run.configured`-carries-`RunConfig.caps`** — confirm the P7.7 in-flight node-bridge + the P7.9 energy-budget source against the real producer at integration; (e) **chart mean-series** — `MEAN_FITNESS_SERIES`/`MEAN_NOVELTY_SERIES` are defined but unrendered (P7 reachability finding) — optional chart-polish overlay. _(origin: 2026-06-22 round-4 demo→cody integration + /phase-exit P7 audit; demo track; triage at the next demo /orchestrate-start)_
+- **Phase-D bootstrap wiring: crash-forward → worker → REST trigger (cross-track → demo/Phase D).** P3.11–P3.13 delivered the kernel-territory pieces (`runWorker`, `crashForward`) but DEFERRED the boot sequence + REST surface (bootstrap/`routes/` is demo territory; kernel→cody merge deferred — `routes/runs.ts` untouched this round). The Phase-D bootstrap must: (a) run `crashForward({listRunIds, eventStore})` BEFORE the worker accepts work (P3.13 — so the single-active-run guard starts from a clean no-active-run state); (b) wire REST POST `/runs` → `runWorker` (fire-and-forget) trigger + POST `/runs/:id/stop` → injected `operatorStop`; (c) supply the real `listRunIds` impl (drizzle `selectDistinct`) + the worker's injected heartbeat sink + (P2.8) the real Langfuse `ObservabilityEmitter`; (d) **[security-reviewer medium, dispositioned NOT a current Finding]** the read-then-append TOCTOU on the active-run guard + run-level idempotency — out of scope for the serial single-in-process MVP (no concurrent caller reachable; the deterministic `${runId}-run-started` id + `unique(run_id,sequence)` fail a racing duplicate LOUD), BUT the Phase-D REST trigger MUST serialize worker invocations (in-memory single-flight re-validated vs the log, LESSONS §56) OR move guard+append under the per-run advisory lock (LESSONS §26). For the Phase-D wiring-slice owner (demo track). _(origin: 2026-06-22 P3.12 kernel-033 + P3.13 kernel-034 + the P3.12 security-reviewer; cross-track → demo/Phase D; DELETE after Phase D wires the bootstrap sequence + serializes the REST→worker trigger)_
+- **P2.8 Langfuse-export RE-HOMED to Phase D — documented deferment (lead + Option-B, 2026-06-22; cross-track → demo/Phase D).** Rationale **KEY SAFETY RULE #2**: Langfuse is a non-authoritative PROJECTION (named among the derived/rebuildable projections) → it is wired off the authoritative event log at the **bootstrap**, NEVER embedded in the gateway write path. The kernel/verifier contribution is DONE — LLM-event meta carries `langfuseTraceId`+`gatewayRequestId→correlationId` (LESSON §41), and the consumable scrub seam `createEmitBoundary`/`scrubObservabilityPayload` is built (demo P6.5/§52). **Phase D wires exactly:** (1) the real Langfuse client — demo territory `packages/observability/src/langfuse.ts` + `trace-metadata.ts`; (2) the export as a **projection subscriber off the event log** (rebuilds from the persisted LLM-event meta, never the gateway write path — rule #2); (3) **scrub-via-the-demo-seam before emit** (`createEmitBoundary`, rule #4 / §14 — never reimplement). Pairs with the Phase-D bootstrap (worker REST trigger + crash-forward boot call). _(origin: 2026-06-22 P2.8 reconcile, lead Option-B; cross-track → demo/Phase D; DELETE after Phase D wires the Langfuse export subscriber)_
+- **Generation-level drain on crash (follow-up, kernel/future).** P3.13 crash-forward terminalizes the RUN only (run.failed/cancelled{crash}); the crashed run's non-terminal GENERATIONS are left un-drained (run-level terminal is what gates the worker clean-slate + projections; replay derives from the run terminal — moot for the demo). If a future need arises, reuse `executeKillAndDrain`'s per-state generation disposition over the crashed run's generations. _(origin: 2026-06-22 P3.13 kernel-034 Q3; low-pri follow-up)_
 - **STANDING (user, 2026-06-21): bundle slices where safe to speed the build.** Group dep-compatible, same-code-area, non-invariant slices into ONE atomic red→green→commit unit. **Safety-invariant slices NEVER bundle with feature work** (root `CLAUDE.md` TDD posture) — they stay solo. Applies to every track's remaining phases (kernel first; freeze bundle stays tight per the deps/safety/cross-area analysis). _(origin: 2026-06-21 lead relay of user direction; STANDING — keep through triage; re-issues the P0-era bundling directive deleted at contract-002 close)_
 
 ---
@@ -62,9 +62,9 @@ Items the orchestrator MUST fold into the next 1–2 briefs. Triaged at every `/
 | Deliverable | Status | Delivered by |
 |---|---|---|
 | Frozen shared-contracts package (`packages/contracts`) | ✅ | Phase 0 |
-| Postgres append-only event store + replay reader | ❌ | Phase 1 |
-| Provider-agnostic ModelGateway (OpenRouter / OpenAI / retrieval) | ❌ | Phase 2 |
-| Runtime kernel — bounded evolution loop, caps, energy, RNG | ❌ | Phase 3 |
+| Postgres append-only event store + replay reader | ✅ | Phase 1 (`/phase-exit P1` CLEAR) |
+| Provider-agnostic ModelGateway (OpenRouter / OpenAI / retrieval) | ✅ | Phase 2 (`/phase-exit P2` CLEAR; P2.8 Langfuse-export → Phase D) |
+| Runtime kernel — bounded evolution loop, caps, energy, RNG | ✅ | Phase 3 (`/phase-exit P3` CLEAR) |
 | Verifier council + held-out judge + critic rotation + checks | ❌ | Phase 4 |
 | Selection / scoring / reproduction — gen N+1 beats gen N | ❌ | Phase 5 |
 | Projections + REST/SSE API + runtime self-observability | ❌ | Phase 6 |
@@ -576,14 +576,15 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.3 — Secret redaction at the gateway/persistence boundary
 
-- [ ] A single scrub function redacts secrets from any payload before it can be appended to the event store or emitted to Langfuse — pattern-based over key formats, Authorization headers, and env-value matches
-- [ ] Credentials are never threaded into persisted request/response objects: a redacted providerMeta or request payload contains no API key, bearer token, or Authorization header value
-- [ ] Redaction is idempotent — scrubbing an already-scrubbed payload leaves it unchanged and never corrupts non-secret fields
-- [ ] Redaction preserves structural shape (keys remain, only secret values are masked) so downstream Zod validation of the event payload still passes
-- [ ] The scrub runs on both the persistence path and the observability/Langfuse-emit path so no secret leaks via either boundary
-- [ ] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P2.1
+- [x] A single scrub function redacts secrets from any payload before it can be appended to the event store or emitted to Langfuse — pattern-based over key formats, Authorization headers, and env-value matches
+- [x] Credentials are never threaded into persisted request/response objects: a redacted providerMeta or request payload contains no API key, bearer token, or Authorization header value
+- [x] Redaction is idempotent — scrubbing an already-scrubbed payload leaves it unchanged and never corrupts non-secret fields
+- [x] Redaction preserves structural shape (keys remain, only secret values are masked) so downstream Zod validation of the event payload still passes
+- [x] The scrub runs on both the persistence path and the observability/Langfuse-emit path so no secret leaks via either boundary _(both SCRUB boundaries built: event-store `scrubEventPayload`/`scrubSecrets` wired before append, P1.2/P1.3/§21; observability `scrubObservabilityPayload` in `createEmitBoundary`, demo P6.5/§52. The actual Langfuse EMIT call that invokes the observability scrub is the Phase-D export subscriber — P2.8 re-home; the scrub seam it consumes is in place.)_
+- [x] Files: apps/api/event-store/redaction.ts (NEW); packages/observability/src/redaction.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P2.1
+- _Satisfied by P1.2 (event-store boundary scrub, §21) + demo P6.5 (observability emit-boundary scrub, §52) — both scrub functions built + the persistence-path scrub wired before append. The Langfuse-emit-path scrub is consumable (`createEmitBoundary`); its invocation rides the Phase-D Langfuse export (P2.8 re-home, rule #2). Ticked 2026-06-22 (kernel orch, lead-confirmed)._
 
 ### P2.4 — Structured-output discipline: validate → accept / repair (≤1) / reject with event
 
@@ -633,14 +634,16 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P2.8 — Langfuse correlation: trace/observation IDs returned, local-trace fallback, operator content toggle
 
-- [x] Successful gateway calls return langfuseTraceId/observationId on the response and these are carried onto the persisted LLM-related event for correlation
-- [x] Langfuse is non-authoritative: if export fails the call still succeeds and the event log retains local trace metadata sufficient for demo/debug — only a local warning is logged, no event-log entry for the export failure
-- [x] An operator content toggle disables external content logging to Langfuse (content withheld) while still emitting trace/observation IDs and model metadata
-- [x] All payloads emitted to Langfuse pass through the secret-redaction scrub (P2.3) before emit
-- [x] When Langfuse is disabled the trace-id field degrades cleanly (absent/local), and when enabled the trace-id is carried — neither path throws
-- [x] Files: packages/observability/src/langfuse.ts (NEW); packages/observability/src/trace-metadata.ts (NEW); apps/api/model-gateway/gateway.ts (extended)
-- [x] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
-- [x] Depends on: P0.12, P2.3, P2.4
+> **RE-HOMED to Phase D — documented deferment (lead + Option-B decision, 2026-06-22). The prior `[x]` was stale/erroneous: the live Langfuse export was never built (no `langfuse.ts`/`trace-metadata.ts`, no gateway emit/trace wiring, no `apps/api` `createEmitBoundary` consumer).** Rationale (KEY SAFETY RULE #2): Langfuse is a **non-authoritative PROJECTION** — it is wired off the authoritative event log at the **bootstrap**, NEVER embedded in the gateway write path (coupling the authoritative provider-call path to a side channel would be architecturally worse). The kernel/verifier territory contribution is ALREADY in place — LLM-event meta carries `langfuseTraceId` + `gatewayRequestId→correlationId` (LESSON §41) and the consumable emit-boundary scrub (`createEmitBoundary`/`scrubObservabilityPayload`) is built (demo P6.5/§52) — so **the event log already carries what Langfuse needs**. What Phase D wires (see Carry-forward): (1) the real Langfuse client (demo territory: `langfuse.ts` + `trace-metadata.ts`), (2) the export as a **projection subscriber off the event log**, (3) **scrub-via-the-demo-seam before emit** (rule #4). Pairs with the Phase-D bootstrap that injects the worker REST trigger + crash-forward boot call.
+
+- [ ] Successful gateway calls return langfuseTraceId/observationId on the response and these are carried onto the persisted LLM-related event for correlation _(partial: verifier LLM events carry langfuseTraceId+correlationId, §41; the gateway-response field + full propagation land with the Phase-D export)_
+- [ ] Langfuse is non-authoritative: if export fails the call still succeeds and the event log retains local trace metadata sufficient for demo/debug — only a local warning is logged, no event-log entry for the export failure _(createEmitBoundary fails-safe seam built §52; export subscriber = Phase D)_
+- [ ] An operator content toggle disables external content logging to Langfuse (content withheld) while still emitting trace/observation IDs and model metadata _(Phase D)_
+- [ ] All payloads emitted to Langfuse pass through the secret-redaction scrub (P2.3) before emit _(scrub seam built §52; the before-emit call = Phase D)_
+- [ ] When Langfuse is disabled the trace-id field degrades cleanly (absent/local), and when enabled the trace-id is carried — neither path throws _(Phase D)_
+- [ ] Files: packages/observability/src/langfuse.ts (NEW); packages/observability/src/trace-metadata.ts (NEW); apps/api/model-gateway/gateway.ts (extended) _(RE-HOMED to Phase D / demo territory — the gateway is NOT extended; the export is a projection subscriber, rule #2)_
+- [ ] Cross-doc invariant: none (consumes ModelGatewayResponse — frozen in P0.12)
+- [ ] Depends on: P0.12, P2.3, P2.4
 
 ### P2.9 — Recorded/fake gateway stub for parallel-track fork
 
@@ -655,14 +658,16 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### Acceptance criteria (P2)
 
-- [ ] Domain/runtime/verifier/selection code can call the ModelGateway port and receive a typed ModelGatewayResponse without importing any vendor SDK; ProviderCapability + Request/Response are the only exposed surface
-- [ ] All 7 roles resolve through a Zod-validated registry; OpenRouter is primary for generation/critic/judge/synthesis and embeddings are pinned to direct-OpenAI text-embedding-3-small; missing config or required env fails fast at boot
-- [ ] Every model output is validated against its Zod schema and accepted, repaired at most once, or rejected with an output_schema_rejected event; providerMeta is carried on accepted and rejected responses alike
-- [ ] Retries, timeouts, fallback-route attempts, and repairs never debit energy and never emit energy.spent; failed attempts surface provider_call_failed{attempt,reason} info
-- [ ] Retrieval results are returned for persistence into the originating event with a curated-corpus replay fallback, so replay never re-calls the web; embedding vectors are returned for authoritative persistence so replay never re-embeds
-- [ ] Langfuse trace/observation IDs are returned and carried on events with a local-trace-metadata fallback and an operator content toggle; all Langfuse and persistence payloads pass secret redaction first
-- [ ] A recorded/fake gateway stub implementing the same port exists so kernel/verifier/selection tracks can fork in parallel per the §2.5 seam
-- [ ] Schema-snapshot tests cover the §2.5 shared gateway contracts (ModelGatewayRequest/Response, ModelRoute/ModelRole/ProviderCapability) so a field change breaks loudly across tracks
+> **`/phase-exit P2`: CLEAR (2026-06-22, kernel orch).** P2's first formal exit. Auditor fan-out all CLEAR: arch-drift §6/§13/§14 (`docs/audits/P2-arch-drift.md` — 0 DRIFT; 2 STALE-DOC = the §6 diagram/prose imply a gateway Langfuse live-export, correctly absent per the approved P2.8 Phase-D re-home → cody-bound §6 reconcile parked in ledger §I), reachability model-gateway (`docs/audits/P2-reachability.md` — 0 dead code, 5 deferred Phase-D), security gateway/redaction/creds (`docs/audits/P2-security.md` — 0 findings; rule #4/#5/#8/#9 PASS, §46 type-aware-redaction fix verified). `/preflight` clean (lint/typecheck/format ✓; suite green at `307ada8`); `pnpm audit --prod` clean; spec §6/§13/§14 tagged tests present. **P2.8 Langfuse-export RE-HOMED to Phase D** (documented deferment, rule #2 — see P2.8 + Carry-forward). Phase checkbox ticks at `/orchestrate-end`.
+
+- [x] Domain/runtime/verifier/selection code can call the ModelGateway port and receive a typed ModelGatewayResponse without importing any vendor SDK; ProviderCapability + Request/Response are the only exposed surface
+- [x] All 7 roles resolve through a Zod-validated registry; OpenRouter is primary for generation/critic/judge/synthesis and embeddings are pinned to direct-OpenAI text-embedding-3-small; missing config or required env fails fast at boot
+- [x] Every model output is validated against its Zod schema and accepted, repaired at most once, or rejected with an output_schema_rejected event; providerMeta is carried on accepted and rejected responses alike
+- [x] Retries, timeouts, fallback-route attempts, and repairs never debit energy and never emit energy.spent; failed attempts surface provider_call_failed{attempt,reason} info
+- [x] Retrieval results are returned for persistence into the originating event with a curated-corpus replay fallback, so replay never re-calls the web; embedding vectors are returned for authoritative persistence so replay never re-embeds
+- [ ] Langfuse trace/observation IDs are returned and carried on events with a local-trace-metadata fallback and an operator content toggle; all Langfuse and persistence payloads pass secret redaction first _(SEAM met + EXPORT re-homed to Phase D: verifier LLM events carry langfuseTraceId+correlationId §41; persistence-path redaction wired (§21); the consumable Langfuse-emit scrub seam built (§52); the live export = Phase-D projection subscriber, rule #2 — P2.8 re-home)_
+- [x] A recorded/fake gateway stub implementing the same port exists so kernel/verifier/selection tracks can fork in parallel per the §2.5 seam
+- [x] Schema-snapshot tests cover the §2.5 shared gateway contracts (ModelGatewayRequest/Response, ModelRoute/ModelRole/ProviderCapability) so a field change breaks loudly across tracks
 
 ---
 
@@ -792,63 +797,68 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 
 ### P3.10 — Generation loop orchestration with resolved zero-survivors / partial-failure / degenerate edges
 
-- [ ] The loop drives a generation pending→running→verifying→scoring→reproducing→completed, emitting generation.started/completed and the per-stage transitions through the state machine guards
-- [ ] Partial failure: the generation proceeds running→degraded→verifying as long as ≥1 candidate reached created (configurable minPopulationSurvival), emitting a partial-failure event listing failed agenome IDs; running→failed only if all agenomes fail or provider failures exceed the run retry cap
-- [ ] Zero-survivors: a generation with no eligible parents takes scoring→completed (no offspring) and emits generation.completed{survivors:0}
-- [ ] Degenerate reproduction: <2 eligible parents → mutation-only reproduction from the single survivor emitting agenome.reproduced{mode:"mutation_only"}; 0 survivors routes to the zero-survivors path
-- [ ] Emits operation-start marker(s) on entering each generation phase — generation.verifying/scoring/reproducing — and relays tool_call.started/tool_call.finished from the gateway, all NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
-- [ ] The loop hands candidates to verifier/selection seams as DATA and consumes their events; it never itself critiques, checks, or scores
-- [ ] The loop repeats until caps (maxGenerations / energyBudget / wall-clock) are reached, then ends the run via terminal classification (P3.11)
-- [ ] Each per-stage deadline / wall-clock / kill aborts the current generation state to failed and is recorded as generation_failed
-- [ ] Files: apps/api/src/runtime/loop/generationLoop.ts (NEW); apps/api/src/runtime/loop/partialFailure.ts (NEW); apps/api/src/runtime/loop/reproductionDispatch.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes Generation, ReproductionEvent — frozen in P0.15, P0.9)
-- [ ] Depends on: P0.15, P0.9, P3.2, P3.3, P3.4, P3.5, P3.6, P3.9
+- [x] The loop drives a generation pending→running→verifying→scoring→reproducing→completed, emitting generation.started/completed and the per-stage transitions through the state machine guards
+- [x] Partial failure: the generation proceeds running→degraded→verifying as long as ≥1 candidate reached created (configurable minPopulationSurvival), emitting a partial-failure event listing failed agenome IDs; running→failed only if all agenomes fail or provider failures exceed the run retry cap
+- [x] Zero-survivors: a generation with no eligible parents takes scoring→completed (no offspring) and emits generation.completed{survivors:0}
+- [x] Degenerate reproduction: <2 eligible parents → mutation-only reproduction from the single survivor emitting agenome.reproduced{mode:"mutation_only"}; 0 survivors routes to the zero-survivors path
+- [x] Emits operation-start marker(s) on entering each generation phase — generation.verifying/scoring/reproducing — and relays tool_call.started/tool_call.finished from the gateway, all NO-energy-debit and replay-faithful for live in-flight observability (§4/§12)
+- [x] The loop hands candidates to verifier/selection seams as DATA and consumes their events; it never itself critiques, checks, or scores
+- [x] The loop repeats until caps (maxGenerations / energyBudget / wall-clock) are reached, then ends the run via terminal classification (P3.11)
+- [x] Each per-stage deadline / wall-clock / kill aborts the current generation state to failed and is recorded as generation_failed
+- [x] Files: apps/api/src/runtime/loop/generationLoop.ts (NEW); apps/api/src/runtime/loop/partialFailure.ts (NEW); apps/api/src/runtime/loop/reproductionDispatch.ts (NEW)
+- [x] Cross-doc invariant: none (consumes Generation, ReproductionEvent — frozen in P0.15, P0.9)
+- [x] Depends on: P0.15, P0.9, P3.2, P3.3, P3.4, P3.5, P3.6, P3.9
 
 ### P3.11 — Run terminal classification rule + partial terminal summary
 
-- [ ] A run ends completed if ANY generation ever produced a selected best-so-far candidate (that candidate is the final idea); the final idea reference is recorded on run.completed
-- [ ] A run ends failed only if NO generation ever produced a scored survivor; run.failed records reason and a partial summary
-- [ ] Operator stop / kill ends the run stopped with a partial terminal summary preserving partial evidence (consistent with the kill switch P3.4)
-- [ ] Crash-detected non-terminal runs are classified via run.failed{reason:"crash"} with a partial summary (handoff to P3.13)
-- [ ] Terminal classification reads only persisted events (selected/scored history) so the same log always yields the same terminal verdict — it is replay-stable
-- [ ] Once classified terminal the run admits no further transitions (enforced by the run state machine P3.2)
-- [ ] Files: apps/api/src/runtime/terminal/terminalClassifier.ts (NEW); apps/api/src/runtime/terminal/partialSummary.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes Run — frozen in P0.15)
-- [ ] Depends on: P0.15, P3.10, P3.2, P3.3
+- [x] A run ends completed if ANY generation ever produced a selected best-so-far candidate (that candidate is the final idea); the final idea reference is recorded on run.completed
+- [x] A run ends failed only if NO generation ever produced a scored survivor; run.failed records reason and a partial summary
+- [x] Operator stop / kill ends the run stopped with a partial terminal summary preserving partial evidence (consistent with the kill switch P3.4)
+- [x] Crash-detected non-terminal runs are classified via run.failed{reason:"crash"} with a partial summary (handoff to P3.13)
+- [x] Terminal classification reads only persisted events (selected/scored history) so the same log always yields the same terminal verdict — it is replay-stable
+- [x] Once classified terminal the run admits no further transitions (enforced by the run state machine P3.2)
+- [x] Files: apps/api/src/runtime/terminal/terminalClassifier.ts (NEW); apps/api/src/runtime/terminal/partialSummary.ts (NEW)
+- [x] Cross-doc invariant: none (consumes Run — frozen in P0.15)
+- [x] Depends on: P0.15, P3.10, P3.2, P3.3
+- _Landed `62f80a1` (kernel-032; 13 unit + 1 integration). `classifyRunTerminal`/`runTerminalPath`/`buildPartialTerminalSummary` (pure) wired into `runGenerationLoop` exit. MVP `selected`=top scored survivor (LESSONS §68); energy_exhausted mid-flight not terminal (§69). No Appendix-A change. §5 arch note cody-bound (ledger §I, deferred merge)._
 
 ### P3.12 — In-process single-active-run async worker, idempotent by event-sequence, serialize one run
 
-- [ ] A single in-process async worker inside apps/api executes the generation loop; no external queue is used
-- [ ] The kernel serializes to one active run at a time: starting a second run while one is active is rejected (a live run and read-only replays may coexist, but only one active run executes)
-- [ ] Every job/step is idempotent and guarded by event-sequence checks: re-running a step that already produced its events is a no-op and never double-appends or double-debits energy
-- [ ] Idempotency keys off the per-run sequence watermark so a retried or re-entered step resumes from the last persisted sequence
-- [ ] A worker-alive heartbeat event is emitted so health/observability can detect a stalled worker
-- [ ] The worker never mutates authoritative events; it only appends new ones through P3.3 and reads ordered-by-sequence
-- [ ] Files: apps/api/src/runtime/worker/runWorker.ts (NEW); apps/api/src/runtime/worker/idempotency.ts (NEW); apps/api/src/runtime/worker/activeRunGuard.ts (NEW)
-- [ ] Cross-doc invariant: none
-- [ ] Depends on: P3.10, P3.3
+- [x] A single in-process async worker inside apps/api executes the generation loop; no external queue is used
+- [x] The kernel serializes to one active run at a time: starting a second run while one is active is rejected (a live run and read-only replays may coexist, but only one active run executes)
+- [x] Every job/step is idempotent and guarded by event-sequence checks: re-running a step that already produced its events is a no-op and never double-appends or double-debits energy
+- [x] Idempotency keys off the per-run sequence watermark so a retried or re-entered step resumes from the last persisted sequence
+- [x] A worker-alive heartbeat event is emitted so health/observability can detect a stalled worker _(via the §60 side-signal — `onIteration` hook → `heartbeat.beat()`; NOT a run_event, rule #2)_
+- [x] The worker never mutates authoritative events; it only appends new ones through P3.3 and reads ordered-by-sequence
+- [x] Files: apps/api/src/runtime/worker/runWorker.ts (NEW); apps/api/src/runtime/worker/idempotency.ts (NEW); apps/api/src/runtime/worker/activeRunGuard.ts (NEW)
+- [x] Cross-doc invariant: none
+- [x] Depends on: P3.10, P3.3
+- _Landed `b9dfeda` (kernel-033; 15 unit + 2 integration). `runWorker` is `runGenerationLoop`'s production caller (closes the tested-but-not-worker-wired gap) + owns `run.started`; single-active-run via `isRunTerminal`/injected `listRunIds`; idempotent off the persisted watermark (LESSONS §70); heartbeat via additive `onIteration` hook (§71). No Appendix-A change. §5 worker arch note cody-bound (ledger §I). REST→worker trigger + the [medium] TOCTOU constraint → Phase D (carry-forward)._
 
 ### P3.13 — Crash-forward recovery at boot
 
-- [ ] On restart the kernel reads the event log and marks any non-terminal run failed via run.failed{reason:"crash"} with a partial summary
-- [ ] Recovery never attempts idempotent resume of a crashed run (true resume is deferred); it only forward-fails and leaves replay/prepared runs as the fallback
-- [ ] Recovery runs before the worker accepts new work, so the single-active-run guard (P3.12) starts from a clean no-active-run state
-- [ ] A run already terminal at restart is left untouched (no re-failing, no duplicate terminal events)
-- [ ] The crash-forward terminal event is appended through the normal append path (P3.3) so it is sequence-ordered and replayable
-- [ ] Recovery is deterministic over the persisted log: the same crashed-state log always yields the same recovery events
-- [ ] Files: apps/api/src/runtime/recovery/crashForward.ts (NEW)
-- [ ] Cross-doc invariant: none (consumes Run — frozen in P0.15)
-- [ ] Depends on: P0.15, P3.11, P3.12, P3.2, P3.3
+- [x] On restart the kernel reads the event log and marks any non-terminal run failed via run.failed{reason:"crash"} with a partial summary
+- [x] Recovery never attempts idempotent resume of a crashed run (true resume is deferred); it only forward-fails and leaves replay/prepared runs as the fallback
+- [x] Recovery runs before the worker accepts new work, so the single-active-run guard (P3.12) starts from a clean no-active-run state
+- [x] A run already terminal at restart is left untouched (no re-failing, no duplicate terminal events)
+- [x] The crash-forward terminal event is appended through the normal append path (P3.3) so it is sequence-ordered and replayable
+- [x] Recovery is deterministic over the persisted log: the same crashed-state log always yields the same recovery events
+- [x] Files: apps/api/src/runtime/recovery/crashForward.ts (NEW)
+- [x] Cross-doc invariant: none (consumes Run — frozen in P0.15)
+- [x] Depends on: P0.15, P3.11, P3.12, P3.2, P3.3
+- _Landed `307ada8` (kernel-034; 8 unit + 2 integration). Per-log-status crash terminal: running→run.failed{crash}, configured→run.cancelled{crash} (configured→failed illegal — LESSONS §72); forward-fail only (pre-crash survivor preserved in partial summary, not finalized); idempotent + deterministic; clean-slate for the P3.12 guard (§73). Reuses P3.11 classifier + P3.12 isRunTerminal (import-only; terminalClassifier.ts untouched). No Appendix-A change. Boot-sequence caller → Phase D. §5 arch note cody-bound (ledger §I). **Phase 3 feature work COMPLETE (P3.11→P3.13).**_
 
 ### Acceptance criteria (P3)
 
-- [ ] All four state machines (Run/Generation/Candidate/Agenome) enforce exactly the transitions in §3 including every resolved edge: zero-survivors scoring→completed, partial-failure running→degraded→verifying with minPopulationSurvival, structured-output created→repairing→under_review ≤1 retry then →invalid, degenerate <2-parent mutation_only, per-state wall-clock/kill abort →failed, and terminal classification (completed iff any selected best-so-far; failed iff no scored survivor); no exit from any terminal state
-- [ ] RunCaps (population/generations/energy/depth/toolCalls/wallClock) are enforced in the kernel and fail closed; spawnBudget is clamped to min(remaining caps) with the clamp emitted; no agenome trait can raise a cap; the kill switch drives non-terminal→failed/stopped, drains in-flight, and writes a partial terminal summary
-- [ ] Energy ledger debits success-only with pre-call estimate + post-call reconcile both persisted on energy.spent; failed/retried/repaired attempts emit provider_call_failed and never energy.spent; energy exhaustion still scores already-verified candidates
-- [ ] Per-run RNG seed is persisted in run.configured and all non-deterministic outcomes are persisted in agenome.mutated/fused and lineage.culled; replay reconstructs from seed/outcomes and never re-samples
-- [ ] Every lifecycle decision and every failure path lands as an append-only, schema-validated, secret-redacted event with a per-run monotonic gap-free sequence as the sole ordering key (occurredAt never orders); the appender never updates/deletes
-- [ ] Gen-0 population is the human-authored baseline set (REQ-F-017), not random init; bounded retry (default 2) + per-call timeout + wall-clock + max caps make the loop finite by construction
-- [ ] An in-process single-active-run worker runs the generation loop idempotently by event-sequence, serializes one active run, emits a heartbeat, and recovers crash-forward (non-terminal runs → run.failed{reason:"crash"}) at boot; config is Zod-validated and fail-fast at boot
+> **`/phase-exit P3`: CLEAR (2026-06-22, kernel orch).** Auditor fan-out all CLEAR: arch-drift §3/§5 (`docs/audits/P3-arch-drift.md` — 13 anchors, 0 DRIFT), reachability runtime (`docs/audits/P3-reachability.md` — 0 dead code; ~20 symbols REACHABLE-PENDING-PHASE-D match the documented Carry-forward deferrals), security caps/kill/worker/crash (`docs/audits/P3-security.md` — 0 findings; rule #1/#2/#7/#8 + single-active-run PASS; the [medium] TOCTOU + [low] from===null re-confirmed correctly-scoped, not new). `/preflight` clean (lint/typecheck/format ✓; suite green at `307ada8` — 436 unit + 84 integration); `pnpm audit --prod` clean; spec §3/§5 tagged tests present. **Phase 3 feature work COMPLETE (P3.1→P3.13).** Phase checkbox ticks at `/orchestrate-end`.
+
+- [x] All four state machines (Run/Generation/Candidate/Agenome) enforce exactly the transitions in §3 including every resolved edge: zero-survivors scoring→completed, partial-failure running→degraded→verifying with minPopulationSurvival, structured-output created→repairing→under_review ≤1 retry then →invalid, degenerate <2-parent mutation_only, per-state wall-clock/kill abort →failed, and terminal classification (completed iff any selected best-so-far; failed iff no scored survivor); no exit from any terminal state
+- [x] RunCaps (population/generations/energy/depth/toolCalls/wallClock) are enforced in the kernel and fail closed; spawnBudget is clamped to min(remaining caps) with the clamp emitted; no agenome trait can raise a cap; the kill switch drives non-terminal→failed/stopped, drains in-flight, and writes a partial terminal summary
+- [x] Energy ledger debits success-only with pre-call estimate + post-call reconcile both persisted on energy.spent; failed/retried/repaired attempts emit provider_call_failed and never energy.spent; energy exhaustion still scores already-verified candidates
+- [x] Per-run RNG seed is persisted in run.configured and all non-deterministic outcomes are persisted in agenome.mutated/fused and lineage.culled; replay reconstructs from seed/outcomes and never re-samples
+- [x] Every lifecycle decision and every failure path lands as an append-only, schema-validated, secret-redacted event with a per-run monotonic gap-free sequence as the sole ordering key (occurredAt never orders); the appender never updates/deletes
+- [x] Gen-0 population is the human-authored baseline set (REQ-F-017), not random init; bounded retry (default 2) + per-call timeout + wall-clock + max caps make the loop finite by construction
+- [x] An in-process single-active-run worker runs the generation loop idempotently by event-sequence, serializes one active run, emits a heartbeat, and recovers crash-forward (non-terminal runs → run.failed{reason:"crash"}) at boot; config is Zod-validated and fail-fast at boot
 
 ---
 
@@ -1617,6 +1627,28 @@ Open scope/design questions awaiting resolution. Resolved entries move into the 
 ---
 
 ## Log
+
+### 2026-06-22 — Kernel round 5: P3.11→P3.13 (Phase 3 feature COMPLETE) + P2.3/P2.8 reconcile + /phase-exit P2 & P3 CLEAR → kernel track closed
+
+- **Phase 3 feature work COMPLETE** — P3.11 run-terminal classification `62f80a1` (pure log-derived verdict + replay-stable `runTerminalPath` executor; `energy_exhausted` mid-flight, not a terminal) · P3.12 in-process single-active-run worker `b9dfeda` (loop's production caller + `run.started` owner; single-active-run + idempotency derived from the authoritative log; heartbeat via an additive `onIteration` hook) · P3.13 crash-forward recovery `307ada8` (per-status legal crash terminal — `running→run.failed{crash}`, `configured→run.cancelled{crash}`; forward-fail only; clean-slate for the worker guard). All test-first, Step-2.5 reviewed, per-slice security-reviewer CLEAN.
+- **P2.3/P2.8 reconcile** (orch Finding + Option-B, lead-approved): P2.8 was falsely-`[x]` but UNBUILT → un-ticked + **RE-HOMED to Phase D** as a documented deferment (Langfuse = non-authoritative PROJECTION, rule #2 — wired off the event log at the bootstrap, never the gateway write path; the kernel contribution — trace-id event meta §41 + the consumable scrub seam §52 — is in place). **P2.3 ticked** (scrub seam built, §21 + §52).
+- **/phase-exit P2 CLEAR + /phase-exit P3 CLEAR** — 6-auditor fan-out all CLEAR (arch-drift / reachability / security × P2+P3; reports `docs/audits/{P2,P3}-*.md`): 0 drift, 0 dead code (every deferral matches Carry-forward), 0 security findings. `/preflight` clean; `pnpm audit --prod` clean; spec §3/§5/§6/§13/§14 tagged tests present. **The kernel track — the LAST of the 5 build tracks — is feature-complete + gated.**
+- **Decisions made:** P2.8 Option-B re-home (Langfuse export → Phase-D bootstrap, rule #2); worker REST trigger + crash-forward boot call + Langfuse export-subscriber all deferred to the Phase-D bootstrap (territory split — `routes/`/bootstrap is demo's).
+- **Lessons:** §67 (run-terminal = pure decision + thin executor) · §68 (MVP `selected` = top scored survivor) · §69 (`energy_exhausted` mid-flight, not a terminal) · §70 (worker = loop's prod caller + log-derived concurrency) · §71 (per-iteration liveness via an `onIteration` hook, not a side-effecting clock) · §72 (crash-forward per-status legal terminal) · §73 (crash-forward = the worker's clean-slate precondition).
+- **Scope shifts:** P2.8 → Phase D (documented deferment); Phase 1/2/3 deliverable-map → ✅.
+- **New blockers:** none. **Next:** kernel→cody track-completion merge (**LEAD-owned**) — the §5/§6 cody-bound arch notes + the P2 §6 STALE-DOC reconcile (the §6 diagram/prose imply a gateway Langfuse live-export; correctly absent per the P2.8 re-home) + the track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE land at that merge (ledger §I). Kernel team stands down after the merge.
+- Reference: implementer session doc kernel-008 (P3.11–13 technical detail); orchestrator routing ledger kernel-003 §I (cody-bound arch notes).
+
+### 2026-06-22 — Kernel round 4: kernel-026 sv5 amendment + P3.10 generation loop COMPLETE (10a–e) + cody@bae1842 back-merge
+
+- **kernel-026** sv4→5 terminal-event amendment: `RunEventType` 37→41 (+run.cancelled/generation.skipped/agenome.failed/candidate.rejected), `CURRENT_SCHEMA_VERSION` 4→5, killSwitch null→named. candidate.rejected = registry-add only (emission = runtime-on-SELECTION-verdict, the P3↔P5 seam, MVP-deferred). Merged to cody scoped (`06299c9`).
+- **P3.10 (generation loop) COMPLETE** — decomposed into 5 sub-slices (safety isolated from feature): 10a cost-map→AppConfig `e88bf6b` · 10b loop skeleton `6279526` · 10c edges `d369acb` · 10d merge+energy `d7fa661`+`8b79888` · 10e kill/abort/drain/latching `201dfe3`. Loop = pure orchestration over INJECTED seam ports (option-b: selection P5 unmerged, verifier retired → faked vs frozen contracts); appends only kernel-owned events; energy.spent success-only + provider_call_failed + scrub round-trip; full cap enforcement + planKillSwitch + drain-then-terminalize under a latching halt. (Files consolidated: generationLoop.ts + killDrain.ts; partialFailure/reproductionDispatch edges kept in-loop.)
+- **cody@bae1842 back-merge** (`d7fa661`): pulled sv5 (no-op) + the verifier scrub fix + demo round-4 (observability/web/projections). Doc reconcile (orch, LESSON-36 handoff): cody LESSONS §1–62 + kernel §63/§64; dropped track §37–40 dups; kept track's sv5 cross-doc rows over cody's stale. **P2.3/P2.8 UNBLOCKED** (`packages/observability` in-tree).
+- **Decisions made:** P3.10 inject-and-fake seams (no real verifier/selection wiring this round); kill granularity = per-generation-boundary (MVP; executeKillAndDrain handles mid-stage); energy_exhausted = named registry event (no amendment).
+- **Lessons:** §63 (audit-all-terminals-vs-registry), §64 (loop = pure orchestration / never authors seam events), §65 (scoped-merge doc-skew → back-merge per-field), §66 (gitleaks redaction-test fixture).
+- **Scope shifts:** P3.7/P3.8 ticked satisfied-by-gateway (residuals folded into P3.10, now done); **kernel→cody merge DEFERRED to track-completion** (lead, user-approved) — track-local IMPLEMENTATION_PLAN/LESSONS/ARCHITECTURE + cody-bound §5/§6 arch notes reach cody then.
+- **New blockers:** none. **Next session target:** P3.11 (run-terminal classification — consumes 10e killSummary + terminal/selected history) → P3.12 worker → P3.13 crash-forward → P2.3/P2.8 → /phase-exit P2 + /phase-exit P3.
+- Reference: orchestrator routing ledger `docs/sessions/kernel-003-2026-06-21-orchestrator-routing-ledger.md` §I (full per-slice detail + cody-bound arch notes); implementer session doc kernel-007.
 
 ### 2026-06-22 — Demo→cody INTEGRATION (round 4): Phase 6 + Phase 7 COMPLETE · sv2→sv5 reconcile · /phase-exit P7 CLEAR
 
