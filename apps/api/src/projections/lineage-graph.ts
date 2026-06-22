@@ -128,7 +128,12 @@ export function buildLineageGraph(
   // Reproduction genealogy — the authoritative parent→child edges, `repro:`-prefixed (see above) so
   // they never collide on id with a structural edge; the authoritative `edge.id` is carried verbatim.
   for (const edge of Object.values(state.lineageEdges)) {
-    edges.push({ id: `repro:${edge.id}`, source: edge.source, target: edge.target, type: edge.type });
+    edges.push({
+      id: `repro:${edge.id}`,
+      source: edge.source,
+      target: edge.target,
+      type: edge.type,
+    });
   }
 
   return { runId, nodes, edges, sequenceThrough };
