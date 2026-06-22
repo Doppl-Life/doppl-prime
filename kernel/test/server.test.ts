@@ -150,15 +150,22 @@ test('kernel HTTP server reports health', async () => {
 });
 
 test('kernel HTTP server serves a visible production page', async () => {
-  const response = await handleKernelHttpRequest({ method: 'GET', url: '/' });
+  const response = await handleKernelHttpRequest(
+    { method: 'GET', url: '/' },
+    { env: { KERNEL_API_KEY: 'dashboard-test-key' } },
+  );
 
   assert.equal(response.status, 200);
   assert.equal(response.contentType, 'text/html; charset=utf-8');
   assert.match(response.bodyText, /Doppl Evolution Graph/);
+  assert.match(response.bodyText, /Real case studies/);
+  assert.match(response.bodyText, /window\.DOPPL_DASHBOARD_API_KEY = "dashboard-test-key"/);
+  assert.match(response.bodyText, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
+  assert.match(response.bodyText, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.match(response.bodyText, /id="lineage-graph"/);
   assert.match(response.bodyText, /data-node-kind="candidate"/);
   assert.match(response.bodyText, /data-node-kind="child"/);
-  assert.match(response.bodyText, /Run fixture/);
+  assert.match(response.bodyText, /Run selected case/);
   assert.match(response.bodyText, /api-key-input/);
   assert.match(response.bodyText, /renderGraph/);
 });
@@ -289,6 +296,91 @@ test('kernel HTTP server runs live model requests with a server-side key', async
   assert.equal(fakeOpenRouter.calls.length, 3);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
   assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
+});
+
+test('kernel HTTP server runs a requested case study path with live model requests', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-case-live-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'GLP-1 Recovery',
+      recoveredProblem:
+        'GLP-1 drugs lower the reward budget behind impulse categories, not just snack preferences.',
+      hiddenConstraint: 'The demand unit is household reward-seeking, not the treated person meal.',
+      falsifier: 'Impulse purchases stay flat in treated households after controlling for income.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'glp_reward_budget',
+          agenomeId: 'ag_blindside',
+          title: 'Reward Budget Ledger',
+          summary: 'Track the household-level reward budget across food, alcohol, and nicotine.',
+          mechanism: 'Compare treated-household basket shrinkage across impulse categories.',
+          claimedDelta: 'Finds demand destruction beyond reformulated snacks.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'glp_channel_exposure',
+          agenomeId: 'ag_first_principles',
+          title: 'Channel Exposure Map',
+          summary: 'Rank retailers by exposure to grazing trips and impulse checkout baskets.',
+          mechanism: 'Measure revenue share from unplanned basket add-ons.',
+          claimedDelta: 'Turns the thesis into an operator watchlist.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'glp_reward_budget',
+          criticId: 'grounding',
+          score: 93,
+          pressure: 'The mechanism explains multiple impulse categories.',
+          revisionMandate: 'Name the household panel split.',
+        },
+        {
+          candidateId: 'glp_channel_exposure',
+          criticId: 'grounding',
+          score: 81,
+          pressure: 'The channel readout is useful but downstream.',
+          revisionMandate: 'Add a retailer cohort definition.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_glp1_live',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        generations: 1,
+        budget: 1,
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: { OPENROUTER_API_KEY: 'test-key' },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_glp1_live?outDir=${encodeURIComponent(path.join(root, 'vault'))}`,
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(response.body.child, 'child_glp_reward_budget_glp_channel_exposure');
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.caseTitle, 'Problem Statement: GLP-1 and the Packaged-Food Demand Regime');
 });
 
 test('kernel HTTP server requires an API key when configured', async () => {

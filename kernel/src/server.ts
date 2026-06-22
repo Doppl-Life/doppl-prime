@@ -15,6 +15,7 @@ import { writeProofBoard } from './proof-board.ts';
 
 type KernelRunRequest = {
   runId?: string;
+  casePath?: string;
   generations?: number;
   budget?: number;
   outDir?: string;
@@ -43,13 +44,53 @@ type KernelHttpOptions = {
   fetch?: OpenRouterModelClientInput['fetch'];
 };
 
+const DASHBOARD_CASE_STUDIES = [
+  {
+    id: 'fsd-ownership-unwind',
+    title: 'FSD Ownership Unwind',
+    path: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    mode: 'fixture',
+  },
+  {
+    id: 'glp1-snack-demand-destruction',
+    title: 'GLP-1 Snack Demand',
+    path: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+    mode: 'live',
+  },
+  {
+    id: 'ai-overviews-zero-click-publishing',
+    title: 'AI Overviews Publishing',
+    path: 'case-studies/ai-overviews-zero-click-publishing/problem-statement.md',
+    mode: 'live',
+  },
+  {
+    id: 'starship-launch-cost-collapse',
+    title: 'Starship Launch Cost',
+    path: 'case-studies/starship-launch-cost-collapse/problem-statement.md',
+    mode: 'live',
+  },
+] as const;
+
 function writeHttpResponse(response: ServerResponse, result: KernelHttpResponse): void {
   const contentType = result.contentType || 'application/json';
   response.writeHead(result.status, { 'Content-Type': contentType });
   response.end(result.bodyText ?? JSON.stringify(result.body));
 }
 
-function productionPage(): string {
+function dashboardApiKey(options: KernelHttpOptions): string {
+  return (
+    options.env?.KERNEL_DASHBOARD_API_KEY ??
+    options.env?.KERNEL_API_KEY ??
+    process.env.KERNEL_DASHBOARD_API_KEY ??
+    process.env.KERNEL_API_KEY ??
+    ''
+  );
+}
+
+function productionPage(options: KernelHttpOptions = {}): string {
+  const dashboardKey = dashboardApiKey(options);
+  const caseStudiesJson = JSON.stringify(DASHBOARD_CASE_STUDIES);
+  const dashboardKeyJson = JSON.stringify(dashboardKey);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -73,8 +114,8 @@ function productionPage(): string {
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--ink); }
-    main { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 100vh; }
-    aside { border-right: 1px solid var(--line); background: #0c1016; padding: 28px 22px; }
+    main { display: grid; grid-template-columns: 360px minmax(0, 1fr); min-height: 100vh; }
+    aside { border-right: 1px solid var(--line); background: #0c1016; padding: 24px 20px; }
     .workspace { padding: 28px; min-width: 0; }
     h1 { font-size: 32px; line-height: 1.05; margin: 0 0 10px; letter-spacing: 0; }
     h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0; color: var(--muted); margin: 0 0 12px; }
@@ -94,6 +135,10 @@ function productionPage(): string {
     button.secondary { background: var(--panel-2); }
     button:focus, input:focus, select:focus { outline: 2px solid var(--teal); outline-offset: 2px; }
     .status { min-height: 22px; color: var(--muted); font-size: 13px; margin-top: 12px; }
+    .case-list { display: grid; gap: 8px; margin: 12px 0 16px; }
+    .case-button { text-align: left; background: var(--panel); font-weight: 600; margin: 0; }
+    .case-button span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-top: 3px; }
+    .case-button.active { border-color: var(--teal); background: #10201f; }
     .topline { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 18px; }
     .topline p { max-width: 720px; }
     .metrics { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
@@ -133,15 +178,17 @@ function productionPage(): string {
       <h1>Doppl Evolution Graph</h1>
       <p>Run the kernel, inspect selection pressure, and watch candidates fuse into the next child.</p>
       <label for="api-key-input">Kernel API key</label>
-      <input id="api-key-input" autocomplete="off" spellcheck="false" placeholder="Bearer token">
+      <input id="api-key-input" autocomplete="off" spellcheck="false" placeholder="Auto-filled demo token">
+      <h2>Real case studies</h2>
+      <div id="case-list" class="case-list" aria-label="Real case studies"></div>
       <label for="run-id-input">Run ID</label>
       <input id="run-id-input" value="dashboard_fixture_run">
       <label for="model-input">Live model</label>
       <input id="model-input" value="openai/gpt-4.1-mini">
-      <button id="fixture-button" class="primary">Run fixture</button>
-      <button id="live-button" class="secondary">Run live model</button>
+      <button id="live-button" class="primary">Run selected case</button>
+      <button id="fixture-button" class="secondary">Run FSD fixture</button>
       <button id="fetch-button" class="secondary">Fetch run graph</button>
-      <p id="status" class="status">Sample graph loaded. Enter an API key to run or fetch protected runs.</p>
+      <p id="status" class="status">Demo token loaded. Choose a case and run Doppl.</p>
     </aside>
     <section class="workspace" aria-label="Kernel run graph workspace">
       <div class="topline">
@@ -205,6 +252,8 @@ function productionPage(): string {
     </section>
   </main>
   <script>
+    window.DOPPL_DASHBOARD_API_KEY = ${dashboardKeyJson};
+    const dashboardCases = ${caseStudiesJson};
     const sampleRun = {
       runId: 'sample',
       caseId: 'fsd-ownership-unwind',
@@ -218,12 +267,32 @@ function productionPage(): string {
       evolution: [{ generation: 0, candidateIds: ['cand_liability_clock', 'cand_recovery_market', 'cand_lender_residual'], selectedParentIds: ['cand_liability_clock', 'cand_recovery_market'], childId: 'child_cand_liability_clock_cand_recovery_market' }],
       budget: { usedUnits: 1 }
     };
-    const state = { runId: sampleRun.runId };
+    const state = { runId: sampleRun.runId, selectedCase: dashboardCases[0] };
     const status = document.getElementById('status');
     const apiKeyInput = document.getElementById('api-key-input');
     const runIdInput = document.getElementById('run-id-input');
     const modelInput = document.getElementById('model-input');
     const artifactPreview = document.getElementById('artifact-preview');
+    apiKeyInput.value = window.DOPPL_DASHBOARD_API_KEY || '';
+    function slugTime() {
+      return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+    }
+    function renderCaseList() {
+      document.getElementById('case-list').innerHTML = dashboardCases.map((caseStudy) => {
+        const active = caseStudy.id === state.selectedCase.id ? ' active' : '';
+        return '<button class="case-button' + active + '" data-case-id="' + caseStudy.id + '">' + caseStudy.title + '<span>' + caseStudy.id + ' / ' + caseStudy.mode + '</span></button>';
+      }).join('');
+      document.querySelectorAll('.case-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          const next = dashboardCases.find((caseStudy) => caseStudy.id === button.dataset.caseId);
+          if (!next) return;
+          state.selectedCase = next;
+          runIdInput.value = next.id + '_' + slugTime();
+          status.textContent = 'Selected ' + next.title + '.';
+          renderCaseList();
+        });
+      });
+    }
     function authHeaders() {
       const key = apiKeyInput.value.trim();
       return key ? { Authorization: 'Bearer ' + key } : {};
@@ -259,12 +328,20 @@ function productionPage(): string {
       document.getElementById('selected-run-list').innerHTML = (run.child?.parentCandidateIds || []).map((id) => '<li><code>' + id + '</code> contributes to the fused child.</li>').join('') || '<li>No child selected yet.</li>';
     }
     async function runKernel(liveModel) {
+      const selectedCase = liveModel ? state.selectedCase : dashboardCases[0];
       const runId = runIdInput.value.trim() || ('dashboard_' + Date.now());
-      status.textContent = liveModel ? 'Running live model...' : 'Running fixture...';
+      status.textContent = liveModel ? 'Running ' + selectedCase.title + ' through Doppl...' : 'Running FSD fixture...';
       const response = await fetch('/kernel/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ runId, generations: 1, budget: 1, liveModel, model: modelInput.value.trim() || undefined })
+        body: JSON.stringify({
+          runId,
+          casePath: selectedCase.path,
+          generations: 1,
+          budget: 1,
+          liveModel,
+          model: liveModel ? modelInput.value.trim() || undefined : undefined
+        })
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || 'run failed');
@@ -287,9 +364,11 @@ function productionPage(): string {
         if (artifactResponse.ok) artifactPreview.textContent = artifactBody.content;
       }
     }
-    document.getElementById('fixture-button').addEventListener('click', () => runKernel(false).catch((error) => { status.textContent = error.message; }));
     document.getElementById('live-button').addEventListener('click', () => runKernel(true).catch((error) => { status.textContent = error.message; }));
+    document.getElementById('fixture-button').addEventListener('click', () => runKernel(false).catch((error) => { status.textContent = error.message; }));
     document.getElementById('fetch-button').addEventListener('click', () => fetchRunGraph().catch((error) => { status.textContent = error.message; }));
+    runIdInput.value = state.selectedCase.id + '_' + slugTime();
+    renderCaseList();
     renderGraph(sampleRun);
   </script>
 </body>
@@ -349,6 +428,22 @@ function parsedUrl(url: string): URL {
 
 function outDirFromUrl(url: URL): string {
   return url.searchParams.get('outDir') || defaultKernelArgs.outDir;
+}
+
+function casePathFromRequest(value: unknown): string {
+  if (value === undefined) return defaultKernelArgs.casePath;
+  if (typeof value !== 'string') throw new Error('casePath must be a string');
+  const normalized = path.posix.normalize(value);
+  if (
+    path.isAbsolute(value) ||
+    normalized.startsWith('..') ||
+    normalized.includes('/../') ||
+    !normalized.startsWith('case-studies/') ||
+    !normalized.endsWith('/problem-statement.md')
+  ) {
+    throw new Error('casePath must point at a case-studies problem-statement.md file');
+  }
+  return normalized;
 }
 
 async function findRunDir(rootDir: string, runId: string): Promise<string | undefined> {
@@ -437,10 +532,12 @@ async function runFromRequestBody(
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
+  const casePath = casePathFromRequest(parsed.casePath);
   const generationProviders = await generationProvidersFromRequest(parsed, options);
   const run = await runKernel({
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
+    casePath,
     generations,
     evolutionBudget: { maxUnits: budget },
     generationProviders,
@@ -469,7 +566,7 @@ export async function handleKernelHttpRequest(
       return {
         status: 200,
         contentType: 'text/html; charset=utf-8',
-        bodyText: productionPage(),
+        bodyText: productionPage(options),
       };
     }
     if (request.method === 'GET' && url.pathname === '/health') {
