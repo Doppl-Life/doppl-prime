@@ -154,9 +154,13 @@ test('kernel HTTP server serves a visible production page', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(response.contentType, 'text/html; charset=utf-8');
-  assert.match(response.bodyText, /Doppl Kernel/);
-  assert.match(response.bodyText, /\/health/);
-  assert.match(response.bodyText, /\/kernel\/runs/);
+  assert.match(response.bodyText, /Doppl Evolution Graph/);
+  assert.match(response.bodyText, /id="lineage-graph"/);
+  assert.match(response.bodyText, /data-node-kind="candidate"/);
+  assert.match(response.bodyText, /data-node-kind="child"/);
+  assert.match(response.bodyText, /Run fixture/);
+  assert.match(response.bodyText, /api-key-input/);
+  assert.match(response.bodyText, /renderGraph/);
 });
 
 test('kernel HTTP server runs a fixture kernel request', async () => {
