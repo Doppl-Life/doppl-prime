@@ -75,6 +75,10 @@ export function createScoreSeam(deps: ScoreSeamDeps): ScoreSeam {
 
     // Read the persisted verifier/energy evidence ONCE per run (rule #7 — every component derives from
     // the log, never a live counter). The verify seam appended this BEFORE the score seam runs.
+    // WHY one-shot pre-loop: the novelty.scored events THIS seam emits during the loop below are
+    // intentionally NOT in `rows` (the snapshot predates them) — the cosine comparison set accumulates
+    // in-seam (Q1 below), so a future component must not expect to read this generation's novelty from
+    // `rows`; it would need its own post-loop re-read.
     const rows = await deps.readByRun(runId);
 
     // Q1 — accumulate the comparison set in-seam: each happy-path NoveltyScore feeds the next

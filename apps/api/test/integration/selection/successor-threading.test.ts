@@ -229,7 +229,7 @@ describe('createSuccessorThreading — the real nextPopulation hook over real PG
     const hook = createSuccessorThreading(THREADING_DEPS);
     await expect(
       hook(buildArgs('not-a-valid-gen-id', [p], await store.readByRun(runId))),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/cannot derive the next generationId/);
   });
 
   // spec(§8) THE HEADLINE — drive the REAL loop with all 3 real seams (verify + W1 score + W2 reproduce) +

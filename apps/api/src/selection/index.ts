@@ -5,7 +5,7 @@
  * state (P3) is the first consumer of `scoreNovelty`.
  */
 export { cosineSimilarity, noveltyFromSimilarities, noveltyScoreOf } from './novelty/cosine';
-export { jaccardSimilarity, lexicalNoveltyScore } from './novelty/lexical-fallback';
+export { lexicalNoveltyScore } from './novelty/lexical-fallback';
 export { embed } from './novelty/embed';
 export type { EmbedDeps, EmbedResult } from './novelty/embed';
 export { scoreNovelty } from './novelty/score-novelty';
@@ -52,8 +52,6 @@ export type {
   CullResult,
   ScoredCandidate,
 } from './cull';
-export { selectParents } from './parent-selection';
-export type { SelectParentsInput, SelectParentsResult } from './parent-selection';
 export { createRng } from './reproduction/rng';
 export type { Rng } from './reproduction/rng';
 export { parentDistance, selectDistantPair } from './reproduction/parent-distance';
