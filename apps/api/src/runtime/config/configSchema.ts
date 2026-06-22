@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { RunCaps, ScoringPolicy } from '@doppl/contracts';
 import type { RegistryConfig } from '../../model-gateway/config.schema';
 import { DEFAULT_MODEL_REGISTRY } from '../../config/model-registry.config';
+import type { SeedAgenomeSet } from '../seed/seedAgenomes.config';
 
 /**
  * Boot-config schemas + built-in defaults (P3.1, ARCHITECTURE.md §5/§15).
@@ -73,4 +74,5 @@ export interface AppConfig {
   readonly scoringPolicy: ScoringPolicy;
   readonly caps: RunCaps;
   readonly problemSets: ProblemSets;
+  readonly seedSet: SeedAgenomeSet;
 }

@@ -13,6 +13,7 @@ import {
 } from './configSchema';
 import type { AppConfig } from './configSchema';
 import { projectEnvOverrides } from './envSchema';
+import { DEFAULT_SEED_SET, SeedAgenomeSet } from '../seed/seedAgenomes.config';
 
 export type { AppConfig } from './configSchema';
 
@@ -34,6 +35,7 @@ export interface FileSources {
   scoringPolicy?: Record<string, unknown>;
   caps?: Record<string, unknown>;
   problemSets?: unknown;
+  seedSet?: unknown;
 }
 
 export interface LoadConfigInput {
@@ -105,6 +107,12 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     fileSources.problemSets ?? DEFAULT_PROBLEM_SETS,
   );
 
+  const seedSet = validateSource(
+    'seed-set',
+    SeedAgenomeSet,
+    fileSources.seedSet ?? DEFAULT_SEED_SET,
+  );
+
   // 4. One composed, deep-frozen immutable handle — downstream kernel code cannot mutate boot config.
-  return deepFreeze({ runConfig, registry, scoringPolicy, caps, problemSets });
+  return deepFreeze({ runConfig, registry, scoringPolicy, caps, problemSets, seedSet });
 }

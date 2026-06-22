@@ -4,7 +4,7 @@
 - **Track / phase:** kernel · Phase 3 (runtime kernel) open + 2 Phase-0 freeze amendments
 - **Role:** kernel-runtime-implementer
 - **Predecessor:** [kernel-004](kernel-004-2026-06-21-retrieval-evidence-resolver-replay-reader.md) (P2.7 · P1.7 · P1.8 — Phase-1 close)
-- **Successor:** _(next kernel-runtime-implementer session — P3.4+ caps/energy/RNG, after the cycle)_
+- **Successor:** [kernel-006](kernel-006-2026-06-21-runtime-safety-substrate.md) — P3.6 RNG · P3.4 caps/kill · P3.5 energy · P3.9 spawn+seed · P0.16 reconcile
 - **Related (orchestrator territory):** [kernel-003](kernel-003-2026-06-21-orchestrator-routing-ledger.md) (orchestrator routing ledger)
 - **Commits this session (6):** `86553c3` (kernel-014) · `db4b045` (P3.1) · `a1da497` (P0.15-amend) · `b9ad31e` (P3.2-partial) · `afaab95` (P0.5-amend) · `087f2b1` (kernel-019, completes P3.2)
 

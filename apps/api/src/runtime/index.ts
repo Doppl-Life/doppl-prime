@@ -47,3 +47,68 @@ export {
   type OutcomeValue,
   type RngDraws,
 } from './rng/persistOutcomes';
+
+// RunCaps enforcement + kill switch (P3.4 — KEY SAFETY RULE #1: caps kernel-enforced, never prompt). PURE
+// fail-closed decisions (caps only from RunConfig.caps; an external hint can't raise a ceiling by shape) +
+// the per-state kill-switch plan (validated through the P3.2 guards; emits nothing) + the queryable cap
+// ledger. DECIDE only — the loop (P3.10) appends the named cap-breach events + the worker (P3.12) halts
+// scheduling + drains the excluded/in-flight states (§5 ownership split).
+export {
+  enforceCap,
+  enforceWallClock,
+  type CapDecision,
+  type CapAllowed,
+  type CapDenied,
+  type CapDimension,
+} from './caps/capEnforcer';
+export {
+  planKillSwitch,
+  type KillTrigger,
+  type KillPlan,
+  type RunTransitionPlan,
+  type GenerationTransitionPlan,
+  type GenerationRef,
+  type KillPlanSummary,
+} from './caps/killSwitch';
+export { capLedger, type CapLedgerView } from './caps/capLedger';
+
+// Success-only energy ledger (P3.5 — KEY SAFETY RULE #8: energy = successful productive spend only). PURE
+// compute: the config-driven doppl_energy cost map (DEFAULT_COST_MAP); estimate (pre-call) + reconcile
+// (post-call, llm actual from real ProviderMeta usage — never the estimate) building the frozen
+// EnergyEvent; and the cumulative fold over ACTUAL spend per scope (feeds the P3.4 capLedger energy dim).
+// COMPUTE only — the loop (P3.10) appends energy.spent (applying the scrub) + emits provider_call_failed
+// on a failure (no debit); emission/scrub/exhaustion are deferred to P3.10 (§5 ownership split).
+export {
+  energyForLlm,
+  energyForTool,
+  energyForSpawn,
+  DEFAULT_COST_MAP,
+  type CostMapConfig,
+} from './energy/costMap';
+export {
+  estimateEnergy,
+  reconcileEnergy,
+  type EnergyDraw,
+  type EnergyScope,
+  type ReconcileInput,
+} from './energy/estimateReconcile';
+export {
+  cumulativeSpend,
+  type LedgerEvent,
+  type ScopeSelector,
+  type EnergyScopeKind,
+} from './energy/energyLedger';
+
+// spawnBudget clamp (P3.9 — KEY SAFETY RULE #1: spawnBudget is an allocation hint, never cap-raising).
+// PURE clampSpawnBudget(spawnBudget, remainingPopulation) → {effectiveSpawns, clamped}; effectiveSpawns =
+// min(spawnBudget, max(0, remaining)) so the hint can't raise maxPopulation. Decision only — the spawn
+// caller (gen-0 seed spawn / P3.10 reproduction) emits the clamp-decision event when clamped; the
+// spawn-depth ceiling is a separate P3.4 enforceCap('maxSpawnDepth',…) gate.
+export { clampSpawnBudget, type SpawnClampResult } from './spawn/spawnBudgetClamp';
+
+// Gen-0 authored seed set (P3.9, REQ-F-017). The boot-validated authored baseline (SeedAgenomeTemplate
+// traits-only; DEFAULT_SEED_SET) + the PURE materializeGen0 — authored templates → the run's gen-0
+// Agenome[] (empty parentIds, seeded status, deterministic positional ids), count clamped to maxPopulation
+// via clampSpawnBudget. The agenome.spawned emission is the loop's (P3.10/P3.12).
+export { SeedAgenomeTemplate, SeedAgenomeSet, DEFAULT_SEED_SET } from './seed/seedAgenomes.config';
+export { materializeGen0 } from './seed/gen0SeedSet';
