@@ -180,6 +180,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Fitness lens/);
   assert.match(source, /fitnessSchedule/);
   assert.match(source, /Fitness schedule/);
+  assert.match(source, /scheduleComparisons/);
+  assert.match(source, /Schedule comparison/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -193,6 +195,8 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /background: #31d4ff/);
   assert.match(styles, /color: #04111c/);
   assert.match(styles, /\.fitness-metrics/);
+  assert.match(styles, /\.schedule-panel/);
+  assert.match(styles, /\.schedule-list/);
   assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
 

@@ -4,6 +4,12 @@ import type { CandidateSolution, KernelRun, VaultExportManifest } from './contra
 import { replayRunProjection, writeRunEvents } from './event-store.ts';
 import { writeModelCallRecords } from './model-gateway.ts';
 import { compileProposalNodes } from './node-compiler.ts';
+import {
+  scoreCandidates,
+  selectParents,
+  type FitnessLens,
+  type FitnessScheduleMode,
+} from './scoring.ts';
 
 function frontmatter(fields: Record<string, string>): string {
   return [
@@ -53,6 +59,48 @@ ${solution.citedKnowledge.join(', ') || 'none'}
 
 function solutionFilename(solution: CandidateSolution): string {
   return `${solution.id}.md`;
+}
+
+const COMPARISON_SCHEDULES: Exclude<FitnessScheduleMode, 'auto'>[] = [
+  'diverge',
+  'balanced',
+  'converge',
+];
+
+function lensForGeneration(run: KernelRun, candidateIds: string[]): FitnessLens | undefined {
+  return run.fitnessRecords.find((record) => candidateIds.includes(record.candidateId))?.selection?.lens;
+}
+
+function scheduleComparisons(run: KernelRun): Array<Record<string, unknown>> {
+  return run.evolution.map((generation) => {
+    const candidateIds = new Set(generation.candidateIds);
+    const verdicts = run.criticVerdicts.filter((verdict) => candidateIds.has(verdict.candidateId));
+    const lens = lensForGeneration(run, generation.candidateIds);
+    const modes = COMPARISON_SCHEDULES.map((schedule) => {
+      const records = scoreCandidates(verdicts, {
+        generation: generation.generation,
+        schedule,
+        lens,
+      });
+      const selectedParentIds = selectParents(records);
+      const top = records[0];
+      return {
+        schedule,
+        dial: top?.selection?.dial ?? schedule,
+        weights: top?.selection?.weights ?? null,
+        selectedParentIds,
+        topCandidateId: top?.candidateId ?? null,
+        topTotal: top?.total ?? null,
+        proposalRating: top?.selection?.proposalRating ?? null,
+        frontierCount: records.filter((record) => record.selection?.frontier.pareto).length,
+      };
+    });
+    return {
+      generation: generation.generation,
+      actualSelectedParentIds: generation.selectedParentIds,
+      modes,
+    };
+  });
 }
 
 function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<string, unknown> {
@@ -109,6 +157,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
     knowledgePacket: run.knowledgePacket,
     criticVerdicts: run.criticVerdicts,
     fitnessRecords: run.fitnessRecords,
+    scheduleComparisons: scheduleComparisons(run),
     trace: {
       path: 'trace.json',
       eventsPath: 'events.jsonl',

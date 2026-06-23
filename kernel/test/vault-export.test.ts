@@ -63,6 +63,12 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.fitnessRecords[0].selection.frontier.pareto, true);
   assert.equal(index.fitnessRecords[0].selection.frontier.rank, 1);
   assert.equal(index.fitnessRecords[0].selection.proposalRating.scale, '-5_to_5');
+  assert.equal(index.scheduleComparisons[0].generation, 0);
+  assert.deepEqual(
+    index.scheduleComparisons[0].modes.map((mode: { schedule: string }) => mode.schedule),
+    ['diverge', 'balanced', 'converge'],
+  );
+  assert.ok(index.scheduleComparisons[0].modes[0].selectedParentIds.length > 0);
   assert.equal(index.modelOutputs.accepted, 0);
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);

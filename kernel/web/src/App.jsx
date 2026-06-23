@@ -325,6 +325,11 @@ function frontierLabel(record) {
   return `dominated r${frontier.rank}`;
 }
 
+function latestScheduleComparison(run) {
+  const comparisons = run.scheduleComparisons || [];
+  return comparisons[comparisons.length - 1] || null;
+}
+
 function selectedIdsFor(run, generation) {
   const evolutionEntry = (run.evolution || []).find((entry) => entry.generation === generation);
   if (evolutionEntry?.selectedParentIds) return new Set(evolutionEntry.selectedParentIds);
@@ -892,6 +897,7 @@ export default function App() {
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
   const budgetUsed = budgetUnits(run);
   const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
+  const scheduleComparison = latestScheduleComparison(run);
   const selectedInspector = useMemo(() => inspectorData(run, selectedNode), [run, selectedNode]);
 
   return (
@@ -1026,6 +1032,28 @@ export default function App() {
         </div>
 
         <div className="lower-grid">
+          <section className="schedule-panel">
+            <h2>Schedule comparison</h2>
+            {scheduleComparison ? (
+              <div className="schedule-list">
+                {scheduleComparison.modes.map((mode) => (
+                  <article key={`${scheduleComparison.generation}-${mode.schedule}`}>
+                    <div>
+                      <strong>{mode.schedule}</strong>
+                      <span>{mode.weights ? `${Math.round(mode.weights.novelty * 100)} / ${Math.round(mode.weights.grounding * 100)}` : 'n/a'}</span>
+                    </div>
+                    <p>{mode.selectedParentIds?.length ? mode.selectedParentIds.join(' + ') : 'No selected parents'}</p>
+                    <small>
+                      top {readableTitle(mode.topCandidateId)} · {mode.topTotal ?? 'n/a'} · {signedRating(mode.proposalRating?.judge)}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="muted-copy">Run a case to compare diverge, balanced, and converge selection pressure.</p>
+            )}
+          </section>
+
           <section className="survivor-panel">
             <h2>Final surviving solutions</h2>
             <div className="survivor-list">
