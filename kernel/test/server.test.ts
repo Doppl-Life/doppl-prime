@@ -170,6 +170,9 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /@xyflow\/react/);
   assert.match(source, /<ReactFlow/);
   assert.match(source, /<MiniMap/);
+  assert.match(source, /nodesDraggable=\{false\}/);
+  assert.match(source, /nodesConnectable=\{false\}/);
+  assert.match(source, /draggable: false/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -574,4 +577,89 @@ test('kernel HTTP server reads exported run indexes and artifacts', async () => 
   assert.equal(artifactResponse.status, 200);
   assert.equal(artifactResponse.body.artifactPath, 'problem-recovery.md');
   assert.match(artifactResponse.body.content, /Recover The Ownership Premise/);
+});
+
+test('kernel HTTP server exposes canonical run events, SSE stream, and run health', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-events-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_events',
+      generations: 1,
+      budget: 1,
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const eventsResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/events?outDir=${encodeURIComponent(outDir)}&after=1`,
+  });
+  const streamResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/stream?outDir=${encodeURIComponent(outDir)}`,
+  });
+  const healthResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/health?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(eventsResponse.status, 200);
+  assert.equal(eventsResponse.body.runId, 'run_http_events');
+  assert.ok(Array.isArray(eventsResponse.body.events));
+  assert.ok(eventsResponse.body.events.every((event: { sequence: number }) => event.sequence > 1));
+  assert.ok(
+    eventsResponse.body.events.every(
+      (event: { id?: string; runId?: string; actor?: string; schemaVersion?: number }) =>
+        event.id && event.runId === 'run_http_events' && event.actor && event.schemaVersion === 1,
+    ),
+  );
+  assert.equal(streamResponse.status, 200);
+  assert.equal(streamResponse.contentType, 'text/event-stream; charset=utf-8');
+  assert.match(streamResponse.bodyText, /^id: 0/m);
+  assert.match(streamResponse.bodyText, /data: .*"type":"run.completed"/);
+  assert.equal(healthResponse.status, 200);
+  assert.deepEqual(healthResponse.body.status, 'completed');
+  assert.equal(healthResponse.body.runId, 'run_http_events');
+  assert.equal(healthResponse.body.candidatesInFlight, 0);
+  assert.ok(Number(healthResponse.body.sequenceThrough) > 0);
+});
+
+test('kernel dashboard exposes keyless event stream without exposing API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-stream-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_stream_fixture',
+      casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const protectedResponse = await handleKernelHttpRequest(
+    {
+      method: 'GET',
+      url: `/kernel/runs/dashboard_stream_fixture/stream?outDir=${encodeURIComponent(outDir)}`,
+    },
+    { env: { KERNEL_API_KEY: 'server-only-key' } },
+  );
+  const dashboardResponse = await handleKernelHttpRequest(
+    {
+      method: 'GET',
+      url: `/kernel/dashboard/runs/dashboard_stream_fixture/stream?outDir=${encodeURIComponent(outDir)}`,
+    },
+    { env: { KERNEL_API_KEY: 'server-only-key' } },
+  );
+
+  assert.equal(protectedResponse.status, 401);
+  assert.equal(dashboardResponse.status, 200);
+  assert.equal(dashboardResponse.contentType, 'text/event-stream; charset=utf-8');
+  assert.match(dashboardResponse.bodyText, /data: .*"runId":"dashboard_stream_fixture"/);
+  assert.doesNotMatch(dashboardResponse.bodyText, /server-only-key/);
 });

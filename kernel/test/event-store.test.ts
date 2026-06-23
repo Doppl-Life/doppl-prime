@@ -13,17 +13,21 @@ import {
 import type { RunEvent } from '../src/contracts.ts';
 
 test('records in-memory events with contiguous indexes', () => {
-  const recorder = createMemoryEventRecorder();
+  const recorder = createMemoryEventRecorder([], 'run_test');
 
   const started = recorder.push('run.started', { runId: 'run_test' });
   const completed = recorder.push('run.completed', { runId: 'run_test' });
 
-  assert.deepEqual(started, {
-    index: 0,
-    type: 'run.started',
-    payload: { runId: 'run_test' },
-  });
+  assert.equal(started.index, 0);
+  assert.equal(started.sequence, 0);
+  assert.equal(started.runId, 'run_test');
+  assert.equal(started.id, 'evt_run_test_0');
+  assert.equal(started.actor, 'runtime');
+  assert.equal(started.schemaVersion, 1);
+  assert.equal(started.type, 'run.started');
+  assert.deepEqual(started.payload, { runId: 'run_test' });
   assert.equal(completed.index, 1);
+  assert.equal(completed.sequence, 1);
   assert.deepEqual(
     recorder.events.map((event) => event.type),
     ['run.started', 'run.completed'],
@@ -41,16 +45,37 @@ test('writes and reads run events as newline-delimited JSON', async () => {
   await writeRunEvents(eventLogPath, events);
   await appendRunEvent(eventLogPath, {
     index: 2,
+    sequence: 2,
     type: 'run.completed',
     payload: { runId: 'run_test', childId: 'child_1' },
   });
 
   const rawLog = await readFile(eventLogPath, 'utf8');
   assert.equal(rawLog.trim().split('\n').length, 3);
-  assert.deepEqual(await readRunEvents(eventLogPath), [
-    ...events,
-    { index: 2, type: 'run.completed', payload: { runId: 'run_test', childId: 'child_1' } },
+  const readEvents = await readRunEvents(eventLogPath);
+  assert.equal(readEvents.length, 3);
+  assert.deepEqual(readEvents.map((event) => event.sequence), [0, 1, 2]);
+  assert.deepEqual(readEvents.map((event) => event.runId), ['run_test', 'run_test', 'run_test']);
+  assert.equal(readEvents[2]!.candidateId, 'child_1');
+});
+
+test('normalizes legacy event logs into canonical envelopes', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'doppl-events-legacy-'));
+  const eventLogPath = path.join(dir, 'events.jsonl');
+  await writeRunEvents(eventLogPath, [
+    { index: 0, type: 'run.started', payload: { runId: 'run_legacy', caseId: 'case_a' } },
+    { index: 1, type: 'candidate.created', payload: { candidateId: 'cand_a', agenomeId: 'ag_a' } },
   ]);
+
+  const events = await readRunEvents(eventLogPath);
+
+  assert.equal(events[0]!.id, 'evt_run_legacy_0');
+  assert.equal(events[0]!.sequence, 0);
+  assert.equal(events[0]!.occurredAt, new Date(0).toISOString());
+  assert.equal(events[1]!.runId, 'run_legacy');
+  assert.equal(events[1]!.actor, 'agenome');
+  assert.equal(events[1]!.candidateId, 'cand_a');
+  assert.equal(events[1]!.agenomeId, 'ag_a');
 });
 
 test('replays events into an inspectable run projection', () => {
@@ -84,6 +109,8 @@ test('replays events into an inspectable run projection', () => {
     childId: 'child_cand_a_cand_b',
     completed: true,
     eventCount: 13,
+    sequenceThrough: 12,
+    lastEventAt: new Date(0).toISOString(),
     modelOutputs: {
       accepted: 1,
       repairRequested: 1,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   Controls,
@@ -249,7 +249,7 @@ function buildFlow(run) {
     }
   }
 
-  return { nodes, edges };
+  return { nodes: nodes.map((node) => ({ ...node, draggable: false })), edges };
 }
 
 function makeEdge(id, source, target, status) {
@@ -298,6 +298,7 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const streamRef = useRef(null);
   const flow = useMemo(() => buildFlow(run), [run]);
   const [nodes, setNodes, onNodesChange] = useNodesState(flow.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flow.edges);
@@ -317,6 +318,46 @@ export default function App() {
   useEffect(() => {
     refreshHistory().catch(() => {});
   }, [refreshHistory]);
+
+  useEffect(() => () => streamRef.current?.close(), []);
+
+  function mergeDashboardEvents(nextEvents) {
+    setRun((currentRun) => {
+      const bySequence = new Map(
+        (currentRun.dashboardEvents || []).map((event) => [event.sequence ?? event.index, event]),
+      );
+      for (const event of nextEvents) {
+        bySequence.set(event.sequence ?? event.index, event);
+      }
+      return {
+        ...currentRun,
+        dashboardEvents: Array.from(bySequence.values()).sort(
+          (left, right) => (left.sequence ?? left.index ?? 0) - (right.sequence ?? right.index ?? 0),
+        ),
+      };
+    });
+  }
+
+  function streamRunEvents(nextRunId) {
+    streamRef.current?.close();
+    if (!nextRunId || typeof EventSource === 'undefined') return;
+    const source = new EventSource(`/kernel/dashboard/runs/${encodeURIComponent(nextRunId)}/stream`);
+    streamRef.current = source;
+    source.onmessage = (message) => {
+      try {
+        const event = JSON.parse(message.data);
+        mergeDashboardEvents([event]);
+        if (event.type === 'run.completed' || event.type === 'run.failed' || event.type === 'run.stopped') {
+          source.close();
+        }
+      } catch {
+        // Ignore malformed delivery frames; the REST event log remains authoritative.
+      }
+    };
+    source.onerror = () => {
+      source.close();
+    };
+  }
 
   async function runSelectedCase(forceFixture = false) {
     setIsRunning(true);
@@ -338,6 +379,7 @@ export default function App() {
       setRun(body);
       setRunId(body.runId);
       setStatus(`Loaded ${body.runId}.`);
+      streamRunEvents(body.runId);
       await refreshHistory();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
@@ -355,6 +397,7 @@ export default function App() {
       if (!response.ok) throw new Error(body.error || `fetch failed: ${response.status}`);
       setRun(body);
       setStatus(`Loaded ${id}.`);
+      streamRunEvents(id);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
     }
@@ -363,6 +406,8 @@ export default function App() {
   const candidates = run.candidates || [];
   const survivors = nodes.filter((node) => node.type === 'kernelNode' && node.data.status !== 'rejected');
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
+  const budgetUsed = run.budgetUsed ?? run.budget?.usedUnits ?? run.budget ?? 0;
+  const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
 
   return (
     <main className="app-shell" aria-label="Doppl React Flow dashboard">
@@ -439,8 +484,8 @@ export default function App() {
           <div className="metrics">
             <span><strong>{candidates.length}</strong> candidates</span>
             <span><strong>{generationCount(run)}</strong> generations</span>
-            <span><strong>{run.budgetUsed ?? run.budget ?? 0}</strong> budget</span>
-            <span><strong>{(run.fusionChildren || []).length}</strong> fused</span>
+            <span><strong>{budgetUsed}</strong> budget</span>
+            <span><strong>{fusedCount}</strong> fused</span>
           </div>
         </header>
 
@@ -452,6 +497,10 @@ export default function App() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={(_, node) => setSelectedNode(node)}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            edgesReconnectable={false}
+            deleteKeyCode={null}
             fitView
             fitViewOptions={{ padding: 0.18 }}
             minZoom={0.2}
@@ -509,9 +558,9 @@ export default function App() {
             <h2>Live event stream</h2>
             <ol>
               {(run.dashboardEvents || []).slice(-12).map((event) => (
-                <li key={`${event.index}-${event.type}`}>
+                <li key={`${event.sequence ?? event.index}-${event.type}`}>
                   <span>{event.type}</span>
-                  <time>{event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : `#${event.index}`}</time>
+                  <time>{event.occurredAt ? new Date(event.occurredAt).toLocaleTimeString() : `#${event.sequence ?? event.index}`}</time>
                 </li>
               ))}
             </ol>

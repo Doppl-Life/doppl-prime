@@ -12,6 +12,7 @@ import {
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
+import { readRunEvents, replayRunProjection } from './event-store.ts';
 
 type KernelRunRequest = {
   runId?: string;
@@ -710,14 +711,112 @@ async function readRunArtifact(
 
 async function readDashboardEvents(runId: string, rootDir: string): Promise<Array<Record<string, unknown>>> {
   try {
-    const artifact = await readRunArtifact(runId, rootDir, 'events.jsonl');
-    return String(artifact.content)
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line) as Record<string, unknown>);
+    return (await readRunEventLog(runId, rootDir)) as unknown as Array<Record<string, unknown>>;
   } catch {
     return [];
   }
+}
+
+async function readRunEventLog(runId: string, rootDir: string) {
+  const runDir = await findRunDir(rootDir, runId);
+  if (!runDir) throw new Error(`run not found: ${runId}`);
+  return readRunEvents(path.join(runDir, 'events.jsonl'));
+}
+
+function eventSequence(event: { sequence?: number; index?: number }): number {
+  return event.sequence ?? event.index ?? -1;
+}
+
+function eventsAfter(
+  events: Array<{ sequence?: number; index?: number }>,
+  afterSequence: number,
+) {
+  return events.filter((event) => eventSequence(event) > afterSequence);
+}
+
+function lastEventIdFromRequest(request: KernelHttpRequest, url: URL): number {
+  const rawQueryAfter = url.searchParams.get('after') ?? url.searchParams.get('afterSequence');
+  if (rawQueryAfter !== null) {
+    const queryAfter = Number(rawQueryAfter);
+    if (Number.isFinite(queryAfter)) return queryAfter;
+  }
+  const rawHeaderAfter = headerValue(request.headers, 'last-event-id');
+  if (rawHeaderAfter !== undefined) {
+    const headerAfter = Number(rawHeaderAfter);
+    if (Number.isFinite(headerAfter)) return headerAfter;
+  }
+  return -1;
+}
+
+async function readRunEventsResponse(
+  request: KernelHttpRequest,
+  url: URL,
+  runId: string,
+  rootDir: string,
+): Promise<KernelHttpResponse> {
+  const events = await readRunEventLog(runId, rootDir);
+  const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
+  return {
+    status: 200,
+    body: {
+      runId,
+      events: filteredEvents,
+      sequenceThrough: events.length ? Math.max(...events.map(eventSequence)) : -1,
+    },
+  };
+}
+
+function sseLine(value: string): string {
+  return value.replace(/\r?\n/g, '\ndata: ');
+}
+
+async function readRunStreamResponse(
+  request: KernelHttpRequest,
+  url: URL,
+  runId: string,
+  rootDir: string,
+): Promise<KernelHttpResponse> {
+  const events = await readRunEventLog(runId, rootDir);
+  const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
+  const bodyText = filteredEvents
+    .map((event) => {
+      const sequence = eventSequence(event);
+      return `id: ${sequence}\ndata: ${sseLine(JSON.stringify(event))}\n\n`;
+    })
+    .join('');
+  return {
+    status: 200,
+    contentType: 'text/event-stream; charset=utf-8',
+    bodyText: bodyText || ': no events after requested sequence\n\n',
+  };
+}
+
+async function readRunHealthResponse(runId: string, rootDir: string): Promise<KernelHttpResponse> {
+  const events = await readRunEventLog(runId, rootDir);
+  const projection = replayRunProjection(events);
+  const generationEvents = events.filter((event) => event.type === 'generation.started');
+  const lastGeneration = generationEvents
+    .map((event) => Number(event.payload.generation))
+    .filter(Number.isFinite)
+    .at(-1);
+  const terminalEvent = events.find(
+    (event) => event.type === 'run.completed' || event.type === 'run.failed' || event.type === 'run.stopped',
+  );
+  return {
+    status: 200,
+    body: {
+      runId,
+      status: terminalEvent ? String(terminalEvent.type).replace('run.', '') : 'running',
+      currentGeneration: lastGeneration ?? null,
+      candidatesInFlight: 0,
+      lastEventAt: projection.lastEventAt ?? null,
+      eventCount: projection.eventCount,
+      sequenceThrough: projection.sequenceThrough,
+      capsConsumed: {
+        candidates: projection.candidateIds.length,
+      },
+    },
+  };
 }
 
 async function listDashboardRuns(rootDir: string): Promise<Array<Record<string, unknown>>> {
@@ -878,6 +977,29 @@ export async function handleKernelHttpRequest(
     }
     if (request.method === 'POST' && url.pathname === '/kernel/dashboard/runs') {
       return { status: 200, body: await runDashboardCaseFromRequestBody(request.body, options) };
+    }
+    const dashboardEventRoute = url.pathname.match(
+      /^\/kernel\/dashboard\/runs\/([^/]+)\/(events|stream|health)$/,
+    );
+    if (request.method === 'GET' && dashboardEventRoute) {
+      const runId = decodeURIComponent(dashboardEventRoute[1]!);
+      const rootDir = outDirFromUrl(url);
+      if (dashboardEventRoute[2] === 'events') {
+        return await readRunEventsResponse(request, url, runId, rootDir);
+      }
+      if (dashboardEventRoute[2] === 'stream') {
+        return await readRunStreamResponse(request, url, runId, rootDir);
+      }
+      return await readRunHealthResponse(runId, rootDir);
+    }
+    const eventRoute = url.pathname.match(/^\/kernel\/runs\/([^/]+)\/(events|stream|health)$/);
+    if (request.method === 'GET' && eventRoute) {
+      if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
+      const runId = decodeURIComponent(eventRoute[1]!);
+      const rootDir = outDirFromUrl(url);
+      if (eventRoute[2] === 'events') return await readRunEventsResponse(request, url, runId, rootDir);
+      if (eventRoute[2] === 'stream') return await readRunStreamResponse(request, url, runId, rootDir);
+      return await readRunHealthResponse(runId, rootDir);
     }
     if (request.method === 'GET' && url.pathname.startsWith('/kernel/runs/')) {
       if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };

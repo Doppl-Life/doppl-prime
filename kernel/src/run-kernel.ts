@@ -52,7 +52,7 @@ export async function runKernel(input: {
   generations?: number;
   evolutionBudget?: { maxUnits: number };
 }): Promise<KernelRun> {
-  const trace = createMemoryEventRecorder();
+  const trace = createMemoryEventRecorder([], input.runId);
   const caseStudy = await loadCaseStudy(input.casePath);
   trace.push('run.started', { runId: input.runId, caseId: caseStudy.id });
   trace.push('knowledge.packet_requested', {

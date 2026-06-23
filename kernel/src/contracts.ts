@@ -107,10 +107,61 @@ export type EvolutionBudget = {
   exhausted: boolean;
 };
 
+export const RUN_EVENT_SCHEMA_VERSION = 1;
+
+export const RUN_EVENT_ACTORS = [
+  'operator',
+  'runtime',
+  'agenome',
+  'critic',
+  'check_runner',
+  'selection_controller',
+  'system',
+] as const;
+
+export type RunEventActor = (typeof RUN_EVENT_ACTORS)[number];
+
+export const RUN_EVENT_TYPES = [
+  'run.started',
+  'run.completed',
+  'run.failed',
+  'run.stopped',
+  'knowledge.packet_requested',
+  'knowledge.packet_selected',
+  'knowledge.item_injected',
+  'problem_recovery.created',
+  'generation.started',
+  'generation.completed',
+  'evolution.budget_exhausted',
+  'candidate.created',
+  'critic.verdict_recorded',
+  'fitness.scored',
+  'pair.compatibility_checked',
+  'candidate.fused',
+  'model.output_accepted',
+  'model.output_repair_requested',
+  'model.output_repaired',
+  'model.output_rejected',
+] as const;
+
+export type RunEventType = (typeof RUN_EVENT_TYPES)[number];
+
 export type RunEvent = {
   index: number;
-  type: string;
+  id?: string;
+  runId?: string;
+  generationId?: string;
+  agenomeId?: string;
+  candidateId?: string;
+  type: RunEventType | string;
+  sequence?: number;
+  occurredAt?: string;
+  actor?: RunEventActor;
+  correlationId?: string;
+  langfuseTraceId?: string;
+  langfuseObservationId?: string;
   payload: Record<string, unknown>;
+  schemaVersion?: number;
 };
 
 export type VaultExportManifest = {
