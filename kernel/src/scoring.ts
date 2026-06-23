@@ -7,6 +7,8 @@ export type FitnessSchedule = {
   dial: 'diverge' | 'balanced' | 'converge';
 };
 
+export type FitnessScheduleMode = 'auto' | 'diverge' | 'balanced' | 'converge';
+
 export type FitnessLens = {
   name: string;
   multiplier: number;
@@ -17,7 +19,7 @@ export type FitnessLensId = 'none' | 'feasibility' | 'novelty';
 
 export type ScoreCandidateOptions = {
   generation?: number;
-  schedule?: FitnessSchedule;
+  schedule?: FitnessSchedule | FitnessScheduleMode;
   lens?: FitnessLens | FitnessLensId;
 };
 
@@ -40,6 +42,37 @@ export function scheduleForGeneration(generation: number): FitnessSchedule {
     noveltyWeight: round(noveltyWeight, 3),
     groundingWeight,
     dial,
+  };
+}
+
+export function scheduleForMode(
+  mode: FitnessScheduleMode | FitnessSchedule | undefined,
+  generation: number,
+): FitnessSchedule {
+  if (!mode || mode === 'auto') return scheduleForGeneration(generation);
+  if (typeof mode === 'object') return mode;
+  const normalizedGeneration = Math.max(0, generation);
+  if (mode === 'diverge') {
+    return {
+      generation: normalizedGeneration,
+      noveltyWeight: 0.72,
+      groundingWeight: 0.28,
+      dial: 'diverge',
+    };
+  }
+  if (mode === 'converge') {
+    return {
+      generation: normalizedGeneration,
+      noveltyWeight: 0.28,
+      groundingWeight: 0.72,
+      dial: 'converge',
+    };
+  }
+  return {
+    generation: normalizedGeneration,
+    noveltyWeight: 0.5,
+    groundingWeight: 0.5,
+    dial: 'balanced',
   };
 }
 
@@ -156,7 +189,7 @@ export function scoreCandidates(
   options: ScoreCandidateOptions = {},
 ): FitnessRecord[] {
   const generation = Math.max(0, options.generation ?? 0);
-  const schedule = options.schedule || scheduleForGeneration(generation);
+  const schedule = scheduleForMode(options.schedule, generation);
   const decay = engineDecayForGeneration(generation);
   const byCandidate = new Map<string, CriticVerdict[]>();
   for (const verdict of verdicts) {

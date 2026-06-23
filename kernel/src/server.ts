@@ -13,7 +13,7 @@ import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { readRunEvents, replayRunProjection } from './event-store.ts';
-import type { FitnessLensId } from './scoring.ts';
+import type { FitnessLensId, FitnessScheduleMode } from './scoring.ts';
 
 type KernelRunRequest = {
   runId?: string;
@@ -28,6 +28,7 @@ type KernelRunRequest = {
   liveModel?: boolean;
   model?: string;
   fitnessLens?: string;
+  fitnessSchedule?: string;
 };
 
 type KernelHttpRequest = {
@@ -652,6 +653,14 @@ function parseFitnessLens(value: unknown): FitnessLensId {
   throw new Error('fitnessLens must be one of: none, feasibility, novelty');
 }
 
+function parseFitnessSchedule(value: unknown): FitnessScheduleMode {
+  if (value === 'auto' || value === 'diverge' || value === 'balanced' || value === 'converge') {
+    return value;
+  }
+  if (value === undefined || value === null || value === '') return 'auto';
+  throw new Error('fitnessSchedule must be one of: auto, diverge, balanced, converge');
+}
+
 function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
@@ -912,6 +921,7 @@ async function runFromRequestBody(
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
   const casePath = casePathFromRequest(parsed.casePath);
   const fitnessLens = parseFitnessLens(parsed.fitnessLens);
+  const fitnessSchedule = parseFitnessSchedule(parsed.fitnessSchedule);
   const generationProviders = await generationProvidersFromRequest(parsed, options);
   const run = await runKernel({
     ...defaultKernelArgs,
@@ -922,6 +932,7 @@ async function runFromRequestBody(
     generations,
     evolutionBudget: { maxUnits: budget },
     fitnessLens,
+    fitnessSchedule,
     generationProviders,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
@@ -960,6 +971,7 @@ async function runDashboardCaseFromRequestBody(
       liveModel,
       model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
       fitnessLens: parseFitnessLens(parsed.fitnessLens),
+      fitnessSchedule: parseFitnessSchedule(parsed.fitnessSchedule),
       outDir,
       proofBoardDir: parsed.proofBoardDir || defaultKernelArgs.proofBoardDir,
     }),

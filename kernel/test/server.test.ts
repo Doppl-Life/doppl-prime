@@ -178,6 +178,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /proposalRating/);
   assert.match(source, /fitnessLens/);
   assert.match(source, /Fitness lens/);
+  assert.match(source, /fitnessSchedule/);
+  assert.match(source, /Fitness schedule/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -493,6 +495,26 @@ test('kernel dashboard route applies an approved fitness lens without exposing s
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
 
+test('kernel dashboard route applies an approved fitness schedule', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-schedule-'));
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_schedule_fixture',
+      casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+      fitnessSchedule: 'converge',
+      generations: 1,
+      outDir: path.join(root, 'vault'),
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.fitnessRecords[0].selection.dial, 'converge');
+  assert.equal(response.body.fitnessRecords[0].selection.weights.grounding, 0.72);
+});
+
 test('kernel dashboard route rejects unknown fitness lenses', async () => {
   const response = await handleKernelHttpRequest({
     method: 'POST',
@@ -505,6 +527,20 @@ test('kernel dashboard route rejects unknown fitness lenses', async () => {
 
   assert.equal(response.status, 400);
   assert.match(String(response.body.error), /fitnessLens/);
+});
+
+test('kernel dashboard route rejects unknown fitness schedules', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_bad_schedule',
+      fitnessSchedule: 'sideways',
+    }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.match(String(response.body.error), /fitnessSchedule/);
 });
 
 test('kernel dashboard route lists recent exported runs without an API key', async () => {

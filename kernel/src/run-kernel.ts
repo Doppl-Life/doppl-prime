@@ -15,6 +15,7 @@ import {
   selectParents,
   checkPairCompatibility,
   type FitnessLensId,
+  type FitnessScheduleMode,
 } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
 import { createMemoryEventRecorder } from './event-store.ts';
@@ -57,6 +58,7 @@ export async function runKernel(input: {
   generations?: number;
   evolutionBudget?: { maxUnits: number };
   fitnessLens?: FitnessLensId;
+  fitnessSchedule?: FitnessScheduleMode;
 }): Promise<KernelRun> {
   const trace = createMemoryEventRecorder([], input.runId);
   const caseStudy = await loadCaseStudy(input.casePath);
@@ -162,6 +164,7 @@ export async function runKernel(input: {
 
     const generationFitnessRecords = scoreCandidates(generationVerdicts, {
       generation,
+      schedule: input.fitnessSchedule,
       lens: input.fitnessLens,
     });
     fitnessRecords.push(...generationFitnessRecords);

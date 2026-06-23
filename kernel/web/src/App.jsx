@@ -45,6 +45,13 @@ const FITNESS_LENSES = [
   { id: 'novelty', label: 'Novelty' },
 ];
 
+const FITNESS_SCHEDULES = [
+  { id: 'auto', label: 'Auto schedule' },
+  { id: 'diverge', label: 'Diverge' },
+  { id: 'balanced', label: 'Balanced' },
+  { id: 'converge', label: 'Converge' },
+];
+
 const SAMPLE_RUN = {
   runId: 'react_flow_preview',
   caseId: 'fsd-ownership-unwind',
@@ -767,6 +774,7 @@ export default function App() {
   const [runId, setRunId] = useState('react_flow_preview');
   const [model, setModel] = useState('openai/gpt-4.1-mini');
   const [fitnessLens, setFitnessLens] = useState('none');
+  const [fitnessSchedule, setFitnessSchedule] = useState('auto');
   const [status, setStatus] = useState('React Flow preview loaded. Run a real case to watch Doppl evolve.');
   const [history, setHistory] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -846,6 +854,7 @@ export default function App() {
           casePath: caseStudy.path,
           model,
           fitnessLens,
+          fitnessSchedule,
           liveModel: caseStudy.mode === 'live' && !forceFixture,
         }),
       });
@@ -916,6 +925,16 @@ export default function App() {
           <input id="run-id-input" value={runId} onChange={(event) => setRunId(event.target.value)} />
           <label htmlFor="model-input">Live model</label>
           <input id="model-input" value={model} onChange={(event) => setModel(event.target.value)} />
+          <label htmlFor="fitness-schedule-input">Fitness schedule</label>
+          <select
+            id="fitness-schedule-input"
+            value={fitnessSchedule}
+            onChange={(event) => setFitnessSchedule(event.target.value)}
+          >
+            {FITNESS_SCHEDULES.map((schedule) => (
+              <option key={schedule.id} value={schedule.id}>{schedule.label}</option>
+            ))}
+          </select>
           <label htmlFor="fitness-lens-input">Fitness lens</label>
           <select
             id="fitness-lens-input"

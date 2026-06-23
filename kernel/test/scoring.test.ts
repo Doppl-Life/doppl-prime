@@ -5,6 +5,7 @@ import {
   selectParents,
   checkPairCompatibility,
   scheduleForGeneration,
+  scheduleForMode,
 } from '../src/scoring.ts';
 
 test('scores candidates and selects parents individually before compatibility', () => {
@@ -78,6 +79,50 @@ test('keeps novelty and grounding as separate axes before scheduled selection', 
   assert.equal(divergeRecords[0]?.selection?.axes.novelty, 0.95);
   assert.equal(divergeRecords[0]?.selection?.axes.grounding, 0.35);
   assert.equal(divergeRecords[0]?.selection?.proposalRating.scale, '-5_to_5');
+});
+
+test('schedule mode can force divergent or convergent pressure', () => {
+  const verdicts = [
+    {
+      candidateId: 'wild',
+      criticId: 'novelty',
+      score: 98,
+      pressure: 'very novel',
+      revisionMandate: 'ground it',
+    },
+    {
+      candidateId: 'wild',
+      criticId: 'grounding',
+      score: 20,
+      pressure: 'thin',
+      revisionMandate: 'cite proof',
+    },
+    {
+      candidateId: 'grounded',
+      criticId: 'novelty',
+      score: 45,
+      pressure: 'familiar',
+      revisionMandate: 'find edge',
+    },
+    {
+      candidateId: 'grounded',
+      criticId: 'grounding',
+      score: 90,
+      pressure: 'strong proof',
+      revisionMandate: 'keep it testable',
+    },
+  ];
+
+  const divergeRecords = scoreCandidates(verdicts, { generation: 0, schedule: 'diverge' });
+  const convergeRecords = scoreCandidates(verdicts, { generation: 0, schedule: 'converge' });
+
+  assert.equal(scheduleForMode('balanced', 7).dial, 'balanced');
+  assert.equal(divergeRecords[0]?.candidateId, 'wild');
+  assert.equal(divergeRecords[0]?.selection?.dial, 'diverge');
+  assert.equal(divergeRecords[0]?.selection?.weights.novelty, 0.72);
+  assert.equal(convergeRecords[0]?.candidateId, 'grounded');
+  assert.equal(convergeRecords[0]?.selection?.dial, 'converge');
+  assert.equal(convergeRecords[0]?.selection?.weights.grounding, 0.72);
 });
 
 test('marks Pareto frontier candidates and selects from the frontier before dominated totals', () => {
