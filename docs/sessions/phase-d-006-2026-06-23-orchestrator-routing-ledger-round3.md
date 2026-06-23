@@ -42,9 +42,17 @@ Triage walked: the Carry-forward items are **cross-track merge-reconcile** (NOT 
 
 - **Now newly relevant to PD.8a:** the stale shared `createFakeGateway` fixtures (`population_generator` + `final_judge`) — PD.8a's fixture capture uses a **loop-capable bespoke fake** (the `main-boot.test.ts` pattern), NOT `createFakeGateway` as-is; fixing the shared fixtures stays OUT of PD.8a (gateway-stub/selection territory).
 
+## ⚠️ BLOCKING FINDING + RESOLUTION (post-handoff — the fresh team's FIRST work item)
+
+**Finding (surfaced at PD.8a Step-2.5, verified by the orch):** the §12 final-idea `status:'selected'` winner has **NO runtime/projection producer.** The kernel records the winner ONLY as `run.completed.finalIdeaRef` (= the best `scored ∧ ¬culled` survivor, `terminalClassifier.ts:155`); NO event/reducer sets a candidate to `'selected'` (grep of `apps/api/src/event-store/reducers` = nothing), yet `replay-summary.ts:75` + `lineage-graph.ts:73` + web `selectWinner` + the shipped PD.7 panel (`1277cd1`) all key off `'selected'`. **Impact:** the entire §12 final-idea surface is **winnerless on every real completed run** (only hand-built fixtures show a winner); PD.7's terminal branch renders "No surviving idea — run completed" on a SUCCESSFUL run — the demo HEADLINE can't show a winner on a real/recorded run, and PD.8a acceptance #2 can't pass.
+
+**✅ DECISION (lead, 2026-06-23 — lead's call, NOT a user product fork; user informed): (b) — a small PREREQUISITE projection-bridge slice.** The winner IS derivable: `lineage-graph` + `replay-summary` mark the candidate whose id == `run.completed.finalIdeaRef` as `'selected'`. **ZERO new contract surface** — a §10-conformance BUG FIX (§10 already says "selected winner = candidate node status 'selected'"; the projection just never produced it), in-track (projections territory). Rejected (a) fold-into-PD.8a (bloats it) + (c) defer (ships the headline winnerless on real runs). **It independently fixes the shipped §12 surface (PD.7) on real runs**, so it's bisectable + high-value on its own.
+
+**Q1 (PD.8a creds-free), confirmed:** placeholder provider-key **VALUES** (recorded/replay calls no provider → keys unused; **§15 boot fail-fast stays INTACT** — do NOT make `assertProviderCredentials` recorded-mode-aware / weaken to truly-empty-env; the brief forbids weakening that test).
+
 ## Next session target (fresh team)
 
-**Re-dispatch `phase-d-013` (PD.8a)** — creds-free e2e smoke + real fixture capture (`fixtures/replay/` is only `.gitkeep` — none exists) + config-boot smoke; **flag the lead at its Step-2.5** → **author + dispatch `phase-d-014` (PD.8b)** — DEMO_RUNBOOK + .env.example (single-sourced from `loadConfig`/`envSchema`) + remaining §16 rehearsals → **`/phase-exit PD`** → THEN the **lead-owned** phase-d→cody merge + USER sign-off (the lead runs the creds-free e2e smoke before/after). Do NOT merge to cody from the track.
+**FIRST: the projection-bridge slice (decision b)** — `lineage-graph` + `replay-summary` mark the `finalIdeaRef` candidate `'selected'` (zero contract surface, §10-conformance, test-first; fixes PD.7's §12 surface on real runs) → **then re-dispatch `phase-d-013` (PD.8a)** — creds-free e2e smoke + real fixture capture (`fixtures/replay/` is only `.gitkeep` — none exists) + config-boot smoke (now PD.8a #2/#8 assert a REAL selected winner end-to-end; Q1 = placeholder creds) → **author + dispatch `phase-d-014` (PD.8b)** — DEMO_RUNBOOK + .env.example (single-sourced from `loadConfig`/`envSchema`) + remaining §16 rehearsals → **`/phase-exit PD`** → THEN the **lead-owned** phase-d→cody merge + USER sign-off (the lead runs the creds-free e2e smoke before/after). Do NOT merge to cody from the track.
 
 ## Operating notes for the successor orchestrator
 
