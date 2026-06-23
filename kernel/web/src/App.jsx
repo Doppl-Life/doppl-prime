@@ -1153,6 +1153,23 @@ export default function App() {
                     <em>{assay.heldOutJudge.survivor?.factors?.[0] || assay.heldOutJudge.limits?.[0]}</em>
                   </div>
                 ) : null}
+                {assay.referenceCase ? (
+                  <div className="assay-reference">
+                    <span>Reference case</span>
+                    <strong>{assay.referenceCase.status?.replace(/_/g, ' ')}</strong>
+                    <small>{assay.referenceCase.visibility?.replace(/_/g, ' ') || 'sealed evaluator only'}</small>
+                    <p>
+                      {assay.referenceCase.path
+                        ? 'Evaluator reference artifact detected and reserved for server-side judging.'
+                        : 'No evaluator reference artifact found.'}
+                    </p>
+                    <em>
+                      {assay.referenceCase.exposedToGeneration
+                        ? 'Reference content was exposed to generation.'
+                        : 'Reference content sealed from generation and public payloads.'}
+                    </em>
+                  </div>
+                ) : null}
                 <div className="assay-comparison">
                   {[assay.baseline, assay.survivor].map((entry) => (
                     <article key={`${entry.type}-${entry.candidateId}`}>

@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type {
@@ -282,6 +283,28 @@ function heldOutAssayJudge(
   };
 }
 
+function referenceCase(run: KernelRun): Record<string, unknown> {
+  const referencePath = path.join(
+    path.dirname(run.caseStudy.sourcePath),
+    `${run.caseStudy.id}-with-solution.md`,
+  );
+  const exists = existsSync(referencePath);
+
+  return {
+    status: exists ? 'withheld_reference_available' : 'no_reference_available',
+    path: exists ? referencePath : null,
+    visibility: exists ? 'sealed_evaluator_only' : 'none',
+    exposedToGeneration: false,
+    contentIncluded: false,
+    notes: exists
+      ? [
+          'Evaluator reference exists but is sealed from generation and public dashboard payloads.',
+          'Future model/human held-out judging can compare against this artifact server-side.',
+        ]
+      : ['No evaluator reference artifact was found for this case.'],
+  };
+}
+
 function assaySnapshot(
   run: KernelRun,
   candidate: CandidateSolution,
@@ -382,6 +405,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     verdict,
     statement,
     heldOutJudge: heldOutAssayJudge(run, baseline, survivor),
+    referenceCase: referenceCase(run),
     controlArtifact: control
       ? {
           path: control.path,

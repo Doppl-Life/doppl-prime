@@ -258,6 +258,9 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /control artifact/);
   assert.match(source, /heldOutJudge/);
   assert.match(source, /Held-out judge/);
+  assert.match(source, /referenceCase/);
+  assert.match(source, /Reference case/);
+  assert.match(source, /sealed evaluator only/);
   assert.match(source, /clean generation-0 baseline/);
   assert.match(source, /agenomes/);
   assert.match(source, /Agenome persona/);
@@ -288,6 +291,7 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /\.assay-comparison/);
   assert.match(styles, /\.assay-evidence/);
   assert.match(styles, /\.assay-judge/);
+  assert.match(styles, /\.assay-reference/);
   assert.match(styles, /\.history-action/);
   assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
@@ -609,6 +613,10 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.assayControl.heldOutJudge.judgeType, 'deterministic_artifact_rubric');
   assert.equal(response.body.assayControl.heldOutJudge.scoreSource, 'artifact_rubric_not_training_fitness');
   assert.equal(typeof response.body.assayControl.heldOutJudge.delta.score, 'number');
+  assert.equal(response.body.assayControl.referenceCase.status, 'withheld_reference_available');
+  assert.equal(response.body.assayControl.referenceCase.visibility, 'sealed_evaluator_only');
+  assert.match(response.body.assayControl.referenceCase.path, /glp1-snack-demand-destruction-with-solution\.md$/);
+  assert.equal(response.body.assayControl.referenceCase.exposedToGeneration, false);
   assert.match(response.body.assayControl.statement, /baseline|Assay/i);
   assert.match(response.body.assayControl.limits[0], /in-run critic fitness/i);
   assert.equal(response.body.knowledgePacket.items.length, 3);

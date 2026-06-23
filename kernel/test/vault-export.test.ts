@@ -95,6 +95,10 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(typeof index.assayControl.heldOutJudge.delta.score, 'number');
   assert.equal(index.assayControl.heldOutJudge.baseline.candidateId, index.assayControl.baseline.candidateId);
   assert.equal(index.assayControl.heldOutJudge.survivor.candidateId, index.assayControl.survivor.candidateId);
+  assert.equal(index.assayControl.referenceCase.status, 'withheld_reference_available');
+  assert.equal(index.assayControl.referenceCase.visibility, 'sealed_evaluator_only');
+  assert.match(index.assayControl.referenceCase.path, /fsd-ownership-unwind-with-solution\.md$/);
+  assert.equal(index.assayControl.referenceCase.exposedToGeneration, false);
   assert.match(index.assayControl.limits[0], /in-run critic fitness/i);
   const controlPath = manifest.files.find((file) => file.endsWith('control-baseline.md'))!;
   const controlMarkdown = await readFile(controlPath, 'utf8');
