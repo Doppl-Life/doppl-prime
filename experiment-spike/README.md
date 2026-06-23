@@ -19,8 +19,8 @@ servers reject. The **Offline demo** and **Harness bridge** providers work fine 
 **Option B — serve it locally (recommended).** From this folder:
 
 ```bash
-python3 -m http.server 5173
-# then open http://localhost:5173
+python3 -m http.server 8000
+# then open http://localhost:8000
 ```
 
 A real `http://localhost` origin makes local model servers reachable and avoids browser quirks.
