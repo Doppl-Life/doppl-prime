@@ -24,7 +24,11 @@ export interface OperatorPromptPanelProps {
   onStarted?: (run: Run) => void;
 }
 
-const field: CSSProperties = { display: 'grid', gap: 'var(--space-1)', marginBottom: 'var(--space-4)' };
+const field: CSSProperties = {
+  display: 'grid',
+  gap: 'var(--space-1)',
+  marginBottom: 'var(--space-4)',
+};
 const labelText: CSSProperties = {
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--text-label)',
@@ -95,7 +99,11 @@ export function OperatorPromptPanel({ runClient, onStarted }: OperatorPromptPane
   return (
     <section
       aria-label="Operator prompt"
-      style={{ fontFamily: 'var(--font-ui)', color: 'var(--fg-default)', padding: 'var(--space-5)' }}
+      style={{
+        fontFamily: 'var(--font-ui)',
+        color: 'var(--fg-default)',
+        padding: 'var(--space-5)',
+      }}
     >
       <h2 style={{ fontSize: 'var(--text-h2)', margin: 0, marginBottom: 'var(--space-5)' }}>
         Start a demo run

@@ -20,7 +20,11 @@ const PREPARED = {
 describe('operatorPromptForm (PD.5b — prepared/freeform → seed)', () => {
   // §17 prepared path — source=prepared + a selected problem → the problem's prompt is the seed.
   test('build_demo_seed_from_prepared', () => {
-    const form: OperatorPromptFormValues = { source: 'prepared', prepared: PREPARED, freeformText: '' };
+    const form: OperatorPromptFormValues = {
+      source: 'prepared',
+      prepared: PREPARED,
+      freeformText: '',
+    };
     expect(buildDemoSeed(form)).toBe(PREPARED.prompt);
   });
 
@@ -37,16 +41,18 @@ describe('operatorPromptForm (PD.5b — prepared/freeform → seed)', () => {
   // RunConfig.seed min(1) — fail closed: no prepared chosen / empty or whitespace-only freeform → error;
   // a valid form → { ok, seed }.
   test('validate_rejects_empty_or_no_source', () => {
-    expect(validateOperatorPrompt({ source: 'prepared', prepared: null, freeformText: '' }).ok).toBe(
-      false,
-    ); // prepared source but nothing selected
+    expect(
+      validateOperatorPrompt({ source: 'prepared', prepared: null, freeformText: '' }).ok,
+    ).toBe(false); // prepared source but nothing selected
     expect(
       validateOperatorPrompt({ source: 'freeform', prepared: null, freeformText: '' }).ok,
     ).toBe(false); // empty freeform
     expect(
       validateOperatorPrompt({ source: 'freeform', prepared: null, freeformText: '   ' }).ok,
     ).toBe(false); // whitespace-only freeform
-    expect(validateOperatorPrompt({ source: 'prepared', prepared: PREPARED, freeformText: '' })).toEqual({
+    expect(
+      validateOperatorPrompt({ source: 'prepared', prepared: PREPARED, freeformText: '' }),
+    ).toEqual({
       ok: true,
       seed: PREPARED.prompt,
     });

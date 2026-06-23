@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { validRun } from '@doppl/contracts';
-import { createRunClient, PayloadValidationError, TransportError } from '../../../src/data/runClient';
+import {
+  createRunClient,
+  PayloadValidationError,
+  TransportError,
+} from '../../../src/data/runClient';
 
 /**
  * PD.5b — the runClient demo methods: getProblemSets (validates GET /problem-sets against the web-local
@@ -49,7 +53,10 @@ describe('runClient demo methods (PD.5b — GET /problem-sets + partial-{seed} P
     await expect(badClient.getProblemSets()).rejects.toBeInstanceOf(PayloadValidationError);
 
     // a non-2xx response → transport error (never parsed as a catalog).
-    const errClient = createRunClient({ baseUrl: BASE, fetch: fakeFetch({ problemSets: CATALOG }, 500) });
+    const errClient = createRunClient({
+      baseUrl: BASE,
+      fetch: fakeFetch({ problemSets: CATALOG }, 500),
+    });
     await expect(errClient.getProblemSets()).rejects.toBeInstanceOf(TransportError);
   });
 

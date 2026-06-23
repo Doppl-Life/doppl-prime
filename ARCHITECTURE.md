@@ -358,6 +358,8 @@ flowchart LR
 
 **Accessibility / projector robustness (resolved):** status uses **shape/label/icon in addition to color** (colorblind-safe palette), a high-contrast theme, and projector-legible font sizes — the dashboard is a first-class acceptance surface shown to a room.
 
+**Final-idea proof panel (resolved — PD.7):** the final surviving-idea panel labels the **transfer-evidence rung** — *live allowlisted (non-executing)* vs *replay-backed* — **derived from the run mode** (live/replay), a presentation of mode, not a re-judgement (the held-out judge/scoring stay immutable, rule #6 emit-only); it renders the winner's `evidenceRefs` **in-tier** via the shared `EvidenceRefLink` (rule #9 — never an external href); and it reflects **terminal zero-survivors** — a terminal run (`run.completed/failed/stopped`) with no kernel/judge-selected winner shows the terminal state, never a fabricated idea (vs the in-progress affordance). **Zero new contract surface:** the label reads the existing run `mode` (the frozen `CheckResult` carries no live/replay discriminator), the terminal branch the existing run-level `RunEventType`.
+
 ## §13 — Observability
 
 **LLM observability:** Langfuse Cloud (non-authoritative). LLM-related events store Langfuse trace/observation IDs + model metadata; if Langfuse is unavailable the event log retains local trace metadata sufficient for demo/debug (`REQ-I-006`, ADR-005). A local-only warning flags a failed Langfuse export (no event-log entry — it's non-authoritative). **Content toggle (Q3):** an operator switch disables external content logging to Langfuse when a live audience prompt may be sensitive.
