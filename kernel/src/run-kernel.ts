@@ -100,6 +100,7 @@ export async function runKernel(input: {
   const fitnessRecords: FitnessRecord[] = [];
   const evolution: EvolutionGeneration[] = [];
   let carryoverChild: CandidateSolution | undefined;
+  let previousCriticVerdicts: CriticVerdict[] = [];
   let selectedParents: [CandidateSolution, CandidateSolution] | [] = [];
   let fusion: FusionResult | undefined;
 
@@ -120,6 +121,8 @@ export async function runKernel(input: {
       problemRecovery,
       knowledgePacket,
       generation,
+      previousChild: carryoverChild,
+      previousCriticVerdicts,
     });
     candidates.push(...freshCandidates);
     for (const candidate of freshCandidates) {
@@ -140,6 +143,7 @@ export async function runKernel(input: {
       candidates: generationCandidates,
       knowledgePacket,
     });
+    previousCriticVerdicts = generationVerdicts;
     criticVerdicts.push(...generationVerdicts);
     for (const verdict of generationVerdicts) {
       trace.push('critic.verdict_recorded', {

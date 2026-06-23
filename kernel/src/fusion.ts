@@ -5,6 +5,21 @@ import {
   type PairCompatibility,
 } from './contracts.ts';
 
+function stableHash(value: string): string {
+  let hash = 0;
+  for (const character of value) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+function compactId(value: string): string {
+  const normalized = value.replace(/^child_/, '');
+  if (normalized.length <= 64) return normalized;
+  const generationMarker = normalized.match(/_g\d+/)?.[0] || '';
+  return `${normalized.slice(0, 34)}${generationMarker}_${stableHash(normalized)}`;
+}
+
 export function fuseCandidates(input: {
   caseId: string;
   parentA: CandidateSolution;
@@ -15,7 +30,7 @@ export function fuseCandidates(input: {
 }): FusionResult {
   const inheritanceWeights = calculateInheritanceWeights(input.parentAScore, input.parentBScore);
   const child: CandidateSolution = {
-    id: `child_${input.parentA.id}_${input.parentB.id}`,
+    id: `child_${compactId(input.parentA.id)}_${compactId(input.parentB.id)}`,
     caseId: input.caseId,
     agenomeId: `fused_${input.parentA.agenomeId}_${input.parentB.agenomeId}`,
     generation: Math.max(input.parentA.generation, input.parentB.generation) + 1,

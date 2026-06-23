@@ -23,6 +23,8 @@ export type CandidateGenerationInput = {
   problemRecovery: ProblemRecovery;
   knowledgePacket: KnowledgePacket;
   generation: number;
+  previousChild?: CandidateSolution;
+  previousCriticVerdicts?: CriticVerdict[];
 };
 
 export type CriticJudgmentInput = {
@@ -72,6 +74,95 @@ export async function createFixtureGenerationProviders(
 ): Promise<GenerationProviders & { caseId: string }> {
   const fixture = await loadKernelFixture(fixturePath);
 
+  function mandateFor(index: number): string {
+    return fixture.critics[index % fixture.critics.length]?.revisionMandate || 'tighten the mechanism';
+  }
+
+  function scoreFor(candidate: CandidateSolution, index: number): number {
+    const baseAverage = fixture.critics
+      .filter((verdict) => verdict.candidateId === candidate.id)
+      .reduce((sum, verdict, _, rows) => sum + verdict.score / rows.length, 0);
+    if (candidate.id.startsWith('child_')) return 83;
+    if (candidate.id.includes('_stability_probe_g')) return 91;
+    if (candidate.id.includes('_failure_probe_g')) return 80;
+    if (candidate.id.includes('_signal_probe_g')) return 67;
+    return Number((baseAverage || Math.max(45, 88 - index * 13)).toFixed(1));
+  }
+
+  function criticPressure(candidate: CandidateSolution, criticId: string, generation?: number): string {
+    if (candidate.id.startsWith('child_')) {
+      return `Carryover child keeps the prior fused mechanism alive but must beat generation ${generation ?? candidate.generation} mutations.`;
+    }
+    if (candidate.id.includes('_stability_probe_g')) {
+      return `Mutation stress-tests whether ${candidate.title} preserves the survivor's strongest mechanism.`;
+    }
+    if (candidate.id.includes('_failure_probe_g')) {
+      return `Failure probe applies critic pressure so the survivor cannot coast on the prior generation.`;
+    }
+    if (candidate.id.includes('_signal_probe_g')) {
+      return `Signal probe expands the search surface, but ${criticId} still needs stronger proof.`;
+    }
+    return fixture.critics.find((verdict) => verdict.candidateId === candidate.id && verdict.criticId === criticId)
+      ?.pressure || `${candidate.title} receives ${criticId} pressure.`;
+  }
+
+  function evolveCandidates(input: CandidateGenerationInput): CandidateSolution[] {
+    if (input.generation === 0 || !input.previousChild) {
+      return fixture.candidates.map((candidate) =>
+        assertCandidateSolution({
+          ...candidate,
+          caseId: input.caseStudy.id,
+          generation: input.generation,
+        }),
+      );
+    }
+
+    const [primary, secondary, tertiary] = fixture.candidates;
+    const knowledge = input.knowledgePacket.items;
+    const childTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
+    const generation = input.generation;
+    const variants = [
+      {
+        source: primary!,
+        id: `${primary!.id}_stability_probe_g${generation}`,
+        title: `${primary!.title} Stability Probe`,
+        summary: `Mutates the previous survivor into a stricter ${primary!.title} test for generation ${generation}.`,
+        mechanism: `${input.previousChild.mechanism} It must now satisfy this mandate: ${mandateFor(0)}.`,
+        claimedDelta: `Keeps ${childTitle} only if the strongest inherited mechanism survives new pressure.`,
+        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...(primary!.citedKnowledge || [])])],
+        agenomeId: `${primary!.agenomeId}_mutation_g${generation}`,
+      },
+      {
+        source: secondary!,
+        id: `${secondary!.id}_failure_probe_g${generation}`,
+        title: `${secondary!.title} Failure Probe`,
+        summary: `Turns the prior critic mandate into a falsifier against ${input.previousChild.title}.`,
+        mechanism: `${secondary!.mechanism} It attacks the survivor through: ${mandateFor(3)}.`,
+        claimedDelta: `Adds a failure mode instead of re-running ${secondary!.title}.`,
+        citedKnowledge: [...new Set([...(secondary!.citedKnowledge || []), knowledge[0]?.citeHandle].filter(Boolean))],
+        agenomeId: `${secondary!.agenomeId}_critic_probe_g${generation}`,
+      },
+      {
+        source: tertiary!,
+        id: `${tertiary!.id}_signal_probe_g${generation}`,
+        title: `${tertiary!.title} Signal Probe`,
+        summary: `Explores a new observable signal adjacent to ${input.previousChild.title}.`,
+        mechanism: `${tertiary!.mechanism} It is redirected toward evidence from ${knowledge[generation % knowledge.length]?.citeHandle || 'the packet'}.`,
+        claimedDelta: `Broadens the search without letting the population collapse to the same parent pair.`,
+        citedKnowledge: [...new Set([...(tertiary!.citedKnowledge || []), knowledge[generation % knowledge.length]?.citeHandle].filter(Boolean))],
+        agenomeId: `${tertiary!.agenomeId}_signal_probe_g${generation}`,
+      },
+    ];
+
+    return variants.map(({ source: _source, ...candidate }) =>
+      assertCandidateSolution({
+        ...candidate,
+        caseId: input.caseStudy.id,
+        generation,
+      }),
+    );
+  }
+
   return {
     caseId: fixture.caseId,
     problemRecovery: {
@@ -88,25 +179,33 @@ export async function createFixtureGenerationProviders(
       },
     },
     candidateGenerator: {
-      async generate({ caseStudy, generation }) {
+      async generate(input) {
+        const { caseStudy } = input;
         if (fixture.caseId !== caseStudy.id) {
           throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
         }
-        return fixture.candidates.map((candidate) =>
-          assertCandidateSolution({
-            ...candidate,
-            caseId: caseStudy.id,
-            generation,
-          }),
-        );
+        return evolveCandidates(input);
       },
     },
     criticCouncil: {
-      async judge({ caseStudy }) {
+      async judge({ caseStudy, candidates }) {
         if (fixture.caseId !== caseStudy.id) {
           throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
         }
-        return fixture.critics.map(assertCriticVerdict);
+        return candidates.flatMap((candidate, index) => {
+          const total = scoreFor(candidate, index);
+          return ['grounding', 'novelty', 'mechanism'].map((criticId, criticIndex) =>
+            assertCriticVerdict({
+              candidateId: candidate.id,
+              criticId,
+              score: Math.max(0, Math.min(100, Number((total - criticIndex * 2).toFixed(1)))),
+              pressure: criticPressure(candidate, criticId, candidate.generation),
+              revisionMandate:
+                fixture.critics.find((verdict) => verdict.candidateId === candidate.id && verdict.criticId === criticId)
+                  ?.revisionMandate || mandateFor(index + criticIndex),
+            }),
+          );
+        });
       },
     },
   };
@@ -216,13 +315,20 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
         knowledgeSummary(knowledgePacket),
       ].join('\n');
     },
-    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation }) {
+    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation, previousChild, previousCriticVerdicts }) {
       return [
         'Return JSON only with a candidates array.',
         `Case: ${caseStudy.title}`,
         `Generation: ${generation}`,
         `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        previousChild
+          ? `Previous survivor: ${previousChild.id} / ${previousChild.title} / ${previousChild.summary}`
+          : 'Previous survivor: none; create the initial population.',
+        previousCriticVerdicts?.length
+          ? `Prior critic mandates: ${previousCriticVerdicts.map((verdict) => `${verdict.candidateId}:${verdict.revisionMandate}`).join(' | ')}`
+          : 'Prior critic mandates: none.',
         'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
+        'For generation > 0, do not repeat prior candidate IDs or simply rename them. Generate mutations, probes, or recombinations that respond to the previous survivor and critic mandates.',
         'Knowledge:',
         knowledgeSummary(knowledgePacket),
       ].join('\n');

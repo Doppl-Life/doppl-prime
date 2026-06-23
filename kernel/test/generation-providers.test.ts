@@ -38,6 +38,25 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
     knowledgePacket,
     generation: 0,
   });
+  const secondGenerationCandidates = await providers.candidateGenerator.generate({
+    runId: 'run_provider',
+    caseStudy,
+    problemRecovery: recovery,
+    knowledgePacket,
+    generation: 1,
+    previousChild: {
+      id: 'child_cand_liability_clock_cand_recovery_market',
+      caseId: caseStudy.id,
+      agenomeId: 'fused_ag_blindside_ag_first_principles',
+      generation: 1,
+      title: 'Liability Clock / Recovery Market fusion',
+      summary: 'Prior survivor summary.',
+      mechanism: 'Prior survivor mechanism.',
+      claimedDelta: 'Prior survivor delta.',
+      citedKnowledge: ['K1', 'K2'],
+    },
+    previousCriticVerdicts: [],
+  });
   const verdicts = await providers.criticCouncil.judge({
     runId: 'run_provider',
     caseStudy,
@@ -50,6 +69,13 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
   assert.equal(recovery.citedKnowledge.length, 3);
   assert.equal(candidates.length, 3);
   assert.equal(candidates[0]?.generation, 0);
+  assert.equal(secondGenerationCandidates.length, 3);
+  assert.equal(secondGenerationCandidates[0]?.generation, 1);
+  assert.notDeepEqual(
+    secondGenerationCandidates.map((candidate) => candidate.id),
+    candidates.map((candidate) => candidate.id),
+  );
+  assert.ok(secondGenerationCandidates.every((candidate) => candidate.id.includes('_g1')));
   assert.equal(verdicts.length, 9);
 });
 

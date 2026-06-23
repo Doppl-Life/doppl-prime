@@ -429,12 +429,15 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.status, 200);
   assert.equal(response.body.runId, 'dashboard_glp1_fixture');
   assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
-  assert.equal(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
+  assert.match(response.body.child.id, /cand_reward_budget_ledger_stability_probe_g3/);
+  assert.notEqual(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
   assert.match(response.body.child.summary, /reward budget/i);
   assert.match(response.body.candidates[0].summary, /reward/i);
   assert.match(response.body.candidates[0].mechanism, /panel/i);
-  assert.equal(response.body.criticVerdicts.length, 36);
-  assert.equal(response.body.fitnessRecords.length, 12);
+  assert.equal(response.body.candidates.length, 12);
+  assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 12);
+  assert.equal(response.body.criticVerdicts.length, 45);
+  assert.equal(response.body.fitnessRecords.length, 15);
   assert.equal(response.body.knowledgePacket.items.length, 3);
   assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));
@@ -465,7 +468,7 @@ test('kernel dashboard route lists recent exported runs without an API key', asy
   assert.ok(Array.isArray(response.body.runs));
   assert.equal(response.body.runs[0].runId, 'dashboard_history_fixture');
   assert.equal(response.body.runs[0].caseId, 'fsd-ownership-unwind');
-  assert.equal(response.body.runs[0].child, 'child_cand_liability_clock_cand_recovery_market');
+  assert.match(response.body.runs[0].child, /cand_liability_clock_stability_probe_g3/);
 });
 
 test('kernel dashboard route runs all approved real case fixtures with unique results', async () => {
@@ -475,25 +478,21 @@ test('kernel dashboard route runs all approved real case fixtures with unique re
     {
       caseId: 'fsd-ownership-unwind',
       casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
-      expectedChild: 'child_cand_liability_clock_cand_recovery_market',
       expectedRecovery: /autonomy removes the human-driver reason/i,
     },
     {
       caseId: 'glp1-snack-demand-destruction',
       casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
-      expectedChild: 'child_cand_reward_budget_ledger_cand_food_noise_tripwire',
       expectedRecovery: /reward system behind impulse eating occasions/i,
     },
     {
       caseId: 'ai-overviews-zero-click-publishing',
       casePath: 'case-studies/ai-overviews-zero-click-publishing/problem-statement.md',
-      expectedChild: 'child_cand_citation_share_market_cand_owned_audience_bridge',
       expectedRecovery: /answer layers remove the click itself/i,
     },
     {
       caseId: 'starship-launch-cost-collapse',
       casePath: 'case-studies/starship-launch-cost-collapse/problem-statement.md',
-      expectedChild: 'child_cand_space_picks_shovels_cand_payload_class_unlock',
       expectedRecovery: /launch-cost collapse re-prices every downstream constraint/i,
     },
   ];
@@ -516,9 +515,12 @@ test('kernel dashboard route runs all approved real case fixtures with unique re
 
     assert.equal(response.status, 200);
     assert.equal(response.body.caseId, caseStudy.caseId);
-    assert.equal(response.body.child.id, caseStudy.expectedChild);
+    assert.match(response.body.child.id, /_stability_probe_g1_/);
     assert.equal(response.body.candidates.length, 6);
+    assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 6);
     assert.equal(response.body.evolution.length, 2);
+    assert.notDeepEqual(response.body.evolution[0].candidateIds, response.body.evolution[1].candidateIds);
+    assert.ok(response.body.evolution[1].candidateIds.includes(response.body.evolution[0].childId));
     assert.match(String(response.body.dashboardArtifact), caseStudy.expectedRecovery);
     assert.ok(Array.isArray(response.body.dashboardEvents));
     assert.ok(response.body.dashboardEvents.some((event: { runId?: string }) => event.runId));

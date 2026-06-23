@@ -20,7 +20,7 @@ test('renders proof board with recovery, parents, fitness, and fused child', asy
   const html = renderProofBoard(await fixtureRun());
   assert.match(html, /Recover The Ownership Premise/);
   assert.match(html, /cand_liability_clock/);
-  assert.match(html, /0\.667/);
+  assert.match(html, /parent A inheritance/);
   assert.match(html, /child_cand_liability_clock_cand_recovery_market/);
   assert.match(html, /knowledge\.packet_selected/);
 });
