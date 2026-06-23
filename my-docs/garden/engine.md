@@ -162,8 +162,4 @@ but never requires a specific external skill loader to run. The durable kernel-o
 
 ## The trace is the spine
 
-One pass emits an ordered machine trace: `generate → fitness → select → lens`, each step
-naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a
-**projection** of that trace — the trace is the specimen. The compiler (`compiler-skill.md`)
-is the garden's projection writer: it turns a pass's survivor + the judge's evaluation into a
-node, replacing the old `kernel.pepsi-output.v1` packet.
+One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../specs/run-trace.md`](../../specs/run-trace.md). The compiler (`compiler-skill.md`) is the garden's projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.

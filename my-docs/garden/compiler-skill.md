@@ -12,9 +12,7 @@ kind: kernel function · markdown-as-code · a cheap model is enough
 
 # compiler
 
-Takes the kernel's raw stage output plus the judge's evaluation and writes a node that conforms to
-`node-template.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM /
-a mini tier); save the strong models for generate→select and for the judge, not the rendering.
+Takes the compiled candidate and judge evaluation from [`../../specs/run-trace.md`](../../specs/run-trace.md) and writes a node that conforms to `node-template.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM / a mini tier); save the strong models for generate→select and for the judge, not the rendering.
 
 ## Inputs
 
@@ -56,5 +54,4 @@ a mini tier); save the strong models for generate→select and for the judge, no
 
 ## Reconcile later (jungle)
 
-The kernel emits a `RunTrace`. The old `kernel.pepsi-output.v1` projection has been burned; the
-compiler is its replacement: it writes nodes, not the old Pepsi packet.
+The kernel emits a `RunTrace`. The old `kernel.pepsi-output.v1` projection has been burned; the compiler is its replacement: it writes nodes, not the old Pepsi packet.

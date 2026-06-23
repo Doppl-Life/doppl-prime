@@ -22,6 +22,7 @@ No spec files are frozen yet. When a garden contract is frozen, add it here.
 These are working contracts, not frozen kernel contracts yet:
 
 - [`node.md`](./node.md) — the markdown node file shape.
+- [`run-trace.md`](./run-trace.md) — the machine trace for one engine pass and compiler handoff.
 - [`rating.md`](./rating.md) — the rating scale, judge evaluation, human score projection, and temporal policy.
 - [`human-ratings-ledger.md`](./human-ratings-ledger.md) — the human rating source and projection contract.
 - [`stock.md`](./stock.md) — the stock field source/projection contract.

@@ -2,7 +2,7 @@
 
 A node is one step of an idea's journey, stored as a single markdown file: a candidate idea plus its lineage and scores, rendered as a portable, human- and agent-readable artifact.
 
-Compiled nodes are projections of the `RunTrace`; they are not a second source of truth.
+Compiled nodes are projections of the [`RunTrace`](./run-trace.md); they are not a second source of truth.
 
 The intent is to make markdown read like the authored artifact while each section carries a TypeScript-shaped pressure test.
 
