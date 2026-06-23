@@ -250,6 +250,34 @@ h2 {
   background: #07111d;
 }
 
+.react-flow__controls {
+  overflow: hidden;
+  border: 1px solid rgba(49, 212, 255, 0.7);
+  border-radius: 6px;
+  background: rgba(4, 11, 18, 0.94);
+  box-shadow: 0 0 0 1px rgba(36, 214, 165, 0.18), 0 14px 34px rgba(0, 0, 0, 0.42);
+}
+
+.react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-bottom: 1px solid rgba(5, 19, 30, 0.58);
+  background: #31d4ff;
+  color: #04111c;
+  box-shadow: none;
+}
+
+.react-flow__controls-button:hover {
+  background: #ffe36e;
+  color: #08111a;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
 .generation-lane {
   width: 286px;
   height: 760px;
@@ -377,11 +405,6 @@ h2 {
 
 .flow-legend .final::before {
   background: var(--gold);
-}
-
-.react-flow-minimap {
-  border: 1px solid #203149;
-  background: rgba(7, 12, 18, 0.92);
 }
 
 .lower-grid {

@@ -169,7 +169,7 @@ test('kernel dashboard source is built on React Flow', async () => {
 
   assert.match(source, /@xyflow\/react/);
   assert.match(source, /<ReactFlow/);
-  assert.match(source, /<MiniMap/);
+  assert.doesNotMatch(source, /<MiniMap/);
   assert.match(source, /nodesDraggable=\{false\}/);
   assert.match(source, /nodesConnectable=\{false\}/);
   assert.match(source, /draggable: false/);
@@ -177,6 +177,15 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
   assert.doesNotMatch(source, /sk-or-v1/);
+});
+
+test('kernel dashboard styles keep graph controls readable without a minimap', async () => {
+  const styles = await readFile('kernel/web/src/styles.css', 'utf8');
+
+  assert.match(styles, /\.react-flow__controls-button/);
+  assert.match(styles, /background: #31d4ff/);
+  assert.match(styles, /color: #04111c/);
+  assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
 
 test('kernel HTTP server rejects missing dashboard assets', async () => {

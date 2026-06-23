@@ -4,7 +4,6 @@ import {
   Controls,
   Handle,
   MarkerType,
-  MiniMap,
   Panel,
   Position,
   ReactFlow,
@@ -940,17 +939,6 @@ export default function App() {
           >
             <Background color="#1d3955" gap={18} size={1} />
             <Controls position="bottom-left" />
-            <MiniMap
-              className="react-flow-minimap"
-              pannable
-              zoomable
-              nodeColor={(node) => {
-                if (node.data?.status === 'final') return '#ffe36e';
-                if (node.data?.status === 'survivor') return '#24d6a5';
-                if (node.data?.status === 'rejected') return '#ff6b92';
-                return '#5ca7ff';
-              }}
-            />
             <Panel position="top-right" className="flow-legend">
               <span className="survivor">survivor</span>
               <span className="rejected">rejected</span>
