@@ -52,6 +52,22 @@ export interface MakeVerifyHookDeps {
 
 export type VerifyHook = (candidates: PersistedCandidate[]) => Promise<void>;
 
+/**
+ * PersistedCandidate.rawOutput is the LLM's response — usually a JSON
+ * string from the gateway adapter, but the test path sometimes passes
+ * a pre-parsed object. Normalize to "object if parseable" so check
+ * adapters and critics see the candidate's actual fields (subtypePayload,
+ * title, summary, etc) instead of a string.
+ */
+function parseRawOutput(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
 function adapterIdsForSubtype(subtype: SubtypeName): readonly string[] {
   switch (subtype) {
     case "cross_domain_transfer":
@@ -85,12 +101,23 @@ export function makeVerifyHook(deps: MakeVerifyHookDeps): VerifyHook {
       everyNGenerations: deps.everyNGenerations,
     });
 
+    // PersistedCandidate.rawOutput is the LLM's response — a JSON
+    // string from the gateway adapter. Critics and check adapters
+    // both expect an OBJECT with .subtypePayload (etc), so without
+    // parsing every check skipped with "missing_subtype_payload" and
+    // every critic was reasoning about a string-of-JSON instead of
+    // the candidate. Parse once per candidate and pass the object.
+    const candidatesWithParsed = candidates.map((c) => ({
+      ...c,
+      parsed: parseRawOutput(c.rawOutput),
+    }));
+
     await runCouncil({
       gateway: deps.gateway,
       appendEvent: appendEventBound,
-      candidates: candidates.map((c) => ({
+      candidates: candidatesWithParsed.map((c) => ({
         candidateId: c.candidateId,
-        candidate: c.rawOutput,
+        candidate: c.parsed,
       })),
       criticAssignment: assignment,
       rubricByMandate: deps.rubricByMandate,
@@ -109,14 +136,14 @@ export function makeVerifyHook(deps: MakeVerifyHookDeps): VerifyHook {
     // skip event and zero gateway/retrieval spend.
     for (const subtype of deps.enabledSubtypes) {
       const adapterIds = adapterIdsForSubtype(subtype);
-      for (const candidate of candidates) {
+      for (const candidate of candidatesWithParsed) {
         for (const adapterId of adapterIds) {
           await runCheck({
             db: deps.db,
             registry: deps.registry,
             adapterId,
             candidateId: candidate.candidateId,
-            candidate: candidate.rawOutput,
+            candidate: candidate.parsed,
             ctx,
             runId: deps.runId,
             correlationId: `verify_${candidate.candidateId}_${adapterId}`,

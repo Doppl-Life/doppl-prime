@@ -124,7 +124,16 @@ export async function scoreCandidateNovelty(input: ScoreNoveltyInput): Promise<S
   let vector: number[];
 
   if (embedded) {
-    const score = meanCosineDistance(embedded.vector, input.comparison);
+    // OpenAI text embeddings cluster same-topic candidates tightly —
+    // observed mean cosine distance for a typical evolutionary run
+    // lands in [0, 0.5], not the theoretical [0, 2] cosine range.
+    // Scale by 2 and clamp so a "very different" candidate (~0.5
+    // raw mean) registers as ~1.0 novelty instead of being squashed
+    // into the dim band. Without this, novelty contributes almost
+    // nothing to fitness because the realistic signal is squeezed
+    // into the bottom 25% of its nominal range.
+    const rawMean = meanCosineDistance(embedded.vector, input.comparison);
+    const score = Math.min(1, rawMean * 2);
     noveltyScore = {
       id: `nov_${randomUUID()}`,
       candidateId: input.candidateId,

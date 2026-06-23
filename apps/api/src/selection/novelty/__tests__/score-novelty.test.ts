@@ -93,8 +93,12 @@ describe("scoreCandidateNovelty — happy path", () => {
     expect(out.noveltyScore.comparisonSet).toEqual(["a", "b"]);
   });
 
-  test("score is the mean of pairwise cosine distances", async () => {
-    // Target [1,0]; comparators [1,0] (dist 0) and [0,1] (dist 1) → mean 0.5
+  test("score is mean cosine distance, scaled ×2 and clamped to [0,1]", async () => {
+    // Target [1,0]; comparators [1,0] (dist 0) and [0,1] (dist 1) →
+    // raw mean 0.5, scaled to 1.0 and clamped. The score-novelty
+    // implementation rescales the OpenAI-embedding-observed range
+    // (~[0, 0.5]) into the full [0, 1] so novelty actually contributes
+    // to fitness instead of squashing into the bottom quartile.
     const gateway = makeGateway([1, 0]);
     const comparison: ComparisonEntry[] = [
       { candidateId: "a", vector: [1, 0], text: "" },
@@ -109,7 +113,7 @@ describe("scoreCandidateNovelty — happy path", () => {
       correlationId: "corr_n4",
       comparison,
     });
-    expect(out.noveltyScore.score).toBeCloseTo(0.5, 10);
+    expect(out.noveltyScore.score).toBeCloseTo(1, 10);
   });
 
   test("vector length equals dimension", async () => {
