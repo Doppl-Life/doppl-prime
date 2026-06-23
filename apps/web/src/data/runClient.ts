@@ -9,6 +9,7 @@ import {
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
+import { FallbackLadderResponse, type RungDescriptor } from './fallbackLadderClient';
 import { parseOrThrow, TransportError } from './errors';
 
 export { PayloadValidationError, TransportError } from './errors';
@@ -70,6 +71,11 @@ export interface RunClient {
    * deep-merges defaults (the panel never sends caps → the boot ceiling applies). PD.10 isolates the seed.
    */
   startDemoRun(partial: { seed: string }, opts?: { idempotencyKey?: string }): Promise<Run>;
+  /**
+   * GET /demo/fallback-ladder (PD.12) — the operator 3-rung demo ladder descriptors, validated through
+   * the WEB-LOCAL `RungDescriptor` mirror (api runtime config, no frozen contract — parallel to ProblemSet).
+   */
+  getFallbackLadder(): Promise<RungDescriptor[]>;
 }
 
 const RunArray = z.array(Run);
@@ -128,5 +134,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
     getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
     getProblemSets: async () => (await getJson('/problem-sets', ProblemSetsResponse)).problemSets,
     startDemoRun: (partial, opts) => getJson('/runs', Run, postInit(partial, opts?.idempotencyKey)),
+    getFallbackLadder: async () =>
+      (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
   };
 }

@@ -13,6 +13,7 @@ import { ModeBanner } from '../components/feedback/ModeBanner';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { RunConfigPanel } from '../components/run/RunConfigPanel';
 import { OperatorPromptPanel } from '../components/demo/OperatorPromptPanel';
+import { FallbackLadderPanel } from '../components/demo/FallbackLadderPanel';
 import { RunHealthPanel } from '../components/demo/RunHealthPanel';
 import { StopControl } from '../components/run/StopControl';
 import { LineageGraph } from '../lineage/LineageGraph';
@@ -191,6 +192,13 @@ export function Dashboard({
           <OperatorPromptPanel
             runClient={runClient}
             onStarted={(run) => setObservedRunId(run.id)}
+          />
+          {/* PD.12 — the operator 3-rung demo fallback ladder (low-cap-live · prepared · replay); start a
+              rung's run or mount the recorded replay (the shell observes the resulting run). */}
+          <FallbackLadderPanel
+            runClient={runClient}
+            onStarted={(run) => setObservedRunId(run.id)}
+            onReplay={(replayRunId) => setObservedRunId(replayRunId)}
           />
           <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
           {observedRunId && (

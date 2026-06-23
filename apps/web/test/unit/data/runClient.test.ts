@@ -72,6 +72,7 @@ describe('runClient — read-only REST seam', () => {
       [
         'getCandidate',
         'getEvents',
+        'getFallbackLadder',
         'getLineage',
         'getProblemSets',
         'getReplay',

@@ -66,6 +66,8 @@ function fakeClient(): RunClient {
     // PD.5b — the shell now mounts OperatorPromptPanel, which fetches the catalog on mount.
     getProblemSets: vi.fn(() => Promise.resolve([])),
     startDemoRun: vi.fn(),
+    // PD.12 — the shell mounts FallbackLadderPanel, which fetches the rung descriptors on mount.
+    getFallbackLadder: vi.fn(() => Promise.resolve([])),
   } as unknown as RunClient;
 }
 
