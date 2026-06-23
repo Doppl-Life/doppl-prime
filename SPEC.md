@@ -31,7 +31,8 @@ Given several **seed fixtures** (AI-unlock theses or problem statements), it:
 3. **Recurses** — expands fixture-authored generation-2 child packets from selected
    survivors under hard caps.
 4. **Decays / lenses** — applies engine decay during selection and feasibility after selection.
-5. **Shows** — a compact board first; optional microscope views read the machine trace.
+5. **Shows** — a compact board first; nodes (`my-docs/garden/node-template.md`) render the
+   machine trace into portable, human-readable artifacts.
 
 The proof it works: **the same harness runs multiple seeds and makes selection behavior
 visible in one glance**: generated count, rejected count, Explore keeps, Proof keeps,
@@ -55,7 +56,7 @@ Keep these few and clean — they ARE the kernel:
 | `FitnessSource` | scores a candidate | returns **{novelty, grounding}** (two axes, not one) |
 | `select(candidates, schedule)` | the convergent step | weights the two axes per the schedule; culls |
 | `dial` / `schedule` | the diverge↔converge knob over generations | a weighting trajectory, not a constant |
-| `decay(node, age)` | time axis | erodes fitness by subtype half-life (zeitgeist fast, transfer slow) |
+| `decay(node, age)` | time axis | erodes fitness by `temporal` half-life (zeitgeist 180d; transfer no decay) |
 | `Lens` | feasibility / fit, applied on top | pluggable; NOT part of fitness |
 | `lineage` | the tree of who-bred-what | append-only; the demo's visible artifact |
 | caps | finite-by-construction | max generations / population / depth / spend |
@@ -72,8 +73,8 @@ Keep these few and clean — they ARE the kernel:
 The source-radar contract lives in `tools/source-radar.ts`. Reuse the contract
 and typed knowledge it exposes:
 
-- **Problem Recovery + subtype classify** — the convergent move + the
-  ±5-year discriminator. Reuse as the grounding/classify component.
+- **Problem Recovery + temporal classify** — the convergent move + the
+  ±5-year discriminator (zeitgeist vs. transfer). Reuse as the grounding/classify component.
 - **Signed −5..+5 scoring + trap register** — feeds the grounding axis + the
   harm-detection.
 - **Why-now decay + refresh** — the time axis.

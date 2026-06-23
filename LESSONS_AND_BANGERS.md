@@ -7,8 +7,8 @@ guiding implementation, cut it.
 
 ### One engine, many masks - 2026-06-21
 
-- **Lesson:** Assay, microscope, architecture, proof board, and deploy pages are
-  projections. The specimen is the trace.
+- **Lesson:** The proof board and the rendered nodes are projections. The specimen is the
+  trace.
 - **Carry forward:** add renderers only when they project existing truth or name
   an explicit static fork.
 
@@ -36,7 +36,7 @@ guiding implementation, cut it.
 
 - **Lesson:** Static design artifacts are allowed, but only if labeled as static
   and kept out of the canonical trace path.
-- **Carry forward:** the live truth stays `/api/trace`; static views advertise
+- **Carry forward:** the live truth stays the `RunTrace`; static views advertise
   their status.
 
 ### Cut faster than you promote - 2026-06-21
@@ -49,9 +49,10 @@ guiding implementation, cut it.
 ### Perfect Pepsis need segmentation - 2026-06-21
 
 - **Lesson:** Some cases have one right convergence; others have several
-  governing logics under one umbrella. Forcing either shape loses signal.
-- **Carry forward:** use `specs/pepsi-output.md` to decide one Pepsi vs many
-  Pepsis before judging output quality.
+  governing logics under one umbrella. Forcing either shape loses signal. (Pepsi is the
+  metaphor — one doppl vs. several distinct doppls.)
+- **Carry forward:** decide one doppl vs. many before judging output quality; a problem may
+  yield more than one doppl (`my-docs/garden/object-model.md`).
 
 ### Discovery feeds seeds, not authority - 2026-06-21
 

@@ -1,6 +1,6 @@
-import type { CandidateSubtype } from '../src/contracts/index.ts';
+import type { CaseStudySubtype } from '../src/contracts/index.ts';
 
-export type DiscoverySubtype = CandidateSubtype | 'neither';
+export type DiscoverySubtype = CaseStudySubtype | 'neither';
 export type SourceTier = 'free' | 'curl_cffi' | 'firecrawl' | 'browser' | 'dispatch' | 'unknown';
 export type SourceRecipeStatus = 'working' | 'broken' | 'untested' | 'unknown';
 export type SourceOutcomeStatus = 'productive' | 'marginal' | 'polluting' | 'looks_good_but_isnt' | 'unproven' | 'unreachable';

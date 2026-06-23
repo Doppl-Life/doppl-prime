@@ -16,19 +16,19 @@
       "id": "substrate-removal",
       "label": "Substrate removal",
       "description": "Find the removed consumer or institutional substrate.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "hidden-dependent",
       "label": "Hidden dependent",
       "description": "Find businesses that depend on the substrate continuing.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "adoption-boundary",
       "label": "Adoption boundary",
       "description": "Look for uneven adoption or access edges.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     }
   ],
   "sourcePackets": [
@@ -42,7 +42,7 @@
       "candidate": {
         "title": "Snack shelf loses the impulse event",
         "thesis": "GLP-1 pressure hits snacks hardest where profit depends on unplanned eating occasions, not staple calories.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from weight loss to disappearance of impulse eating events.",
@@ -71,7 +71,7 @@
       "candidate": {
         "title": "Alcohol gets hit through craving, not calories",
         "thesis": "The larger GLP-1 branch may be reward-loop dampening, where alcohol demand falls because craving quiets, not because drink calories are counted.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from appetite to reward-loop consumption.",
@@ -100,7 +100,7 @@
       "candidate": {
         "title": "Appetite becomes an access class",
         "thesis": "GLP-1 adoption turns appetite suppression into an access class, splitting consumer behavior by coverage, cash-pay capacity, and supply reliability.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from average weight-loss adoption to uneven access as the market edge.",
@@ -139,7 +139,7 @@
       "candidate": {
         "title": "Checkout shelf becomes loyalty real estate",
         "thesis": "The snack branch gets sharper at the checkout shelf: GLP-1s weaken the impulse slot, so retailers reprice that space toward pharmacy pickup, loyalty, or prepared essentials.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from snack volume to the physical retail shelf whose economics depend on impulse.",

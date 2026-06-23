@@ -70,7 +70,7 @@ function generateCandidate(seedId: string, packet: SourcePacket, operators: Repr
     operatorId: operator.id,
     operatorLabel: operator.label,
     sourcePacketIds: [packet.id],
-    subtype: packet.candidate.subtype || operator.defaultSubtype,
+    temporal: packet.candidate.temporal ?? operator.defaultTemporal,
     title: packet.candidate.title,
     thesis: packet.candidate.thesis,
     substrate: packet.substrate,

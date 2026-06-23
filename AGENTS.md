@@ -1,67 +1,58 @@
 # AGENTS.md
 
+## The garden is canon
+
+`my-docs/garden/` (the hut) defines the model and is where we operate from. When the
+garden and the running kernel (`src/`, `tools/`, `specs/`) disagree, **the garden wins**;
+the kernel follows, deliberately. Change the decision in the garden first; the kernel
+catches up as its own planned step. "It's still in the kernel" is not an argument for keeping
+a concept the garden has cut.
+
+The garden is canon but **provisional** — live until we freeze it on purpose. Do not let it
+quietly grow back into what the old kernel assumed.
+
 ## Working rules
 
-- Do not change `src/**` kernel semantics unless the user explicitly asks.
-- Trace truth: `src/trace.ts` via `buildRunTrace()`.
-- Local viewer: `pnpm serve`.
-- Deploy pages: `pnpm publish:html`.
-- `published/**` is the committed deploy page surface; `published/index.html`
-  is generated at build time and ignored.
+- Do not change `src/**` kernel semantics unless the user explicitly asks. (The garden being
+  canon tells you *what* to build toward; it is not standing permission to rewrite the engine.)
+- Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
+  the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Specs live under `specs/**`; memory lives in `MEMORY.md`.
-- This branch is Doppel Prime. Do not qualify it with migration tracks,
-  compatibility branches, or derivative paths.
-- Original Prime docs are quarantined historical input, not operating authority.
-  Treat `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`,
-  `docs/planning/**`, `docs/prds/**`, and `docs/gap-audits/**` as reference-only
-  unless a specific claim has been promoted into `specs/**`, `MEMORY.md`, or the
-  current kernel code.
-- `my-docs/**` belongs to this branch; it is not part of the old-doc quarantine.
-- After a cleanup pass, remove the cleanup machinery unless it enforces a
-  durable contract. Temporary scans, lists of dead names, and one-off guards do
-  not survive the cleanup they enabled.
+- Specs live under `specs/**`; the model lives in `my-docs/garden/**`; durable kernel
+  decisions live in `MEMORY.md`.
+- This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
+  derivative paths.
+- After a cleanup pass, remove the cleanup machinery unless it enforces a durable contract.
+  Temporary scans, lists of dead names, and one-off guards do not survive the cleanup they
+  enabled.
 
 ## Duplicate surfaces
 
-Do not create shadow hubs, duplicate servers, planning archives, or parallel
-instruction files that compete with the named surfaces above.
+Do not create shadow hubs, duplicate servers, planning archives, or parallel instruction
+files that compete with the garden or the named registers below. The garden owns the model;
+the registers own the kernel's operating reality. One home per fact.
 
 ## Scope boundary
 
-Do not import product application architecture, docs, or repository assumptions
-unless the user explicitly asks.
+Do not import product application architecture, docs, or repository assumptions unless the
+user explicitly asks.
 
 ## First-principles guardrail
 
-For strategic, architectural, spec, product-direction, or abstraction-setting
-work, do not treat existing repo assumptions as bedrock. Treat them as evidence
-to test against current goals, kernel behavior, specs, and explicit user intent.
+For strategic, architectural, spec, product-direction, or abstraction-setting work, do not
+treat existing repo assumptions as bedrock. Treat them as evidence to test against current
+goals, kernel behavior, the garden, and explicit user intent.
 
-Use the `first-principles` mutagen skill actively for this class of work: reduce
-the problem to invariants, name the provisional assumption you are rejecting or
-depending on, and only then branch into implementation or documentation.
+Use the `first-principles` mutagen skill actively for this class of work: reduce the problem
+to invariants, name the provisional assumption you are rejecting or depending on, and only
+then branch into implementation or documentation.
 
-Do not trigger a full rethink for narrow mechanical edits unless the edit depends
-on an unvalidated product or architecture premise. If first-principles reasoning
-would send the work in a materially different direction than the repo appears to
-assume, pause and ask the user before continuing.
+Do not trigger a full rethink for narrow mechanical edits unless the edit depends on an
+unvalidated product or architecture premise. If first-principles reasoning would send the work
+in a materially different direction than the repo appears to assume, pause and ask the user.
 
-Log only important, interesting, actionable, or actioned-on corrections in the
-appropriate register. Do not memorialize every merely true assumption.
-
-## Original Prime quarantine
-
-The inherited original Prime docs under `docs/**` are allowed to exist as
-quarantined source material. They may be canonical elsewhere. Here they do not
-define product direction, architecture, requirements, repo shape, or
-implementation order.
-
-If an old-doc claim should constrain current work, promote the claim into its
-own home first: `specs/**` for contracts or evaluation doctrine, `MEMORY.md` for
-fork or ownership decisions, or the current kernel code/tests for behavior. Do
-not cite old docs as the reason for a change. Do not give this branch a
-qualifier.
+Log only important, interesting, actionable, or actioned-on corrections in the appropriate
+register. Do not memorialize every merely true assumption.
 
 ## Registers
 
@@ -69,12 +60,14 @@ Log durable findings in one home:
 
 | Finding | File |
 | --- | --- |
+| The model (stages, node, rating, engine, vocabulary) | `my-docs/garden/**` |
 | Build contract or evaluation doctrine | `specs/**` |
 | Active fork or ownership decision | `MEMORY.md` |
 | Durable lesson or banger | `LESSONS_AND_BANGERS.md` |
 | Portable move or trap | `HEURISTICS.md` |
 | Reward hack or confirmed failure | `BUGS_AND_MITIGATIONS.md` |
 | Operational watch item | `OPERATIONAL_WATCHLIST.md` |
+| Kernel invariant | `INVARIANTS.md` |
 | Term definition | `GLOSSARY.md` |
 | How to run/use the kernel | `README.md` or `tools/README.md` |
 
@@ -82,8 +75,8 @@ Do not dump transient debug notes into registers. One idea, one home.
 
 ## Skills and mutations
 
-Skill expressions are external and optional. The kernel-owned surface is the
-lineage registry at `skills/LINEAGE.md`, checked by `tools/skill-lineage.ts`.
+Skill expressions are external and optional. The kernel-owned surface is the lineage registry
+at `skills/LINEAGE.md`, checked by `tools/skill-lineage.ts`.
 
 Use mutagen skills when the work is creative or strategic:
 
@@ -111,8 +104,8 @@ Default verification for tooling changes:
 ```bash
 pnpm typecheck
 pnpm build
-pnpm publish:html
+pnpm proof
 ```
 
-For viewer changes, start `pnpm serve` and verify the canonical routes. For deploy
-changes, start `pnpm serve:static` and verify `published/**` routes.
+For case-study edits, run `pnpm case-study:lint` to confirm seed-visible material leaks no
+evaluator-only language.

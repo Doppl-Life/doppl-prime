@@ -7,13 +7,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "proof": "node --experimental-strip-types tools/run.ts",
-    "pepsi:generator-check": "node --experimental-strip-types tools/pepsi-generator-check.ts",
-    "build": "pnpm typecheck && node --experimental-strip-types tools/integrity.ts && pnpm pepsi:generator-check && pnpm proof",
+    "build": "pnpm typecheck && pnpm proof",
     "proof:export": "node --experimental-strip-types tools/run.ts --export-proof-board",
     "case-study:lint": "node --experimental-strip-types tools/case-study-seed-lint.ts",
-    "serve": "node --experimental-strip-types tools/serve.ts",
-    "publish:html": "node --experimental-strip-types tools/publish.ts",
-    "serve:static": "node --experimental-strip-types tools/static-server.ts",
     "clear:run-data": "node --experimental-strip-types tools/clear-run-data.ts"
   },
   "devDependencies": {

@@ -1,8 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { CandidateSubtype } from '../src/contracts/index.ts';
-import { caseStudySubtypes } from './case-study-manifest.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
@@ -29,7 +27,6 @@ type CaseStudyIdentity = {
   schemaVersion: typeof CASE_STUDY_CORPUS_SCHEMA_VERSION;
   slug: string;
   title: string;
-  subtype: CandidateSubtype;
   status: CaseStudyStatus;
 };
 
@@ -65,11 +62,6 @@ function displayPath(filePath: string): string {
   return path.relative(root, filePath);
 }
 
-function assertSubtype(value: string, slug: string): CandidateSubtype {
-  if (value === 'cross_domain_transfer' || value === 'zeitgeist_synthesis') return value;
-  throw new Error(`Case study ${slug} has unsupported subtype: ${value || '<missing>'}`);
-}
-
 function slugTitle(slug: string): string {
   return slug
     .split('-')
@@ -80,14 +72,6 @@ function slugTitle(slug: string): string {
 function extractTitle(markdown: string, slug: string): string {
   const heading = markdown.match(/^#\s+(.+)$/m)?.[1]?.trim();
   return (heading || slugTitle(slug)).replace(/^Problem Statement:\s*/i, '').replace(/^Case Study:\s*/i, '');
-}
-
-function extractSubtype(markdown: string, slug: string): CandidateSubtype {
-  const inline = markdown.match(/\*\*Doppl subtype:\*\*\s*`([^`]+)`/)?.[1];
-  if (inline) return assertSubtype(inline, slug);
-  const indexed = caseStudySubtypes[slug as keyof typeof caseStudySubtypes];
-  if (indexed) return indexed;
-  throw new Error(`Case study ${slug} is missing a subtype.`);
 }
 
 function toPublicPaths(files: CaseStudyFiles): CaseStudyPublicPaths {
@@ -174,7 +158,6 @@ async function loadIdentity(files: CaseStudyFiles): Promise<CaseStudyIdentity> {
     schemaVersion: CASE_STUDY_CORPUS_SCHEMA_VERSION,
     slug: files.slug,
     title: extractTitle(caseStudyMarkdown, files.slug),
-    subtype: extractSubtype(caseStudyMarkdown, files.slug),
     status: solutionMarkdown?.match(/\bsolution unknown\b/i) ? 'open' : 'solved',
   };
 }

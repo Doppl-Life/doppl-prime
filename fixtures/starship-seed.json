@@ -16,19 +16,19 @@
       "id": "substrate-removal",
       "label": "Substrate removal",
       "description": "Find the launch constraint that weakens.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "hidden-dependent",
       "label": "Hidden dependent",
       "description": "Find actors dependent on launch scarcity.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "infrastructure-inversion",
       "label": "Infrastructure inversion",
       "description": "Ask whether cheap mass-to-orbit creates infrastructure for another market.",
-      "defaultSubtype": "cross_domain_transfer"
+      "defaultTemporal": false
     }
   ],
   "sourcePackets": [
@@ -42,7 +42,7 @@
       "candidate": {
         "title": "Space hardware gets less precious",
         "thesis": "Cheap heavy launch moves spacecraft design from exquisite mass optimization toward heavier, redundant, serviceable hardware.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from cheaper launch to changed hardware design rules.",
@@ -71,7 +71,7 @@
       "candidate": {
         "title": "Orbit becomes a construction yard",
         "thesis": "Starship-class cadence could make orbital assembly an infrastructure business, where parts, fuel, and servicing create a construction supply chain above Earth.",
-        "subtype": "cross_domain_transfer"
+        "temporal": false
       },
       "delta": {
         "summary": "Moved from transportation cost to orbit as a construction substrate.",
@@ -100,7 +100,7 @@
       "candidate": {
         "title": "Replacement beats perfection",
         "thesis": "Cheap heavy launch lets some orbital businesses replace hardware often instead of over-insuring and over-qualifying every asset for long life.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from launch cost to asset-lifecycle economics.",
@@ -139,7 +139,7 @@
       "candidate": {
         "title": "Orbital construction needs dry docks",
         "thesis": "The construction-yard thesis sharpens into orbital dry docks: reusable heavy launch is not enough unless platforms can be inspected, refueled, repaired, and mechanically standardized.",
-        "subtype": "cross_domain_transfer"
+        "temporal": false
       },
       "delta": {
         "summary": "Moved from orbital construction to the service infrastructure that makes construction repeatable.",

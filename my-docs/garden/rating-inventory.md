@@ -30,7 +30,7 @@ The discovery / source layer already rates on −5…+5 (its lenses, hit +3 / tr
 benchmarks). So our scale is **not new** — this layer already speaks it. The only mismatch is with
 the `0…1` core.
 
-## The verdict (`tools/judgments.ts`) — being retired
+## The verdict — retired
 
 `dead < obvious < interesting < investigate < keeper` is an ordinal rating we've replaced with the
 single −5…+5 human slider.

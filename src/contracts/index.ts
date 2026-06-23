@@ -1,7 +1,9 @@
 // Defines the machine contracts shared by kernel modules.
 export type Dial = 'diverge' | 'converge';
 
-export type CandidateSubtype = 'cross_domain_transfer' | 'zeitgeist_synthesis';
+// Case-study classification (the seed's flavor). Distinct from a candidate's `temporal`
+// decay axis and from the discovery layer's source-freshness subtype.
+export type CaseStudySubtype = 'cross_domain_transfer' | 'zeitgeist_synthesis';
 
 export const RUN_TRACE_SCHEMA_VERSION = 'kernel.run-trace.v2';
 
@@ -71,7 +73,7 @@ export type ReproductionOperator = {
   id: string;
   label: string;
   description: string;
-  defaultSubtype: CandidateSubtype;
+  defaultTemporal: boolean;
 };
 
 export type SourcePacket = {
@@ -86,7 +88,7 @@ export type SourcePacket = {
   candidate?: {
     title: string;
     thesis: string;
-    subtype?: CandidateSubtype;
+    temporal?: boolean;
   };
   delta?: CandidateDelta;
   claims?: string[];
@@ -104,7 +106,7 @@ export type Candidate = {
   operatorId: string;
   operatorLabel: string;
   sourcePacketIds: string[];
-  subtype: CandidateSubtype;
+  temporal: boolean;
   title: string;
   thesis: string;
   substrate: string;
@@ -203,7 +205,7 @@ export type DecayScore = {
   factor: number;
   halfLifeDays: number;
   ageDays: number;
-  subtypeBasis: CandidateSubtype;
+  temporalBasis: boolean;
   reason: string;
 };
 
@@ -410,11 +412,8 @@ export function assertSeedFixture(value: unknown): SeedFixture {
   }
   const operatorIds = new Set(fixture.operators.map((operator) => operator.id));
   for (const operator of fixture.operators) {
-    if (!operator.id || !operator.label || !operator.defaultSubtype) {
+    if (!operator.id || !operator.label || typeof operator.defaultTemporal !== 'boolean') {
       throw new Error(`Operator is missing required fields: ${operator.id || '<unknown>'}`);
-    }
-    if (operator.defaultSubtype !== 'cross_domain_transfer' && operator.defaultSubtype !== 'zeitgeist_synthesis') {
-      throw new Error(`Operator has invalid subtype: ${operator.id}`);
     }
   }
   for (const packet of fixture.sourcePackets) {
@@ -428,10 +427,8 @@ export function assertSeedFixture(value: unknown): SeedFixture {
     if (!packet.candidateId || !packet.candidate?.title || !packet.candidate.thesis || !packet.delta) {
       throw new Error(`Generated source packet is missing candidate fields: ${packet.id}`);
     }
-    if (packet.candidate.subtype &&
-      packet.candidate.subtype !== 'cross_domain_transfer' &&
-      packet.candidate.subtype !== 'zeitgeist_synthesis') {
-      throw new Error(`Source packet has invalid candidate subtype: ${packet.id}`);
+    if (packet.candidate.temporal !== undefined && typeof packet.candidate.temporal !== 'boolean') {
+      throw new Error(`Source packet has invalid candidate temporal flag: ${packet.id}`);
     }
     if (!packet.delta.changes.length) {
       throw new Error(`Generated source packet must state at least one delta change: ${packet.id}`);

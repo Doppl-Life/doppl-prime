@@ -54,8 +54,9 @@ these, it changes the kernel contract.
 
 ## Proof and artifacts
 
-16. **Trace first, microscope separate.** The kernel emits machine-clean process
-    facts. Human-readable views translate those facts outside the engine.
+16. **Trace first, views separate.** The kernel emits machine-clean process
+    facts. Human-readable views (nodes, the proof board) translate those facts
+    outside the engine; they never become the trace.
 17. **Generated output is disposable.** `out/**` is inspection output. Promote a
     run only when it becomes evidence for a decision or regression.
 18. **A report must change a decision.** If an artifact cannot help a human make

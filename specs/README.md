@@ -1,20 +1,22 @@
 # Kernel Specs
 
-Specs are the build contracts. Memory records decisions. Anything else is
+Specs are frozen build contracts. The **model** is defined in the garden
+([`my-docs/garden/**`](../my-docs/garden)); a spec is where a garden decision lands once it is
+deliberately frozen into the kernel. `MEMORY.md` records fork decisions. Anything else is
 source material only while it is being mined.
 
-## Files
+## Current contracts
 
-- [`runtime-kernel.md`](./runtime-kernel.md) - the core generate/evaluate/select
-  runtime, modes, caps, lineage, and trace boundary.
-- [`fitness-selection.md`](./fitness-selection.md) - novelty, grounding, decay,
-  regret siblings, Pareto risks, and tripwires.
-- [`pepsi-output.md`](./pepsi-output.md) - what a Pepsi is, the public output
-  projection, generator boundary, and the packet every output must expose.
-- [`assay-corpus.md`](./assay-corpus.md) - case-study roles, withheld solutions,
-  source radar, validation, and the human verdict loop.
-- [`artifacts-deploy.md`](./artifacts-deploy.md) - serve/publish/static surfaces
-  and generated artifact ownership.
+The engine and evaluation contracts currently live in the garden, which is canon:
 
-If a new doctrine affects how the kernel runs or is judged, add it here. If it
-only records why we chose a fork, put it in [`../MEMORY.md`](../MEMORY.md).
+- [`my-docs/garden/engine.md`](../my-docs/garden/engine.md) — the generate/evaluate/select
+  runtime, the dial, fitness measurements, decay, caps, lineage, and the trace boundary.
+- [`my-docs/garden/rating-model.md`](../my-docs/garden/rating-model.md) — the −5…+5 rating, the
+  two raters, and decay-to-zero.
+- [`my-docs/garden/object-model.md`](../my-docs/garden/object-model.md) — stages, the node, the
+  stock, and the signals.
+
+No spec files are frozen yet. When a garden contract is frozen, add it here.
+
+If a new doctrine affects how the kernel runs or is judged, freeze it here. If it only records
+why we chose a fork, put it in [`../MEMORY.md`](../MEMORY.md).

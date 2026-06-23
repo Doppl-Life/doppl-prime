@@ -115,18 +115,16 @@ still only being watched.
 
 ### Fixture answer-key marker - 2026-06-22
 
-- **Mistake:** letting seed-visible fixture evidence carry a `known-solution`
-  label.
-- **Symptom:** the Assay surface can look like the kernel discovered the exact
-  answer when it actually projected contaminated candidate evidence.
-- **Mitigation:** generator requests reject known-solution and known-answer
-  markers; public Pepsi fallback filters restricted markers; publish fails if
-  evaluator markers appear in public HTML.
-- **Tripwire:** `pnpm pepsi:generator-check` must reject the contaminated Jack
-  drone request before spawning the configured generator.
-- **Pass condition:** clean fixtures can use a valid generator, contaminated
-  fixtures fall back with `request-rejected`, and static output contains no
-  evaluator-only markers.
+- **Mistake:** letting seed-visible case material carry answer-key, solution, or
+  scoring language.
+- **Symptom:** a rendered node can look like the kernel discovered the exact
+  answer when it actually carried contaminated candidate evidence.
+- **Mitigation:** seed-visible `case-study.md` must contain no evaluator-only
+  language; the seed leakage guard in `tools/case-study-corpus.ts` rejects it, and
+  evaluator-only material stays in `solution.md` (judge access only).
+- **Tripwire:** `pnpm case-study:lint` must reject any `case-study.md` that leaks
+  answer-key, solution, scoring, or known-solution language.
+- **Pass condition:** every seed view loads clean; the solution stays judge-side.
 - **Carry forward:** answer-key labels are poison even when the surrounding
   evidence is otherwise seed-visible.
 
@@ -144,22 +142,21 @@ still only being watched.
   on disk.
 - **Carry forward:** the map must match the territory.
 
-### Microscope indistinguishability - 2026-06-21
+### Stale default surface after a kernel change - 2026-06-21
 
-- **Mistake:** changing kernel behavior while the default microscope first screen
-  still looks like the previous slice.
-- **Symptom:** a human opens `out/microscope/index.html` after a major change and
-  has to infer whether anything changed from small labels or hidden fields.
-- **Mitigation:** the first viewport must expose current RunTrace facts that name
+- **Mistake:** changing kernel behavior while the default human surface (the proof
+  board, the node) still shows the previous slice's facts.
+- **Symptom:** a human reads the board or a node after a major change and has to
+  infer whether anything changed from small labels or hidden fields.
+- **Mitigation:** the default surface must expose current RunTrace facts that name
   the active slice: schema version, generation count, computed fitness, bounded
-  child expansion, decay, lens, and failed checks. It must also give a reading
-  order and define its terms at the point of use; otherwise visible facts still
-  require a narrator.
-- **Tripwire:** after a major kernel change, the first screen could be mistaken
-  for the previous microscope without scrolling, or a reader can see changed
-  fields but cannot say what to inspect first.
-- **Pass condition:** the first screen makes the changed contract/behavior
-  visible and interpretable before the selector lanes.
+  child expansion, decay, lens, and failed checks — with terms defined at the point
+  of use.
+- **Tripwire:** after a major kernel change, the board/node could be mistaken for
+  the previous slice, or a reader sees changed fields but cannot say what to
+  inspect first.
+- **Pass condition:** the default surface makes the changed contract/behavior
+  visible and interpretable.
 - **Carry forward:** visibility has to change shape when the kernel changes shape.
 
 ### Hidden control edge - 2026-06-21
@@ -197,25 +194,25 @@ still only being watched.
 
 ### Human-signal Goodhart - 2026-06-21
 
-- **Mistake:** optimizing Agora reactions as if approval were truth.
+- **Mistake:** optimizing the human −5…+5 rating as if approval were truth.
 - **Symptom:** ideas become pleasing, cool, or socially agreeable while losing
   falsifiability and mechanism clarity.
-- **Mitigation:** map verdicts to dimensions and correlate them against other
-  bedrock signals before changing selection policy.
-- **Tripwire:** a single reaction class starts driving energy budget alone.
-- **Pass condition:** verdicts remain labeled evidence, not the whole objective.
+- **Mitigation:** keep the human slider advisory; the held-out judge stays the
+  immutable anchor. Correlate human scores against the judge before changing
+  selection policy.
+- **Tripwire:** the human rating starts driving selection alone.
+- **Pass condition:** human scores remain labeled evidence, not the whole objective.
 - **Carry forward:** human judgment is bedrock input, not a replacement for
   bedrock.
 
 ### Static artifact drift - 2026-06-21
 
 - **Mistake:** letting a hand-authored artifact look canonical.
-- **Symptom:** a static page disagrees with `/api/trace` but the UI does not say
+- **Symptom:** a static page or node disagrees with the `RunTrace` but does not say
   which one owns truth.
-- **Mitigation:** label static artifacts and inject canonical nav from the shared
-  view-nav source.
-- **Tripwire:** a static page contains baked navigation or claims trace truth it
-  does not derive.
+- **Mitigation:** label static artifacts; a rendered node advertises that it is a
+  projection of the trace, not the trace.
+- **Tripwire:** a static page or node claims trace truth it does not derive.
 - **Pass condition:** static artifacts are visibly static and never bypass the
   canonical nav.
 - **Carry forward:** static is allowed; silent static is not.

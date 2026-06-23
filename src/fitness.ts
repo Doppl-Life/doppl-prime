@@ -186,15 +186,19 @@ function scoreFromDetails(details: FitnessScore['componentDetails']): Pick<Fitne
 }
 
 function decayFor(candidate: Candidate, asOf: string): FitnessScore['decay'] {
-  const halfLifeDays = candidate.subtype === 'zeitgeist_synthesis' ? 180 : 730;
   const ageDays = daysBetween(candidate.observedAt, asOf);
-  const factor = clampScore(Math.pow(0.5, ageDays / halfLifeDays));
+  // Garden rule (engine.md): zeitgeist (temporal) decays toward zero on a 180-day
+  // half-life; a transfer (timeless) does not decay.
+  const halfLifeDays = candidate.temporal ? 180 : 0;
+  const factor = candidate.temporal ? clampScore(Math.pow(0.5, ageDays / halfLifeDays)) : 1;
   return {
     factor,
     halfLifeDays,
     ageDays,
-    subtypeBasis: candidate.subtype,
-    reason: `${candidate.subtype} half-life ${halfLifeDays}d; observed age ${ageDays}d`,
+    temporalBasis: candidate.temporal,
+    reason: candidate.temporal
+      ? `zeitgeist half-life ${halfLifeDays}d; observed age ${ageDays}d`
+      : 'transfer (timeless); no decay',
   };
 }
 

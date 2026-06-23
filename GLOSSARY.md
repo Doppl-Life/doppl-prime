@@ -1,7 +1,8 @@
 # Kernel Glossary
 
-Only terms the kernel actually uses belong here. If the kernel can run without a
-term, leave it out.
+Engine-mechanics terms the running kernel uses. The **model** vocabulary (doppl, node, stage,
+stock, the spine) lives in the garden — see [`my-docs/garden/LEXICON.md`](my-docs/garden/LEXICON.md).
+Only terms the kernel actually uses belong here.
 
 ## Core
 
@@ -9,7 +10,7 @@ term, leave it out.
 
 - **Def:** the reusable operation `generate -> evaluate -> select -> generate
   again`, parameterized by direction, reproduction unit, fitness source, and
-  schedule.
+  schedule. See [`my-docs/garden/engine.md`](my-docs/garden/engine.md).
 
 ### Direction
 
@@ -18,94 +19,91 @@ term, leave it out.
 
 ### Divergent
 
-- **Def:** generation-heavy search. One seed fans out into many candidates.
-  Primary danger: redundancy and slop.
+- **Def:** generation-heavy search (r-like). One seed fans out into many
+  candidates. Primary danger: redundancy and slop.
 
 ### Convergent
 
-- **Def:** selection-heavy search. Many candidates collapse toward the strongest
-  candidate or frame. Primary danger: premature consensus.
+- **Def:** selection-heavy search (K-like). Many candidates collapse toward the
+  strongest candidate or frame. Primary danger: premature consensus.
 
 ### Schedule
 
 - **Def:** the per-run or per-generation policy that controls how much selection
-  favors novelty, grounding, depth, cost, or other axes.
+  favors novelty vs. grounding. Encoded as `{ keep, priorityAxis, floorAxis, floor }`.
 
 ### Reproduction Unit
 
 - **Def:** the thing that reproduces in a run: thesis, consequence, problem
-  frame, solution candidate, or later agenome.
+  frame, solution candidate, or later agenome. Pluggable; not baked into the kernel.
 
 ## Fitness
 
+### Measurement
+
+- **Def:** a `0–1` instrument reading (cosine similarity, token-overlap ratios). No
+  judgment. Measurements map *into* ratings; they are not ratings.
+
+### Rating
+
+- **Def:** a `−5…+5` judgment of worth (the judge's and the human's output). See
+  [`my-docs/garden/rating-model.md`](my-docs/garden/rating-model.md).
+
 ### Novelty
 
-- **Def:** evidence that a candidate reaches somewhere not already covered.
-  Preferred signals include source absence, substrate distance, hidden
-  dependents, cluster coverage, and nearest-prior distance.
+- **Def:** measurement that a candidate reaches somewhere not already covered.
+  Components: source absence, substrate distance, hidden dependents. Never pure
+  model self-grading.
 
 ### Grounding
 
-- **Def:** evidence that a candidate lands on something true or testable:
-  source support, mechanism clarity, falsifiability, held-out cases, dated
-  predictions, or human judgment.
+- **Def:** measurement that a candidate lands on something true or testable:
+  signal strength, mechanism clarity, falsifiability, minus a risk penalty.
 
 ### Decay
 
-- **Def:** fitness erosion over time. A timing-bound thesis decays faster than a
-  mechanism-transfer thesis.
+- **Def:** fitness erosion over time, an engine time-axis factor. A `temporal`
+  (zeitgeist) idea decays on a 180-day half-life; a transfer (timeless) idea does
+  not decay.
+
+### Temporal
+
+- **Def:** the boolean time-decay axis of an idea. `true` = zeitgeist (decays,
+  can reinvigorate); `false` = transfer (timeless). The one survivor of the old
+  `subtype`.
 
 ### Lens
 
 - **Def:** observer-relative feasibility or fit applied after intrinsic fitness.
-  The engine scores what is novel, grounded, and durable; the lens asks whether
-  it is worth acting on for this user or build.
+  The engine scores what is novel, grounded, and durable; the lens asks whether it
+  is worth acting on for this user. (Open: may fold into the judge's
+  Cost-efficiency/Relevance rating axes — see `engine.md`.)
 
 ### Mechanism Cost
 
-- **Def:** ownership cost introduced by dependencies, glue, abstractions,
-  irreversible commitments, or human workflow burden.
+- **Def:** ownership cost from dependencies, glue, abstractions, irreversible
+  commitments, or human workflow burden. In the garden it lives as the judge's
+  Cost-efficiency rating axis.
 
-## Memory
+## Memory and signals
 
-### Lineage Ledger
+The node graph is the lineage memory; there is no separate ledger.
 
-- **Def:** append-only memory of candidates, parents, mutations, claimed deltas,
-  nearest priors, delta classes, convergence clusters, and watch triggers.
+### Doppelgangers
 
-### Claimed Delta
+- **Def:** a stored per-node count of near-duplicate ideas deduped into it. The one
+  fact dedup destroys. A rising count on a low-rated idea is a process-health signal.
 
-- **Def:** the candidate's explicit answer to "what changed besides wording?"
+### Convergence
 
-### Delta Class
+- **Def:** distinct lineages arriving at the same target. *Derived* — a query over
+  the node graph, never stored — read through novelty and usefulness.
 
-- **Def:** classification of a candidate's relationship to prior work:
-  `rehash`, `enrichment`, `convergence_signal`, `breakout_seed`, `dead_end`, or
-  `unknown`.
+### Rehash / Enrichment
 
-### Rehash
-
-- **Def:** same core thesis, same route, no meaningful new delta.
-
-### Enrichment
-
-- **Def:** same cluster or thesis, but with new mechanism, source, constraint,
-  prediction, execution path, or synthesis.
-
-### Convergence Signal
-
-- **Def:** independent lineages re-finding the same thesis through different
-  routes.
-
-### Breakout Seed
-
-- **Def:** a candidate or cluster deliberately used to escape an exhausted local
-  search region.
-
-### Convergence Cluster
-
-- **Def:** a stable group of candidates that point to the same underlying
-  attractor.
+- **Def:** a candidate (or a discovery into the stock) that adds no real delta is a
+  **rehash** (dropped); one that adds new mechanism, source, constraint, prediction,
+  or synthesis is **enrichment** (kept/merged).
 
 ## Idea patterns
 
@@ -126,25 +124,19 @@ term, leave it out.
 
 ### Zeitgeist Synthesis
 
-- **Def:** a timing-bound thesis whose mechanism depends on current signals,
-  why-now, and falsifiable near-future predictions.
+- **Def:** a timing-bound thesis whose mechanism depends on current signals and
+  why-now. Maps to `temporal: true`.
 
 ### Cross-Domain Transfer
 
-- **Def:** a mechanism-first thesis where the core pattern transfers from one
-  domain to another and timing is incidental.
+- **Def:** a mechanism-first thesis where the pattern transfers between domains and
+  timing is incidental. Maps to `temporal: false`.
 
-### Pepsi
+### Pepsi (the metaphor)
 
-- **Def:** an inspectable candidate branch with a named claim, problem-recovery
-  chain, implication map, falsifier, mechanism cost, lens fit, and lineage. A
-  generated idea is not a Pepsi until it validates as a complete packet.
-
-### Pepsi Output
-
-- **Def:** the `kernel.pepsi-output.v1` human-facing projection built from
-  `RunTrace` or an optional local generator. It is public output; evaluator-side
-  Pepsi segmentation fixtures are calibration, not this artifact.
+- **Def:** the reasoning metaphor for one-vs-many doppls — the perfect Pepsi (one
+  converged answer) vs. the perfect Pepsis (several distinct ones). Not a schema term;
+  the artifact is the doppl.
 
 ## Proof
 
@@ -155,27 +147,15 @@ term, leave it out.
 
 ### Proof Board
 
-- **Def:** default proof surface where stdout shows seed, generated count,
-  rejected count, Explore keeps, Proof keeps, swap or rank movement, failed
-  checks, and drill-down instructions.
+- **Def:** the default proof surface. Stdout shows seed, generated count, rejected
+  count, Explore keeps, Proof keeps, swap or rank movement, and failed checks.
 
 ### Regret Sibling
 
-- **Def:** the candidate the other dial would have kept. Regret siblings expose
+- **Def:** the candidate the other dial would have kept from the same pool. Exposes
   whether direction actually changes the run.
-
-### Agora Verdict
-
-- **Def:** a typed human judgment over a surfaced sprout or afrit. The current
-  kernel form is the post/verdict contract in `bedrock/signal/` plus the adapter
-  in `tools/bedrock-signal.ts`; it is not a running service.
 
 ### Sprout
 
-- **Def:** a side idea surfaced mid-run. Judged as process/generativity signal,
-  not necessarily as the final answer.
-
-### Afrit
-
-- **Def:** a harvested outcome candidate. Judged as conclusion/actionability
-  signal, separate from sprout fitness.
+- **Def:** a rare, high-novelty side-idea surfaced mid-run that isn't the
+  conclusion. Kept on the node for later; pruned by hand.

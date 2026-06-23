@@ -58,5 +58,5 @@ a mini tier); save the strong models for generate→select and for the judge, no
 
 ## Reconcile later (jungle)
 
-The kernel emits a `RunTrace` and a `kernel.pepsi-output.v1` projection today. The compiler is the
-garden's replacement for that projection: it writes nodes, not the old Pepsi packet.
+The kernel emits a `RunTrace`. The old `kernel.pepsi-output.v1` projection has been burned; the
+compiler is its replacement: it writes nodes, not the old Pepsi packet.

@@ -18,7 +18,6 @@ type ProofCaseSummary = {
   caseStudy?: {
     slug: string;
     title: string;
-    subtype: CaseStudyPublicView['subtype'];
     status: CaseStudyPublicView['status'];
     seed: string;
     seedMarkdownBytes: number;
@@ -127,7 +126,6 @@ async function loadProofCaseStudy(trace: RunTrace): Promise<ProofCaseSummary['ca
     return {
       slug,
       title: publicView.title,
-      subtype: publicView.subtype,
       status: publicView.status,
       seed: publicView.paths.caseStudy,
       seedMarkdownBytes: seedView.caseStudyMarkdown.length,

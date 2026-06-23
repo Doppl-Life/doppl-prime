@@ -16,31 +16,31 @@
       "id": "substrate-removal",
       "label": "Substrate removal",
       "description": "Find the human, institutional, or economic substrate that disappears if the seed is true.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "hidden-dependent",
       "label": "Hidden dependent",
       "description": "Follow the removed substrate into second-order actors whose business depends on it.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "adoption-boundary",
       "label": "Adoption boundary",
       "description": "Look for uneven deployment edges where one region, actor, or belief updates before another.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "infrastructure-inversion",
       "label": "Infrastructure inversion",
       "description": "Ask whether the new system becomes infrastructure for a different market.",
-      "defaultSubtype": "cross_domain_transfer"
+      "defaultTemporal": false
     },
     {
       "id": "cost-curve-inversion",
       "label": "Cost-curve inversion",
       "description": "Look for deployed assets that become liabilities when the cost curve flips.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     }
   ],
   "sourcePackets": [
@@ -54,7 +54,7 @@
       "candidate": {
         "title": "Accident economy dries up",
         "thesis": "The visible crash reduction branch is not just safer roads; it removes revenue and labor from insurance, plaintiff law, collision repair, trauma workflows, and organ supply.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from safer roads to businesses dependent on accident volume.",
@@ -91,7 +91,7 @@
       "candidate": {
         "title": "Traffic-state loses its subject",
         "thesis": "When the human stops being the driver, the traffic stop, ticket, pretext-search, points, DUI docket, and forfeiture pipeline lose their ordinary on-ramp.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from autonomous driving to disappearance of the policeable driver.",
@@ -128,7 +128,7 @@
       "candidate": {
         "title": "Ownership becomes fleet yield",
         "thesis": "Autonomy attacks the privately owned idle car: finance, dealers, residual values, aftermarket repair, and parking all reprice around service fleets or owner-operated robotaxi yield.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from better cars to idle owned assets repricing as yield assets.",
@@ -165,7 +165,7 @@
       "candidate": {
         "title": "Sleeper commute rewires geography",
         "thesis": "Door-to-door autonomy changes the 200-700 mile band: sleeping or working through travel collapses the felt cost of distance and welds labor markets into megaregions.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from urban robotaxi to distance friction disappearing in the intercity band.",
@@ -202,7 +202,7 @@
       "candidate": {
         "title": "Adoption asymmetry creates border arbitrage",
         "thesis": "FSD arrives unevenly, so the edge lives at the boundary: believers versus disbelievers, served metros versus laggards, and leapfrog regions that skip old car ownership patterns.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from average arrival to edges where belief and deployment diverge.",
@@ -239,7 +239,7 @@
       "candidate": {
         "title": "Fleet compute becomes mobile edge",
         "thesis": "A large autonomous fleet could become a distributed sensing and compute substrate, turning parked or low-utilization vehicles into mobile edge infrastructure.",
-        "subtype": "cross_domain_transfer"
+        "temporal": false
       },
       "delta": {
         "summary": "Moved from cars as transport to fleet as distributed infrastructure.",
@@ -276,7 +276,7 @@
       "candidate": {
         "title": "LiDAR retrofit inventory is not a lead",
         "thesis": "Competitors with deployed LiDAR-heavy fleets may own expensive inventory rather than durable advantage if camera-only OTA economics dominate the cost curve.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from deployment count to cost-curve liability.",
@@ -313,7 +313,7 @@
       "candidate": {
         "title": "Movement metering replaces fine revenue",
         "thesis": "The state will claw back dying fine, fuel-tax, and registration revenue through VMT, congestion pricing, and fleet-level movement metering.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from fines disappearing to states replacing the measurement basis for transport revenue.",
@@ -368,7 +368,7 @@
       "candidate": {
         "title": "Traffic stop becomes compliance audit",
         "thesis": "The lost traffic stop does not only remove ticket revenue; it pushes state search and compliance power into fleet APIs, movement ledgers, and account-level enforcement.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from missing traffic stops to the replacement substrate for enforcement power.",
@@ -399,7 +399,7 @@
       "candidate": {
         "title": "Road revenue moves to mobility accounts",
         "thesis": "Autonomous mobility lets road revenue move from driver punishment and fuel consumption to account-level trip metering, congestion pricing, and fleet access fees.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Took the revenue-replacement branch from VMT into account-level mobility taxation.",
@@ -430,7 +430,7 @@
       "candidate": {
         "title": "Fleet edge needs a demand router",
         "thesis": "The fleet-compute thesis only becomes actionable if a market routes work by location, latency, and sensor context, turning vehicles into priced edge capacity instead of idle hardware.",
-        "subtype": "cross_domain_transfer"
+        "temporal": false
       },
       "delta": {
         "summary": "Moved from speculative compute substrate to the market mechanism that would make it real.",

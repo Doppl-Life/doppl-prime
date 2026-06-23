@@ -32,6 +32,11 @@ actually needs the concept.
 
 ## Watch items
 
+> Evidence note: the garden replaces the separate lineage ledger with *the node graph as the
+> memory* — a stored `doppelgangers` count plus a derived `convergence` query
+> (`my-docs/garden/object-model.md`). The "ledger evidence" fields below describe the signal
+> shapes to watch for; read them off the node graph, not a separate ledger schema.
+
 ### OW-001 Lineage rehash masquerading as evolution - 2026-06-21
 
 - **Watch for:** generation depth increases, but children repeat the same core

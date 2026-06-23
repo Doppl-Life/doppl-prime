@@ -16,19 +16,19 @@
       "id": "substrate-removal",
       "label": "Substrate removal",
       "description": "Find the substrate that disappears or becomes scarce if the seed is true.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "hidden-dependent",
       "label": "Hidden dependent",
       "description": "Follow the scarcity into second-order actors whose business depends on it.",
-      "defaultSubtype": "zeitgeist_synthesis"
+      "defaultTemporal": true
     },
     {
       "id": "infrastructure-inversion",
       "label": "Infrastructure inversion",
       "description": "Ask whether the constrained system becomes infrastructure for another market.",
-      "defaultSubtype": "cross_domain_transfer"
+      "defaultTemporal": false
     }
   ],
   "sourcePackets": [
@@ -42,7 +42,7 @@
       "candidate": {
         "title": "Interconnect position becomes AI strategy",
         "thesis": "AI winners may be decided by who owns queue position, transformers, and firm megawatts before model demand arrives.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from compute demand to the grid queue as the scarce strategic asset.",
@@ -71,7 +71,7 @@
       "candidate": {
         "title": "Old firm power becomes AI land",
         "thesis": "Gas peakers, nuclear sites, and industrial power campuses become AI land because firm megawatts are more scarce than generic acreage.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from datacenter real estate to firm power as the land-like asset.",
@@ -100,7 +100,7 @@
       "candidate": {
         "title": "AI heat becomes neighborhood substrate",
         "thesis": "AI campuses could become local thermal infrastructure if waste heat is routed into district heating, greenhouses, or industrial process loads.",
-        "subtype": "cross_domain_transfer"
+        "temporal": false
       },
       "delta": {
         "summary": "Moved from power draw to thermal byproduct as a second infrastructure market.",
@@ -139,7 +139,7 @@
       "candidate": {
         "title": "Transformer inventory becomes compute inventory",
         "thesis": "The hidden AI inventory may be transformers and substation rights, not only GPUs, because electrical equipment decides when compute can come online.",
-        "subtype": "zeitgeist_synthesis"
+        "temporal": true
       },
       "delta": {
         "summary": "Moved from grid queue position to the physical equipment market underneath it.",

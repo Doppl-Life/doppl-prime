@@ -9,13 +9,14 @@ Each case folder must contain exactly:
 - `solution.md` — the reference artifact. If the real answer is unknown, it can
   say only that.
 
-Do not put methodology, rubrics, source ledgers, subtype rationales, evaluator
-coaching, scoring notes, "strong answer should" language, or known-answer hints
-beside case packets.
+Do not put methodology, rubrics, source ledgers, classification rationales,
+evaluator coaching, scoring notes, "strong answer should" language, or
+known-answer hints beside case packets.
 
 Seed/generation paths read only `case-study.md`. Judge/reference paths may also
 read `solution.md`.
 
-Subtype metadata lives in `../tools/case-study-manifest.ts`.
+The seed carries no classification field — the corpus surfaces title and status
+only. Time-decay is the judge's `temporal`, set on later nodes, not on the seed.
 
 Run `pnpm case-study:lint` after editing case packets.

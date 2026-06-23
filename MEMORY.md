@@ -5,142 +5,109 @@ kernel owner must not accidentally undo.
 
 ## Entries
 
+### The garden is canon - 2026-06-22
+
+- **Chose:** make `my-docs/garden/**` the operating canon for the model. When the
+  garden and the running kernel disagree, the garden wins; the kernel follows.
+- **Over:** treating the kernel code/specs as the source of truth for the model.
+- **Because:** the model is being shaped deliberately in the hut; the kernel is
+  legacy reconciled on purpose, not bedrock.
+- **Revisit if:** the garden is deliberately frozen into the kernel; then the
+  frozen contract moves into `specs/**` and the kernel.
+
+### Burn-and-rebuild: old surface cut, engine promoted first - 2026-06-22
+
+- **Chose:** burn the pepsi pipeline, the verdict/judgment stack, the
+  viewer/deploy/microscope surface, the superseded engine specs, the original-Prime
+  `docs/**` quarantine, and the old eval fixtures. Before burning, promote the
+  generate→select engine contract into `my-docs/garden/engine.md`.
+- **Over:** surgically de-vocabularying dead surfaces, or burning the engine without
+  first salvaging its contract.
+- **Because:** the hut holds the model's spirit but not the engine internals; the
+  engine had to be written down before the fire so it could regrow.
+- **Revisit if:** a burned surface is deliberately replanted; build it from the
+  garden, not by restoring the old file.
+
+### subtype is now temporal - 2026-06-22
+
+- **Chose:** replace the candidate `subtype` flavor with a `temporal` boolean.
+  `true` = zeitgeist (180-day decay half-life); `false` = transfer (no decay).
+- **Over:** the old multi-value subtype as decay driver, and the 730-day transfer
+  half-life in the kernel.
+- **Because:** the garden cut subtype to its one load-bearing axis — time decay.
+- **Revisit if:** a second decay regime is genuinely needed; add it to `engine.md`
+  first.
+
+### Seed carries no classification - 2026-06-22
+
+- **Chose:** the case_study seed is minimal — no subtype/classification field. The
+  case-study corpus surfaces title and status only.
+- **Over:** extracting and projecting a per-case subtype.
+- **Because:** the garden seed template is minimal; classification is the judge's
+  `temporal`, set on later nodes, not the seed's.
+- **Revisit if:** a downstream consumer needs a seed-level classification; add it as
+  explicit case metadata.
+
+### Trace is source of truth - 2026-06-21
+
+- **Chose:** `buildRunTrace()` remains the canonical pipeline; every view is a
+  projection of one trace contract.
+- **Over:** view-specific trace assembly, static narratives, or generated reports
+  acting as truth.
+- **Revisit if:** a new artifact needs data not expressible in `RunTrace`; then
+  extend the contract deliberately.
+
 ### Kernel-only project shape - 2026-06-21
 
 - **Chose:** make this kernel project the only substantive surface.
 - **Over:** duplicate planning docs, shadow hubs, parallel servers, and retired
   experiment shells.
-- **Because:** fake authority had accumulated: many ways to read or run the same
-  thing, most of them stale.
+- **Because:** fake authority accumulates — many stale ways to read or run the same
+  thing.
 - **Revisit if:** a deploy target requires an explicit adapter boundary.
-
-### Live viewer and deploy publisher are separate - 2026-06-21
-
-- **Chose:** `pnpm serve` for local live views; `pnpm publish:html` for committed
-  deploy pages plus generated deploy hub.
-- **Over:** hub scripts, extra static servers, and `out/**` as a deploy input.
-- **Because:** live rendering and deploy publishing can share render functions
-  without sharing a server boundary.
-- **Revisit if:** a deployment target cannot run the package commands directly.
-
-### Trace is source of truth - 2026-06-21
-
-- **Chose:** `buildRunTrace()` remains the canonical pipeline.
-- **Over:** view-specific trace assembly, static narratives, or generated reports
-  acting as truth.
-- **Because:** every view must be a projection of one trace contract.
-- **Revisit if:** a new artifact needs data not expressible in `RunTrace`; then
-  extend the contract deliberately.
-
-### Architecture v2 is a static design artifact - 2026-06-21
-
-- **Chose:** keep `tools/microscope/architecture-v2.html` as explicitly static.
-- **Over:** pretending it is trace-derived.
-- **Because:** it is useful as a design fork, but it can drift from `/api/trace`.
-- **Revisit if:** the map becomes a product surface; then bind it to trace data.
 
 ### Case-study access boundary - 2026-06-21
 
 - **Chose:** generation reads case packets; judgment may read solution packets.
 - **Over:** wholesale answer-key visibility.
-- **Because:** leakage turns evaluation into answer coaching.
-- **Revisit if:** the assay moves from local proof to a production evaluation
-  harness with stricter roles.
+- **Because:** leakage turns evaluation into answer coaching. Enforced by the seed
+  leakage guard (`pnpm case-study:lint`).
+- **Revisit if:** the corpus moves to a production evaluation harness with stricter
+  roles.
 
 ### Skill lineage is registry, not storage - 2026-06-21
 
-- **Chose:** skill expressions stay in their owning runtime dirs; `skills/LINEAGE.md` tracks
-  pedigree.
+- **Chose:** skill expressions stay in their owning runtime dirs; `skills/LINEAGE.md`
+  tracks pedigree.
 - **Over:** moving every skill into one tree or symlinking external folders.
-- **Because:** the durable object is lineage, not the expression path.
 - **Revisit if:** a portable skill needs a real storage home.
 
-### Bedrock signal is a contract, not a service - 2026-06-21
+### Distill, do not bulk import - 2026-06-21
 
-- **Chose:** keep Agora post/verdict schema, validators, and signal-label adapter
-  in `tools/bedrock-signal.ts`.
-- **Over:** building a Slack/Discord service before the kernel needs it.
-- **Because:** the durable value now is the boundary and polarity mapping.
-- **Revisit if:** human verdict capture becomes the next named vertical.
-
-### Specs or memory, otherwise out - 2026-06-21
-
-- **Chose:** distill raw conversations, comparison docs, panel notes, and legacy
-  source archives into `specs/**`, `MEMORY.md`, and existing case fixtures; then
-  delete the raw/archive copies.
-- **Over:** preserving a live museum of transcripts, inherited planning docs,
-  and source packets.
-- **Because:** old source quickly becomes fake authority unless it is either a
-  build contract or an explicit decision.
-- **Revisit if:** a source file is legally or scientifically required as
-  provenance for a promoted fixture; then make that provenance boundary explicit.
-
-### This branch is Doppel Prime - 2026-06-22
-
-- **Chose:** treat this branch as Doppel Prime without migration,
-  compatibility, comparison, or derivative labels. `my-docs/**` belongs to this
-  branch.
-- **Over:** qualifying this branch, or letting original Prime docs under
-  `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/planning/**`,
-  `docs/prds/**`, and `docs/gap-audits/**` guide current architecture,
-  requirements, repo shape, or implementation order by default.
-- **Because:** this branch must be understood by what it is building now.
-  Original Prime docs may be canonical elsewhere, but here they are quarantined
-  reference material. Only promoted specs, memory decisions, `my-docs/**`, and
-  current kernel behavior are authority.
-- **Revisit if:** an inherited doc is deliberately promoted into an active
-  contract; then move the specific claim into the owning spec or register rather
-  than making the old doc authoritative again.
-
-### Product comparison is demoted - 2026-06-21
-
-- **Chose:** keep kernel contracts local and remove ongoing comparison docs.
-- **Over:** measuring every kernel decision against the future product system while
-  the kernel contract is still settling.
-- **Because:** the kernel needs coherent contracts first; product integration is
-  explicit migration work, not a standing doc frame.
-- **Revisit if:** the user starts the product-branch migration.
-
-### One canonical front door per job - 2026-06-22
-
-- **Chose:** package scripts expose only blessed workflows; projection renderers
-  stay implementation details behind `pnpm serve` and `pnpm publish:html`.
-- **Over:** many top-level scripts for local static views, aliases, and
-  exploration scaffolding.
-- **Because:** single source of truth needs one operational entry point per job,
-  or old doors become fake authority.
-- **Revisit if:** a renderer gets a named user who needs it outside the local
-  server or deploy publisher.
+- **Chose:** distill raw conversations, comparison docs, and legacy source into the
+  garden, `specs/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
+  source is raw material, not operating authority.
+- **Over:** preserving a live museum of transcripts and inherited planning docs.
+- **Because:** old source becomes fake authority unless it is a build contract or an
+  explicit decision.
+- **Revisit if:** a source is legally/scientifically required as provenance for a
+  promoted fixture; then make that boundary explicit.
 
 ### Object-level operating docs - 2026-06-22
 
-- **Chose:** operational docs state commands, contracts, boundaries, and
-  forbidden duplicates.
-- **Over:** placement language, transfer posture, provenance notes, and
-  tautological instructions about location.
-- **Because:** placement language makes fake authority: future agents inherit
+- **Chose:** operational docs state commands, contracts, boundaries, and forbidden
+  duplicates — not placement language or tautological location notes.
+- **Over:** placement/transfer/provenance framing that makes future agents inherit
   the old frame instead of the operating contract.
-- **Revisit if:** a deployment or ownership boundary is truly active and must be
-  named to prevent mistakes.
+- **Revisit if:** a deployment or ownership boundary is truly active.
 
 ### Cleanup machinery does not survive cleanup - 2026-06-22
 
-- **Chose:** after a cleanup pass, delete the temporary scans, dead-name lists,
-  phrase blacklists, and one-off guards created to perform that cleanup.
-- **Over:** preserving "not this" machinery inside the kernel after the old
-  surface is gone.
-- **Because:** remembering the rejected frame turns cleanup residue into a new
-  source of fake authority. Durable checks should enforce what exists, not what
-  used to be wrong.
-- **Revisit if:** a cleanup check becomes an object-level contract with a named
-  owner and failure mode.
-
-### Conversation captures are retired - 2026-06-21
-
-- **Chose:** move the durable ideas from raw conversation captures and source
-  archives into specs and memory.
-- **Over:** keeping transcripts as fallback context.
-- **Because:** if the detail matters, it must appear in a spec, fixture, or
-  register before the raw source disappears.
-- **Revisit if:** a deleted raw source contained a missing constraint; recover it
-  only into the owning spec or fixture, not as a restored archive.
+- **Chose:** after a cleanup pass, delete the temporary scans, dead-name lists, and
+  one-off guards created to perform it.
+- **Over:** preserving "not this" machinery inside the kernel after the old surface
+  is gone.
+- **Because:** remembering the rejected frame turns cleanup residue into new fake
+  authority.
+- **Revisit if:** a cleanup check becomes an object-level contract with a named owner
+  and failure mode.

@@ -1,105 +1,65 @@
-# Doppl Kernel
+# Doppl
 
-Doppl Kernel is a TypeScript runtime for generation under selection: a run can
-diverge, converge, or oscillate; fitness is novelty x grounding; decay lives in
-the engine; lenses apply after selection.
+Doppl evolves ideas the way a population evolves: generate many candidates, apply
+selective pressure, breed the survivors into the next round. One engine —
+*generation under selection* — run along a spine of stages, scored, and rendered into
+portable nodes.
 
-The current artifact is a runnable proof board, trace contract, fixture corpus,
-Pepsi output projection, and local/deploy views that make selection behavior
-visible against real ideas.
+## Where the truth lives
 
-## Read order
+**The garden is canon.** `my-docs/garden/` is where the model is defined and where we
+operate from. When the garden and the running kernel (`src/`, `tools/`) disagree, **the
+garden wins** — the kernel follows, deliberately. Start there:
 
-1. **[`AGENTS.md`](./AGENTS.md)** — operating rules for the kernel.
-2. **[`SPINE.md`](./SPINE.md)** — the conceptual heart. One kernel, two directions, the
-   two-axis fitness, decay as the time axis, lens on top. *Start here.*
-3. **[`INVARIANTS.md`](./INVARIANTS.md)** — rules that must survive implementation
-   changes.
-4. **[`specs/`](./specs/README.md)** — build contracts for runtime, fitness,
-   Pepsi output, assay corpus, and deploy surfaces.
-5. **[`SPEC.md`](./SPEC.md)** — the build plan: the artifact, the core abstractions,
-   canonical contracts, settled decisions, and open questions.
-6. **[`ARTIFACTS.md`](./ARTIFACTS.md)** — proof surfaces, generated-output policy,
-   and artifact kill rules.
-7. **[`ASSAY.md`](./ASSAY.md)** — outcome-oriented discovery assay: stages, default
-   cases, win condition, and feedback scale.
-8. **[`OPERATIONAL_WATCHLIST.md`](./OPERATIONAL_WATCHLIST.md)** — process traps and
-   convergence signals to monitor while the kernel runs.
-9. **[`BUGS_AND_MITIGATIONS.md`](./BUGS_AND_MITIGATIONS.md)** — mistakes and
-   mitigations the kernel should not relearn.
-10. **[`HEURISTICS.md`](./HEURISTICS.md)** — portable moves and traps for runs.
-11. **[`MEMORY.md`](./MEMORY.md)** — active fork decisions that still constrain
-    this kernel.
-12. **[`LESSONS_AND_BANGERS.md`](./LESSONS_AND_BANGERS.md)** — short durable
-    lessons carried forward.
-13. **[`GLOSSARY.md`](./GLOSSARY.md)** — local terms used by the kernel.
+- [`my-docs/garden/README.md`](my-docs/garden/README.md) — the hut: how to read the garden.
+- [`my-docs/garden/PROPOSAL.md`](my-docs/garden/PROPOSAL.md) — the unified frame. **Read first.**
+- [`my-docs/garden/object-model.md`](my-docs/garden/object-model.md) — stages, the node, the flow.
+- [`my-docs/garden/engine.md`](my-docs/garden/engine.md) — the generate→select crucible behind each stage.
+- [`my-docs/garden/rating-model.md`](my-docs/garden/rating-model.md) — the −5…+5 scoring source of truth.
+- [`my-docs/garden/LEXICON.md`](my-docs/garden/LEXICON.md) — the vocabulary.
 
-The kernel lives in `src/`. Human-facing views live in `tools/microscope/` and
-are disposable unless they prove reusable. Views project the trace; they do not
-become the trace.
+## The spine
 
-## The one line
+```
+case_study → problem_recovery → doppl → (the human's action)
+```
 
-We didn't find another feature. We found that everything already built is **one engine
-wearing different masks**, and the masks are *dial settings*, not separate machines.
+A **case_study** is the seed. **problem_recovery** recovers the real problem behind the
+surface symptom. A **doppl** is the finished answer — the unlock. Each arrow is one pass of
+the crucible (`engine.md`): generate candidates → score (novelty × grounding measurements) →
+select survivors under a diverge/converge dial → lens. A problem may yield more than one
+doppl.
 
-## Status
+## The kernel
 
-Runnable TypeScript prototype started. Current slice proves:
+The engine lives in `src/`:
 
-- multiple seed fixtures run through the same proof board
-- source packets generate children through named reproduction operators
-- no-delta packets are rejected before fitness
-- generated children carry lineage, delta, parent, and generation
-- novelty and grounding are computed from seed/candidate/source text, not required fixture scores
-- bounded generation 2 expands fixture-authored child packets from selected candidates under caps
-- decay is an engine time factor; feasibility is a post-selection lens
-- the same generated pool supports diverge vs. converge selection
-- `kernel.pepsi-output.v1` projects selected trace candidates into human-facing
-  Pepsi packets without changing `RunTrace` semantics
+- `src/contracts/index.ts` — the machine contracts.
+- `src/trace.ts` — `buildRunTrace()`, the canonical pipeline. The trace is the specimen.
+- `src/generate.ts` · `src/fitness.ts` · `src/select.ts` · `src/lens.ts` — the crucible.
 
-## What To Do
+Fitness keeps **novelty and grounding** as separate 0–1 measurements, never collapsed before
+selection. **Decay** is the engine's time axis: a `temporal` (zeitgeist) idea decays on a
+180-day half-life; a transfer (timeless) idea does not. Feasibility is a **lens** applied
+after selection. These 0–1 measurements map into the judge's −5…+5 **ratings**
+(`rating-model.md`); they are not ratings themselves.
 
-Run `pnpm build` when you want the default proof. It typechecks, checks repo
-contracts, exercises the Pepsi generator boundary, and prints the compact
-multi-seed board:
-`seed -> generated -> rejected -> Explore keeps -> Proof keeps -> swap -> failed checks`.
+## Run it
 
-Run `pnpm proof:export` only when you need replay artifacts under `out/proof-board/**`.
+```bash
+pnpm build          # typecheck + the multi-seed proof board
+pnpm proof          # the proof board alone
+pnpm proof:export   # replay artifacts under out/proof-board/** (ephemeral, gitignored)
+pnpm case-study:lint   # verify seed-visible case material leaks no evaluator-only language
+pnpm clear:run-data    # clear local out/** run data
+```
 
-Run `pnpm serve` when you want the local front door. It builds the trace once
-per fixture, renders Pepsi-first Assay, Microscope, Architecture, Review, and
-the static Architecture v2 artifact from one localhost surface, and saves verdict
-clicks automatically to `records/assay-judgments/judgments.jsonl`.
+The proof board prints one line per seed:
+`seed → generated → rejected → Explore keeps → Proof keeps → swap → failed checks`.
 
-Set `DOPPL_PEPSI_GENERATOR` only when you want an optional local executable to
-generate `kernel.pepsi-output.v1` from stdin JSON. If it is absent, slow, or
-invalid, Assay falls back to deterministic Pepsi packets from selected
-`RunTrace` candidates.
+## Registers
 
-Run `pnpm pepsi:generator-check` when changing the Pepsi output boundary. It
-checks absent, failed, malformed, timed-out, valid, and contaminated generator
-paths, including the rule that known-solution markers never reach the generator.
-
-Run `pnpm case-study:lint` after editing case packets. It verifies seed-visible
-case material does not leak evaluator-only solution language.
-
-Run `pnpm clear:run-data` when you want a clean local slate. It removes
-`out/**` and local Assay judgment records, but leaves committed
-`published/**`, fixtures, and specs alone.
-
-`pnpm serve` is the only local UI entry point. Assay, Microscope, Architecture,
-Architecture v2, and Review are renderers behind that server, not separate
-package scripts.
-
-## Publishing pages to the deployed hub
-
-`out/**` is ephemeral and gitignored, so those pages never reach the deploy. To
-surface the HTML views on the live site, run `pnpm publish:html`: it renders the
-same Pepsi-first Assay, Microscope, Architecture, and static Architecture v2
-surfaces used by `pnpm serve` directly into committed `published/*.html`, and
-writes an ignored `published/index.html` deploy hub.
-
-Deployment config should run `pnpm publish:html` and serve only `published/**`
-through `pnpm serve:static`. Local judgment consensus is intentionally
-local-only until the team decides to promote a ledger.
+Durable findings have one home each (see [`AGENTS.md`](AGENTS.md)): build contracts in
+`specs/**`, fork decisions in `MEMORY.md`, lessons in `LESSONS_AND_BANGERS.md`, portable moves
+in `HEURISTICS.md`, failures in `BUGS_AND_MITIGATIONS.md`, watch items in
+`OPERATIONAL_WATCHLIST.md`, terms in `GLOSSARY.md`, invariants in `INVARIANTS.md`.
