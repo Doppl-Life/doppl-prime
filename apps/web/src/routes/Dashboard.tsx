@@ -12,6 +12,7 @@ import { selectRunStatus } from '../components/run/runControl';
 import { ModeBanner } from '../components/feedback/ModeBanner';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { RunConfigPanel } from '../components/run/RunConfigPanel';
+import { OperatorPromptPanel } from '../components/demo/OperatorPromptPanel';
 import { StopControl } from '../components/run/StopControl';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
@@ -195,6 +196,9 @@ export function Dashboard({
 
       <div style={grid}>
         <Panel title="Run">
+          {/* PD.5b — the demo-forward operator-prompt path (prepared/freeform → partial {seed}); the
+              full-control RunConfigPanel stays alongside. Both hand the new run to the shell via onStarted. */}
+          <OperatorPromptPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
           <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
           {observedRunId && (
             <StopControl runId={observedRunId} store={store} runClient={runClient} />

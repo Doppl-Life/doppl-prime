@@ -63,6 +63,9 @@ function fakeClient(): RunClient {
         capsConsumed: { maxGenerations: 2 },
       }),
     ),
+    // PD.5b — the shell now mounts OperatorPromptPanel, which fetches the catalog on mount.
+    getProblemSets: vi.fn(() => Promise.resolve([])),
+    startDemoRun: vi.fn(),
   } as unknown as RunClient;
 }
 

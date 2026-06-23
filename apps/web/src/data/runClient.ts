@@ -8,6 +8,7 @@ import {
 } from './contracts';
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
+import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
 import { parseOrThrow, TransportError } from './errors';
 
 export { PayloadValidationError, TransportError } from './errors';
@@ -59,6 +60,16 @@ export interface RunClient {
    * contract yet; reconcile/promote at the demo→cody merge).
    */
   getRunHealth(runId: string): Promise<RunHealth>;
+  /**
+   * GET /problem-sets (PD.5a) — the boot prepared-problem catalog, validated through the WEB-LOCAL
+   * `ProblemSet` mirror (no frozen contract yet; parallel to RunHealth). Returns the catalog array.
+   */
+  getProblemSets(): Promise<ProblemSet[]>;
+  /**
+   * POST /runs with a PARTIAL `{ seed }` (PD.5b) — the demo operator-prompt start path; the api
+   * deep-merges defaults (the panel never sends caps → the boot ceiling applies). PD.10 isolates the seed.
+   */
+  startDemoRun(partial: { seed: string }, opts?: { idempotencyKey?: string }): Promise<Run>;
 }
 
 const RunArray = z.array(Run);
@@ -115,5 +126,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
     startRun: (config, opts) => getJson('/runs', Run, postInit(config, opts?.idempotencyKey)),
     stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, Run, postInit()),
     getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
+    getProblemSets: async () => (await getJson('/problem-sets', ProblemSetsResponse)).problemSets,
+    startDemoRun: (partial, opts) => getJson('/runs', Run, postInit(partial, opts?.idempotencyKey)),
   };
 }
