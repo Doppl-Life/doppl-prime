@@ -50,6 +50,20 @@ import { buildServer } from './server';
 /** The required secret env vars whose VALUES feed the persistence-boundary redaction scrub (rule #4). */
 const REQUIRED_SECRET_ENV = ['OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'DATABASE_URL'] as const;
 
+/**
+ * The boot-orchestration env vars this module reads (DISTINCT from the closed config-override
+ * `ENV_ALLOWLIST` + the credential `REQUIRED_CREDENTIAL_ENV`): the gateway-mode + seed-fixture + listen
+ * knobs consumed BELOW (`gatewaySelectionFromEnv`, the seed step, `parsePort`/host). Single source for the
+ * PD.8b `.env.example` drift-guard — KEEP IN SYNC with the `env.<VAR>` reads in this file.
+ */
+export const BOOT_ORCHESTRATION_ENV = [
+  'DOPPL_GATEWAY',
+  'DOPPL_SEED_FIXTURE',
+  'DOPPL_FIXTURE_DIR',
+  'HOST',
+  'PORT',
+] as const;
+
 export interface BootOverrides {
   /** Env record (default `process.env`); injected so the test drives fail-fast + caps without a real env. */
   readonly env?: Record<string, string | undefined>;

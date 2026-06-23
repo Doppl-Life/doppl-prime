@@ -42,6 +42,10 @@ const ENV_ALLOWLIST: readonly AllowlistEntry[] = [
   { envVar: 'DOPPL_RNG_SEED', source: 'runConfig', key: 'rngSeed', coerce: toInt },
 ];
 
+/** The env var NAMES of the closed config-override allowlist — single source for the `.env.example`
+ *  drift-guard (PD.8b), so the committed example can't drift from the allowlist (derived, never copied). */
+export const ENV_ALLOWLIST_VARS: readonly string[] = ENV_ALLOWLIST.map((entry) => entry.envVar);
+
 /** Project the env record into per-source config-override fragments, via the closed allowlist only. */
 export function projectEnvOverrides(env: Record<string, string | undefined>): EnvOverrides {
   const overrides: EnvOverrides = { runConfig: {}, caps: {} };

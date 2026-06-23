@@ -16,7 +16,11 @@ export interface RegistryConfigSources {
 
 // Required provider credentials — env-only, fail-fast at boot (rule #4 / §14). A retrieval/web-search
 // key (if P2.7's retrieval adapter needs one) is that slice's concern, not here.
-const REQUIRED_CREDENTIAL_ENV = ['OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'DATABASE_URL'] as const;
+export const REQUIRED_CREDENTIAL_ENV = [
+  'OPENROUTER_API_KEY',
+  'OPENAI_API_KEY',
+  'DATABASE_URL',
+] as const;
 
 /**
  * Fail-fast credential check (rule #4 / §14). Required provider creds load ONLY from env; aborts boot
