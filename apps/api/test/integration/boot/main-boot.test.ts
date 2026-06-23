@@ -16,7 +16,14 @@ import {
   type AppendInput,
   type EventStore,
 } from '../../../src/event-store';
-import { createGateway, type ModelGateway, type ProviderCallFn } from '../../../src/model-gateway';
+import {
+  createGateway,
+  type ModelGateway,
+  type OpenRouterClient,
+  type OpenRouterCompletionParams,
+  type OpenRouterRawCompletion,
+  type ProviderCallFn,
+} from '../../../src/model-gateway';
 import { dumpReplayToFile } from '../../../src/event-store/scripts/dump-replay';
 import { bootApp } from '../../../src/main';
 
@@ -455,6 +462,93 @@ describe('bootApp seed step — PD.3-completion migrate→seed→start (real PG)
     expect(rows.filter((r) => r.type === 'run.failed' || r.type === 'run.cancelled')).toHaveLength(
       0,
     );
+    await close();
+  });
+});
+
+// ---- PD.9: DOPPL_GATEWAY=live boot branch (injected fake client — no network, no real SDK) ----------
+/**
+ * A fake `OpenRouterClient` that returns role-appropriate structured outputs so a run can drive the LIVE
+ * gateway to a terminal without a network call. Role is read from the structured `responseFormat.name`
+ * (`<role>_output`), falling back to the route's modelId for the unstructured embedding call.
+ */
+function fakeOpenRouterClient(opts: { onCall?: () => void } = {}): OpenRouterClient {
+  return {
+    complete(params: OpenRouterCompletionParams): Promise<OpenRouterRawCompletion> {
+      opts.onCall?.();
+      // Role detection from the contract-shaped params (the client never sees ModelRole): structured calls
+      // (critic/final_judge/fusion_synthesis) carry responseFormat.name `<role>_output`; embedding is the
+      // only EMBEDDING_ONLY route (no responseFormat) → keyed by its modelId; the population_generator call
+      // is the loop's only SCHEMA-LESS non-embedding call → the remaining fallback.
+      const role = params.responseFormat
+        ? params.responseFormat.name.replace(/_output$/, '')
+        : params.model === 'text-embedding-3-small'
+          ? 'embedding'
+          : 'population_generator';
+      let output: unknown;
+      if (role === 'embedding') {
+        output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
+      } else if (role === 'final_judge') {
+        output = {
+          grounding: 4,
+          novelty: 3,
+          feasibility: 5,
+          falsification_survival: 2,
+          subtype_check_pass: 4,
+        };
+      } else if (role === 'fusion_synthesis') {
+        output = { synthesis: 'a merged child system prompt' };
+      } else if (role === 'population_generator') {
+        output = CANDIDATE_CONTENT;
+      } else {
+        output = { critique: 'stub critique', confidence: 0.5, scores: { grounding: 4 } };
+      }
+      return Promise.resolve({ id: 'fake-or-req', model: params.model, output, tokensIn: 1, tokensOut: 1 });
+    },
+  };
+}
+
+describe('bootApp — PD.9 DOPPL_GATEWAY=live (real PG, injected fake client)', () => {
+  // spec(§6/§17) — DOPPL_GATEWAY=live builds the live gateway at boot (createLiveGateway over the injected
+  // client) and threads it into the worker: a POSTed run drives the fake client (no network), reaching a terminal.
+  test('boot_live_mode_builds_live_gateway', async () => {
+    const url = await freshDatabaseUrl();
+    let clientCalls = 0;
+    const { onSettled, settled } = settledLatch();
+    const { app, close } = await bootApp({
+      env: bootEnv(url, { DOPPL_GATEWAY: 'live' }),
+      port: 0,
+      host: '127.0.0.1',
+      openRouterClient: fakeOpenRouterClient({ onCall: () => (clientCalls += 1) }),
+      onSettled,
+    });
+    const { status, json } = await postRun(addressPort(app.server));
+    expect(status).toBe(201);
+    const { runId } = json as { runId: string };
+    await settled;
+    expect(clientCalls).toBeGreaterThan(0); // the env→live branch routed the run through the injected client
+    const rows = await probeStore(url).readByRun(runId);
+    expect(rows.some((r) => TERMINAL_EVENTS.includes(r.type))).toBe(true);
+    await close();
+  });
+
+  // spec(§17, Q4 lazy) — recorded default builds NO provider client: an injected client that THROWS if
+  // touched is ignored, and a recorded boot still succeeds (the recorded branch returns before any
+  // registry/client construction — local-first stays provider-client-free).
+  test('boot_recorded_mode_does_not_use_provider_client', async () => {
+    const url = await freshDatabaseUrl();
+    const throwingClient: OpenRouterClient = {
+      complete() {
+        throw new Error('recorded boot must not build/use a provider client');
+      },
+    };
+    const { app, close } = await bootApp({
+      env: bootEnv(url), // DOPPL_GATEWAY unset → recorded; resolveGateway takes the recorded branch
+      port: 0,
+      host: '127.0.0.1',
+      openRouterClient: throwingClient, // ignored in recorded mode — never constructed-into-use
+    });
+    expect(app.server.listening).toBe(true); // boot succeeded without touching the provider client
     await close();
   });
 });

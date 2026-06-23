@@ -6,7 +6,16 @@ import type { FastifyInstance } from 'fastify';
 import type { RunConfig } from '@doppl/contracts';
 import { loadConfig } from './runtime/config/loadConfig';
 import { createEventStore, runMigrations } from './event-store';
-import { selectGateway, type GatewaySelection, type ModelGateway } from './model-gateway';
+import {
+  createModelRegistry,
+  createOpenRouterClient,
+  loadModelRegistry,
+  selectGateway,
+  type GatewaySelection,
+  type ModelGateway,
+  type OpenRouterClient,
+} from './model-gateway';
+import { DEFAULT_MODEL_REGISTRY } from './config/model-registry.config';
 import { CHECK_RUNNER_REGISTRY } from './check-runners/registry';
 import { listRunIds } from './projections/run-list';
 import { crashForward } from './runtime/recovery/crashForward';
@@ -63,6 +72,12 @@ export interface BootOverrides {
   readonly seedFixtureRunId?: string;
   /** The fixtures dir the seed step reads (default `env.DOPPL_FIXTURE_DIR ?? the repo `fixtures/replay/`). */
   readonly fixtureDir?: string;
+  /**
+   * PD.9 — the OpenRouter provider client used ONLY on the `DOPPL_GATEWAY=live` branch (default
+   * `createOpenRouterClient(env)`). Injected so the live boot branch is exercised WITHOUT a network call
+   * (a fake `OpenRouterClient`). Ignored on the recorded default (no provider client is built — Q4 lazy).
+   */
+  readonly openRouterClient?: OpenRouterClient;
 }
 
 /** The committed fixtures dir at the repo root (`fixtures/replay/`), resolved from this module's location. */
@@ -75,10 +90,29 @@ export interface BootedApp {
 }
 
 /** Map the boot env to a `GatewaySelection`. Default `recorded` (local-first is the demo of record, §17);
- *  `live` selects the real provider path (currently unwired in `selectGateway` — P2.5 deferred → throws). */
+ *  `live` selects the real OpenRouter-backed provider path (PD.9 — wired below in `resolveGateway`). */
 function gatewaySelectionFromEnv(env: Record<string, string | undefined>): GatewaySelection {
   const mode = (env.DOPPL_GATEWAY ?? 'recorded').trim().toLowerCase();
   return mode === 'live' ? { useStub: false } : { useStub: true };
+}
+
+/**
+ * Resolve the boot ModelGateway (PD.9). A direct `overrides.gateway` wins (the run-executing tests inject
+ * a recorded multi-role fake). Otherwise: the recorded default builds NO provider client/registry (local-
+ * first stays dependency-light — Q4 lazy); `DOPPL_GATEWAY=live` builds the live deps (registry from
+ * DEFAULT_MODEL_REGISTRY + the OpenRouter client from env, or the injected test client) and delegates to
+ * `selectGateway` → `createLiveGateway`. The API key stays env-only inside the client (rule #4).
+ */
+function resolveGateway(
+  env: Record<string, string | undefined>,
+  overrides: BootOverrides,
+): ModelGateway {
+  if (overrides.gateway !== undefined) return overrides.gateway;
+  const selection = gatewaySelectionFromEnv(env);
+  if (selection.useStub) return selectGateway(selection); // recorded — no provider client constructed
+  const registry = createModelRegistry(loadModelRegistry({ defaults: DEFAULT_MODEL_REGISTRY }));
+  const client = overrides.openRouterClient ?? createOpenRouterClient(env);
+  return selectGateway(selection, { registry, client });
 }
 
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).
@@ -122,7 +156,7 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
   try {
     const db = drizzle(pool);
     const eventStore = createEventStore({ db, secretValues: collectSecretValues(env) });
-    const gateway = overrides.gateway ?? selectGateway(gatewaySelectionFromEnv(env));
+    const gateway = resolveGateway(env, overrides);
     const listRunIdsBound = (): Promise<readonly string[]> => listRunIds(db);
     const newId = (): string => randomUUID();
 

@@ -75,6 +75,12 @@ export type { CuratedCorpus, CuratedCorpusEntry } from './adapters/curated-corpu
 export { createFakeGateway, selectGateway } from './stub/fake-gateway';
 export type { FakeGatewayConfig, FakeMode, GatewaySelection } from './stub/fake-gateway';
 
+// Live OpenRouter-backed gateway (PD.9) — the real counterpart of the fake: `createLiveGateway` composes
+// the P2.5 adapter behind `createGateway`; `selectGateway` delegates `useStub:false` to it. Built at boot
+// from env when DOPPL_GATEWAY=live (closes carry-forward (a) — the demo live-rung enabler).
+export { createLiveGateway } from './live-gateway';
+export type { LiveGatewayDeps } from './live-gateway';
+
 // Model registry (P2.2) — role→route resolution + boot config validation + credential boundary;
 // provides createGateway's capabilityFor + the adapters' route resolution.
 export { createModelRegistry, loadModelRegistry, assertProviderCredentials } from './registry';
