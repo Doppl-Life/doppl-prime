@@ -28,7 +28,9 @@ import type {
   RunEventRow,
 } from '../../../../src/event-store';
 import { scrubEventPayload } from '../../../../src/event-store';
+import { createGateway, type ProviderCallFn } from '../../../../src/model-gateway';
 import { executeKillAndDrain } from '../../../../src/runtime/loop/killDrain';
+import { CandidateContent } from '../../../../src/runtime/loop/candidateContent';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
@@ -1108,5 +1110,147 @@ describe('runGenerationLoop (PD.10 commit 1 — per-run problem isolated as DATA
     const a = await run('problem alpha');
     const b = await run('problem beta');
     expect(b).toEqual(a); // generation events are problem-independent → replay-stable (rule #7)
+  });
+});
+
+// PD.10 commit 2 — OUTPUT validation: the population_generator generate call passes the CandidateContent
+// schema → the gateway runs validate/repair(≤1)/reject. A real createGateway + a controllable providerCall
+// drives the genuine discipline (so a malformed output is actually rejected by the schema).
+function realGenerationGateway(providerCall: ProviderCallFn): GenerationGateway {
+  const modelGateway = createGateway({
+    providerCall,
+    capabilityFor: () => ({ structuredOutputs: true, embeddings: true }),
+  });
+  return { generate: async (request) => ({ response: await modelGateway.call(request) }) };
+}
+
+describe('runGenerationLoop (PD.10 commit 2 — generation output validation, §6 + rule #8)', () => {
+  // spec(§6) — the population_generator request carries the CandidateContent schema, so the gateway runs
+  // validate/repair/reject on the model output (today's no-schema path bypassed the discipline).
+  test('population_generator_call_passes_candidate_schema', async () => {
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(makeDeps({ config: configWithProblem('design X'), gateway }));
+    expect(requests[0]!.schema).toBe(CandidateContent);
+  });
+
+  // spec(§6) + folded Finding — a malformed (un-repairable) model output is REJECTED at the gateway → the
+  // loop's existing reject path appends agenome.failed; the run CONTINUES (the valid agenome yields a
+  // candidate, generation.completed); NO worker throw, NO candidate.created for the bad agenome, NO
+  // shape_mismatch append. (Pre-fix: no schema → garbage ACCEPTED → candidate.created → append THROWS.)
+  test('malformed_generation_rejects_to_agenome_failed_no_throw', async () => {
+    let n = 0;
+    const providerCall: ProviderCallFn = () => {
+      n += 1;
+      // first agenome → a valid candidate; second agenome → garbage on the initial AND the (≤1) repair.
+      const output = n === 1 ? CANDIDATE_CONTENT : { not: 'a candidate' };
+      return Promise.resolve({ output, providerMeta: validProviderMeta });
+    };
+    const fake = makeFakeEventStore();
+    await expect(
+      runGenerationLoop(
+        makeDeps({
+          config: configWithProblem('design Y'),
+          eventStore: fake.store,
+          gateway: realGenerationGateway(providerCall),
+        }),
+      ),
+    ).resolves.toBeDefined(); // no throw
+
+    const types = fake.appendedTypes();
+    expect(types.filter((t) => t === 'candidate.created')).toHaveLength(1); // only the valid agenome
+    expect(types.filter((t) => t === 'agenome.failed')).toHaveLength(1); // the garbage agenome failed gracefully
+    expect(types).toContain('generation.completed'); // the run CONTINUED (1 survivor ≥ minSurvival)
+  });
+
+  // rule #8 — a rejected generation emits provider_call_failed and debits NO llm energy (success-only
+  // spend); only a successful candidate.created debits the llm EnergyEvent.
+  test('rejected_generation_debits_no_energy', async () => {
+    const garbage: ProviderCallFn = () =>
+      Promise.resolve({ output: { not: 'a candidate' }, providerMeta: validProviderMeta });
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        config: configWithProblem('design Z'),
+        eventStore: fake.store,
+        gateway: realGenerationGateway(garbage),
+      }),
+    );
+    const types = fake.appendedTypes();
+    expect(types).toContain('provider_call_failed');
+    expect(types.filter((t) => t === 'candidate.created')).toHaveLength(0); // all rejected
+    // no LLM energy debit for a rejected generation (spawn energy is a separate productive spend).
+    const llmEnergy = fake.rows.filter(
+      (r) => r.type === 'energy.spent' && (r.payload as { eventType?: string }).eventType === 'llm',
+    );
+    expect(llmEnergy).toHaveLength(0);
+  });
+
+  // rule #7 — a run whose generations were rejected (agenome.failed in the log) replays deterministically:
+  // two identical garbage runs produce identical generation event logs (the failure is in the log).
+  test('rejected_generation_replays_deterministically', async () => {
+    const garbage: ProviderCallFn = () =>
+      Promise.resolve({ output: { not: 'a candidate' }, providerMeta: validProviderMeta });
+    const run = async () => {
+      const fake = makeFakeEventStore();
+      await runGenerationLoop(
+        makeDeps({
+          config: configWithProblem('design W'),
+          eventStore: fake.store,
+          gateway: realGenerationGateway(garbage),
+        }),
+      );
+      return fake.rows
+        .filter((r) => r.type !== 'run.configured')
+        .map((r) => ({ type: r.type, payload: r.payload }));
+    };
+    expect(await run()).toEqual(await run());
+  });
+
+  // spec(§6, lead ADD) — OMIT-SET COMPLETENESS: KERNEL must be the COMPLETE set of fields the loop stamps
+  // post-gateway. Too FEW omitted → CandidateContent would REQUIRE a stamped field the model never emits →
+  // a VALID model output spuriously REJECTED → a false agenome.failed on a live run. Pin both directions +
+  // the exact stamped set (catches a future createdAt/meta stamped field left out of the omit-set).
+  test('candidate_content_omit_set_is_the_complete_stamped_set', () => {
+    const content = {
+      title: validCandidateIdeaCrossDomain.title,
+      summary: validCandidateIdeaCrossDomain.summary,
+      claims: validCandidateIdeaCrossDomain.claims,
+      evidenceRefs: validCandidateIdeaCrossDomain.evidenceRefs,
+      subtype: validCandidateIdeaCrossDomain.subtype,
+      subtypePayload: validCandidateIdeaCrossDomain.subtypePayload,
+    };
+    // a real model CONTENT sample (lacking ALL kernel-stamped fields) PASSES — the omit-set isn't too narrow.
+    expect(CandidateContent.safeParse(content).success).toBe(true);
+    // missing a genuine MODEL field (title) FAILS — the schema still requires what the model must generate.
+    const withoutModelField: Record<string, unknown> = { ...content };
+    delete withoutModelField.title;
+    expect(CandidateContent.safeParse(withoutModelField).success).toBe(false);
+    // COMPLETENESS — the fields a full CandidateIdea has MINUS the model content == EXACTLY the omit-set.
+    const stamped = Object.keys(validCandidateIdeaCrossDomain).filter((k) => !(k in content));
+    expect(new Set(stamped)).toEqual(
+      new Set(['id', 'runId', 'generationId', 'agenomeId', 'status']),
+    );
+  });
+
+  // spec(§6, lead ADD) — the validate/repair(≤1)/reject MIDDLE leg: a malformed-but-REPAIRABLE output →
+  // exactly one repair → valid → accepted → candidate.created (NOT rejected). Pins the full discipline, not
+  // just the accept/reject ends. (population_generator carries a schema → createGateway runs the repair.)
+  test('repairable_generation_repairs_then_accepts', async () => {
+    let n = 0;
+    const providerCall: ProviderCallFn = () => {
+      n += 1;
+      // initial invalid (incomplete content) → the single repair returns a valid CandidateContent.
+      const output = n === 1 ? { title: 'incomplete' } : CANDIDATE_CONTENT;
+      return Promise.resolve({ output, providerMeta: validProviderMeta });
+    };
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 1 });
+    const config = { ...base, runConfig: { ...base.runConfig, seed: 'design R' } };
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ config, eventStore: fake.store, gateway: realGenerationGateway(providerCall) }),
+    );
+    expect(n).toBe(2); // exactly one repair (initial invalid + 1 repair attempt)
+    expect(fake.appendedTypes().filter((t) => t === 'candidate.created')).toHaveLength(1); // repaired → accepted
+    expect(fake.appendedTypes()).not.toContain('agenome.failed'); // not rejected
   });
 });

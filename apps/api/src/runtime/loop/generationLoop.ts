@@ -23,6 +23,7 @@ import { cumulativeSpend } from '../energy/energyLedger';
 import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
 import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
+import { CandidateContent } from './candidateContent';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
@@ -52,6 +53,10 @@ function buildPopulationRequest(systemPrompt: string, problem: string): ModelGat
       { role: 'system', content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}` },
       { role: 'user', content: wrapUntrusted(problem) },
     ],
+    // PD.10 commit 2 — pass the CandidateContent schema so the gateway runs validate/repair(≤1)/reject on
+    // the model output: a malformed output is REJECTED (→ the loop's graceful agenome.failed), never
+    // accepted-then-crashed at the candidate.created append.
+    schema: CandidateContent,
   };
 }
 
