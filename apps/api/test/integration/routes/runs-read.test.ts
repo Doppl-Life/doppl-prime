@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
+  RunEventEnvelope,
   validCandidateIdeaCrossDomain,
   validCriticReview,
   validFitnessScore,
@@ -130,6 +131,36 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
 
       const bad = await app.inject({ method: 'GET', url: '/runs/read-events/events?since=abc' });
       expect(bad.statusCode).toBe(400); // numeric-guarded
+    } finally {
+      await app.close();
+    }
+  });
+
+  // PD.15 (§4/§11) — GET /runs/:id/events omits null/undefined optionals on the wire (the shared
+  // serializer) so the frozen RunEventEnvelope re-parses on the consumer (the web getEvents no longer
+  // PayloadValidationErrors on DB-null optionals). Pre-fix: nulls present → parse throws (the Finding).
+  test('test_get_events_omit_null_optionals_reparse', async () => {
+    await seedRun('read-omit-null');
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/runs/read-omit-null/events' });
+      expect(res.statusCode).toBe(200);
+      const events = (res.json() as { events: Record<string, unknown>[] }).events;
+      expect(events.length).toBeGreaterThan(0);
+      for (const event of events) {
+        for (const key of [
+          'generationId',
+          'agenomeId',
+          'candidateId',
+          'correlationId',
+          'langfuseTraceId',
+          'langfuseObservationId',
+        ]) {
+          expect(event[key]).not.toBeNull(); // ABSENT (undefined), never `null`
+        }
+        expect(() => RunEventEnvelope.parse(event)).not.toThrow(); // the frozen consumer re-parses
+      }
     } finally {
       await app.close();
     }

@@ -176,8 +176,77 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): the false-accept guard — a non-2xx body that happens to satisfy the schema (e.g. a 404
   // returning []) must surface as a transport error, NOT be accepted as a valid empty projection.
   it('test_non_ok_empty_array_not_accepted_as_projection', async () => {
-    const fetch = fakeFetch([], 404);
+    const fetch = fakeFetch({ runs: [] }, 404);
     const client = createRunClient({ baseUrl: BASE, fetch });
     await expect(client.listRuns()).rejects.toBeInstanceOf(TransportError);
+  });
+
+  // ---- PD.15: the client consumes the REAL API response-shapes (the PD.14 Finding fix, option C) ----
+
+  // spec(§11): GET /runs returns `{ runs: [summary] }` (not a bare Run[]) — the client unwraps it; a
+  // summary's `status` may be null (a run with no current-state status), a WEB-local shape (not frozen).
+  it('runclient_listRuns_consumes_runs_wrapper', async () => {
+    const fetch = fakeFetch({
+      runs: [
+        { runId: 'run_1', status: 'completed', sequenceThrough: 12 },
+        { runId: 'run_2', status: null, sequenceThrough: 0 },
+      ],
+    });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const runs = await client.listRuns();
+    expect(runs.map((r) => r.runId)).toEqual(['run_1', 'run_2']);
+    expect(runs[1]?.status).toBeNull();
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+  });
+
+  // spec(§11/§12): GET /runs/:id returns the current-state wrapper `{ runId, sequenceThrough, state }`.
+  it('runclient_getRun_consumes_current_state_wrapper', async () => {
+    const body = { runId: 'run_1', sequenceThrough: 5, state: { runs: {}, candidateIdeas: {} } };
+    const fetch = fakeFetch(body);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const run = await client.getRun('run_1');
+    expect(run.runId).toBe('run_1');
+    expect(run.sequenceThrough).toBe(5);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1`);
+  });
+
+  // spec(§11/§4): GET /runs/:id/events returns `{ runId, events: [...] }` — the client unwraps `.events`
+  // (null-free envelopes, post the API omit-null serializer) AND sends the canonical `?since=` cursor.
+  it('runclient_getEvents_unwraps_events_and_sends_since', async () => {
+    const env = {
+      id: 'ev1',
+      runId: 'run_1',
+      type: 'run.configured',
+      sequence: 0,
+      occurredAt: '2026-06-20T12:00:00.000Z',
+      actor: 'operator',
+      payload: {},
+      schemaVersion: 5,
+    };
+    const fetch = fakeFetch({ runId: 'run_1', events: [env] });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const events = await client.getEvents('run_1', { sinceSequence: 3 });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.id).toBe('ev1');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/events?since=3`);
+  });
+
+  it('runclient_getEvents_no_cursor_omits_param', async () => {
+    const fetch = fakeFetch({ runId: 'run_1', events: [] });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    await client.getEvents('run_1');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/events`);
+  });
+
+  // spec(§11): GET /runs/:id/replay returns the replay-summary object `{ runId, sequenceThrough, state }`
+  // (not a bare envelope[]) — the client consumes the summary shape (the replay view is not yet wired).
+  it('runclient_getReplay_consumes_summary_shape', async () => {
+    const body = { runId: 'run_1', sequenceThrough: 9, state: { runs: {}, candidateIdeas: {} } };
+    const fetch = fakeFetch(body);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const replay = await client.getReplay('run_1');
+    expect(replay.runId).toBe('run_1');
+    expect(replay.sequenceThrough).toBe(9);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/replay`);
   });
 });

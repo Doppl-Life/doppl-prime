@@ -47,11 +47,11 @@ export interface RunClientOptions {
 }
 
 export interface RunClient {
-  listRuns(): Promise<Run[]>;
-  getRun(runId: string): Promise<Run>;
+  listRuns(): Promise<RunSummary[]>;
+  getRun(runId: string): Promise<RunStateView>;
   getEvents(runId: string, opts?: { sinceSequence?: number }): Promise<RunEventEnvelope[]>;
   getLineage(runId: string): Promise<LineageGraphProjection>;
-  getReplay(runId: string): Promise<RunEventEnvelope[]>;
+  getReplay(runId: string): Promise<RunStateView>;
   getCandidate(runId: string, candidateId: string): Promise<CandidateIdea>;
   listModelRoutes(): Promise<ModelRoute[]>;
   startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<Run>;
@@ -78,9 +78,35 @@ export interface RunClient {
   getFallbackLadder(): Promise<RungDescriptor[]>;
 }
 
-const RunArray = z.array(Run);
 const RunEventEnvelopeArray = z.array(RunEventEnvelope);
 const ModelRouteArray = z.array(ModelRoute);
+
+// PD.15 — WEB-LOCAL response shapes for the API's real REST wrappers (the PD.14 Finding fix, option C).
+// These are web data-client types, NOT Appendix-A models (the dashboard defines no frozen contract).
+// The no-`.nullable()` rule is the FROZEN contract's — fixed api-side via the omit-null wire serializer
+// for envelopes; here a run summary's `status` is genuinely nullable (a run with no current-state
+// status), so `.nullable()` on this web-local type is correct.
+export const RunSummary = z.object({
+  runId: z.string(),
+  status: z.string().nullable(),
+  sequenceThrough: z.number(),
+});
+export type RunSummary = z.infer<typeof RunSummary>;
+const RunSummariesResponse = z.object({ runs: z.array(RunSummary) });
+
+// GET /runs/:id and /runs/:id/replay return the current-state / replay-summary wrapper. `state` is the
+// API's current-state projection (no frozen contract; the dashboard renders the headline via the
+// lineage/candidate projections, not this) → kept permissive rather than over-modeling an unconsumed shape.
+export const RunStateView = z.object({
+  runId: z.string(),
+  sequenceThrough: z.number(),
+  state: z.unknown(),
+});
+export type RunStateView = z.infer<typeof RunStateView>;
+
+// GET /runs/:id/events returns `{ runId, events }` — the client unwraps `.events` (null-free post the
+// API omit-null serializer, so the frozen RunEventEnvelope re-parses).
+const EventsResponse = z.object({ runId: z.string(), events: RunEventEnvelopeArray });
 
 export function createRunClient(options: RunClientOptions): RunClient {
   const { baseUrl } = options;
@@ -117,15 +143,15 @@ export function createRunClient(options: RunClientOptions): RunClient {
   });
 
   const eventsPath = (runId: string, sinceSequence?: number): string =>
-    `/runs/${enc(runId)}/events${sinceSequence !== undefined ? `?sinceSequence=${sinceSequence}` : ''}`;
+    `/runs/${enc(runId)}/events${sinceSequence !== undefined ? `?since=${sinceSequence}` : ''}`;
 
   return {
-    listRuns: () => getJson('/runs', RunArray),
-    getRun: (runId) => getJson(`/runs/${enc(runId)}`, Run),
-    getEvents: (runId, opts) =>
-      getJson(eventsPath(runId, opts?.sinceSequence), RunEventEnvelopeArray),
+    listRuns: async () => (await getJson('/runs', RunSummariesResponse)).runs,
+    getRun: (runId) => getJson(`/runs/${enc(runId)}`, RunStateView),
+    getEvents: async (runId, opts) =>
+      (await getJson(eventsPath(runId, opts?.sinceSequence), EventsResponse)).events,
     getLineage: (runId) => getJson(`/runs/${enc(runId)}/lineage`, LineageGraphProjection),
-    getReplay: (runId) => getJson(`/runs/${enc(runId)}/replay`, RunEventEnvelopeArray),
+    getReplay: (runId) => getJson(`/runs/${enc(runId)}/replay`, RunStateView),
     getCandidate: (runId, candidateId) =>
       getJson(`/runs/${enc(runId)}/candidates/${enc(candidateId)}`, CandidateIdea),
     listModelRoutes: () => getJson('/model-routes', ModelRouteArray),

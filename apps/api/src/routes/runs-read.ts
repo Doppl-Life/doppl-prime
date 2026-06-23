@@ -3,6 +3,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
 import { buildCurrentState, buildLineageGraph, buildReplaySummary } from '../projections';
 import { listRunIds } from '../projections/run-list';
+import { serializeEnvelope } from './_support/serializeEnvelope';
 
 /**
  * The REST read surface (ARCHITECTURE.md §11/§9). All GET, all READ-ONLY (no append, no projection
@@ -56,7 +57,9 @@ export function registerRunReadRoutes(app: FastifyInstance, deps: RunReadRoutesD
     const events = await deps.store.readByRun(runId);
     if (events.length === 0) return reply.status(404).send({ error: 'run_not_found', runId });
     const filtered = since === null ? events : events.filter((event) => event.sequence > since);
-    return reply.send({ runId, events: filtered });
+    // PD.15 — omit null/undefined optionals on the wire so the frozen RunEventEnvelope re-parses on
+    // the consumer (the web getEvents no longer PayloadValidationErrors on DB-null optionals).
+    return reply.send({ runId, events: filtered.map(serializeEnvelope) });
   });
 
   // GET /runs/:id/lineage — the LineageGraphProjection (P6.3).

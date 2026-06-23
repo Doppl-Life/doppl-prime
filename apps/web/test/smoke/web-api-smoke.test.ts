@@ -4,10 +4,11 @@ import { createServer as netCreateServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { LineageGraphProjection } from '@doppl/contracts';
+import { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
+import { createRunClient } from '../../src/data/runClient';
 
 /**
- * PD.14 — the REAL web→proxy→API smoke (ARCHITECTURE.md §11/§12/§17, the lead/user Finding). The thing
+ * PD.14 + PD.15 — the REAL web→proxy→API smoke (ARCHITECTURE.md §11/§12/§17, the lead/user Finding). The thing
  * the Playwright e2e always MOCKED — so a wrong origin / wrong `/api` prefix silently 404'd in the real
  * app. This boots the REAL stack creds-free (testcontainer PG + the seeded API as a CHILD PROCESS — no
  * `apps/api` import, rule #6 — + Vite programmatically with the dev proxy) and fetches the dashboard's
@@ -128,10 +129,9 @@ describe.skipIf(!SMOKE_ENABLED)('PD.14 real web→proxy→API smoke (§11/§12/�
   // carries the real `status:'selected'` winner node (PD.11 bridge) — the demo HEADLINE (lineage +
   // surviving idea) renders from real responses through the proxy.
   //
-  // NOTE: we assert the ACTUAL API shapes here. `/runs` returns `{ runs: [{runId,…}] }`, not the bare
-  // `Run[]` the web `runClient.listRuns` expects — a separate web↔API response-shape DRIFT the mocked
-  // e2e hid (flagged as a Step-7.5 finding). The lineage/candidate render path uses the frozen
-  // projections (built in-memory, no null-row drift) and parses cleanly — so the headline works.
+  // NOTE: we assert the ACTUAL API shapes here. `/runs` returns `{ runs: [{runId,…}] }`. The lineage/
+  // candidate render path uses the frozen projections (built in-memory, no null-row drift) and parses
+  // cleanly — so the headline works. The reconciled web data-client consumption is the next test.
   test('dashboard_loads_seeded_run_through_real_api', async () => {
     const runsRes = await fetch(`http://127.0.0.1:${vitePort}/api/runs`);
     expect(runsRes.status).toBe(200);
@@ -143,6 +143,29 @@ describe.skipIf(!SMOKE_ENABLED)('PD.14 real web→proxy→API smoke (§11/§12/�
     const lineage = LineageGraphProjection.parse(await lineageRes.json());
     expect(lineage.runId).toBe(RUN_ID);
     expect(lineage.nodes.some((n) => n.type === 'candidate' && n.status === 'selected')).toBe(true);
+  });
+
+  // PD.15 (§11/§12) — the REAL web data-client consumes the reconciled API shapes THROUGH the proxy with
+  // NO PayloadValidationError: listRuns `{runs}`, getRun current-state wrapper, getEvents `{runId,events}`
+  // (null-free envelopes via the omit-null serializer + the `?since=` cursor), getReplay summary. Uses the
+  // actual `runClient` (global fetch) against the booted API — consumer↔producer agreement end-to-end.
+  test('reconciled_rest_endpoints_through_proxy', async () => {
+    const client = createRunClient({ baseUrl: `http://127.0.0.1:${vitePort}/api` });
+
+    const runs = await client.listRuns();
+    expect(runs.some((r) => r.runId === RUN_ID)).toBe(true);
+
+    const run = await client.getRun(RUN_ID);
+    expect(run.runId).toBe(RUN_ID);
+
+    // getEvents returns frozen RunEventEnvelope[] — the client parses them, so a single null-bearing
+    // envelope would throw here (proves the API omit-null fix end-to-end via the real consumer).
+    const events = await client.getEvents(RUN_ID);
+    expect(events.length).toBeGreaterThan(0);
+    expect(events.every((e) => e.runId === RUN_ID)).toBe(true);
+
+    const replay = await client.getReplay(RUN_ID);
+    expect(replay.runId).toBe(RUN_ID);
   });
 
   // spec(§11/§12 live window) — the SSE stream proxies UNBUFFERED: `/api/runs/:id/stream` delivers events
@@ -178,14 +201,15 @@ describe.skipIf(!SMOKE_ENABLED)('PD.14 real web→proxy→API smoke (§11/§12/�
       }
       controller.abort(); // stop reading the (idle-open) stream.
 
-      expect(frames.length).toBeGreaterThanOrEqual(2);
-      // The frames are real run events for the seeded run (structural check: the DB-serialized envelope
-      // carries explicit `null` optionals that the strict frozen `RunEventEnvelope` rejects — the same
-      // web↔API drift flagged for `/events`; not what this test asserts, which is incremental delivery).
-      const first = JSON.parse(frames[0]!) as { runId?: string; type?: string; sequence?: number };
-      expect(first.runId).toBe(RUN_ID);
-      expect(typeof first.type).toBe('string');
-      expect(typeof first.sequence).toBe('number');
+      expect(frames.length).toBeGreaterThanOrEqual(2); // incremental (unbuffered), not one blob
+      // PD.15 (demo-critical, failing-then-green): every real frame now PARSES against the FROZEN
+      // RunEventEnvelope. Pre-fix the DB-`null` optionals threw → the web's per-frame parse dropped every
+      // live event (PD.14 had RELAXED this to a structural check precisely BECAUSE of the nulls). This is
+      // the literal `live_sse_flows_null_bearing_events_web_from_api` assertion.
+      for (const frame of frames) {
+        const envelope = RunEventEnvelope.parse(JSON.parse(frame));
+        expect(envelope.runId).toBe(RUN_ID);
+      }
     } finally {
       clearTimeout(timer);
     }
