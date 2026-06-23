@@ -186,6 +186,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Schedule comparison/);
   assert.match(source, /agenomes/);
   assert.match(source, /Agenome persona/);
+  assert.match(source, /runMode/);
+  assert.match(source, /Run mode/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -472,6 +474,159 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.ok(Array.isArray(response.body.dashboardEvents));
   assert.ok(response.body.dashboardEvents.length > 0);
   assert.equal(fakeOpenRouter.calls.length, 0);
+});
+
+test('kernel dashboard route refuses live generation unless explicitly enabled', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-disabled-'));
+  const fakeOpenRouter = createOpenRouterFetch([]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_disabled',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 403);
+  assert.match(String(response.body.error), /live dashboard generation is disabled/i);
+  assert.equal(fakeOpenRouter.calls.length, 0);
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route can run enabled live generation without exposing secrets', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-enabled-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'Dashboard Live Recovery',
+      recoveredProblem:
+        'GLP-1 adoption collapses the reward budget behind impulse categories before snacks alone show the break.',
+      hiddenConstraint: 'The useful demand unit is household impulse surface area.',
+      falsifier: 'Treated households keep impulse category spend stable after adoption.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'dash_live_reward_budget',
+          agenomeId: 'ag_polymath',
+          title: 'Reward Budget Ledger',
+          summary: 'Follow treated households across snacks, alcohol, and other impulse rewards.',
+          mechanism: 'Build a household panel that compares pre/post GLP-1 baskets across impulse categories.',
+          claimedDelta: 'Finds demand destruction before snack SKU substitutions make it obvious.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'dash_live_tripwire',
+          agenomeId: 'ag_blindside',
+          title: 'Checkout Tripwire',
+          summary: 'Use checkout add-on disappearance as the first public signal.',
+          mechanism: 'Watch baskets, convenience trips, and add-on rates for treated versus untreated households.',
+          claimedDelta: 'Turns medical adoption into a retailer signal.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'dash_live_reward_budget',
+          criticId: 'grounding',
+          score: 92,
+          pressure: 'The household panel directly tests the cross-category mechanism.',
+          revisionMandate: 'Name the impulse categories and comparison cohort.',
+        },
+        {
+          candidateId: 'dash_live_tripwire',
+          criticId: 'novelty',
+          score: 86,
+          pressure: 'Checkout add-ons are an early and non-obvious signal.',
+          revisionMandate: 'Separate treated households from broad channel weakness.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_enabled',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        liveModel: true,
+        model: 'fixture-model',
+        generations: 4,
+        budget: 4,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runMode, 'live');
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(response.body.generations, 1);
+  assert.equal(response.body.budget.usedUnits, 1);
+  assert.equal(response.body.child.id, 'child_dash_live_reward_budget_dash_live_tripwire');
+  assert.ok(response.body.modelCalls.path.endsWith('model-calls.jsonl'));
+  assert.equal(fakeOpenRouter.calls.length, 3);
+  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route requires a live demo token when configured', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-token-'));
+  const fakeOpenRouter = createOpenRouterFetch([]);
+
+  const denied = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_token_denied',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault-denied'),
+        proofBoardDir: path.join(root, 'proof-board-denied'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true',
+        DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(denied.status, 403);
+  assert.match(String(denied.body.error), /live demo token/i);
+  assert.equal(fakeOpenRouter.calls.length, 0);
+  assert.doesNotMatch(JSON.stringify(denied.body), /server-side-model-key|live-demo-token/);
 });
 
 test('kernel dashboard route applies an approved fitness lens without exposing secrets', async () => {

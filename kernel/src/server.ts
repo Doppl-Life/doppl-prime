@@ -50,6 +50,15 @@ type KernelHttpOptions = {
   fetch?: OpenRouterModelClientInput['fetch'];
 };
 
+class KernelHttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const DASHBOARD_CASE_STUDIES = [
   {
     id: 'fsd-ownership-unwind',
@@ -661,6 +670,24 @@ function parseFitnessSchedule(value: unknown): FitnessScheduleMode {
   throw new Error('fitnessSchedule must be one of: auto, diverge, balanced, converge');
 }
 
+function envValue(options: KernelHttpOptions, name: string): string {
+  return options.env?.[name] ?? process.env[name] ?? '';
+}
+
+function envFlagEnabled(options: KernelHttpOptions, name: string): boolean {
+  return ['1', 'true', 'yes', 'on'].includes(envValue(options, name).trim().toLowerCase());
+}
+
+function liveDemoAuthorized(request: KernelHttpRequest, options: KernelHttpOptions): boolean {
+  if (!envFlagEnabled(options, 'DOPPL_REQUIRE_LIVE_DEMO_TOKEN')) return true;
+  const configuredToken = envValue(options, 'DOPPL_LIVE_DEMO_TOKEN').trim();
+  if (!configuredToken) return false;
+  const suppliedToken =
+    headerValue(request.headers, 'x-live-demo-token') ||
+    headerValue(request.headers, 'x-doppl-live-demo-token');
+  return suppliedToken === configuredToken;
+}
+
 function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
@@ -897,7 +924,7 @@ async function generationProvidersFromRequest(
     if (!parsed.model) throw new Error('model is required when liveModel is set');
     return createModelGenerationProviders({
       client: createOpenRouterModelClient({
-        apiKey: options.env?.OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? '',
+        apiKey: envValue(options, 'OPENROUTER_API_KEY'),
         fetch: options.fetch,
       }),
       model: parsed.model,
@@ -950,6 +977,7 @@ async function runFromRequestBody(
 }
 
 async function runDashboardCaseFromRequestBody(
+  request: KernelHttpRequest,
   body: string | undefined,
   options: KernelHttpOptions,
 ): Promise<Record<string, unknown>> {
@@ -958,6 +986,12 @@ async function runDashboardCaseFromRequestBody(
   const dashboardCase = approvedDashboardCase(casePath);
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = Boolean(parsed.liveModel);
+  if (liveModel && !envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM')) {
+    throw new KernelHttpError(403, 'live dashboard generation is disabled');
+  }
+  if (liveModel && !liveDemoAuthorized(request, options)) {
+    throw new KernelHttpError(403, 'live demo token is required');
+  }
   const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
   const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
   const summary = await runFromRequestBody(
@@ -985,6 +1019,15 @@ async function runDashboardCaseFromRequestBody(
     : undefined;
   return {
     ...runIndex,
+    runMode: liveModel ? 'live' : 'fixture',
+    generations: Array.isArray(runIndex.evolution) ? runIndex.evolution.length : 0,
+    candidateCount: Array.isArray(runIndex.candidates) ? runIndex.candidates.length : 0,
+    modelCalls: runIndex.trace &&
+      typeof runIndex.trace === 'object' &&
+      'modelCallsPath' in runIndex.trace &&
+      typeof runIndex.trace.modelCallsPath === 'string'
+      ? { path: runIndex.trace.modelCallsPath }
+      : null,
     dashboardArtifact: artifact?.content,
     dashboardEvents: await readDashboardEvents(runId, outDir),
   };
@@ -1013,7 +1056,7 @@ export async function handleKernelHttpRequest(
       return { status: 200, body: { runs: await listDashboardRuns(outDirFromUrl(url)) } };
     }
     if (request.method === 'POST' && url.pathname === '/kernel/dashboard/runs') {
-      return { status: 200, body: await runDashboardCaseFromRequestBody(request.body, options) };
+      return { status: 200, body: await runDashboardCaseFromRequestBody(request, request.body, options) };
     }
     const dashboardEventRoute = url.pathname.match(
       /^\/kernel\/dashboard\/runs\/([^/]+)\/(events|stream|health)$/,
@@ -1055,6 +1098,12 @@ export async function handleKernelHttpRequest(
     }
     return { status: 404, body: { error: 'not_found' } };
   } catch (error) {
+    if (error instanceof KernelHttpError) {
+      return {
+        status: error.status,
+        body: { error: error.message },
+      };
+    }
     return {
       status: 400,
       body: { error: error instanceof Error ? error.message : String(error) },

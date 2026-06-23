@@ -55,6 +55,7 @@ const FITNESS_SCHEDULES = [
 const SAMPLE_RUN = {
   runId: 'react_flow_preview',
   caseId: 'fsd-ownership-unwind',
+  runMode: 'fixture',
   generations: 4,
   budgetUsed: 4,
   problemRecovery: {
@@ -915,6 +916,7 @@ export default function App() {
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
   const budgetUsed = budgetUnits(run);
   const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
+  const runMode = run.runMode || (run.modelCalls ? 'live' : 'fixture');
   const scheduleComparison = latestScheduleComparison(run);
   const selectedInspector = useMemo(() => inspectorData(run, selectedNode), [run, selectedNode]);
 
@@ -1011,6 +1013,7 @@ export default function App() {
             <h2>{run.caseId || 'sample'} / {run.runId}</h2>
           </div>
           <div className="metrics">
+            <span><strong>{runMode}</strong> Run mode</span>
             <span><strong>{candidates.length}</strong> candidates</span>
             <span><strong>{generationCount(run)}</strong> generations</span>
             <span><strong>{budgetUsed}</strong> budget</span>

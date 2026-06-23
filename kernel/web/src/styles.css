@@ -222,7 +222,7 @@ h2 {
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(4, 118px);
+  grid-template-columns: repeat(5, 118px);
   gap: 8px;
 }
 
