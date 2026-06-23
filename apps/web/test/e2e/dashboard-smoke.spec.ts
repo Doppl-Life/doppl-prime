@@ -160,7 +160,9 @@ test('dashboard happy path: start → live events fold → final-idea links reso
     // PD.16 — POST /runs returns the command shape `{ runId }` (not a full Run); startRun consumes it.
     if (path === '/api/runs' && method === 'POST')
       return route.fulfill({ json: { runId: run.id } });
-    if (path === '/api/runs') return route.fulfill({ json: [] });
+    // PD.17 — RunListPanel calls listRuns on mount; the real API + the PD.15 client use the `{runs}`
+    // wrapper, so the GET /runs mock returns `{ runs: [] }` (the panel renders its empty state cleanly).
+    if (path === '/api/runs') return route.fulfill({ json: { runs: [] } });
     if (path === '/api/runs/run_1/lineage') return route.fulfill({ json: lineage });
     if (path.startsWith('/api/runs/run_1/events')) return route.fulfill({ json: events });
     if (path === '/api/runs/run_1/candidates/cand_1') return route.fulfill({ json: candidate });

@@ -16,6 +16,7 @@ import { OperatorPromptPanel } from '../components/demo/OperatorPromptPanel';
 import { FallbackLadderPanel } from '../components/demo/FallbackLadderPanel';
 import { RunHealthPanel } from '../components/demo/RunHealthPanel';
 import { StopControl } from '../components/run/StopControl';
+import { RunListPanel } from '../components/run/RunListPanel';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
 import { GenerationComparison } from '../charts/GenerationComparison';
@@ -113,13 +114,26 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 export function Dashboard({
   runId,
   runClient,
-  mode = 'live',
+  mode: modeProp = 'live',
   baseUrl = '/api',
   eventSourceFactory = defaultEventSourceFactory,
   createStream = createSseStream,
   store: injectedStore,
 }: DashboardProps) {
   const [observedRunId, setObservedRunId] = useState(runId);
+  // PD.17 — `mode` is run-switchable STATE (was a static prop): browsing a past run (the run-list or the
+  // fallback replay rung) observes it in REPLAY mode; starting a fresh run returns to LIVE. Mode is a
+  // non-folded §2 label (the live/replay fold is identical) — only the ModeBanner reads it; the store
+  // recreates on either an observedRunId OR a mode change.
+  const [mode, setMode] = useState<RunMode>(modeProp);
+  const observeReplay = (id: string): void => {
+    setMode('replay');
+    setObservedRunId(id);
+  };
+  const observeLive = (id: string): void => {
+    setMode('live');
+    setObservedRunId(id);
+  };
   const store = useMemo(
     () => injectedStore ?? createRunStore({ runId: observedRunId, runClient, mode }),
     [injectedStore, observedRunId, runClient, mode],
@@ -186,21 +200,28 @@ export function Dashboard({
       {observedRunId && <RunHealthPanel health={health} />}
 
       <div style={grid}>
+        {/* PD.17 — the run-list / replay browser: browse past runs (GET /runs) → click → observe that run
+            in REPLAY mode (observeReplay; the shared replay-switch the fallback rung also uses). */}
+        <Panel title="Runs">
+          <RunListPanel
+            runClient={runClient}
+            onReplay={observeReplay}
+            observedRunId={observedRunId}
+          />
+        </Panel>
+
         <Panel title="Run">
           {/* PD.5b — the demo-forward operator-prompt path (prepared/freeform → partial {seed}); the
-              full-control RunConfigPanel stays alongside. Both hand the new run to the shell via onStarted. */}
-          <OperatorPromptPanel
-            runClient={runClient}
-            onStarted={(run) => setObservedRunId(run.runId)}
-          />
+              full-control RunConfigPanel stays alongside. A fresh start observes the new run in LIVE mode. */}
+          <OperatorPromptPanel runClient={runClient} onStarted={(run) => observeLive(run.runId)} />
           {/* PD.12 — the operator 3-rung demo fallback ladder (low-cap-live · prepared · replay); start a
-              rung's run or mount the recorded replay (the shell observes the resulting run). */}
+              rung's run (LIVE) or mount the recorded replay (REPLAY — observeReplay, the shared switch). */}
           <FallbackLadderPanel
             runClient={runClient}
-            onStarted={(run) => setObservedRunId(run.runId)}
-            onReplay={(replayRunId) => setObservedRunId(replayRunId)}
+            onStarted={(run) => observeLive(run.runId)}
+            onReplay={observeReplay}
           />
-          <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.runId)} />
+          <RunConfigPanel runClient={runClient} onStarted={(run) => observeLive(run.runId)} />
           {observedRunId && (
             <StopControl runId={observedRunId} store={store} runClient={runClient} />
           )}

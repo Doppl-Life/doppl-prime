@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import type { LineageGraphProjection } from '@doppl/contracts';
@@ -127,6 +127,28 @@ describe('Dashboard — shell + SSE-store wiring', () => {
   it('test_resync_on_mount', async () => {
     const { runClient } = renderDashboard('live');
     await waitFor(() => expect(runClient.getEvents).toHaveBeenCalled());
+  });
+
+  // PD.17 (§12/§11) — the run-list browses past runs; clicking one observes it in REPLAY mode. Rendered
+  // WITHOUT an injected store so the mode-lift recreates the real store: the observed run switches
+  // (getLineage re-fetched for the clicked run) AND the ModeBanner label flips to REPLAY.
+  it('run_list_click_observes_run_in_replay_mode', async () => {
+    const runClient = fakeClient();
+    runClient.listRuns = () =>
+      Promise.resolve([{ runId: 'run_2', status: 'completed', sequenceThrough: 5 }]);
+    render(
+      <Dashboard
+        runId="run_1"
+        runClient={runClient}
+        baseUrl="/api"
+        eventSourceFactory={eventSourceFactory}
+        createStream={createStream}
+      />,
+    );
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledWith('run_1')); // initial (live)
+    fireEvent.click((await screen.findByText('run_2')).closest('button')!);
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledWith('run_2')); // observed switch
+    expect(screen.getByText('REPLAY')).toBeTruthy(); // the mode-lift → replay label
   });
 
   // spec(rule #6): no apps/api import.

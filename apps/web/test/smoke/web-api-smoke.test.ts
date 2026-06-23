@@ -186,6 +186,19 @@ describe.skipIf(!SMOKE_ENABLED)('PD.14 real web→proxy→API smoke (§11/§12/�
     expect(stopped.runId).toBe(started.runId);
   });
 
+  // PD.17 (§12/§11/§17) — the run-list / replay BROWSE→REPLAY data path through the proxy: listRuns
+  // surfaces the past run, and getReplay(that runId) returns its replay summary (what observeReplay's
+  // observed-run effect fetches). The UI click→onReplay is unit-covered (RunListPanel/Dashboard); this
+  // proves the browse→replay DATA against the real API.
+  test('smoke_run_list_browse_to_replay', async () => {
+    const client = createRunClient({ baseUrl: `http://127.0.0.1:${vitePort}/api` });
+    const runs = await client.listRuns();
+    const target = runs.find((r) => r.runId === RUN_ID) ?? runs[0];
+    expect(target).toBeDefined();
+    const replay = await client.getReplay(target!.runId);
+    expect(replay.runId).toBe(target!.runId);
+  });
+
   // spec(§11/§12 live window) — the SSE stream proxies UNBUFFERED: `/api/runs/:id/stream` delivers events
   // incrementally (≥2 separate `data:` frames while the stream stays open), not one buffered blob. (A
   // buffering proxy would deliver nothing until the upstream closes — which a terminal run never does —
