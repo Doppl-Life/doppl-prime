@@ -76,6 +76,59 @@ function boundedLens(lens: FitnessLens): FitnessLens {
   };
 }
 
+function dominates(left: FitnessRecord, right: FitnessRecord): boolean {
+  const leftAxes = left.selection?.axes;
+  const rightAxes = right.selection?.axes;
+  if (!leftAxes || !rightAxes) return false;
+  const noveltyAtLeast = leftAxes.novelty >= rightAxes.novelty;
+  const groundingAtLeast = leftAxes.grounding >= rightAxes.grounding;
+  const betterSomewhere = leftAxes.novelty > rightAxes.novelty || leftAxes.grounding > rightAxes.grounding;
+  return noveltyAtLeast && groundingAtLeast && betterSomewhere;
+}
+
+function withFrontierRanks(records: FitnessRecord[]): FitnessRecord[] {
+  const remaining = [...records];
+  const ranked = new Map<string, FitnessRecord['selection']['frontier']>();
+  let rank = 1;
+
+  while (remaining.length) {
+    const currentFrontier = remaining.filter(
+      (candidate) => !remaining.some((other) => other.candidateId !== candidate.candidateId && dominates(other, candidate)),
+    );
+    const frontierIds = new Set(currentFrontier.map((candidate) => candidate.candidateId));
+
+    for (const candidate of currentFrontier) {
+      const dominatedBy = records
+        .filter((other) => other.candidateId !== candidate.candidateId && dominates(other, candidate))
+        .map((other) => other.candidateId);
+      ranked.set(candidate.candidateId, {
+        pareto: rank === 1,
+        rank,
+        dominatedBy,
+      });
+    }
+
+    const nextRemaining = remaining.filter((candidate) => !frontierIds.has(candidate.candidateId));
+    if (nextRemaining.length === remaining.length) break;
+    remaining.splice(0, remaining.length, ...nextRemaining);
+    rank += 1;
+  }
+
+  return records.map((record) => ({
+    ...record,
+    selection: record.selection
+      ? {
+          ...record.selection,
+          frontier: ranked.get(record.candidateId) || {
+            pareto: false,
+            rank,
+            dominatedBy: [],
+          },
+        }
+      : record.selection,
+  }));
+}
+
 export function scoreCandidates(
   verdicts: CriticVerdict[],
   options: ScoreCandidateOptions = {},
@@ -88,7 +141,7 @@ export function scoreCandidates(
   for (const verdict of verdicts) {
     byCandidate.set(verdict.candidateId, [...(byCandidate.get(verdict.candidateId) || []), verdict]);
   }
-  return [...byCandidate.entries()]
+  const records = [...byCandidate.entries()]
     .map(([candidateId, rows]) => {
       const fallback = average(rows);
       const novelty = averageByCritic(rows, [/novel/i, /distinct/i, /surpris/i]) ?? fallback;
@@ -128,16 +181,31 @@ export function scoreCandidates(
             judge: projectedProposalRating(total),
             source: 'projected_from_internal_selection_fitness',
           },
+          frontier: {
+            pareto: false,
+            rank: 1,
+            dominatedBy: [],
+          },
         },
         rationale: rows.map((row) => row.pressure).join(' | '),
       };
     })
     .sort((a, b) => b.total - a.total);
+  return withFrontierRanks(records);
 }
 
 export function selectParents(records: FitnessRecord[]): [string, string] | [] {
   if (records.length < 2) return [];
-  return [records[0]!.candidateId, records[1]!.candidateId];
+  const frontierRecords = records
+    .filter((record) => record.selection?.frontier.pareto)
+    .sort((a, b) => b.total - a.total);
+  const ordered = [
+    ...frontierRecords,
+    ...records.filter(
+      (record) => !frontierRecords.some((frontier) => frontier.candidateId === record.candidateId),
+    ),
+  ];
+  return [ordered[0]!.candidateId, ordered[1]!.candidateId];
 }
 
 export function checkPairCompatibility(parentA: string, parentB: string): PairCompatibility {

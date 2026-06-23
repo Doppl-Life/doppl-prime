@@ -290,6 +290,28 @@ function fitnessFor(run, candidate) {
   return score?.total ?? score?.score ?? null;
 }
 
+function fitnessRecordFor(run, candidateId) {
+  return (run.fitnessRecords || []).find((record) => record.candidateId === candidateId) || null;
+}
+
+function percent(value) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return 'n/a';
+  return `${Math.round(Number(value) * 100)}%`;
+}
+
+function signedRating(value) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return 'n/a';
+  const numeric = Number(value);
+  return `${numeric > 0 ? '+' : ''}${numeric.toFixed(1)}`;
+}
+
+function frontierLabel(record) {
+  const frontier = record?.selection?.frontier;
+  if (!frontier) return null;
+  if (frontier.pareto) return `frontier r${frontier.rank}`;
+  return `dominated r${frontier.rank}`;
+}
+
 function selectedIdsFor(run, generation) {
   const evolutionEntry = (run.evolution || []).find((entry) => entry.generation === generation);
   if (evolutionEntry?.selectedParentIds) return new Set(evolutionEntry.selectedParentIds);
@@ -384,6 +406,8 @@ function buildFlow(run) {
       const nodeId = `candidate-${generation}-${candidate.id}`;
       const status = selected.has(candidate.id) ? 'survivor' : 'rejected';
       const score = fitnessFor(run, candidate);
+      const fitnessRecord = fitnessRecordFor(run, candidate.id);
+      const frontier = frontierLabel(fitnessRecord);
       nodes.push({
         id: nodeId,
         type: 'kernelNode',
@@ -393,7 +417,7 @@ function buildFlow(run) {
           status,
           title: candidate.title || readableTitle(candidate.id),
           subtitle: candidate.summary || candidate.mechanism || candidate.path || 'Candidate pressure point',
-          badge: score === null ? 'unscored' : `fitness ${score}`,
+          badge: score === null ? frontier || 'unscored' : `${frontier || 'fitness'} ${score}`,
           raw: candidate,
         },
       });
@@ -640,6 +664,23 @@ function NodeInspector({ activeTab, data, onTabChange }) {
                   <strong>{record.total}</strong>
                 </div>
                 <ScoreBar value={record.total} />
+                {record.selection ? (
+                  <div className="fitness-metrics">
+                    <span>novelty {percent(record.selection.axes?.novelty)}</span>
+                    <span>grounding {percent(record.selection.axes?.grounding)}</span>
+                    <span>{record.selection.dial}</span>
+                    <span>decay {percent(record.selection.decay)}</span>
+                    <span>rating {signedRating(record.selection.proposalRating?.judge)}</span>
+                    <span>
+                      {record.selection.frontier?.pareto
+                        ? `Pareto frontier r${record.selection.frontier.rank}`
+                        : `Dominated r${record.selection.frontier?.rank ?? 'n/a'}`}
+                    </span>
+                  </div>
+                ) : null}
+                {record.selection?.frontier?.dominatedBy?.length ? (
+                  <small>Dominated by {record.selection.frontier.dominatedBy.join(', ')}</small>
+                ) : null}
                 <p>{record.rationale}</p>
               </article>
             ))}

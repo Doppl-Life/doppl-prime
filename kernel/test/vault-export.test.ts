@@ -60,6 +60,9 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.proposalNodes.root, 'proposal-nodes/case-study.md');
   assert.equal(index.proposalNodes.problemRecovery, 'proposal-nodes/problem-recovery.md');
   assert.equal(index.proposalNodes.doppl, 'proposal-nodes/doppl.md');
+  assert.equal(index.fitnessRecords[0].selection.frontier.pareto, true);
+  assert.equal(index.fitnessRecords[0].selection.frontier.rank, 1);
+  assert.equal(index.fitnessRecords[0].selection.proposalRating.scale, '-5_to_5');
   assert.equal(index.modelOutputs.accepted, 0);
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);

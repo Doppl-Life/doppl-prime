@@ -173,6 +173,9 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /nodesDraggable=\{false\}/);
   assert.match(source, /nodesConnectable=\{false\}/);
   assert.match(source, /draggable: false/);
+  assert.match(source, /fitness-metrics/);
+  assert.match(source, /Pareto frontier/);
+  assert.match(source, /proposalRating/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -185,6 +188,7 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /\.react-flow__controls-button/);
   assert.match(styles, /background: #31d4ff/);
   assert.match(styles, /color: #04111c/);
+  assert.match(styles, /\.fitness-metrics/);
   assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
 
@@ -447,6 +451,9 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 12);
   assert.equal(response.body.criticVerdicts.length, 45);
   assert.equal(response.body.fitnessRecords.length, 15);
+  assert.equal(response.body.fitnessRecords[0].selection.frontier.pareto, true);
+  assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
+  assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');
   assert.equal(response.body.knowledgePacket.items.length, 3);
   assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));

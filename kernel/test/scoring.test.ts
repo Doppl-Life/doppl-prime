@@ -80,6 +80,63 @@ test('keeps novelty and grounding as separate axes before scheduled selection', 
   assert.equal(divergeRecords[0]?.selection?.proposalRating.scale, '-5_to_5');
 });
 
+test('marks Pareto frontier candidates and selects from the frontier before dominated totals', () => {
+  const records = scoreCandidates(
+    [
+      {
+        candidateId: 'balanced',
+        criticId: 'novelty',
+        score: 70,
+        pressure: 'solid novelty',
+        revisionMandate: 'keep it distinct',
+      },
+      {
+        candidateId: 'balanced',
+        criticId: 'grounding',
+        score: 70,
+        pressure: 'solid grounding',
+        revisionMandate: 'keep it grounded',
+      },
+      {
+        candidateId: 'wild',
+        criticId: 'novelty',
+        score: 99,
+        pressure: 'breaks new terrain',
+        revisionMandate: 'prove it',
+      },
+      {
+        candidateId: 'wild',
+        criticId: 'grounding',
+        score: 20,
+        pressure: 'thin grounding',
+        revisionMandate: 'find evidence',
+      },
+      {
+        candidateId: 'dominated',
+        criticId: 'novelty',
+        score: 65,
+        pressure: 'nearby',
+        revisionMandate: 'sharpen',
+      },
+      {
+        candidateId: 'dominated',
+        criticId: 'grounding',
+        score: 65,
+        pressure: 'nearby',
+        revisionMandate: 'sharpen',
+      },
+    ],
+    { generation: 0 },
+  );
+
+  const byId = new Map(records.map((record) => [record.candidateId, record]));
+  assert.equal(byId.get('balanced')?.selection?.frontier.pareto, true);
+  assert.equal(byId.get('wild')?.selection?.frontier.pareto, true);
+  assert.equal(byId.get('dominated')?.selection?.frontier.pareto, false);
+  assert.deepEqual(byId.get('dominated')?.selection?.frontier.dominatedBy, ['balanced']);
+  assert.deepEqual(selectParents(records), ['wild', 'balanced']);
+});
+
 test('compatibility is separate from fitness', () => {
   const compatibility = checkPairCompatibility('a', 'b');
   assert.equal(compatibility.parentA, 'a');

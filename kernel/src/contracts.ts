@@ -90,6 +90,11 @@ export type FitnessRecord = {
       judge: number;
       source: string;
     };
+    frontier: {
+      pareto: boolean;
+      rank: number;
+      dominatedBy: string[];
+    };
   };
   rationale: string;
 };
@@ -371,6 +376,12 @@ export function assertFitnessRecord(value: unknown): FitnessRecord {
     assertStringField(proposalRating, 'scale', 'FitnessRecord.selection.proposalRating');
     assertNumberRangeField(proposalRating, 'judge', 'FitnessRecord.selection.proposalRating', -5, 5);
     assertStringField(proposalRating, 'source', 'FitnessRecord.selection.proposalRating');
+    const frontier = assertObject(selection.frontier, 'FitnessRecord.selection.frontier');
+    if (typeof frontier.pareto !== 'boolean') {
+      throw new Error('FitnessRecord.selection.frontier.pareto must be a boolean');
+    }
+    assertIntegerMinField(frontier, 'rank', 'FitnessRecord.selection.frontier', 1);
+    assertStringArrayField(frontier, 'dominatedBy', 'FitnessRecord.selection.frontier');
   }
   assertStringField(record, 'rationale', 'FitnessRecord');
   return record as FitnessRecord;

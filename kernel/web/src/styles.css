@@ -668,6 +668,33 @@ h2 {
   line-height: 1.45;
 }
 
+.fitness-card small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fitness-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  margin-top: 10px;
+}
+
+.fitness-metrics span {
+  border: 1px solid rgba(49, 212, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(49, 212, 255, 0.08);
+  color: #cdefff;
+  padding: 5px 8px;
+  font-size: 11px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .critic-card small,
 .evidence-list small {
   display: block;
