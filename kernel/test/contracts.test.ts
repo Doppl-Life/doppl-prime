@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  assertAgenome,
   assertCandidateSolution,
   assertCriticVerdict,
   assertFitnessRecord,
@@ -10,6 +11,7 @@ import {
   assertProblemRecovery,
   calculateInheritanceWeights,
 } from '../src/contracts.ts';
+import { materializeAgenomes } from '../src/agenomes.ts';
 
 test('inheritance weights preserve a 2:1 parent fitness ratio', () => {
   assert.deepEqual(calculateInheritanceWeights(80, 40), { parentA: 0.667, parentB: 0.333 });
@@ -62,6 +64,72 @@ test('candidate assertion rejects invalid generation metadata', () => {
         citedKnowledge: [],
       }),
     /CandidateSolution.generation/,
+  );
+});
+
+test('agenome assertion validates durable hereditary fields', () => {
+  assert.throws(
+    () =>
+      assertAgenome({
+        id: 'ag_bad',
+        label: 'Bad',
+        prompt: 'prompt',
+        persona: 'persona',
+        valueWeights: {
+          novelty: 1.2,
+          grounding: 0.2,
+          feasibility: 0.2,
+          skepticism: 0.2,
+        },
+        toolPermissions: [],
+        decompositionPolicy: 'policy',
+        spawnBudget: { maxCandidates: 1, maxToolCalls: 0 },
+        parentAgenomeIds: [],
+        mutations: [],
+        energy: { allocated: 1, spent: 0, remaining: 1 },
+        candidateIds: [],
+        generations: [],
+      }),
+    /Agenome.valueWeights.novelty/,
+  );
+});
+
+test('materialized agenomes group candidates into durable runtime objects', () => {
+  const agenomes = materializeAgenomes({
+    candidates: [
+      {
+        id: 'cand_a',
+        caseId: 'case_a',
+        agenomeId: 'ag_blindside',
+        generation: 0,
+        title: 'A',
+        summary: 'summary',
+        mechanism: 'mechanism',
+        claimedDelta: 'delta',
+        citedKnowledge: [],
+      },
+      {
+        id: 'cand_b',
+        caseId: 'case_a',
+        agenomeId: 'ag_blindside_mutation_g1',
+        generation: 1,
+        title: 'B',
+        summary: 'summary',
+        mechanism: 'mechanism',
+        claimedDelta: 'delta',
+        citedKnowledge: [],
+      },
+    ],
+  });
+  assert.equal(agenomes.length, 2);
+  assert.equal(agenomes.find((agenome) => agenome.id === 'ag_blindside')?.label, 'Blindside');
+  assert.deepEqual(
+    agenomes.find((agenome) => agenome.id === 'ag_blindside_mutation_g1')?.parentAgenomeIds,
+    ['ag_blindside'],
+  );
+  assert.equal(
+    agenomes.find((agenome) => agenome.id === 'ag_blindside_mutation_g1')?.mutations[0],
+    'mutation derived for generation 1',
   );
 });
 

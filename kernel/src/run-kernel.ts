@@ -18,6 +18,7 @@ import {
   type FitnessScheduleMode,
 } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
+import { materializeAgenomes } from './agenomes.ts';
 import { createMemoryEventRecorder } from './event-store.ts';
 import {
   createFixtureGenerationProviders,
@@ -226,6 +227,21 @@ export async function runKernel(input: {
       budgetRemainingUnits: budget.remainingUnits,
     });
   }
+  const agenomes = materializeAgenomes({ candidates, fusion });
+  for (const agenome of agenomes) {
+    trace.push(
+      'agenome.materialized',
+      {
+        agenomeId: agenome.id,
+        label: agenome.label,
+        parentAgenomeIds: agenome.parentAgenomeIds,
+        mutations: agenome.mutations,
+        energy: agenome.energy,
+        candidateIds: agenome.candidateIds,
+      },
+      { actor: 'agenome', agenomeId: agenome.id },
+    );
+  }
   const modelCallRecords = modelCallRecordsFrom(generationProviders);
   for (const record of modelCallRecords || []) {
     trace.push(modelOutputEventType(record), {
@@ -246,6 +262,7 @@ export async function runKernel(input: {
     caseStudy,
     memoryMode: input.memoryMode,
     knowledgePacket,
+    agenomes,
     problemRecovery,
     candidates,
     criticVerdicts,

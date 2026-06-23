@@ -123,6 +123,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       falsifier: run.problemRecovery.falsifier,
       citedKnowledge: run.problemRecovery.citedKnowledge,
     },
+    agenomes: run.agenomes,
     candidates: run.candidates.map((candidate) => ({
       id: candidate.id,
       path: solutionFilename(candidate),

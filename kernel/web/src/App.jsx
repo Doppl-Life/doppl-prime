@@ -525,6 +525,9 @@ function uniqueById(items, getId) {
 function nodeSubject(run, node) {
   if (!node) return null;
   const raw = node.data.raw || {};
+  const agenome = raw.agenomeId
+    ? (run.agenomes || []).find((entry) => entry.id === raw.agenomeId)
+    : null;
   if (node.data.kind === 'recovery') {
     return {
       id: raw.id || node.id,
@@ -538,7 +541,7 @@ function nodeSubject(run, node) {
         ['Artifact', raw.path],
       ],
       citedKnowledge: raw.citedKnowledge || [],
-      raw,
+      raw: { ...raw, agenome },
     };
   }
   if (node.data.kind === 'child') {
@@ -552,6 +555,9 @@ function nodeSubject(run, node) {
         ['Mechanism', raw.mechanism],
         ['Claimed delta', raw.claimedDelta],
         ['Parents', (raw.parentCandidateIds || []).join(' + ')],
+        ['Agenome', agenome ? `${agenome.label} (${agenome.id})` : raw.agenomeId],
+        ['Agenome parents', agenome?.parentAgenomeIds?.join(' + ')],
+        ['Agenome energy', agenome ? `${agenome.energy.spent}/${agenome.energy.allocated}` : undefined],
         ['Compatibility', raw.compatibility ? `${raw.compatibility.score} - ${raw.compatibility.rationale}` : undefined],
         [
           'Inheritance',
@@ -572,13 +578,16 @@ function nodeSubject(run, node) {
     summary: raw.summary || node.data.subtitle,
     details: [
       ['Agenome', raw.agenomeId],
+      ['Agenome persona', agenome?.persona],
+      ['Agenome energy', agenome ? `${agenome.energy.spent}/${agenome.energy.allocated}` : undefined],
+      ['Agenome policy', agenome?.decompositionPolicy],
       ['Generation', raw.generation === undefined ? undefined : String(raw.generation)],
       ['Mechanism', raw.mechanism],
       ['Claimed delta', raw.claimedDelta],
       ['Artifact', raw.path],
     ],
     citedKnowledge: raw.citedKnowledge || [],
-    raw,
+    raw: { ...raw, agenome },
   };
 }
 

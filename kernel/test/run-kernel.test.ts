@@ -17,6 +17,9 @@ test('runs deterministic kernel loop end to end', async () => {
   assert.equal(run.selectedParents.length, 2);
   assert.ok((run.fusion?.inheritanceWeights.parentA || 0) > 0.5);
   assert.ok(run.events.some((event) => event.type === 'knowledge.packet_selected'));
+  assert.ok(run.agenomes.length >= 2);
+  assert.ok(run.agenomes.some((agenome) => agenome.id === run.candidates[0]?.agenomeId));
+  assert.ok(run.events.some((event) => event.type === 'agenome.materialized'));
 });
 
 test('runs through injected generation providers', async () => {

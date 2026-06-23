@@ -52,6 +52,9 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.artifact_type, 'kernel_run_index');
   assert.equal(index.runId, 'run_export_index');
   assert.equal(index.problemRecovery.path, 'problem-recovery.md');
+  assert.ok(index.agenomes.length >= 2);
+  assert.ok(index.agenomes[0].prompt);
+  assert.ok(index.agenomes[0].energy);
   assert.equal(index.candidates.length, run.candidates.length);
   assert.equal(index.child.id, run.fusion?.child.id);
   assert.deepEqual(index.child.parentCandidateIds, run.fusion?.parentCandidateIds);

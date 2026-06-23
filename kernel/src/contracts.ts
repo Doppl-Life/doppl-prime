@@ -49,6 +49,34 @@ export type CandidateSolution = {
   citedKnowledge: string[];
 };
 
+export type Agenome = {
+  id: string;
+  label: string;
+  prompt: string;
+  persona: string;
+  valueWeights: {
+    novelty: number;
+    grounding: number;
+    feasibility: number;
+    skepticism: number;
+  };
+  toolPermissions: string[];
+  decompositionPolicy: string;
+  spawnBudget: {
+    maxCandidates: number;
+    maxToolCalls: number;
+  };
+  parentAgenomeIds: string[];
+  mutations: string[];
+  energy: {
+    allocated: number;
+    spent: number;
+    remaining: number;
+  };
+  candidateIds: string[];
+  generations: number[];
+};
+
 export type CriticVerdict = {
   candidateId: string;
   criticId: string;
@@ -157,6 +185,7 @@ export const RUN_EVENT_TYPES = [
   'knowledge.packet_requested',
   'knowledge.packet_selected',
   'knowledge.item_injected',
+  'agenome.materialized',
   'problem_recovery.created',
   'generation.started',
   'generation.completed',
@@ -202,6 +231,7 @@ export type KernelRun = {
   caseStudy: CaseStudy;
   memoryMode: MemoryMode;
   knowledgePacket: KnowledgePacket;
+  agenomes: Agenome[];
   problemRecovery: ProblemRecovery;
   candidates: CandidateSolution[];
   criticVerdicts: CriticVerdict[];
@@ -330,6 +360,32 @@ export function assertCandidateSolution(value: unknown): CandidateSolution {
   return candidate as CandidateSolution;
 }
 
+export function assertAgenome(value: unknown): Agenome {
+  const agenome = assertObject(value, 'Agenome');
+  for (const field of ['id', 'label', 'prompt', 'persona', 'decompositionPolicy']) {
+    assertStringField(agenome, field, 'Agenome');
+  }
+  const valueWeights = assertObject(agenome.valueWeights, 'Agenome.valueWeights');
+  for (const field of ['novelty', 'grounding', 'feasibility', 'skepticism']) {
+    assertNumberRangeField(valueWeights, field, 'Agenome.valueWeights', 0, 1);
+  }
+  assertStringArrayField(agenome, 'toolPermissions', 'Agenome');
+  const spawnBudget = assertObject(agenome.spawnBudget, 'Agenome.spawnBudget');
+  assertIntegerMinField(spawnBudget, 'maxCandidates', 'Agenome.spawnBudget', 0);
+  assertIntegerMinField(spawnBudget, 'maxToolCalls', 'Agenome.spawnBudget', 0);
+  assertStringArrayField(agenome, 'parentAgenomeIds', 'Agenome');
+  assertStringArrayField(agenome, 'mutations', 'Agenome');
+  const energy = assertObject(agenome.energy, 'Agenome.energy');
+  assertNumberRangeField(energy, 'allocated', 'Agenome.energy', 0, Number.MAX_SAFE_INTEGER);
+  assertNumberRangeField(energy, 'spent', 'Agenome.energy', 0, Number.MAX_SAFE_INTEGER);
+  assertNumberRangeField(energy, 'remaining', 'Agenome.energy', 0, Number.MAX_SAFE_INTEGER);
+  assertStringArrayField(agenome, 'candidateIds', 'Agenome');
+  if (!Array.isArray(agenome.generations) || !agenome.generations.every(Number.isInteger)) {
+    throw new Error('Agenome.generations must be an integer array');
+  }
+  return agenome as Agenome;
+}
+
 export function assertCriticVerdict(value: unknown): CriticVerdict {
   const verdict = assertObject(value, 'CriticVerdict');
   for (const field of ['candidateId', 'criticId', 'pressure', 'revisionMandate']) {
@@ -423,6 +479,8 @@ export function assertKernelRun(value: unknown): KernelRun {
   if (!Array.isArray(run.events)) throw new Error('KernelRun.events is required');
   assertProblemRecovery(run.problemRecovery);
   assertKnowledgePacket(run.knowledgePacket);
+  if (!Array.isArray(run.agenomes)) throw new Error('KernelRun.agenomes is required');
+  for (const agenome of run.agenomes) assertAgenome(agenome);
   for (const candidate of run.candidates || []) assertCandidateSolution(candidate);
   for (const verdict of run.criticVerdicts || []) assertCriticVerdict(verdict);
   for (const fitness of run.fitnessRecords || []) assertFitnessRecord(fitness);

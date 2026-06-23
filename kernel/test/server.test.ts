@@ -182,6 +182,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Fitness schedule/);
   assert.match(source, /scheduleComparisons/);
   assert.match(source, /Schedule comparison/);
+  assert.match(source, /agenomes/);
+  assert.match(source, /Agenome persona/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
