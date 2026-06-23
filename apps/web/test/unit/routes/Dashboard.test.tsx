@@ -93,7 +93,9 @@ describe('Dashboard — shell + SSE-store wiring', () => {
   // spec(§12/P7.4): the ModeBanner reflects the store's mode (live/replay).
   it('test_mode_banner_reflects_store_mode', () => {
     renderDashboard('replay');
-    expect(screen.getByText(/replay/i)).toBeTruthy();
+    // ModeBanner's exact uppercase label (PD.6 added a RunHealthPanel "…switching to replay" cue, so a
+    // case-insensitive /replay/i now matches both — target the banner's exact "REPLAY" span).
+    expect(screen.getByText('REPLAY')).toBeTruthy();
   });
 
   // spec(§13/rule #4): the redaction trust indicator renders the "redaction active" affordance, no secret.

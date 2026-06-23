@@ -13,6 +13,7 @@ import { ModeBanner } from '../components/feedback/ModeBanner';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { RunConfigPanel } from '../components/run/RunConfigPanel';
 import { OperatorPromptPanel } from '../components/demo/OperatorPromptPanel';
+import { RunHealthPanel } from '../components/demo/RunHealthPanel';
 import { StopControl } from '../components/run/StopControl';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
@@ -69,13 +70,6 @@ const trust: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   color: 'var(--success)',
-};
-const healthRow: CSSProperties = {
-  display: 'flex',
-  gap: 'var(--space-4)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-caption)',
-  color: 'var(--fg-muted)',
 };
 const grid: CSSProperties = { display: 'grid', gap: 'var(--space-5)' };
 const panelCard: CSSProperties = {
@@ -186,13 +180,9 @@ export function Dashboard({
         </span>
       </header>
 
-      {health && (
-        <section aria-label="Run health" style={healthRow}>
-          <span>generation {health.currentGeneration}</span>
-          <span>{health.candidatesInFlight} in flight</span>
-          <span>last event {health.lastEventAt ?? '—'}</span>
-        </section>
-      )}
+      {/* PD.6 — the continue-vs-switch health surface (signal + a colorblind-safe stale/absent flag),
+          extracted from the inline healthRow. Shown for the observed run; absent health is flagged. */}
+      {observedRunId && <RunHealthPanel health={health} />}
 
       <div style={grid}>
         <Panel title="Run">
