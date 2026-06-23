@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { CandidateSolution, KernelRun, VaultExportManifest } from './contracts.ts';
 import { replayRunProjection, writeRunEvents } from './event-store.ts';
 import { writeModelCallRecords } from './model-gateway.ts';
+import { compileProposalNodes } from './node-compiler.ts';
 
 function frontmatter(fields: Record<string, string>): string {
   return [
@@ -113,6 +114,11 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       eventsPath: 'events.jsonl',
       modelCallsPath: paths.modelCallsPath,
     },
+    proposalNodes: {
+      root: 'proposal-nodes/case-study.md',
+      problemRecovery: 'proposal-nodes/problem-recovery.md',
+      doppl: run.fusion ? 'proposal-nodes/doppl.md' : null,
+    },
     evolution: run.evolution,
     budget: run.budget,
     modelOutputs: replayRunProjection(run.events).modelOutputs,
@@ -189,6 +195,13 @@ export async function exportRunToVault(
     const solutionPath = path.join(runDir, solutionFilename(solution));
     await writeFile(solutionPath, solutionMarkdown(solution), 'utf8');
     files.push(solutionPath);
+  }
+
+  for (const node of compileProposalNodes(run)) {
+    const nodePath = path.join(runDir, node.path);
+    await mkdir(path.dirname(nodePath), { recursive: true });
+    await writeFile(nodePath, node.markdown, 'utf8');
+    files.push(nodePath);
   }
 
   const tracePath = path.join(runDir, 'trace.json');

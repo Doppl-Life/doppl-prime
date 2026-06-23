@@ -20,6 +20,9 @@ test('exports problem recovery and child solution markdown separately', async ()
   const manifest = await exportRunToVault(run, outDir);
   assert.ok(manifest.files.some((file) => file.endsWith('problem-recovery.md')));
   assert.ok(manifest.files.some((file) => file.includes('child_')));
+  assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/case-study.md')));
+  assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/problem-recovery.md')));
+  assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/doppl.md')));
   assert.ok(manifest.files.some((file) => file.endsWith('events.jsonl')));
   const recovery = await readFile(
     manifest.files.find((file) => file.endsWith('problem-recovery.md'))!,
@@ -54,6 +57,9 @@ test('exports a calibrator-facing run index', async () => {
   assert.deepEqual(index.child.parentCandidateIds, run.fusion?.parentCandidateIds);
   assert.equal(index.trace.path, 'trace.json');
   assert.equal(index.trace.eventsPath, 'events.jsonl');
+  assert.equal(index.proposalNodes.root, 'proposal-nodes/case-study.md');
+  assert.equal(index.proposalNodes.problemRecovery, 'proposal-nodes/problem-recovery.md');
+  assert.equal(index.proposalNodes.doppl, 'proposal-nodes/doppl.md');
   assert.equal(index.modelOutputs.accepted, 0);
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);
