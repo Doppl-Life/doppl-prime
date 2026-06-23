@@ -163,7 +163,7 @@ export function buildRunTrace(fixture: SeedFixture, dial: Dial, options: { caps?
     stage: 'trace',
     input: 'SelectionComparison + LensResult[] + boundary contracts + goal checks',
     decision: 'Emit the machine trace for tools and replay.',
-    reason: 'The kernel emits process facts; microscope tools translate those facts for humans.',
+    reason: 'The kernel emits process facts; human views (the proof board, nodes) translate those facts for humans.',
     output: 'RunTrace',
     goalChecks: [
       {

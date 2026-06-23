@@ -7,7 +7,6 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const targets = [
   { label: 'out/**', path: path.join(root, 'out') },
-  { label: 'records/assay-judgments/**', path: path.join(root, 'records', 'assay-judgments') },
 ];
 
 async function exists(target: string): Promise<boolean> {

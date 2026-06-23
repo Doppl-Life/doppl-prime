@@ -66,11 +66,11 @@ skill expresses ──► produces ideas in a run ──► Agora posts (sprout/
               (recorded in LINEAGE.md bedrock col)    to source skill
 ```
 
-A skill whose ideas keep earning `novel`/`feasible` verdicts ([bedrock/signal](../bedrock/signal/README.md))
+A skill whose ideas keep earning strong ratings ([rating-model](../my-docs/garden/rating-model.md))
 earns the right to spawn mutated children and gets more energy budget; one whose ideas draw
-`derivative`/`not-it` starves toward `deprecated`. The verdict's `kind` matters: a skill can be a
-strong **sprouter** (great process/generativity) but bear weak **afrits** (poor conclusions) — those
-are different fitnesses, so a skill's `bedrock` evidence should track them separately.
+negative ratings starves toward `deprecated`. A skill can be a strong **sprouter** (great
+process/generativity) but bear weak **doppls** (poor conclusions) — those are different
+fitnesses, so a skill's evidence should track them separately.
 
 **Gate before propagate:** a new/mutated skill is promoted only if its verdicts correlate with
 bedrock — otherwise it's [memetic cancer](../BUGS_AND_MITIGATIONS.md), archived not promoted.

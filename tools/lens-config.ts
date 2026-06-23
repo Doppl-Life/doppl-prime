@@ -1,4 +1,4 @@
-// Defines lens configs used by proof and microscope tools.
+// Defines lens configs used by the proof board.
 import type { LensConfig } from '../src/contracts/index.ts';
 
 export const capstoneDemoLens: LensConfig = {

@@ -383,7 +383,7 @@ export const boundaryContracts: BoundaryContract[] = [
     entersFrom: { id: 'lens', label: 'lens', kind: 'module' },
     input: { name: 'KernelRun + LensResult[]', schemaId: 'kernel.run.v2', direction: 'in' },
     output: { name: 'RunTrace', schemaId: RUN_TRACE_SCHEMA_VERSION, direction: 'out' },
-    exitsTo: { id: 'microscope-tools', label: 'MicroscopeTools', kind: 'artifact' },
+    exitsTo: { id: 'proof-board', label: 'ProofBoard', kind: 'artifact' },
   },
 ];
 
