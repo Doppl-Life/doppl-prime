@@ -87,7 +87,7 @@ So fitness is not one scale, and not three rubrics. It is **one two-axis space
 (novelty × grounding), and each application is a different weighting / trajectory
 through it.** You maintain *two fitness signals and a weighting schedule* — the
   schedule is the application. The sprout-vs-conclusion split (a high-novelty side-idea kept
-  for later vs. the doppl itself) lives on the node — see `my-docs/garden/object-model.md`.
+  for later vs. the doppl itself) lives on the node — see `my-docs/the-hut/object-model.md`.
 
 ---
 

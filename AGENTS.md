@@ -1,24 +1,24 @@
 # AGENTS.md
 
-## The garden is canon
+## The hut is canon
 
-`my-docs/garden/` (the hut) defines the model and is where we operate from. When the
-garden and the running kernel (`src/`, `tools/`, `specs/`) disagree, **the garden wins**;
-the kernel follows, deliberately. Change the decision in the garden first; the kernel
+`my-docs/the-hut/` defines the model and is where we operate from. When the
+hut and the running kernel (`src/`, `tools/`, `specs/`) disagree, **the hut wins**;
+the kernel follows, deliberately. Change the decision in the hut first; the kernel
 catches up as its own planned step. "It's still in the kernel" is not an argument for keeping
-a concept the garden has cut.
+a concept the hut has cut.
 
-The garden is canon but **provisional** — live until we freeze it on purpose. Do not let it
+The hut is canon but **provisional** — live until we freeze it on purpose. Do not let it
 quietly grow back into what the old kernel assumed.
 
 ## Working rules
 
-- Do not change `src/**` kernel semantics unless the user explicitly asks. (The garden being
+- Do not change `src/**` kernel semantics unless the user explicitly asks. (The hut being
   canon tells you *what* to build toward; it is not standing permission to rewrite the engine.)
 - Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
   the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Specs live under `specs/**`; the model lives in `my-docs/garden/**`; durable kernel
+- Specs live under `specs/**`; the model lives in `my-docs/the-hut/**`; durable kernel
   decisions live in `MEMORY.md`.
 - This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
   derivative paths.
@@ -29,7 +29,7 @@ quietly grow back into what the old kernel assumed.
 ## Duplicate surfaces
 
 Do not create shadow hubs, duplicate servers, planning archives, or parallel instruction
-files that compete with the garden or the named registers below. The garden owns the model;
+files that compete with the hut or the named registers below. The hut owns the model;
 the registers own the kernel's operating reality. One home per fact.
 
 ## Scope boundary
@@ -41,7 +41,7 @@ user explicitly asks.
 
 For strategic, architectural, spec, product-direction, or abstraction-setting work, do not
 treat existing repo assumptions as bedrock. Treat them as evidence to test against current
-goals, kernel behavior, the garden, and explicit user intent.
+goals, kernel behavior, the hut, and explicit user intent.
 
 Use the `first-principles` mutagen skill actively for this class of work: reduce the problem
 to invariants, name the provisional assumption you are rejecting or depending on, and only
@@ -60,7 +60,7 @@ Log durable findings in one home:
 
 | Finding | File |
 | --- | --- |
-| The model (stages, node, rating, engine, vocabulary) | `my-docs/garden/**` |
+| The model (stages, node, rating, engine, vocabulary) | `my-docs/the-hut/**` |
 | Build contract or evaluation doctrine | `specs/**` |
 | Active fork or ownership decision | `MEMORY.md` |
 | Durable lesson or banger | `LESSONS_AND_BANGERS.md` |

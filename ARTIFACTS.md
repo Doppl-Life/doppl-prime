@@ -23,7 +23,7 @@ Files are for replay and investigation after the human already knows what happen
 | Class | Paths | Keep? | Why |
 | --- | --- | --- | --- |
 | Source contracts | `src/contracts/index.ts` | yes | Load-bearing boundary definitions. |
-| The model | `my-docs/garden/**` | yes | Canon: the engine, rating, object model, vocabulary. |
+| The model | `my-docs/the-hut/**` | yes | Canon: the engine, rating, object model, vocabulary. |
 | Fixture inputs | `fixtures/*.json` | yes | Reproducible seed material. |
 | Case-study corpus | `case-studies/**` | yes | The seeds; `case-study.md` is seed-visible, `solution.md` is judge-only. |
 | Generated run output | `out/**` | no | Ephemeral inspection output; regenerate with `pnpm proof:export`. |

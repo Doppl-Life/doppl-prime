@@ -52,7 +52,7 @@ guiding implementation, cut it.
   governing logics under one umbrella. Forcing either shape loses signal. (Pepsi is the
   metaphor — one doppl vs. several distinct doppls.)
 - **Carry forward:** decide one doppl vs. many before judging output quality; a problem may
-  yield more than one doppl (`my-docs/garden/object-model.md`).
+  yield more than one doppl (`my-docs/the-hut/object-model.md`).
 
 ### Discovery feeds seeds, not authority - 2026-06-21
 
@@ -67,3 +67,22 @@ guiding implementation, cut it.
   withheld solution or executable check proves whether selection improved.
 - **Carry forward:** every assay batch needs at least one case with a real
   answer key, control lane, or cheap falsifier.
+
+### A mutagen is a widener bundled with its falsifier - 2026-06-23
+
+- **Lesson:** A mutagen is a distribution-widener bundled with the falsifier that
+  reconverges it. The generative perturbation is only half; without an
+  operator-local kill filter it is variance injection, not a strategy. (Drunk
+  Claude is the counter-example: the widener with a fake gate and invented
+  rigor.) See [`skills/LINEAGE.md`](skills/LINEAGE.md) Kill Filters.
+- **Carry forward:** coining an operator means writing its kill filter in the same
+  move; a roster row without one is incomplete.
+
+### Perspective earns operator status only by verdict - 2026-06-23
+
+- **Lesson:** A perspective (lens, mood, persona) becomes an operator only when
+  verdicts show it winning. Until then it stays `coined`, not `stable`. Skipping
+  to claimed rigor — results without a trace behind them — is how a mood cosplays
+  an operator.
+- **Carry forward:** gate promotion on `bedrock` evidence; honest "no verdict
+  ledger evidence yet" beats a confident fabricated benchmark.

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Doppl · build log</title>
+<style>
+/* ===========================================================
+   Doppl — build log. A live logbook of how the idearganism
+   was grown. Same lab palette as the app; the signature is the
+   commit spine, where growth (additions) and pruning (deletions)
+   render as light so the burn-and-rebuild rhythm is visible.
+   =========================================================== */
+:root{
+  --ink:#0a0d13; --ink-2:#0c1119; --panel:#111722; --panel-2:#141c28;
+  --line:#1f2836; --line-2:#2a3850;
+  --text:#e8eef5; --muted:#8b97a8; --faint:#5a6678; --faintest:#3a4456;
+  --novelty:#46d3c4; --grounding:#f0b429;
+  --seed:#64748b; --problem:#a78bfa; --doppl:#34d399;
+  --add:#34d399; --del:#f0843e; --neg:#f87171;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --sh:0 14px 50px rgba(0,0,0,.5);
+  --maxw:1080px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{
+  margin:0;color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;
+  background:
+    radial-gradient(1100px 620px at 82% -8%, rgba(70,211,196,.07), transparent 60%),
+    radial-gradient(900px 560px at 4% 8%, rgba(240,180,41,.05), transparent 55%),
+    var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:#26324a;border-radius:20px;border:3px solid transparent;background-clip:content-box}
+a{color:var(--novelty);text-decoration:none}
+a:hover{text-decoration:underline}
+.mono{font-family:var(--mono)}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.accent-n{color:var(--novelty)} .accent-g{color:var(--grounding)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------------- sticky nav ---------------- */
+.nav{position:sticky;top:0;z-index:40;background:rgba(10,13,19,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:16px;height:54px}
+.nav .brand{font-family:var(--mono);font-weight:700;font-size:16px;letter-spacing:-.01em;
+  background:linear-gradient(92deg,var(--novelty),var(--grounding));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.nav .links{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.nav .links a{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-radius:7px;transition:.15s}
+.nav .links a:hover{color:var(--text);background:var(--panel);text-decoration:none}
+.nav .links a.on{color:var(--ink);background:var(--novelty)}
+@media(max-width:760px){.nav .links{display:none}}
+
+/* ---------------- hero ---------------- */
+.hero{padding:70px 0 40px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero .eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.hero .org{font-size:30px;filter:drop-shadow(0 0 14px rgba(52,211,153,.4))}
+.hero h1{font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.03em;margin:0 0 18px;font-weight:680}
+.hero h1 .b{background:linear-gradient(94deg,var(--novelty),var(--doppl) 60%,var(--grounding));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero .lede{font-size:clamp(16px,2.2vw,20px);color:var(--muted);max-width:660px;margin:0 0 30px;line-height:1.55}
+.hero .lede b{color:var(--text);font-weight:600}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:30px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:13px 18px;background:linear-gradient(180deg,var(--panel),var(--ink-2))}
+.stat .v{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:-.02em}
+.stat .l{font-size:11px;color:var(--faint);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.stat.add .v{color:var(--add)} .stat.del .v{color:var(--del)}
+.pulse-chart{border:1px solid var(--line);border-radius:14px;background:var(--ink-2);padding:16px 18px 10px;position:relative}
+.pulse-chart .ch-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.pulse-chart .ch-hd .t{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pulse-chart .ch-hd .leg{font-size:11px;color:var(--faint);display:flex;gap:12px}
+.pulse-chart .ch-hd .leg i{font-style:normal;display:inline-flex;align-items:center;gap:5px}
+.pulse-chart .ch-hd .leg .sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+#pulse{display:block;width:100%;height:120px}
+.stamp{font-family:var(--mono);font-size:11px;color:var(--faintest);margin-top:18px;display:flex;align-items:center;gap:8px}
+.stamp .dot{width:6px;height:6px;border-radius:50%;background:var(--doppl);box-shadow:0 0 8px var(--doppl);animation:bl 2s infinite}
+@keyframes bl{50%{opacity:.35}}
+
+/* ---------------- section frame ---------------- */
+section{padding:64px 0;border-bottom:1px solid var(--line)}
+.sec-hd{margin-bottom:36px}
+.sec-hd .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--novelty);display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-hd .kicker::before{content:"";width:24px;height:1px;background:var(--novelty)}
+.sec-hd h2{font-size:clamp(26px,3.6vw,38px);letter-spacing:-.02em;margin:0 0 12px;font-weight:640}
+.sec-hd p{color:var(--muted);max-width:680px;margin:0;font-size:16px}
+
+/* ---------------- phases ---------------- */
+.phases{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.phase{border:1px solid var(--line);border-radius:14px;padding:20px;background:linear-gradient(180deg,var(--panel),var(--ink-2));position:relative;overflow:hidden;transition:.2s}
+.phase:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.phase .idx{font-family:var(--mono);font-size:40px;font-weight:700;line-height:1;color:var(--faintest);position:absolute;top:14px;right:16px}
+.phase .ph-date{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.06em}
+.phase h3{font-size:18px;margin:6px 0 8px;letter-spacing:-.01em;max-width:88%}
+.phase p{font-size:13.5px;color:var(--muted);margin:0;line-height:1.55}
+.phase .bar{height:3px;border-radius:3px;margin-top:14px;background:var(--line)}
+.phase .bar i{display:block;height:100%;border-radius:3px}
+
+/* ---------------- timeline ---------------- */
+.tl-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:26px}
+.filter{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border:1px solid var(--line);border-radius:100px;background:var(--panel);font-size:12.5px;color:var(--muted);cursor:pointer;transition:.14s;user-select:none}
+.filter:hover{border-color:var(--faint)}
+.filter[data-on="1"]{border-color:var(--novelty);color:var(--novelty);background:rgba(70,211,196,.08)}
+.filter .dot{width:8px;height:8px;border-radius:50%}
+.timeline{position:relative;padding-left:30px}
+.timeline::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--novelty),var(--problem) 50%,var(--del));opacity:.35}
+.day{margin:30px 0 14px;display:flex;align-items:center;gap:12px}
+.day:first-child{margin-top:0}
+.day .d-dot{position:absolute;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink);border:2px solid var(--novelty);box-shadow:0 0 0 4px var(--ink)}
+.day .d-label{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
+.day .d-sub{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.commit{position:relative;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 10px;background:var(--panel);transition:.16s}
+.commit::before{content:"";position:absolute;left:-25px;top:20px;width:9px;height:9px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 3px var(--ink)}
+.commit:hover{border-color:var(--line-2)}
+.commit.milestone{border-color:rgba(70,211,196,.4);background:linear-gradient(100deg,rgba(70,211,196,.06),var(--panel) 60%)}
+.commit.milestone::before{background:var(--novelty);box-shadow:0 0 0 3px var(--ink),0 0 12px var(--novelty)}
+.commit .c-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.commit .hash{font-family:var(--mono);font-size:11px;color:var(--faint);background:var(--ink);padding:2px 7px;border-radius:5px;border:1px solid var(--line)}
+.commit .who{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.commit .who .av{width:7px;height:7px;border-radius:50%}
+.commit .time{font-family:var(--mono);font-size:11px;color:var(--faintest);margin-left:auto}
+.commit .msg{font-size:14.5px;margin:9px 0 0;line-height:1.45;color:var(--text)}
+.commit.milestone .msg{font-weight:560}
+.commit .mstag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--novelty);border:1px solid rgba(70,211,196,.35);border-radius:5px;padding:1px 6px;margin-right:8px;vertical-align:1px}
+.diffbar{display:flex;align-items:center;gap:8px;margin-top:11px}
+.diffbar .track{flex:1;height:6px;border-radius:4px;background:var(--ink);overflow:hidden;display:flex}
+.diffbar .track .ins{height:100%;background:var(--add)}
+.diffbar .track .del{height:100%;background:var(--del)}
+.diffbar .nums{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap}
+.diffbar .nums .p{color:var(--add)} .diffbar .nums .m{color:var(--del)}
+.note{margin-top:12px;padding:12px 14px;border-left:2px solid var(--novelty);background:var(--ink-2);border-radius:0 8px 8px 0;font-size:13.5px;color:#c4d0dc;line-height:1.6;display:none}
+.note.open{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0}}
+.note b{color:var(--novelty)}
+.expand{margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--faint);cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:none;background:none;padding:0}
+.expand:hover{color:var(--novelty)}
+.expand .ch{transition:.2s;display:inline-block}
+.expand[aria-expanded="true"] .ch{transform:rotate(90deg)}
+
+/* ---------------- decisions ---------------- */
+.decisions{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:720px){.decisions{grid-template-columns:1fr}}
+.decision{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--panel);position:relative}
+.decision .dn{font-family:var(--mono);font-size:11px;color:var(--grounding);letter-spacing:.06em}
+.decision h3{font-size:16.5px;margin:8px 0 12px;letter-spacing:-.01em}
+.decision .pair{display:grid;grid-template-columns:62px 1fr;gap:4px 10px;font-size:13px;align-items:baseline}
+.decision .pair .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-top:2px}
+.decision .pair .chose{color:var(--doppl)} .decision .pair .over{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faintest)}
+.decision .pair .because{color:#c4d0dc}
+
+/* ---------------- bugs ---------------- */
+.bugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.bug{border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden;transition:.16s;cursor:pointer}
+.bug:hover{border-color:rgba(248,113,113,.4)}
+.bug .b-hd{padding:16px 18px}
+.bug .b-hd .meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.bug .b-hd .meta .date{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.bug .b-hd .meta .pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--neg);border:1px solid rgba(248,113,113,.35);border-radius:100px;padding:2px 8px}
+.bug h3{font-size:16px;margin:0 0 8px;letter-spacing:-.01em}
+.bug .sym{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
+.bug .b-body{display:none;border-top:1px solid var(--line);padding:16px 18px;background:var(--ink-2)}
+.bug.open .b-body{display:block;animation:fade .3s ease}
+.bug.open{border-color:rgba(248,113,113,.45)}
+.bug .row{margin-bottom:11px}.bug .row:last-child{margin-bottom:0}
+.bug .row .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.bug .row.mit .k{color:var(--doppl)} .bug .row.trip .k{color:var(--grounding)} .bug .row.carry .k{color:var(--novelty)}
+.bug .row .t{font-size:13px;color:#c8d3df;line-height:1.55}
+
+/* ---------------- doctrine ---------------- */
+.doctrine-tabs{display:flex;gap:8px;margin-bottom:24px}
+.doctrine-tabs button{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:100px;cursor:pointer;transition:.14s}
+.doctrine-tabs button.on{color:var(--ink);background:var(--grounding);border-color:transparent}
+.bangers{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px}
+.banger{border:1px solid var(--line);border-left:3px solid var(--grounding);border-radius:0 11px 11px 0;padding:15px 18px;background:var(--panel)}
+.banger.move{border-left-color:var(--doppl)} .banger.trap{border-left-color:var(--neg)}
+.banger h4{font-size:14.5px;margin:0 0 6px;letter-spacing:-.01em}
+.banger p{font-size:13px;color:var(--muted);margin:0;line-height:1.55}
+
+/* ---------------- closing ---------------- */
+.closing{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:start}
+@media(max-width:760px){.closing{grid-template-columns:1fr}}
+.closing .lead p{font-size:16px;color:#c4d0dc;line-height:1.7;margin:0 0 16px}
+.closing .lead p b{color:var(--text)}
+.state{border:1px solid var(--line);border-radius:14px;padding:20px;background:linear-gradient(180deg,var(--panel),var(--ink-2))}
+.state .si{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.state .si:last-child{border-bottom:none}
+.state .si .dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none}
+.state .si .k{font-size:13.5px;color:var(--text);font-weight:560}
+.state .si .v{font-size:12.5px;color:var(--muted)}
+
+/* ---------------- footer ---------------- */
+footer{padding:40px 0 60px;text-align:center}
+footer .mark{font-family:var(--mono);font-size:14px;background:linear-gradient(92deg,var(--novelty),var(--grounding));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:700}
+footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:10px 0 0;line-height:1.7}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <span class="brand">◈ doppl</span>
+    <div class="links" id="navLinks">
+      <a href="#arc">the arc</a>
+      <a href="#timeline">timeline</a>
+      <a href="#decisions">decisions</a>
+      <a href="#bugs">bugs</a>
+      <a href="#doctrine">doctrine</a>
+      <a href="#state">where it stands</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="org">🌱</span><span class="tag">build log · branch <span class="accent-n">michael</span></span></div>
+    <h1>Growing an <span class="b">idearganism</span>,<br>commit by commit.</h1>
+    <p class="lede">Doppl is an agent that breeds non-obvious, verifiable ideas under selection. This is the record of how it was shaped over six days — the contracts written, the surfaces <b>burned</b>, the failure modes named, and the doctrine that survived. Every entry is drawn from the repository's own kernel-memory files.</p>
+    <div class="stats" id="heroStats"></div>
+    <div class="pulse-chart">
+      <div class="ch-hd">
+        <span class="t">commit pulse — growth vs pruning</span>
+        <span class="leg"><i><span class="sw" style="background:var(--add)"></span>additions</i><i><span class="sw" style="background:var(--del)"></span>deletions</i></span>
+      </div>
+      <canvas id="pulse"></canvas>
+    </div>
+    <div class="stamp"><span class="dot"></span><span id="stampText">synced from michael · generated from 34 commits</span></div>
+  </div>
+</header>
+
+<section id="arc">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">the arc</div>
+      <h2>Seven movements, one fire in the middle</h2>
+      <p>The project's shape arrives early as a contract, accumulates a corpus and a conscience, then is deliberately burned down to the part worth keeping — the garden — and regrown from it.</p>
+    </div>
+    <div class="phases" id="phases"></div>
+  </div>
+</section>
+
+<section id="timeline">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">the timeline</div>
+      <h2>34 commits, June 18–23</h2>
+      <p>Each commit shows its diff as a bar — growth in green, pruning in amber. Milestones carry an annotation explaining what changed and why it mattered. The burn is the one you can see from across the room.</p>
+    </div>
+    <div class="tl-controls reveal" id="tlControls">
+      <span class="tag" style="margin-right:4px">filter</span>
+      <span class="filter" data-author="all" data-on="1">all hands</span>
+      <span class="filter" data-author="MichaelHabermas" data-on="0"><span class="dot" style="background:var(--novelty)"></span>Michael</span>
+      <span class="filter" data-author="loopstrangest" data-on="0"><span class="dot" style="background:var(--problem)"></span>loopstrangest</span>
+      <span class="filter" data-author="Cody Clayton" data-on="0"><span class="dot" style="background:var(--grounding)"></span>Cody</span>
+      <span class="filter" data-milestones="1" data-on="0" style="margin-left:8px">★ milestones only</span>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+</section>
+
+<section id="decisions">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">the forks</div>
+      <h2>Decisions that still constrain the kernel</h2>
+      <p>From the project's <span class="mono">MEMORY.md</span> — the choices the owner must not accidentally undo. Each names what was chosen, what it was chosen over, and when to revisit.</p>
+    </div>
+    <div class="decisions" id="decisions"></div>
+  </div>
+</section>
+
+<section id="bugs">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">failure memory</div>
+      <h2>Bugs &amp; mitigations</h2>
+      <p>The kernel keeps a record of mistakes it made or is likely to remake, each with the tripwire that catches it and the mitigation that prevents it from hiding twice. Click any card to open the full entry.</p>
+    </div>
+    <div class="bugs" id="bugs"></div>
+  </div>
+</section>
+
+<section id="doctrine">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">what survived</div>
+      <h2>Doctrine — lessons, moves &amp; traps</h2>
+      <p>The durable ideas that still guide the kernel, and the portable moves and traps carried into every run.</p>
+    </div>
+    <div class="doctrine-tabs reveal" id="doctrineTabs">
+      <button data-d="lessons" class="on">Lessons</button>
+      <button data-d="moves">Moves</button>
+      <button data-d="traps">Traps</button>
+    </div>
+    <div class="bangers" id="bangers"></div>
+  </div>
+</section>
+
+<section id="state">
+  <div class="wrap">
+    <div class="sec-hd reveal">
+      <div class="kicker">where it stands</div>
+      <h2>The model today</h2>
+    </div>
+    <div class="closing reveal">
+      <div class="lead">
+        <p>After the burn, what remains is small and load-bearing. <b>The garden is canon.</b> When the garden and the running kernel disagree, the garden wins and the kernel follows.</p>
+        <p>One kernel — <b>generate → fitness → select → lens → judge → compile</b> — runs in one direction at a time on a single dial: diverge for reach, converge for grounding. Fitness keeps <b>novelty × grounding</b> as two warring axes, never collapsed before selection, with a regret sibling that proves the dial mattered. A node is a <b>projection of the RunTrace</b>, never a second source of truth.</p>
+        <p>This log's siblings — the <b>system-design document</b> and the <b>local field-lab app</b> built alongside it — are downstream renderers of exactly this contract. They project the trace; the specimen is the trace.</p>
+      </div>
+      <div class="state" id="stateList"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="mark">◈ doppl</div>
+    <p id="footText"></p>
+  </div>
+</footer>
+
+<script>
+'use strict';
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const AUTH={'MichaelHabermas':{n:'Michael',c:'var(--novelty)'},'loopstrangest':{n:'loopstrangest',c:'var(--problem)'},'Cody Clayton':{n:'Cody',c:'var(--grounding)'}};
+
+/* ---------- commits (branch michael, chronological) ---------- */
+const COMMITS=[
+{h:'9dc2945',a:'Cody Clayton',d:'2026-06-18',t:'15:40',f:47,ins:5552,del:0,s:'first commit',ph:1,ms:1,tag:'genesis',
+  note:'The skeleton: 47 files, a typed TypeScript monorepo. From the start, <b>energy is defined as successful-spend-only</b> — the kernel only pays for selection that actually survives, not for everything it generates.'},
+{h:'ddaaf40',a:'Cody Clayton',d:'2026-06-18',t:'16:00',f:8,ins:1581,del:125,s:'Finalize architecture contract + spec-anchored implementation plan; proper .gitignore',ph:1,ms:1,tag:'the contract',
+  note:'The architecture is fixed as typed rows — <b>Run / Generation / CullingEvent / FinalJudgeRubric</b> — and anchored to a spec-driven plan: 9 phases, 101 tasks, a 5-track parallelization. The shape is written down before a line of kernel runs.'},
+{h:'f09fe5b',a:'MichaelHabermas',d:'2026-06-19',t:'09:18',f:1,ins:17,del:0,s:'Add initial README.md for Doppl project',ph:2,ms:0},
+{h:'2bd7267',a:'MichaelHabermas',d:'2026-06-19',t:'10:22',f:1,ins:0,del:0,s:'Remove .DS_Store to keep a cleaner project structure',ph:2,ms:0},
+{h:'c9c072c',a:'MichaelHabermas',d:'2026-06-19',t:'10:42',f:1,ins:16,del:0,s:'Add .gitignore for CodeGraph data files',ph:2,ms:0},
+{h:'e8023ed',a:'loopstrangest',d:'2026-06-19',t:'11:37',f:7,ins:438,del:0,s:'Add modular MVP PRDs',ph:2,ms:0},
+{h:'75f1472',a:'loopstrangest',d:'2026-06-19',t:'12:00',f:22,ins:740,del:438,s:'Reshape PRDs around prototype proof surfaces',ph:2,ms:1,tag:'the pivot',
+  note:'A reframing that echoes through the whole project: PRDs stop describing <i>features</i> and start describing <b>proof surfaces</b> — the cheapest artifact that proves the kernel actually works. The shadow of this decision is the later "report theater" bug: volume is not visibility.'},
+{h:'3c12ca9',a:'loopstrangest',d:'2026-06-19',t:'13:55',f:1,ins:166,del:0,s:'Add prototype system map',ph:2,ms:0},
+{h:'de6dc68',a:'loopstrangest',d:'2026-06-19',t:'14:10',f:2,ins:0,del:0,s:'Rename prototype PRD guide docs',ph:2,ms:0},
+{h:'d13f1d4',a:'MichaelHabermas',d:'2026-06-19',t:'17:34',f:39,ins:9881,del:0,s:'Add case study schemas and evaluation rubrics',ph:2,ms:1,tag:'the corpus',
+  note:'9,881 lines: the corpus selection will be judged against. Crucially, the <b>generator/judge access split</b> is baked in here — the generator may read case packets, the judge may read solutions. Mixing those roles fakes performance, so the boundary is structural from the beginning.'},
+{h:'c69e998',a:'MichaelHabermas',d:'2026-06-19',t:'18:25',f:20,ins:117,del:22,s:'Add original source material for case studies',ph:2,ms:0},
+{h:'6aea1c4',a:'MichaelHabermas',d:'2026-06-19',t:'18:47',f:19,ins:217,del:18,s:'Add case studies and alignment documentation',ph:2,ms:0},
+{h:'23018a2',a:'MichaelHabermas',d:'2026-06-19',t:'22:36',f:35,ins:7997,del:6,s:'Enhance case studies with new proposals and documentation',ph:2,ms:0},
+{h:'9ba25e6',a:'MichaelHabermas',d:'2026-06-20',t:'10:10',f:7,ins:532,del:0,s:'Add new skills documentation for problem-solving techniques',ph:3,ms:1,tag:'the operators',
+  note:'The <b>mutagen skills</b> arrive — first-principles, polymath, blindside, breakout, addition-by-subtraction, constraint-injection. These are the operators that mutate an idea. Running them is also what surfaces the failure modes: most of the bug record carries a 06-21 date.'},
+{h:'80b300e',a:'MichaelHabermas',d:'2026-06-20',t:'18:18',f:1,ins:0,del:0,s:'Add kernel rebuild zip file',ph:3,ms:0},
+{h:'94c39b9',a:'MichaelHabermas',d:'2026-06-21',t:'20:52',f:45,ins:948,del:0,s:'Add new case studies and solutions for various scenarios',ph:3,ms:0},
+{h:'98c4633',a:'MichaelHabermas',d:'2026-06-22',t:'00:16',f:205,ins:20365,del:18177,s:'Add foundational documentation and ignore files',ph:4,ms:1,tag:'the conscience',
+  note:'One 205-file commit gives the kernel a memory: <b>AGENTS, INVARIANTS, BUGS_AND_MITIGATIONS, LESSONS, MEMORY, HEURISTICS, OPERATIONAL_WATCHLIST</b>. The kernel gains a conscience — a place to record what it must not do twice — and the burn-and-rebuild begins in earnest (+20k / −18k in a single pass).'},
+{h:'f5927b3',a:'MichaelHabermas',d:'2026-06-22',t:'00:29',f:6,ins:75,del:37,s:'Update .gitignore and enhance documentation structure',ph:4,ms:0},
+{h:'ee3a60f',a:'MichaelHabermas',d:'2026-06-22',t:'11:27',f:21,ins:4053,del:859,s:'Enhance Pepsi output documentation and tooling',ph:4,ms:0},
+{h:'37ea5c2',a:'MichaelHabermas',d:'2026-06-22',t:'14:21',f:1,ins:18,del:0,s:'Add first-principles guardrail section to AGENTS.md',ph:4,ms:0},
+{h:'19e992f',a:'MichaelHabermas',d:'2026-06-22',t:'17:48',f:7,ins:426,del:0,s:'Add foundational case study and node documentation',ph:4,ms:0},
+{h:'13c8254',a:'MichaelHabermas',d:'2026-06-22',t:'18:07',f:6,ins:165,del:3,s:'Add compiler and discovery kernel function documentation',ph:4,ms:0},
+{h:'546d6e9',a:'MichaelHabermas',d:'2026-06-22',t:'18:26',f:15,ins:416,del:0,s:'Add case studies: agentic package execution safety, mobile builder distribution collapse, synced state',ph:4,ms:0},
+{h:'70c039c',a:'MichaelHabermas',d:'2026-06-22',t:'18:32',f:6,ins:189,del:143,s:'Update compiler and discovery documentation for clarity',ph:4,ms:0},
+{h:'ddadfcf',a:'MichaelHabermas',d:'2026-06-22',t:'18:45',f:39,ins:140,del:15,s:'Enhance case study documentation with synopses',ph:4,ms:0},
+{h:'1dc8c68',a:'MichaelHabermas',d:'2026-06-22',t:'20:01',f:10,ins:359,del:197,s:'Add case studies on review at agent speed and proposed solutions',ph:4,ms:0},
+{h:'f07f0f9',a:'MichaelHabermas',d:'2026-06-22',t:'20:18',f:1,ins:34,del:2,s:'Enhance proposal documentation with conceptual model and structure',ph:4,ms:0},
+{h:'3833dee',a:'MichaelHabermas',d:'2026-06-22',t:'23:29',f:6,ins:181,del:9,s:'Refactor documentation to remove lineage ledger references and enhance clarity',ph:5,ms:1,tag:'ledger out',
+  note:'A load-bearing simplification: the separate <b>lineage ledger is deleted</b>. The decision — the node graph <i>is</i> the memory, a stored <code>doppelgangers</code> count plus a derived convergence query, not a parallel schema. In the same breath, <b>engine.md</b> is born, writing the generate→select crucible down before anything else is built on top of it.'},
+{h:'23f5c75',a:'MichaelHabermas',d:'2026-06-23',t:'00:10',f:121,ins:423,del:24712,s:'Refactor AGENTS.md and ARTIFACTS.md for clarity and structure',ph:6,ms:1,tag:'the burn',
+  note:'The fire: 121 files, <b>−24,712 lines</b>. "The garden is canon" becomes explicit doctrine — when the garden and the running kernel disagree, the garden wins. The governing rule of the whole project is now visible in a single diff: <b>cut faster than you promote</b>.'},
+{h:'c8b0c6f',a:'MichaelHabermas',d:'2026-06-23',t:'10:43',f:12,ins:665,del:173,s:'Remove obsolete files and update documentation for clarity',ph:6,ms:0},
+{h:'82cfd42',a:'MichaelHabermas',d:'2026-06-23',t:'11:06',f:2,ins:273,del:64,s:'Refactor node and rating documentation for clarity and structure',ph:7,ms:0},
+{h:'fa9872d',a:'MichaelHabermas',d:'2026-06-23',t:'12:40',f:17,ins:664,del:335,s:'Enhance documentation clarity and structure across multiple files',ph:7,ms:0},
+{h:'040a4cb',a:'MichaelHabermas',d:'2026-06-23',t:'13:23',f:3,ins:14,del:8,s:'Enhance engine and proposal documentation with selection aim and consensus-gap concepts',ph:7,ms:1,tag:'the aim',
+  note:'Selection gets its purpose stated: surface what is <b>true, non-obvious, and actionable</b>. The <b>consensus-gap</b> enters the lexicon — the distance between what is true/useful and what the crowd already prices. Today\'s <code>novelty × grounding</code> is named as a proxy for a future <code>truth × consensus-gap</code>.'},
+{h:'a626b5f',a:'MichaelHabermas',d:'2026-06-23',t:'13:54',f:5,ins:286,del:11,s:'Update documentation to clarify RunTrace and its role in node compilation',ph:7,ms:1,tag:'trace is truth',
+  note:'The capstone: <b>RunTrace</b> is named the source of truth. A compiled node is a <i>projection</i> of the trace, never a second authority. The engine pass now reads end-to-end as <b>generate → fitness → select → lens → judge → compile</b> — every visible surface derives from one contract.'},
+];
+
+/* ---------- phases ---------- */
+const PHASES=[
+{i:1,date:'Jun 18',t:'Scaffold the contract',c:'var(--novelty)',w:18,p:'Cody lands a typed TS monorepo and finalizes the architecture contract. The shape — runs, generations, culling, judge rubric — is fixed before a line of kernel runs.'},
+{i:2,date:'Jun 19',t:'Proof surfaces & corpus',c:'var(--problem)',w:34,p:'PRDs are reshaped from features to the cheapest things that prove the kernel works. Michael pours in case-study schemas and rubrics — the record selection will be judged against.'},
+{i:3,date:'Jun 20–21',t:'Operators & the hard lessons',c:'var(--grounding)',w:50,p:'The mutagen skills arrive and the case library grows. Running them surfaces a wall of failure modes — most of the bug record is dated here.'},
+{i:4,date:'Jun 22',t:'The conscience',c:'var(--doppl)',w:72,p:'A 205-file commit gives the kernel a memory: invariants, bugs, lessons, watchlist. The burn-and-rebuild begins.'},
+{i:5,date:'Jun 22',t:'Ledger out, crucible in',c:'var(--novelty)',w:80,p:'The separate lineage ledger is deleted; the node graph becomes the memory. engine.md writes the generate→select crucible down before more is built on it.'},
+{i:6,date:'Jun 23',t:'The burn',c:'var(--del)',w:92,p:'121 files, −24,712 lines. "The garden is canon" becomes doctrine. Fake authority is deleted faster than new surface is promoted.'},
+{i:7,date:'Jun 23',t:'Sharpen the contracts',c:'var(--grounding)',w:100,p:'Node, rating, selection-aim and RunTrace contracts are sharpened. A node becomes a projection of the trace; selection gets its aim.'},
+];
+
+/* ---------- decisions (MEMORY.md) ---------- */
+const DECISIONS=[
+{n:'2026-06-22',t:'The garden is canon',chose:'Make my-docs/the-hut/** the operating canon for the model.',over:'Treating kernel code/specs as the source of truth.',because:'The model is being shaped deliberately in the hut; the kernel is legacy reconciled on purpose, not bedrock.',revisit:'When the garden is deliberately frozen into the kernel.'},
+{n:'2026-06-22',t:'Burn-and-rebuild',chose:'Burn the pepsi pipeline, verdict stack, viewer surface and old specs — but promote the engine contract into engine.md first.',over:'Surgically de-vocabularying dead surfaces, or burning the engine without salvaging its contract.',because:'The hut holds the spirit, not the engine internals; the engine had to be written down before the fire so it could regrow.',revisit:'When a burned surface is deliberately replanted — rebuild from the garden.'},
+{n:'2026-06-22',t:'subtype is now temporal',chose:'Replace the candidate subtype flavor with a temporal boolean: true = zeitgeist (180-day decay), false = transfer (no decay).',over:'The old multi-value subtype and a 730-day transfer half-life.',because:'The garden cut subtype to its one load-bearing axis — time decay.',revisit:'If a second decay regime is genuinely needed; add it to engine.md first.'},
+{n:'2026-06-22',t:'Seed carries no classification',chose:'The case_study seed is minimal — title and status only, no subtype field.',over:'Extracting and projecting a per-case subtype onto the seed.',because:'Classification is the judge\'s temporal flag, set on later nodes — not the seed\'s.',revisit:'If a downstream consumer needs seed-level classification.'},
+{n:'2026-06-21',t:'Trace is source of truth',chose:'buildRunTrace() is the canonical pipeline; every view is a projection of one trace contract.',over:'View-specific assembly, static narratives, or generated reports acting as truth.',because:'One specimen, many masks — the trace is the specimen.',revisit:'When a new artifact needs data not expressible in RunTrace; extend the contract deliberately.'},
+{n:'2026-06-21',t:'Case-study access boundary',chose:'Generation reads case packets; judgment may read solution packets.',over:'Wholesale answer-key visibility.',because:'Leakage turns evaluation into answer coaching. Enforced by the seed leakage guard.',revisit:'When the corpus moves to a production harness with stricter roles.'},
+{n:'2026-06-21',t:'Distill, do not bulk import',chose:'Distill raw conversations and legacy source into the garden/specs/MEMORY, then delete the raw copies.',over:'Preserving a live museum of transcripts and inherited planning docs.',because:'Old source becomes fake authority unless it is a build contract or an explicit decision.',revisit:'When a source is legally required as provenance for a promoted fixture.'},
+{n:'2026-06-22',t:'Cleanup machinery does not survive cleanup',chose:'After a cleanup pass, delete the temporary scans, dead-name lists, and one-off guards created to perform it.',over:'Preserving "not this" machinery inside the kernel after the old surface is gone.',because:'Remembering the rejected frame turns cleanup residue into new fake authority.',revisit:'When a cleanup check becomes an object-level contract with a named owner.'},
+];
+
+/* ---------- bugs & mitigations ---------- */
+const BUGS=[
+{n:'Report theater',d:'2026-06-21',sym:'The run produces a long report or trace, but the human cannot see pass/fail, survivor changes, or failed checks quickly.',mit:'Proof-board output: the build shows the verdict and decision-relevant deltas; full traces are drill-down only.',trip:'A build whose first useful output is a file path, a full report, or a trace blob.',carry:'Visibility is a budget; rich data is fine, mandatory reading is not.'},
+{n:'Novelty theater',d:'2026-06-21',sym:'Weird phrasing, speculative leaps, or source-free claims outrank ideas that are actually absent from the record.',mit:'Novelty must expose grounded components: source absence, substrate distance, hidden dependents, or an explicit nearest-prior comparison.',trip:'A high-novelty candidate whose novelty reason cites no sources, substrate, or absence signal.',carry:'Novelty is a claim about the search space, not a writing style.'},
+{n:'Consensus grading',d:'2026-06-21',sym:'Convergent runs score high while unresolved tension is empty, or all ideas collapse into one answer without saying what was lost.',mit:'Preserve dissent and cross-dial regret: a run exposes what the other dial would have kept and where branches still disagree.',trip:'High score plus no unresolved crux and no rejected sibling worth inspecting.',carry:'Convergence must be earned belief movement, not room mood.'},
+{n:'Rehash as evolution',d:'2026-06-21',sym:'Descendants differ in wording but not in mechanism, evidence, constraint, prediction, or synthesis.',mit:'Require a claimed delta and classify it; starve rehash, synthesize repeated independent attractors.',trip:'High nearest-prior similarity plus a weak or empty claimed delta.',carry:'"What changed besides wording?" is a selection gate.'},
+{n:'Flat cascade',d:'2026-06-21',sym:'An unlock names many industries but shows no substrate removed, branch structure, or convergence.',mit:'Score breadth, depth and synthesis separately; group by substrate removed, then take fertile branches deep.',trip:'Many first-order effects, no because-chain, no branch map, no final synthesis.',carry:'Breadth is not depth; depth is not synthesis.'},
+{n:'Zeitgeist vibe laundering',d:'2026-06-21',sym:'"AI changes everything" style answers pass without dated signals, a why-now, or a falsifiable miss.',mit:'Run the ±5-year test: a zeitgeist candidate must name current signals, why timing matters now, and what falsifies it by a date.',trip:'The answer would read the same five years earlier or later.',carry:'Zeitgeist is timing-first, not trend-first.'},
+{n:'Signal leakage',d:'2026-06-21',sym:'A withheld prompt contains the hidden thesis, branch map, or prediction the evaluator expects.',mit:'Separate agent-visible context from evaluator-only targets; leakage scans cover prompts, criteria, and source notes.',trip:'A generated answer "recovers" a target phrase already present in the visible packet.',carry:'Signals can be input; synthesis targets cannot.'},
+{n:'Fixture answer-key marker',d:'2026-06-22',sym:'A rendered node looks like the kernel discovered the exact answer when it actually carried contaminated evidence.',mit:'Seed-visible case-study.md must contain no evaluator-only language; the seed leakage guard rejects it, evaluator material stays judge-side.',trip:'case-study:lint rejects any seed that leaks answer-key, solution, or scoring language.',carry:'Answer-key labels are poison even when the surrounding evidence is otherwise seed-visible.'},
+{n:'Contract drift',d:'2026-06-21',sym:'Docs point to deleted diagrams, stale commands, or generated outputs treated as durable truth.',mit:'Keep source contracts and run commands aligned; generated output stays disposable unless promoted by decision.',trip:'A README path does not resolve, a stated command fails, or a generated artifact becomes the only proof of a design claim.',carry:'The map must match the territory.'},
+{n:'Stale default surface',d:'2026-06-21',sym:'After a kernel change, the proof board or node still shows the previous slice\'s facts.',mit:'The default surface must expose current RunTrace facts naming the active slice: schema version, fitness, decay, lens, failed checks.',trip:'After a major change, the board could be mistaken for the previous slice.',carry:'Visibility has to change shape when the kernel changes shape.'},
+{n:'Hidden control edge',d:'2026-06-21',sym:'A control decision affects downstream generation without its own trace event — the parent-selection edge must be inferred.',mit:'Mark hidden control edges explicitly; if recursion grows past fixture-bounded proof, emit parent selection as a first-class event.',trip:'A stage prunes work based on a decision not present in the trace events.',carry:'If it controls the next generation, it deserves a trace surface.'},
+{n:'Premature fork resolution',d:'2026-06-21',sym:'A deliberate static artifact or corpus boundary disappears under "cleanup" without a memory entry.',mit:'Label forks explicitly and route the choice to MEMORY.md before deleting the alternate path.',trip:'A deletion removes the only record of why a competing path existed.',carry:'Simplify hard, but do not erase the evidence for choices future work will need.'},
+{n:'Human-signal Goodhart',d:'2026-06-21',sym:'Optimizing the −5…+5 human rating makes ideas pleasing and agreeable while losing falsifiability and mechanism.',mit:'Keep the human slider advisory; the held-out judge stays the immutable anchor. Correlate human against judge before changing policy.',trip:'The human rating starts driving selection alone.',carry:'Human judgment is bedrock input, not a replacement for bedrock.'},
+{n:'Static artifact drift',d:'2026-06-21',sym:'A static page or node disagrees with the RunTrace but does not say which one owns truth.',mit:'Label static artifacts; a rendered node advertises that it is a projection of the trace, not the trace.',trip:'A static page or node claims trace truth it does not derive.',carry:'Static is allowed; silent static is not.'},
+];
+
+/* ---------- doctrine ---------- */
+const LESSONS=[
+['One engine, many masks','The proof board and rendered nodes are projections. The specimen is the trace — add renderers only when they project existing truth.'],
+['Delete fake authority','A stale doc or runner is worse than none, because it competes with the real one. When two surfaces answer the same question, pick one.'],
+['Historical source is raw material','Drafts, notes and PDFs contain ore but are not operational authority. Mine them into typed fixtures or specs; otherwise delete.'],
+['Answer keys cannot leak','A generator reads context and constraints; a judge reads solutions and verdicts. Mixing those roles fakes performance.'],
+['Cut faster than you promote','Radical simplification works only if additions face a higher bar than deletions. Prefer a small typed surface over migrated archives.'],
+['Perfect Pepsis need segmentation','Some problems have one right convergence; others house several governing logics. Decide one doppl vs. many before judging quality.'],
+['Discovery feeds seeds, not authority','Harvested sources become ranked seed packets or benchmark cases — never a second truth surface beside the kernel.'],
+['Checkable domains prove; fuzzy demo','A fuzzy case shows taste; a withheld solution or executable check proves whether selection actually improved.'],
+['Static artifacts need labels','Static design artifacts are allowed only if labeled as static and kept out of the canonical trace path.'],
+];
+const MOVES=[
+['Recover the frame first','Translate the symptom report into the actual problem before generating any solution.'],
+['Run both directions','If a seed matters, inspect what divergence finds and what convergence keeps.'],
+['Ask what changed besides wording','Every child idea needs a real delta — mechanism, evidence, constraint, prediction, or synthesis.'],
+['Group by substrate removed','Split large unlocks by what vanishes or becomes load-bearing, not by surface topic.'],
+['Dry-riverbed test','Ask whether an event gets cheaper or disappears. Disappearing events deserve deeper search.'],
+['Breadth, then depth, then convergence','Map branches, take fertile ones deep, then synthesize what they add up to.'],
+['Keep the regret sibling','Show what the other dial would have selected; it exposes whether the dial matters.'],
+['Borrow a solved mechanism','Use another field\'s mature answer when the structure matches.'],
+['Cheapest falsification first','Prefer the test that could kill the claim fastest.'],
+['Turn the constraint into the design','The binding limit is usually the strongest lever, not the obstacle.'],
+];
+const TRAPS=[
+['Solving the apparent problem','A strong answer to the wrong frame is still wrong.'],
+['Herding','Agreement read as truth; convergence without a preserved crux.'],
+['Novelty theater','Surprising wording mistaken for a new idea.'],
+['Flat cascade','Listing first-order knock-ons without branch depth or synthesis.'],
+['Topic clustering','Grouping by industry label instead of changed substrate.'],
+['Trend laundering','Calling a dated vibe zeitgeist without a why-now or a falsifiable miss.'],
+['Memory cage','Treating "similar to a prior idea" as a hard reject even when the delta is real.'],
+['Report theater','Producing artifacts inspectable in theory but that do not speed a decision.'],
+['Premature lock-in','Closing a fork because deciding feels like progress.'],
+['Fake authority','A stale file at a prestigious path makes the wrong thing feel binding.'],
+];
+const STATE=[
+['var(--doppl)','The garden is canon','garden wins ties against the running kernel'],
+['var(--novelty)','One dial, one direction','diverge for reach · converge for grounding'],
+['var(--grounding)','novelty × grounding','two axes, never collapsed before selection'],
+['var(--problem)','RunTrace is truth','every node is a projection of one trace'],
+['var(--novelty)','doppelgangers + convergence','the node graph is the memory; convergence is derived'],
+['var(--grounding)','temporal decay','zeitgeist decays at 180 days · transfer never'],
+];
+
+/* ====================== render ====================== */
+function authColor(a){return (AUTH[a]||{c:'var(--faint)'}).c;}
+function authName(a){return (AUTH[a]||{n:a}).n;}
+const log1=x=>Math.log(1+Math.max(0,x));
+
+function renderHero(){
+  const totIns=COMMITS.reduce((s,c)=>s+c.ins,0),totDel=COMMITS.reduce((s,c)=>s+c.del,0);
+  const days=new Set(COMMITS.map(c=>c.d)).size;
+  const hands=new Set(COMMITS.map(c=>c.a)).size;
+  const stats=[['v',COMMITS.length,'commits'],['v',days,'days'],['v',hands,'contributors'],['add','+'+totIns.toLocaleString(),'lines grown'],['del','−'+totDel.toLocaleString(),'lines pruned']];
+  $('#heroStats').innerHTML=stats.map(s=>`<div class="stat ${s[0]==='add'?'add':s[0]==='del'?'del':''}"><div class="v">${s[1]}</div><div class="l">${s[2]}</div></div>`).join('');
+  $('#stampText').textContent=`synced from michael · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · ${COMMITS.length} commits`;
+  $('#footText').innerHTML=`Generated from ${COMMITS.length} commits on branch <b class="mono">michael</b> · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · June 18–23, 2026<br>A live document — re-run against the repository to refresh the timeline.`;
+  drawPulse();
+}
+function drawPulse(){
+  const cv=$('#pulse'),ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth,H=120;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const n=COMMITS.length,gap=4,bw=Math.max(3,(W-(n-1)*gap)/n-1),mid=H*0.52;
+  const maxV=Math.max(...COMMITS.map(c=>Math.max(c.ins,c.del)));
+  ctx.strokeStyle='rgba(120,140,170,.18)';ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(W,mid);ctx.stroke();
+  COMMITS.forEach((c,i)=>{const x=i*(bw+gap);
+    const ih=log1(c.ins)/log1(maxV)*(mid-6),dh=log1(c.del)/log1(maxV)*(H-mid-6);
+    ctx.fillStyle='#34d399';if(c.ins)ctx.fillRect(x,mid-ih,bw,ih);
+    ctx.fillStyle='#f0843e';if(c.del)ctx.fillRect(x,mid,bw,dh);
+    if(c.ms){ctx.fillStyle='rgba(70,211,196,.9)';ctx.fillRect(x,mid-ih-3,bw,2);}
+  });
+}
+function renderPhases(){
+  $('#phases').innerHTML=PHASES.map(p=>`<div class="phase reveal"><div class="idx">${p.i}</div><div class="ph-date">${p.date}</div><h3>${p.t}</h3><p>${p.p}</p><div class="bar"><i style="width:${p.w}%;background:${p.c}"></i></div></div>`).join('');
+}
+let FILTER={author:'all',ms:false};
+function renderTimeline(){
+  const list=COMMITS.filter(c=>(FILTER.author==='all'||c.a===FILTER.author)&&(!FILTER.ms||c.ms));
+  const days=[...new Set(list.map(c=>c.d))];
+  const dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html='';
+  days.forEach(d=>{
+    const dc=list.filter(c=>c.d===d);const dt=new Date(d+'T00:00');
+    html+=`<div class="day"><span class="d-dot"></span><span class="d-label">${dn[dt.getDay()]} · ${dt.toLocaleDateString('en-US',{month:'long',day:'numeric'})}</span><span class="d-sub">${dc.length} commit${dc.length>1?'s':''}</span></div>`;
+    dc.forEach(c=>{
+      html+=`<div class="commit ${c.ms?'milestone':''}">
+        <div class="c-top"><span class="hash">${c.h}</span><span class="who"><span class="av" style="background:${authColor(c.a)}"></span>${authName(c.a)}</span><span class="time">${c.t}</span></div>
+        <p class="msg">${c.ms?`<span class="mstag">★ ${c.tag}</span>`:''}${c.s}</p>
+        <div class="diffbar"><div class="track"><span class="ins" style="width:${log1(c.ins)/log1(maxAll())*100}%"></span><span class="del" style="width:${log1(c.del)/log1(maxAll())*100}%"></span></div><span class="nums"><span class="p">+${c.ins.toLocaleString()}</span> / <span class="m">−${c.del.toLocaleString()}</span> · ${c.f}f</span></div>
+        ${c.note?`<button class="expand" aria-expanded="false"><span class="ch">▸</span> what changed & why</button><div class="note">${c.note}</div>`:''}
+      </div>`;
+    });
+  });
+  $('#timeline').innerHTML=html||'<p style="color:var(--faint)">No commits match this filter.</p>';
+  $$('#timeline .expand').forEach(b=>b.onclick=()=>{const open=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',!open);b.nextElementSibling.classList.toggle('open',!open);});
+  observeReveal();
+}
+let _maxAll=null;function maxAll(){if(_maxAll===null)_maxAll=Math.max(...COMMITS.map(c=>Math.max(c.ins,c.del)));return _maxAll;}
+function renderDecisions(){
+  $('#decisions').innerHTML=DECISIONS.map((d,i)=>`<div class="decision reveal"><div class="dn">FORK ${String(i+1).padStart(2,'0')} · ${d.n}</div><h3>${d.t}</h3>
+    <div class="pair"><span class="k">chose</span><span class="chose">${d.chose}</span><span class="k">over</span><span class="over">${d.over}</span><span class="k">because</span><span class="because">${d.because}</span><span class="k">revisit</span><span class="because" style="color:var(--muted)">${d.revisit}</span></div></div>`).join('');
+}
+function renderBugs(){
+  $('#bugs').innerHTML=BUGS.map(b=>`<div class="bug reveal"><div class="b-hd"><div class="meta"><span class="date">${b.d}</span><span class="pill">failure mode</span></div><h3>${b.n}</h3><p class="sym">${b.sym}</p></div>
+    <div class="b-body">
+      <div class="row mit"><div class="k">Mitigation</div><div class="t">${b.mit}</div></div>
+      <div class="row trip"><div class="k">Tripwire</div><div class="t">${b.trip}</div></div>
+      <div class="row carry"><div class="k">Carry forward</div><div class="t">${b.carry}</div></div>
+    </div></div>`).join('');
+  $$('#bugs .bug').forEach(el=>el.onclick=()=>el.classList.toggle('open'));
+}
+function renderDoctrine(which){
+  const data=which==='lessons'?LESSONS:which==='moves'?MOVES:TRAPS;
+  const cls=which==='moves'?'move':which==='traps'?'trap':'';
+  $('#bangers').innerHTML=data.map(x=>`<div class="banger ${cls} reveal"><h4>${x[0]}</h4><p>${x[1]}</p></div>`).join('');
+  observeReveal();
+}
+function renderState(){$('#stateList').innerHTML=STATE.map(s=>`<div class="si"><span class="dot" style="background:${s[0]}"></span><div><div class="k">${s[1]}</div><div class="v">${s[2]}</div></div></div>`).join('');}
+
+/* reveal + scrollspy */
+let _io;
+function observeReveal(){
+  if(!_io)_io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');_io.unobserve(e.target);}}),{threshold:.12});
+  $$('.reveal:not(.in)').forEach(el=>_io.observe(el));
+}
+function scrollSpy(){
+  const secs=$$('section[id]'),links=$$('#navLinks a');
+  const so=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const id=e.target.id;links.forEach(l=>l.classList.toggle('on',l.getAttribute('href')==='#'+id));}}),{rootMargin:'-45% 0px -50% 0px'});
+  secs.forEach(s=>so.observe(s));
+}
+
+/* events */
+function wire(){
+  $$('#tlControls .filter').forEach(f=>f.onclick=()=>{
+    if(f.dataset.author){$$('#tlControls .filter[data-author]').forEach(x=>x.dataset.on='0');f.dataset.on='1';FILTER.author=f.dataset.author;}
+    else if(f.dataset.milestones){const on=f.dataset.on==='1';f.dataset.on=on?'0':'1';FILTER.ms=!on;}
+    renderTimeline();
+  });
+  $$('#doctrineTabs button').forEach(b=>b.onclick=()=>{$$('#doctrineTabs button').forEach(x=>x.classList.toggle('on',x===b));renderDoctrine(b.dataset.d);});
+  window.addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(drawPulse,150);});
+}
+function boot(){
+  renderHero();renderPhases();renderTimeline();renderDecisions();renderBugs();renderDoctrine('lessons');renderState();
+  wire();observeReveal();scrollSpy();
+}
+boot();
+</script>
+</body>
+</html>

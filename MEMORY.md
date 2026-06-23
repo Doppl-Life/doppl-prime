@@ -5,14 +5,14 @@ kernel owner must not accidentally undo.
 
 ## Entries
 
-### The garden is canon - 2026-06-22
+### The hut is canon - 2026-06-22
 
-- **Chose:** make `my-docs/garden/**` the operating canon for the model. When the
-  garden and the running kernel disagree, the garden wins; the kernel follows.
+- **Chose:** make `my-docs/the-hut/**` the operating canon for the model. When the
+  hut and the running kernel disagree, the hut wins; the kernel follows.
 - **Over:** treating the kernel code/specs as the source of truth for the model.
 - **Because:** the model is being shaped deliberately in the hut; the kernel is
   legacy reconciled on purpose, not bedrock.
-- **Revisit if:** the garden is deliberately frozen into the kernel; then the
+- **Revisit if:** the hut is deliberately frozen into the kernel; then the
   frozen contract moves into `specs/**` and the kernel.
 
 ### Burn-and-rebuild: old surface cut, engine promoted first - 2026-06-22
@@ -20,13 +20,13 @@ kernel owner must not accidentally undo.
 - **Chose:** burn the pepsi pipeline, the verdict/judgment stack, the
   viewer/deploy/microscope surface, the superseded engine specs, the original-Prime
   `docs/**` quarantine, and the old eval fixtures. Before burning, promote the
-  generate→select engine contract into `my-docs/garden/engine.md`.
+  generate→select engine contract into `my-docs/the-hut/engine.md`.
 - **Over:** surgically de-vocabularying dead surfaces, or burning the engine without
   first salvaging its contract.
 - **Because:** the hut holds the model's spirit but not the engine internals; the
   engine had to be written down before the fire so it could regrow.
 - **Revisit if:** a burned surface is deliberately replanted; build it from the
-  garden, not by restoring the old file.
+  hut, not by restoring the old file.
 
 ### subtype is now temporal - 2026-06-22
 
@@ -34,7 +34,7 @@ kernel owner must not accidentally undo.
   `true` = zeitgeist (180-day decay half-life); `false` = transfer (no decay).
 - **Over:** the old multi-value subtype as decay driver, and the 730-day transfer
   half-life in the kernel.
-- **Because:** the garden cut subtype to its one load-bearing axis — time decay.
+- **Because:** the hut cut subtype to its one load-bearing axis — time decay.
 - **Revisit if:** a second decay regime is genuinely needed; add it to `engine.md`
   first.
 
@@ -43,7 +43,7 @@ kernel owner must not accidentally undo.
 - **Chose:** the case_study seed is minimal — no subtype/classification field. The
   case-study corpus surfaces title and status only.
 - **Over:** extracting and projecting a per-case subtype.
-- **Because:** the garden seed template is minimal; classification is the judge's
+- **Because:** the hut seed template is minimal; classification is the judge's
   `temporal`, set on later nodes, not the seed's.
 - **Revisit if:** a downstream consumer needs a seed-level classification; add it as
   explicit case metadata.
@@ -85,7 +85,7 @@ kernel owner must not accidentally undo.
 ### Distill, do not bulk import - 2026-06-21
 
 - **Chose:** distill raw conversations, comparison docs, and legacy source into the
-  garden, `specs/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
+  hut, `specs/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
   source is raw material, not operating authority.
 - **Over:** preserving a live museum of transcripts and inherited planning docs.
 - **Because:** old source becomes fake authority unless it is a build contract or an

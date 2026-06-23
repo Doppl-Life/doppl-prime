@@ -9,9 +9,9 @@ A node is a rendered projection of a `RunTrace`. The node's `## Trace` section i
 `RunTrace` coordinates contracts owned elsewhere. It does not redefine them.
 
 - Shared primitives used across specs: `Uuid`, `Iso8601`, and `NonEmptyArray`.
-- [`node.md`](./node.md) owns `Stage`, `GrowthStage`, and `KernelName`.
-- [`rating.md`](./rating.md) owns `Measurement`, `Rating`, `Decay`, and `JudgeResult`.
-- [`stock.md`](./stock.md) owns stock records and rendered stock field shape.
+- `[node.md](./node.md)` owns `Stage`, `GrowthStage`, and `KernelName`.
+- `[rating.md](./rating.md)` owns `Measurement`, `Rating`, `Decay`, and `JudgeResult`.
+- `[stock.md](./stock.md)` owns stock records and rendered stock field shape.
 
 ## Trace primitives
 
@@ -224,7 +224,7 @@ type LensResult = {
 
 The judge rates the compiled candidate and emits the evaluation the compiler renders into `### Evaluation`.
 
-[`rating.md`](./rating.md) owns the judge axes, axis reasoning, `scores.judge`, and `temporal`. `RunTrace` only attaches that judge result to the candidate that was judged. Human scores are not part of `RunTrace`.
+`[rating.md](./rating.md)` owns the judge axes, axis reasoning, `scores.judge`, and `temporal`. `RunTrace` only attaches that judge result to the candidate that was judged. Human scores are not part of `RunTrace`.
 
 ### Type contract
 
@@ -239,7 +239,7 @@ type TraceJudgeStep<S extends GrowthStage> = {
 
 The compiler receives only the compiled candidate plus the data needed to render a valid node. It may mint the node id and format markdown. It may not invent judge reasoning, human scores, prior synopses, or discovery findings.
 
-The handoff is derived from `RunTrace`; it is not stored as a second copy inside `RunTrace`.
+The handoff is derived from `RunTrace`; it is not stored as a second copy inside `RunTrace`. The field-by-field map from this handoff to a compiled node lives in `[projection.md](./projection.md)`.
 
 ### Type contract
 
@@ -279,3 +279,4 @@ type RunTrace<S extends GrowthStage> = {
   compile: CompileStep;
 };
 ```
+

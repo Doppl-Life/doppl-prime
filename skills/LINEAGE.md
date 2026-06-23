@@ -49,6 +49,55 @@ emerge when repeated runs show the same operator winning.
 The catalog is open. Add an operator only when repeated runs need a name for a
 winning mutation, not because the map looks incomplete.
 
+## Kill Filters
+
+Every operator widens the candidate distribution. The **kill filter** is the
+operator-local test that reconverges it to signal — applied *within the run,
+before anything reaches the Agora*. An operator without a kill filter is variance
+injection, not a strategy. (This is distinct from verdicts: the Agora selects
+across runs which skills survive; the kill filter decides which of *this run's*
+candidates are worth posting at all.)
+
+Two axes apply to every operator. A candidate passes only if it clears **both**:
+
+- **Non-obvious** — it would not have surfaced without the operator. If sober
+  baseline reasoning produces the same thing, the operator did nothing. Reject.
+- **Sound** — it survives the operator's own falsifier below. If taking it
+  seriously leads nowhere, it is noise wearing the operator's costume. Reject.
+
+The `sound` test specializes per operator:
+
+| Operator | Reject when… |
+| --- | --- |
+| `breakthrough` / `rule-of-cool` | surprising xor sound — a mundane move with a flourish, or a wild move that collapses on contact |
+| `breakout` | taking the frame-break seriously for 60s leads nowhere; wild-but-inert |
+| `blindside` | the failure mode has no concrete trigger; generic, unfalsifiable doom |
+| `first-principles` | the named "invariant" breaks nothing when removed; it was a relabeled assumption |
+| `constraint-injection` | the output is unchanged if the constraint is dropped; the constraint was cosmetic |
+| `polymath` | the source mechanism's precondition does not hold in the target; surface analogy |
+| `addition-by-subtraction` | the system stops meeting a load-bearing requirement after the cut |
+
+Add a row when an operator is added, not before. The filter is part of coining
+the operator — a roster entry without a kill filter is incomplete.
+
+**The measured gate already exists in the kernel.** The two axes are not
+self-reported — they are computed in [`src/fitness.ts`](../src/fitness.ts):
+`non-obvious` = `fitness.novelty` (token-distance from the seed: `sourceAbsence` +
+`substrateDistance` + `hiddenDependents`), `sound` = `fitness.grounding` (signal +
+mechanism + falsifiability − risk), both with `inputRefs` provenance. The gate is
+the `schedule.floor` reject in [`src/select.ts`](../src/select.ts), and it is
+dial-asymmetric: diverge enforces a grounding floor while ranking on novelty,
+converge enforces a novelty floor while ranking on grounding — sub-floor
+candidates are rejected with a reason in the trace. So the doctrine filters above
+are the operator-local layer; the kernel already realizes the measured
+`non-obvious × sound` gate, with provenance. This is the rigor Drunk Claude faked.
+
+The one piece *not* built is **per-operator efficacy**: which `operatorId` tends
+to produce non-obvious-but-sound survivors. The signal exists per candidate; what
+is missing is the verdict-to-lineage adapter that aggregates it back to the
+`bedrock` column (see [`README.md`](./README.md) — "the verdict-to-lineage
+adapter does not exist"). Build that, not a redundant baseline lane.
+
 ## Convergence Watch
 
 Promote a watched move only when unrelated runs re-create it and verdicts justify

@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppl — idea organism lab</title>
+<style>
+/* ============================================================= *
+ *  Doppl — a field lab for an idea organism.
+ *  Two accent hues ARE the two-axis fitness:
+ *    novelty  = aquamarine   grounding = amber
+ *  Stage colors come from the subject: seed=slate, problem=violet,
+ *  doppl=leaf-green (the leaf). Everything else stays quiet.
+ * ============================================================= */
+:root{
+  --ink:#0b0e14; --ink-2:#0e131c; --panel:#131a26; --panel-2:#161e2c;
+  --line:#222c3c; --line-2:#2c3950;
+  --text:#e6edf3; --muted:#8b97a8; --faint:#5a6678;
+  --novelty:#46d3c4;   /* aquamarine */
+  --grounding:#f0b429;  /* amber */
+  --seed:#64748b;       /* slate */
+  --problem:#a78bfa;    /* violet */
+  --doppl:#34d399;      /* leaf */
+  --neg:#f87171; --ok:#34d399; --warn:#fbbf24;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:10px; --r-sm:7px;
+  --sh:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(70,211,196,.06), transparent 60%),
+    radial-gradient(900px 600px at 8% 110%, rgba(240,180,41,.05), transparent 55%),
+    var(--ink);
+  color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:20px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+.mono{font-family:var(--mono)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+
+/* ---- frame ---- */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:10px 16px;
+  border-bottom:1px solid var(--line);background:rgba(11,14,20,.7);backdrop-filter:blur(8px);z-index:20;
+}
+.brand{display:flex;align-items:baseline;gap:10px;user-select:none}
+.brand .mark{
+  font-family:var(--mono);font-weight:700;font-size:18px;letter-spacing:-.02em;
+  background:linear-gradient(92deg,var(--novelty),var(--grounding));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.brand .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.topbar .spacer{flex:1}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line);
+  border-radius:100px;font-size:12px;color:var(--muted);background:var(--panel);
+}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);box-shadow:0 0 0 0 transparent;transition:.3s}
+.pill.live .dot{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.pill.err .dot{background:var(--neg);box-shadow:0 0 10px var(--neg)}
+.pill.busy .dot{background:var(--grounding);box-shadow:0 0 10px var(--grounding);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:var(--r-sm);
+  border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);font-weight:500;font-size:13px;
+  transition:.14s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--faint);background:#1a2433}
+.btn:active{transform:translateY(1px)}
+.btn.primary{border-color:transparent;background:linear-gradient(92deg,var(--novelty),#2bb6a8);color:#05130f;font-weight:650}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn .ico{width:15px;height:15px;flex:none}
+
+/* ---- body grid ---- */
+.body{display:grid;grid-template-columns:308px 1fr 380px;min-height:0;overflow:hidden}
+.col{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.col.left{border-right:1px solid var(--line);background:var(--ink-2)}
+.col.right{border-left:1px solid var(--line);background:var(--ink-2)}
+.col.center{position:relative;background:
+  radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,.018), transparent 70%)}
+.scroll{overflow-y:auto;overflow-x:hidden;min-height:0;flex:1}
+.pad{padding:14px}
+
+.section{border-bottom:1px solid var(--line)}
+.section h3{
+  margin:0;padding:12px 14px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;
+}
+.section h3 .n{color:var(--faint);font-size:10px}
+.field{padding:0 14px 12px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin:10px 0 5px;font-weight:500}
+.input,textarea,select{
+  width:100%;padding:9px 11px;background:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);
+  color:var(--text);outline:none;transition:.14s;resize:vertical;
+}
+.input:focus,textarea:focus,select:focus{border-color:var(--novelty);box-shadow:0 0 0 3px rgba(70,211,196,.12)}
+textarea{min-height:88px;line-height:1.55;font-size:13.5px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.hint{font-size:11px;color:var(--faint);margin-top:5px;line-height:1.5}
+
+/* dial */
+.dial{display:flex;border:1px solid var(--line);border-radius:100px;padding:3px;background:var(--ink);gap:3px}
+.dial button{flex:1;border:none;background:transparent;color:var(--muted);padding:7px;border-radius:100px;font-size:12px;font-weight:600;transition:.16s}
+.dial button[data-on="1"]{color:#05130f}
+.dial button[data-dir="diverge"][data-on="1"]{background:linear-gradient(92deg,var(--novelty),#2bb6a8)}
+.dial button[data-dir="converge"][data-on="1"]{background:linear-gradient(92deg,var(--grounding),#d99818);color:#1a1102}
+
+/* operator chips */
+.ops{display:flex;flex-wrap:wrap;gap:6px;padding:2px 14px 12px}
+.chip{
+  padding:5px 9px;border:1px solid var(--line);border-radius:100px;background:var(--ink);
+  font-size:11.5px;color:var(--muted);font-family:var(--mono);transition:.14s;user-select:none;
+}
+.chip[data-on="1"]{border-color:var(--novelty);color:var(--novelty);background:rgba(70,211,196,.08)}
+.chip:hover{border-color:var(--faint)}
+
+/* library list */
+.lib-item{
+  padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:9px;align-items:flex-start;transition:.12s;
+}
+.lib-item:hover{background:var(--panel)}
+.lib-item.sel{background:linear-gradient(90deg,rgba(70,211,196,.1),transparent)}
+.lib-item .sw{width:8px;height:8px;border-radius:2px;margin-top:5px;flex:none}
+.lib-item .t{flex:1;min-width:0}
+.lib-item .t .nm{font-size:13px;color:var(--text);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lib-item .t .meta{font-size:10.5px;color:var(--faint);font-family:var(--mono);margin-top:3px;display:flex;gap:7px;flex-wrap:wrap}
+.score-chip{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:4px;border:1px solid var(--line-2)}
+
+/* canvas */
+#graph{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#graph:active{cursor:grabbing}
+.canvas-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.canvas-empty .inner{max-width:380px}
+.canvas-empty h2{font-size:19px;font-weight:600;margin:0 0 8px;letter-spacing:-.01em}
+.canvas-empty p{color:var(--muted);font-size:13.5px;margin:0}
+.canvas-empty .org{font-size:42px;margin-bottom:14px;opacity:.8}
+
+.legend{
+  position:absolute;left:14px;bottom:14px;display:flex;gap:14px;align-items:center;
+  padding:8px 12px;background:rgba(11,14,20,.72);border:1px solid var(--line);border-radius:100px;backdrop-filter:blur(6px);
+}
+.legend .it{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend .it .d{width:9px;height:9px;border-radius:50%}
+.viz-ctrls{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+.viz-ctrls .btn{justify-content:center;width:34px;height:34px;padding:0;font-size:16px;background:rgba(11,14,20,.72);backdrop-filter:blur(6px)}
+
+/* run console */
+.console{position:absolute;left:14px;top:14px;width:340px;max-height:46%;display:none;flex-direction:column;
+  background:rgba(11,14,20,.86);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(8px);box-shadow:var(--sh);overflow:hidden}
+.console.show{display:flex}
+.console .hd{padding:8px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.console .log{overflow-y:auto;padding:8px 12px;font-family:var(--mono);font-size:11.5px;line-height:1.6;flex:1}
+.console .log .ln{color:var(--muted);white-space:pre-wrap;word-break:break-word}
+.console .log .ln b{color:var(--novelty);font-weight:600}
+.console .log .ln.g b{color:var(--grounding)}
+.console .log .ln.ok{color:var(--ok)}
+.console .log .ln.err{color:var(--neg)}
+.console .log .stream{color:var(--faint);font-style:italic}
+
+/* inspector */
+.insp-empty{padding:40px 18px;text-align:center;color:var(--faint);font-size:13px}
+.insp-hd{padding:14px;border-bottom:1px solid var(--line)}
+.insp-hd .stage{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;border:1px solid var(--line-2)}
+.insp-hd h2{margin:10px 0 0;font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
+.insp-hd .ids{margin-top:7px;font-family:var(--mono);font-size:10.5px;color:var(--faint);display:flex;gap:10px;flex-wrap:wrap}
+
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px;border-bottom:1px solid var(--line)}
+.score-box{border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;background:var(--panel)}
+.score-box .lab{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.score-box .val{font-size:22px;font-weight:700;margin-top:2px;letter-spacing:-.02em}
+.bar{height:5px;border-radius:4px;background:var(--ink);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px}
+
+.axes{padding:6px 14px 14px}
+.axis-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.axis-row:last-child{border-bottom:none}
+.axis-row .an{font-size:12.5px;color:var(--muted);width:104px;flex:none}
+.axis-row .av{font-family:var(--mono);font-weight:700;width:32px;text-align:right}
+.axis-row .ar{flex:1;font-size:11.5px;color:var(--faint);line-height:1.4}
+
+.md{padding:14px;font-size:13.5px}
+.md h1{font-size:17px;margin:0 0 12px;line-height:1.3;font-weight:600}
+.md h2{font-size:11px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--novelty);margin:20px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.md h3{font-size:13px;margin:14px 0 5px;color:var(--text);font-weight:650}
+.md h4{font-size:12px;margin:10px 0 4px;color:var(--grounding);font-family:var(--mono)}
+.md p{margin:0 0 9px;color:#cdd6e0}
+.md ul{margin:0 0 9px;padding-left:18px}
+.md li{margin:3px 0;color:#cdd6e0}
+.md code{font-family:var(--mono);font-size:12px;background:var(--ink);padding:1px 5px;border-radius:4px;color:var(--novelty)}
+.md .arrow{color:var(--faint)}
+
+.human-rate{padding:14px;border-top:1px solid var(--line);background:var(--panel-2)}
+.human-rate .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.human-rate .lab b{color:var(--grounding);font-size:15px}
+.slider{width:100%;margin:10px 0 2px;-webkit-appearance:none;height:5px;border-radius:5px;background:linear-gradient(90deg,var(--neg),var(--faint) 50%,var(--doppl));outline:none}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--grounding);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.scale-marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+
+.insp-actions{padding:14px;display:flex;gap:8px;border-top:1px solid var(--line);flex-wrap:wrap}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(5,7,11,.66);backdrop-filter:blur(4px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{width:560px;max-width:100%;max-height:88vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;box-shadow:var(--sh)}
+.modal .hd{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal .hd h2{margin:0;font-size:16px;font-weight:600}
+.modal .bd{padding:18px}
+.modal .ft{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin-bottom:4px}
+.seg button{flex:1;background:var(--ink);border:none;border-right:1px solid var(--line);padding:9px 6px;font-size:12px;color:var(--muted);transition:.14s}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--panel-2);color:var(--novelty);font-weight:600}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;align-items:center;margin-top:6px}
+.bridge-box{margin-top:12px;padding:12px;border:1px dashed var(--line-2);border-radius:var(--r-sm);background:var(--ink);font-family:var(--mono);font-size:12px;color:var(--muted);display:none}
+.bridge-box.show{display:block}
+.bridge-box textarea{margin-top:8px;min-height:120px;font-family:var(--mono);font-size:12px}
+
+/* toast */
+.toasts{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{padding:10px 16px;border-radius:100px;background:var(--panel-2);border:1px solid var(--line-2);font-size:13px;box-shadow:var(--sh);animation:rise .25s ease}
+.toast.ok{border-color:var(--ok)}.toast.err{border-color:var(--neg)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+
+/* proof board */
+.board{padding:0}
+.board table{width:100%;border-collapse:collapse;font-size:12px}
+.board th{text-align:left;padding:8px 10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--ink-2)}
+.board td{padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-family:var(--mono)}
+.board tr:hover td{background:var(--panel)}
+
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;background:transparent;border:none;padding:11px;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid transparent;transition:.14s}
+.tabs button.on{color:var(--text);border-bottom-color:var(--novelty)}
+
+@media (max-width:1180px){.body{grid-template-columns:260px 1fr 340px}}
+@media (max-width:900px){.body{grid-template-columns:1fr}.col.left,.col.right{display:none}.col.left.show,.col.right.show{display:flex;position:absolute;inset:46px 0 0;z-index:15;width:88%}}
+
+/* campaign */
+label.ck{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);margin:10px 0 0;cursor:pointer;font-weight:500}
+label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
+.prog{height:4px;background:var(--ink);border-radius:4px;margin:6px 12px 0;overflow:hidden;display:none}
+.prog.show{display:block}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--novelty),var(--grounding));width:0;transition:width .25s}
+
+/* analyze */
+.an-list{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto}
+.an-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--ink);cursor:pointer;transition:.12s}
+.an-row:hover{border-color:var(--faint);background:var(--panel)}
+.an-row .sw{width:9px;height:9px;border-radius:50%;flex:none}
+.an-row .nm{flex:1;min-width:0;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.an-row .nm small{display:block;color:var(--faint);font-family:var(--mono);font-size:10px}
+.an-row .sc{font-family:var(--mono);font-size:12px;color:var(--novelty);flex:none}
+.an-meter{flex:0 0 64px;height:5px;border-radius:4px;background:var(--ink-2);overflow:hidden}
+.an-meter i{display:block;height:100%;background:var(--novelty);border-radius:4px}
+.cl-head{display:flex;align-items:center;gap:9px;padding:8px 4px 6px;border-top:1px solid var(--line);margin-top:6px}
+.cl-head:first-child{border-top:none;margin-top:0}
+.cl-head .dot{width:11px;height:11px;border-radius:3px;flex:none}
+.cl-head b{font-size:13px}.cl-head .terms{font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:1}
+.an-empty{color:var(--faint);font-size:13px;text-align:center;padding:32px}
+
+/* chat drawer */
+.chat-drawer{position:fixed;right:0;bottom:0;top:46px;width:380px;max-width:92vw;background:var(--ink-2);border-left:1px solid var(--line-2);box-shadow:-12px 0 40px rgba(0,0,0,.4);z-index:45;display:none;flex-direction:column;transform:translateX(20px);opacity:0;transition:.2s}
+.chat-drawer.show{display:flex;transform:none;opacity:1}
+.chat-hd{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:linear-gradient(92deg,var(--novelty),#2bb6a8);color:#05130f;border-bottom-right-radius:3px}
+.msg.bot{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line);border-bottom-left-radius:3px;color:#cdd6e0}
+.msg.bot b{color:var(--novelty)}.msg.bot code{font-family:var(--mono);font-size:12px;color:var(--grounding)}
+.msg.bot.think{color:var(--faint);font-style:italic}
+.chat-empty{color:var(--faint);font-size:13px;text-align:center;margin:auto;padding:30px;line-height:1.6}
+.chat-suggest{display:flex;flex-wrap:wrap;gap:6px;padding:0 13px 8px}
+.chat-suggest .chip{cursor:pointer}
+.chat-in{display:flex;gap:8px;padding:11px 13px;border-top:1px solid var(--line);align-items:flex-end}
+.chat-in textarea{flex:1;min-height:38px;max-height:120px;padding:9px 11px;font-size:13.5px}
+.chat-in .btn{flex:0 0 auto;width:38px;height:38px;padding:0;justify-content:center;font-size:17px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◈ doppl</span>
+      <span class="sub">idea organism · local lab</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill" id="providerPill" title="Click to configure"><span class="dot"></span><span id="providerLabel">no model</span></div>
+    <button class="btn ghost sm" id="btnSettings">⚙ Providers</button>
+    <button class="btn ghost sm" id="btnBoard">▦ Proof board</button>
+    <button class="btn ghost sm" id="btnAnalyze">⊕ Analyze</button>
+    <button class="btn ghost sm" id="btnChat">✦ Insights</button>
+    <button class="btn ghost sm" id="btnExport">⤓ Export</button>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+    <!-- LEFT -->
+    <aside class="col left">
+      <div class="scroll">
+        <div class="section">
+          <h3>Seed a thought <span class="n">case study · postulation</span></h3>
+          <div class="field">
+            <label>Name</label>
+            <input class="input" id="seedName" placeholder="Battery / yuan resource constraint" />
+            <label>The situation it grows from</label>
+            <textarea id="seedContext" placeholder="Drop a raw postulation, a case, an observation, a contradiction you noticed…"></textarea>
+            <label>Synopsis <span class="hint" style="display:inline">— one line, travels into Trace</span></label>
+            <input class="input" id="seedSynopsis" placeholder="Battery supply is read as a raw-materials scarcity story." />
+            <button class="btn primary" id="btnSeed" style="width:100%;margin-top:12px;justify-content:center">⊕ Plant seed</button>
+            <div class="hint">A seed is a start, not a claim — no scores until it grows.</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Run controls <span class="n">the dial</span></h3>
+          <div class="field">
+            <label>Direction</label>
+            <div class="dial" id="dial">
+              <button data-dir="diverge" data-on="0">◇ diverge · novelty</button>
+              <button data-dir="converge" data-on="1">◆ converge · grounding</button>
+            </div>
+            <div class="hint" id="dialHint">Converge: priority grounding, novelty as a floor. Used to recover the real problem.</div>
+            <div class="row" style="margin-top:10px">
+              <div><label>Generate</label><input class="input" id="capGen" type="number" value="8" min="2" max="40"/></div>
+              <div><label>Keep</label><input class="input" id="capKeep" type="number" value="3" min="1" max="10"/></div>
+            </div>
+          </div>
+          <label class="tag" style="padding:0 14px">Operators · mutagen skills</label>
+          <div class="ops" id="opChips"></div>
+        </div>
+
+        <div class="section">
+          <h3>Campaign <span class="n">grow many generations</span></h3>
+          <div class="field">
+            <div class="row">
+              <div><label>Depth</label><input class="input" id="campDepth" type="number" value="4" min="1" max="20"/></div>
+              <div><label>Max nodes</label><input class="input" id="campMax" type="number" value="40" min="3" max="400"/></div>
+            </div>
+            <label>Traversal</label>
+            <div class="seg" id="campTrav">
+              <button data-t="bfs" class="on">BFS · breadth</button>
+              <button data-t="dfs">DFS · depth</button>
+            </div>
+            <label>Dial schedule</label>
+            <div class="seg" id="campDial">
+              <button data-d="auto" class="on">Auto</button>
+              <button data-d="converge">Converge</button>
+              <button data-d="diverge">Diverge</button>
+            </div>
+            <label class="ck"><input type="checkbox" id="campReseed" checked/> Reseed leaves to grow past depth 3</label>
+            <label class="ck"><input type="checkbox" id="campAll"/> Start from every seed (not just selected)</label>
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="btnCampaign" style="justify-content:center">▶ Run campaign</button>
+              <button class="btn" id="btnStop" style="flex:0 0 auto;display:none">■ Stop</button>
+            </div>
+            <div class="hint">Auto dial = converge to recover the problem, diverge to grow doppls. Depth counts hops from the origin; reseeding lets a lineage continue as new islands.</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Library <span class="n" id="libCount">0 nodes</span></h3>
+          <div id="libList"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <main class="col center">
+      <canvas id="graph"></canvas>
+      <div class="canvas-empty" id="canvasEmpty">
+        <div class="inner">
+          <div class="org">🌱</div>
+          <h2>Nothing growing yet</h2>
+          <p>Plant a seed on the left. Each seed becomes an island — a tree of recovered problems and the doppls they unlock. Leaves can be reseeded to start new islands.</p>
+        </div>
+      </div>
+      <div class="console" id="console">
+        <div class="hd"><span id="consoleTitle">run trace</span><div class="spacer" style="flex:1"></div><button class="btn ghost sm" id="btnConsoleClose">×</button></div>
+        <div class="prog" id="consoleProg"><i></i></div>
+        <div class="log" id="consoleLog"></div>
+      </div>
+      <div class="legend">
+        <div class="it"><span class="d" style="background:var(--seed)"></span>seed</div>
+        <div class="it"><span class="d" style="background:var(--problem)"></span>problem</div>
+        <div class="it"><span class="d" style="background:var(--doppl)"></span>doppl</div>
+        <div class="it" style="color:var(--faint)">halo = novelty × grounding</div>
+      </div>
+      <div class="viz-ctrls">
+        <button class="btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="btn" id="zoomOut" title="Zoom out">−</button>
+        <button class="btn" id="zoomFit" title="Fit to view">⊡</button>
+      </div>
+    </main>
+
+    <!-- RIGHT -->
+    <aside class="col right">
+      <div class="tabs">
+        <button class="on" data-tab="inspect">Inspector</button>
+        <button data-tab="board">Proof board</button>
+      </div>
+      <div class="scroll" id="rightScroll">
+        <div id="tabInspect">
+          <div class="insp-empty" id="inspEmpty">Select a node in the graph to read it, score it, or grow the next stage.</div>
+          <div id="inspBody" style="display:none"></div>
+        </div>
+        <div id="tabBoard" style="display:none">
+          <div class="board" id="boardBody"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <div class="hd"><h2>Model providers</h2><button class="btn ghost sm" id="settingsClose">×</button></div>
+    <div class="bd">
+      <p class="hint" style="margin-bottom:12px">Generation is the only step that calls a model. Scoring, selection, and the graph are all local and free — so the pipeline runs even with no key, and any provider below works.</p>
+      <div class="seg" id="provSeg">
+        <button data-p="ollama">Ollama · local</button>
+        <button data-p="openai">OpenAI-compatible</button>
+        <button data-p="bridge">Harness bridge</button>
+        <button data-p="demo">Offline demo</button>
+      </div>
+      <div id="provForm"></div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+        <button class="btn" id="btnTest">Test connection</button>
+        <span id="testResult" class="hint" style="margin:0"></span>
+      </div>
+    </div>
+    <div class="ft">
+      <button class="btn ghost" id="settingsCancel">Cancel</button>
+      <button class="btn primary" id="settingsSave">Save provider</button>
+    </div>
+  </div>
+</div>
+
+<!-- BRIDGE MODAL (manual harness paste) -->
+<div class="modal-bg" id="bridgeModal">
+  <div class="modal">
+    <div class="hd"><h2>Harness bridge — run this in your agent</h2><button class="btn ghost sm" id="bridgeClose">×</button></div>
+    <div class="bd">
+      <p class="hint">Works with any harness at zero marginal cost — Claude Code, opencode, Cursor, or a chat window. Copy the prompt, run it in your tool, paste the JSON it returns, and the local pipeline scores and folds it into the graph.</p>
+      <label class="tag">1 · copy this prompt</label>
+      <textarea id="bridgePrompt" readonly style="min-height:150px;font-family:var(--mono);font-size:12px;margin-top:6px"></textarea>
+      <button class="btn sm" id="bridgeCopy" style="margin-top:6px">⧉ Copy prompt</button>
+      <label class="tag" style="display:block;margin-top:14px">2 · paste the JSON response</label>
+      <textarea id="bridgeResponse" placeholder='[ { "title": "...", "thesis": "...", ... } ]' style="min-height:130px;font-family:var(--mono);font-size:12px;margin-top:6px"></textarea>
+    </div>
+    <div class="ft">
+      <button class="btn ghost" id="bridgeCancel">Cancel</button>
+      <button class="btn primary" id="bridgeRun">Fold response into graph</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYZE MODAL -->
+<div class="modal-bg" id="analyzeModal">
+  <div class="modal" style="width:680px">
+    <div class="hd"><h2>Analyze the graph</h2><button class="btn ghost sm" id="analyzeClose">×</button></div>
+    <div class="tabs" id="anTabs" style="border-bottom:1px solid var(--line)">
+      <button class="on" data-an="sim">Similarity</button>
+      <button data-an="cluster">Clusters</button>
+      <button data-an="dupe">Doppelgängers</button>
+    </div>
+    <div class="bd" style="min-height:300px">
+      <!-- similarity -->
+      <div id="anSim">
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:2"><label class="tag">Find neighbours of</label>
+            <select class="input" id="simNode" style="margin-top:6px"></select></div>
+          <div style="flex:3"><label class="tag">…or by free text</label>
+            <input class="input" id="simText" placeholder="e.g. control the refining bottleneck" style="margin-top:6px"></div>
+          <button class="btn primary" id="simRun" style="flex:0 0 auto">Search</button>
+        </div>
+        <div id="simResults" class="an-list" style="margin-top:14px"></div>
+      </div>
+      <!-- clusters -->
+      <div id="anCluster" style="display:none">
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:0 0 120px"><label class="tag">Clusters (k)</label><input class="input" id="clK" type="number" value="3" min="2" max="12" style="margin-top:6px"></div>
+          <button class="btn primary" id="clRun" style="flex:0 0 auto">Cluster</button>
+          <button class="btn" id="clTint" style="flex:0 0 auto">Tint graph</button>
+          <button class="btn ghost" id="clClear" style="flex:0 0 auto">Clear tint</button>
+        </div>
+        <div id="clResults" class="an-list" style="margin-top:14px"></div>
+      </div>
+      <!-- duplicates -->
+      <div id="anDupe" style="display:none">
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:0 0 160px"><label class="tag">Similarity ≥</label><input class="input" id="dupThr" type="number" value="0.72" min="0.3" max="0.99" step="0.01" style="margin-top:6px"></div>
+          <button class="btn primary" id="dupRun" style="flex:0 0 auto">Find near-duplicates</button>
+          <button class="btn" id="dupMark" style="flex:0 0 auto" title="Increment doppelgangers on the later node of each pair">Mark doppelgängers</button>
+        </div>
+        <div id="dupResults" class="an-list" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSIGHTS CHAT DRAWER -->
+<div class="chat-drawer" id="chatDrawer">
+  <div class="chat-hd">
+    <span class="mono" style="color:var(--novelty)">✦ insights</span>
+    <span class="tag" id="chatCtx" style="flex:1;text-align:center"></span>
+    <button class="btn ghost sm" id="chatClear" title="Clear conversation">⌫</button>
+    <button class="btn ghost sm" id="chatClose">×</button>
+  </div>
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chat-suggest" id="chatSuggest"></div>
+  <div class="chat-in">
+    <textarea id="chatInput" rows="1" placeholder="Ask about your graph — strongest doppls, recurring themes, what to grow next…"></textarea>
+    <button class="btn primary" id="chatSend">↑</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script>
+'use strict';
+/* ============================ util ============================ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const uuid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const r3=v=>Math.round(v*1000)/1000, r1=v=>Math.round(v*10)/10;
+const nowISO=()=>new Date().toISOString();
+const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function toast(msg,kind=''){const t=document.createElement('div');t.className='toast '+kind;t.textContent=msg;$('#toasts').appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='.3s';setTimeout(()=>t.remove(),300)},2600);}
+function debounce(fn,ms){let h;return(...a)=>{clearTimeout(h);h=setTimeout(()=>fn(...a),ms)}}
+
+/* ============================ IndexedDB ============================ */
+const DB=(()=>{
+  let db;const NAME='doppl',VER=1;
+  function open(){return new Promise((res,rej)=>{const rq=indexedDB.open(NAME,VER);
+    rq.onupgradeneeded=e=>{const d=e.target.result;
+      if(!d.objectStoreNames.contains('nodes')){const s=d.createObjectStore('nodes',{keyPath:'id'});s.createIndex('root','root');s.createIndex('stage','stage');s.createIndex('runId','runId');}
+      if(!d.objectStoreNames.contains('ratings'))d.createObjectStore('ratings',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('runs'))d.createObjectStore('runs',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('settings'))d.createObjectStore('settings',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('stock'))d.createObjectStore('stock',{keyPath:'id'});};
+    rq.onsuccess=e=>{db=e.target.result;res(db)};rq.onerror=e=>rej(e.target.error);});}
+  const tx=(store,mode='readonly')=>db.transaction(store,mode).objectStore(store);
+  const p=req=>new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});
+  return{open,
+    put:(s,v)=>p(tx(s,'readwrite').put(v)),
+    get:(s,k)=>p(tx(s).get(k)),
+    all:s=>p(tx(s).getAll()),
+    del:(s,k)=>p(tx(s,'readwrite').delete(k)),
+    clear:s=>p(tx(s,'readwrite').clear()),
+    byIndex:(s,idx,val)=>p(tx(s).index(idx).getAll(val)),
+  };
+})();
+
+/* ============================ text signals ============================ */
+const DEP=['depend','downstream','upstream','supply','demand','market','offtake','bottleneck','constraint','liability','reprice','exposure','capacity','dependent','chain','cascade','knock-on','second-order'];
+const SIGNAL=['market','policy','deployment','regulation','adoption','data','filing','permit','revenue','price','rate','launch','shipment','quarter','study','report','metric','contract'];
+const CAUSAL=['because','if','when','removes','causes','leads','drives','forces','shifts','unlocks','enables','triggers','results','therefore','so that','which means'];
+const CHECK=['will','predict','measure','reprice','by 20','within','percent','%','digit','test','falsif','observ','track','verify','threshold','before','after'];
+const HEDGE=['might','could','maybe','perhaps','possibly','speculative','probably','seems','arguably','potentially','somewhat','unclear'];
+const STOP=new Set('the a an and or of to in for on is are be as it its with that this by from at into not no'.split(' '));
+function toks(s){return new Set((s||'').toLowerCase().replace(/[^a-z0-9\s-]/g,' ').split(/\s+/).filter(w=>w.length>2&&!STOP.has(w)));}
+function wordCount(s){return (s||'').trim().split(/\s+/).filter(Boolean).length;}
+function absence(text,seedT){const t=toks(text);if(!t.size)return 0;let novel=0;t.forEach(w=>{if(!seedT.has(w))novel++});return novel/t.size;}
+function hits(text,list){const l=(text||'').toLowerCase();return list.reduce((n,w)=>n+(l.includes(w)?1:0),0);}
+const sat=(x,k)=>1-Math.exp(-x/k); // saturating 0..1
+
+/* ============================ fitness (deterministic, local, free) ============================ */
+function candBundle(c){
+  const full=[c.title,c.thesis,c.claim,c.actualProblem,c.hiddenVariable,c.candidateResponse,c.surfaceComplaint,c.deletedAssumption,(c.implications||[]).join(' '),(c.opportunities||[]).join(' ')].filter(Boolean).join(' ');
+  const sub=[c.substrate,c.mechanism].filter(Boolean).join(' ');
+  return{full,sub,mech:c.mechanism||'',claims:c.claims||[],evidence:c.evidence||[],delta:c.delta||{changes:[]}};
+}
+function fitness(c,seedText){
+  const b=candBundle(c),seedT=toks(seedText);
+  // novelty
+  const sourceAbsence=absence(b.full,seedT);
+  const substrateDistance=absence(b.sub,seedT);
+  const depDensity=sat(hits(b.full,DEP),4)*0.6+sat((b.claims.length+(b.delta.changes||[]).length),5)*0.4;
+  const novelty=clamp(0.5*sourceAbsence+0.3*substrateDistance+0.2*depDensity);
+  // grounding
+  const signalStrength=clamp(0.5*sat(b.evidence.length,2)+0.3*sat(hits(b.full,SIGNAL),4)+0.2*sat(b.evidence.join(' ').length/40,2));
+  const mechanismClarity=clamp(0.6*sat(wordCount(b.mech),24)+0.4*sat(hits(b.full,CAUSAL),3));
+  const falsifiability=clamp(0.5*sat(hits(b.full,CHECK),3)+0.25*sat(b.claims.length,2)+0.25*sat(b.evidence.length,2));
+  const riskPenalty=clamp(0.6*sat(hits(b.full,HEDGE),3)+(b.evidence.length===0?0.4:0));
+  const grounding=clamp(0.4*signalStrength+0.25*mechanismClarity+0.25*falsifiability-0.1*riskPenalty);
+  return{novelty:r3(novelty),grounding:r3(grounding),components:{sourceAbsence:r3(sourceAbsence),substrateDistance:r3(substrateDistance),hiddenDependents:r3(depDensity),signalStrength:r3(signalStrength),mechanismClarity:r3(mechanismClarity),falsifiability:r3(falsifiability),riskPenalty:r3(riskPenalty)},
+    reasons:{novelty:`${Math.round(sourceAbsence*100)}% of language absent from the seed; ${hits(b.full,DEP)} dependency markers.`,grounding:`${b.evidence.length} evidence item(s); ${hits(b.full,CAUSAL)} causal markers; ${hits(b.full,HEDGE)} hedge(s).`}};
+}
+
+/* ============================ select (Pareto + dial) ============================ */
+function fronts(cands){
+  const dom=(a,b)=>a.fitness.novelty>=b.fitness.novelty&&a.fitness.grounding>=b.fitness.grounding&&(a.fitness.novelty>b.fitness.novelty||a.fitness.grounding>b.fitness.grounding);
+  let rem=cands.map((c,i)=>({c,i})),f=1;const out=new Map();
+  while(rem.length){const front=rem.filter(x=>!rem.some(y=>y!==x&&dom(y.c,x.c)));front.forEach(x=>out.set(x.c,f));rem=rem.filter(x=>!front.includes(x));f++;}
+  return out;
+}
+function schedule(dial){return dial==='diverge'?{priority:'novelty',floorAxis:'grounding',floor:0.35}:{priority:'grounding',floorAxis:'novelty',floor:0.25};}
+function selectDial(scored,dial,keep){
+  const sc=schedule(dial),fr=fronts(scored);
+  let gated=scored.filter(c=>c.fitness[sc.floorAxis]>=sc.floor);
+  if(!gated.length)gated=scored.slice();
+  const sec=sc.priority==='novelty'?'grounding':'novelty';
+  const dir=c=>c.fitness[sc.priority]*0.7+c.fitness[sec]*0.2+(1-Math.abs(c.fitness.novelty-c.fitness.grounding))*0.1;
+  gated.sort((a,b)=>(fr.get(a)-fr.get(b))||(dir(b)-dir(a))||(b.fitness[sc.priority]-a.fitness[sc.priority]));
+  gated.forEach(c=>{c._front=fr.get(c);c._dir=r3(dir(c))});
+  return{selected:gated.slice(0,keep),rejected:gated.slice(keep),schedule:sc};
+}
+function regret(scored,focusDial,keep){
+  const other=focusDial==='diverge'?'converge':'diverge';
+  const F=selectDial(scored,focusDial,keep),A=selectDial(scored,other,keep);
+  const aIds=new Set(A.selected.map(c=>c.id));
+  return F.selected.map(c=>{
+    if(aIds.has(c.id))return{id:c.id,status:'stable'};
+    const alt=A.selected.find(x=>!F.selected.some(y=>y.id===x.id));
+    return alt?{id:c.id,status:'replaced',alternateId:alt.id,altTitle:alt.title}:{id:c.id,status:'dropped'};
+  });
+}
+
+/* ============================ lens (feasibility, after selection) ============================ */
+function lens(c){const b=candBundle(c);
+  const demoFit=clamp(sat(wordCount(b.full),60));
+  const evidenceFit=clamp(sat(b.evidence.length,2));
+  const scopeFit=clamp(1-Math.abs(wordCount(b.mech)-30)/60);
+  const riskFit=clamp(1-sat(hits(b.full,HEDGE),3));
+  const score=r3((demoFit+evidenceFit+scopeFit+riskFit)/4);
+  return{score,passed:score>=0.55,components:{demoFit:r3(demoFit),evidenceFit:r3(evidenceFit),scopeFit:r3(scopeFit),riskFit:r3(riskFit)}};
+}
+
+/* ============================ compile (bridge measurements -> ratings) ============================ */
+function judgeBridge(fit){
+  const nov=Math.round(fit.novelty*5),grnd=Math.round(fit.grounding*5),fals=Math.round(fit.components.falsifiability*5);
+  const cost=0,rel=0; // judge-only axes default to 0 under the deterministic bridge
+  const axes=[
+    {axis:'Novelty',score:nov,reasoning:fit.reasons.novelty},
+    {axis:'Grounding',score:grnd,reasoning:fit.reasons.grounding},
+    {axis:'Falsifiability',score:fals,reasoning:'Bridged from the falsifiability measurement (checkable markers, claims, evidence).'},
+    {axis:'Cost-efficiency',score:cost,reasoning:'Judge-only axis — defaults to 0 under the deterministic bridge.'},
+    {axis:'Relevance',score:rel,reasoning:'Judge-only axis — defaults to 0 under the deterministic bridge.'},
+  ];
+  const judge=clamp(Math.round(axes.reduce((s,a)=>s+a.score,0)/axes.length),-5,5);
+  return{axes,judge};
+}
+const NEXT={case_study:'problem_recovery',problem_recovery:'doppl',doppl:null};
+const STAGE={case_study:{label:'case study',color:'var(--seed)',hex:'#64748b'},problem_recovery:{label:'problem recovery',color:'var(--problem)',hex:'#a78bfa'},doppl:{label:'doppl',color:'var(--doppl)',hex:'#34d399'}};
+function synopsisOf(stage,c){return stage==='problem_recovery'?(c.actualProblem||c.title):(c.claim||c.title);}
+function lst(a){return (a&&a.length)?a.map(x=>`- ${esc(x)}`).join('\n'):'- —';}
+function buildBody(stage,c,trace,fit,axes){
+  const head=`# ${esc(c.title||synopsisOf(stage,c))}\n`;
+  const traceMd='## Trace\n'+(trace.length?trace.map(t=>`### ${STAGE[t.stage].label.replace(/^./,m=>m.toUpperCase())} · synopsis\n\n${esc(t.synopsis)}`).join('\n\n'):'_(no prior stage)_')+'\n';
+  const disc='## Discovery\n'+((c.evidence&&c.evidence.length)?c.evidence.map((e,i)=>`### Finding ${i+1}\n\n${esc(e)} <span class="arrow">→ field: ${esc((c.substrate||'context').split(/\s+/).slice(0,2).join('-').toLowerCase())}</span>`).join('\n\n'):'_(no external finds this pass)_')+'\n';
+  let growth;
+  if(stage==='problem_recovery'){
+    growth=`## Growth — Problem recovery\n### Surface complaint\n${esc(c.surfaceComplaint||'—')}\n### Deleted assumption\n${esc(c.deletedAssumption||'—')}\n### Hidden variable\n${esc(c.hiddenVariable||'—')}\n### Actual problem\n${esc(c.actualProblem||'—')}\n### Candidate response\n${esc(c.candidateResponse||'—')}\n### Skin in the Game\n${lst(c.skinInTheGame)}\n`+((c.sprouts&&c.sprouts.length)?`### Sprouts\n${lst(c.sprouts)}\n`:'');
+  }else{
+    growth=`## Growth — Doppl\n### Claim\n${esc(c.claim||'—')}\n### Implications\n${lst(c.implications)}\n### Opportunities\n${lst(c.opportunities)}\n`+((c.sprouts&&c.sprouts.length)?`### Sprouts\n${lst(c.sprouts)}\n`:'');
+  }
+  const ev='### Evaluation\n'+axes.map(a=>`#### ${a.axis} ${a.score>=0?'+':''}${a.score}\n${esc(a.reasoning)}`).join('\n');
+  const path=`## Path\nnext: ${NEXT[stage]||'null'}`;
+  return [head,traceMd,disc,growth+ev,path].join('\n');
+}
+
+/* ============================ operators (mutagen skills) ============================ */
+const OPERATORS=[
+  {id:'breakthrough',label:'breakthrough',persona:'Converge on the single best move from within the work\'s own frame.'},
+  {id:'first-principles',label:'first-principles',persona:'Strip the problem to invariants and rebuild from what must be true.'},
+  {id:'polymath',label:'polymath',persona:'Import a proven mechanism from a distant field (the Medici Effect); rank by structural fit × domain distance.'},
+  {id:'breakout',label:'breakout',persona:'Drop the feasibility filter, raise variance, hunt the frame-breaking branch.'},
+  {id:'blindside',label:'blindside',persona:'Hunt the buried failure mode, deleted assumption, or opportunity cost.'},
+  {id:'addition-by-subtraction',label:'subtraction',persona:'Find the highest-leverage removal — the best cut, not the best add.'},
+  {id:'constraint-injection',label:'constraint',persona:'Inject the productive constraint that forces specificity and testability.'},
+];
+let SELECTED_OPS=new Set(['first-principles','polymath','blindside']);
+
+function genPrompt(stage,seedText,parentText,dial,n){
+  const ops=OPERATORS.filter(o=>SELECTED_OPS.has(o.id));
+  const sc=schedule(dial);
+  const sysSchema=stage==='problem_recovery'
+    ?`{ "title": string, "surfaceComplaint": string, "deletedAssumption": string, "hiddenVariable": string, "actualProblem": string, "candidateResponse": string, "skinInTheGame": string[], "sprouts": string[], "substrate": string, "mechanism": string, "thesis": string, "claims": string[], "evidence": string[], "temporal": boolean, "delta": { "summary": string, "changes": string[] } }`
+    :`{ "title": string, "claim": string, "implications": string[], "opportunities": string[], "sprouts": string[], "substrate": string, "mechanism": string, "thesis": string, "claims": string[], "evidence": string[], "temporal": boolean, "delta": { "summary": string, "changes": string[] } }`;
+  const job=stage==='problem_recovery'
+    ?'Recover the REAL problem behind the surface complaint. Strip the symptom to the hidden variable and name the actual problem.'
+    :'Produce the doppl — the finished unlock/answer. State the claim, its implications (who loses substrate, who wins), and concrete opportunities.';
+  const system=`You are Doppl, an idea organism that breeds non-obvious, verifiable ideas under selection.
+Operators active this pass (apply their moves; each candidate should state how it differs):
+${ops.map(o=>`• ${o.id}: ${o.persona}`).join('\n')}
+
+This pass is ${dial.toUpperCase()} — priority ${sc.priority}, ${sc.floorAxis} is a floor.
+${dial==='diverge'?'Favor reach and distance-from-consensus; stay grounded enough to clear the floor.':'Favor truth, mechanism, and falsifiability; stay novel enough to clear the floor.'}
+
+${job}
+
+Return ONLY a JSON array of exactly ${n} candidate objects. No prose, no markdown fences. Each object:
+${sysSchema}
+Rules: every candidate MUST state a real delta (what changed besides wording). "evidence" should cite concrete signals where possible. "mechanism" must be a causal sentence. "temporal": true if timing-bound (zeitgeist), false if timeless (transfer).`;
+  const user=`SEED / ROOT CONTEXT:\n${seedText}\n\n${parentText?`PARENT STAGE CONCLUSION (build from this, copy nothing verbatim):\n${parentText}\n\n`:''}Generate ${n} distinct candidates now as a JSON array.`;
+  return{system,user};
+}
+function parseCandidates(raw){
+  if(Array.isArray(raw))return raw;
+  let s=String(raw||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  const a=s.indexOf('['),b=s.lastIndexOf(']');
+  if(a>=0&&b>a){try{const arr=JSON.parse(s.slice(a,b+1));if(Array.isArray(arr))return arr;}catch(e){}}
+  try{const o=JSON.parse(s);return Array.isArray(o)?o:[o];}catch(e){}
+  // last resort: pull individual {...} objects
+  const objs=[...s.matchAll(/\{[\s\S]*?\}(?=\s*[,\]]|\s*$)/g)].map(m=>{try{return JSON.parse(m[0])}catch(e){return null}}).filter(Boolean);
+  if(objs.length)return objs;
+  throw new Error('Could not parse candidates from model output.');
+}
+function normCand(c,stage){
+  const arr=k=>Array.isArray(c[k])?c[k]:(c[k]?[c[k]]:[]);
+  return Object.assign({},c,{title:c.title||(stage==='doppl'?c.claim:c.actualProblem)||'Untitled candidate',
+    substrate:c.substrate||'',mechanism:c.mechanism||c.thesis||'',thesis:c.thesis||c.title||'',
+    claims:arr('claims'),evidence:arr('evidence'),implications:arr('implications'),opportunities:arr('opportunities'),
+    skinInTheGame:arr('skinInTheGame'),sprouts:arr('sprouts'),
+    temporal:!!c.temporal,delta:c.delta&&typeof c.delta==='object'?{summary:c.delta.summary||'',changes:Array.isArray(c.delta.changes)?c.delta.changes:(c.delta.changes?[c.delta.changes]:[])}:{summary:'',changes:[]}});
+}
+
+/* ============================ demo generator (offline, $0) ============================ */
+function demoGen(stage,seedText,parentText,n){
+  const words=[...toks(seedText+' '+parentText)].filter(w=>w.length>4);
+  const pick=()=>words[Math.floor(Math.random()*words.length)]||'system';
+  const out=[];const opIds=[...SELECTED_OPS];
+  for(let i=0;i<n;i++){
+    const op=opIds[i%opIds.length]||'breakthrough';
+    const a=pick(),bb=pick(),cc=pick();
+    const ev=Math.random()<0.6?[`${a} repricing observed in recent ${bb} signals`,`${cc} capacity is the named constraint`].slice(0,1+Math.floor(Math.random()*2)):[];
+    const mech=`When ${a} is removed, ${bb} becomes load-bearing because downstream ${cc} must reprice, which shifts where the value accrues.`;
+    if(stage==='problem_recovery'){
+      out.push({title:`The real constraint is ${bb}, not ${a}`,surfaceComplaint:`${a} is read as the binding constraint.`,deletedAssumption:`That ${a} scarcity is what blocks delivery.`,hiddenVariable:`Access to ${bb} controlled by ${cc}.`,actualProblem:`The actor needs ${bb} access, not exposure to ${a}.`,candidateResponse:`Look for ${cc} leverage and ${bb} control.`,skinInTheGame:[`Talk to a ${bb} lead about what actually blocks delivery.`,`Price a position that wins from ${bb} repricing.`],sprouts:Math.random()<0.4?[`${cc} as a separately investable wedge.`]:[],substrate:`${a} ${bb}`,mechanism:mech,thesis:`${bb} access via ${cc} is the recovered problem.`,claims:[`${bb} is the binding constraint`],evidence:ev,temporal:Math.random()<0.5,delta:{summary:`Reframes ${a} story onto ${bb} via ${op}`,changes:[`operator:${op}`,`substrate ${a}→${bb}`]}});
+    }else{
+      out.push({title:`Own the ${bb} bottleneck, not the ${a}`,claim:`Control of ${bb} — gated by ${cc} — is the unlock; ${a} exposure is the crowded trade.`,implications:[`loses substrate: players priced on ${a} scarcity`,`wins: holders of ${bb} / ${cc}`],opportunities:[`Back ${bb} capacity directly.`,`Hedge raw ${a} exposure.`],sprouts:Math.random()<0.4?[`${cc} toll-processing as a pattern.`]:[],substrate:`${a} ${bb}`,mechanism:mech,thesis:`${bb} control unlock`,claims:[`${bb} control beats ${a} exposure`],evidence:ev,temporal:Math.random()<0.5,delta:{summary:`${op}: shifts ownership to ${bb}`,changes:[`operator:${op}`,`unlock at ${cc}`]}});
+    }
+  }
+  return out;
+}
+
+/* ============================ providers ============================ */
+const Provider={
+  cfg:{mode:'demo',ollama:{base:'http://localhost:11434',model:'llama3.1'},openai:{base:'https://api.groq.com/openai/v1',key:'',model:'llama-3.3-70b-versatile'}},
+  async load(){const s=await DB.get('settings','provider');if(s&&s.val)this.cfg=Object.assign(this.cfg,s.val);},
+  async save(){await DB.put('settings',{key:'provider',val:this.cfg});},
+  label(){const m=this.cfg.mode;if(m==='demo')return'offline demo';if(m==='bridge')return'harness bridge';if(m==='ollama')return`ollama · ${this.cfg.ollama.model}`;return`api · ${this.cfg.openai.model||'?'}`;},
+  isLive(){return this.cfg.mode!=='demo';},
+  async test(){
+    const m=this.cfg.mode;
+    if(m==='demo')return{ok:true,msg:'Offline demo — synthesizes candidates locally, no network.'};
+    if(m==='bridge')return{ok:true,msg:'Harness bridge — you paste your agent\'s JSON. Always available.'};
+    if(m==='ollama'){const r=await fetch(this.cfg.ollama.base.replace(/\/$/,'')+'/api/tags');if(!r.ok)throw new Error('Ollama returned '+r.status);const j=await r.json();return{ok:true,msg:`Connected. ${(j.models||[]).length} model(s) installed.`};}
+    const base=this.cfg.openai.base.replace(/\/$/,'');
+    const r=await fetch(base+'/models',{headers:{'Authorization':'Bearer '+this.cfg.openai.key}});
+    if(!r.ok)throw new Error('API returned '+r.status+' — check base URL and key.');
+    return{ok:true,msg:'Connected to '+base};
+  },
+  async _complete(messages,{onToken,temp=0.7}={}){
+    const m=this.cfg.mode;
+    if(m==='ollama'){
+      const res=await fetch(this.cfg.ollama.base.replace(/\/$/,'')+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:this.cfg.ollama.model,stream:true,messages,options:{temperature:temp}})});
+      if(!res.ok)throw new Error('Ollama '+res.status+' — is it running, and is OLLAMA_ORIGINS set to allow this page?');
+      return readNDJSON(res,onToken);
+    }
+    const base=this.cfg.openai.base.replace(/\/$/,'');
+    const res=await fetch(base+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+this.cfg.openai.key},body:JSON.stringify({model:this.cfg.openai.model,stream:true,temperature:temp,messages})});
+    if(!res.ok){const t=await res.text();throw new Error('API '+res.status+': '+t.slice(0,140));}
+    return readSSE(res,onToken);
+  },
+  async generate(ctx,onToken){
+    const{stage,seedText,parentText,dial,n}=ctx,m=this.cfg.mode;
+    if(m==='demo'){onToken&&onToken('synthesizing locally…\n');await new Promise(r=>setTimeout(r,260));return demoGen(stage,seedText,parentText,n).map(c=>normCand(c,stage));}
+    const{system,user}=genPrompt(stage,seedText,parentText,dial,n);
+    if(m==='bridge'){const raw=await openBridge(system+'\n\n'+user);return parseCandidates(raw).map(c=>normCand(c,stage));}
+    const text=await this._complete([{role:'system',content:system},{role:'user',content:user}],{onToken,temp:dial==='diverge'?0.95:0.6});
+    return parseCandidates(text).map(c=>normCand(c,stage));
+  },
+  async chat(messages,onToken){
+    const m=this.cfg.mode;
+    if(m==='demo')return localInsight(messages);
+    if(m==='bridge'){const last=messages[messages.length-1].content;const raw=await openBridge('You are an analyst for a Doppl idea-graph. Answer the question using the context.\n\n'+messages.map(x=>x.role+': '+x.content).join('\n\n'));return raw;}
+    return this._complete(messages,{onToken,temp:0.4});
+  }
+};
+async function readNDJSON(res,onToken){const rd=res.body.getReader(),dec=new TextDecoder();let buf='',out='';
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();
+    for(const ln of lines){if(!ln.trim())continue;try{const j=JSON.parse(ln);const t=j.message?.content||'';if(t){out+=t;onToken&&onToken(t);}}catch(e){}}}
+  return out;}
+async function readSSE(res,onToken){const rd=res.body.getReader(),dec=new TextDecoder();let buf='',out='';
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
+    for(const p of parts){const line=p.split('\n').find(l=>l.startsWith('data:'));if(!line)continue;const data=line.slice(5).trim();if(data==='[DONE]')continue;try{const j=JSON.parse(data);const t=j.choices?.[0]?.delta?.content||'';if(t){out+=t;onToken&&onToken(t);}}catch(e){}}}
+  return out;}
+
+/* bridge modal promise */
+let _bridgeResolve=null;
+function openBridge(prompt){return new Promise((res,rej)=>{_bridgeResolve={res,rej};$('#bridgePrompt').value=prompt;$('#bridgeResponse').value='';$('#bridgeModal').classList.add('show');});}
+
+/* ============================ engine ============================ */
+let RUNNING=false, CAMPAIGN={running:false,stop:false};
+function dialForStage(stage){return stage==='problem_recovery'?'converge':'diverge';}
+function progShow(b){$('#consoleProg').classList.toggle('show',b);if(!b)progSet(0);}
+function progSet(f){$('#consoleProg').querySelector('i').style.width=Math.round(clamp(f)*100)+'%';}
+
+async function runStage(parentNode,dial,opts={}){
+  const child=NEXT[parentNode.stage];
+  if(!child){if(!opts.silent)toast('A doppl is a leaf — reseed it to start a new island','');return[];}
+  if(!opts.fromCampaign){if(RUNNING){toast('A run is already in progress','err');return[];}RUNNING=true;setBusy(true);}
+  const n=clamp(opts.n||parseInt($('#capGen').value)||8,2,40),keep=clamp(opts.keep||parseInt($('#capKeep').value)||3,1,10);
+  const runId='run-'+uuid().slice(0,8);let made=[];
+  if(!opts.silent)consoleOpen(`${STAGE[parentNode.stage].label} → ${STAGE[child].label}`);
+  log(`<b>${STAGE[child].label}</b> from ${esc((parentNode.name||parentNode.headline||parentNode.synopsis||'').slice(0,46))} · dial <b>${dial}</b>`);
+  try{
+    const rootNode=await DB.get('nodes',parentNode.root)||parentNode;
+    const seedText=[rootNode.name,rootNode.context,rootNode.synopsis].filter(Boolean).join('. ');
+    const parentText=parentNode.stage==='case_study'?'':(parentNode.body||'').replace(/^#.*$/m,'').slice(0,1200);
+    let streamLn=null;
+    const cands=await Provider.generate({stage:child,seedText,parentText,dial,n},(tok)=>{
+      if(!streamLn){streamLn=document.createElement('div');streamLn.className='ln stream';$('#consoleLog').appendChild(streamLn);}
+      streamLn.textContent=(streamLn.textContent+tok).slice(-360);$('#consoleLog').scrollTop=1e9;});
+    if(streamLn)streamLn.remove();
+    if(!cands.length)throw new Error('Model returned no candidates.');
+    const withDelta=cands.filter(c=>(c.delta&&c.delta.changes&&c.delta.changes.length));
+    const rejected=cands.length-withDelta.length;
+    const pool=(withDelta.length?withDelta:cands).map(c=>Object.assign({id:'c-'+uuid().slice(0,8)},c,{fitness:fitness(c,seedText+' '+parentText)}));
+    const sel=selectDial(pool,dial,keep);
+    const reg=regret(pool,dial,keep);
+    log(`  gen ${cands.length}${rejected?' · rej '+rejected:''} · <span class="g">kept ${sel.selected.length}</span>`,'g');
+    if(!opts.silent)reg.forEach(r=>log(`  ↳ ${r.status}${r.status==='replaced'?' (other dial: '+esc((r.altTitle||'').slice(0,36))+')':''}`,''));
+    const trace=(parentNode.trace||[]).concat([{stage:parentNode.stage,synopsis:parentNode.synopsis||parentNode.name||''}]);
+    for(const c of sel.selected){
+      const{axes,judge}=judgeBridge(c.fitness);const lz=lens(c);
+      const node={id:uuid(),stage:child,headline:c.title,synopsis:synopsisOf(child,c),root:parentNode.root,prev:[parentNode.id],
+        kernel:'prime',temporal:c.temporal,scores:{judge,human:null,n:0},doppelgangers:0,
+        trace,body:buildBody(child,c,trace,c.fitness,axes),fitness:c.fitness,axes,lens:lz,operatorId:(c.delta.changes.find(x=>x.startsWith('operator:'))||'operator:mixed').split(':')[1],
+        dial,runId,createdAt:nowISO()};
+      await DB.put('nodes',node);made.push(node);
+    }
+    await DB.put('runs',{id:runId,seed:parentNode.name||parentNode.headline,stage:child,dial,generated:cands.length,rejected,kept:sel.selected.length,swaps:reg.filter(r=>r.status==='replaced').length,at:nowISO()});
+    if(!opts.silent){
+      log(`<span class="ok">folded ${made.length} ${STAGE[child].label} node(s) ✓</span>`,'ok');
+      await Graph.sync();renderLibrary();renderBoard();
+      if(made[0])selectNode(made[0].id);
+      toast(`Grew ${made.length} ${STAGE[child].label} node(s)`,'ok');
+    }
+  }catch(e){log('<span class="err">'+esc(e.message)+'</span>','err');if(!opts.silent)toast(e.message,'err');if(opts.fromCampaign)throw e;}
+  finally{if(!opts.fromCampaign){RUNNING=false;setBusy(false);}}
+  return made;
+}
+
+async function reseedNode(leaf,silent){
+  const id=uuid();
+  const node={id,stage:'case_study',name:leaf.headline,context:'Reseeded from doppl '+leaf.id.slice(0,8)+'. '+(leaf.synopsis||''),synopsis:leaf.synopsis||leaf.headline,next:'problem_recovery',root:id,prev:[leaf.id],createdAt:nowISO(),
+    body:`# ${esc(leaf.headline)}\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\n${esc(leaf.synopsis||leaf.headline)}`};
+  await DB.put('nodes',node);
+  if(!silent){await Graph.sync();renderLibrary();Graph.fit();selectNode(id);toast('New island planted from leaf','ok');}
+  return node;
+}
+
+async function runCampaign(){
+  if(RUNNING){toast('A run is already in progress','err');return;}
+  const depth=clamp(parseInt($('#campDepth').value)||4,1,20),maxNodes=clamp(parseInt($('#campMax').value)||40,3,400);
+  const trav=$('#campTrav .on').dataset.t,dialMode=$('#campDial .on').dataset.d;
+  const reseed=$('#campReseed').checked,fromAll=$('#campAll').checked;
+  let origins=[];
+  if(fromAll)origins=(await DB.all('nodes')).filter(n=>n.stage==='case_study');
+  else{const sel=Graph.sel?await DB.get('nodes',Graph.sel.id):null;if(sel)origins=[sel];}
+  if(!origins.length){toast('Select a node or plant a seed first','err');return;}
+  RUNNING=true;setBusy(true);CAMPAIGN={running:true,stop:false};
+  $('#btnCampaign').style.display='none';$('#btnStop').style.display='';
+  consoleOpen(`campaign · ${trav.toUpperCase()} · depth ${depth}`);progShow(true);
+  log(`origins <b>${origins.length}</b> · cap ${maxNodes} nodes · dial ${dialMode}${reseed?' · reseed leaves':''}`);
+  const frontier=origins.map(o=>({node:o,depth:0}));let made=0,rounds=0;
+  try{
+    while(frontier.length&&made<maxNodes&&!CAMPAIGN.stop){
+      const item=trav==='bfs'?frontier.shift():frontier.pop();
+      if(item.depth>=depth)continue;
+      const parent=item.node,child=NEXT[parent.stage];
+      if(!child){
+        if(reseed&&item.depth<depth-1){const ns=await reseedNode(parent,true);made++;frontier.push({node:ns,depth:item.depth+1});log(`  ♺ reseeded leaf → new island`);progSet(made/maxNodes);await Graph.sync();}
+        continue;
+      }
+      const dial=dialMode==='auto'?dialForStage(child):dialMode;
+      let kids=[];
+      try{kids=await runStage(parent,dial,{fromCampaign:true,silent:true});}
+      catch(e){if(Provider.cfg.mode==='bridge'){throw e;}/* skip a failed step, keep going */}
+      kids.forEach(k=>frontier.push({node:k,depth:item.depth+1}));
+      made+=kids.length;rounds++;progSet(Math.min(1,made/maxNodes));
+      await Graph.sync();renderLibrary();
+    }
+    log(`<span class="ok">campaign complete · ${made} node(s) over ${rounds} round(s)${CAMPAIGN.stop?' (stopped)':''} ✓</span>`,'ok');
+    toast(`Campaign grew ${made} node(s)`,'ok');
+  }catch(e){log('<span class="err">'+esc(e.message)+'</span>','err');toast(e.message||'Campaign halted','err');}
+  finally{RUNNING=false;setBusy(false);CAMPAIGN.running=false;progShow(false);$('#btnCampaign').style.display='';$('#btnStop').style.display='none';await Graph.sync();renderLibrary();renderBoard();Graph.fit();}
+}
+
+/* ============================ markdown render ============================ */
+function mdToHtml(md){
+  const lines=md.split('\n');let html='',inList=false;
+  const inline=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/&lt;span class="arrow"&gt;(.*?)&lt;\/span&gt;/g,'<span class="arrow">$1</span>');
+  for(let ln of lines){
+    if(/^- /.test(ln)){if(!inList){html+='<ul>';inList=true;}html+='<li>'+inline(ln.slice(2))+'</li>';continue;}
+    if(inList){html+='</ul>';inList=false;}
+    if(/^#### /.test(ln))html+='<h4>'+inline(ln.slice(5))+'</h4>';
+    else if(/^### /.test(ln))html+='<h3>'+inline(ln.slice(4))+'</h3>';
+    else if(/^## /.test(ln))html+='<h2>'+inline(ln.slice(3))+'</h2>';
+    else if(/^# /.test(ln))html+='<h1>'+inline(ln.slice(2))+'</h1>';
+    else if(ln.trim()==='')continue;
+    else html+='<p>'+inline(ln)+'</p>';
+  }
+  if(inList)html+='</ul>';
+  return html;
+}
+
+/* ============================ graph (canvas force) ============================ */
+const Graph={
+  cv:null,ctx:null,nodes:[],links:[],byId:new Map(),
+  scale:1,tx:0,ty:0,alpha:0,sel:null,hover:null,drag:null,panning:false,last:null,W:0,H:0,tint:null,hi:null,
+  init(){this.cv=$('#graph');this.ctx=this.cv.getContext('2d');this.resize();
+    window.addEventListener('resize',()=>this.resize());
+    this.cv.addEventListener('mousedown',e=>this.onDown(e));
+    window.addEventListener('mousemove',e=>this.onMove(e));
+    window.addEventListener('mouseup',()=>this.onUp());
+    this.cv.addEventListener('wheel',e=>this.onWheel(e),{passive:false});
+    requestAnimationFrame(()=>this.tick());},
+  resize(){const r=this.cv.parentElement.getBoundingClientRect();const d=window.devicePixelRatio||1;this.W=r.width;this.H=r.height;this.cv.width=r.width*d;this.cv.height=r.height*d;this.cv.style.width=r.width+'px';this.cv.style.height=r.height+'px';this.ctx.setTransform(d,0,0,d,0,0);},
+  async sync(){
+    const recs=await DB.all('nodes');
+    const keep=new Map(this.nodes.map(n=>[n.id,n]));
+    this.nodes=recs.map(rec=>{const ex=keep.get(rec.id);
+      const parent=this.byId.get((rec.prev||[])[0]);
+      return Object.assign(ex||{x:(parent?parent.x:0)+(Math.random()*60-30),y:(parent?parent.y:0)+(Math.random()*60-30),vx:0,vy:0,fixed:false},
+        {id:rec.id,stage:rec.stage,root:rec.root,prev:rec.prev||[],label:rec.headline||rec.name||rec.synopsis||'',judge:rec.scores?rec.scores.judge:null,human:rec.scores?rec.scores.human:null,novelty:rec.fitness?rec.fitness.novelty:0.4,grounding:rec.fitness?rec.fitness.grounding:0.4});});
+    this.byId=new Map(this.nodes.map(n=>[n.id,n]));
+    this.links=[];this.nodes.forEach(n=>(n.prev||[]).forEach(p=>{if(this.byId.has(p))this.links.push({s:p,t:n.id})}));
+    $('#canvasEmpty').style.display=this.nodes.length?'none':'flex';
+    this.alpha=1;
+  },
+  centroidOf(root){const g=this.nodes.filter(n=>n.root===root);if(!g.length)return{x:0,y:0};return{x:g.reduce((s,n)=>s+n.x,0)/g.length,y:g.reduce((s,n)=>s+n.y,0)/g.length};},
+  step(){
+    if(this.alpha<0.02)return;
+    const N=this.nodes;
+    // island centroids for gentle clustering & separation
+    const roots=[...new Set(N.map(n=>n.root))];const cen={};roots.forEach(r=>cen[r]=this.centroidOf(r));
+    for(let i=0;i<N.length;i++){const a=N[i];let fx=0,fy=0;
+      for(let j=0;j<N.length;j++){if(i===j)continue;const b=N[j];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy||0.01;const d=Math.sqrt(d2);
+        const rep=(a.root===b.root?1400:2600)/d2;fx+=dx/d*rep;fy+=dy/d*rep;}
+      // gravity toward own island centroid, islands pushed apart on a ring
+      const c=cen[a.root];fx+=(c.x-a.x)*0.005;fy+=(c.y-a.y)*0.005;
+      a.vx=(a.vx+fx)*0.82;a.vy=(a.vy+fy)*0.82;}
+    // springs
+    for(const l of this.links){const s=this.byId.get(l.s),t=this.byId.get(l.t);if(!s||!t)continue;let dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)||0.01;const f=(d-96)*0.03;const ux=dx/d*f,uy=dy/d*f;s.vx+=ux;s.vy+=uy;t.vx-=ux;t.vy-=uy;}
+    // separate island centroids
+    for(let i=0;i<roots.length;i++)for(let j=i+1;j<roots.length;j++){const c1=cen[roots[i]],c2=cen[roots[j]];let dx=c1.x-c2.x,dy=c1.y-c2.y,d=Math.sqrt(dx*dx+dy*dy)||1;if(d<260){const push=(260-d)/d*0.5;N.filter(n=>n.root===roots[i]).forEach(n=>{n.vx+=dx*push*0.01;n.vy+=dy*push*0.01;});N.filter(n=>n.root===roots[j]).forEach(n=>{n.vx-=dx*push*0.01;n.vy-=dy*push*0.01;});}}
+    for(const a of N){if(a.fixed||a===this.drag)continue;a.x+=a.vx*this.alpha;a.y+=a.vy*this.alpha;}
+    this.alpha*=0.985;
+  },
+  rad(n){return 6+(n.judge!=null?Math.abs(n.judge):1)*1.6+(n.stage==='case_study'?3:0);},
+  w2s(x,y){return{x:x*this.scale+this.tx+this.W/2,y:y*this.scale+this.ty+this.H/2};},
+  s2w(x,y){return{x:(x-this.tx-this.W/2)/this.scale,y:(y-this.ty-this.H/2)/this.scale};},
+  draw(){const c=this.ctx;c.clearRect(0,0,this.W,this.H);
+    // links
+    c.lineWidth=1;for(const l of this.links){const s=this.byId.get(l.s),t=this.byId.get(l.t);if(!s||!t)continue;const a=this.w2s(s.x,s.y),b=this.w2s(t.x,t.y);c.strokeStyle='rgba(120,140,170,.18)';c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke();}
+    // nodes
+    for(const n of this.nodes){const p=this.w2s(n.x,n.y),r=this.rad(n)*Math.max(.6,Math.min(1.4,this.scale));
+      const dim=this.hi&&!this.hi.has(n.id)&&n!==this.sel?0.18:1;c.globalAlpha=dim;
+      // halo = novelty(teal) x grounding(amber)
+      const tealA=clamp(n.novelty),ambA=clamp(n.grounding);
+      const g=c.createRadialGradient(p.x,p.y,r*0.5,p.x,p.y,r*3.2);
+      g.addColorStop(0,`rgba(70,211,196,${0.10+tealA*0.28})`);
+      g.addColorStop(0.55,`rgba(240,180,41,${0.04+ambA*0.18})`);
+      g.addColorStop(1,'rgba(0,0,0,0)');
+      c.fillStyle=g;c.beginPath();c.arc(p.x,p.y,r*3.2,0,7);c.fill();
+      // core (cluster tint overrides stage colour when active)
+      c.fillStyle=(this.tint&&this.tint.get(n.id))||STAGE[n.stage].hex;c.beginPath();c.arc(p.x,p.y,r,0,7);c.fill();
+      if(n.stage==='case_study'){c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=1.5;c.stroke();}
+      if(this.hi&&this.hi.has(n.id)){c.strokeStyle='var(--novelty)';c.strokeStyle='#46d3c4';c.lineWidth=2;c.beginPath();c.arc(p.x,p.y,r+3,0,7);c.stroke();}
+      if(n===this.sel){c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.arc(p.x,p.y,r+4,0,7);c.stroke();}
+      if(RUNNING&&n===this.sel){c.strokeStyle='rgba(240,180,41,'+(0.4+0.4*Math.sin(Date.now()/200))+')';c.lineWidth=2;c.beginPath();c.arc(p.x,p.y,r+8,0,7);c.stroke();}
+      // label
+      if(this.scale>0.55||n===this.sel||n===this.hover){c.fillStyle=n===this.sel?'#fff':'rgba(200,210,224,.78)';c.font='11px ui-monospace,monospace';c.textAlign='center';const lab=(n.label||'').slice(0,28)+((n.label||'').length>28?'…':'');c.fillText(lab,p.x,p.y+r+13);}
+      c.globalAlpha=1;
+    }
+  },
+  tick(){this.step();this.draw();requestAnimationFrame(()=>this.tick());},
+  nodeAt(sx,sy){for(let i=this.nodes.length-1;i>=0;i--){const n=this.nodes[i],p=this.w2s(n.x,n.y),r=this.rad(n)*Math.max(.6,Math.min(1.4,this.scale))+4;if((sx-p.x)**2+(sy-p.y)**2<=r*r)return n;}return null;},
+  onDown(e){const rect=this.cv.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;const n=this.nodeAt(x,y);this.last={x:e.clientX,y:e.clientY};
+    if(n){this.drag=n;n.fixed=true;selectNode(n.id);}else{this.panning=true;}},
+  onMove(e){const rect=this.cv.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;
+    if(this.drag){const w=this.s2w(x,y);this.drag.x=w.x;this.drag.y=w.y;this.drag.vx=0;this.drag.vy=0;this.alpha=Math.max(this.alpha,.3);}
+    else if(this.panning&&this.last){this.tx+=e.clientX-this.last.x;this.ty+=e.clientY-this.last.y;this.last={x:e.clientX,y:e.clientY};}
+    else{this.hover=this.nodeAt(x,y);this.cv.style.cursor=this.hover?'pointer':'grab';}},
+  onUp(){if(this.drag){this.drag.fixed=false;this.drag=null;}this.panning=false;this.last=null;},
+  onWheel(e){e.preventDefault();const rect=this.cv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;const before=this.s2w(mx,my);this.scale=clamp(this.scale*(e.deltaY<0?1.12:0.89),0.18,3.5);const after=this.s2w(mx,my);this.tx+=(after.x-before.x)*this.scale;this.ty+=(after.y-before.y)*this.scale;},
+  fit(){if(!this.nodes.length)return;let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;this.nodes.forEach(n=>{minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x);maxY=Math.max(maxY,n.y);});const w=maxX-minX||1,h=maxY-minY||1;this.scale=clamp(Math.min(this.W/(w+160),this.H/(h+160)),0.2,2);this.tx=-((minX+maxX)/2)*this.scale;this.ty=-((minY+maxY)/2)*this.scale;},
+  select(id){this.sel=this.byId.get(id)||null;}
+};
+
+/* ============================ UI ============================ */
+function setBusy(b){const pill=$('#providerPill');pill.classList.toggle('busy',b);if(!b)refreshPill();}
+function refreshPill(){const pill=$('#providerPill');$('#providerLabel').textContent=Provider.label();pill.className='pill'+(Provider.isLive()?' live':'');}
+function consoleOpen(title){$('#console').classList.add('show');$('#consoleTitle').textContent=title;$('#consoleLog').innerHTML='';}
+function log(html,cls=''){const d=document.createElement('div');d.className='ln '+cls;d.innerHTML=html;$('#consoleLog').appendChild(d);$('#consoleLog').scrollTop=1e9;}
+
+async function renderLibrary(){
+  const recs=(await DB.all('nodes')).sort((a,b)=>(a.createdAt<b.createdAt?1:-1));
+  $('#libCount').textContent=recs.length+' node'+(recs.length===1?'':'s');
+  $('#libList').innerHTML=recs.map(n=>{const st=STAGE[n.stage];const j=n.scores?n.scores.judge:null;
+    return `<div class="lib-item ${n.id===Graph.sel?.id?'sel':''}" data-id="${n.id}">
+      <span class="sw" style="background:${st.hex}"></span>
+      <div class="t"><div class="nm">${esc(n.headline||n.name||n.synopsis||'—')}</div>
+      <div class="meta"><span>${st.label}</span>${j!=null?`<span class="score-chip" style="color:${j>=0?'var(--doppl)':'var(--neg)'}">J ${j>=0?'+':''}${j}</span>`:''}${n.scores&&n.scores.human!=null?`<span class="score-chip" style="color:var(--grounding)">H ${n.scores.human}</span>`:''}</div></div></div>`;}).join('');
+  $$('#libList .lib-item').forEach(el=>el.onclick=()=>selectNode(el.dataset.id));
+}
+async function renderBoard(){
+  const runs=(await DB.all('runs')).sort((a,b)=>(a.at<b.at?1:-1));
+  $('#boardBody').innerHTML=runs.length?`<table><thead><tr><th>seed</th><th>→</th><th>dial</th><th>gen</th><th>rej</th><th>keep</th><th>swap</th></tr></thead><tbody>${runs.map(r=>`<tr><td style="white-space:normal;color:var(--text)">${esc((r.seed||'').slice(0,30))}</td><td>${r.stage[0]}</td><td>${r.dial}</td><td>${r.generated}</td><td>${r.rejected}</td><td style="color:var(--doppl)">${r.kept}</td><td>${r.swaps}</td></tr>`).join('')}</tbody></table>`:'<div class="insp-empty">No runs yet. Grow a node to populate the proof board.</div>';
+}
+async function selectNode(id){
+  Graph.select(id);renderLibrary();
+  const n=await DB.get('nodes',id);if(!n)return;
+  $('#inspEmpty').style.display='none';$('#inspBody').style.display='block';
+  $$('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab==='inspect'));
+  $('#tabInspect').style.display='';$('#tabBoard').style.display='none';
+  const st=STAGE[n.stage],grow=NEXT[n.stage];
+  const sc=n.scores||{};
+  const scoresHtml=n.stage==='case_study'?'<div class="scores"><div class="score-box" style="grid-column:span 2"><div class="lab">seed</div><div class="val" style="font-size:14px;color:var(--muted)">A start, not a claim — no scores until it grows.</div></div></div>':`
+    <div class="scores">
+      <div class="score-box"><div class="lab">judge · −5…+5</div><div class="val" style="color:${sc.judge>=0?'var(--doppl)':'var(--neg)'}">${sc.judge>=0?'+':''}${sc.judge}</div></div>
+      <div class="score-box"><div class="lab">human</div><div class="val" style="color:var(--grounding)">${sc.human!=null?sc.human:'—'}<span style="font-size:11px;color:var(--faint)"> ${sc.n?('· n='+sc.n):''}</span></div></div>
+      <div class="score-box"><div class="lab">novelty</div><div class="val" style="font-size:16px">${n.fitness?n.fitness.novelty:'—'}</div><div class="bar"><i style="width:${(n.fitness?n.fitness.novelty:0)*100}%;background:var(--novelty)"></i></div></div>
+      <div class="score-box"><div class="lab">grounding</div><div class="val" style="font-size:16px">${n.fitness?n.fitness.grounding:'—'}</div><div class="bar"><i style="width:${(n.fitness?n.fitness.grounding:0)*100}%;background:var(--grounding)"></i></div></div>
+    </div>`;
+  const axesHtml=n.axes?`<div class="axes"><label class="tag" style="display:block;margin:4px 0 6px">judge evaluation · five axes</label>${n.axes.map(a=>`<div class="axis-row"><span class="an">${a.axis}</span><span class="av" style="color:${a.score>0?'var(--doppl)':a.score<0?'var(--neg)':'var(--faint)'}">${a.score>=0?'+':''}${a.score}</span><span class="ar">${esc(a.reasoning)}</span></div>`).join('')}</div>`:'';
+  const human=n.stage!=='case_study'?`<div class="human-rate"><div class="lab"><span>your rating · one slider</span><b id="hVal">${sc.human!=null?(sc.userScore!=null?sc.userScore:Math.round(sc.human)):'0'}</b></div>
+    <input class="slider" type="range" min="-5" max="5" step="1" value="${sc.userScore!=null?sc.userScore:(sc.human!=null?Math.round(sc.human):0)}" id="hSlider">
+    <div class="scale-marks"><span>−5 value-subtracting</span><span>0</span><span>+5 real contribution</span></div>
+    <button class="btn sm" id="hSave" style="width:100%;margin-top:10px;justify-content:center">Save rating</button></div>`:'';
+  const actions=`<div class="insp-actions">
+    ${grow?`<button class="btn primary" id="growBtn">${n.stage==='case_study'?'⇲ Recover the problem':'🌿 Grow the doppls'}</button>`:`<button class="btn primary" id="reseedBtn">♺ Reseed as new island</button>`}
+    <button class="btn ghost" id="copyMd">⧉ Copy markdown</button>
+    <button class="btn ghost" id="delNode">Delete</button></div>`;
+  $('#inspBody').innerHTML=`
+    <div class="insp-hd"><span class="stage" style="color:${st.hex};border-color:${st.hex}55"><span class="sw" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${st.hex}"></span>${st.label}</span>
+      <h2>${esc(n.headline||n.name||'—')}</h2>
+      <div class="ids"><span>id ${n.id.slice(0,8)}</span><span>temporal ${n.temporal?'true':'false'}</span>${n.operatorId?`<span>op ${esc(n.operatorId)}</span>`:''}${n.doppelgangers?`<span>dupes ${n.doppelgangers}</span>`:''}</div></div>
+    ${scoresHtml}${axesHtml}
+    <div class="md">${mdToHtml(n.body||'')}</div>
+    ${human}${actions}`;
+  // wire
+  const gb=$('#growBtn');if(gb)gb.onclick=()=>{$('#console').classList.add('show');runStage(n,currentDial());};
+  const rb=$('#reseedBtn');if(rb)rb.onclick=()=>reseed(n);
+  $('#copyMd').onclick=()=>{navigator.clipboard.writeText(n.body||'');toast('Markdown copied','ok');};
+  $('#delNode').onclick=async()=>{if(confirm('Delete this node?')){await DB.del('nodes',n.id);await Graph.sync();renderLibrary();$('#inspBody').style.display='none';$('#inspEmpty').style.display='block';}};
+  const sl=$('#hSlider');if(sl){sl.oninput=()=>$('#hVal').textContent=sl.value;$('#hSave').onclick=()=>saveHuman(n.id,parseInt(sl.value));}
+}
+async function saveHuman(nodeId,score){
+  const rater='me@local';const key=nodeId+'|'+rater;
+  await DB.put('ratings',{key,node_id:nodeId,rater_id:rater,score,rate_date:nowISO()});
+  const all=(await DB.all('ratings')).filter(r=>r.node_id===nodeId);
+  const n=await DB.get('nodes',nodeId);
+  n.scores.n=all.length;n.scores.human=all.length?r1(all.reduce((s,r)=>s+r.score,0)/all.length):null;n.scores.userScore=score;
+  await DB.put('nodes',n);await Graph.sync();renderLibrary();selectNode(nodeId);
+  toast('Rating saved · projection updated','ok');
+}
+async function reseed(leaf){return reseedNode(leaf,false);}
+async function plantSeed(){
+  const name=$('#seedName').value.trim(),ctx=$('#seedContext').value.trim(),syn=$('#seedSynopsis').value.trim()||name;
+  if(!name&&!ctx){toast('Give the seed a name or a situation','err');return;}
+  const id=uuid();
+  const node={id,stage:'case_study',name:name||syn,context:ctx,synopsis:syn||name,next:'problem_recovery',root:id,prev:[],createdAt:nowISO(),
+    body:`# ${esc(name||syn)}\n\n## Context\n\n${esc(ctx||'—')}\n\n## Synopsis\n\n${esc(syn||name)}`};
+  await DB.put('nodes',node);$('#seedName').value='';$('#seedContext').value='';$('#seedSynopsis').value='';
+  await Graph.sync();Graph.fit();renderLibrary();selectNode(id);
+  toast('Seed planted — open it to recover the problem','ok');
+}
+
+/* dial */
+function currentDial(){return $('#dial button[data-on="1"]').dataset.dir;}
+function setDial(dir){$$('#dial button').forEach(b=>b.dataset.on=b.dataset.dir===dir?'1':'0');
+  $('#dialHint').textContent=dir==='diverge'?'Diverge: priority novelty, grounding as a floor. Used to fan out doppls and explore.':'Converge: priority grounding, novelty as a floor. Used to recover the real problem.';}
+
+/* operator chips */
+function renderOps(){$('#opChips').innerHTML=OPERATORS.map(o=>`<span class="chip" data-id="${o.id}" data-on="${SELECTED_OPS.has(o.id)?1:0}" title="${esc(o.persona)}">${o.label}</span>`).join('');
+  $$('#opChips .chip').forEach(el=>el.onclick=()=>{const id=el.dataset.id;if(SELECTED_OPS.has(id)){if(SELECTED_OPS.size>1)SELECTED_OPS.delete(id);}else SELECTED_OPS.add(id);el.dataset.on=SELECTED_OPS.has(id)?1:0;});}
+
+/* settings modal */
+function provForm(){
+  const m=Provider.cfg.mode;
+  $$('#provSeg button').forEach(b=>b.classList.toggle('on',b.dataset.p===m));
+  let h='';
+  if(m==='ollama')h=`<div class="kv"><label>Base URL</label><input class="input" id="pf_base" value="${esc(Provider.cfg.ollama.base)}"><label>Model</label><input class="input" id="pf_model" value="${esc(Provider.cfg.ollama.model)}"></div><div class="hint" style="margin-top:10px">Free & local. Start Ollama with <code>OLLAMA_ORIGINS=*</code> so the browser can reach it. e.g. <code>OLLAMA_ORIGINS=* ollama serve</code></div>`;
+  else if(m==='openai')h=`<div class="kv"><label>Base URL</label><input class="input" id="pf_base" value="${esc(Provider.cfg.openai.base)}"><label>API key</label><input class="input" id="pf_key" type="password" value="${esc(Provider.cfg.openai.key)}" placeholder="sk-…"><label>Model</label><input class="input" id="pf_model" value="${esc(Provider.cfg.openai.model)}"></div>
+    <div class="hint" style="margin-top:10px">Any OpenAI-compatible endpoint. Presets: <a href="#" data-preset="groq" class="pp">Groq</a> · <a href="#" data-preset="openrouter" class="pp">OpenRouter</a> · <a href="#" data-preset="openai" class="pp">OpenAI</a> · <a href="#" data-preset="lmstudio" class="pp">LM Studio (local)</a>. Browser CORS: Groq, OpenRouter and local servers work directly; OpenAI may need a proxy.</div>`;
+  else if(m==='bridge')h=`<div class="hint">Zero marginal cost — use whatever harness you already pay for (Claude Code, opencode, Cursor, a chat window). When you grow a node, Doppl shows you the exact prompt; you run it in your tool and paste the JSON back. The local pipeline does all scoring and graphing.</div>`;
+  else h=`<div class="hint">Offline demo synthesizes candidates locally from your seed — no network, no key, no cost. Great for feeling the pipeline (generate → score → select → fold) before wiring a model.</div>`;
+  $('#provForm').innerHTML=h;
+  $$('#provForm .pp').forEach(a=>a.onclick=e=>{e.preventDefault();const p=a.dataset.preset;const map={groq:['https://api.groq.com/openai/v1','llama-3.3-70b-versatile'],openrouter:['https://openrouter.ai/api/v1','meta-llama/llama-3.3-70b-instruct'],openai:['https://api.openai.com/v1','gpt-4o-mini'],lmstudio:['http://localhost:1234/v1','local-model']};$('#pf_base').value=map[p][0];$('#pf_model').value=map[p][1];});
+}
+function readProvForm(){const m=Provider.cfg.mode;
+  if(m==='ollama'){Provider.cfg.ollama.base=$('#pf_base').value.trim();Provider.cfg.ollama.model=$('#pf_model').value.trim();}
+  else if(m==='openai'){Provider.cfg.openai.base=$('#pf_base').value.trim();Provider.cfg.openai.key=$('#pf_key').value.trim();Provider.cfg.openai.model=$('#pf_model').value.trim();}}
+
+/* export */
+async function exportAll(){
+  const nodes=await DB.all('nodes'),runs=await DB.all('runs'),ratings=await DB.all('ratings');
+  const bundle={exported:nowISO(),nodes,runs,ratings};
+  const md=nodes.map(n=>`<!-- ${n.id} | stage:${n.stage} | root:${n.root} | prev:${(n.prev||[]).join(',')} -->\n${n.body||''}`).join('\n\n---\n\n');
+  dl('doppl-export.json',JSON.stringify(bundle,null,2),'application/json');
+  setTimeout(()=>dl('doppl-nodes.md',md,'text/markdown'),200);
+  toast('Exported JSON + markdown','ok');
+}
+function dl(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
+/* ============================ analyze UI ============================ */
+let LAST_CLUSTER=null;
+async function openAnalyze(){
+  await buildVectors();
+  const opts=VEC.meta.map(m=>`<option value="${m.id}">[${STAGE[m.stage].label}] ${esc((m.label||'').slice(0,50))}</option>`).join('');
+  $('#simNode').innerHTML=opts||'<option>— no nodes yet —</option>';
+  if(Graph.sel)$('#simNode').value=Graph.sel.id;
+  anTab('sim');$('#simResults').innerHTML='';$('#clResults').innerHTML='';$('#dupResults').innerHTML='';
+  $('#analyzeModal').classList.add('show');
+}
+function anTab(name){$$('#anTabs button').forEach(b=>b.classList.toggle('on',b.dataset.an===name));$('#anSim').style.display=name==='sim'?'':'none';$('#anCluster').style.display=name==='cluster'?'':'none';$('#anDupe').style.display=name==='dupe'?'':'none';}
+function simRow(x){return `<div class="an-row" data-id="${x.id}"><span class="sw" style="background:${STAGE[x.meta.stage].hex}"></span><div class="nm">${esc((x.meta.label||'').slice(0,60))}<small>${STAGE[x.meta.stage].label}</small></div><div class="an-meter"><i style="width:${Math.round(x.sim*100)}%"></i></div><span class="sc">${x.sim.toFixed(2)}</span></div>`;}
+async function runSim(){
+  await buildVectors();
+  const text=$('#simText').value.trim();let qv,exclude=null;
+  if(text){qv=vecFromText(text);}else{const id=$('#simNode').value;exclude=id;const i=VEC.ids.indexOf(id);if(i<0){$('#simResults').innerHTML='<div class="an-empty">Pick a node or type some text.</div>';return;}qv=VEC.vecs[i];}
+  const res=neighbours(qv,exclude).slice(0,12);
+  $('#simResults').innerHTML=res.length?res.map(simRow).join(''):'<div class="an-empty">No comparable nodes yet.</div>';
+  Graph.hi=new Set(res.slice(0,8).map(r=>r.id));if(exclude)Graph.hi.add(exclude);
+  $$('#simResults .an-row').forEach(el=>el.onclick=()=>{$('#analyzeModal').classList.remove('show');selectNode(el.dataset.id);Graph.fit();});
+}
+async function runCluster(){
+  await buildVectors();
+  if(VEC.vecs.length<2){$('#clResults').innerHTML='<div class="an-empty">Grow at least two nodes to cluster.</div>';return;}
+  const k=clamp(parseInt($('#clK').value)||3,2,12);
+  const cl=kmeans(k);LAST_CLUSTER=cl;
+  let html='';
+  for(let c=0;c<cl.k;c++){
+    const members=VEC.meta.filter((m,i)=>cl.assign[i]===c);if(!members.length)continue;
+    html+=`<div class="cl-head"><span class="dot" style="background:${CLUSTER_HUES[c%CLUSTER_HUES.length]}"></span><b>Cluster ${c+1}</b><span class="terms">${cl.topTerms[c].join(' · ')}</span><span class="sc">${members.length}</span></div>`;
+    html+=members.slice(0,8).map(m=>`<div class="an-row" data-id="${m.id}"><span class="sw" style="background:${STAGE[m.stage].hex}"></span><div class="nm">${esc((m.label||'').slice(0,60))}<small>${STAGE[m.stage].label}</small></div></div>`).join('');
+  }
+  $('#clResults').innerHTML=html;
+  $$('#clResults .an-row').forEach(el=>el.onclick=()=>{$('#analyzeModal').classList.remove('show');selectNode(el.dataset.id);});
+}
+function tintClusters(){if(!LAST_CLUSTER){toast('Run clustering first','err');return;}const m=new Map();VEC.ids.forEach((id,i)=>m.set(id,CLUSTER_HUES[LAST_CLUSTER.assign[i]%CLUSTER_HUES.length]));Graph.tint=m;toast('Graph tinted by cluster','ok');}
+function clearTint(){Graph.tint=null;Graph.hi=null;toast('Tint cleared','');}
+async function runDupes(){
+  await buildVectors();
+  const thr=clamp(parseFloat($('#dupThr').value)||0.72,0.3,0.99);const pairs=[];
+  for(let i=0;i<VEC.vecs.length;i++)for(let j=i+1;j<VEC.vecs.length;j++){const s=cosine(VEC.vecs[i],VEC.vecs[j]);if(s>=thr)pairs.push({a:VEC.meta[i],b:VEC.meta[j],sim:s});}
+  pairs.sort((x,y)=>y.sim-x.sim);
+  $('#dupResults').innerHTML=pairs.length?pairs.slice(0,30).map(p=>`<div class="an-row"><div class="nm">${esc((p.a.label||'').slice(0,40))}<small>↔ ${esc((p.b.label||'').slice(0,40))}</small></div><div class="an-meter"><i style="width:${Math.round(p.sim*100)}%;background:var(--neg)"></i></div><span class="sc" style="color:var(--neg)">${p.sim.toFixed(2)}</span></div>`).join(''):'<div class="an-empty">No near-duplicates above this threshold — healthy diversity.</div>';
+  $('#dupResults').dataset.pairs=JSON.stringify(pairs.map(p=>[p.a.id,p.b.id]));
+}
+async function markDupes(){
+  const raw=$('#dupResults').dataset.pairs;if(!raw){toast('Find near-duplicates first','err');return;}
+  const pairs=JSON.parse(raw);const nodes=await DB.all('nodes');const byId=new Map(nodes.map(n=>[n.id,n]));let marked=0;
+  for(const[a,b]of pairs){const na=byId.get(a),nb=byId.get(b);if(!na||!nb)continue;const later=(na.createdAt>nb.createdAt)?na:nb;later.doppelgangers=(later.doppelgangers||0)+1;await DB.put('nodes',later);marked++;}
+  toast(`Flagged ${marked} doppelgänger pair(s)`,'ok');renderLibrary();
+}
+
+
+function nodeText(n){return [n.headline,n.name,n.synopsis,n.body].filter(Boolean).join(' ');}
+let VEC={ids:[],vecs:[],idf:{},vocab:[]};
+async function buildVectors(){
+  const recs=await DB.all('nodes');
+  const docs=recs.map(n=>({id:n.id,stage:n.stage,label:n.headline||n.name||n.synopsis||'',toks:[...toks(nodeText(n))]}));
+  const df={};docs.forEach(d=>{new Set(d.toks).forEach(t=>df[t]=(df[t]||0)+1)});
+  const N=docs.length||1;const idf={};Object.keys(df).forEach(t=>idf[t]=Math.log((N+1)/(df[t]+1))+1);
+  const vocab=Object.keys(idf);
+  const vecs=docs.map(d=>{const tf={};d.toks.forEach(t=>tf[t]=(tf[t]||0)+1);const v={};let norm=0;Object.keys(tf).forEach(t=>{const w=(tf[t]/d.toks.length)*idf[t];v[t]=w;norm+=w*w});norm=Math.sqrt(norm)||1;Object.keys(v).forEach(t=>v[t]/=norm);return v;});
+  VEC={ids:docs.map(d=>d.id),meta:docs,vecs,idf,vocab};
+  return VEC;
+}
+function vecFromText(text){const t=[...toks(text)];const tf={};t.forEach(x=>tf[x]=(tf[x]||0)+1);const v={};let norm=0;Object.keys(tf).forEach(x=>{const w=(tf[x]/t.length)*(VEC.idf[x]||1);v[x]=w;norm+=w*w});norm=Math.sqrt(norm)||1;Object.keys(v).forEach(x=>v[x]/=norm);return v;}
+function cosine(a,b){let s=0;const k=Object.keys(a).length<Object.keys(b).length?a:b,o=k===a?b:a;for(const t in k)if(o[t])s+=k[t]*o[t];return s;}
+function neighbours(qv,excludeId){return VEC.ids.map((id,i)=>({id,sim:cosine(qv,VEC.vecs[i]),meta:VEC.meta[i]})).filter(x=>x.id!==excludeId).sort((a,b)=>b.sim-a.sim);}
+function kmeans(k){
+  const n=VEC.vecs.length;if(n<k)k=Math.max(2,n);
+  let cent=[];const used=new Set();while(cent.length<k){const i=Math.floor(Math.random()*n);if(!used.has(i)){used.add(i);cent.push(Object.assign({},VEC.vecs[i]));}}
+  let assign=new Array(n).fill(0);
+  for(let it=0;it<25;it++){
+    let changed=false;
+    for(let i=0;i<n;i++){let best=0,bs=-1;for(let c=0;c<k;c++){const s=cosine(VEC.vecs[i],cent[c]);if(s>bs){bs=s;best=c;}}if(assign[i]!==best){assign[i]=best;changed=true;}}
+    cent=Array.from({length:k},()=>({}));const cnt=new Array(k).fill(0);
+    for(let i=0;i<n;i++){const c=assign[i];cnt[c]++;for(const t in VEC.vecs[i])cent[c][t]=(cent[c][t]||0)+VEC.vecs[i][t];}
+    for(let c=0;c<k;c++){let norm=0;for(const t in cent[c])norm+=cent[c][t]*cent[c][t];norm=Math.sqrt(norm)||1;for(const t in cent[c])cent[c][t]/=norm;}
+    if(!changed&&it>1)break;
+  }
+  // top terms per cluster
+  const terms=Array.from({length:k},()=>({}));
+  for(let i=0;i<n;i++){const c=assign[i];for(const t in VEC.vecs[i])terms[c][t]=(terms[c][t]||0)+VEC.vecs[i][t];}
+  const topTerms=terms.map(tm=>Object.entries(tm).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]));
+  return{assign,k,topTerms};
+}
+const CLUSTER_HUES=['#46d3c4','#f0b429','#a78bfa','#34d399','#f87171','#60a5fa','#fb923c','#e879f9','#facc15','#4ade80','#22d3ee','#c084fc'];
+
+/* ============================ insights: graph summary + chat ============================ */
+async function graphSummary(){
+  const nodes=await DB.all('nodes'),runs=await DB.all('runs');
+  const by=s=>nodes.filter(n=>n.stage===s);
+  const islands=by('case_study').map(cs=>{const fam=nodes.filter(n=>n.root===cs.root);const best=fam.filter(n=>n.scores&&n.scores.judge!=null).sort((a,b)=>b.scores.judge-a.scores.judge)[0];return{name:cs.name||cs.synopsis,size:fam.length,best:best?best.scores.judge:null};});
+  const doppls=by('doppl').sort((a,b)=>((b.scores?.judge??-9)-(a.scores?.judge??-9)));
+  const topD=doppls.slice(0,6).map(d=>`• [J${d.scores.judge>=0?'+':''}${d.scores.judge}${d.scores.human!=null?'/H'+d.scores.human:''}] ${(d.synopsis||d.headline||'').slice(0,90)}`);
+  const sel=Graph.sel?nodes.find(n=>n.id===Graph.sel.id):null;
+  return{
+    text:`GRAPH STATE
+seeds:${by('case_study').length}  problems:${by('problem_recovery').length}  doppls:${by('doppl').length}  runs:${runs.length}
+ISLANDS (${islands.length}):
+${islands.map(i=>`• ${(i.name||'').slice(0,60)} — ${i.size} nodes${i.best!=null?', best judge '+(i.best>=0?'+':'')+i.best:''}`).join('\n')||'• none'}
+STRONGEST DOPPLS:
+${topD.join('\n')||'• none grown yet'}
+${sel?`SELECTED NODE (${STAGE[sel.stage].label}): ${sel.headline||sel.name}\n${(sel.body||'').replace(/\s+/g,' ').slice(0,700)}`:''}`,
+    stats:{seeds:by('case_study').length,problems:by('problem_recovery').length,doppls:by('doppl').length,runs:runs.length,islands,topDoppls:doppls.slice(0,6)}
+  };
+}
+function localInsight(messages){
+  const q=(messages[messages.length-1].content||'').toLowerCase();
+  const s=CHAT.ctx&&CHAT.ctx.stats;if(!s)return'Plant and grow some nodes first, then I can summarise the graph for you.';
+  const fmt=d=>`• [J${d.scores.judge>=0?'+':''}${d.scores.judge}] ${(d.synopsis||d.headline||'').slice(0,80)}`;
+  if(/strong|best|top|winner/.test(q))return s.topDoppls.length?`Your strongest doppls right now:\n\n${s.topDoppls.slice(0,5).map(fmt).join('\n')}\n\n(Offline insight — wire a model under ✦ Providers for full reasoning.)`:'No doppls grown yet — recover a problem, then grow doppls.';
+  if(/island|cluster|theme|topic/.test(q))return `You have ${s.islands.length} island(s):\n\n${s.islands.map(i=>`• ${(i.name||'').slice(0,56)} — ${i.size} nodes${i.best!=null?', best J'+(i.best>=0?'+':'')+i.best:''}`).join('\n')}\n\nOpen ⊕ Analyze → Clusters to group by text similarity.`;
+  if(/weak|worst|low|prune|cut/.test(q)){const w=[...s.topDoppls].reverse().slice(0,4);return w.length?`Lowest-rated doppls (candidates to prune or regrow):\n\n${w.map(fmt).join('\n')}`:'Nothing to prune yet.';}
+  if(/next|grow|what.*do|suggest|recommend/.test(q))return `${s.problems} problem(s) recovered, ${s.doppls} doppl(s) grown. Next moves: ${s.doppls<3?'grow more doppls from your recovered problems (diverge dial)':'rate your doppls, then reseed the best leaf to start a deeper island'}. Or run a Campaign to auto-grow several generations deep.`;
+  return `Overview: ${s.seeds} seed(s), ${s.problems} problem(s), ${s.doppls} doppl(s), across ${s.islands.length} island(s), from ${s.runs} run(s). Ask me about your strongest doppls, recurring themes, what to prune, or what to grow next. (Offline heuristic — connect a model for deeper answers.)`;
+}
+let CHAT={msgs:[],ctx:null};
+async function loadChat(){const s=await DB.get('settings','chat');CHAT.msgs=(s&&s.val)||[];}
+async function saveChat(){await DB.put('settings',{key:'chat',val:CHAT.msgs.slice(-40)});}
+function chatMd(t){return esc(t).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n/g,'<br>');}
+function renderChat(){
+  const log=$('#chatLog');
+  if(!CHAT.msgs.length){log.innerHTML='<div class="chat-empty">Ask about your idea graph.<br>I read the live state — islands, ratings, strongest doppls — and answer from it.</div>';return;}
+  log.innerHTML=CHAT.msgs.map(m=>`<div class="msg ${m.role==='user'?'user':'bot'}">${m.role==='user'?esc(m.content):chatMd(m.content)}</div>`).join('');
+  log.scrollTop=1e9;
+}
+async function sendChat(text){
+  text=(text||$('#chatInput').value).trim();if(!text||CHAT.busy)return;
+  $('#chatInput').value='';$('#chatInput').style.height='auto';
+  CHAT.msgs.push({role:'user',content:text});renderChat();
+  CHAT.busy=true;
+  const sum=await graphSummary();CHAT.ctx=sum;
+  const thinking={role:'bot',content:'…'};CHAT.msgs.push(thinking);renderChat();
+  try{
+    const sys={role:'system',content:`You are the Insights analyst inside Doppl, a local idea-organism lab. Answer concisely and specifically using ONLY the graph state below; if something isn't in it, say so. Use plain language, short paragraphs, and reference nodes by their synopsis. Do not invent ratings.\n\n${sum.text}`};
+    const history=CHAT.msgs.filter(m=>m.content!=='…').slice(-10).map(m=>({role:m.role==='bot'?'assistant':'user',content:m.content}));
+    let acc='';
+    const out=await Provider.chat([sys,...history],(tok)=>{acc+=tok;thinking.content=acc;renderChat();});
+    thinking.content=(out||acc||'(no response)').trim();
+  }catch(e){thinking.content='⚠ '+e.message;}
+  CHAT.busy=false;renderChat();saveChat();
+}
+
+/* ============================ events + boot ============================ */
+function wire(){
+  $('#btnSeed').onclick=plantSeed;
+  $$('#dial button').forEach(b=>b.onclick=()=>setDial(b.dataset.dir));
+  $('#btnExport').onclick=exportAll;
+  $('#zoomIn').onclick=()=>Graph.scale=clamp(Graph.scale*1.2,.18,3.5);
+  $('#zoomOut').onclick=()=>Graph.scale=clamp(Graph.scale*0.8,.18,3.5);
+  $('#zoomFit').onclick=()=>Graph.fit();
+  $('#btnConsoleClose').onclick=()=>$('#console').classList.remove('show');
+  $$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.toggle('on',x===b));$('#tabInspect').style.display=b.dataset.tab==='inspect'?'':'none';$('#tabBoard').style.display=b.dataset.tab==='board'?'':'none';if(b.dataset.tab==='board')renderBoard();});
+  // settings
+  const sm=$('#settingsModal');
+  const openS=()=>{provForm();$('#testResult').textContent='';sm.classList.add('show');};
+  $('#btnSettings').onclick=openS;$('#providerPill').onclick=openS;
+  $('#settingsClose').onclick=$('#settingsCancel').onclick=()=>sm.classList.remove('show');
+  $$('#provSeg button').forEach(b=>b.onclick=()=>{Provider.cfg.mode=b.dataset.p;provForm();$('#testResult').textContent='';});
+  $('#btnTest').onclick=async()=>{readProvForm();$('#testResult').textContent='testing…';$('#testResult').style.color='var(--muted)';try{const r=await Provider.test();$('#testResult').textContent=r.msg;$('#testResult').style.color='var(--ok)';}catch(e){$('#testResult').textContent=e.message;$('#testResult').style.color='var(--neg)';}};
+  $('#settingsSave').onclick=async()=>{readProvForm();await Provider.save();refreshPill();sm.classList.remove('show');toast('Provider saved','ok');};
+  // bridge
+  $('#bridgeCopy').onclick=()=>{navigator.clipboard.writeText($('#bridgePrompt').value);toast('Prompt copied','ok');};
+  $('#bridgeClose').onclick=$('#bridgeCancel').onclick=()=>{$('#bridgeModal').classList.remove('show');if(_bridgeResolve){_bridgeResolve.rej(new Error('Bridge cancelled'));_bridgeResolve=null;}};
+  $('#bridgeRun').onclick=()=>{const v=$('#bridgeResponse').value.trim();if(!v){toast('Paste the JSON response first','err');return;}$('#bridgeModal').classList.remove('show');if(_bridgeResolve){_bridgeResolve.res(v);_bridgeResolve=null;}};
+  // campaign
+  $$('#campTrav button').forEach(b=>b.onclick=()=>$$('#campTrav button').forEach(x=>x.classList.toggle('on',x===b)));
+  $$('#campDial button').forEach(b=>b.onclick=()=>$$('#campDial button').forEach(x=>x.classList.toggle('on',x===b)));
+  $('#btnCampaign').onclick=runCampaign;
+  $('#btnStop').onclick=()=>{CAMPAIGN.stop=true;toast('Stopping after current step…','');};
+  // analyze
+  const am=$('#analyzeModal');
+  $('#btnAnalyze').onclick=openAnalyze;
+  $('#analyzeClose').onclick=()=>am.classList.remove('show');
+  $$('#anTabs button').forEach(b=>b.onclick=()=>anTab(b.dataset.an));
+  $('#simRun').onclick=runSim;$('#clRun').onclick=runCluster;$('#clTint').onclick=tintClusters;$('#clClear').onclick=clearTint;
+  $('#dupRun').onclick=runDupes;$('#dupMark').onclick=markDupes;
+  // chat
+  const cd=$('#chatDrawer');
+  $('#btnChat').onclick=()=>{cd.classList.toggle('show');$('#chatCtx').textContent=Provider.label();if(cd.classList.contains('show')){renderChat();renderSuggest();$('#chatInput').focus();}};
+  $('#chatClose').onclick=()=>cd.classList.remove('show');
+  $('#chatSend').onclick=()=>sendChat();
+  $('#chatClear').onclick=()=>{CHAT.msgs=[];saveChat();renderChat();};
+  $('#chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+  $('#chatInput').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(120,e.target.scrollHeight)+'px';});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){sm.classList.remove('show');am.classList.remove('show');}});
+}
+function renderSuggest(){const s=['Strongest doppls?','Recurring themes?','What should I grow next?','What can I prune?'];$('#chatSuggest').innerHTML=s.map(x=>`<span class="chip" data-q="${esc(x)}">${esc(x)}</span>`).join('');$$('#chatSuggest .chip').forEach(el=>el.onclick=()=>sendChat(el.dataset.q));}
+async function boot(){
+  await DB.open();await Provider.load();await loadChat();
+  Graph.init();renderOps();wire();refreshPill();
+  await Graph.sync();Graph.fit();await renderLibrary();await renderBoard();
+}
+boot();
+</script>
+</body>
+</html>

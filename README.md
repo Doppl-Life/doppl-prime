@@ -7,16 +7,16 @@ portable nodes.
 
 ## Where the truth lives
 
-**The garden is canon.** `my-docs/garden/` is where the model is defined and where we
-operate from. When the garden and the running kernel (`src/`, `tools/`) disagree, **the
-garden wins** — the kernel follows, deliberately. Start there:
+**The hut is canon.** `my-docs/the-hut/` is where the model is defined and where we
+operate from. When the hut and the running kernel (`src/`, `tools/`) disagree, **the
+hut wins** — the kernel follows, deliberately. Start there:
 
-- [`my-docs/garden/README.md`](my-docs/garden/README.md) — the hut: how to read the garden.
-- [`my-docs/garden/PROPOSAL.md`](my-docs/garden/PROPOSAL.md) — the unified frame. **Read first.**
-- [`my-docs/garden/object-model.md`](my-docs/garden/object-model.md) — stages, the node, the flow.
-- [`my-docs/garden/engine.md`](my-docs/garden/engine.md) — the generate→select crucible behind each stage.
-- [`my-docs/garden/rating-model.md`](my-docs/garden/rating-model.md) — the −5…+5 scoring source of truth.
-- [`my-docs/garden/LEXICON.md`](my-docs/garden/LEXICON.md) — the vocabulary.
+- [`my-docs/the-hut/README.md`](my-docs/the-hut/README.md) — start here: how to read the hut.
+- [`my-docs/the-hut/PROPOSAL.md`](my-docs/the-hut/PROPOSAL.md) — the unified frame. **Read first.**
+- [`my-docs/the-hut/object-model.md`](my-docs/the-hut/object-model.md) — stages, the node, the flow.
+- [`my-docs/the-hut/engine.md`](my-docs/the-hut/engine.md) — the generate→select crucible behind each stage.
+- [`my-docs/the-hut/rating-model.md`](my-docs/the-hut/rating-model.md) — the −5…+5 scoring source of truth.
+- [`my-docs/the-hut/LEXICON.md`](my-docs/the-hut/LEXICON.md) — the vocabulary.
 
 ## The spine
 

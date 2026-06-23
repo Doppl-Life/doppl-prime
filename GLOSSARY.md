@@ -1,7 +1,7 @@
 # Kernel Glossary
 
 Engine-mechanics terms the running kernel uses. The **model** vocabulary (doppl, node, stage,
-stock, the spine) lives in the garden — see [`my-docs/garden/LEXICON.md`](my-docs/garden/LEXICON.md).
+stock, the spine) lives in the hut — see [`my-docs/the-hut/LEXICON.md`](my-docs/the-hut/LEXICON.md).
 Only terms the kernel actually uses belong here.
 
 ## Core
@@ -10,7 +10,7 @@ Only terms the kernel actually uses belong here.
 
 - **Def:** the reusable operation `generate -> evaluate -> select -> generate
   again`, parameterized by direction, reproduction unit, fitness source, and
-  schedule. See [`my-docs/garden/engine.md`](my-docs/garden/engine.md).
+  schedule. See [`my-docs/the-hut/engine.md`](my-docs/the-hut/engine.md).
 
 ### Direction
 
@@ -47,7 +47,7 @@ Only terms the kernel actually uses belong here.
 ### Rating
 
 - **Def:** a `−5…+5` judgment of worth (the judge's and the human's output). See
-  [`my-docs/garden/rating-model.md`](my-docs/garden/rating-model.md).
+  [`my-docs/the-hut/rating-model.md`](my-docs/the-hut/rating-model.md).
 
 ### Novelty
 
@@ -82,7 +82,7 @@ Only terms the kernel actually uses belong here.
 ### Mechanism Cost
 
 - **Def:** ownership cost from dependencies, glue, abstractions, irreversible
-  commitments, or human workflow burden. In the garden it lives as the judge's
+  commitments, or human workflow burden. In the hut it lives as the judge's
   Cost-efficiency rating axis.
 
 ## Memory and signals

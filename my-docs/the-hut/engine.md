@@ -6,7 +6,7 @@ is that crucible written down, so the hut holds enough to regrow it when the jun
 
 **Promoted, not imported.** This is the distilled contract of `src/generate.ts`,
 `src/fitness.ts`, `src/select.ts`, `src/lens.ts`, `src/trace.ts` — the mechanism, in the
-garden's dialect. The jungle code is the origin; this doc is the authority. When they
+hut's dialect. The jungle code is the origin; this doc is the authority. When they
 disagree, this wins (rule of the hut).
 
 ## What one spine arrow does
@@ -62,7 +62,7 @@ self-grading** (it must point at absence-from-record); **grounding must point ou
 prose**. Swap in a richer scorer only when it has a named consumer and clearer failure
 detection.
 
-> Reconciliation: the garden's five judge axes (`rating-model.md`) are −5…+5 *ratings*.
+> Reconciliation: the hut's five judge axes (`rating-model.md`) are −5…+5 *ratings*.
 > These two 0–1 *measurements* map **into** Novelty and Grounding. Falsifiability,
 > Cost-efficiency, and Relevance are judge-only ratings with no engine instrument yet —
 > open: build instruments or leave judge-only.
@@ -80,7 +80,7 @@ Decay is configured to `0` for now. The engine keeps `temporal` as metadata, but
 - **temporal: true** — timing-bound, eligible for a future decay mechanism.
 - **temporal: false** — timeless, not eligible for decay.
 
-The future mechanism can bolt onto this seam by replacing `decay = 0` with a named time function. Until then, no half-life table is active in the garden.
+The future mechanism can bolt onto this seam by replacing `decay = 0` with a named time function. Until then, no half-life table is active in the hut.
 
 ## Selection — Pareto front, then directional rank, under floors
 
@@ -115,7 +115,7 @@ carries lineage: `parent`, `generation`, `operatorId`, and an explicit **delta**
 changed besides wording). Packets with no delta are **rejected before scoring** — rehash never
 reaches fitness.
 
-> Reconciliation: this is the jungle's `LineageLedger`. The garden replaces the separate
+> Reconciliation: this is the jungle's `LineageLedger`. The hut replaces the separate
 > ledger with *the node graph is the memory* — `doppelgangers` (a stored count of deduped
 > near-duplicates) + `convergence` (a derived query). The **delta-on-every-child** rule
 > survives; the separate ledger schema does not.
@@ -137,7 +137,7 @@ The lens is observer-relative feasibility scored *after* selection (demoFit/evid
 The crucible does not bake in one breeding unit. The thing that reproduces can be a
 **thesis** (a claim), a **consequence** (an implication branch), a **problem-frame** (a
 recovered pressure point), a **solution-candidate**, or — left as a seam, not a dependency —
-an **agenome** (an agent scaffold). The garden's stages are this seam made concrete:
+an **agenome** (an agent scaffold). The hut's stages are this seam made concrete:
 `problem_recovery` breeds problem-frames, `doppl` breeds solution-candidates. A run says which
 unit it breeds; a child always states its delta.
 
@@ -157,9 +157,9 @@ but never requires a specific external skill loader to run. The durable kernel-o
   deferred layer is budgeted cost — output tokens, tool calls, wall-clock, money — with a
   lineage that overruns its budget dying or pausing, never borrowing invisible compute.
 - **Mechanism cost.** Named in the old contract as a fitness component, never implemented in
-  the instruments. In the garden it lives as the judge's **Cost-efficiency** rating axis, not
+  the instruments. In the hut it lives as the judge's **Cost-efficiency** rating axis, not
   an engine measurement — unless a named consumer needs it scored upstream.
 
 ## The trace is the spine
 
-One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../specs/run-trace.md`](../../specs/run-trace.md). The compiler (`compiler-skill.md`) is the garden's projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.
+One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../specs/run-trace.md`](../../specs/run-trace.md). The compiler (`compiler-skill.md`) is the hut's projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.

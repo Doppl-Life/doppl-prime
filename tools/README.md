@@ -24,7 +24,7 @@ selection is leakage.
 Canonical sources:
 
 - Trace truth: `src/trace.ts` via `buildRunTrace()`.
-- The engine contract: [`my-docs/garden/engine.md`](../my-docs/garden/engine.md).
+- The engine contract: [`my-docs/the-hut/engine.md`](../my-docs/the-hut/engine.md).
 - Case-study corpus boundary: `tools/case-study-corpus.ts`.
 - Judgment agreement math: `tools/agreement.ts`.
 - Source radar knowledge: `tools/source-radar.ts`.

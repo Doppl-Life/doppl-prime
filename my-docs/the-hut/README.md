@@ -1,9 +1,9 @@
-# The Garden — where we scheme (single source of truth, still wet)
+# The Hut — where we scheme (single source of truth, still wet)
 
 These files define the model we are building. This folder is the safe space. We operate from here.
 
 **Canon, but provisional.** This is where we scheme together; it is not solidified. We shape the
-garden — the garden does not shape us. Beware the inverse of the jungle trap: don't let the garden
+hut — the hut does not shape us. Beware the inverse of the jungle trap: don't let the hut
 quietly grow back into what it "wants" to be. Decisions here are live until we freeze them on purpose.
 
 ## Rule of the hut
@@ -24,7 +24,7 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - `node-template.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).
 - `stock-template.md` — the stock field.
 - `rating-model.md` — the single source of truth for scoring.
-- `rating-inventory.md` — every scoring system, garden + jungle, and the conflicts to settle.
+- `rating-inventory.md` — every scoring system, hut + jungle, and the conflicts to settle.
 - `markscript.md` — the markdown-plus-TypeScript contract idiom used by the draft specs.
 - `discovery-skill.md` — kernel function: gather context (round trip).
 - `compiler-skill.md` — kernel function: render a stage's output into a node.
