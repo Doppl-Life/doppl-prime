@@ -338,9 +338,6 @@ type DiscoverySection = MarkdownSection<'## Discovery', DiscoveryEntry[]>;
 Growth is the current stage at full fidelity: what the node concluded. It is the only body section
 the judge rates. The content differs by stage; the wrapper stays the same idea.
 
-This prototype makes `problem_recovery` typed as subsections instead of a single arrow-chain line.
-The old line was readable, but not contract-shaped enough.
-
 ### Markdown shape
 
 ```markdown
@@ -541,7 +538,6 @@ never stored.
 ```ts
 type NodeSignals = {
   doppelgangers: number;
-  convergence?: never;
 };
 ```
 
@@ -558,4 +554,3 @@ type PortableSynopsis = string;
 type VerbatimCopy<Source extends PortableSynopsis, Copy extends PortableSynopsis> =
   Source extends Copy ? Copy : never;
 ```
-
