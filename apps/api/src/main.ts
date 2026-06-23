@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { FastifyInstance } from 'fastify';
@@ -12,6 +12,7 @@ import { listRunIds } from './projections/run-list';
 import { crashForward } from './runtime/recovery/crashForward';
 import { createStartRun, type StartRunInfra } from './boot/startRun';
 import { createOperatorStopRegistry } from './boot/operatorStop';
+import { seedDemo } from './event-store/scripts/seed-demo';
 import { buildServer } from './server';
 
 /**
@@ -57,7 +58,15 @@ export interface BootOverrides {
   readonly onSettled?: (runId: string) => void;
   /** Optional worker-error logging hook threaded into `createStartRun` (the failure is authoritative in the log). */
   readonly onError?: (runId: string, err: unknown) => void;
+  /** PD.3-completion — restore this committed fixture (`<fixtureDir>/<runId>.json`) after migrations + before
+   *  the server accepts work (the demo fallback). Default `env.DOPPL_SEED_FIXTURE`; absent → no seed step. */
+  readonly seedFixtureRunId?: string;
+  /** The fixtures dir the seed step reads (default `env.DOPPL_FIXTURE_DIR ?? the repo `fixtures/replay/`). */
+  readonly fixtureDir?: string;
 }
+
+/** The committed fixtures dir at the repo root (`fixtures/replay/`), resolved from this module's location. */
+const DEFAULT_FIXTURE_DIR = fileURLToPath(new URL('../../../fixtures/replay', import.meta.url));
 
 export interface BootedApp {
   readonly app: FastifyInstance;
@@ -107,59 +116,79 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
 
   // 3. Real infra over ONE pg pool. The same drizzle handle backs the event store, the GET /runs reader, and
   //    the SINGLE `listRunIds(db)` source wired into BOTH crashForward + the worker (no divergent enumeration).
+  //    Everything after the pool is wrapped so a boot ABORT (seed / crashForward / listen failure) ends the
+  //    pool instead of leaking it (no half-initialized boot serves; no dangling pg connection).
   const pool = new pg.Pool({ connectionString: databaseUrl });
-  const db = drizzle(pool);
-  const eventStore = createEventStore({ db, secretValues: collectSecretValues(env) });
-  const gateway = overrides.gateway ?? selectGateway(gatewaySelectionFromEnv(env));
-  const listRunIdsBound = (): Promise<readonly string[]> => listRunIds(db);
-  const newId = (): string => randomUUID();
+  try {
+    const db = drizzle(pool);
+    const eventStore = createEventStore({ db, secretValues: collectSecretValues(env) });
+    const gateway = overrides.gateway ?? selectGateway(gatewaySelectionFromEnv(env));
+    const listRunIdsBound = (): Promise<readonly string[]> => listRunIds(db);
+    const newId = (): string => randomUUID();
 
-  // 4. crash-forward AWAITED before the server can accept work (§5 / P3.13): orphaned non-terminal runs are
-  //    forward-failed to their §3-legal terminal so the single-active-run guard starts from a clean slate.
-  await crashForward({ eventStore, listRunIds: listRunIdsBound });
+    // 3.5 Conditional seed step (§17 migrate → SEED → start): restore a committed replay fixture when
+    //     DOPPL_SEED_FIXTURE=<runId> is set (the demo fallback source). AFTER the db handle exists + BEFORE
+    //     crashForward — the seeded run is TERMINAL, so crashForward leaves it untouched. A missing/invalid/
+    //     malformed fixture THROWS → bootApp rejects (pool ended below) → the API never serves a half-seeded
+    //     demo. Absent → no-op (a normal live boot seeds nothing).
+    const seedFixtureRunId = overrides.seedFixtureRunId ?? env.DOPPL_SEED_FIXTURE;
+    if (seedFixtureRunId !== undefined && seedFixtureRunId.trim() !== '') {
+      const fixtureDir = overrides.fixtureDir ?? env.DOPPL_FIXTURE_DIR ?? DEFAULT_FIXTURE_DIR;
+      await seedDemo({ db, dir: fixtureDir, runId: seedFixtureRunId });
+    }
 
-  // 5. The operator-stop channel (PD.3): the route latches via `request`; the worker polls via `checker`.
-  const operatorStop = createOperatorStopRegistry();
+    // 4. crash-forward AWAITED before the server can accept work (§5 / P3.13): orphaned non-terminal runs are
+    //    forward-failed to their §3-legal terminal so the single-active-run guard starts from a clean slate.
+    await crashForward({ eventStore, listRunIds: listRunIdsBound });
 
-  // 6. The §11 fire-and-forget run trigger — the only `onRunConfigured` (createStartRun composes the worker).
-  const infra: StartRunInfra = {
-    config,
-    modelGateway: gateway,
-    eventStore,
-    checkRegistry: CHECK_RUNNER_REGISTRY,
-    listRunIds: listRunIdsBound,
-    newId,
-    // The worker polls this latch at each generation boundary → drain-then-terminalize run.stopped (§5).
-    operatorStopFor: operatorStop.checker,
-    // onSettled ALWAYS drops the run's stop latch (bounds the registry), then forwards the optional test hook.
-    onSettled: (runId: string): void => {
-      operatorStop.clear(runId);
-      overrides.onSettled?.(runId);
-    },
-    ...(overrides.onError !== undefined ? { onError: overrides.onError } : {}),
-  };
+    // 5. The operator-stop channel (PD.3): the route latches via `request`; the worker polls via `checker`.
+    const operatorStop = createOperatorStopRegistry();
 
-  // The route cap-maxima == the boot ceiling (`config.caps` — what the worker clamps to, rule #1), so a
-  // recorded run.configured cannot execute above-ceiling (recorded == executed cannot drift via a
-  // runConfig.caps / config.caps divergence). Closes selection P5 carry-forward (a) route-max residual.
-  const defaultConfig: RunConfig = { ...config.runConfig, caps: config.caps };
+    // 6. The §11 fire-and-forget run trigger — the only `onRunConfigured` (createStartRun composes the worker).
+    const infra: StartRunInfra = {
+      config,
+      modelGateway: gateway,
+      eventStore,
+      checkRegistry: CHECK_RUNNER_REGISTRY,
+      listRunIds: listRunIdsBound,
+      newId,
+      // The worker polls this latch at each generation boundary → drain-then-terminalize run.stopped (§5).
+      operatorStopFor: operatorStop.checker,
+      // onSettled ALWAYS drops the run's stop latch (bounds the registry), then forwards the optional test hook.
+      onSettled: (runId: string): void => {
+        operatorStop.clear(runId);
+        overrides.onSettled?.(runId);
+      },
+      ...(overrides.onError !== undefined ? { onError: overrides.onError } : {}),
+    };
 
-  const app = buildServer({
-    store: eventStore,
-    db,
-    defaultConfig,
-    newId,
-    onRunConfigured: createStartRun(infra),
-    requestStop: operatorStop.request,
-  });
+    // The route cap-maxima == the boot ceiling (`config.caps` — what the worker clamps to, rule #1), so a
+    // recorded run.configured cannot execute above-ceiling (recorded == executed cannot drift via a
+    // runConfig.caps / config.caps divergence). Closes selection P5 carry-forward (a) route-max residual.
+    const defaultConfig: RunConfig = { ...config.runConfig, caps: config.caps };
 
-  await app.listen({ host, port });
+    const app = buildServer({
+      store: eventStore,
+      db,
+      defaultConfig,
+      newId,
+      onRunConfigured: createStartRun(infra),
+      requestStop: operatorStop.request,
+    });
 
-  const close = async (): Promise<void> => {
-    await app.close();
+    await app.listen({ host, port });
+
+    const close = async (): Promise<void> => {
+      await app.close();
+      await pool.end();
+    };
+    return { app, close };
+  } catch (err) {
+    // A boot abort (seed / crashForward / listen failure) must NOT leak the pg pool — end it, then rethrow so
+    // the guarded runner surfaces the error + exits (no server serves a half-initialized boot).
     await pool.end();
-  };
-  return { app, close };
+    throw err;
+  }
 }
 
 /** True when this module is the process entry (so an import — e.g. a test — never auto-boots). ESM-safe. */

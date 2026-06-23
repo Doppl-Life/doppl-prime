@@ -4,8 +4,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { sql } from 'drizzle-orm';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
-import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
+import { CURRENT_SCHEMA_VERSION, RunEventEnvelope, validateEventPayload } from '@doppl/contracts';
 import { replayEvents, runEvents, type RunEventRow } from '../index';
+import { summarizeZodIssues } from '../../shared/zod-errors';
 import { assertSafeRunId } from './runId-guard';
 
 /**
@@ -47,7 +48,15 @@ export function buildSeedPlan(fixture: SerializedReplayFixture): SeedPlan {
       `seed-demo: fixture schemaVersion ${fixture.schemaVersion} > current ${CURRENT_SCHEMA_VERSION} — re-record the fixture (MVP policy: re-record, not upcast)`,
     );
   }
-  // Deserialize occurredAt at the boundary (ISO string → Date); a faithful restore of the recorded column.
+  // Per-event validation (rule #2 / LESSON 46): the direct restore bypasses the append path's per-event
+  // validation, so a malformed fixture event would INSERT via jsonb + pass replayEvents (ordering-only) →
+  // fail on READ = a corrupt demo run. Validate each event vs the frozen RunEventEnvelope + per-type
+  // validateEventPayload BEFORE any insert — never seed a row that fails on read.
+  for (const event of fixture.events) {
+    validateFixtureEvent(event);
+  }
+  // Deserialize occurredAt at the boundary (ISO string → Date); the row is otherwise restored VERBATIM
+  // (null optional columns intact — a nullable column inserting null is equivalent to omitting it in PG).
   const rows: RunEventRow[] = fixture.events.map((event) => ({
     ...event,
     occurredAt: new Date(event.occurredAt),
@@ -55,6 +64,29 @@ export function buildSeedPlan(fixture: SerializedReplayFixture): SeedPlan {
   // Re-validate ordering BEFORE any insert — a hand-edited/tampered committed fixture fails loud.
   const ordered = replayEvents(rows);
   return { runId: fixture.runId, rows: [...ordered] };
+}
+
+/**
+ * Validate one fixture event vs the frozen `RunEventEnvelope` (full, incl. sequence/occurredAt-as-ISO) +
+ * per-type `validateEventPayload` — mirroring the append path's per-event validation that the direct
+ * restore bypasses. Top-level `null` columns (a dump serializes absent optionals as explicit `null`, but
+ * the envelope's `.optional()` accepts undefined/absent, not `null`) are stripped FOR THE PARSE ONLY — the
+ * inserted row stays verbatim (this validation is a gate, not a transform).
+ */
+function validateFixtureEvent(event: SerializedRow): void {
+  const forParse = Object.fromEntries(Object.entries(event).filter(([, value]) => value !== null));
+  const envelope = RunEventEnvelope.safeParse(forParse);
+  if (!envelope.success) {
+    throw new Error(
+      `seed-demo: fixture event '${event.id}' (sequence ${event.sequence}) failed envelope validation — ${summarizeZodIssues(envelope.error)}`,
+    );
+  }
+  const payload = validateEventPayload(envelope.data.type, envelope.data.payload);
+  if (!payload.ok) {
+    throw new Error(
+      `seed-demo: fixture event '${event.id}' (sequence ${event.sequence}) payload rejected — ${payload.reason}`,
+    );
+  }
 }
 
 export interface SeedDemoDeps {

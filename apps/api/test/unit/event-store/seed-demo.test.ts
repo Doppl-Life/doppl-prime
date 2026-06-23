@@ -88,6 +88,25 @@ describe('buildSeedPlan — PD.2 prepared-replay restore core (§17/§4)', () =>
     expect(() => buildSeedPlan(fixture(gapped, 2))).toThrow(ReplayIntegrityError);
   });
 
+  // spec(rule #2 / LESSON 46) — never seed a row that fails on read: an event passing replayEvents ordering
+  // but failing the frozen RunEventEnvelope (bad type) OR validateEventPayload (bad high-traffic payload) throws.
+  test('build_seed_plan_rejects_malformed_event', () => {
+    // (a) envelope failure — a non-registry event type (RunEventEnvelope.type = RunEventType enum).
+    const badType: SerializedRow[] = [
+      serializedRow(0, { type: 'run.configured' }),
+      serializedRow(1, { type: 'totally.bogus.type' }),
+      serializedRow(2, { type: 'run.completed', payload: { from: 'running', to: 'completed' } }),
+    ];
+    expect(() => buildSeedPlan(fixture(badType, 2))).toThrow(/envelope validation/i);
+    // (b) per-type payload failure — a high-traffic candidate.created with a malformed CandidateIdea payload.
+    const badPayload: SerializedRow[] = [
+      serializedRow(0, { type: 'run.configured' }),
+      serializedRow(1, { type: 'candidate.created', payload: { not: 'a candidate' } }),
+      serializedRow(2, { type: 'run.completed', payload: { from: 'running', to: 'completed' } }),
+    ];
+    expect(() => buildSeedPlan(fixture(badPayload, 2))).toThrow(/payload rejected/i);
+  });
+
   // spec(security) — CALL-SITE guard: seedDemo REJECTS a traversal runId BEFORE any DB read/insert (pins the
   // assertSafeRunId invocation, not just its import — a dropped call would leave the import-ban green).
   test('seed_rejects_traversal_runId', async () => {

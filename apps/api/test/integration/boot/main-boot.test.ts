@@ -1,5 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, inject, test } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
@@ -14,6 +17,7 @@ import {
   type EventStore,
 } from '../../../src/event-store';
 import { createGateway, type ModelGateway, type ProviderCallFn } from '../../../src/model-gateway';
+import { dumpReplayToFile } from '../../../src/event-store/scripts/dump-replay';
 import { bootApp } from '../../../src/main';
 
 /**
@@ -34,6 +38,7 @@ import { bootApp } from '../../../src/main';
 // ---- isolated-database harness ----------------------------------------------------------------
 let adminPool: pg.Pool;
 let baseUri: string;
+let tmpFixtureDir: string;
 let dbCounter = 0;
 const createdDbs: string[] = [];
 const openPools: pg.Pool[] = [];
@@ -41,6 +46,7 @@ const openPools: pg.Pool[] = [];
 beforeAll(() => {
   baseUri = inject('pgConnectionUri');
   adminPool = new pg.Pool({ connectionString: baseUri });
+  tmpFixtureDir = mkdtempSync(join(tmpdir(), 'doppl-boot-fix-'));
 });
 
 afterEach(async () => {
@@ -55,6 +61,7 @@ afterAll(async () => {
     await adminPool.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
   }
   await adminPool.end();
+  rmSync(tmpFixtureDir, { recursive: true, force: true });
 });
 
 /** Create a fresh dedicated database and return its connection URI (counter-named — no injection risk). */
@@ -368,5 +375,86 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
     expect(app.server.listening).toBe(true);
     await close();
     expect(app.server.listening).toBe(false);
+  });
+});
+
+describe('bootApp seed step — PD.3-completion migrate→seed→start (real PG)', () => {
+  /** Generate a committed fixture by dumping a real terminal run (PD.1) into the tmp fixture dir. */
+  async function generateSeedFixture(runId: string): Promise<void> {
+    const sourceUrl = await freshDatabaseUrl();
+    await runMigrations(sourceUrl);
+    const source = probeStore(sourceUrl);
+    await source.append(evt(runId, 'run.configured', { rngSeed: 4 }));
+    await source.append(evt(runId, 'run.started', { from: 'configured', to: 'running' }));
+    await source.append(
+      evt(runId, 'run.completed', { from: 'running', to: 'completed', finalIdeaRef: 'cand-seed' }),
+    );
+    await dumpReplayToFile({ store: source, runId, dir: tmpFixtureDir });
+  }
+
+  // spec(§17) — migrate → SEED → start: DOPPL_SEED_FIXTURE loads the committed fixture into the boot DB.
+  test('boot_with_seed_fixture_loads_replayable_run', async () => {
+    const runId = `seed-boot-${dbCounter}`;
+    await generateSeedFixture(runId);
+    const url = await freshDatabaseUrl();
+    const { app, close } = await bootApp({
+      env: bootEnv(url, { DOPPL_SEED_FIXTURE: runId }),
+      fixtureDir: tmpFixtureDir,
+      port: 0,
+      host: '127.0.0.1',
+    });
+    const rows = await probeStore(url).readByRun(runId);
+    expect(rows.map((r) => r.sequence)).toEqual([0, 1, 2]); // identical-by-sequence
+    expect(rows.some((r) => r.type === 'run.completed')).toBe(true); // the terminal run replays
+    expect(app.server.listening).toBe(true);
+    await close();
+  });
+
+  // spec(§17) — a configured-but-missing fixture ABORTS boot before listen (no half-seeded demo served).
+  test('boot_missing_seed_fixture_aborts_before_listen', async () => {
+    const url = await freshDatabaseUrl();
+    let caught: Error | undefined;
+    await bootApp({
+      env: bootEnv(url, { DOPPL_SEED_FIXTURE: 'no-such-fixture-run' }),
+      fixtureDir: tmpFixtureDir,
+      port: 0,
+      host: '127.0.0.1',
+    }).catch((err: unknown) => {
+      caught = err as Error;
+    });
+    expect(caught).toBeDefined();
+    expect(caught!.message).toMatch(/ENOENT|no such file|fixture/i);
+  });
+
+  // spec(additive env-gate) — no DOPPL_SEED_FIXTURE → the seed step is a no-op (the live boot is unchanged).
+  test('boot_no_seed_fixture_skips_seed', async () => {
+    const url = await freshDatabaseUrl();
+    const { app, close } = await bootApp({
+      env: bootEnv(url), // no DOPPL_SEED_FIXTURE
+      fixtureDir: tmpFixtureDir,
+      port: 0,
+      host: '127.0.0.1',
+    });
+    expect(app.server.listening).toBe(true); // boot succeeds; nothing seeded
+    await close();
+  });
+
+  // spec(§5) — the seed runs BEFORE crashForward: the seeded TERMINAL run is left untouched (no crash terminal).
+  test('boot_seed_runs_before_crash_forward', async () => {
+    const runId = `seed-cf-${dbCounter}`;
+    await generateSeedFixture(runId);
+    const url = await freshDatabaseUrl();
+    const { close } = await bootApp({
+      env: bootEnv(url, { DOPPL_SEED_FIXTURE: runId }),
+      fixtureDir: tmpFixtureDir,
+      port: 0,
+      host: '127.0.0.1',
+    });
+    const rows = await probeStore(url).readByRun(runId);
+    expect(rows).toHaveLength(3); // exactly the seeded events — crashForward added no terminal
+    expect(rows.filter((r) => r.type === 'run.failed' || r.type === 'run.cancelled')).toHaveLength(
+      0,
+    );
+    await close();
   });
 });
