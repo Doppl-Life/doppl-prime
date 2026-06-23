@@ -15,6 +15,7 @@ import {
   type ModelGateway,
   type OpenRouterClient,
 } from './model-gateway';
+import { REQUIRED_CREDENTIAL_ENV } from './model-gateway/registry';
 import { DEFAULT_MODEL_REGISTRY } from './config/model-registry.config';
 import { CHECK_RUNNER_REGISTRY } from './check-runners/registry';
 import { listRunIds } from './projections/run-list';
@@ -46,9 +47,6 @@ import { buildServer } from './server';
  * Exported `bootApp` + a guarded entry runner: a test boots it with no process-level side effect and tears
  * down cleanly; production reaches it by executing the module (the `start` script).
  */
-
-/** The required secret env vars whose VALUES feed the persistence-boundary redaction scrub (rule #4). */
-const REQUIRED_SECRET_ENV = ['OPENROUTER_API_KEY', 'OPENAI_API_KEY', 'DATABASE_URL'] as const;
 
 /**
  * The boot-orchestration env vars this module reads (DISTINCT from the closed config-override
@@ -132,7 +130,7 @@ function resolveGateway(
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).
  *  Length-gating is deferred to the scrub (`MIN_SECRET_LENGTH`) — this collects every present secret value. */
 function collectSecretValues(env: Record<string, string | undefined>): string[] {
-  return REQUIRED_SECRET_ENV.map((key) => env[key]).filter(
+  return REQUIRED_CREDENTIAL_ENV.map((key) => env[key]).filter(
     (value): value is string => typeof value === 'string' && value.length > 0,
   );
 }
