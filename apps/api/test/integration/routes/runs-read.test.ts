@@ -223,4 +223,26 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
       await app.close();
     }
   });
+
+  // PD.5a (§11/§17) — buildServer REGISTERS GET /problem-sets (closes the unit-tested-but-unregistered
+  // gap: the route is served through the production server builder, not just in isolation), returning the
+  // injected boot catalog. main.ts wires `problemSets: config.problemSets` into this same buildServer.
+  test('test_buildServer_serves_problem_sets', async () => {
+    const catalog = [{ id: 'p1', title: 'Demo problem', prompt: 'Solve a hard, well-scoped problem.' }];
+    const app = buildServer({
+      store,
+      db,
+      defaultConfig: DEFAULT_RUN_CONFIG,
+      newId: () => 'id-ps',
+      problemSets: catalog,
+    });
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/problem-sets' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ problemSets: catalog });
+    } finally {
+      await app.close();
+    }
+  });
 });

@@ -5,9 +5,11 @@ import type { EventStore } from './event-store';
 import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
+import { registerProblemSetsRoutes } from './routes/problem-sets';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
 import type { EventBridgeOptions } from './sse/event-bridge';
+import type { ProblemSets } from './runtime/config/configSchema';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -51,6 +53,9 @@ export interface BuildServerDeps {
   bodyLimit?: number;
   /** The configured ModelRoute set served by GET /model-routes (defaults to empty). */
   modelRoutes?: readonly ModelRoute[];
+  /** PD.5a — the boot prepared-problem catalog served by GET /problem-sets (defaults to empty). Wired from
+   *  `main.ts` `config.problemSets`; the PD.5b operator panel reads it to populate its selector. */
+  problemSets?: ProblemSets;
   /**
    * SSE bridge poll options for GET /runs/:id/stream (P6.9). Defaults to a live stream (real
    * abort-aware sleep + unbounded idle polls); tests inject a no-op sleep + bounded maxIdlePolls.
@@ -94,5 +99,6 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
   });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
+  registerProblemSetsRoutes(app, { problemSets: deps.problemSets ?? [] });
   return app;
 }

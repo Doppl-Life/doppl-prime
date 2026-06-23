@@ -208,6 +208,8 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
       newId,
       onRunConfigured: createStartRun(infra),
       requestStop: operatorStop.request,
+      // PD.5a — expose the boot prepared-problem catalog at GET /problem-sets (read-only; PD.5b reads it).
+      problemSets: config.problemSets,
     });
 
     await app.listen({ host, port });
