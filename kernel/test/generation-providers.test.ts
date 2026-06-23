@@ -11,6 +11,7 @@ import {
   type ProblemRecoveryProvider,
 } from '../src/generation-providers.ts';
 import { createReplayModelClient, type ModelCallRecord } from '../src/model-gateway.ts';
+import { initialAgenomePool } from '../src/agenomes.ts';
 
 test('fixture generation providers expose recovery, candidate, and critic boundaries', async () => {
   const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
@@ -37,6 +38,7 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
     problemRecovery: recovery,
     knowledgePacket,
     generation: 0,
+    agenomePool: initialAgenomePool(),
   });
   const secondGenerationCandidates = await providers.candidateGenerator.generate({
     runId: 'run_provider',
@@ -69,6 +71,8 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
   assert.equal(recovery.citedKnowledge.length, 3);
   assert.equal(candidates.length, 3);
   assert.equal(candidates[0]?.generation, 0);
+  assert.match(candidates[0]?.summary || '', /Agenome/);
+  assert.match(candidates[0]?.mechanism || '', /Agenome policy/);
   assert.equal(secondGenerationCandidates.length, 3);
   assert.equal(secondGenerationCandidates[0]?.generation, 1);
   assert.notDeepEqual(
@@ -77,6 +81,39 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
   );
   assert.ok(secondGenerationCandidates.every((candidate) => candidate.id.includes('_g1')));
   assert.equal(verdicts.length, 9);
+});
+
+test('fixture generation can narrow candidates from the supplied Agenome pool', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_provider_pool',
+    targetCase: caseStudy.id,
+    maxItems: 3,
+  });
+  const providers = await createFixtureGenerationProviders(
+    'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+  );
+  const recovery = await providers.problemRecovery.recover({
+    runId: 'run_provider_pool',
+    caseStudy,
+    knowledgePacket,
+  });
+  const candidates = await providers.candidateGenerator.generate({
+    runId: 'run_provider_pool',
+    caseStudy,
+    problemRecovery: recovery,
+    knowledgePacket,
+    generation: 0,
+    agenomePool: initialAgenomePool(['ag_blindside', 'ag_first_principles']),
+  });
+
+  assert.deepEqual(
+    candidates.map((candidate) => candidate.agenomeId).sort(),
+    ['ag_blindside', 'ag_first_principles'],
+  );
 });
 
 test('provider interfaces can be implemented without fixture files', async () => {
@@ -315,6 +352,41 @@ test('model generation providers expose default prompts and captured call record
   assert.equal(recovery.title, 'Default Prompt Recovery');
   assert.match(providers.modelCallRecords[0]?.prompt || '', /Return JSON only/);
   assert.match(providers.modelCallRecords[0]?.prompt || '', /FSD|ownership|unwind/i);
+});
+
+test('default candidate prompt includes Agenome traits for live generation', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_agenomes',
+    targetCase: caseStudy.id,
+    maxItems: 1,
+  });
+  const prompts = createDefaultModelGenerationPrompts();
+  const prompt = prompts.candidateGeneration({
+    runId: 'run_model_agenomes',
+    caseStudy,
+    problemRecovery: {
+      id: 'recovery_fsd-ownership-unwind',
+      caseId: caseStudy.id,
+      title: 'Recovered',
+      recoveredProblem: 'Recovered problem.',
+      hiddenConstraint: 'Hidden constraint.',
+      falsifier: 'Falsifier.',
+      citedKnowledge: [],
+    },
+    knowledgePacket,
+    generation: 0,
+    agenomePool: initialAgenomePool(['ag_blindside']),
+  });
+
+  assert.match(prompt, /Agenome pool/);
+  assert.match(prompt, /ag_blindside/);
+  assert.match(prompt, /Adversarial market scout/);
+  assert.match(prompt, /weights=novelty/);
+  assert.match(prompt, /Choose agenomeId from the supplied Agenome pool/);
 });
 
 test('model generation providers request schemas for structured outputs', async () => {

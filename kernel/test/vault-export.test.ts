@@ -51,6 +51,7 @@ test('exports a calibrator-facing run index', async () => {
 
   assert.equal(index.artifact_type, 'kernel_run_index');
   assert.equal(index.runId, 'run_export_index');
+  assert.ok(index.initialAgenomePool.some((agenome: { id: string }) => agenome.id === 'ag_blindside'));
   assert.equal(index.problemRecovery.path, 'problem-recovery.md');
   assert.ok(index.agenomes.length >= 2);
   assert.ok(index.agenomes[0].prompt);

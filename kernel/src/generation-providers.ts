@@ -2,6 +2,7 @@ import {
   assertCandidateSolution,
   assertCriticVerdict,
   assertProblemRecovery,
+  type Agenome,
   type CandidateSolution,
   type CaseStudy,
   type CriticVerdict,
@@ -25,6 +26,7 @@ export type CandidateGenerationInput = {
   generation: number;
   previousChild?: CandidateSolution;
   previousCriticVerdicts?: CriticVerdict[];
+  agenomePool?: Agenome[];
 };
 
 export type CriticJudgmentInput = {
@@ -106,18 +108,43 @@ export async function createFixtureGenerationProviders(
       ?.pressure || `${candidate.title} receives ${criticId} pressure.`;
   }
 
+  function agenomeFor(input: CandidateGenerationInput, agenomeId: string): Agenome | undefined {
+    return input.agenomePool?.find((agenome) => agenome.id === agenomeId);
+  }
+
+  function fixtureCandidatesFor(input: CandidateGenerationInput): Array<typeof fixture.candidates[number]> {
+    const poolIds = new Set((input.agenomePool || []).map((agenome) => agenome.id));
+    const selected = fixture.candidates.filter((candidate) => poolIds.has(candidate.agenomeId));
+    return selected.length >= 2 ? selected : fixture.candidates;
+  }
+
+  function candidateWithAgenomeContext(
+    candidate: Omit<CandidateSolution, 'caseId' | 'generation'>,
+    input: CandidateGenerationInput,
+  ): Omit<CandidateSolution, 'caseId' | 'generation'> {
+    const agenome = agenomeFor(input, candidate.agenomeId);
+    if (!agenome) return candidate;
+    return {
+      ...candidate,
+      summary: `${candidate.summary} Agenome ${agenome.label} applies ${agenome.persona}.`,
+      mechanism: `${candidate.mechanism} Agenome policy: ${agenome.decompositionPolicy}`,
+    };
+  }
+
   function evolveCandidates(input: CandidateGenerationInput): CandidateSolution[] {
+    const fixtureCandidates = fixtureCandidatesFor(input);
     if (input.generation === 0 || !input.previousChild) {
-      return fixture.candidates.map((candidate) =>
-        assertCandidateSolution({
-          ...candidate,
+      return fixtureCandidates.map((candidate) => {
+        const contextualCandidate = candidateWithAgenomeContext(candidate, input);
+        return assertCandidateSolution({
+          ...contextualCandidate,
           caseId: input.caseStudy.id,
           generation: input.generation,
-        }),
-      );
+        });
+      });
     }
 
-    const [primary, secondary, tertiary] = fixture.candidates;
+    const [primary, secondary, tertiary] = fixtureCandidates;
     const knowledge = input.knowledgePacket.items;
     const childTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
     const generation = input.generation;
@@ -156,7 +183,7 @@ export async function createFixtureGenerationProviders(
 
     return variants.map(({ source: _source, ...candidate }) =>
       assertCandidateSolution({
-        ...candidate,
+        ...candidateWithAgenomeContext(candidate, input),
         caseId: input.caseStudy.id,
         generation,
       }),
@@ -219,6 +246,22 @@ function arrayField(value: Record<string, unknown>, field: string): unknown[] {
 
 function knowledgeSummary(packet: KnowledgePacket): string {
   return packet.items.map((item) => `${item.citeHandle}: ${item.text}`).join('\n');
+}
+
+function agenomeSummary(agenomes: Agenome[] = []): string {
+  if (agenomes.length === 0) return 'No Agenome pool supplied.';
+  return agenomes
+    .map(
+      (agenome) =>
+        [
+          `${agenome.id} (${agenome.label})`,
+          `persona=${agenome.persona}`,
+          `policy=${agenome.decompositionPolicy}`,
+          `weights=novelty:${agenome.valueWeights.novelty},grounding:${agenome.valueWeights.grounding},feasibility:${agenome.valueWeights.feasibility},skepticism:${agenome.valueWeights.skepticism}`,
+          `energy=${agenome.energy.remaining}/${agenome.energy.allocated}`,
+        ].join(' | '),
+    )
+    .join('\n');
 }
 
 function stringSchema(): Record<string, unknown> {
@@ -315,12 +358,14 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
         knowledgeSummary(knowledgePacket),
       ].join('\n');
     },
-    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation, previousChild, previousCriticVerdicts }) {
+    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation, previousChild, previousCriticVerdicts, agenomePool }) {
       return [
         'Return JSON only with a candidates array.',
         `Case: ${caseStudy.title}`,
         `Generation: ${generation}`,
         `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        'Agenome pool:',
+        agenomeSummary(agenomePool),
         previousChild
           ? `Previous survivor: ${previousChild.id} / ${previousChild.title} / ${previousChild.summary}`
           : 'Previous survivor: none; create the initial population.',
@@ -328,6 +373,7 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
           ? `Prior critic mandates: ${previousCriticVerdicts.map((verdict) => `${verdict.candidateId}:${verdict.revisionMandate}`).join(' | ')}`
           : 'Prior critic mandates: none.',
         'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
+        'Choose agenomeId from the supplied Agenome pool and make the candidate reflect that Agenome persona, policy, and value weights.',
         'For generation > 0, do not repeat prior candidate IDs or simply rename them. Generate mutations, probes, or recombinations that respond to the previous survivor and critic mandates.',
         'Knowledge:',
         knowledgeSummary(knowledgePacket),

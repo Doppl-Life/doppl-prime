@@ -19,7 +19,7 @@ import {
   type FitnessScheduleMode,
 } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
-import { materializeAgenomes } from './agenomes.ts';
+import { initialAgenomePool, materializeAgenomes } from './agenomes.ts';
 import { createMemoryEventRecorder } from './event-store.ts';
 import {
   createFixtureGenerationProviders,
@@ -115,6 +115,7 @@ export async function runKernel(input: {
   const fitnessRecords: FitnessRecord[] = [];
   const energyLedger: AgenomeEnergyLedgerEntry[] = [];
   const allocatedAgenomes = new Set<string>();
+  let agenomePool = initialAgenomePool();
   const evolution: EvolutionGeneration[] = [];
   let carryoverChild: CandidateSolution | undefined;
   let previousCriticVerdicts: CriticVerdict[] = [];
@@ -173,6 +174,7 @@ export async function runKernel(input: {
       generation,
       previousChild: carryoverChild,
       previousCriticVerdicts,
+      agenomePool,
     });
     candidates.push(...freshCandidates);
     for (const candidate of freshCandidates) {
@@ -265,6 +267,7 @@ export async function runKernel(input: {
       });
       fusionChildren.push(fusion);
       carryoverChild = fusion.child;
+      agenomePool = materializeAgenomes({ candidates, fusions: fusionChildren, energyLedger });
     }
     evolution.push({
       generation,

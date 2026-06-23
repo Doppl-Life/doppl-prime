@@ -7,6 +7,7 @@ import { handleKernelHttpRequest } from '../src/server.ts';
 import { loadCaseStudy } from '../src/case-loader.ts';
 import { createDefaultModelGenerationPrompts } from '../src/generation-providers.ts';
 import { createJsonKnowledgeGateway } from '../src/knowledge-gateway.ts';
+import { initialAgenomePool } from '../src/agenomes.ts';
 import { type ModelCallRecord, writeModelCallRecords } from '../src/model-gateway.ts';
 
 async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
@@ -81,6 +82,7 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
         problemRecovery: completedProblemRecovery,
         knowledgePacket,
         generation: 0,
+        agenomePool: initialAgenomePool(),
       }),
       outputText: JSON.stringify({ candidates }),
       metadata: {},

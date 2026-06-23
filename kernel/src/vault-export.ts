@@ -4,6 +4,7 @@ import type { CandidateSolution, KernelRun, VaultExportManifest } from './contra
 import { replayRunProjection, writeRunEvents } from './event-store.ts';
 import { writeModelCallRecords } from './model-gateway.ts';
 import { compileProposalNodes } from './node-compiler.ts';
+import { initialAgenomePool } from './agenomes.ts';
 import {
   scoreCandidates,
   selectParents,
@@ -121,6 +122,13 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
     caseId: run.caseStudy.id,
     caseTitle: run.caseStudy.title,
     memoryMode: run.memoryMode,
+    initialAgenomePool: initialAgenomePool().map((agenome) => ({
+      id: agenome.id,
+      label: agenome.label,
+      persona: agenome.persona,
+      valueWeights: agenome.valueWeights,
+      decompositionPolicy: agenome.decompositionPolicy,
+    })),
     problemRecovery: {
       id: run.problemRecovery.id,
       path: 'problem-recovery.md',

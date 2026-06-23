@@ -114,6 +114,7 @@ test('runs through injected generation providers', async () => {
 });
 
 test('can evolve a child across multiple generations', async () => {
+  const seenAgenomePools: string[][] = [];
   const run = await runKernel({
     runId: 'run_evolution',
     casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
@@ -136,7 +137,8 @@ test('can evolve a child across multiple generations', async () => {
         },
       },
       candidateGenerator: {
-        async generate({ caseStudy, generation }) {
+        async generate({ caseStudy, generation, agenomePool }) {
+          seenAgenomePools.push((agenomePool || []).map((agenome) => agenome.id));
           return [
             {
               id: `evo_${generation}_a`,
@@ -178,6 +180,8 @@ test('can evolve a child across multiple generations', async () => {
   });
 
   assert.equal(run.evolution.length, 2);
+  assert.ok(seenAgenomePools[0]?.includes('ag_blindside'));
+  assert.ok(seenAgenomePools[1]?.some((id) => id.startsWith('fused_')));
   assert.deepEqual(run.evolution.map((generation) => generation.generation), [0, 1]);
   assert.equal(run.evolution[0]!.childId?.startsWith('child_'), true);
   assert.ok(run.evolution[1]!.candidateIds.includes(run.evolution[0]!.childId!));

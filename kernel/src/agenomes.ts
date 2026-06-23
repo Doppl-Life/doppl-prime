@@ -264,6 +264,25 @@ function energyFor(
   };
 }
 
+export function initialAgenomePool(ids = Object.keys(BASE_TEMPLATES)): Agenome[] {
+  return ids.sort().map((id) => {
+    const template = templateFor(id);
+    return {
+      id,
+      ...template,
+      parentAgenomeIds: [],
+      mutations: [],
+      energy: {
+        allocated: 0,
+        spent: 0,
+        remaining: 0,
+      },
+      candidateIds: [],
+      generations: [],
+    };
+  });
+}
+
 export function materializeAgenomes(input: {
   candidates: CandidateSolution[];
   fusion?: FusionResult;
