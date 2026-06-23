@@ -433,12 +433,22 @@ function fakeOpenRouterClient(opts: { onCall?: () => void } = {}): OpenRouterCli
   return {
     complete(params: OpenRouterCompletionParams): Promise<OpenRouterRawCompletion> {
       opts.onCall?.();
-      // Role detection from the contract-shaped params (the client never sees ModelRole): structured calls
-      // (critic/final_judge/fusion_synthesis) carry responseFormat.name `<role>_output`; embedding is the
-      // only EMBEDDING_ONLY route (no responseFormat) → keyed by its modelId; the population_generator call
-      // is the loop's only SCHEMA-LESS non-embedding call → the remaining fallback.
+      // Role detection from the contract-shaped params (the client never sees ModelRole): PD.13 relaxed
+      // structured mode sends `response_format: json_object` (no role name) + the role's SCHEMA as a system
+      // message — so detect the structured role from distinctive schema keywords in the system text;
+      // embedding is the only EMBEDDING_ONLY route (no responseFormat) → keyed by its modelId.
+      const systemText = params.messages
+        .filter((m) => m.role === 'system')
+        .map((m) => m.content)
+        .join('\n');
       const role = params.responseFormat
-        ? params.responseFormat.name.replace(/_output$/, '')
+        ? systemText.includes('falsification_survival')
+          ? 'final_judge'
+          : systemText.includes('synthesis')
+            ? 'fusion_synthesis'
+            : systemText.includes('subtypePayload') || systemText.includes('cross_domain_transfer')
+              ? 'population_generator'
+              : 'critic'
         : params.model === 'text-embedding-3-small'
           ? 'embedding'
           : 'population_generator';
