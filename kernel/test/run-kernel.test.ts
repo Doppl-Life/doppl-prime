@@ -173,6 +173,19 @@ test('can evolve a child across multiple generations', async () => {
   assert.ok(run.evolution[1]!.candidateIds.includes(run.evolution[0]!.childId!));
   assert.equal(run.fusion?.parentCandidateIds[0], run.evolution[0]!.childId);
   assert.equal(run.fusion?.child.generation, 2);
+  assert.equal(run.fusionChildren.length, 2);
+  assert.deepEqual(
+    run.fusionChildren.map((fusion) => fusion.child.id),
+    [run.evolution[0]!.childId, run.evolution[1]!.childId],
+  );
+  assert.ok(
+    run.agenomes.some((agenome) => agenome.candidateIds.includes(run.evolution[0]!.childId!)),
+  );
+  assert.ok(
+    run.agenomes
+      .find((agenome) => agenome.id === run.fusion?.child.agenomeId)
+      ?.parentAgenomeIds.includes(run.fusionChildren[0]!.child.agenomeId),
+  );
 });
 
 test('stops evolution when the generation budget is exhausted', async () => {

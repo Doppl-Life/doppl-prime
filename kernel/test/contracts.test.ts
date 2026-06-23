@@ -133,6 +133,60 @@ test('materialized agenomes group candidates into durable runtime objects', () =
   );
 });
 
+test('materialized fused agenomes inherit parent genetics by fusion weights', () => {
+  const agenomes = materializeAgenomes({
+    candidates: [
+      {
+        id: 'cand_a',
+        caseId: 'case_a',
+        agenomeId: 'ag_blindside',
+        generation: 0,
+        title: 'A',
+        summary: 'summary',
+        mechanism: 'mechanism',
+        claimedDelta: 'delta',
+        citedKnowledge: [],
+      },
+      {
+        id: 'cand_b',
+        caseId: 'case_a',
+        agenomeId: 'ag_first_principles',
+        generation: 0,
+        title: 'B',
+        summary: 'summary',
+        mechanism: 'mechanism',
+        claimedDelta: 'delta',
+        citedKnowledge: [],
+      },
+    ],
+    fusions: [
+      {
+        child: {
+          id: 'child_a_b',
+          caseId: 'case_a',
+          agenomeId: 'fused_ag_blindside_ag_first_principles',
+          generation: 1,
+          title: 'Child',
+          summary: 'summary',
+          mechanism: 'mechanism',
+          claimedDelta: 'delta',
+          citedKnowledge: [],
+        },
+        parentCandidateIds: ['cand_a', 'cand_b'],
+        compatibility: { parentA: 'cand_a', parentB: 'cand_b', score: 80, rationale: 'compatible' },
+        inheritanceWeights: { parentA: 0.667, parentB: 0.333 },
+        inheritedTraits: [],
+        mutationNotes: [],
+      },
+    ],
+  });
+  const fused = agenomes.find((agenome) => agenome.id === 'fused_ag_blindside_ag_first_principles');
+  assert.deepEqual(fused?.parentAgenomeIds, ['ag_blindside', 'ag_first_principles']);
+  assert.equal(fused?.valueWeights.novelty, 0.3);
+  assert.match(fused?.persona || '', /Adversarial market scout/);
+  assert.match(fused?.mutations[0] || '', /fused from ag_blindside \+ ag_first_principles/);
+});
+
 test('critic assertion rejects scores outside the bounded range', () => {
   assert.throws(
     () =>

@@ -112,6 +112,7 @@ export async function runKernel(input: {
   let previousCriticVerdicts: CriticVerdict[] = [];
   let selectedParents: [CandidateSolution, CandidateSolution] | [] = [];
   let fusion: FusionResult | undefined;
+  const fusionChildren: FusionResult[] = [];
 
   for (let generation = 0; generation < generationCount; generation += 1) {
     if (budget.remainingUnits < 1) {
@@ -204,6 +205,7 @@ export async function runKernel(input: {
         inheritanceWeights: fusion.inheritanceWeights,
         generation,
       });
+      fusionChildren.push(fusion);
       carryoverChild = fusion.child;
     }
     evolution.push({
@@ -227,7 +229,7 @@ export async function runKernel(input: {
       budgetRemainingUnits: budget.remainingUnits,
     });
   }
-  const agenomes = materializeAgenomes({ candidates, fusion });
+  const agenomes = materializeAgenomes({ candidates, fusions: fusionChildren });
   for (const agenome of agenomes) {
     trace.push(
       'agenome.materialized',
@@ -269,6 +271,7 @@ export async function runKernel(input: {
     fitnessRecords,
     selectedParents,
     fusion,
+    fusionChildren,
     evolution,
     budget,
     events: trace.events,

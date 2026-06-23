@@ -58,6 +58,9 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.candidates.length, run.candidates.length);
   assert.equal(index.child.id, run.fusion?.child.id);
   assert.deepEqual(index.child.parentCandidateIds, run.fusion?.parentCandidateIds);
+  assert.equal(index.fusionChildren.length, run.fusionChildren.length);
+  assert.equal(index.fusionChildren[0].child.id, run.fusionChildren[0]?.child.id);
+  assert.deepEqual(index.fusionChildren[0].parentCandidateIds, run.fusionChildren[0]?.parentCandidateIds);
   assert.equal(index.trace.path, 'trace.json');
   assert.equal(index.trace.eventsPath, 'events.jsonl');
   assert.equal(index.proposalNodes.root, 'proposal-nodes/case-study.md');

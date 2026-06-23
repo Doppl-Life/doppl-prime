@@ -5,6 +5,11 @@ type AgenomeTemplate = Omit<
   'id' | 'parentAgenomeIds' | 'mutations' | 'energy' | 'candidateIds' | 'generations'
 >;
 
+type Parentage = {
+  parentIds: string[];
+  weights: number[];
+};
+
 const DEFAULT_TEMPLATE: AgenomeTemplate = {
   label: 'Unclassified Agenome',
   prompt: 'Generate a bounded candidate solution and expose its mechanism clearly.',
@@ -102,20 +107,99 @@ function baseIdFor(id: string): string {
   return id.replace(/_(mutation|critic_probe|signal_probe)_g\d+$/, '');
 }
 
-function templateFor(id: string): AgenomeTemplate {
+function roundWeight(value: number): number {
+  return Number(value.toFixed(3));
+}
+
+function weightedAverage(values: Array<[number, number]>): number {
+  return roundWeight(values.reduce((sum, [value, weight]) => sum + value * weight, 0));
+}
+
+function mergePermissions(templates: AgenomeTemplate[]): string[] {
+  return [...new Set(templates.flatMap((template) => template.toolPermissions))].sort();
+}
+
+function templateFor(
+  id: string,
+  parentageByAgenome: Map<string, Parentage> = new Map(),
+  cache = new Map<string, AgenomeTemplate>(),
+): AgenomeTemplate {
+  const cached = cache.get(id);
+  if (cached) return cached;
+
+  const parentage = parentageByAgenome.get(id);
+  if (parentage && parentage.parentIds.length > 0) {
+    const parentTemplates = parentage.parentIds.map((parentId) =>
+      templateFor(parentId, parentageByAgenome, cache),
+    );
+    const weightedParents = parentTemplates.map((template, index) => ({
+      template,
+      weight: parentage.weights[index] ?? 1 / parentTemplates.length,
+    }));
+    const label = `Fusion: ${parentTemplates.map((template) => template.label).join(' / ')}`;
+    const template: AgenomeTemplate = {
+      label,
+      prompt: `Fuse the strongest mechanism from ${parentTemplates[0]!.label} with the constraint pressure from ${parentTemplates[1]?.label || parentTemplates[0]!.label}.`,
+      persona: parentTemplates.map((parentTemplate) => parentTemplate.persona).join(' + '),
+      valueWeights: {
+        novelty: weightedAverage(
+          weightedParents.map(({ template: parentTemplate, weight }) => [
+            parentTemplate.valueWeights.novelty,
+            weight,
+          ]),
+        ),
+        grounding: weightedAverage(
+          weightedParents.map(({ template: parentTemplate, weight }) => [
+            parentTemplate.valueWeights.grounding,
+            weight,
+          ]),
+        ),
+        feasibility: weightedAverage(
+          weightedParents.map(({ template: parentTemplate, weight }) => [
+            parentTemplate.valueWeights.feasibility,
+            weight,
+          ]),
+        ),
+        skepticism: weightedAverage(
+          weightedParents.map(({ template: parentTemplate, weight }) => [
+            parentTemplate.valueWeights.skepticism,
+            weight,
+          ]),
+        ),
+      },
+      toolPermissions: mergePermissions(parentTemplates),
+      decompositionPolicy: `Preserve parent mechanisms separately, test compatibility, then synthesize only the traits that survive critic pressure.`,
+      spawnBudget: {
+        maxCandidates: Math.max(...parentTemplates.map((template) => template.spawnBudget.maxCandidates)),
+        maxToolCalls: Math.max(...parentTemplates.map((template) => template.spawnBudget.maxToolCalls)),
+      },
+    };
+    cache.set(id, template);
+    return template;
+  }
+
   const base = baseIdFor(id);
   const template = BASE_TEMPLATES[base] || DEFAULT_TEMPLATE;
-  return {
+  const resolved = {
     ...template,
     label: template === DEFAULT_TEMPLATE ? titleize(id) : template.label,
     valueWeights: { ...template.valueWeights },
     toolPermissions: [...template.toolPermissions],
     spawnBudget: { ...template.spawnBudget },
   };
+  cache.set(id, resolved);
+  return resolved;
 }
 
-function mutationNotes(id: string): string[] {
+function mutationNotes(id: string, parentage?: Parentage): string[] {
   const notes: string[] = [];
+  if (parentage) {
+    notes.push(
+      `fused from ${parentage.parentIds.join(' + ')} with weights ${parentage.weights
+        .map((weight) => roundWeight(weight))
+        .join(' / ')}`,
+    );
+  }
   const mutation = id.match(/_(mutation|critic_probe|signal_probe)_g(\d+)$/);
   if (!mutation) return notes;
   const kind = mutation[1]!.replace('_', ' ');
@@ -131,37 +215,44 @@ function byAgenome(candidates: CandidateSolution[]): Map<string, CandidateSoluti
   return grouped;
 }
 
-function fusedParents(candidates: CandidateSolution[], fusion?: FusionResult): Map<string, string[]> {
-  const parents = new Map<string, string[]>();
-  if (!fusion) return parents;
+function fusedParents(candidates: CandidateSolution[], fusions: FusionResult[]): Map<string, Parentage> {
+  const parents = new Map<string, Parentage>();
   const byCandidateId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
-  parents.set(
-    fusion.child.agenomeId,
-    fusion.parentCandidateIds
+  for (const fusion of fusions) {
+    const parentIds = fusion.parentCandidateIds
       .map((parentId) => byCandidateId.get(parentId)?.agenomeId)
-      .filter((id): id is string => Boolean(id)),
-  );
+      .filter((id): id is string => Boolean(id));
+    parents.set(fusion.child.agenomeId, {
+      parentIds,
+      weights: [fusion.inheritanceWeights.parentA, fusion.inheritanceWeights.parentB],
+    });
+    byCandidateId.set(fusion.child.id, fusion.child);
+  }
   return parents;
 }
 
 export function materializeAgenomes(input: {
   candidates: CandidateSolution[];
   fusion?: FusionResult;
+  fusions?: FusionResult[];
 }): Agenome[] {
-  const candidates = input.fusion ? [...input.candidates, input.fusion.child] : input.candidates;
+  const fusions = input.fusions ?? (input.fusion ? [input.fusion] : []);
+  const candidates = [...input.candidates, ...fusions.map((fusion) => fusion.child)];
   const grouped = byAgenome(candidates);
-  const parentMap = fusedParents(input.candidates, input.fusion);
+  const parentMap = fusedParents(input.candidates, fusions);
+  const templateCache = new Map<string, AgenomeTemplate>();
   const agenomes: Agenome[] = [];
 
   for (const [id, ownedCandidates] of grouped) {
-    const template = templateFor(id);
+    const template = templateFor(id, parentMap, templateCache);
+    const parentage = parentMap.get(id);
     const spent = ownedCandidates.length;
     const allocated = Math.max(template.spawnBudget.maxCandidates, spent);
     agenomes.push({
       id,
       ...template,
-      parentAgenomeIds: parentMap.get(id) || (id === baseIdFor(id) ? [] : [baseIdFor(id)]),
-      mutations: mutationNotes(id),
+      parentAgenomeIds: parentage?.parentIds || (id === baseIdFor(id) ? [] : [baseIdFor(id)]),
+      mutations: mutationNotes(id, parentage),
       energy: {
         allocated,
         spent,

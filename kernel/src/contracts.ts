@@ -238,6 +238,7 @@ export type KernelRun = {
   fitnessRecords: FitnessRecord[];
   selectedParents: [CandidateSolution, CandidateSolution] | [];
   fusion?: FusionResult;
+  fusionChildren: FusionResult[];
   evolution: EvolutionGeneration[];
   budget: EvolutionBudget;
   events: RunEvent[];
@@ -485,6 +486,8 @@ export function assertKernelRun(value: unknown): KernelRun {
   for (const verdict of run.criticVerdicts || []) assertCriticVerdict(verdict);
   for (const fitness of run.fitnessRecords || []) assertFitnessRecord(fitness);
   if (run.fusion) assertFusionResult(run.fusion);
+  if (!Array.isArray(run.fusionChildren)) throw new Error('KernelRun.fusionChildren is required');
+  for (const fusionChild of run.fusionChildren) assertFusionResult(fusionChild);
   if (!Array.isArray(run.evolution)) throw new Error('KernelRun.evolution is required');
   const budget = assertObject(run.budget, 'KernelRun.budget');
   assertIntegerMinField(budget, 'maxUnits', 'KernelRun.budget', 0);

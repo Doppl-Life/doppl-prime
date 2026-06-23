@@ -348,7 +348,16 @@ function generationCount(run) {
 
 function childForGeneration(run, generation) {
   const fusionChild = (run.fusionChildren || []).find((child) => child.generation === generation);
-  if (fusionChild?.child) return fusionChild.child;
+  if (fusionChild?.child) {
+    return {
+      ...fusionChild.child,
+      parentCandidateIds: fusionChild.parentCandidateIds,
+      inheritanceWeights: fusionChild.inheritanceWeights,
+      compatibility: fusionChild.compatibility,
+      inheritedTraits: fusionChild.inheritedTraits,
+      mutationNotes: fusionChild.mutationNotes,
+    };
+  }
   const evolutionEntry = (run.evolution || []).find((entry) => entry.generation === generation);
   if (!evolutionEntry?.childId) return null;
   return {

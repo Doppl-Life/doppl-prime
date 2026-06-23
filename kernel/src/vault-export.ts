@@ -61,6 +61,13 @@ function solutionFilename(solution: CandidateSolution): string {
   return `${solution.id}.md`;
 }
 
+function exportedSolutions(run: KernelRun): CandidateSolution[] {
+  const solutions = [...run.candidates, ...run.fusionChildren.map((fusion) => fusion.child)];
+  return solutions.filter(
+    (solution, index) => solutions.findIndex((other) => other.id === solution.id) === index,
+  );
+}
+
 const COMPARISON_SCHEDULES: Exclude<FitnessScheduleMode, 'auto'>[] = [
   'diverge',
   'balanced',
@@ -155,6 +162,25 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
           mutationNotes: run.fusion.mutationNotes,
         }
       : null,
+    fusionChildren: run.fusionChildren.map((fusion) => ({
+      generation: Math.max(0, fusion.child.generation - 1),
+      child: {
+        id: fusion.child.id,
+        path: solutionFilename(fusion.child),
+        agenomeId: fusion.child.agenomeId,
+        generation: fusion.child.generation,
+        title: fusion.child.title,
+        summary: fusion.child.summary,
+        mechanism: fusion.child.mechanism,
+        claimedDelta: fusion.child.claimedDelta,
+        citedKnowledge: fusion.child.citedKnowledge,
+      },
+      parentCandidateIds: fusion.parentCandidateIds,
+      inheritanceWeights: fusion.inheritanceWeights,
+      compatibility: fusion.compatibility,
+      inheritedTraits: fusion.inheritedTraits,
+      mutationNotes: fusion.mutationNotes,
+    })),
     knowledgePacket: run.knowledgePacket,
     criticVerdicts: run.criticVerdicts,
     fitnessRecords: run.fitnessRecords,
@@ -241,7 +267,7 @@ export async function exportRunToVault(
   await writeFile(recoveryPath, problemRecoveryMarkdown(run), 'utf8');
   files.push(recoveryPath);
 
-  for (const solution of [...run.candidates, ...(run.fusion ? [run.fusion.child] : [])]) {
+  for (const solution of exportedSolutions(run)) {
     const solutionPath = path.join(runDir, solutionFilename(solution));
     await writeFile(solutionPath, solutionMarkdown(solution), 'utf8');
     files.push(solutionPath);
@@ -293,7 +319,7 @@ export async function exportRunToCalibrationVault(
   await writeFile(recoveryPath, problemRecoveryMarkdown(run, calibrationFields()), 'utf8');
   files.push(recoveryPath);
 
-  for (const solution of [...run.candidates, ...(run.fusion ? [run.fusion.child] : [])]) {
+  for (const solution of exportedSolutions(run)) {
     const solutionPath = path.join(runDir, solutionFilename(solution));
     await writeFile(solutionPath, solutionMarkdown(solution, calibrationFields()), 'utf8');
     files.push(solutionPath);
