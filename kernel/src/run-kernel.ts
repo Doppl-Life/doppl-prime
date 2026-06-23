@@ -43,6 +43,17 @@ function modelCallRecordsFrom(providers: GenerationProviders): ModelCallRecord[]
   return records && records.length > 0 ? records : undefined;
 }
 
+function modelProviderInfo(
+  providers: GenerationProviders,
+): { provider: string; model: string } | undefined {
+  const modelProviders = providers as GenerationProviders & {
+    modelProvider?: string;
+    model?: string;
+  };
+  if (!modelProviders.modelProvider || !modelProviders.model) return undefined;
+  return { provider: modelProviders.modelProvider, model: modelProviders.model };
+}
+
 function modelOutputEventType(record: ModelCallRecord): string {
   if (record.metadata.status === 'repair_requested') return 'model.output_repair_requested';
   if (record.metadata.status === 'repaired') return 'model.output_repaired';
@@ -94,6 +105,7 @@ export async function runKernel(input: {
 
   const generationProviders =
     input.generationProviders || (await createFixtureGenerationProviders(input.fixturePath));
+  const activeModelProvider = modelProviderInfo(generationProviders);
   const generationCount = Math.max(1, Math.floor(input.generations ?? 1));
   const maxBudgetUnits = Math.max(0, Math.floor(input.evolutionBudget?.maxUnits ?? generationCount));
   const budget = {
@@ -103,6 +115,22 @@ export async function runKernel(input: {
     exhausted: maxBudgetUnits === 0,
   };
 
+  function traceModelOperation(purpose: string, generation?: number): void {
+    if (!activeModelProvider) return;
+    trace.push(
+      'model.operation_started',
+      {
+        runId: input.runId,
+        purpose,
+        provider: activeModelProvider.provider,
+        model: activeModelProvider.model,
+        generation,
+      },
+      { actor: 'system' },
+    );
+  }
+
+  traceModelOperation('problem_recovery');
   const problemRecovery = await generationProviders.problemRecovery.recover({
     runId: input.runId,
     caseStudy,
@@ -166,6 +194,7 @@ export async function runKernel(input: {
       break;
     }
     trace.push('generation.started', { generation });
+    traceModelOperation('candidate_generation', generation);
     const freshCandidates = await generationProviders.candidateGenerator.generate({
       runId: input.runId,
       caseStudy,
@@ -197,6 +226,7 @@ export async function runKernel(input: {
     const generationCandidates = carryoverChild
       ? [carryoverChild, ...freshCandidates]
       : freshCandidates;
+    traceModelOperation('critic_judgment', generation);
     const generationVerdicts = await generationProviders.criticCouncil.judge({
       runId: input.runId,
       caseStudy,

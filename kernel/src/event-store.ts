@@ -36,6 +36,7 @@ export type RunProjection = {
 };
 
 export type ModelOutputCounts = {
+  started: number;
   accepted: number;
   repairRequested: number;
   repaired: number;
@@ -175,10 +176,11 @@ function numberPayloadValue(event: RunEvent, key: string): number | undefined {
 }
 
 function emptyModelOutputCounts(): ModelOutputCounts {
-  return { accepted: 0, repairRequested: 0, repaired: 0, rejected: 0 };
+  return { started: 0, accepted: 0, repairRequested: 0, repaired: 0, rejected: 0 };
 }
 
 function modelOutputBucket(type: string): keyof ModelOutputCounts | undefined {
+  if (type === 'model.operation_started') return 'started';
   if (type === 'model.output_accepted') return 'accepted';
   if (type === 'model.output_repair_requested') return 'repairRequested';
   if (type === 'model.output_repaired') return 'repaired';

@@ -394,6 +394,24 @@ test('runs through replayed model generation providers', async () => {
     run.modelCallRecords?.map((record) => record.purpose),
     ['problem_recovery', 'candidate_generation', 'critic_judgment'],
   );
+  const startedEvents = run.events.filter((event) => event.type === 'model.operation_started');
+  assert.deepEqual(
+    startedEvents.map((event) => event.payload.purpose),
+    ['problem_recovery', 'candidate_generation', 'critic_judgment'],
+  );
+  assert.ok(
+    startedEvents.every(
+      (event) =>
+        event.actor === 'system' &&
+        event.payload.provider === 'model_generation_provider' &&
+        event.payload.model === 'fixture-model' &&
+        !('prompt' in event.payload),
+    ),
+  );
+  assert.ok(
+    run.events.findIndex((event) => event.type === 'model.operation_started') <
+      run.events.findIndex((event) => event.type === 'model.output_accepted'),
+  );
   assert.deepEqual(
     run.events
       .filter((event) => event.type.startsWith('model.output_'))

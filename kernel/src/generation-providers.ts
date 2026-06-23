@@ -69,6 +69,8 @@ export type ModelGenerationProviderInput = {
 
 export type ModelGenerationProviders = GenerationProviders & {
   modelCallRecords: ModelCallRecord[];
+  modelProvider: string;
+  model: string;
 };
 
 export async function createFixtureGenerationProviders(
@@ -443,6 +445,8 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
 
   return {
     modelCallRecords,
+    modelProvider: 'model_generation_provider',
+    model: input.model,
     problemRecovery: {
       async recover(providerInput) {
         return parseWithRepair(

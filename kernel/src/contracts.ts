@@ -207,6 +207,7 @@ export const RUN_EVENT_TYPES = [
   'fitness.scored',
   'pair.compatibility_checked',
   'candidate.fused',
+  'model.operation_started',
   'model.output_accepted',
   'model.output_repair_requested',
   'model.output_repaired',
