@@ -78,6 +78,8 @@ function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
     caps,
     runConfig: {
       ...boot.runConfig,
+      // PD.10 — thread the per-run PROBLEM (RunConfig.seed) so it reaches the generation loop (was dropped).
+      seed: perRun.seed,
       rngSeed: perRun.rngSeed,
       enabledSubtypes: perRun.enabledSubtypes,
       caps,

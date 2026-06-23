@@ -279,4 +279,17 @@ describe('composeRunWorkerDeps — boot composition root function-level e2e (rea
     const deps = compose('merge-absent'); // no perRunConfig.
     expect(deps.config.caps.maxGenerations).toBe(boot.caps.maxGenerations); // boot (2), not merged.
   });
+
+  // spec(§5, PD.10 commit 1) — the per-run PROBLEM (RunConfig.seed) is threaded into the worker config so
+  // it reaches the generation loop. Today mergePerRunConfig drops `seed` (merges only rngSeed/enabledSubtypes/
+  // caps) → the operator's problem never shapes the run. Pins the thread; immutables stay boot.
+  test('test_merge_threads_per_run_seed', () => {
+    const boot = buildConfig();
+    const problem = 'design a low-cost off-grid water filter';
+    expect(boot.runConfig.seed).not.toBe(problem); // guard: the test seed differs from the boot default.
+    const perRun: RunConfig = { ...boot.runConfig, seed: problem };
+    const deps = compose('merge-seed', undefined, perRun);
+    expect(deps.config.runConfig.seed).toBe(problem); // the problem is threaded through to the loop.
+    expect(deps.config.scoringPolicy).toEqual(boot.scoringPolicy); // immutables unchanged.
+  });
 });
