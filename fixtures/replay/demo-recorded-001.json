@@ -1,0 +1,1516 @@
+{
+  "schemaVersion": 5,
+  "runId": "demo-recorded-001",
+  "events": [
+    {
+      "id": "demo-recorded-001-configured",
+      "runId": "demo-recorded-001",
+      "generationId": null,
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "run.configured",
+      "sequence": 0,
+      "occurredAt": "2026-06-23T07:44:41.087Z",
+      "actor": "operator",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "caps": {
+          "energyBudget": 1000,
+          "maxToolCalls": 64,
+          "maxPopulation": 2,
+          "maxSpawnDepth": 4,
+          "maxGenerations": 1,
+          "wallClockTimeoutMs": 600000
+        },
+        "seed": "demo-scenario",
+        "rngSeed": 42,
+        "modelProfile": "mvp",
+        "enabledSubtypes": [
+          "cross_domain_transfer",
+          "zeitgeist_synthesis"
+        ],
+        "scoringPolicyVersion": "mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-run-started",
+      "runId": "demo-recorded-001",
+      "generationId": null,
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "run.started",
+      "sequence": 1,
+      "occurredAt": "2026-06-23T07:44:41.094Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "to": "running",
+        "from": "configured"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e0",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-0",
+      "candidateId": null,
+      "type": "agenome.spawned",
+      "sequence": 2,
+      "occurredAt": "2026-06-23T07:44:41.096Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "agenome": {
+          "id": "demo-recorded-001-gen0-0",
+          "runId": "demo-recorded-001",
+          "status": "seeded",
+          "parentIds": [],
+          "spawnBudget": 2,
+          "generationId": "demo-recorded-001-gen0",
+          "systemPrompt": "You are a cross-domain analogist: map a mechanism from a distant field onto the target problem.",
+          "personaWeights": {
+            "rigor": 0.3,
+            "explorer": 0.7
+          },
+          "toolPermissions": [
+            "retrieval"
+          ],
+          "decompositionPolicy": "breadth-first"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e1",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-0",
+      "candidateId": null,
+      "type": "energy.spent",
+      "sequence": 3,
+      "occurredAt": "2026-06-23T07:44:41.098Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-energy-0",
+        "unit": "doppl_energy",
+        "runId": "demo-recorded-001",
+        "actual": 50,
+        "reason": "spawn",
+        "estimate": 50,
+        "agenomeId": "demo-recorded-001-gen0-0",
+        "eventType": "spawn",
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e2",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-1",
+      "candidateId": null,
+      "type": "agenome.spawned",
+      "sequence": 4,
+      "occurredAt": "2026-06-23T07:44:41.100Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "agenome": {
+          "id": "demo-recorded-001-gen0-1",
+          "runId": "demo-recorded-001",
+          "status": "seeded",
+          "parentIds": [],
+          "spawnBudget": 2,
+          "generationId": "demo-recorded-001-gen0",
+          "systemPrompt": "You are a first-principles skeptic: decompose the target to fundamentals and rebuild minimally.",
+          "personaWeights": {
+            "rigor": 0.8,
+            "explorer": 0.2
+          },
+          "toolPermissions": [
+            "retrieval"
+          ],
+          "decompositionPolicy": "depth-first"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e3",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-1",
+      "candidateId": null,
+      "type": "energy.spent",
+      "sequence": 5,
+      "occurredAt": "2026-06-23T07:44:41.101Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-energy-1",
+        "unit": "doppl_energy",
+        "runId": "demo-recorded-001",
+        "actual": 50,
+        "reason": "spawn",
+        "estimate": 50,
+        "agenomeId": "demo-recorded-001-gen0-1",
+        "eventType": "spawn",
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e4",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "generation.started",
+      "sequence": 6,
+      "occurredAt": "2026-06-23T07:44:41.104Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "index": 0,
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e5",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-0",
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "candidate.created",
+      "sequence": 7,
+      "occurredAt": "2026-06-23T07:44:41.106Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-gen0-c0",
+        "runId": "demo-recorded-001",
+        "title": "Immune-inspired cold-start recommender",
+        "claims": [
+          "CF underperforms on cold-start"
+        ],
+        "status": "created",
+        "subtype": "cross_domain_transfer",
+        "summary": "Apply affinity maturation to surface niche items for new users.",
+        "agenomeId": "demo-recorded-001-gen0-0",
+        "evidenceRefs": [
+          {
+            "kind": "prior_art",
+            "label": "AIRS 2003"
+          }
+        ],
+        "generationId": "demo-recorded-001-gen0",
+        "subtypePayload": {
+          "sourceDomain": "immunology",
+          "targetDomain": "recommender systems",
+          "targetProblem": "cold-start personalization",
+          "sourceTechnique": "clonal selection",
+          "transferMapping": "antigens→items, antibodies→user-affinity vectors",
+          "expectedMechanism": "affinity maturation surfaces niche items faster than CF",
+          "executableCheckIdea": "A/B vs CF baseline on held-out cold-start users"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e6",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-0",
+      "candidateId": null,
+      "type": "energy.spent",
+      "sequence": 8,
+      "occurredAt": "2026-06-23T07:44:41.108Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-energy-2",
+        "unit": "doppl_energy",
+        "runId": "demo-recorded-001",
+        "actual": 2,
+        "reason": "llm_generation",
+        "estimate": 1,
+        "agenomeId": "demo-recorded-001-gen0-0",
+        "eventType": "llm",
+        "generationId": "demo-recorded-001-gen0",
+        "providerMeta": {
+          "modelId": "anthropic/claude-3.5",
+          "provider": "openrouter",
+          "tokensIn": 1200,
+          "tokensOut": 380,
+          "costEstimate": 0.004,
+          "gatewayRequestId": "greq_1"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e7",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-1",
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "candidate.created",
+      "sequence": 9,
+      "occurredAt": "2026-06-23T07:44:41.110Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-gen0-c1",
+        "runId": "demo-recorded-001",
+        "title": "Immune-inspired cold-start recommender",
+        "claims": [
+          "CF underperforms on cold-start"
+        ],
+        "status": "created",
+        "subtype": "cross_domain_transfer",
+        "summary": "Apply affinity maturation to surface niche items for new users.",
+        "agenomeId": "demo-recorded-001-gen0-1",
+        "evidenceRefs": [
+          {
+            "kind": "prior_art",
+            "label": "AIRS 2003"
+          }
+        ],
+        "generationId": "demo-recorded-001-gen0",
+        "subtypePayload": {
+          "sourceDomain": "immunology",
+          "targetDomain": "recommender systems",
+          "targetProblem": "cold-start personalization",
+          "sourceTechnique": "clonal selection",
+          "transferMapping": "antigens→items, antibodies→user-affinity vectors",
+          "expectedMechanism": "affinity maturation surfaces niche items faster than CF",
+          "executableCheckIdea": "A/B vs CF baseline on held-out cold-start users"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e8",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": "demo-recorded-001-gen0-1",
+      "candidateId": null,
+      "type": "energy.spent",
+      "sequence": 10,
+      "occurredAt": "2026-06-23T07:44:41.112Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "demo-recorded-001-energy-3",
+        "unit": "doppl_energy",
+        "runId": "demo-recorded-001",
+        "actual": 2,
+        "reason": "llm_generation",
+        "estimate": 1,
+        "agenomeId": "demo-recorded-001-gen0-1",
+        "eventType": "llm",
+        "generationId": "demo-recorded-001-gen0",
+        "providerMeta": {
+          "modelId": "anthropic/claude-3.5",
+          "provider": "openrouter",
+          "tokensIn": 1200,
+          "tokensOut": 380,
+          "costEstimate": 0.004,
+          "gatewayRequestId": "greq_1"
+        }
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e9",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "generation.verifying",
+      "sequence": 11,
+      "occurredAt": "2026-06-23T07:44:41.113Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:feasibility:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.review_started",
+      "sequence": 12,
+      "occurredAt": "2026-06-23T07:44:41.116Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "feasibility",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:feasibility:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.reviewed",
+      "sequence": 13,
+      "occurredAt": "2026-06-23T07:44:41.118Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:feasibility",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "feasibility",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:falsification:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.review_started",
+      "sequence": 14,
+      "occurredAt": "2026-06-23T07:44:41.119Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "falsification",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:falsification:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.reviewed",
+      "sequence": 15,
+      "occurredAt": "2026-06-23T07:44:41.121Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:falsification",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "falsification",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:factual_grounding:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.review_started",
+      "sequence": 16,
+      "occurredAt": "2026-06-23T07:44:41.122Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "factual_grounding",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:factual_grounding:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "critic.reviewed",
+      "sequence": 17,
+      "occurredAt": "2026-06-23T07:44:41.123Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c0:factual_grounding",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "factual_grounding",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.source_validity:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.started",
+      "sequence": 18,
+      "occurredAt": "2026-06-23T07:44:41.124Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.source_validity",
+        "checkType": "transfer.source_validity",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.source_validity:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.completed",
+      "sequence": 19,
+      "occurredAt": "2026-06-23T07:44:41.126Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.source_validity",
+        "score": 1,
+        "output": "source domain differs from target domain (genuine cross-domain transfer)",
+        "status": "passed",
+        "checkType": "transfer.source_validity",
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.target_fit:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.started",
+      "sequence": 20,
+      "occurredAt": "2026-06-23T07:44:41.127Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.target_fit",
+        "checkType": "transfer.target_fit",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.target_fit:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.completed",
+      "sequence": 21,
+      "occurredAt": "2026-06-23T07:44:41.129Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.target_fit",
+        "score": 0,
+        "output": "transfer mapping does not reference the target (no shared tokens)",
+        "status": "failed",
+        "checkType": "transfer.target_fit",
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.mapping_quality:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.started",
+      "sequence": 22,
+      "occurredAt": "2026-06-23T07:44:41.130Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.mapping_quality",
+        "checkType": "transfer.mapping_quality",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.mapping_quality:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.completed",
+      "sequence": 23,
+      "occurredAt": "2026-06-23T07:44:41.131Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.mapping_quality",
+        "score": 1,
+        "output": "mapping and mechanism are substantive (3/8 words)",
+        "status": "passed",
+        "checkType": "transfer.mapping_quality",
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.allowlisted_executable:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.started",
+      "sequence": 24,
+      "occurredAt": "2026-06-23T07:44:41.133Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.allowlisted_executable",
+        "checkType": "transfer.allowlisted_executable",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.allowlisted_executable:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.completed",
+      "sequence": 25,
+      "occurredAt": "2026-06-23T07:44:41.134Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.allowlisted_executable",
+        "status": "skipped",
+        "checkType": "transfer.allowlisted_executable",
+        "skipReason": "problem_not_prepared",
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.prior_art:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.started",
+      "sequence": 26,
+      "occurredAt": "2026-06-23T07:44:41.135Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.prior_art",
+        "checkType": "transfer.prior_art",
+        "candidateId": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.prior_art:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "check.completed",
+      "sequence": 27,
+      "occurredAt": "2026-06-23T07:44:41.137Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c0:transfer.prior_art",
+        "status": "skipped",
+        "checkType": "transfer.prior_art",
+        "skipReason": "retrieval_unavailable",
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "judge:demo-recorded-001:demo-recorded-001-gen0-c0:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "judge.review_started",
+      "sequence": 28,
+      "occurredAt": "2026-06-23T07:44:41.139Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "policyVersion": "final-judge-mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "judge:demo-recorded-001:demo-recorded-001-gen0-c0:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "judge.reviewed",
+      "sequence": 29,
+      "occurredAt": "2026-06-23T07:44:41.140Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "judge-result:demo-recorded-001:demo-recorded-001-gen0-c0",
+        "acceptance": 18,
+        "axisScores": {
+          "novelty": 3,
+          "grounding": 4,
+          "feasibility": 5,
+          "subtype_check_pass": 4,
+          "falsification_survival": 2
+        },
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "providerMeta": {
+          "modelId": "anthropic/claude-3.5",
+          "provider": "openrouter",
+          "tokensIn": 1200,
+          "tokensOut": 380,
+          "costEstimate": 0.004,
+          "gatewayRequestId": "greq_1"
+        },
+        "rubricPolicyVersion": "final-judge-mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:feasibility:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.review_started",
+      "sequence": 30,
+      "occurredAt": "2026-06-23T07:44:41.141Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "feasibility",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:feasibility:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.reviewed",
+      "sequence": 31,
+      "occurredAt": "2026-06-23T07:44:41.143Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:feasibility",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "feasibility",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:falsification:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.review_started",
+      "sequence": 32,
+      "occurredAt": "2026-06-23T07:44:41.144Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "falsification",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:falsification:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.reviewed",
+      "sequence": 33,
+      "occurredAt": "2026-06-23T07:44:41.146Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:falsification",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "falsification",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:factual_grounding:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.review_started",
+      "sequence": 34,
+      "occurredAt": "2026-06-23T07:44:41.147Z",
+      "actor": "critic",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "mandate": "factual_grounding",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:factual_grounding:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "critic.reviewed",
+      "sequence": 35,
+      "occurredAt": "2026-06-23T07:44:41.148Z",
+      "actor": "critic",
+      "correlationId": "greq_1",
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "critic-review:demo-recorded-001:demo-recorded-001-gen0-c1:factual_grounding",
+        "scores": {
+          "grounding": 4
+        },
+        "mandate": "factual_grounding",
+        "critique": "stub critique",
+        "confidence": 0.5,
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.source_validity:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.started",
+      "sequence": 36,
+      "occurredAt": "2026-06-23T07:44:41.150Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.source_validity",
+        "checkType": "transfer.source_validity",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.source_validity:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.completed",
+      "sequence": 37,
+      "occurredAt": "2026-06-23T07:44:41.151Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.source_validity",
+        "score": 1,
+        "output": "source domain differs from target domain (genuine cross-domain transfer)",
+        "status": "passed",
+        "checkType": "transfer.source_validity",
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.target_fit:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.started",
+      "sequence": 38,
+      "occurredAt": "2026-06-23T07:44:41.152Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.target_fit",
+        "checkType": "transfer.target_fit",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.target_fit:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.completed",
+      "sequence": 39,
+      "occurredAt": "2026-06-23T07:44:41.154Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.target_fit",
+        "score": 0,
+        "output": "transfer mapping does not reference the target (no shared tokens)",
+        "status": "failed",
+        "checkType": "transfer.target_fit",
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.mapping_quality:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.started",
+      "sequence": 40,
+      "occurredAt": "2026-06-23T07:44:41.155Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.mapping_quality",
+        "checkType": "transfer.mapping_quality",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.mapping_quality:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.completed",
+      "sequence": 41,
+      "occurredAt": "2026-06-23T07:44:41.156Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.mapping_quality",
+        "score": 1,
+        "output": "mapping and mechanism are substantive (3/8 words)",
+        "status": "passed",
+        "checkType": "transfer.mapping_quality",
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.allowlisted_executable:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.started",
+      "sequence": 42,
+      "occurredAt": "2026-06-23T07:44:41.157Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.allowlisted_executable",
+        "checkType": "transfer.allowlisted_executable",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.allowlisted_executable:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.completed",
+      "sequence": 43,
+      "occurredAt": "2026-06-23T07:44:41.158Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.allowlisted_executable",
+        "status": "skipped",
+        "checkType": "transfer.allowlisted_executable",
+        "skipReason": "problem_not_prepared",
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.prior_art:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.started",
+      "sequence": 44,
+      "occurredAt": "2026-06-23T07:44:41.159Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "adapterId": "transfer.prior_art",
+        "checkType": "transfer.prior_art",
+        "candidateId": "demo-recorded-001-gen0-c1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.prior_art:completed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "check.completed",
+      "sequence": 45,
+      "occurredAt": "2026-06-23T07:44:41.161Z",
+      "actor": "check_runner",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "check:demo-recorded-001:demo-recorded-001-gen0-c1:transfer.prior_art",
+        "status": "skipped",
+        "checkType": "transfer.prior_art",
+        "skipReason": "retrieval_unavailable",
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "evidenceRefs": []
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "judge:demo-recorded-001:demo-recorded-001-gen0-c1:started",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "judge.review_started",
+      "sequence": 46,
+      "occurredAt": "2026-06-23T07:44:41.162Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "policyVersion": "final-judge-mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "judge:demo-recorded-001:demo-recorded-001-gen0-c1:reviewed",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "judge.reviewed",
+      "sequence": 47,
+      "occurredAt": "2026-06-23T07:44:41.163Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "judge-result:demo-recorded-001:demo-recorded-001-gen0-c1",
+        "acceptance": 18,
+        "axisScores": {
+          "novelty": 3,
+          "grounding": 4,
+          "feasibility": 5,
+          "subtype_check_pass": 4,
+          "falsification_survival": 2
+        },
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "providerMeta": {
+          "modelId": "anthropic/claude-3.5",
+          "provider": "openrouter",
+          "tokensIn": 1200,
+          "tokensOut": 380,
+          "costEstimate": 0.004,
+          "gatewayRequestId": "greq_1"
+        },
+        "rubricPolicyVersion": "final-judge-mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e10",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "generation.scoring",
+      "sequence": 48,
+      "occurredAt": "2026-06-23T07:44:41.164Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "e03e2657-117f-4079-b654-25ea8d12434a",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "novelty.scoring_started",
+      "sequence": 49,
+      "occurredAt": "2026-06-23T07:44:41.166Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {},
+      "schemaVersion": 5
+    },
+    {
+      "id": "246beaab-a9aa-4d3d-8d1b-e0fac3a9c2d6",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "novelty.scored",
+      "sequence": 50,
+      "occurredAt": "2026-06-23T07:44:41.168Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "53c277c4-6aa0-44db-a20a-396174aa4ec4",
+        "score": 1,
+        "method": "cosine",
+        "vector": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "dimension": 3,
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "explanation": "First candidate scored — no prior candidates in the comparison set; maximally novel (score 1).",
+        "comparisonSet": [],
+        "embeddingModelId": "fake-embed"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "6988ce66-0795-4e2e-949c-4c4ee0164fa6",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c0",
+      "type": "fitness.scored",
+      "sequence": 51,
+      "occurredAt": "2026-06-23T07:44:41.170Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "4e62a00a-47f1-46e3-ae9c-1775fcfb9bf8",
+        "total": 1.6666666666666665,
+        "components": {
+          "novelty": 1,
+          "critic_scores": 4,
+          "subtype_check": 0.6666666666666666,
+          "judge_acceptance": 18,
+          "energy_efficiency": 0.018867924528301886
+        },
+        "candidateId": "demo-recorded-001-gen0-c0",
+        "explanation": "FitnessScore total 1.6666666666666665 under policy mvp-1 = novelty: value 1 × weight 1 = 1; energy_efficiency: value 0.018867924528301886 × weight 0 = 0; critic_scores: value 4 × weight 0 = 0; subtype_check: value 0.6666666666666666 × weight 1 = 0.6666666666666666; judge_acceptance: value 18 × weight 0 = 0.",
+        "policyVersion": "mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "36b3b2fb-6b1e-49ab-b04d-76b71d23be8f",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "novelty.scoring_started",
+      "sequence": 52,
+      "occurredAt": "2026-06-23T07:44:41.171Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {},
+      "schemaVersion": 5
+    },
+    {
+      "id": "527d81ca-0227-49d4-afe0-cabfc3a194d0",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "novelty.scored",
+      "sequence": 53,
+      "occurredAt": "2026-06-23T07:44:41.173Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "0104fda3-73db-4a9d-9e25-ff5b961ed93a",
+        "score": 0,
+        "method": "cosine",
+        "vector": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "dimension": 3,
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "explanation": "Novelty 0 = 1 − max cosine similarity 1 over 1 prior candidate(s); nearest neighbour demo-recorded-001-gen0-c0.",
+        "comparisonSet": [
+          "demo-recorded-001-gen0-c0"
+        ],
+        "embeddingModelId": "fake-embed"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "cae3454f-3291-4c8a-841f-250c41cd91aa",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": "demo-recorded-001-gen0-c1",
+      "type": "fitness.scored",
+      "sequence": 54,
+      "occurredAt": "2026-06-23T07:44:41.174Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "76663d33-89f6-4089-90d0-72b4f73b7a49",
+        "total": 0.6666666666666666,
+        "components": {
+          "novelty": 0,
+          "critic_scores": 4,
+          "subtype_check": 0.6666666666666666,
+          "judge_acceptance": 18,
+          "energy_efficiency": 0.018867924528301886
+        },
+        "candidateId": "demo-recorded-001-gen0-c1",
+        "explanation": "FitnessScore total 0.6666666666666666 under policy mvp-1 = novelty: value 0 × weight 1 = 0; energy_efficiency: value 0.018867924528301886 × weight 0 = 0; critic_scores: value 4 × weight 0 = 0; subtype_check: value 0.6666666666666666 × weight 1 = 0.6666666666666666; judge_acceptance: value 18 × weight 0 = 0.",
+        "policyVersion": "mvp-1"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e11",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "generation.reproducing",
+      "sequence": 55,
+      "occurredAt": "2026-06-23T07:44:41.177Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "39e6dbfb-35b6-4481-a406-894977ac1be8",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "fusion.started",
+      "sequence": 56,
+      "occurredAt": "2026-06-23T07:44:41.179Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {},
+      "schemaVersion": 5
+    },
+    {
+      "id": "e22bac46-ba04-4d74-9ff9-dd2c6c6bf34b",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "agenome.fused",
+      "sequence": 57,
+      "occurredAt": "2026-06-23T07:44:41.180Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "90fc78e9-01e6-4683-9027-d62549541119",
+        "mode": "fusion",
+        "runId": "demo-recorded-001",
+        "childAgenomeId": "6e2082ad-9544-43bc-807b-de237b58829f",
+        "crossoverPoints": [
+          1,
+          1
+        ],
+        "mutationSummary": {
+          "synthesisOutput": "a merged child system prompt",
+          "spawnBudget_from": "B",
+          "childGenerationId": "demo-recorded-001-gen0",
+          "systemPrompt_from": "A",
+          "decompositionPolicy_from": "B"
+        },
+        "parentAgenomeIds": [
+          "demo-recorded-001-gen0-0",
+          "demo-recorded-001-gen0-1"
+        ]
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "4e9124d9-70ea-4cad-89a3-5e78a3ce5b7b",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "fusion.started",
+      "sequence": 58,
+      "occurredAt": "2026-06-23T07:44:41.182Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {},
+      "schemaVersion": 5
+    },
+    {
+      "id": "07c5408d-3471-4b05-ae32-c0478ee9402c",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "agenome.fused",
+      "sequence": 59,
+      "occurredAt": "2026-06-23T07:44:41.183Z",
+      "actor": "selection_controller",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "id": "f7176ef0-9902-41ba-ba71-7521348430c2",
+        "mode": "fusion",
+        "runId": "demo-recorded-001",
+        "childAgenomeId": "df172660-1f16-41cf-8d52-7276a22cc897",
+        "crossoverPoints": [
+          2,
+          1
+        ],
+        "mutationSummary": {
+          "synthesisOutput": "a merged child system prompt",
+          "spawnBudget_from": "A",
+          "childGenerationId": "demo-recorded-001-gen0",
+          "systemPrompt_from": "A",
+          "decompositionPolicy_from": "B"
+        },
+        "parentAgenomeIds": [
+          "demo-recorded-001-gen0-0",
+          "demo-recorded-001-gen0-1"
+        ]
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e12",
+      "runId": "demo-recorded-001",
+      "generationId": "demo-recorded-001-gen0",
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "generation.completed",
+      "sequence": 60,
+      "occurredAt": "2026-06-23T07:44:41.184Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "survivors": 2,
+        "generationId": "demo-recorded-001-gen0"
+      },
+      "schemaVersion": 5
+    },
+    {
+      "id": "demo-recorded-001-e13",
+      "runId": "demo-recorded-001",
+      "generationId": null,
+      "agenomeId": null,
+      "candidateId": null,
+      "type": "run.completed",
+      "sequence": 61,
+      "occurredAt": "2026-06-23T07:44:41.188Z",
+      "actor": "runtime",
+      "correlationId": null,
+      "langfuseTraceId": null,
+      "langfuseObservationId": null,
+      "payload": {
+        "to": "completed",
+        "from": "running",
+        "finalIdeaRef": "demo-recorded-001-gen0-c0"
+      },
+      "schemaVersion": 5
+    }
+  ]
+}

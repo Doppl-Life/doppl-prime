@@ -14,6 +14,8 @@
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
     "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
+    "test:smoke:demo": "vitest run --config vitest.integration.config.ts test/integration/demo",
+    "capture:demo-fixture": "DOPPL_CAPTURE_FIXTURE=1 vitest run --config vitest.integration.config.ts test/integration/demo/demo-e2e-smoke.test.ts -t capture_demo_fixture",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

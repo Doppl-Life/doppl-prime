@@ -5,11 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import {
-  CURRENT_SCHEMA_VERSION,
-  validCandidateIdeaCrossDomain,
-  validProviderMeta,
-} from '@doppl/contracts';
+import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
 import {
   createEventStore,
   runMigrations,
@@ -17,15 +13,14 @@ import {
   type EventStore,
 } from '../../../src/event-store';
 import {
-  createGateway,
   type ModelGateway,
   type OpenRouterClient,
   type OpenRouterCompletionParams,
   type OpenRouterRawCompletion,
-  type ProviderCallFn,
 } from '../../../src/model-gateway';
 import { dumpReplayToFile } from '../../../src/event-store/scripts/dump-replay';
 import { bootApp } from '../../../src/main';
+import { CANDIDATE_CONTENT, recordedDemoGateway } from '../_support/recorded-demo-gateway';
 
 /**
  * PD.3 boot-spine — the production boot root `apps/api/src/main.ts` (ARCHITECTURE.md §15/§5/§11/§17,
@@ -108,46 +103,8 @@ function bootEnv(
 }
 
 // ---- deterministic multi-role fake gateway (no live SDK — rule #7) ------------------------------
-const CANDIDATE_CONTENT = {
-  title: validCandidateIdeaCrossDomain.title,
-  summary: validCandidateIdeaCrossDomain.summary,
-  claims: validCandidateIdeaCrossDomain.claims,
-  evidenceRefs: validCandidateIdeaCrossDomain.evidenceRefs,
-  subtype: validCandidateIdeaCrossDomain.subtype,
-  subtypePayload: validCandidateIdeaCrossDomain.subtypePayload,
-};
-
-function multiRoleProviderCall(opts: { onCall?: () => void } = {}): ProviderCallFn {
-  return (request) => {
-    opts.onCall?.();
-    let output: unknown;
-    if (request.role === 'embedding') {
-      output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
-    } else if (request.role === 'final_judge') {
-      output = {
-        grounding: 4,
-        novelty: 3,
-        feasibility: 5,
-        falsification_survival: 2,
-        subtype_check_pass: 4,
-      };
-    } else if (request.role === 'fusion_synthesis') {
-      output = { synthesis: 'a merged child system prompt' };
-    } else if (request.role === 'population_generator') {
-      output = CANDIDATE_CONTENT;
-    } else {
-      output = { critique: 'stub critique', confidence: 0.5, scores: { grounding: 4 } };
-    }
-    return Promise.resolve({ output, providerMeta: validProviderMeta });
-  };
-}
-
-function multiRoleGateway(opts: { onCall?: () => void } = {}): ModelGateway {
-  return createGateway({
-    providerCall: multiRoleProviderCall(opts),
-    capabilityFor: () => ({ structuredOutputs: true, embeddings: true }),
-  });
-}
+// The loop-capable recorded fake (`recordedDemoGateway` + `CANDIDATE_CONTENT`) lives in the shared support
+// util `../_support/recorded-demo-gateway` (LESSON §5 single-source) — also used by the PD.8a capture/smoke.
 
 /** A gateway whose FIRST provider call blocks until `open()` — keeps the first run non-terminal. */
 function gatedGateway(): { gateway: ModelGateway; open: () => void } {
@@ -155,7 +112,7 @@ function gatedGateway(): { gateway: ModelGateway; open: () => void } {
   const gate = new Promise<void>((resolve) => {
     open = resolve;
   });
-  const inner = multiRoleGateway();
+  const inner = recordedDemoGateway();
   let gated = false;
   return {
     open,
@@ -281,7 +238,7 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
       env: bootEnv(url),
       port: 0,
       host: '127.0.0.1',
-      gateway: multiRoleGateway(),
+      gateway: recordedDemoGateway(),
       onSettled,
     });
     // boot's crashForward (awaited before listen) forward-failed the orphan.
@@ -303,7 +260,7 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
       env: bootEnv(url),
       port: 0,
       host: '127.0.0.1',
-      gateway: multiRoleGateway(),
+      gateway: recordedDemoGateway(),
       onSettled,
     });
     const port = addressPort(app.server);
@@ -357,7 +314,7 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
       env: bootEnv(url),
       port: 0,
       host: '127.0.0.1',
-      gateway: multiRoleGateway({ onCall: () => (calls += 1) }),
+      gateway: recordedDemoGateway({ onCall: () => (calls += 1) }),
       onSettled,
     });
     const { status, json } = await postRun(addressPort(app.server));
@@ -377,7 +334,7 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
       env: bootEnv(url),
       port: 0,
       host: '127.0.0.1',
-      gateway: multiRoleGateway(),
+      gateway: recordedDemoGateway(),
     });
     expect(app.server.listening).toBe(true);
     await close();
