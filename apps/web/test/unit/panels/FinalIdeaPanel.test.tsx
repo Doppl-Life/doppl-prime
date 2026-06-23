@@ -181,3 +181,125 @@ describe('FinalIdeaPanel — final surviving-idea proof (capstone)', () => {
     }
   });
 });
+
+const scoredOnlyLineage = lineageWith([
+  { id: 'c', type: 'candidate', label: 'c', status: 'scored', dataRef: 'cand_x' },
+]);
+
+describe('FinalIdeaPanel — PD.7 evidence-rung label + terminal zero-survivors', () => {
+  // spec(§17/§12, rule #4): a LIVE run labels the transfer-evidence rung "live allowlisted
+  // (non-executing)" — derived from the run mode (zero new contract surface), text not color-only.
+  it('test_evidence_rung_labeled_live', async () => {
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={winnerLineage}
+        events={[checkEvent(4, 'math_check')]}
+        runClient={client(WIN)}
+        mode="live"
+      />,
+    );
+    await screen.findByText(WIN.title);
+    expect(screen.getByText(/live allowlisted \(non-executing\)/i)).toBeTruthy();
+  });
+
+  // spec(§17): a REPLAY run labels the rung "replay-backed" (the labeled state is unambiguous on the projector).
+  it('test_evidence_rung_labeled_replay', async () => {
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={winnerLineage}
+        events={[checkEvent(4, 'math_check')]}
+        runClient={client(WIN)}
+        mode="replay"
+      />,
+    );
+    await screen.findByText(WIN.title);
+    expect(screen.getByText(/replay-backed/i)).toBeTruthy();
+  });
+
+  // spec(§9/LESSON 7): the winner's evidenceRefs render via the shared EvidenceRefLink IN-TIER (kind +
+  // label present; NO <a>/[href]) — realizing the not-yet-done final-idea reuse.
+  it('test_winner_evidence_refs_render_in_tier', async () => {
+    const { container } = render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={winnerLineage}
+        events={[]}
+        runClient={client(WIN)} // WIN.evidenceRefs = [{ kind: 'prior_art', label: 'AIRS 2003' }]
+        mode="live"
+      />,
+    );
+    await screen.findByText(WIN.title);
+    expect(screen.getByText('prior_art')).toBeTruthy();
+    expect(screen.getByText('AIRS 2003')).toBeTruthy();
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelector('[href]')).toBeNull();
+  });
+
+  // spec(§12 partial-data): a winner with EMPTY evidenceRefs → graceful (no EvidenceRefLink, no crash).
+  it('test_no_evidence_refs_graceful', async () => {
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={winnerLineage}
+        events={[]}
+        runClient={client({ ...WIN, evidenceRefs: [] })}
+        mode="live"
+      />,
+    );
+    await screen.findByText(WIN.title); // renders without crashing
+    expect(screen.queryByText('prior_art')).toBeNull(); // empty refs → no EvidenceRefLink rendered
+  });
+
+  // spec(§12 acceptance #3): no selected winner + a TERMINAL run → reflect the terminal state, never
+  // fabricate an idea; getCandidate is NOT called.
+  it('test_terminal_zero_survivors_reflects_failed', () => {
+    const c = client(WIN);
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={scoredOnlyLineage}
+        events={[]}
+        runClient={c}
+        runStatus="run.failed"
+      />,
+    );
+    expect(screen.getByText(/no surviving idea — run failed/i)).toBeTruthy();
+    expect(screen.queryByText(/appears once a candidate is selected/i)).toBeNull();
+    expect(c.getCandidate).not.toHaveBeenCalled();
+  });
+
+  // spec(backward-compat): no winner + NON-terminal (runStatus undefined) → the EXISTING in-progress
+  // affordance — the terminal branch must not swallow the in-progress case.
+  it('test_no_winner_in_progress_unchanged', () => {
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={scoredOnlyLineage}
+        events={[]}
+        runClient={client(WIN)}
+      />,
+    );
+    expect(screen.getByText(/appears once a candidate is selected/i)).toBeTruthy();
+  });
+
+  // spec(rule #8): displayed energy = successful productive spend only — a provider_call_failed event
+  // contributes NOTHING (only energy.spent.actual does).
+  it('test_energy_excludes_failed_calls', async () => {
+    render(
+      <FinalIdeaPanel
+        runId="run_1"
+        lineage={winnerLineage}
+        events={[
+          makeEvent(1, 'provider_call_failed', { agenomeId: 'agn_1', payload: {} }),
+          energyEvent(2, 120),
+        ]}
+        runClient={client(WIN)}
+        mode="live"
+      />,
+    );
+    await screen.findByText(WIN.title);
+    expect(screen.getByText('120 doppl_energy')).toBeTruthy(); // ONLY the energy.spent.actual
+  });
+});

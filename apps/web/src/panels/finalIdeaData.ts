@@ -1,5 +1,6 @@
 import { FitnessScore } from '../data/contracts';
 import type { CandidateIdea, LineageGraphProjection, RunEventEnvelope } from '../data/contracts';
+import type { RunMode } from '../state/reducer';
 import { deriveReviewsByCandidate } from './criticData';
 import type { CriticReviewValue } from './criticData';
 import { deriveChecksByCandidate } from './checkData';
@@ -24,6 +25,16 @@ export type LineageNodeValue = LineageGraphProjection['nodes'][number];
 /** The selected winner node, or null if the run hasn't produced one yet (graceful). */
 export function selectWinner(lineage: LineageGraphProjection): LineageNodeValue | null {
   return lineage.nodes.find((n) => n.type === 'candidate' && n.status === 'selected') ?? null;
+}
+
+/**
+ * The transfer-evidence rung label, derived purely from the run MODE (PD.7). ZERO new contract surface:
+ * the frozen `CheckResult` carries no live/replay discriminator, so the run-wide live/replay framing IS
+ * the provenance — a `live` run's allowlisted check is the live non-executing check; a `replay` run's
+ * evidence is replay-backed. This is a PRESENTATION of the mode, never a re-judgement (rule #6 emit-only).
+ */
+export function evidenceRungLabel(mode: RunMode): string {
+  return mode === 'replay' ? 'replay-backed' : 'live allowlisted (non-executing)';
 }
 
 export interface TraceRef {

@@ -199,4 +199,9 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   await expect(finalIdea.getByText('subtype checks', { exact: true })).toBeVisible();
   await expect(finalIdea.getByText('fitness', { exact: true })).toBeVisible();
   await expect(finalIdea.getByText('energy', { exact: true })).toBeVisible();
+
+  // 5. PD.7 — the transfer-evidence rung is labeled for the run mode (live here) + the winner's
+  //    prior-art evidenceRef resolves in-tier via the shared EvidenceRefLink.
+  await expect(finalIdea.getByText(/live allowlisted \(non-executing\)/i)).toBeVisible();
+  await expect(finalIdea.getByText('AIRS 2003')).toBeVisible();
 });

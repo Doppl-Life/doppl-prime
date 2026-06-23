@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { StatusBadge } from '../components/core/StatusBadge';
-import type { CandidateIdea, LineageGraphProjection, RunEventEnvelope } from '../data/contracts';
+import type {
+  CandidateIdea,
+  LineageGraphProjection,
+  RunEventEnvelope,
+  RunEventType,
+} from '../data/contracts';
 import type { RunClient } from '../data/runClient';
-import { gatherProof, selectWinner } from './finalIdeaData';
+import type { RunMode } from '../state/reducer';
+import { isRunTerminal } from '../components/run/runControl';
+import { EvidenceRefLink } from './evidenceRef';
+import { evidenceRungLabel, gatherProof, selectWinner } from './finalIdeaData';
 
 /**
  * FinalIdeaPanel — the §12 capstone. Identifies the kernel/judge-selected winner (the lineage node with
@@ -24,7 +32,19 @@ export interface FinalIdeaPanelProps {
   runClient: Pick<RunClient, 'getCandidate'>;
   /** Wired by the shell to focus the winner's lineage node (link target = the winner dataRef). */
   onSelectLineageNode?: (dataRef: string) => void;
+  /** Run mode (PD.7) — labels the transfer-evidence rung live vs replay. `undefined` = no label. */
+  mode?: RunMode | undefined;
+  /** The run's latest run-level event type (PD.7) — when no winner + terminal, reflect that state
+   *  instead of the in-progress affordance. `undefined` = run still in progress (today's behavior). */
+  runStatus?: RunEventType | undefined;
 }
+
+/** The terminal word shown in the zero-survivors copy, keyed by the run-terminal event type. */
+const TERMINAL_WORD: Readonly<Record<string, string>> = {
+  'run.completed': 'completed',
+  'run.failed': 'failed',
+  'run.stopped': 'stopped',
+};
 
 const section: CSSProperties = {
   display: 'grid',
@@ -49,6 +69,12 @@ const proofValue: CSSProperties = {
   fontSize: 'var(--text-caption)',
 };
 const muted: CSSProperties = { color: 'var(--fg-muted)' };
+const rungLabel: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 'var(--space-1)',
+  marginRight: 'var(--space-2)',
+};
 
 function ProofSection({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -65,6 +91,8 @@ export function FinalIdeaPanel({
   events,
   runClient,
   onSelectLineageNode,
+  mode,
+  runStatus,
 }: FinalIdeaPanelProps) {
   const winner = useMemo(() => selectWinner(lineage), [lineage]);
   const [candidate, setCandidate] = useState<CandidateIdea | null>(null);
@@ -95,8 +123,17 @@ export function FinalIdeaPanel({
     };
   }, [winner, runId, runClient]);
 
-  // No selected winner yet (run in progress) — graceful, never a fabricated winner.
+  // No selected winner — graceful, NEVER a fabricated winner (rule #6). A TERMINAL run with no winner
+  // reflects its terminal state (PD.7 zero-survivors); a non-terminal run keeps the in-progress affordance.
   if (winner === null) {
+    if (runStatus !== undefined && isRunTerminal(runStatus)) {
+      const word = TERMINAL_WORD[runStatus] ?? 'ended';
+      return (
+        <div role="img" aria-label={`Final idea — none; run ${word}`} style={empty}>
+          No surviving idea — run {word}.
+        </div>
+      );
+    }
     return (
       <div role="img" aria-label="Final idea — none yet" style={empty}>
         No final idea yet — the surviving idea appears once a candidate is selected.
@@ -149,6 +186,22 @@ export function FinalIdeaPanel({
         >
           {winner.dataRef}
         </button>
+      </ProofSection>
+
+      {/* PD.7 — the transfer-evidence rung: the live/replay provenance label (mode-derived, colorblind-safe
+          shape+text) + the winner's evidenceRefs via the shared EvidenceRefLink (in-tier, no href). */}
+      <ProofSection label="transfer evidence">
+        {mode !== undefined && (
+          <span data-evidence-rung={mode} style={rungLabel}>
+            <span aria-hidden="true">{mode === 'replay' ? '⏮' : '▶'}</span>
+            <span>{evidenceRungLabel(mode)}</span>
+          </span>
+        )}
+        {candidate.evidenceRefs.length === 0 ? (
+          <span style={muted}>—</span>
+        ) : (
+          candidate.evidenceRefs.map((ref, i) => <EvidenceRefLink key={i} evidenceRef={ref} />)
+        )}
       </ProofSection>
 
       <ProofSection label="fitness">

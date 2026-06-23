@@ -188,7 +188,10 @@ export function Dashboard({
         <Panel title="Run">
           {/* PD.5b — the demo-forward operator-prompt path (prepared/freeform → partial {seed}); the
               full-control RunConfigPanel stays alongside. Both hand the new run to the shell via onStarted. */}
-          <OperatorPromptPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
+          <OperatorPromptPanel
+            runClient={runClient}
+            onStarted={(run) => setObservedRunId(run.id)}
+          />
           <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
           {observedRunId && (
             <StopControl runId={observedRunId} store={store} runClient={runClient} />
@@ -219,6 +222,8 @@ export function Dashboard({
               events={fold.events}
               runClient={runClient}
               onSelectLineageNode={setSelectedCandidateId}
+              mode={store.getMode()}
+              runStatus={runStatus}
             />
           </Panel>
         )}
