@@ -1,7 +1,6 @@
 # Node Contract
 
-A node is one step of an idea's journey, stored as a single markdown file: a candidate idea plus
-its lineage and scores, rendered as a portable, human- and agent-readable artifact.
+A node is one step of an idea's journey, stored as a single markdown file: a candidate idea plus its lineage and scores, rendered as a portable, human- and agent-readable artifact.
 
 Compiled nodes are projections of the `RunTrace`; they are not a second source of truth.
 
@@ -15,8 +14,7 @@ Each section below has three layers:
 - the markdown shape the compiler should render;
 - the TypeScript contract for the parsed shape.
 
-The TypeScript is not trying to replace markdown. It names what must be recoverable from the
-markdown after parsing.
+The TypeScript is not trying to replace markdown. It names what must be recoverable from the markdown after parsing.
 
 ```ts
 type Uuid = string; // UUIDv4; durable link key
@@ -54,8 +52,7 @@ type MarkdownSubsection<Heading extends string, Body> = MarkdownSection<Heading,
 
 ## File shape
 
-The file has YAML frontmatter and a markdown body. Every body starts with a headline. The case
-study stays minimal; growth-stage bodies add Trace, Discovery, Growth, and Path.
+The file has YAML frontmatter and a markdown body. Every body starts with a headline. The case study stays minimal; growth-stage bodies add Trace, Discovery, Growth, and Path.
 
 ### Markdown shape
 
@@ -121,8 +118,7 @@ The spine is fixed:
 case_study → problem_recovery → doppl → (the human's action)
 ```
 
-No `doppl` without a recovered problem. No problem without a case study. A problem may produce
-more than one `doppl`; each is its own node.
+No `doppl` without a recovered problem. No problem without a case study. A problem may produce more than one `doppl`; each is its own node.
 
 ### Type contract
 
@@ -132,11 +128,9 @@ type Stages = CaseStudyStage | ProblemRecoveryStage | DopplStage;
 
 ## Frontmatter
 
-Frontmatter is the file's identity and routing layer. It is a discriminated union on `stage`.
-`next` is pinned by stage, so the type enforces the spine.
+Frontmatter is the file's identity and routing layer. It is a discriminated union on `stage`. `next` is pinned by stage, so the type enforces the spine.
 
-The seed has no scores, no `temporal`, no `prev`, and no `doppelgangers`: it is a start, not a
-claim. Growth-stage nodes carry lineage, judge/human score projections, and dedup signal.
+The seed has no scores, no `temporal`, no `prev`, and no `doppelgangers`: it is a start, not a claim. Growth-stage nodes carry lineage, the judge score, the materialized human score projection, and dedup signal.
 
 ### Markdown shape
 
@@ -168,11 +162,8 @@ doppelgangers: 0
 ```ts
 type KernelName = 'cody' | 'melissa' | 'michael' | 'dalton' | 'prime';
 
-type Scores = {
-  judge: Rating;
-  human: Rating | null;
-  n: number;
-};
+// rating.md composes the judge score with the human-ratings-ledger.md projection
+type Scores = ScoresProjection;
 
 type BaseFrontmatter<S extends Stage> = {
   id: Uuid;
@@ -442,10 +433,7 @@ type DopplGrowth = {
 
 ## Evaluation
 
-Evaluation is inside Growth because Growth is what gets scored. It holds the judge's ground truth:
-one subsection per axis, each with a signed score and full reasoning. The frontmatter
-`scores.judge` is the boil-down. Humans never see this per-axis form; they only append one slider
-score to the ratings ledger.
+Evaluation is inside Growth because Growth is what gets scored. It holds the judge's ground truth: one subsection per axis, each with a signed score and full reasoning. The frontmatter `scores.judge` is the boil-down. Humans never see this per-axis form; they only send one slider score to the human ratings ledger.
 
 ### Markdown shape
 
@@ -470,7 +458,7 @@ Needs primary research to confirm the offtake lock.
 
 #### Relevance +3
 
-Actionable for the allocator lens.
+Actionable for the allocator context.
 ```
 
 ### Type contract

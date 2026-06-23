@@ -26,7 +26,7 @@ prev: [7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44]
 kernel: melissa                  # [optional] Cody | Melissa | Michael | Dalton | prime
 temporal: false                  # true = zeitgeist (decays) · false = transfer (timeless)
 next: doppl                      # deterministic by stage: problem_recovery → doppl
-scores: { judge: 3, human: -2, n: 4 }   # single -5..+5 each. projection of the ratings ledger.
+scores: { judge: 3, human: null, n: 0 } # born judge-only; human/n are materialized from the ratings ledger
 doppelgangers: 0                 # near-duplicate ideas deduped into this node
 ---
 
@@ -76,7 +76,7 @@ Needs primary research to confirm the offtake lock; until then the cost of certa
 
 #### Relevance +3
 
-Actionable for the allocator lens — it points at instruments, not just a thesis.
+Actionable for the allocator context — it points at instruments, not just a thesis.
 
 #### Falsifiability +2
 
@@ -98,7 +98,7 @@ prev: [4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f]   # the problem_recovery node
 kernel: melissa
 temporal: false
 next: null
-scores: { judge: 4, human: 3, n: 6 }
+scores: { judge: 4, human: null, n: 0 }
 doppelgangers: 0
 ---
 
@@ -158,7 +158,7 @@ Investable via liquid instruments — low ownership burden for the exposure it b
 
 #### Relevance +3
 
-Fits a capital-allocator lens; points at deployable positions.
+Fits a capital-allocator context; points at deployable positions.
 
 #### Falsifiability +1
 

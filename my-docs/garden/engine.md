@@ -24,7 +24,7 @@ under variation. The compiler then writes the survivor into the next node; the j
 
 ## The dial: diverge ↔ converge
 
-One knob, two postures (PROPOSAL "conceptual model": r/K selection).
+One knob, two postures.
 
 - **diverge** (r-like) — many cheap children, broad search. Priority axis **novelty**;
   grounding is a floor, not the goal.
@@ -67,18 +67,14 @@ detection.
 > Cost-efficiency, and Relevance are judge-only ratings with no engine instrument yet —
 > open: build instruments or leave judge-only.
 
-## Decay — the time axis (inside the engine)
+## Decay — stubbed to zero
 
-Decay is intrinsic engine time, not feasibility. `factor = 0.5^(age_days / half_life)`,
-applied to a candidate's directional score during selection.
+Decay is configured to `0` for now. The engine keeps `temporal` as metadata, but active decay is a no-op: `decay = 0`, `decayFactor = 1`, and selection scores do not change with age.
 
-- **zeitgeist (temporal: true)** — 180-day half-life. Window closes.
-- **transfer (temporal: false)** — **no decay** (garden decision, PROPOSAL §7).
+- **temporal: true** — timing-bound, eligible for a future decay mechanism.
+- **temporal: false** — timeless, not eligible for decay.
 
-> Reconciliation: `src/fitness.ts` gives transfers a 730-day half-life, not zero. The garden
-> overrides to *no decay* for transfers. The garden also floors decay at 0 and never decays a
-> negative (`rating-model.md`); the jungle's raw 0.5^x has no floor because it predates the
-> signed scale. Promote the garden rule.
+The future mechanism can bolt onto this seam by replacing `decay = 0` with a named time function. Until then, no half-life table is active in the garden.
 
 ## Selection — Pareto front, then directional rank, under floors
 
@@ -97,7 +93,7 @@ Procedure:
 2. **Floor gate** — drop anything whose floor-axis measurement is below the floor.
 3. **Directional score** = `priority·0.7 + secondary·0.2 + balanceBonus·0.1`, where
    `balanceBonus = 1 − |novelty − grounding|` (rewards candidates strong on both).
-4. **Decay-adjust** — multiply the directional score by the decay factor.
+4. **Decay-adjust** — currently no-op because `decayFactor = 1`.
 5. **Rank** by front, then decay-adjusted score, then the priority axis; **keep top 3**.
 
 **The regret sibling.** Every run computes both dials on the *same scored pool* and emits a
@@ -124,17 +120,11 @@ reaches fitness.
 expands from *selected* parents, capped per parent and against remaining population slots.
 Recursion is earned: don't deepen until a depth-1 pass produces a judgeable survivor.
 
-## Lens — feasibility, after selection (open in the garden)
+## Lens — feasibility, after selection
 
-The jungle keeps a **lens**: observer-relative feasibility scored *after* selection
-(demoFit/evidenceFit/scopeFit/riskFit → 0–1, pass ≥ 0.55), which must never contaminate
-novelty/grounding/decay. *"A hedge fund and a capstone team weigh the same true idea
-oppositely."*
+Lens stays separate from the judge. The judge rates worth; the lens asks whether the selected survivor is actionable for a specific actor, context, or constraint set.
 
-> Open reconciliation: the garden's rating model has no separate lens — its **Relevance** and
-> **Cost-efficiency** judge axes are observer-flavored and may absorb it. Decide: keep lens as
-> a distinct post-selection layer, or fold feasibility into the judge's Relevance/Cost-efficiency
-> axes. Until decided, the lens stays as documented here.
+The lens is observer-relative feasibility scored *after* selection (demoFit/evidenceFit/scopeFit/riskFit → 0–1, pass ≥ 0.55), and it must never contaminate novelty, grounding, or rating. *"A hedge fund and a capstone team weigh the same true idea oppositely."*
 
 ## Reproduction units — what reproduces is pluggable
 

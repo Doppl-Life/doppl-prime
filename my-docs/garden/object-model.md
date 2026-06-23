@@ -81,11 +81,9 @@ Every node and field has a **UUIDv4** `id` — the durable link key. Names/headl
 change freely. Each node also carries a `doppelgangers` count — how many near-duplicate ideas were
 deduped into it (the one fact dedup destroys; everything else is derived).
 
-## Temporal (decay)
+## Temporal
 
-Each node carries `temporal` — a **boolean**. `true` = zeitgeist (timing-bound: decays over time, can
-reinvigorate). `false` = transfer (timeless: solved or not, no decay). It is the one piece of the old
-`subtype` worth keeping. See `rating-model.md`.
+Each node carries `temporal` — a **boolean**. `true` = timing-bound. `false` = timeless. Active decay is configured to `0`; the field stays because it is the seam a future time mechanism can attach to. See `rating-model.md`.
 
 ## Signals (derived, not stored)
 

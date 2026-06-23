@@ -29,8 +29,8 @@ shared, precise vocabulary the team can build against. Add to it whenever a good
 - **measurement (`0–1`)** — an instrument reading (cosine similarity, ratios). No judgment.
 - **rating (`−5…+5`)** — a judgment of worth. The *map* turns measurements into ratings.
 - **the five axes** — Novelty, Grounding, Falsifiability, Cost-efficiency, Relevance (judge-scored).
-- **temporal** — judge-set boolean; zeitgeist (decays toward zero) vs transfer (timeless).
-- **decay-to-zero** — a zeitgeist's score sowly fades toward 0 and floors there; negatives don't decay (poison's poison); reinvigoration can revive a faded one.
+- **temporal** — judge-set boolean; `true` means timing-bound, `false` means timeless.
+- **decay** — currently configured to `0`; the effective multiplier is `1`, so scores do not change with age.
 
 ## Memory & signals
 

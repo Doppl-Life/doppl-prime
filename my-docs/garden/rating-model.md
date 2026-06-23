@@ -32,40 +32,31 @@ Each runs −5…+5, higher is better, so they sum:
 reserved for a claim engineered to dodge any test.)
 - **Cost-efficiency** — the all-in cost to own it (money, time, effort, energy, dependencies),
 scored as efficiency: cheap = +, ruinous = −.
-- **Relevance** — matters for the current actor / lens.
+- **Relevance** — matters for the current actor. The lens remains a separate post-selection feasibility pass.
 
 On the node these live in `### Evaluation` as one `#### <axis> <score>` subsection each, carrying the
 judge's full reasoning — not capped at a sentence. The single `scores.judge` is their boil-down.
 
-## Temporal (decay)
+## Temporal
 
 The judge sets `temporal` (boolean).
 
-`true` = zeitgeist (timing-bound: decays over time, can reinvigorate).
+`true` = timing-bound, eligible for future decay.
 
-`false` = transfer (timeless: no decay).
+`false` = timeless.
 
-Decay is a time factor applied after scoring, to zeitgeists only, and it **only decays toward zero**:
+Decay is configured to `0` for now. Active effect: none. The score does not change with age.
 
-- A positive zeitgeist score fades toward 0 as its moment passes, and floors at 0. Decay never turns a sprout into a weed.
-- A negative score does not decay — it's already bad; poison stays poison.
-- **Reinvigoration:** when circumstances re-validate a faded zeitgeist, it can be rechecked and rise again.
+- `temporal: true` preserves the seam for a later time function.
+- `temporal: false` remains ineligible for decay.
+- Future decay, if added, bolts onto this field rather than changing the rating shape.
 
 (The only scales in the system are `0–1` measurements and `−5…+5` ratings; `temporal` is a boolean. There is no other scale.)
 
 ## Where the numbers live
 
 - **Judge** writes the node: `### Evaluation`, `scores.judge`, `temporal`. Runs once, at generation.
-- **Humans** append to the **ratings ledger** — one row per rater per node:
-`{ node_id, rater_id, score: -5..+5, ts }`. One score, because the human gives one slider.
-- The node's `scores.human` is a recomputed **projection** of that ledger: the mean of `score`, with
-`n` = rater count. **At birth a node is judge-only: `human: null, n: 0`.**
+- **Humans** write to the **human ratings ledger** — one current rating per `(node_id, rater_id)`, where `rater_id` is the rater's email for the demo: `{ node_id, ratings: [{ rater_id, score: -5..+5, rate_date }] }`. One score, because the human gives one slider.
+- The node's `scores.human` is a materialized **projection** of that ledger: the mean of current `score` values, rounded to one decimal place, with `n` = current rater count. **At birth a node is judge-only: `human: null, n: 0`.**
+- A projection runner recomputes `scores.human` and `scores.n` from the ratings ledger and writes them back into node frontmatter. The mechanism is open for now; the data shape is the contract.
 - `delta` (judge − human) is computed at display, never stored.
-
-> Open: the ledger's home — a JSONL file (lean; matches the existing `judgments.jsonl`) or a small
-> DB. The row shape above is the contract; the store is TBD.
-
-## Verdicts: dead
-
-`dead / obvious / interesting / investigate / keeper` is replaced by the single −5…+5 human slider.
-It still lives in the kernel — jungle, reconciled later.

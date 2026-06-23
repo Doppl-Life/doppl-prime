@@ -21,7 +21,7 @@ Tools, not verdicts — they should be **mapped into** the −5…+5 rating, nev
 
 - novelty / grounding fitness and their 7 sub-components (token-overlap and keyword ratios)
 - lens score and directional score (weighted blends of the above)
-- decay factor (a 0…1 time multiplier)
+- decay setting (currently `0`, so the effective multiplier is `1`)
 - selection floors (0.35 / 0.25) and Pareto fronts (an ordinal ranking)
 
 ## The ratings that already exist (`−5…+5`, `tools/source-radar.ts`)
@@ -30,14 +30,7 @@ The discovery / source layer already rates on −5…+5 (its lenses, hit +3 / tr
 benchmarks). So our scale is **not new** — this layer already speaks it. The only mismatch is with
 the `0…1` core.
 
-## The verdict — retired
-
-`dead < obvious < interesting < investigate < keeper` is an ordinal rating we've replaced with the
-single −5…+5 human slider.
-
 ## What to decide (the real questions)
 
 1. **The map.** For each `0…1` instrument, which −5…+5 rating does it inform, and how? (similarity →
    novelty; signal strength → grounding; …) The instruments stay `0…1`; only the rating is `−5…+5`.
-2. **Decay.** Two half-life tables exist (180/730 and 14/3650/60). Pick one, zeitgeist-only.
-3. **Verdict → slider.** Finish retiring the ordinal verdict.

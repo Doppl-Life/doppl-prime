@@ -50,6 +50,8 @@ Discovery must be told where things live and how to write them:
 - `write_method` — how a keeper is appended or merged.
 - `backend` — which discovery backend to use for this call.
 
+The stock source/projection shape is defined in [`../../specs/stock.md`](../../specs/stock.md).
+
 ## Reconcile later (jungle)
 
 `tools/source-radar.ts` already has the source recipes (the backends) and source-quality signals.

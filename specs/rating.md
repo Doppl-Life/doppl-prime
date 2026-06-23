@@ -12,7 +12,7 @@ There are only two numeric scales in the system.
 
 **Rating** is a judgment of worth, `-5...+5`. Negative does not mean "it does not work"; it means "even if it works, it is bad." `0` is neutral. Positive is real contribution.
 
-`temporal` is a boolean. There is no third numeric scale.
+`temporal` is a boolean. Decay is configured to `0`, so there is no active time score yet.
 
 The judge axis names are also primitive here because the measurement bridge and the rendered Evaluation section both build from them.
 
@@ -24,8 +24,10 @@ type Measurement = number; // 0...1; runtime validator enforces the range
 type Rating = -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
 type PositiveRating = 0 | 1 | 2 | 3 | 4 | 5;
 type RatingLabel = '-5' | '-4' | '-3' | '-2' | '-1' | '0' | '+1' | '+2' | '+3' | '+4' | '+5';
+type OneDecimal = number; // runtime validator enforces at most one decimal place
 
 type Temporal = boolean;
+type Decay = 0;
 
 type JudgeAxis =
   | 'Novelty'
@@ -48,8 +50,7 @@ A `0...1` measurement detects presence, so it maps to the positive band only:
 rating = round(measurement * 5); // 0 -> 0, 0.5 -> +3, 1 -> +5
 ```
 
-A measurement cannot produce a negative rating. Negative ratings are judge-only: a judgment that
-an idea is misleading or value-subtracting.
+A measurement cannot produce a negative rating. Negative ratings are judge-only: a judgment that an idea is misleading or value-subtracting.
 
 ### Type contract
 
@@ -77,8 +78,7 @@ type MeasurementBridge<A extends BridgeableAxis, M extends MeasurementName> = {
 A node is scored on its **Growth**: the live work of its stage. The whole document is not scored.
 Discovery is not scored; it clears a signal bar elsewhere.
 
-`problem_recovery` and `doppl` are scored separately, so a chain carries one judge result per
-growth-stage node.
+`problem_recovery` and `doppl` are scored separately, so a chain carries one judge result per growth-stage node.
 
 ### Type contract
 
@@ -115,7 +115,7 @@ The deterministic bridge fills Novelty, Grounding, and Falsifiability from measu
 | Grounding       | lands on something true / testable    | `round(grounding * 5)`      |
 | Falsifiability  | states what would make it wrong       | `round(falsifiability * 5)` |
 | Cost-efficiency | value vs. all-in ownership cost       | judge-only                  |
-| Relevance       | matters for the current actor / lens  | judge-only                  |
+| Relevance       | matters for the current actor         | judge-only                  |
 
 
 ### Type contract
@@ -154,8 +154,7 @@ type AxisEvaluation<A extends JudgeAxis> = {
 
 ## Evaluation section
 
-On a node, the judge result renders inside `### Evaluation`, one subsection per axis. The single
-`scores.judge` in frontmatter is the boil-down of these axes.
+On a node, the judge result renders inside `### Evaluation`, one subsection per axis. The single `scores.judge` in frontmatter is the boil-down of these axes.
 
 Humans never fill this form. Humans get one slider.
 
@@ -182,7 +181,7 @@ Needs primary research to confirm the offtake lock.
 
 #### Relevance +3
 
-Actionable for the allocator lens.
+Actionable for the allocator context.
 ```
 
 ### Type contract
@@ -218,44 +217,28 @@ type JudgeResult<S extends GrowthStage> = {
 
 ## Human rating
 
-The human gives one number: a gut read of the whole node on the same `-5...+5` scale. Never five
-axes. Asking a human to fill five axes will not happen in practice.
+The human gives one number: a gut read of the whole node on the same `-5...+5` scale. Never five axes. Asking a human to fill five axes will not happen in practice.
 
-Human ratings append to a ledger. The node frontmatter stores only the projection.
-
-### Rendered ledger row
-
-```json
-{ "node_id": "4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f", "rater_id": "mh", "score": 3, "ts": "2026-06-23T15:04:05.000Z" }
-```
+Human ratings are upserted in the [human ratings ledger](./human-ratings-ledger.md). The node frontmatter stores only the materialized projection: the mean of current ratings, rounded to at most one decimal place, plus the current rater count.
 
 ### Type contract
 
 ```ts
-type Uuid = string;
-type Iso8601 = string;
-
-type HumanRatingRow = {
-  node_id: Uuid;
-  rater_id: string;
-  score: Rating;
-  ts: Iso8601;
-};
-
-type ScoresProjection = {
+// owned by human-ratings-ledger.md
+type ScoresProjection = HumanScoresProjection & {
   judge: Rating;
-  human: Rating | null;
-  n: number;
 };
 
-type RatingDelta = {
-  judgeMinusHuman: number; // computed at display, never stored
+type RatingDelta = OneDecimal; // judge - human, rounded to one decimal place
+
+type DisplayDelta = {
+  judgeMinusHuman: RatingDelta | null; // null when human is null
 };
 ```
 
 ## Birth state
 
-A compiled node is born judge-only. Human ratings arrive later.
+A compiled node is born judge-only. The projection job may fill `human` and `n` later from the human ratings ledger.
 
 ### Markdown shape
 
@@ -266,25 +249,18 @@ scores: { judge: 3, human: null, n: 0 }
 ### Type contract
 
 ```ts
-type BirthScores<J extends Rating> = {
-  judge: J;
-  human: null;
-  n: 0;
-};
+type BirthScores<J extends Rating> = { judge: J; human: null; n: 0; };
 ```
 
 ## Temporal policy
 
 The judge sets `temporal`.
 
-`true` means zeitgeist: a positive score fades toward `0` as its moment passes and floors there.
-Decay never turns a positive into a negative. A negative score does not decay; poison stays poison.
-Reinvigoration happens by rechecking the idea when circumstances re-validate it.
+`true` means timing-bound and eligible for a future decay mechanism.
 
-`false` means transfer: no decay.
+`false` means timeless and ineligible for decay.
 
-The engine may hold the raw decay factor as a `0...1` measurement, but the rating-layer rule is
-decay-to-zero for temporal positives only.
+Decay is stubbed to `0` for now. The effective multiplier is `1`, so ratings do not change with age. A future decay mechanism can replace the stub without changing the node's `temporal` field.
 
 ### Type contract
 
@@ -292,16 +268,13 @@ decay-to-zero for temporal positives only.
 type TemporalPolicy =
   | {
       temporal: true;
-      halfLifeDays: 180;
-      appliesTo: 'positive_rating';
-      direction: 'toward_zero';
-      floor: 0;
-      negativeDecay: false;
-      reinvigoration: 'recheck';
+      decay: Decay;
+      effect: 'none';
+      futureMechanism: 'time_decay';
     }
   | {
       temporal: false;
-      decay: 'none';
+      decay: Decay;
+      effect: 'none';
     };
 ```
-

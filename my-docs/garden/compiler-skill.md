@@ -29,9 +29,7 @@ a mini tier); save the strong models for generate→select and for the judge, no
 
 - **`temporal` comes from the judge.** It is a judgment (is this timing-bound?), emitted as the
   judge's final output just before compile. The compiler never guesses it.
-- **Human scores are absent at birth.** A node is compiled judge-only:
-  `scores: { judge, human: null, n: 0 }`. The human number is appended later from the ratings ledger
-  (`rating-model.md`), never by the compiler.
+- **Human scores are absent at birth.** A node is compiled judge-only: `scores: { judge, human: null, n: 0 }`. The human number is materialized later from the human ratings ledger (`rating-model.md`), never by the compiler.
 
 ## Procedure
 

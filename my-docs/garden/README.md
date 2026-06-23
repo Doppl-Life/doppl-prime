@@ -25,6 +25,7 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - `stock-template.md` — the stock field.
 - `rating-model.md` — the single source of truth for scoring.
 - `rating-inventory.md` — every scoring system, garden + jungle, and the conflicts to settle.
+- `markscript.md` — the markdown-plus-TypeScript contract idiom used by the draft specs.
 - `discovery-skill.md` — kernel function: gather context (round trip).
 - `compiler-skill.md` — kernel function: render a stage's output into a node.
 - `engine.md` — the generate→select crucible behind each spine arrow, promoted from the
@@ -35,5 +36,5 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 
 - `subtype` — kernel: 9-value flavor + decay driver. Here: cut, except `temporal` (boolean) for decay.
 - Verdicts `dead/obvious/interesting/investigate/keeper` — kernel: live. Here: dead; one −5…+5 human score.
-- Decay — here: zeitgeist only; transfers don't decay.
+- Decay — here: active decay is `0`; `temporal` preserves the seam for a later mechanism.
 - Leaf name — here: `doppl` (was `pepsi`).
