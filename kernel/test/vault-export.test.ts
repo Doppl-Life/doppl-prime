@@ -19,6 +19,7 @@ test('exports problem recovery and child solution markdown separately', async ()
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-'));
   const manifest = await exportRunToVault(run, outDir);
   assert.ok(manifest.files.some((file) => file.endsWith('problem-recovery.md')));
+  assert.ok(manifest.files.some((file) => file.endsWith('control-baseline.md')));
   assert.ok(manifest.files.some((file) => file.includes('child_')));
   assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/case-study.md')));
   assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/problem-recovery.md')));
@@ -78,12 +79,21 @@ test('exports a calibrator-facing run index', async () => {
     ['diverge', 'balanced', 'converge'],
   );
   assert.ok(index.scheduleComparisons[0].modes[0].selectedParentIds.length > 0);
+  assert.equal(index.controlBaseline.artifact_type, 'control_baseline');
+  assert.equal(index.controlBaseline.path, 'control-baseline.md');
+  assert.equal(index.controlBaseline.selection, 'best_scored_generation_0_candidate');
+  assert.equal(index.controlBaseline.candidate.generation, 0);
   assert.equal(index.assayControl.assayType, 'in_run_clean_baseline');
+  assert.equal(index.assayControl.controlArtifact.path, 'control-baseline.md');
   assert.equal(index.assayControl.baseline.type, 'clean_baseline');
   assert.equal(index.assayControl.survivor.type, 'doppl_survivor');
   assert.ok(['doppl_wins', 'baseline_wins', 'tie', 'inconclusive'].includes(index.assayControl.verdict));
   assert.match(index.assayControl.statement, /baseline|Assay/i);
   assert.match(index.assayControl.limits[0], /in-run critic fitness/i);
+  const controlPath = manifest.files.find((file) => file.endsWith('control-baseline.md'))!;
+  const controlMarkdown = await readFile(controlPath, 'utf8');
+  assert.match(controlMarkdown, /artifact_type: control_baseline/);
+  assert.match(controlMarkdown, /Clean Control Baseline/);
   assert.equal(index.modelOutputs.accepted, 0);
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);

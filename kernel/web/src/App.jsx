@@ -1135,6 +1135,13 @@ export default function App() {
                   <span>{signedScore(assay.delta?.fitnessTotal)} fitness delta</span>
                 </div>
                 <p>{assay.statement}</p>
+                {assay.controlArtifact ? (
+                  <div className="assay-artifact">
+                    <span>control artifact</span>
+                    <strong>{assay.controlArtifact.path}</strong>
+                    <small>selected from {readableTitle(assay.controlArtifact.sourceCandidateId)}</small>
+                  </div>
+                ) : null}
                 <div className="assay-comparison">
                   {[assay.baseline, assay.survivor].map((entry) => (
                     <article key={`${entry.type}-${entry.candidateId}`}>
@@ -1142,7 +1149,7 @@ export default function App() {
                       <strong>{entry.title}</strong>
                       <p>{entry.summary}</p>
                       <small>
-                        fitness {entry.fitnessTotal ?? 'n/a'} · rating {signedRating(entry.proposalRating)} · {entry.scoreSource?.replace(/_/g, ' ')}
+                        fitness {entry.fitnessTotal ?? 'n/a'} · rating {signedRating(entry.proposalRating)} · {entry.scoreSource?.replace(/_/g, ' ')} · {entry.path}
                       </small>
                     </article>
                   ))}

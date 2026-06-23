@@ -119,6 +119,7 @@ function scheduleComparisons(run: KernelRun): Array<Record<string, unknown>> {
 type AssaySnapshot = {
   type: 'clean_baseline' | 'doppl_survivor';
   candidateId: string;
+  path: string;
   title: string;
   summary: string;
   fitnessTotal: number | null;
@@ -174,6 +175,7 @@ function assaySnapshot(
     return {
       type,
       candidateId: candidate.id,
+      path: solutionFilename(candidate),
       title: candidate.title,
       summary: candidate.summary,
       fitnessTotal: record.total,
@@ -186,11 +188,42 @@ function assaySnapshot(
   return {
     type,
     candidateId: candidate.id,
+    path: solutionFilename(candidate),
     title: candidate.title,
     summary: candidate.summary,
     fitnessTotal: parentAverage,
     proposalRating: null,
     scoreSource: parentAverage === null ? 'unscored' : 'parent_average',
+  };
+}
+
+function controlBaseline(run: KernelRun): Record<string, unknown> | null {
+  const candidate = bestGenerationCandidate(run, 0);
+  if (!candidate) return null;
+  const record = latestFitnessRecord(run, candidate.id);
+  return {
+    artifact_type: 'control_baseline',
+    path: 'control-baseline.md',
+    sourceCandidateId: candidate.id,
+    sourceCandidatePath: solutionFilename(candidate),
+    selection: 'best_scored_generation_0_candidate',
+    candidate: {
+      id: candidate.id,
+      title: candidate.title,
+      summary: candidate.summary,
+      mechanism: candidate.mechanism,
+      claimedDelta: candidate.claimedDelta,
+      citedKnowledge: candidate.citedKnowledge,
+      agenomeId: candidate.agenomeId,
+      generation: candidate.generation,
+      fitnessTotal: record?.total ?? null,
+      proposalRating: proposalRating(record),
+      scoreSource: record ? 'direct_fitness' : 'unscored',
+    },
+    limits: [
+      'This is a clean one-generation control artifact selected from the initial candidate population.',
+      'It is not yet a separately generated clean-agent model run or independent held-out judge result.',
+    ],
   };
 }
 
@@ -201,6 +234,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
 
   const baselineSnapshot = assaySnapshot(run, baseline, 'clean_baseline');
   const survivorSnapshot = assaySnapshot(run, survivor, 'doppl_survivor');
+  const control = controlBaseline(run);
   const baselineScore = baselineSnapshot.fitnessTotal;
   const survivorScore = survivorSnapshot.fitnessTotal;
   const delta =
@@ -229,6 +263,14 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     assayType: 'in_run_clean_baseline',
     verdict,
     statement,
+    controlArtifact: control
+      ? {
+          path: control.path,
+          sourceCandidateId: control.sourceCandidateId,
+          sourceCandidatePath: control.sourceCandidatePath,
+          selection: control.selection,
+        }
+      : null,
     baseline: baselineSnapshot,
     survivor: survivorSnapshot,
     delta: {
@@ -241,6 +283,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     evidence: [
       `Baseline: ${baselineSnapshot.title} (${baselineSnapshot.scoreSource}).`,
       `Survivor: ${survivorSnapshot.title} (${survivorSnapshot.scoreSource}).`,
+      control ? `Control artifact: ${control.path}.` : 'No control artifact could be selected.',
       run.fusion
         ? `Fusion parents: ${run.fusion.parentCandidateIds.join(' + ')} at compatibility ${run.fusion.compatibility.score}.`
         : 'No fusion child was produced for this run.',
@@ -335,6 +378,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
     criticVerdicts: run.criticVerdicts,
     fitnessRecords: run.fitnessRecords,
     scheduleComparisons: scheduleComparisons(run),
+    controlBaseline: controlBaseline(run),
     assayControl: assayControl(run),
     trace: {
       path: 'trace.json',
@@ -350,6 +394,50 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
     budget: run.budget,
     modelOutputs: replayRunProjection(run.events).modelOutputs,
   };
+}
+
+function controlBaselineMarkdown(run: KernelRun): string | null {
+  const control = controlBaseline(run);
+  const candidate = bestGenerationCandidate(run, 0);
+  if (!control || !candidate) return null;
+  const record = latestFitnessRecord(run, candidate.id);
+  return `${frontmatter({
+    artifact_type: 'control_baseline',
+    artifact_id: `control_${candidate.id}`,
+    case_id: run.caseStudy.id,
+    source_candidate_id: candidate.id,
+    source_candidate_path: solutionFilename(candidate),
+    selection: 'best_scored_generation_0_candidate',
+    ...calibrationFields(),
+  })}
+# Clean Control Baseline: ${candidate.title}
+
+${candidate.summary}
+
+## Mechanism
+
+${candidate.mechanism}
+
+## Claimed Delta
+
+${candidate.claimedDelta}
+
+## Control Selection
+
+Selected as the strongest scored generation-0 candidate before Doppl fusion and later-generation mutation pressure.
+
+Fitness total: ${record?.total ?? 'unscored'}
+Proposal rating: ${proposalRating(record) ?? 'n/a'}
+
+## Assay Limits
+
+- This is a clean one-generation control artifact selected from the initial candidate population.
+- It is not yet a separately generated clean-agent model run or independent held-out judge result.
+
+## Knowledge Citations
+
+${candidate.citedKnowledge.join(', ') || 'none'}
+`;
 }
 
 function problemRecoveryMarkdown(run: KernelRun, fields: Record<string, string> = {}): string {
@@ -417,6 +505,13 @@ export async function exportRunToVault(
   const recoveryPath = path.join(runDir, 'problem-recovery.md');
   await writeFile(recoveryPath, problemRecoveryMarkdown(run), 'utf8');
   files.push(recoveryPath);
+
+  const controlMarkdown = controlBaselineMarkdown(run);
+  if (controlMarkdown) {
+    const controlPath = path.join(runDir, 'control-baseline.md');
+    await writeFile(controlPath, controlMarkdown, 'utf8');
+    files.push(controlPath);
+  }
 
   for (const solution of exportedSolutions(run)) {
     const solutionPath = path.join(runDir, solutionFilename(solution));

@@ -197,6 +197,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Schedule comparison/);
   assert.match(source, /assayControl/);
   assert.match(source, /Assay control/);
+  assert.match(source, /controlArtifact/);
+  assert.match(source, /control artifact/);
   assert.match(source, /clean generation-0 baseline/);
   assert.match(source, /agenomes/);
   assert.match(source, /Agenome persona/);
@@ -223,6 +225,7 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /\.schedule-panel/);
   assert.match(styles, /\.schedule-list/);
   assert.match(styles, /\.assay-panel/);
+  assert.match(styles, /\.assay-artifact/);
   assert.match(styles, /\.assay-comparison/);
   assert.match(styles, /\.assay-evidence/);
   assert.match(styles, /\.history-action/);
@@ -492,7 +495,11 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
   assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');
   assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'none');
+  assert.equal(response.body.controlBaseline.artifact_type, 'control_baseline');
+  assert.equal(response.body.controlBaseline.path, 'control-baseline.md');
+  assert.equal(response.body.controlBaseline.candidate.generation, 0);
   assert.equal(response.body.assayControl.assayType, 'in_run_clean_baseline');
+  assert.equal(response.body.assayControl.controlArtifact.path, 'control-baseline.md');
   assert.equal(response.body.assayControl.baseline.type, 'clean_baseline');
   assert.equal(response.body.assayControl.survivor.type, 'doppl_survivor');
   assert.match(response.body.assayControl.statement, /baseline|Assay/i);
