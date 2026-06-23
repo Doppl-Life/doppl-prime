@@ -844,9 +844,21 @@ export default function App() {
     });
   }
 
-  function streamRunEvents(nextRunId) {
+  async function fetchDashboardRunIndex(nextRunId) {
+    const response = await fetch(`/kernel/dashboard/runs/${encodeURIComponent(nextRunId)}`);
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || `fetch failed: ${response.status}`);
+    setRun(body);
+    setStatus(`Loaded ${nextRunId}.`);
+    await refreshHistory();
+  }
+
+  function streamRunEvents(nextRunId, options = {}) {
     streamRef.current?.close();
-    if (!nextRunId || typeof EventSource === 'undefined') return;
+    if (!nextRunId || typeof EventSource === 'undefined') {
+      setIsRunning(false);
+      return;
+    }
     const source = new EventSource(`/kernel/dashboard/runs/${encodeURIComponent(nextRunId)}/stream`);
     streamRef.current = source;
     source.onmessage = (message) => {
@@ -855,13 +867,22 @@ export default function App() {
         mergeDashboardEvents([event]);
         if (event.type === 'run.completed' || event.type === 'run.failed' || event.type === 'run.stopped') {
           source.close();
+          setIsRunning(false);
+          if (options.fetchOnTerminal && event.type === 'run.completed') {
+            fetchDashboardRunIndex(nextRunId).catch((error) => {
+              setStatus(error instanceof Error ? error.message : String(error));
+            });
+          }
         }
       } catch {
         // Ignore malformed delivery frames; the REST event log remains authoritative.
       }
     };
     source.onerror = () => {
-      source.close();
+      if (!options.reconnectUntilTerminal) {
+        source.close();
+        setIsRunning(false);
+      }
     };
   }
 
@@ -880,19 +901,21 @@ export default function App() {
           fitnessLens,
           fitnessSchedule,
           liveModel: caseStudy.mode === 'live' && !forceFixture,
+          async: true,
         }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || `run failed: ${response.status}`);
       setRun(body);
       setRunId(body.runId);
-      setStatus(`Loaded ${body.runId}.`);
-      streamRunEvents(body.runId);
+      setStatus(`Started ${body.runId}; streaming live events.`);
+      streamRunEvents(body.runId, { fetchOnTerminal: true, reconnectUntilTerminal: true });
       await refreshHistory();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));
-    } finally {
       setIsRunning(false);
+    } finally {
+      // Async runs clear the running state when their stream reaches a terminal event.
     }
   }
 
@@ -900,11 +923,7 @@ export default function App() {
     if (!id.trim()) return;
     setStatus(`Fetching ${id}...`);
     try {
-      const response = await fetch(`/kernel/runs/${encodeURIComponent(id)}`);
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || `fetch failed: ${response.status}`);
-      setRun(body);
-      setStatus(`Loaded ${id}.`);
+      await fetchDashboardRunIndex(id);
       streamRunEvents(id);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : String(error));

@@ -1,4 +1,5 @@
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import {
   RUN_EVENT_ACTORS,
@@ -12,6 +13,8 @@ export type EventRecorder = {
   events: RunEvent[];
   push(type: string, payload: Record<string, unknown>, options?: EventRecorderPushOptions): RunEvent;
 };
+
+export type EventRecorderListener = (event: RunEvent) => void;
 
 export type EventRecorderPushOptions = {
   actor?: RunEventActor;
@@ -105,7 +108,11 @@ export function normalizeRunEvent(event: RunEvent, defaultRunId?: string): RunEv
   };
 }
 
-export function createMemoryEventRecorder(seedEvents: RunEvent[] = [], runId?: string): EventRecorder {
+export function createMemoryEventRecorder(
+  seedEvents: RunEvent[] = [],
+  runId?: string,
+  onEvent?: EventRecorderListener,
+): EventRecorder {
   const events = seedEvents.map((event) => normalizeRunEvent(event, runId));
   let activeRunId = runId ?? events.find((event) => event.runId)?.runId;
   return {
@@ -131,6 +138,7 @@ export function createMemoryEventRecorder(seedEvents: RunEvent[] = [], runId?: s
         activeRunId,
       );
       events.push(event);
+      onEvent?.(event);
       return event;
     },
   };
@@ -152,6 +160,11 @@ export async function writeRunEvents(filePath: string, events: RunEvent[]): Prom
 export async function appendRunEvent(filePath: string, event: RunEvent): Promise<void> {
   await ensureParentDir(filePath);
   await appendFile(filePath, serializeEvent(event), 'utf8');
+}
+
+export function appendRunEventSync(filePath: string, event: RunEvent): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  appendFileSync(filePath, serializeEvent(event), 'utf8');
 }
 
 export async function readRunEvents(filePath: string): Promise<RunEvent[]> {

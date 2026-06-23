@@ -20,7 +20,7 @@ import {
 } from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
 import { initialAgenomePool, materializeAgenomes } from './agenomes.ts';
-import { createMemoryEventRecorder } from './event-store.ts';
+import { createMemoryEventRecorder, type EventRecorderListener } from './event-store.ts';
 import {
   createFixtureGenerationProviders,
   type GenerationProviders,
@@ -77,8 +77,9 @@ export async function runKernel(input: {
   evolutionBudget?: { maxUnits: number };
   fitnessLens?: FitnessLensId;
   fitnessSchedule?: FitnessScheduleMode;
+  onEvent?: EventRecorderListener;
 }): Promise<KernelRun> {
-  const trace = createMemoryEventRecorder([], input.runId);
+  const trace = createMemoryEventRecorder([], input.runId, input.onEvent);
   const caseStudy = await loadCaseStudy(input.casePath);
   trace.push('run.started', { runId: input.runId, caseId: caseStudy.id });
   trace.push('knowledge.packet_requested', {

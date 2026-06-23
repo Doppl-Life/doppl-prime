@@ -12,7 +12,13 @@ import {
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
-import { readRunEvents, replayRunProjection } from './event-store.ts';
+import {
+  appendRunEventSync,
+  createMemoryEventRecorder,
+  readRunEvents,
+  replayRunProjection,
+  type EventRecorderListener,
+} from './event-store.ts';
 import type { FitnessLensId, FitnessScheduleMode } from './scoring.ts';
 
 type KernelRunRequest = {
@@ -29,6 +35,7 @@ type KernelRunRequest = {
   model?: string;
   fitnessLens?: string;
   fitnessSchedule?: string;
+  async?: boolean;
 };
 
 type KernelHttpRequest = {
@@ -719,7 +726,12 @@ async function findRunDir(rootDir: string, runId: string): Promise<string | unde
       await readFile(path.join(runDir, 'run-index.json'), 'utf8');
       return runDir;
     } catch {
-      // Keep looking through case directories.
+      try {
+        await readFile(path.join(runDir, 'events.jsonl'), 'utf8');
+        return runDir;
+      } catch {
+        // Keep looking through case directories.
+      }
     }
   }
   return undefined;
@@ -728,10 +740,24 @@ async function findRunDir(rootDir: string, runId: string): Promise<string | unde
 async function readRunIndex(runId: string, rootDir: string): Promise<Record<string, unknown>> {
   const runDir = await findRunDir(rootDir, runId);
   if (!runDir) throw new Error(`run not found: ${runId}`);
-  return JSON.parse(await readFile(path.join(runDir, 'run-index.json'), 'utf8')) as Record<
-    string,
-    unknown
-  >;
+  try {
+    return JSON.parse(await readFile(path.join(runDir, 'run-index.json'), 'utf8')) as Record<
+      string,
+      unknown
+    >;
+  } catch {
+    const events = await readRunEvents(path.join(runDir, 'events.jsonl'));
+    const projection = replayRunProjection(events);
+    return {
+      artifact_type: 'partial_run_index',
+      runId,
+      caseId: projection.caseId ?? null,
+      status: projection.completed ? 'completed' : 'running',
+      dashboardEvents: events,
+      eventCount: projection.eventCount,
+      sequenceThrough: projection.sequenceThrough,
+    };
+  }
 }
 
 function safeArtifactPath(rawArtifactPath: string): string {
@@ -942,6 +968,7 @@ async function generationProvidersFromRequest(
 async function runFromRequestBody(
   body: string | undefined,
   options: KernelHttpOptions,
+  runtime: { onEvent?: EventRecorderListener } = {},
 ): Promise<Record<string, unknown>> {
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
@@ -961,6 +988,7 @@ async function runFromRequestBody(
     fitnessLens,
     fitnessSchedule,
     generationProviders,
+    onEvent: runtime.onEvent,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
   const proofBoard = await writeProofBoard(run, parsed.proofBoardDir || defaultKernelArgs.proofBoardDir);
@@ -974,6 +1002,33 @@ async function runFromRequestBody(
     proofBoard,
     files: manifest.files,
   };
+}
+
+function appendFailureEvent(eventLogPath: string, runId: string, error: unknown): void {
+  const recorder = createMemoryEventRecorder([], runId);
+  const event = recorder.push(
+    'run.failed',
+    {
+      runId,
+      error: error instanceof Error ? error.message : String(error),
+    },
+    { actor: 'runtime' },
+  );
+  appendRunEventSync(eventLogPath, event);
+}
+
+function startAsyncRun(
+  body: string,
+  options: KernelHttpOptions,
+  eventLogPath: string,
+): void {
+  void runFromRequestBody(body, options, {
+    onEvent(event) {
+      appendRunEventSync(eventLogPath, event);
+    },
+  }).catch((error) => {
+    appendFailureEvent(eventLogPath, JSON.parse(body).runId || defaultKernelArgs.runId, error);
+  });
 }
 
 async function runDashboardCaseFromRequestBody(
@@ -994,9 +1049,9 @@ async function runDashboardCaseFromRequestBody(
   }
   const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
   const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
-  const summary = await runFromRequestBody(
-    JSON.stringify({
-      runId: parsed.runId || `${dashboardCase.id}_${Date.now()}`,
+  const runId = parsed.runId || `${dashboardCase.id}_${Date.now()}`;
+  const runRequestBody = JSON.stringify({
+      runId,
       casePath,
       fixturePath: dashboardCase.fixturePath,
       knowledgePacketPath: dashboardCase.knowledgePacketPath,
@@ -1008,14 +1063,29 @@ async function runDashboardCaseFromRequestBody(
       fitnessSchedule: parseFitnessSchedule(parsed.fitnessSchedule),
       outDir,
       proofBoardDir: parsed.proofBoardDir || defaultKernelArgs.proofBoardDir,
-    }),
-    options,
-  );
-  const runId = String(summary.runId);
-  const runIndex = await readRunIndex(runId, outDir);
+    });
+  if (parsed.async) {
+    const eventLogPath = path.join(outDir, dashboardCase.id, runId, 'events.jsonl');
+    startAsyncRun(runRequestBody, options, eventLogPath);
+    return {
+      runId,
+      caseId: dashboardCase.id,
+      caseTitle: dashboardCase.title,
+      runMode: liveModel ? 'live' : 'fixture',
+      status: 'running',
+      async: true,
+      generations: 0,
+      candidateCount: 0,
+      modelCalls: null,
+      dashboardEvents: await readDashboardEvents(runId, outDir),
+    };
+  }
+  const summary = await runFromRequestBody(runRequestBody, options);
+  const completedRunId = String(summary.runId);
+  const runIndex = await readRunIndex(completedRunId, outDir);
   const problemRecovery = runIndex.problemRecovery as { path?: string } | undefined;
   const artifact = problemRecovery?.path
-    ? await readRunArtifact(runId, outDir, problemRecovery.path)
+    ? await readRunArtifact(completedRunId, outDir, problemRecovery.path)
     : undefined;
   return {
     ...runIndex,
@@ -1071,6 +1141,11 @@ export async function handleKernelHttpRequest(
         return await readRunStreamResponse(request, url, runId, rootDir);
       }
       return await readRunHealthResponse(runId, rootDir);
+    }
+    const dashboardRunRoute = url.pathname.match(/^\/kernel\/dashboard\/runs\/([^/]+)$/);
+    if (request.method === 'GET' && dashboardRunRoute) {
+      const runId = decodeURIComponent(dashboardRunRoute[1]!);
+      return { status: 200, body: await readRunIndex(runId, outDirFromUrl(url)) };
     }
     const eventRoute = url.pathname.match(/^\/kernel\/runs\/([^/]+)\/(events|stream|health)$/);
     if (request.method === 'GET' && eventRoute) {

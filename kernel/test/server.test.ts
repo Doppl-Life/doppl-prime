@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { handleKernelHttpRequest } from '../src/server.ts';
 import { loadCaseStudy } from '../src/case-loader.ts';
 import { createDefaultModelGenerationPrompts } from '../src/generation-providers.ts';
@@ -144,6 +145,16 @@ function createOpenRouterFetch(outputs: string[]) {
   };
 }
 
+async function waitFor<T>(read: () => Promise<T>, ready: (value: T) => boolean): Promise<T> {
+  let lastValue: T;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    lastValue = await read();
+    if (ready(lastValue)) return lastValue;
+    await sleep(10);
+  }
+  return lastValue!;
+}
+
 test('kernel HTTP server reports health', async () => {
   const response = await handleKernelHttpRequest({ method: 'GET', url: '/health' });
 
@@ -188,6 +199,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Agenome persona/);
   assert.match(source, /runMode/);
   assert.match(source, /Run mode/);
+  assert.match(source, /async: true/);
+  assert.match(source, /fetchDashboardRunIndex/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -945,4 +958,141 @@ test('kernel dashboard exposes keyless event stream without exposing API key', a
   assert.equal(dashboardResponse.contentType, 'text/event-stream; charset=utf-8');
   assert.match(dashboardResponse.bodyText, /data: .*"runId":"dashboard_stream_fixture"/);
   assert.doesNotMatch(dashboardResponse.bodyText, /server-only-key/);
+});
+
+test('kernel dashboard async live runs stream model operation starts before completion', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-async-'));
+  const outDir = path.join(root, 'vault');
+  let releaseFirstCall!: () => void;
+  const firstCallGate = new Promise<void>((resolve) => {
+    releaseFirstCall = resolve;
+  });
+  const outputs = [
+    JSON.stringify({
+      title: 'Async Live Recovery',
+      recoveredProblem: 'The run should expose model work before the first call completes.',
+      hiddenConstraint: 'The dashboard needs an event before final vault export exists.',
+      falsifier: 'Only run.completed appears in the stream.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'async_live_a',
+          agenomeId: 'ag_blindside',
+          title: 'Early Operation Beacon',
+          summary: 'Emit model starts as soon as the provider boundary is crossed.',
+          mechanism: 'Persist the operation-start event before awaiting provider output.',
+          claimedDelta: 'Makes live runs visibly alive before completion.',
+          citedKnowledge: ['K1'],
+        },
+        {
+          id: 'async_live_b',
+          agenomeId: 'ag_first_principles',
+          title: 'Completion Export Mirror',
+          summary: 'Fetch the dashboard index after the terminal stream event.',
+          mechanism: 'Use event logs for liveness and run-index for final artifacts.',
+          claimedDelta: 'Keeps replay truth and live UX aligned.',
+          citedKnowledge: ['K2'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'async_live_a',
+          criticId: 'grounding',
+          score: 86,
+          pressure: 'Provider-boundary starts are directly observable.',
+          revisionMandate: 'Keep payloads free of prompts and secrets.',
+        },
+        {
+          candidateId: 'async_live_b',
+          criticId: 'novelty',
+          score: 78,
+          pressure: 'Final fetch is useful but less immediate.',
+          revisionMandate: 'Tie final fetch to terminal stream events.',
+        },
+      ],
+    }),
+  ];
+  let fetchCount = 0;
+  const fetch = async (_url: string, init: { headers: Record<string, string>; body: string }) => {
+    fetchCount += 1;
+    if (fetchCount === 1) await firstCallGate;
+    const outputText = outputs.shift();
+    if (!outputText) throw new Error('unexpected extra async model call');
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => 'async-request-id' },
+      async json() {
+        return { choices: [{ message: { content: outputText } }] };
+      },
+    };
+  };
+
+  const startResponse = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_async_live_stream',
+        casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+        liveModel: true,
+        async: true,
+        model: 'fixture-model',
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-only-openrouter-key',
+      },
+      fetch,
+    },
+  );
+
+  assert.equal(startResponse.status, 200);
+  assert.equal(startResponse.body.runId, 'dashboard_async_live_stream');
+  assert.equal(startResponse.body.status, 'running');
+  assert.equal(startResponse.body.async, true);
+
+  const partialStream = await waitFor(
+    () =>
+      handleKernelHttpRequest({
+        method: 'GET',
+        url: `/kernel/dashboard/runs/dashboard_async_live_stream/stream?outDir=${encodeURIComponent(outDir)}`,
+      }),
+    (response) =>
+      response.status === 200 &&
+      Boolean(response.bodyText?.includes('"type":"model.operation_started"')),
+  );
+  assert.equal(partialStream.status, 200);
+  assert.match(partialStream.bodyText, /"type":"model.operation_started"/);
+  assert.match(partialStream.bodyText, /"purpose":"problem_recovery"/);
+  assert.doesNotMatch(partialStream.bodyText, /run.completed/);
+  assert.doesNotMatch(partialStream.bodyText, /server-only-openrouter-key/);
+
+  releaseFirstCall();
+
+  const healthResponse = await waitFor(
+    () =>
+      handleKernelHttpRequest({
+        method: 'GET',
+        url: `/kernel/dashboard/runs/dashboard_async_live_stream/health?outDir=${encodeURIComponent(outDir)}`,
+      }),
+    (response) => response.status === 200 && response.body.status === 'completed',
+  );
+  assert.equal(healthResponse.status, 200);
+  assert.equal(healthResponse.body.status, 'completed');
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs/dashboard_async_live_stream?outDir=${encodeURIComponent(outDir)}`,
+  });
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.runId, 'dashboard_async_live_stream');
+  assert.equal(indexResponse.body.caseId, 'fsd-ownership-unwind');
 });
