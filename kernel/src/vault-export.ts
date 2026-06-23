@@ -182,6 +182,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       mutationNotes: fusion.mutationNotes,
     })),
     knowledgePacket: run.knowledgePacket,
+    energyLedger: run.energyLedger,
     criticVerdicts: run.criticVerdicts,
     fitnessRecords: run.fitnessRecords,
     scheduleComparisons: scheduleComparisons(run),

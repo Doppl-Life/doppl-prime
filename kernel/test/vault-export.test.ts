@@ -55,6 +55,8 @@ test('exports a calibrator-facing run index', async () => {
   assert.ok(index.agenomes.length >= 2);
   assert.ok(index.agenomes[0].prompt);
   assert.ok(index.agenomes[0].energy);
+  assert.ok(index.energyLedger.some((entry: { kind: string }) => entry.kind === 'allocation'));
+  assert.ok(index.energyLedger.some((entry: { kind: string }) => entry.kind === 'spend'));
   assert.equal(index.candidates.length, run.candidates.length);
   assert.equal(index.child.id, run.fusion?.child.id);
   assert.deepEqual(index.child.parentCandidateIds, run.fusion?.parentCandidateIds);

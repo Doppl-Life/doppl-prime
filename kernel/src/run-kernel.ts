@@ -1,6 +1,7 @@
 import {
   assertKernelRun,
   type CandidateSolution,
+  type AgenomeEnergyLedgerEntry,
   type CriticVerdict,
   type EvolutionGeneration,
   type FitnessRecord,
@@ -47,6 +48,11 @@ function modelOutputEventType(record: ModelCallRecord): string {
   if (record.metadata.status === 'repaired') return 'model.output_repaired';
   if (record.metadata.status === 'rejected') return 'model.output_rejected';
   return 'model.output_accepted';
+}
+
+function allocationUnitsForAgenome(agenomeId: string): number {
+  if (agenomeId.startsWith('fused_')) return 2;
+  return 3;
 }
 
 export async function runKernel(input: {
@@ -107,12 +113,46 @@ export async function runKernel(input: {
   const candidates: CandidateSolution[] = [];
   const criticVerdicts: CriticVerdict[] = [];
   const fitnessRecords: FitnessRecord[] = [];
+  const energyLedger: AgenomeEnergyLedgerEntry[] = [];
+  const allocatedAgenomes = new Set<string>();
   const evolution: EvolutionGeneration[] = [];
   let carryoverChild: CandidateSolution | undefined;
   let previousCriticVerdicts: CriticVerdict[] = [];
   let selectedParents: [CandidateSolution, CandidateSolution] | [] = [];
   let fusion: FusionResult | undefined;
   const fusionChildren: FusionResult[] = [];
+
+  function recordEnergy(entry: Omit<AgenomeEnergyLedgerEntry, 'id'>): void {
+    const ledgerEntry = {
+      id: `energy_${energyLedger.length}`,
+      ...entry,
+    };
+    energyLedger.push(ledgerEntry);
+    trace.push(
+      ledgerEntry.kind === 'allocation' ? 'agenome.energy_allocated' : 'agenome.energy_spent',
+      {
+        ledgerEntryId: ledgerEntry.id,
+        agenomeId: ledgerEntry.agenomeId,
+        generation: ledgerEntry.generation,
+        units: ledgerEntry.units,
+        reason: ledgerEntry.reason,
+        candidateId: ledgerEntry.candidateId,
+      },
+      { actor: 'agenome', agenomeId: ledgerEntry.agenomeId, candidateId: ledgerEntry.candidateId },
+    );
+  }
+
+  function ensureAgenomeAllocation(agenomeId: string, generation: number): void {
+    if (allocatedAgenomes.has(agenomeId)) return;
+    allocatedAgenomes.add(agenomeId);
+    recordEnergy({
+      agenomeId,
+      generation,
+      kind: 'allocation',
+      units: allocationUnitsForAgenome(agenomeId),
+      reason: 'spawn_budget_opened',
+    });
+  }
 
   for (let generation = 0; generation < generationCount; generation += 1) {
     if (budget.remainingUnits < 1) {
@@ -136,6 +176,15 @@ export async function runKernel(input: {
     });
     candidates.push(...freshCandidates);
     for (const candidate of freshCandidates) {
+      ensureAgenomeAllocation(candidate.agenomeId, generation);
+      recordEnergy({
+        agenomeId: candidate.agenomeId,
+        generation,
+        kind: 'spend',
+        units: 1,
+        reason: 'candidate_generated',
+        candidateId: candidate.id,
+      });
       trace.push('candidate.created', {
         candidateId: candidate.id,
         agenomeId: candidate.agenomeId,
@@ -205,6 +254,15 @@ export async function runKernel(input: {
         inheritanceWeights: fusion.inheritanceWeights,
         generation,
       });
+      ensureAgenomeAllocation(fusion.child.agenomeId, generation);
+      recordEnergy({
+        agenomeId: fusion.child.agenomeId,
+        generation,
+        kind: 'spend',
+        units: 1,
+        reason: 'fusion_child_created',
+        candidateId: fusion.child.id,
+      });
       fusionChildren.push(fusion);
       carryoverChild = fusion.child;
     }
@@ -229,7 +287,7 @@ export async function runKernel(input: {
       budgetRemainingUnits: budget.remainingUnits,
     });
   }
-  const agenomes = materializeAgenomes({ candidates, fusions: fusionChildren });
+  const agenomes = materializeAgenomes({ candidates, fusions: fusionChildren, energyLedger });
   for (const agenome of agenomes) {
     trace.push(
       'agenome.materialized',
@@ -264,6 +322,7 @@ export async function runKernel(input: {
     caseStudy,
     memoryMode: input.memoryMode,
     knowledgePacket,
+    energyLedger,
     agenomes,
     problemRecovery,
     candidates,

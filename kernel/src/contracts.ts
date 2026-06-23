@@ -77,6 +77,16 @@ export type Agenome = {
   generations: number[];
 };
 
+export type AgenomeEnergyLedgerEntry = {
+  id: string;
+  agenomeId: string;
+  generation: number;
+  kind: 'allocation' | 'spend';
+  units: number;
+  reason: string;
+  candidateId?: string;
+};
+
 export type CriticVerdict = {
   candidateId: string;
   criticId: string;
@@ -186,6 +196,8 @@ export const RUN_EVENT_TYPES = [
   'knowledge.packet_selected',
   'knowledge.item_injected',
   'agenome.materialized',
+  'agenome.energy_allocated',
+  'agenome.energy_spent',
   'problem_recovery.created',
   'generation.started',
   'generation.completed',
@@ -231,6 +243,7 @@ export type KernelRun = {
   caseStudy: CaseStudy;
   memoryMode: MemoryMode;
   knowledgePacket: KnowledgePacket;
+  energyLedger: AgenomeEnergyLedgerEntry[];
   agenomes: Agenome[];
   problemRecovery: ProblemRecovery;
   candidates: CandidateSolution[];
@@ -387,6 +400,20 @@ export function assertAgenome(value: unknown): Agenome {
   return agenome as Agenome;
 }
 
+export function assertAgenomeEnergyLedgerEntry(value: unknown): AgenomeEnergyLedgerEntry {
+  const entry = assertObject(value, 'AgenomeEnergyLedgerEntry');
+  for (const field of ['id', 'agenomeId', 'kind', 'reason']) {
+    assertStringField(entry, field, 'AgenomeEnergyLedgerEntry');
+  }
+  assertIntegerMinField(entry, 'generation', 'AgenomeEnergyLedgerEntry', 0);
+  assertNumberRangeField(entry, 'units', 'AgenomeEnergyLedgerEntry', 0, Number.MAX_SAFE_INTEGER);
+  if (entry.kind !== 'allocation' && entry.kind !== 'spend') {
+    throw new Error('AgenomeEnergyLedgerEntry.kind must be allocation or spend');
+  }
+  if (entry.candidateId !== undefined) assertStringField(entry, 'candidateId', 'AgenomeEnergyLedgerEntry');
+  return entry as AgenomeEnergyLedgerEntry;
+}
+
 export function assertCriticVerdict(value: unknown): CriticVerdict {
   const verdict = assertObject(value, 'CriticVerdict');
   for (const field of ['candidateId', 'criticId', 'pressure', 'revisionMandate']) {
@@ -480,6 +507,8 @@ export function assertKernelRun(value: unknown): KernelRun {
   if (!Array.isArray(run.events)) throw new Error('KernelRun.events is required');
   assertProblemRecovery(run.problemRecovery);
   assertKnowledgePacket(run.knowledgePacket);
+  if (!Array.isArray(run.energyLedger)) throw new Error('KernelRun.energyLedger is required');
+  for (const entry of run.energyLedger) assertAgenomeEnergyLedgerEntry(entry);
   if (!Array.isArray(run.agenomes)) throw new Error('KernelRun.agenomes is required');
   for (const agenome of run.agenomes) assertAgenome(agenome);
   for (const candidate of run.candidates || []) assertCandidateSolution(candidate);

@@ -20,6 +20,16 @@ test('runs deterministic kernel loop end to end', async () => {
   assert.ok(run.agenomes.length >= 2);
   assert.ok(run.agenomes.some((agenome) => agenome.id === run.candidates[0]?.agenomeId));
   assert.ok(run.events.some((event) => event.type === 'agenome.materialized'));
+  assert.ok(run.energyLedger.some((entry) => entry.kind === 'allocation'));
+  assert.ok(run.energyLedger.some((entry) => entry.kind === 'spend'));
+  assert.ok(run.events.some((event) => event.type === 'agenome.energy_allocated'));
+  assert.ok(run.events.some((event) => event.type === 'agenome.energy_spent'));
+  assert.equal(
+    run.agenomes.find((agenome) => agenome.id === run.candidates[0]?.agenomeId)?.energy.spent,
+    run.energyLedger
+      .filter((entry) => entry.agenomeId === run.candidates[0]?.agenomeId && entry.kind === 'spend')
+      .reduce((sum, entry) => sum + entry.units, 0),
+  );
 });
 
 test('runs through injected generation providers', async () => {

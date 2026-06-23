@@ -1,4 +1,9 @@
-import type { Agenome, CandidateSolution, FusionResult } from './contracts.ts';
+import type {
+  Agenome,
+  AgenomeEnergyLedgerEntry,
+  CandidateSolution,
+  FusionResult,
+} from './contracts.ts';
 
 type AgenomeTemplate = Omit<
   Agenome,
@@ -231,10 +236,39 @@ function fusedParents(candidates: CandidateSolution[], fusions: FusionResult[]):
   return parents;
 }
 
+function energyFor(
+  agenomeId: string,
+  fallbackSpent: number,
+  template: AgenomeTemplate,
+  energyLedger: AgenomeEnergyLedgerEntry[] = [],
+): Agenome['energy'] {
+  const entries = energyLedger.filter((entry) => entry.agenomeId === agenomeId);
+  if (entries.length === 0) {
+    const allocated = Math.max(template.spawnBudget.maxCandidates, fallbackSpent);
+    return {
+      allocated,
+      spent: fallbackSpent,
+      remaining: Math.max(0, allocated - fallbackSpent),
+    };
+  }
+  const allocated = entries
+    .filter((entry) => entry.kind === 'allocation')
+    .reduce((sum, entry) => sum + entry.units, 0);
+  const spent = entries
+    .filter((entry) => entry.kind === 'spend')
+    .reduce((sum, entry) => sum + entry.units, 0);
+  return {
+    allocated,
+    spent,
+    remaining: Math.max(0, allocated - spent),
+  };
+}
+
 export function materializeAgenomes(input: {
   candidates: CandidateSolution[];
   fusion?: FusionResult;
   fusions?: FusionResult[];
+  energyLedger?: AgenomeEnergyLedgerEntry[];
 }): Agenome[] {
   const fusions = input.fusions ?? (input.fusion ? [input.fusion] : []);
   const candidates = [...input.candidates, ...fusions.map((fusion) => fusion.child)];
@@ -247,17 +281,12 @@ export function materializeAgenomes(input: {
     const template = templateFor(id, parentMap, templateCache);
     const parentage = parentMap.get(id);
     const spent = ownedCandidates.length;
-    const allocated = Math.max(template.spawnBudget.maxCandidates, spent);
     agenomes.push({
       id,
       ...template,
       parentAgenomeIds: parentage?.parentIds || (id === baseIdFor(id) ? [] : [baseIdFor(id)]),
       mutations: mutationNotes(id, parentage),
-      energy: {
-        allocated,
-        spent,
-        remaining: Math.max(0, allocated - spent),
-      },
+      energy: energyFor(id, spent, template, input.energyLedger),
       candidateIds: ownedCandidates.map((candidate) => candidate.id),
       generations: [...new Set(ownedCandidates.map((candidate) => candidate.generation))].sort(
         (a, b) => a - b,

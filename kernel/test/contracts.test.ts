@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   assertAgenome,
+  assertAgenomeEnergyLedgerEntry,
   assertCandidateSolution,
   assertCriticVerdict,
   assertFitnessRecord,
@@ -91,6 +92,21 @@ test('agenome assertion validates durable hereditary fields', () => {
         generations: [],
       }),
     /Agenome.valueWeights.novelty/,
+  );
+});
+
+test('agenome energy ledger assertion validates entry shape', () => {
+  assert.throws(
+    () =>
+      assertAgenomeEnergyLedgerEntry({
+        id: 'energy_bad',
+        agenomeId: 'ag_bad',
+        generation: 0,
+        kind: 'burn',
+        units: 1,
+        reason: 'bad kind',
+      }),
+    /AgenomeEnergyLedgerEntry.kind/,
   );
 });
 
@@ -185,6 +201,44 @@ test('materialized fused agenomes inherit parent genetics by fusion weights', ()
   assert.equal(fused?.valueWeights.novelty, 0.3);
   assert.match(fused?.persona || '', /Adversarial market scout/);
   assert.match(fused?.mutations[0] || '', /fused from ag_blindside \+ ag_first_principles/);
+});
+
+test('materialized agenomes derive energy from ledger entries when present', () => {
+  const agenomes = materializeAgenomes({
+    candidates: [
+      {
+        id: 'cand_a',
+        caseId: 'case_a',
+        agenomeId: 'ag_blindside',
+        generation: 0,
+        title: 'A',
+        summary: 'summary',
+        mechanism: 'mechanism',
+        claimedDelta: 'delta',
+        citedKnowledge: [],
+      },
+    ],
+    energyLedger: [
+      {
+        id: 'energy_0',
+        agenomeId: 'ag_blindside',
+        generation: 0,
+        kind: 'allocation',
+        units: 5,
+        reason: 'spawn_budget_opened',
+      },
+      {
+        id: 'energy_1',
+        agenomeId: 'ag_blindside',
+        generation: 0,
+        kind: 'spend',
+        units: 2,
+        reason: 'candidate_generated',
+        candidateId: 'cand_a',
+      },
+    ],
+  });
+  assert.deepEqual(agenomes[0]?.energy, { allocated: 5, spent: 2, remaining: 3 });
 });
 
 test('critic assertion rejects scores outside the bounded range', () => {
