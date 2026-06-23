@@ -258,6 +258,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /control artifact/);
   assert.match(source, /heldOutJudge/);
   assert.match(source, /Held-out judge/);
+  assert.match(source, /referenceBenchmark/);
+  assert.match(source, /Reference benchmark/);
   assert.match(source, /referenceCase/);
   assert.match(source, /Reference case/);
   assert.match(source, /sealed evaluator only/);
@@ -613,6 +615,12 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.assayControl.heldOutJudge.judgeType, 'deterministic_artifact_rubric');
   assert.equal(response.body.assayControl.heldOutJudge.scoreSource, 'artifact_rubric_not_training_fitness');
   assert.equal(typeof response.body.assayControl.heldOutJudge.delta.score, 'number');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.judgeType, 'sealed_reference_keyword_benchmark');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.referenceStatus, 'withheld_reference_available');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.contentIncluded, false);
+  assert.equal(typeof response.body.assayControl.heldOutJudge.referenceBenchmark.delta.score, 'number');
+  assert.ok(['doppl_wins', 'baseline_wins', 'tie'].includes(response.body.assayControl.heldOutJudge.referenceBenchmark.verdict));
+  assert.doesNotMatch(JSON.stringify(response.body.assayControl.heldOutJudge.referenceBenchmark), /reward-system dimmer|drug noise/i);
   assert.equal(response.body.assayControl.referenceCase.status, 'withheld_reference_available');
   assert.equal(response.body.assayControl.referenceCase.visibility, 'sealed_evaluator_only');
   assert.match(response.body.assayControl.referenceCase.path, /glp1-snack-demand-destruction-with-solution\.md$/);

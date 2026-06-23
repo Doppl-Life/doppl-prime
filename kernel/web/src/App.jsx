@@ -1151,6 +1151,21 @@ export default function App() {
                     </small>
                     <p>{assay.heldOutJudge.statement}</p>
                     <em>{assay.heldOutJudge.survivor?.factors?.[0] || assay.heldOutJudge.limits?.[0]}</em>
+                    {assay.heldOutJudge.referenceBenchmark ? (
+                      <div className="reference-benchmark">
+                        <span>Reference benchmark</span>
+                        <strong>{assay.heldOutJudge.referenceBenchmark.verdict?.replace(/_/g, ' ')}</strong>
+                        <small>
+                          {signedScore(assay.heldOutJudge.referenceBenchmark.delta?.score)} sealed-reference delta ·{' '}
+                          {assay.heldOutJudge.referenceBenchmark.judgeType?.replace(/_/g, ' ')}
+                        </small>
+                        <p>{assay.heldOutJudge.referenceBenchmark.statement}</p>
+                        <em>
+                          {assay.heldOutJudge.referenceBenchmark.survivor?.factors?.[0] ||
+                            assay.heldOutJudge.referenceBenchmark.factors?.[0]}
+                        </em>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 {assay.referenceCase ? (

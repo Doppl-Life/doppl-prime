@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type {
@@ -251,6 +251,7 @@ function heldOutAssayJudge(
 ): Record<string, unknown> {
   const baselineJudgment = rubricCandidateScore(run, baseline, 'clean_baseline');
   const survivorJudgment = rubricCandidateScore(run, survivor, 'doppl_survivor');
+  const referenceBenchmark = sealedReferenceBenchmark(run, baseline, survivor);
   const baselineScore = baselineJudgment.score as number;
   const survivorScore = survivorJudgment.score as number;
   const delta = Number((survivorScore - baselineScore).toFixed(2));
@@ -276,6 +277,7 @@ function heldOutAssayJudge(
     delta: {
       score: delta,
     },
+    referenceBenchmark,
     limits: [
       'This is a deterministic held-out artifact rubric, not an in-run fitness score.',
       'Replace this with a model or human held-out judge before claiming external validity.',
@@ -283,11 +285,15 @@ function heldOutAssayJudge(
   };
 }
 
-function referenceCase(run: KernelRun): Record<string, unknown> {
-  const referencePath = path.join(
+function referenceCasePath(run: KernelRun): string {
+  return path.join(
     path.dirname(run.caseStudy.sourcePath),
     `${run.caseStudy.id}-with-solution.md`,
   );
+}
+
+function referenceCase(run: KernelRun): Record<string, unknown> {
+  const referencePath = referenceCasePath(run);
   const exists = existsSync(referencePath);
 
   return {
@@ -302,6 +308,147 @@ function referenceCase(run: KernelRun): Record<string, unknown> {
           'Future model/human held-out judging can compare against this artifact server-side.',
         ]
       : ['No evaluator reference artifact was found for this case.'],
+  };
+}
+
+function publicCandidateText(candidate: CandidateSolution): string {
+  return [
+    candidate.title,
+    candidate.summary,
+    candidate.mechanism,
+    candidate.claimedDelta,
+    candidate.citedKnowledge.join(' '),
+  ].join(' ');
+}
+
+const REFERENCE_STOPWORDS = new Set([
+  'about',
+  'after',
+  'again',
+  'against',
+  'because',
+  'before',
+  'being',
+  'between',
+  'could',
+  'current',
+  'details',
+  'during',
+  'enough',
+  'rather',
+  'should',
+  'their',
+  'there',
+  'these',
+  'through',
+  'where',
+  'which',
+  'while',
+  'would',
+  'without',
+]);
+
+function referenceScoringText(referenceText: string): string {
+  const focus = referenceText.match(/## Evaluation Focus([\s\S]*?)(?:\n## Solution|\n## Visibility|$)/i)?.[1];
+  const scoring = referenceText.match(/### Scoring Notes([\s\S]*?)(?:\n## |\n### |$)/i)?.[1];
+  return [focus, scoring].filter(Boolean).join('\n') || referenceText;
+}
+
+function privateReferenceTerms(referenceText: string): string[] {
+  const counts = new Map<string, number>();
+  for (const token of referenceScoringText(referenceText).toLowerCase().match(/[a-z][a-z-]{4,}/g) ?? []) {
+    const normalized = token.replace(/^-+|-+$/g, '');
+    if (normalized.length < 5 || REFERENCE_STOPWORDS.has(normalized)) continue;
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, 32)
+    .map(([term]) => term);
+}
+
+function referenceCandidateScore(candidate: CandidateSolution, privateTerms: string[]): Record<string, unknown> {
+  const candidateText = publicCandidateText(candidate).toLowerCase();
+  const matchedCount = privateTerms.filter((term) => candidateText.includes(term)).length;
+  const targetCount = Math.max(1, Math.min(12, privateTerms.length));
+  const coverage = Number((clamp(matchedCount / targetCount, 0, 1) * 10).toFixed(2));
+  const score = Number((coverage - 5).toFixed(2));
+
+  return {
+    candidateId: candidate.id,
+    title: candidate.title,
+    score,
+    rubric: {
+      targetCount,
+      matchedCount,
+      coverage,
+      scale: '-5_to_5',
+    },
+    factors: [
+      `${matchedCount} sealed evaluator target signals matched out of ${targetCount}.`,
+      'Reference terms are counted server-side and not included in this payload.',
+    ],
+  };
+}
+
+function sealedReferenceBenchmark(
+  run: KernelRun,
+  baseline: CandidateSolution,
+  survivor: CandidateSolution,
+): Record<string, unknown> {
+  const referencePath = referenceCasePath(run);
+  if (!existsSync(referencePath)) {
+    return {
+      judgeType: 'sealed_reference_keyword_benchmark',
+      referenceStatus: 'no_reference_available',
+      visibility: 'none',
+      contentIncluded: false,
+      verdict: 'inconclusive',
+      statement: 'No sealed evaluator reference artifact was available for this case.',
+      baseline: null,
+      survivor: null,
+      delta: {
+        score: null,
+      },
+      factors: ['No reference benchmark was run.'],
+    };
+  }
+
+  const privateTerms = privateReferenceTerms(readFileSync(referencePath, 'utf8'));
+  const baselineJudgment = referenceCandidateScore(baseline, privateTerms);
+  const survivorJudgment = referenceCandidateScore(survivor, privateTerms);
+  const baselineScore = baselineJudgment.score as number;
+  const survivorScore = survivorJudgment.score as number;
+  const delta = Number((survivorScore - baselineScore).toFixed(2));
+  const verdict =
+    delta >= 1
+      ? 'doppl_wins'
+      : delta <= -1
+        ? 'baseline_wins'
+        : 'tie';
+
+  return {
+    judgeType: 'sealed_reference_keyword_benchmark',
+    referenceStatus: 'withheld_reference_available',
+    visibility: 'sealed_evaluator_only',
+    contentIncluded: false,
+    verdict,
+    statement:
+      verdict === 'doppl_wins'
+        ? `Sealed reference benchmark favors the Doppl survivor by ${Math.abs(delta)} points.`
+        : verdict === 'baseline_wins'
+          ? `Sealed reference benchmark favors the clean baseline by ${Math.abs(delta)} points.`
+          : 'Sealed reference benchmark treats the clean baseline and Doppl survivor as effectively tied.',
+    baseline: baselineJudgment,
+    survivor: survivorJudgment,
+    delta: {
+      score: delta,
+    },
+    factors: [
+      'Evaluator reference was read only on the server.',
+      'The response includes numeric coverage and generic factors, not evaluator answer text.',
+    ],
   };
 }
 

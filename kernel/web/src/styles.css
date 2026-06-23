@@ -568,6 +568,45 @@ h2 {
   color: #91a8be;
 }
 
+.reference-benchmark {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 7px 10px;
+  align-items: center;
+  border-top: 1px solid rgba(255, 227, 110, 0.16);
+  margin-top: 4px;
+  padding-top: 11px;
+}
+
+.reference-benchmark span,
+.reference-benchmark small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.reference-benchmark strong {
+  color: var(--gold);
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.reference-benchmark p,
+.reference-benchmark em {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #d8ddca;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.reference-benchmark em {
+  color: #aeb8a5;
+}
+
 .assay-reference {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr);
@@ -1138,6 +1177,7 @@ h2 {
 
   .assay-artifact,
   .assay-judge,
+  .reference-benchmark,
   .assay-reference {
     grid-template-columns: 1fr;
   }
