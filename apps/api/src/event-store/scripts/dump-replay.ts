@@ -5,6 +5,7 @@ import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { createEventStore, replayEvents, type EventStore, type RunEventRow } from '../index';
 import { isRunTerminal } from '../../runtime/worker/activeRunGuard';
+import { assertSafeRunId } from './runId-guard';
 
 /**
  * PD.1 — prepared-replay capture (ARCHITECTURE.md §16/§9/§4, KEY SAFETY RULES #4/#7). A read-only export
@@ -56,26 +57,6 @@ export interface DumpReplayDeps {
   readonly runId: string;
   /** The committed fixtures directory (`fixtures/replay/`); the artifact is `<dir>/<runId>.json`. */
   readonly dir: string;
-}
-
-/**
- * Defense-in-depth: the `runId` becomes the artifact filename, so reject any path separator / traversal
- * BEFORE any read or write — the dump can never escape `dir` even for a future untrusted caller (a real
- * kernel runId is an opaque separator-free id). Thrown before `readByRun`, so a crafted id never touches the DB.
- */
-function assertSafeRunId(runId: string): void {
-  if (
-    runId.length === 0 ||
-    runId === '.' ||
-    runId === '..' ||
-    runId.includes('/') ||
-    runId.includes('\\') ||
-    runId.includes('\0')
-  ) {
-    throw new Error(
-      `dump-replay: unsafe runId '${runId}' — must be a plain id (no path separators / traversal)`,
-    );
-  }
 }
 
 /** IO boundary — read the run's events, build the fixture, write `<dir>/<runId>.json`. Read-only (no append). */
