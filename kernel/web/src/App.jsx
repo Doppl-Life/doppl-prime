@@ -190,6 +190,7 @@ function buildFlow(run) {
       title: run.problemRecovery?.title || 'Problem Recovery',
       subtitle: run.problemRecovery?.recoveredProblem || run.problemRecovery?.summary || 'Recovered problem frame',
       badge: 'recovery',
+      raw: run.problemRecovery,
     },
   });
 
@@ -296,6 +297,250 @@ function LaneNode({ data }) {
 
 const nodeTypes = { kernelNode: KernelNode, laneNode: LaneNode };
 
+function uniqueById(items, getId) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const id = getId(item);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function nodeSubject(run, node) {
+  if (!node) return null;
+  const raw = node.data.raw || {};
+  if (node.data.kind === 'recovery') {
+    return {
+      id: raw.id || node.id,
+      kind: 'Problem recovery',
+      status: node.data.status,
+      title: raw.title || node.data.title,
+      summary: raw.recoveredProblem || node.data.subtitle,
+      details: [
+        ['Hidden constraint', raw.hiddenConstraint],
+        ['Falsifier', raw.falsifier],
+        ['Artifact', raw.path],
+      ],
+      citedKnowledge: raw.citedKnowledge || [],
+      raw,
+    };
+  }
+  if (node.data.kind === 'child') {
+    return {
+      id: raw.id || node.id,
+      kind: 'Fused child',
+      status: node.data.status,
+      title: raw.title || node.data.title,
+      summary: raw.summary || node.data.subtitle,
+      details: [
+        ['Mechanism', raw.mechanism],
+        ['Claimed delta', raw.claimedDelta],
+        ['Parents', (raw.parentCandidateIds || []).join(' + ')],
+        ['Compatibility', raw.compatibility ? `${raw.compatibility.score} - ${raw.compatibility.rationale}` : undefined],
+        [
+          'Inheritance',
+          raw.inheritanceWeights
+            ? `parent A ${raw.inheritanceWeights.parentA}, parent B ${raw.inheritanceWeights.parentB}`
+            : undefined,
+        ],
+      ],
+      citedKnowledge: raw.citedKnowledge || [],
+      raw,
+    };
+  }
+  return {
+    id: raw.id || node.id,
+    kind: 'Candidate',
+    status: node.data.status,
+    title: raw.title || node.data.title,
+    summary: raw.summary || node.data.subtitle,
+    details: [
+      ['Agenome', raw.agenomeId],
+      ['Generation', raw.generation === undefined ? undefined : String(raw.generation)],
+      ['Mechanism', raw.mechanism],
+      ['Claimed delta', raw.claimedDelta],
+      ['Artifact', raw.path],
+    ],
+    citedKnowledge: raw.citedKnowledge || [],
+    raw,
+  };
+}
+
+function inspectorData(run, node) {
+  const subject = nodeSubject(run, node);
+  if (!subject) return null;
+  const candidateId = subject.raw.id;
+  const criticVerdicts = uniqueById(
+    (run.criticVerdicts || []).filter((verdict) => verdict.candidateId === candidateId),
+    (verdict) => `${verdict.criticId}-${verdict.score}-${verdict.pressure}`,
+  );
+  const fitnessRecords = uniqueById(
+    (run.fitnessRecords || []).filter((record) => record.candidateId === candidateId),
+    (record) => `${record.total}-${record.rationale}`,
+  );
+  const citationSet = new Set(subject.citedKnowledge || []);
+  const evidenceItems = ((run.knowledgePacket && run.knowledgePacket.items) || []).filter(
+    (item) => citationSet.size === 0 || citationSet.has(item.citeHandle),
+  );
+  const events = (run.dashboardEvents || []).filter(
+    (event) =>
+      event.candidateId === candidateId ||
+      event.payload?.candidateId === candidateId ||
+      event.payload?.childId === candidateId ||
+      event.payload?.recoveryId === candidateId,
+  );
+  return {
+    subject,
+    criticVerdicts,
+    fitnessRecords,
+    evidenceItems,
+    events,
+  };
+}
+
+function ScoreBar({ value }) {
+  const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+  return (
+    <div className="score-bar" aria-label={`score ${safeValue}`}>
+      <span style={{ width: `${safeValue}%` }} />
+    </div>
+  );
+}
+
+function NodeInspector({ activeTab, data, onTabChange }) {
+  if (!data) {
+    return (
+      <aside className="insight-rail">
+        <div className="inspector-empty">
+          <p>Node inspector</p>
+          <h2>Select a graph node</h2>
+          <span>Click a recovery, candidate, or fused child to inspect its critic pressure, evidence, and payload.</span>
+        </div>
+      </aside>
+    );
+  }
+
+  const { subject, criticVerdicts, fitnessRecords, evidenceItems, events } = data;
+  const tabs = ['overview', 'critics', 'evidence'];
+  return (
+    <aside className="insight-rail" aria-label="Selected node inspector">
+      <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
+        {tabs.map((tab) => (
+          <button
+            className={activeTab === tab ? 'active' : ''}
+            key={tab}
+            onClick={() => onTabChange(tab)}
+            role="tab"
+            type="button"
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      <section className="inspector-card">
+        <div className="inspector-kicker">
+          <span className={`status-dot ${subject.status}`} />
+          <strong>{subject.kind}</strong>
+          <code>{subject.id}</code>
+        </div>
+        <h2>{subject.title}</h2>
+
+        {activeTab === 'overview' && (
+          <div className="inspector-section">
+            <p className="inspector-summary">{subject.summary}</p>
+            <dl className="detail-list">
+              {subject.details
+                .filter(([, value]) => value)
+                .map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+            </dl>
+            {fitnessRecords.map((record) => (
+              <article className="fitness-card" key={`${record.candidateId}-${record.total}`}>
+                <div>
+                  <span>Fitness total</span>
+                  <strong>{record.total}</strong>
+                </div>
+                <ScoreBar value={record.total} />
+                <p>{record.rationale}</p>
+              </article>
+            ))}
+            {subject.raw.inheritedTraits?.length ? (
+              <div className="trait-list">
+                <h3>Inherited traits</h3>
+                {subject.raw.inheritedTraits.map((trait) => <span key={trait}>{trait}</span>)}
+              </div>
+            ) : null}
+            {subject.raw.mutationNotes?.length ? (
+              <div className="trait-list">
+                <h3>Mutation notes</h3>
+                {subject.raw.mutationNotes.map((note) => <span key={note}>{note}</span>)}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === 'critics' && (
+          <div className="inspector-section">
+            {criticVerdicts.length ? (
+              criticVerdicts.map((verdict) => (
+                <article className="critic-card" key={`${verdict.candidateId}-${verdict.criticId}`}>
+                  <div>
+                    <strong>{verdict.criticId}</strong>
+                    <span>{verdict.score}</span>
+                  </div>
+                  <ScoreBar value={verdict.score} />
+                  <p>{verdict.pressure}</p>
+                  <small>{verdict.revisionMandate}</small>
+                </article>
+              ))
+            ) : (
+              <p className="muted-copy">No critic verdicts are attached to this node yet.</p>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'evidence' && (
+          <div className="inspector-section">
+            <div className="evidence-list">
+              {evidenceItems.length ? (
+                evidenceItems.map((item) => (
+                  <article key={item.recordId}>
+                    <div>
+                      <strong>{item.citeHandle}</strong>
+                      <span>{item.trustTier}</span>
+                    </div>
+                    <p>{item.text}</p>
+                    <small>{item.citation}</small>
+                  </article>
+                ))
+              ) : (
+                <p className="muted-copy">No cited memory items are attached to this node.</p>
+              )}
+            </div>
+            <div className="event-snips">
+              <h3>Node events</h3>
+              {events.slice(-6).map((event) => (
+                <span key={`${event.sequence ?? event.index}-${event.type}`}>{event.type}</span>
+              ))}
+              {!events.length ? <p className="muted-copy">No node-specific events found.</p> : null}
+            </div>
+            <details className="raw-payload">
+              <summary>Raw payload</summary>
+              <pre>{JSON.stringify(subject.raw, null, 2)}</pre>
+            </details>
+          </div>
+        )}
+      </section>
+    </aside>
+  );
+}
+
 export default function App() {
   const [run, setRun] = useState(SAMPLE_RUN);
   const [selectedCase, setSelectedCase] = useState(CASE_STUDIES[0]);
@@ -304,6 +549,7 @@ export default function App() {
   const [status, setStatus] = useState('React Flow preview loaded. Run a real case to watch Doppl evolve.');
   const [history, setHistory] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [inspectorTab, setInspectorTab] = useState('overview');
   const [isRunning, setIsRunning] = useState(false);
   const streamRef = useRef(null);
   const flow = useMemo(() => buildFlow(run), [run]);
@@ -415,6 +661,7 @@ export default function App() {
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
   const budgetUsed = budgetUnits(run);
   const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
+  const selectedInspector = useMemo(() => inspectorData(run, selectedNode), [run, selectedNode]);
 
   return (
     <main className="app-shell" aria-label="Doppl React Flow dashboard">
@@ -503,7 +750,11 @@ export default function App() {
             nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
-            onNodeClick={(_, node) => setSelectedNode(node)}
+            onNodeClick={(_, node) => {
+              if (node.type !== 'kernelNode') return;
+              setSelectedNode(node);
+              setInspectorTab('overview');
+            }}
             nodesDraggable={false}
             nodesConnectable={false}
             edgesReconnectable={false}
@@ -548,19 +799,6 @@ export default function App() {
             </div>
           </section>
 
-          <section className="inspector-panel">
-            <h2>Node inspector</h2>
-            {selectedNode ? (
-              <div>
-                <strong>{selectedNode.data.title}</strong>
-                <p>{selectedNode.data.subtitle}</p>
-                <code>{selectedNode.id}</code>
-              </div>
-            ) : (
-              <p>Select a node to inspect its role in the lineage.</p>
-            )}
-          </section>
-
           <section className="event-panel">
             <h2>Live event stream</h2>
             <ol>
@@ -579,6 +817,7 @@ export default function App() {
           </section>
         </div>
       </section>
+      <NodeInspector activeTab={inspectorTab} data={selectedInspector} onTabChange={setInspectorTab} />
     </main>
   );
 }

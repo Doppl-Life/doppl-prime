@@ -430,6 +430,12 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.runId, 'dashboard_glp1_fixture');
   assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
   assert.equal(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
+  assert.match(response.body.child.summary, /reward budget/i);
+  assert.match(response.body.candidates[0].summary, /reward/i);
+  assert.match(response.body.candidates[0].mechanism, /panel/i);
+  assert.equal(response.body.criticVerdicts.length, 36);
+  assert.equal(response.body.fitnessRecords.length, 12);
+  assert.equal(response.body.knowledgePacket.items.length, 3);
   assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));
   assert.ok(response.body.dashboardEvents.length > 0);

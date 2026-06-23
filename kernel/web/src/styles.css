@@ -52,7 +52,7 @@ input:focus-visible {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 360px minmax(780px, 1fr);
+  grid-template-columns: 340px minmax(720px, 1fr) 420px;
   min-height: 100vh;
 }
 
@@ -199,6 +199,16 @@ h2 {
   padding: 22px 26px 28px;
 }
 
+.insight-rail {
+  height: 100vh;
+  overflow: auto;
+  border-left: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(21, 32, 44, 0.96), rgba(10, 15, 22, 0.98)),
+    var(--rail);
+  padding: 20px;
+}
+
 .workspace-header {
   display: flex;
   align-items: end;
@@ -266,6 +276,10 @@ h2 {
   background: #0f1722;
   padding: 10px 12px;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+}
+
+.react-flow__node.selected .kernel-node {
+  box-shadow: 0 0 0 2px rgba(49, 212, 255, 0.6), 0 18px 44px rgba(0, 0, 0, 0.34);
 }
 
 .kernel-node.recovery {
@@ -412,18 +426,11 @@ h2 {
 }
 
 .survivor-list p,
-.inspector-panel p {
+.muted-copy {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
-}
-
-.inspector-panel code {
-  display: block;
-  margin-top: 10px;
-  overflow-wrap: anywhere;
-  color: var(--blue);
 }
 
 .event-panel ol {
@@ -457,6 +464,281 @@ h2 {
   line-height: 1.45;
 }
 
+.inspector-empty {
+  min-height: calc(100vh - 40px);
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.inspector-empty p {
+  margin: 0;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.inspector-empty h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1.1;
+  text-transform: none;
+}
+
+.inspector-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-bottom: 14px;
+  background: linear-gradient(180deg, rgba(16, 24, 34, 1), rgba(16, 24, 34, 0.86));
+}
+
+.inspector-tabs button {
+  height: 38px;
+  text-transform: capitalize;
+  font-weight: 900;
+}
+
+.inspector-tabs button.active {
+  border-color: var(--mint);
+  background: var(--mint);
+  color: #06120f;
+  box-shadow: 0 0 22px rgba(36, 214, 165, 0.28);
+}
+
+.inspector-card {
+  margin-top: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(17, 25, 35, 0.92);
+  padding: 20px;
+}
+
+.inspector-kicker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.inspector-kicker strong {
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.inspector-kicker code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.status-dot.survivor,
+.status-dot.final {
+  background: var(--mint);
+}
+
+.status-dot.rejected {
+  background: var(--rose);
+}
+
+.inspector-card h2 {
+  margin: 18px 0 18px;
+  color: var(--ink);
+  font-size: 27px;
+  line-height: 1.22;
+  text-transform: uppercase;
+}
+
+.inspector-section {
+  display: grid;
+  gap: 16px;
+}
+
+.inspector-summary {
+  margin: 0;
+  color: #cbd7e7;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.detail-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 14px;
+  border-top: 1px solid rgba(92, 167, 255, 0.14);
+  padding-top: 12px;
+}
+
+.detail-list dt,
+.trait-list h3,
+.event-snips h3 {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.detail-list dd {
+  margin: 0;
+  color: #dbe6f7;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.fitness-card,
+.critic-card,
+.evidence-list article {
+  border: 1px solid rgba(92, 167, 255, 0.18);
+  border-radius: 7px;
+  background: #0d1520;
+  padding: 13px;
+}
+
+.fitness-card div,
+.critic-card div,
+.evidence-list article div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fitness-card strong,
+.critic-card span,
+.evidence-list strong {
+  color: var(--cyan);
+}
+
+.fitness-card p,
+.critic-card p,
+.evidence-list p {
+  margin: 10px 0 0;
+  color: #cbd7e7;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.critic-card small,
+.evidence-list small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.score-bar {
+  height: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #07111a;
+}
+
+.score-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--mint));
+}
+
+.trait-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trait-list h3 {
+  width: 100%;
+  margin: 0;
+}
+
+.trait-list span,
+.event-snips span {
+  border: 1px solid rgba(49, 212, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(49, 212, 255, 0.08);
+  color: #cdefff;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 10px;
+}
+
+.evidence-list article {
+  border-color: rgba(36, 214, 165, 0.22);
+}
+
+.event-snips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid rgba(92, 167, 255, 0.14);
+  padding-top: 14px;
+}
+
+.event-snips h3,
+.event-snips .muted-copy {
+  width: 100%;
+  margin: 0;
+}
+
+.raw-payload {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #0a1018;
+  padding: 10px 12px;
+}
+
+.raw-payload summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.raw-payload pre {
+  max-height: 240px;
+  margin: 12px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #b7c6d8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 @media (max-width: 900px) {
   body {
     min-width: 0;
@@ -466,7 +748,8 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .control-rail {
+  .control-rail,
+  .insight-rail {
     height: auto;
   }
 
@@ -486,5 +769,10 @@ h2 {
 
   .lower-grid section {
     margin-top: 12px;
+  }
+
+  .detail-list div {
+    grid-template-columns: 1fr;
+    gap: 5px;
   }
 }
