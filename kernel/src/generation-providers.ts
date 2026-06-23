@@ -62,6 +62,7 @@ export type GenerationProviders = {
 
 export type ModelGenerationPromptRenderers = {
   problemRecovery(input: ProblemRecoveryInput): string;
+  cleanBaseline(input: CandidateGenerationInput): string;
   candidateGeneration(input: CandidateGenerationInput): string;
   criticJudgment(input: CriticJudgmentInput): string;
 };
@@ -69,7 +70,7 @@ export type ModelGenerationPromptRenderers = {
 export type ModelGenerationProviderInput = {
   client: ModelClient;
   model: string;
-  prompts?: ModelGenerationPromptRenderers;
+  prompts?: Partial<ModelGenerationPromptRenderers>;
 };
 
 export type ModelGenerationProviders = GenerationProviders & {
@@ -275,6 +276,14 @@ function arrayField(value: Record<string, unknown>, field: string): unknown[] {
   return array;
 }
 
+function objectField(value: Record<string, unknown>, field: string): Record<string, unknown> {
+  const object = value[field];
+  if (!object || typeof object !== 'object' || Array.isArray(object)) {
+    throw new Error(`model response.${field} must be an object`);
+  }
+  return object as Record<string, unknown>;
+}
+
 function knowledgeSummary(packet: KnowledgePacket): string {
   return packet.items.map((item) => `${item.citeHandle}: ${item.text}`).join('\n');
 }
@@ -349,6 +358,18 @@ const candidateGenerationResponseSchema = {
   },
 };
 
+const cleanBaselineResponseSchema = {
+  name: 'control_baseline_generation',
+  schema: {
+    type: 'object',
+    properties: {
+      candidate: candidateSchema,
+    },
+    required: ['candidate'],
+    additionalProperties: false,
+  },
+};
+
 const criticVerdictSchema = {
   type: 'object',
   properties: {
@@ -389,6 +410,21 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
         knowledgeSummary(knowledgePacket),
       ].join('\n');
     },
+    cleanBaseline({ caseStudy, problemRecovery, knowledgePacket, agenomePool }) {
+      return [
+        'Return JSON only with a candidate object.',
+        `Case: ${caseStudy.title}`,
+        `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        'Create a single-pass clean-agent baseline before Doppl evolution, selection, mutation, or fusion.',
+        'Agenome pool:',
+        agenomeSummary(agenomePool),
+        'The candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
+        'Use agenomeId ag_clean_control unless a supplied Agenome clearly fits better.',
+        'Do not mention Doppl as improving this answer; this is the plain control lane.',
+        'Knowledge:',
+        knowledgeSummary(knowledgePacket),
+      ].join('\n');
+    },
     candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation, previousChild, previousCriticVerdicts, agenomePool }) {
       return [
         'Return JSON only with a candidates array.',
@@ -423,7 +459,7 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
 }
 
 export function createModelGenerationProviders(input: ModelGenerationProviderInput): ModelGenerationProviders {
-  const prompts = input.prompts || createDefaultModelGenerationPrompts();
+  const prompts = { ...createDefaultModelGenerationPrompts(), ...input.prompts };
   const modelCallRecords: ModelCallRecord[] = [];
 
   async function complete(request: Parameters<ModelClient['complete']>[0]): Promise<ModelCallRecord> {
@@ -493,6 +529,26 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
               caseId: providerInput.caseStudy.id,
               ...parsed,
               citedKnowledge: providerInput.knowledgePacket.items.map((item) => item.citeHandle),
+            }),
+        );
+      },
+    },
+    cleanBaseline: {
+      async generate(providerInput) {
+        return parseWithRepair(
+          {
+            runId: providerInput.runId,
+            purpose: 'control_baseline_generation',
+            prompt: prompts.cleanBaseline(providerInput),
+            model: input.model,
+            responseFormat: 'json_object',
+            responseSchema: cleanBaselineResponseSchema,
+          },
+          (parsed) =>
+            assertCandidateSolution({
+              ...objectField(parsed, 'candidate'),
+              caseId: providerInput.caseStudy.id,
+              generation: 0,
             }),
         );
       },

@@ -308,6 +308,75 @@ test('model generation providers parse replayed structured outputs', async () =>
   assert.equal(verdicts[0]?.score, 88);
 });
 
+test('model generation providers parse replayed clean baseline outputs', async () => {
+  const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
+  const gateway = await createJsonKnowledgeGateway(
+    'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId: 'run_model_clean_baseline',
+    targetCase: caseStudy.id,
+    maxItems: 2,
+  });
+  const prompts = {
+    cleanBaseline: 'clean baseline prompt',
+  };
+  const records: ModelCallRecord[] = [
+    {
+      id: 'call_clean_baseline',
+      runId: 'run_model_clean_baseline',
+      purpose: 'control_baseline_generation',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.cleanBaseline,
+      outputText: JSON.stringify({
+        candidate: {
+          id: 'clean_model_baseline',
+          agenomeId: 'ag_clean_control',
+          title: 'Clean Model Baseline',
+          summary: 'Single-pass model control answer.',
+          mechanism: 'Solve directly before Doppl selection applies pressure.',
+          claimedDelta: 'Provides a baseline against the evolved survivor.',
+          citedKnowledge: ['K1'],
+        },
+      }),
+      metadata: {},
+    },
+  ];
+  const providers = createModelGenerationProviders({
+    client: createReplayModelClient(records),
+    model: 'fixture-model',
+    prompts: {
+      cleanBaseline: () => prompts.cleanBaseline,
+    },
+  });
+
+  const baseline = await providers.cleanBaseline!.generate({
+    runId: 'run_model_clean_baseline',
+    caseStudy,
+    problemRecovery: {
+      id: 'recovery_fsd-ownership-unwind',
+      caseId: caseStudy.id,
+      title: 'Recovered',
+      recoveredProblem: 'Recovered problem.',
+      hiddenConstraint: 'Hidden constraint.',
+      falsifier: 'Falsifier.',
+      citedKnowledge: [],
+    },
+    knowledgePacket,
+    generation: 0,
+  });
+
+  assert.equal(baseline.id, 'clean_model_baseline');
+  assert.equal(baseline.caseId, caseStudy.id);
+  assert.equal(baseline.generation, 0);
+  assert.equal(baseline.agenomeId, 'ag_clean_control');
+  assert.deepEqual(
+    providers.modelCallRecords.map((record) => record.purpose),
+    ['control_baseline_generation'],
+  );
+});
+
 test('model generation providers expose default prompts and captured call records', async () => {
   const caseStudy = await loadCaseStudy('case-studies/fsd-ownership-unwind/problem-statement.md');
   const gateway = await createJsonKnowledgeGateway(

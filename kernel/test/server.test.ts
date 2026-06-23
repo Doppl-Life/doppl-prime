@@ -60,6 +60,20 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
     caseId: caseStudy.id,
     generation: 0,
   }));
+  const cleanBaseline = {
+    id: 'clean_http_replay',
+    agenomeId: 'ag_clean_control',
+    title: 'Clean HTTP Replay',
+    summary: 'Single-pass replay control before Doppl selection.',
+    mechanism: 'Solve directly from the recovered problem.',
+    claimedDelta: 'Provides the baseline lane for replay.',
+    citedKnowledge: ['K1'],
+  };
+  const completedCleanBaseline = {
+    ...cleanBaseline,
+    caseId: caseStudy.id,
+    generation: 0,
+  };
   const records: ModelCallRecord[] = [
     {
       id: 'call_http_replay_problem',
@@ -69,6 +83,49 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
       model,
       prompt: prompts.problemRecovery({ runId, caseStudy, knowledgePacket }),
       outputText: JSON.stringify(problemRecovery),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_clean_baseline',
+      runId,
+      purpose: 'control_baseline_generation',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.cleanBaseline({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        knowledgePacket,
+        generation: 0,
+        agenomePool: initialAgenomePool(),
+      }),
+      outputText: JSON.stringify({ candidate: cleanBaseline }),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_control_critics',
+      runId,
+      purpose: 'critic_judgment',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.criticJudgment({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        candidates: [completedCleanBaseline],
+        knowledgePacket,
+      }),
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'clean_http_replay',
+            criticId: 'grounding',
+            score: 62,
+            pressure: 'The clean answer is plausible but not selection-tested.',
+            revisionMandate: 'Beat the baseline with sharper mechanism.',
+          },
+        ],
+      }),
       metadata: {},
     },
     {
@@ -301,6 +358,28 @@ test('kernel HTTP server runs live model requests with a server-side key', async
       falsifier: 'Households keep buying private autonomous vehicles at current replacement rates.',
     }),
     JSON.stringify({
+      candidate: {
+        id: 'clean_http_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean HTTP Live',
+        summary: 'Direct answer before Doppl selection.',
+        mechanism: 'Solve once from the recovery and packet.',
+        claimedDelta: 'Baseline for the evolved survivor.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_http_live',
+          criticId: 'grounding',
+          score: 66,
+          pressure: 'Clear baseline but less diagnostic.',
+          revisionMandate: 'Find the earlier observable break.',
+        },
+      ],
+    }),
+    JSON.stringify({
       candidates: [
         {
           id: 'http_live_a',
@@ -364,7 +443,7 @@ test('kernel HTTP server runs live model requests with a server-side key', async
 
   assert.equal(response.status, 200);
   assert.equal(response.body.child, 'child_http_live_a_http_live_b');
-  assert.equal(fakeOpenRouter.calls.length, 3);
+  assert.equal(fakeOpenRouter.calls.length, 5);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
   assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
 });
@@ -378,6 +457,28 @@ test('kernel HTTP server runs a requested case study path with live model reques
         'GLP-1 drugs lower the reward budget behind impulse categories, not just snack preferences.',
       hiddenConstraint: 'The demand unit is household reward-seeking, not the treated person meal.',
       falsifier: 'Impulse purchases stay flat in treated households after controlling for income.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_glp_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean GLP-1 Live',
+        summary: 'Direct GLP-1 demand thesis before Doppl search.',
+        mechanism: 'Compare treated and untreated household impulse spend.',
+        claimedDelta: 'Baseline for evolved GLP-1 candidates.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_glp_live',
+          criticId: 'grounding',
+          score: 69,
+          pressure: 'Grounded but broad.',
+          revisionMandate: 'Separate impulse channels and treatment cohorts.',
+        },
+      ],
     }),
     JSON.stringify({
       candidates: [
@@ -553,6 +654,28 @@ test('kernel dashboard route can run enabled live generation without exposing se
       falsifier: 'Treated households keep impulse category spend stable after adoption.',
     }),
     JSON.stringify({
+      candidate: {
+        id: 'clean_dash_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Dashboard Live',
+        summary: 'Direct dashboard live baseline answer.',
+        mechanism: 'Measure treated household impulse surface area once.',
+        claimedDelta: 'Baseline for Doppl survivor comparison.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_dash_live',
+          criticId: 'grounding',
+          score: 68,
+          pressure: 'Reasonable control answer.',
+          revisionMandate: 'Add stronger cross-category specificity.',
+        },
+      ],
+    }),
+    JSON.stringify({
       candidates: [
         {
           id: 'dash_live_reward_budget',
@@ -625,7 +748,7 @@ test('kernel dashboard route can run enabled live generation without exposing se
   assert.equal(response.body.budget.usedUnits, 1);
   assert.equal(response.body.child.id, 'child_dash_live_reward_budget_dash_live_tripwire');
   assert.ok(response.body.modelCalls.path.endsWith('model-calls.jsonl'));
-  assert.equal(fakeOpenRouter.calls.length, 3);
+  assert.equal(fakeOpenRouter.calls.length, 5);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
@@ -640,6 +763,28 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
         'GLP-1 adoption changes the household reward budget before snack sales alone reveal it.',
       hiddenConstraint: 'The useful measurement unit is treated household impulse spend.',
       falsifier: 'Treated and untreated household impulse baskets remain identical.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_replayable_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Replayable Live',
+        summary: 'Direct recorded baseline answer.',
+        mechanism: 'Use a simple treated-household impulse comparison.',
+        claimedDelta: 'Baseline for replayable Doppl survivor.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_replayable_live',
+          criticId: 'grounding',
+          score: 67,
+          pressure: 'Replayable clean answer is valid but broad.',
+          revisionMandate: 'Doppl should produce a sharper mechanism.',
+        },
+      ],
     }),
     JSON.stringify({
       candidates: [
@@ -709,7 +854,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
   assert.equal(source.status, 200);
   assert.equal(source.body.runMode, 'live');
   assert.equal(source.body.modelCalls.path, 'model-calls.jsonl');
-  assert.equal(fakeOpenRouter.calls.length, 3);
+  assert.equal(fakeOpenRouter.calls.length, 5);
 
   const replay = await handleKernelHttpRequest(
     {
@@ -1119,6 +1264,28 @@ test('kernel dashboard async live runs stream model operation starts before comp
       recoveredProblem: 'The run should expose model work before the first call completes.',
       hiddenConstraint: 'The dashboard needs an event before final vault export exists.',
       falsifier: 'Only run.completed appears in the stream.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_async_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Async Live',
+        summary: 'Direct async baseline answer.',
+        mechanism: 'Solve once before the evolving population begins.',
+        claimedDelta: 'Gives the stream a control lane to score.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_async_live',
+          criticId: 'grounding',
+          score: 65,
+          pressure: 'Baseline exists but lacks evolved specificity.',
+          revisionMandate: 'Keep the live stream free of prompts and secrets.',
+        },
+      ],
     }),
     JSON.stringify({
       candidates: [

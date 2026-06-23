@@ -373,6 +373,8 @@ test('stops evolution when the generation budget is exhausted', async () => {
 test('runs through replayed model generation providers', async () => {
   const prompts = {
     recovery: 'recover for run model',
+    cleanBaseline: 'clean baseline for run model',
+    controlCritics: 'judge clean baseline for run model',
     candidates: 'generate for run model',
     critics: 'judge for run model',
   };
@@ -389,6 +391,46 @@ test('runs through replayed model generation providers', async () => {
         recoveredProblem: 'Recovered through the model gateway.',
         hiddenConstraint: 'Model outputs must become contracts.',
         falsifier: 'The loop ignores the model provider.',
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_clean_baseline',
+      runId: 'run_model_generation',
+      purpose: 'control_baseline_generation',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.cleanBaseline,
+      outputText: JSON.stringify({
+        candidate: {
+          id: 'clean_gateway',
+          agenomeId: 'ag_clean_control',
+          title: 'Clean Gateway',
+          summary: 'A direct clean-agent answer before Doppl selection.',
+          mechanism: 'Solve directly from recovered problem and knowledge.',
+          claimedDelta: 'Provides the control lane.',
+          citedKnowledge: ['K1'],
+        },
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_control_critics',
+      runId: 'run_model_generation',
+      purpose: 'critic_judgment',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.controlCritics,
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'clean_gateway',
+            criticId: 'grounding',
+            score: 55,
+            pressure: 'Useful but less specific than the evolved population.',
+            revisionMandate: 'Add sharper evidence.',
+          },
+        ],
       }),
       metadata: {},
     },
@@ -463,8 +505,12 @@ test('runs through replayed model generation providers', async () => {
       model: 'fixture-model',
       prompts: {
         problemRecovery: () => prompts.recovery,
+        cleanBaseline: () => prompts.cleanBaseline,
         candidateGeneration: () => prompts.candidates,
-        criticJudgment: () => prompts.critics,
+        criticJudgment: ({ candidates }) =>
+          candidates.some((candidate) => candidate.id === 'clean_gateway')
+            ? prompts.controlCritics
+            : prompts.critics,
       },
     }),
   });
@@ -474,16 +520,30 @@ test('runs through replayed model generation providers', async () => {
     run.candidates.map((candidate) => candidate.id),
     ['gateway_a', 'gateway_b'],
   );
+  assert.equal(run.controlBaseline?.id, 'clean_gateway');
+  assert.equal(run.candidates.some((candidate) => candidate.id === 'clean_gateway'), false);
   assert.equal(run.fusion?.inheritanceWeights.parentA, 0.667);
-  assert.equal(run.modelCallRecords?.length, 3);
+  assert.equal(run.modelCallRecords?.length, 5);
   assert.deepEqual(
     run.modelCallRecords?.map((record) => record.purpose),
-    ['problem_recovery', 'candidate_generation', 'critic_judgment'],
+    [
+      'problem_recovery',
+      'control_baseline_generation',
+      'critic_judgment',
+      'candidate_generation',
+      'critic_judgment',
+    ],
   );
   const startedEvents = run.events.filter((event) => event.type === 'model.operation_started');
   assert.deepEqual(
     startedEvents.map((event) => event.payload.purpose),
-    ['problem_recovery', 'candidate_generation', 'critic_judgment'],
+    [
+      'problem_recovery',
+      'control_baseline_generation',
+      'control_baseline_judgment',
+      'candidate_generation',
+      'critic_judgment',
+    ],
   );
   assert.ok(
     startedEvents.every(
@@ -504,6 +564,8 @@ test('runs through replayed model generation providers', async () => {
       .map((event) => [event.type, event.payload.purpose]),
     [
       ['model.output_accepted', 'problem_recovery'],
+      ['model.output_accepted', 'control_baseline_generation'],
+      ['model.output_accepted', 'critic_judgment'],
       ['model.output_accepted', 'candidate_generation'],
       ['model.output_accepted', 'critic_judgment'],
     ],
@@ -513,6 +575,8 @@ test('runs through replayed model generation providers', async () => {
 test('emits model lifecycle trace events for repaired outputs', async () => {
   const prompts = {
     recovery: 'recover repair trace',
+    cleanBaseline: 'clean baseline repair trace',
+    controlCritics: 'judge clean baseline repair trace',
     candidates: 'generate repair trace',
     critics: 'judge repair trace',
   };
@@ -545,6 +609,46 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
         recoveredProblem: 'Recovered through repair.',
         hiddenConstraint: 'Repair lifecycle should be visible.',
         falsifier: 'Repair events are absent.',
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_clean_baseline',
+      runId: 'run_model_repair_trace',
+      purpose: 'control_baseline_generation',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.cleanBaseline,
+      outputText: JSON.stringify({
+        candidate: {
+          id: 'clean_repair',
+          agenomeId: 'ag_clean_control',
+          title: 'Clean Repair Baseline',
+          summary: 'Clean answer for repair trace.',
+          mechanism: 'Solve once before evolution.',
+          claimedDelta: 'Provides control evidence.',
+          citedKnowledge: ['K1'],
+        },
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_control_critics',
+      runId: 'run_model_repair_trace',
+      purpose: 'critic_judgment',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: prompts.controlCritics,
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'clean_repair',
+            criticId: 'grounding',
+            score: 60,
+            pressure: 'Clean answer is serviceable.',
+            revisionMandate: 'Doppl should beat this with specificity.',
+          },
+        ],
       }),
       metadata: {},
     },
@@ -619,8 +723,12 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
       model: 'fixture-model',
       prompts: {
         problemRecovery: () => prompts.recovery,
+        cleanBaseline: () => prompts.cleanBaseline,
         candidateGeneration: () => prompts.candidates,
-        criticJudgment: () => prompts.critics,
+        criticJudgment: ({ candidates }) =>
+          candidates.some((candidate) => candidate.id === 'clean_repair')
+            ? prompts.controlCritics
+            : prompts.critics,
       },
     }),
   });
@@ -632,6 +740,8 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
     [
       ['model.output_repair_requested', 'problem_recovery'],
       ['model.output_repaired', 'problem_recovery.repair'],
+      ['model.output_accepted', 'control_baseline_generation'],
+      ['model.output_accepted', 'critic_judgment'],
       ['model.output_accepted', 'candidate_generation'],
       ['model.output_accepted', 'critic_judgment'],
     ],
