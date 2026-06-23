@@ -17,7 +17,8 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 
 ## The files
 
-- `SUMMARY.md` — the whole model in one read. **Start here.**
+- `PROPOSAL.md` — the proposed changes, for the team's review. **Start here.**
+- `LEXICON.md` — the vocabulary we've legitimized (add to it as we coin terms).
 - `object-model.md` — stages, the node, dependencies, the diagram.
 - `case-study-template.md` — the seed node (minimal).
 - `node-template.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).

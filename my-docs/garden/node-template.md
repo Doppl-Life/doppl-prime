@@ -2,16 +2,14 @@
 
 Every non-seed node has the same four parts: `## Trace` · `## Discovery` · `## Growth` (with
 `### Evaluation` inside) · `## Path`. The frontmatter is identical too. **Only two things change by
-stage** — the content of `## Growth`, and the leaf action surface. The seed is different and minimal
+stage** — the content of `## Growth`, and the action surface. The seed is different and minimal
 (`case-study-template.md`).
 
-
-|                                              | `problem_recovery`                                | `doppl`                                                |
-| -------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
-| Growth content                               | the recovery chain (surface → … → actual problem) | `### Claim` + `### Implications` + `### Opportunities` |
-| leaf action surface (only if it is the leaf) | `### Skin in the Game`                            | Opportunities already is it                            |
-| `next`                                       | `doppl`                                   | `null`                                     |
-
+| | `problem_recovery` | `doppl` |
+| --- | --- | --- |
+| Growth content | the recovery chain (surface → … → actual problem) | `### Claim` + `### Implications` + `### Opportunities` |
+| action surface | `### Skin in the Game` | Opportunities already is it |
+| `next` | `doppl` | `null` |
 
 `next` is fixed by stage: `case_study → problem_recovery`, `problem_recovery → doppl`, `doppl → null`.
 
@@ -29,6 +27,7 @@ kernel: melissa                  # [optional] Cody | Melissa | Michael | Dalton 
 temporal: false                  # true = zeitgeist (decays) · false = transfer (timeless)
 next: doppl                      # deterministic by stage: problem_recovery → doppl
 scores: { judge: 3, human: -2, n: 4 }   # single -5..+5 each. projection of the ratings ledger.
+doppelgangers: 0                 # near-duplicate ideas deduped into this node
 ---
 
 # Refined-supply access is the real battery constraint
@@ -57,6 +56,10 @@ surface complaint → deleted assumption → hidden variable → actual problem 
 
 - who to talk to · the cheap quick real-world tests that risks time/money/ego · what would change your mind
 
+### Sprouts                     <!-- optional · rare · high-novelty side-ideas that aren't the conclusion; prune by hand -->
+
+- (usually empty) — e.g. a toll-refining supplier angle worth its own case study later
+
 ### Evaluation                  <!-- judge's ground truth; humans get one slider, not this -->
 
 #### Novelty +3
@@ -67,11 +70,11 @@ Reframes off the consensus scarcity story — from "raw lithium is scarce" to "r
 
 Sourced; mechanism plausible. Drop the refining-capacity and offtake receipts here as they firm up.
 
-#### Worth the squeeze +1
+#### Cost-efficiency +1
 
 Needs primary research to confirm the offtake lock; until then the cost of certainty is high.
 
-#### Lens fit +3
+#### Relevance +3
 
 Actionable for the allocator lens — it points at instruments, not just a thesis.
 
@@ -96,6 +99,7 @@ kernel: melissa
 temporal: false
 next: null
 scores: { judge: 4, human: 3, n: 6 }
+doppelgangers: 0
 ---
 
 # Own the refining bottleneck, not the lithium
@@ -134,6 +138,10 @@ The unlock is refining capacity + offtake position, not extraction.
 
 - where to deploy, who to back, what to build / short / hedge
 
+### Sprouts                     <!-- optional · rare · high-novelty side-ideas that aren't the conclusion; prune by hand -->
+
+- (usually empty)
+
 ### Evaluation                  <!-- judge's ground truth; humans get one slider, not this -->
 
 #### Novelty +2
@@ -144,11 +152,11 @@ The refining/offtake unlock is a real reframe, though parts are becoming visible
 
 Refining-capacity and yuan-offtake mechanics are sourced; one dated signal.
 
-#### Worth the squeeze +4
+#### Cost-efficiency +4
 
 Investable via liquid instruments — low ownership burden for the exposure it buys.
 
-#### Lens fit +3
+#### Relevance +3
 
 Fits a capital-allocator lens; points at deployable positions.
 

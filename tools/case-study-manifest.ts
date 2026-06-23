@@ -24,6 +24,7 @@ export const caseStudySubtypes = {
   'mobile-builder-distribution-collapse': 'zeitgeist_synthesis',
   'post-primitive-team-comms': 'zeitgeist_synthesis',
   'practitioner-benchmark-flywheel': 'zeitgeist_synthesis',
+  'review-at-agent-speed': 'zeitgeist_synthesis',
   'singapore-mrt-pre-peak': 'cross_domain_transfer',
   'source-control-beyond-repos': 'zeitgeist_synthesis',
   'starship-launch-cost-collapse': 'zeitgeist_synthesis',

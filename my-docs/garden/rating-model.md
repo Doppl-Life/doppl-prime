@@ -30,9 +30,9 @@ Each runs −5…+5, higher is better, so they sum:
 - **Grounding** — lands on something true / testable.
 - **Falsifiability** — states what would make it wrong. (Mostly 0 or positive; negative is rare —
 reserved for a claim engineered to dodge any test.)
-- **Worth the squeeze** — the all-in cost to own it (money, time, effort, energy, dependencies),
+- **Cost-efficiency** — the all-in cost to own it (money, time, effort, energy, dependencies),
 scored as efficiency: cheap = +, ruinous = −.
-- **Lens fit** — matters for the current actor / lens.
+- **Relevance** — matters for the current actor / lens.
 
 On the node these live in `### Evaluation` as one `#### <axis> <score>` subsection each, carrying the
 judge's full reasoning — not capped at a sentence. The single `scores.judge` is their boil-down.
