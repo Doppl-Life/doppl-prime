@@ -6,6 +6,7 @@ import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
 import { registerProblemSetsRoutes } from './routes/problem-sets';
+import { registerDemoLadderRoutes } from './routes/demo-ladder';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
 import type { EventBridgeOptions } from './sse/event-bridge';
@@ -100,5 +101,9 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
   });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   registerProblemSetsRoutes(app, { problemSets: deps.problemSets ?? [] });
+  registerDemoLadderRoutes(app, {
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    problemSets: deps.problemSets ?? [],
+  });
   return app;
 }

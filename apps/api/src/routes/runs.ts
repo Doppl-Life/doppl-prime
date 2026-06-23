@@ -8,6 +8,7 @@ import {
 import type { EventStore } from '../event-store';
 import { buildCurrentState } from '../projections';
 import { createIdempotencyStore } from '../middleware/idempotency';
+import { applyDemoCapOverride } from '../runtime/demo';
 
 /**
  * The REST write path (ARCHITECTURE.md §11/§14/§15). POST /runs + POST /runs/:id/stop append
@@ -101,16 +102,40 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
         .send({ error: 'invalid_config', message: 'request body must be a JSON object' });
     }
 
+    // Separate the PD.12 demo cap-override from the RunConfig body BEFORE validation — RunConfig is
+    // strict, so an unknown `demoOverride` key would 400. It's a demo cap-LOWERING convenience (a route-
+    // body field, NOT part of the frozen RunConfig — zero new contract surface).
+    const { demoOverride, ...runConfigBody } = asRecord(request.body);
+
     // Fail-fast config validation (§15) — an invalid config appends NO run.configured.
     let config: RunConfig;
     try {
       config = validateRunConfig({
         defaults: deps.defaultConfig as unknown as Record<string, unknown>,
-        file: asRecord(request.body),
+        file: runConfigBody,
         env: {},
       });
     } catch (error) {
       return reply.status(400).send({ error: 'invalid_config', message: (error as Error).message });
+    }
+
+    // Demo cap-override (PD.12, §17/§5) — when present, the caps come ENTIRELY from
+    // `applyDemoCapOverride(maxima, override)`: every overridden field is LOWERED, every other field is
+    // the maximum (the override supersedes any submitted `caps` — a deliberate demo convenience). It
+    // only-LOWERS within maxima (throws → 422 on above-maxima / non-positive / bogus field) and is
+    // defense-in-depth operator input, NEVER a 2nd cap authority — the authoritative `overCapField`
+    // below still runs on the result (rule #1, LESSONS §89).
+    if (isPlainObject(demoOverride)) {
+      try {
+        config = {
+          ...config,
+          caps: applyDemoCapOverride(deps.defaultConfig.caps, demoOverride as Partial<RunCaps>),
+        };
+      } catch (error) {
+        return reply
+          .status(422)
+          .send({ error: 'cap_override_exceeds_max', message: (error as Error).message });
+      }
     }
 
     // Cap-override rejection (§11) — a cap above the validated maxima is refused, never clamped up.
