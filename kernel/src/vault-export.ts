@@ -180,6 +180,108 @@ function averageSelectedParentScore(run: KernelRun): number | null {
   return Number((parentScores.reduce((sum, score) => sum + score, 0) / parentScores.length).toFixed(2));
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+function rubricCandidateScore(
+  run: KernelRun,
+  candidate: CandidateSolution,
+  type: AssaySnapshot['type'],
+): Record<string, unknown> {
+  const citedKnowledge = new Set(candidate.citedKnowledge || []);
+  const citationCoverage = Number(((clamp(citedKnowledge.size, 0, 3) / 3) * 2.5).toFixed(2));
+  const mechanismDepth = Number(((clamp(Math.floor(wordCount(candidate.mechanism) / 12), 0, 3) / 3) * 2.5).toFixed(2));
+  const specificitySignals = Number(
+    ((
+      clamp(
+        (candidate.summary.match(/\b(when|where|track|measure|compare|rank|threshold|signal|filing|panel)\b/gi) || []).length,
+        0,
+        3,
+      ) / 3
+    ) * 2.5).toFixed(2),
+  );
+  const fusionSynthesisRaw =
+    type === 'doppl_survivor' && run.fusion?.child.id === candidate.id
+      ? clamp(
+          run.fusion.inheritedTraits.length +
+            (run.fusion.compatibility.score >= 70 ? 1 : 0) +
+            (run.fusion.mutationNotes.length ? 1 : 0),
+          0,
+          3,
+        )
+      : 0;
+  const fusionSynthesis = Number(((fusionSynthesisRaw / 3) * 2.5).toFixed(2));
+  const total = citationCoverage + mechanismDepth + specificitySignals + fusionSynthesis;
+  const score = Number((total - 5).toFixed(2));
+  const factors = [
+    `Citation coverage: ${citationCoverage}/2.5 from ${citedKnowledge.size} cited knowledge handles.`,
+    `Mechanism depth: ${mechanismDepth}/2.5 from ${wordCount(candidate.mechanism)} mechanism words.`,
+    `Specificity signals: ${specificitySignals}/2.5 from artifact language.`,
+    type === 'doppl_survivor'
+      ? `Fusion synthesis: ${fusionSynthesis}/2.5 from inherited traits, compatibility, and mutation notes.`
+      : 'Fusion synthesis: 0/2.5 because the clean baseline is not a fused survivor.',
+  ];
+
+  return {
+    candidateId: candidate.id,
+    title: candidate.title,
+    score,
+    rubric: {
+      citationCoverage,
+      mechanismDepth,
+      specificitySignals,
+      fusionSynthesis,
+      total,
+      scale: '-5_to_5',
+    },
+    factors,
+  };
+}
+
+function heldOutAssayJudge(
+  run: KernelRun,
+  baseline: CandidateSolution,
+  survivor: CandidateSolution,
+): Record<string, unknown> {
+  const baselineJudgment = rubricCandidateScore(run, baseline, 'clean_baseline');
+  const survivorJudgment = rubricCandidateScore(run, survivor, 'doppl_survivor');
+  const baselineScore = baselineJudgment.score as number;
+  const survivorScore = survivorJudgment.score as number;
+  const delta = Number((survivorScore - baselineScore).toFixed(2));
+  const verdict =
+    delta >= 1
+      ? 'doppl_wins'
+      : delta <= -1
+        ? 'baseline_wins'
+        : 'tie';
+
+  return {
+    judgeType: 'deterministic_artifact_rubric',
+    scoreSource: 'artifact_rubric_not_training_fitness',
+    verdict,
+    statement:
+      verdict === 'doppl_wins'
+        ? `Held-out artifact rubric favors the Doppl survivor by ${Math.abs(delta)} points.`
+        : verdict === 'baseline_wins'
+          ? `Held-out artifact rubric favors the clean baseline by ${Math.abs(delta)} points.`
+          : 'Held-out artifact rubric treats the clean baseline and Doppl survivor as effectively tied.',
+    baseline: baselineJudgment,
+    survivor: survivorJudgment,
+    delta: {
+      score: delta,
+    },
+    limits: [
+      'This is a deterministic held-out artifact rubric, not an in-run fitness score.',
+      'Replace this with a model or human held-out judge before claiming external validity.',
+    ],
+  };
+}
+
 function assaySnapshot(
   run: KernelRun,
   candidate: CandidateSolution,
@@ -279,6 +381,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     assayType: 'in_run_clean_baseline',
     verdict,
     statement,
+    heldOutJudge: heldOutAssayJudge(run, baseline, survivor),
     controlArtifact: control
       ? {
           path: control.path,
@@ -306,7 +409,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     ],
     limits: [
       'Current assay uses in-run critic fitness, not an independent held-out model judge.',
-      'Next phase should add a clean-agent model baseline and known-answer reference cases.',
+      'A deterministic held-out artifact rubric is included, but the next phase should add a model/human judge and known-answer reference cases.',
     ],
   };
 }

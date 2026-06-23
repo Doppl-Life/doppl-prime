@@ -1142,6 +1142,17 @@ export default function App() {
                     <small>selected from {readableTitle(assay.controlArtifact.sourceCandidateId)}</small>
                   </div>
                 ) : null}
+                {assay.heldOutJudge ? (
+                  <div className="assay-judge">
+                    <span>Held-out judge</span>
+                    <strong>{assay.heldOutJudge.verdict?.replace(/_/g, ' ')}</strong>
+                    <small>
+                      {signedScore(assay.heldOutJudge.delta?.score)} artifact-rubric delta · {assay.heldOutJudge.scoreSource?.replace(/_/g, ' ')}
+                    </small>
+                    <p>{assay.heldOutJudge.statement}</p>
+                    <em>{assay.heldOutJudge.survivor?.factors?.[0] || assay.heldOutJudge.limits?.[0]}</em>
+                  </div>
+                ) : null}
                 <div className="assay-comparison">
                   {[assay.baseline, assay.survivor].map((entry) => (
                     <article key={`${entry.type}-${entry.candidateId}`}>

@@ -89,6 +89,12 @@ test('exports a calibrator-facing run index', async () => {
   assert.equal(index.assayControl.survivor.type, 'doppl_survivor');
   assert.ok(['doppl_wins', 'baseline_wins', 'tie', 'inconclusive'].includes(index.assayControl.verdict));
   assert.match(index.assayControl.statement, /baseline|Assay/i);
+  assert.equal(index.assayControl.heldOutJudge.judgeType, 'deterministic_artifact_rubric');
+  assert.equal(index.assayControl.heldOutJudge.scoreSource, 'artifact_rubric_not_training_fitness');
+  assert.ok(['doppl_wins', 'baseline_wins', 'tie', 'inconclusive'].includes(index.assayControl.heldOutJudge.verdict));
+  assert.equal(typeof index.assayControl.heldOutJudge.delta.score, 'number');
+  assert.equal(index.assayControl.heldOutJudge.baseline.candidateId, index.assayControl.baseline.candidateId);
+  assert.equal(index.assayControl.heldOutJudge.survivor.candidateId, index.assayControl.survivor.candidateId);
   assert.match(index.assayControl.limits[0], /in-run critic fitness/i);
   const controlPath = manifest.files.find((file) => file.endsWith('control-baseline.md'))!;
   const controlMarkdown = await readFile(controlPath, 'utf8');
@@ -216,6 +222,8 @@ test('exports a separate clean-agent baseline when the run provides one', async 
   assert.equal(index.controlBaseline.selection, 'clean_agent_baseline_provider');
   assert.equal(index.assayControl.baseline.candidateId, 'clean_export_baseline');
   assert.equal(index.assayControl.controlArtifact.selection, 'clean_agent_baseline_provider');
+  assert.equal(index.assayControl.heldOutJudge.baseline.candidateId, 'clean_export_baseline');
+  assert.equal(index.assayControl.heldOutJudge.baseline.factors.some((factor: string) => /citation/i.test(factor)), true);
   const controlPath = manifest.files.find((file) => file.endsWith('control-baseline.md'))!;
   const controlMarkdown = await readFile(controlPath, 'utf8');
   assert.match(controlMarkdown, /source_candidate_id: clean_export_baseline/);
