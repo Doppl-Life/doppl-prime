@@ -211,6 +211,13 @@ h2 {
   gap: 10px;
 }
 
+.section-heading span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .section-heading button {
   width: auto;
   margin-top: 0;
@@ -446,6 +453,124 @@ h2 {
   border-radius: 8px;
   background: var(--panel);
   padding: 15px;
+}
+
+.assay-panel {
+  grid-column: 1 / -1;
+}
+
+.assay-panel.doppl_wins {
+  border-color: rgba(36, 214, 165, 0.54);
+}
+
+.assay-panel.baseline_wins {
+  border-color: rgba(255, 91, 139, 0.54);
+}
+
+.assay-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 13px;
+  border: 1px solid rgba(49, 212, 255, 0.18);
+  border-radius: 7px;
+  background: #0c131c;
+  padding: 12px;
+}
+
+.assay-verdict strong {
+  color: var(--ink);
+  font-size: 17px;
+  text-transform: uppercase;
+}
+
+.assay-verdict span {
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.assay-panel > p {
+  margin: 12px 0 0;
+  color: #cbd7e7;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.assay-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.assay-comparison article {
+  min-width: 0;
+  border: 1px solid rgba(49, 212, 255, 0.16);
+  border-radius: 7px;
+  background: #0c131c;
+  padding: 11px;
+}
+
+.assay-comparison span {
+  color: var(--cyan);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.assay-comparison strong {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assay-comparison p {
+  display: -webkit-box;
+  margin: 7px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.assay-comparison small {
+  display: block;
+  margin-top: 9px;
+  color: #91a8be;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.assay-evidence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assay-evidence li {
+  border-left: 2px solid var(--mint);
+  background: rgba(36, 214, 165, 0.07);
+  padding: 8px 9px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.assay-limit {
+  color: #91a8be !important;
+  font-size: 12px !important;
 }
 
 .schedule-panel {
@@ -893,6 +1018,11 @@ h2 {
   }
 
   .schedule-list {
+    grid-template-columns: 1fr;
+  }
+
+  .assay-comparison,
+  .assay-evidence {
     grid-template-columns: 1fr;
   }
 

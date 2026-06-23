@@ -78,6 +78,12 @@ test('exports a calibrator-facing run index', async () => {
     ['diverge', 'balanced', 'converge'],
   );
   assert.ok(index.scheduleComparisons[0].modes[0].selectedParentIds.length > 0);
+  assert.equal(index.assayControl.assayType, 'in_run_clean_baseline');
+  assert.equal(index.assayControl.baseline.type, 'clean_baseline');
+  assert.equal(index.assayControl.survivor.type, 'doppl_survivor');
+  assert.ok(['doppl_wins', 'baseline_wins', 'tie', 'inconclusive'].includes(index.assayControl.verdict));
+  assert.match(index.assayControl.statement, /baseline|Assay/i);
+  assert.match(index.assayControl.limits[0], /in-run critic fitness/i);
   assert.equal(index.modelOutputs.accepted, 0);
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);

@@ -319,6 +319,12 @@ function signedRating(value) {
   return `${numeric > 0 ? '+' : ''}${numeric.toFixed(1)}`;
 }
 
+function signedScore(value) {
+  if (value === undefined || value === null || Number.isNaN(Number(value))) return 'n/a';
+  const numeric = Number(value);
+  return `${numeric > 0 ? '+' : ''}${numeric.toFixed(1)}`;
+}
+
 function frontierLabel(record) {
   const frontier = record?.selection?.frontier;
   if (!frontier) return null;
@@ -969,6 +975,7 @@ export default function App() {
   const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
   const runMode = run.runMode || (run.modelCalls ? 'live' : 'fixture');
   const scheduleComparison = latestScheduleComparison(run);
+  const assay = run.assayControl || null;
   const selectedInspector = useMemo(() => inspectorData(run, selectedNode), [run, selectedNode]);
 
   return (
@@ -1116,6 +1123,40 @@ export default function App() {
         </div>
 
         <div className="lower-grid">
+          <section className={`assay-panel ${assay?.verdict || 'empty'}`}>
+            <div className="section-heading">
+              <h2>Assay control</h2>
+              <span>{assay?.assayType || 'pending'}</span>
+            </div>
+            {assay ? (
+              <>
+                <div className="assay-verdict">
+                  <strong>{assay.verdict?.replace(/_/g, ' ')}</strong>
+                  <span>{signedScore(assay.delta?.fitnessTotal)} fitness delta</span>
+                </div>
+                <p>{assay.statement}</p>
+                <div className="assay-comparison">
+                  {[assay.baseline, assay.survivor].map((entry) => (
+                    <article key={`${entry.type}-${entry.candidateId}`}>
+                      <span>{entry.type?.replace(/_/g, ' ')}</span>
+                      <strong>{entry.title}</strong>
+                      <p>{entry.summary}</p>
+                      <small>
+                        fitness {entry.fitnessTotal ?? 'n/a'} · rating {signedRating(entry.proposalRating)} · {entry.scoreSource?.replace(/_/g, ' ')}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+                <ul className="assay-evidence">
+                  {(assay.evidence || []).slice(0, 3).map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                <p className="assay-limit">{(assay.limits || [])[0]}</p>
+              </>
+            ) : (
+              <p className="muted-copy">Run a case to compare a clean generation-0 baseline against the final Doppl survivor.</p>
+            )}
+          </section>
+
           <section className="schedule-panel">
             <h2>Schedule comparison</h2>
             {scheduleComparison ? (

@@ -195,6 +195,9 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /Fitness schedule/);
   assert.match(source, /scheduleComparisons/);
   assert.match(source, /Schedule comparison/);
+  assert.match(source, /assayControl/);
+  assert.match(source, /Assay control/);
+  assert.match(source, /clean generation-0 baseline/);
   assert.match(source, /agenomes/);
   assert.match(source, /Agenome persona/);
   assert.match(source, /runMode/);
@@ -219,6 +222,9 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /\.fitness-metrics/);
   assert.match(styles, /\.schedule-panel/);
   assert.match(styles, /\.schedule-list/);
+  assert.match(styles, /\.assay-panel/);
+  assert.match(styles, /\.assay-comparison/);
+  assert.match(styles, /\.assay-evidence/);
   assert.match(styles, /\.history-action/);
   assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
@@ -486,6 +492,11 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
   assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');
   assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'none');
+  assert.equal(response.body.assayControl.assayType, 'in_run_clean_baseline');
+  assert.equal(response.body.assayControl.baseline.type, 'clean_baseline');
+  assert.equal(response.body.assayControl.survivor.type, 'doppl_survivor');
+  assert.match(response.body.assayControl.statement, /baseline|Assay/i);
+  assert.match(response.body.assayControl.limits[0], /in-run critic fitness/i);
   assert.equal(response.body.knowledgePacket.items.length, 3);
   assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));

@@ -1,6 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { CandidateSolution, KernelRun, VaultExportManifest } from './contracts.ts';
+import type {
+  CandidateSolution,
+  FitnessRecord,
+  KernelRun,
+  VaultExportManifest,
+} from './contracts.ts';
 import { replayRunProjection, writeRunEvents } from './event-store.ts';
 import { writeModelCallRecords } from './model-gateway.ts';
 import { compileProposalNodes } from './node-compiler.ts';
@@ -111,6 +116,142 @@ function scheduleComparisons(run: KernelRun): Array<Record<string, unknown>> {
   });
 }
 
+type AssaySnapshot = {
+  type: 'clean_baseline' | 'doppl_survivor';
+  candidateId: string;
+  title: string;
+  summary: string;
+  fitnessTotal: number | null;
+  proposalRating: number | null;
+  scoreSource: 'direct_fitness' | 'parent_average' | 'unscored';
+};
+
+function latestFitnessRecord(run: KernelRun, candidateId: string): FitnessRecord | undefined {
+  return [...run.fitnessRecords].reverse().find((record) => record.candidateId === candidateId);
+}
+
+function candidateById(run: KernelRun, candidateId: string): CandidateSolution | undefined {
+  return exportedSolutions(run).find((candidate) => candidate.id === candidateId);
+}
+
+function proposalRating(record: FitnessRecord | undefined): number | null {
+  return typeof record?.selection?.proposalRating?.judge === 'number'
+    ? record.selection.proposalRating.judge
+    : null;
+}
+
+function bestGenerationCandidate(run: KernelRun, generationNumber: number): CandidateSolution | undefined {
+  const generation = run.evolution.find((entry) => entry.generation === generationNumber);
+  const candidateIds = new Set(
+    generation?.candidateIds.length
+      ? generation.candidateIds
+      : run.candidates
+          .filter((candidate) => candidate.generation === generationNumber)
+          .map((candidate) => candidate.id),
+  );
+  const scored = run.fitnessRecords
+    .filter((record) => candidateIds.has(record.candidateId))
+    .sort((left, right) => right.total - left.total);
+  return scored[0] ? candidateById(run, scored[0].candidateId) : undefined;
+}
+
+function averageSelectedParentScore(run: KernelRun): number | null {
+  const parentIds = run.fusion?.parentCandidateIds ?? [];
+  const parentScores = parentIds
+    .map((parentId) => latestFitnessRecord(run, parentId)?.total)
+    .filter((score): score is number => typeof score === 'number');
+  if (parentScores.length === 0) return null;
+  return Number((parentScores.reduce((sum, score) => sum + score, 0) / parentScores.length).toFixed(2));
+}
+
+function assaySnapshot(
+  run: KernelRun,
+  candidate: CandidateSolution,
+  type: AssaySnapshot['type'],
+): AssaySnapshot {
+  const record = latestFitnessRecord(run, candidate.id);
+  if (record) {
+    return {
+      type,
+      candidateId: candidate.id,
+      title: candidate.title,
+      summary: candidate.summary,
+      fitnessTotal: record.total,
+      proposalRating: proposalRating(record),
+      scoreSource: 'direct_fitness',
+    };
+  }
+
+  const parentAverage = type === 'doppl_survivor' ? averageSelectedParentScore(run) : null;
+  return {
+    type,
+    candidateId: candidate.id,
+    title: candidate.title,
+    summary: candidate.summary,
+    fitnessTotal: parentAverage,
+    proposalRating: null,
+    scoreSource: parentAverage === null ? 'unscored' : 'parent_average',
+  };
+}
+
+function assayControl(run: KernelRun): Record<string, unknown> | null {
+  const baseline = bestGenerationCandidate(run, 0);
+  const survivor = run.fusion?.child ?? run.selectedParents[0] ?? baseline;
+  if (!baseline || !survivor) return null;
+
+  const baselineSnapshot = assaySnapshot(run, baseline, 'clean_baseline');
+  const survivorSnapshot = assaySnapshot(run, survivor, 'doppl_survivor');
+  const baselineScore = baselineSnapshot.fitnessTotal;
+  const survivorScore = survivorSnapshot.fitnessTotal;
+  const delta =
+    typeof baselineScore === 'number' && typeof survivorScore === 'number'
+      ? Number((survivorScore - baselineScore).toFixed(2))
+      : null;
+  const verdict =
+    delta === null
+      ? 'inconclusive'
+      : delta >= 3
+        ? 'doppl_wins'
+        : delta <= -3
+          ? 'baseline_wins'
+          : 'tie';
+  const absoluteDelta = Math.abs(delta ?? 0);
+  const statement =
+    verdict === 'doppl_wins'
+      ? `Doppl survivor beats the clean generation-0 baseline by ${absoluteDelta} fitness points on current in-run scoring.`
+      : verdict === 'baseline_wins'
+        ? `Clean generation-0 baseline still beats the Doppl survivor by ${absoluteDelta} fitness points; this run needs more pressure before claiming improvement.`
+        : verdict === 'tie'
+          ? `Doppl survivor and clean baseline are within ${absoluteDelta} fitness points; treat this as sharpened framing, not a proven win.`
+          : 'Assay is inconclusive because the baseline or survivor lacks enough scored evidence.';
+
+  return {
+    assayType: 'in_run_clean_baseline',
+    verdict,
+    statement,
+    baseline: baselineSnapshot,
+    survivor: survivorSnapshot,
+    delta: {
+      fitnessTotal: delta,
+      proposalRating:
+        baselineSnapshot.proposalRating === null || survivorSnapshot.proposalRating === null
+          ? null
+          : Number((survivorSnapshot.proposalRating - baselineSnapshot.proposalRating).toFixed(2)),
+    },
+    evidence: [
+      `Baseline: ${baselineSnapshot.title} (${baselineSnapshot.scoreSource}).`,
+      `Survivor: ${survivorSnapshot.title} (${survivorSnapshot.scoreSource}).`,
+      run.fusion
+        ? `Fusion parents: ${run.fusion.parentCandidateIds.join(' + ')} at compatibility ${run.fusion.compatibility.score}.`
+        : 'No fusion child was produced for this run.',
+    ],
+    limits: [
+      'Current assay uses in-run critic fitness, not an independent held-out model judge.',
+      'Next phase should add a clean-agent model baseline and known-answer reference cases.',
+    ],
+  };
+}
+
 function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<string, unknown> {
   const fitnessByCandidate = new Map(
     run.fitnessRecords.map((fitness) => [fitness.candidateId, fitness.total]),
@@ -194,6 +335,7 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
     criticVerdicts: run.criticVerdicts,
     fitnessRecords: run.fitnessRecords,
     scheduleComparisons: scheduleComparisons(run),
+    assayControl: assayControl(run),
     trace: {
       path: 'trace.json',
       eventsPath: 'events.jsonl',
