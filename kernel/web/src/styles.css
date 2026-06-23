@@ -27,7 +27,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -45,7 +46,8 @@ button:disabled {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
@@ -149,7 +151,8 @@ h2 {
   font-size: 12px;
 }
 
-.run-controls input {
+.run-controls input,
+.run-controls select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;

@@ -13,10 +13,12 @@ export type FitnessLens = {
   notes: string[];
 };
 
+export type FitnessLensId = 'none' | 'feasibility' | 'novelty';
+
 export type ScoreCandidateOptions = {
   generation?: number;
   schedule?: FitnessSchedule;
-  lens?: FitnessLens;
+  lens?: FitnessLens | FitnessLensId;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -60,20 +62,40 @@ function averageByCritic(rows: CriticVerdict[], patterns: RegExp[]): number | un
   return average(matches);
 }
 
-function defaultLens(): FitnessLens {
-  return {
-    name: 'none',
-    multiplier: 1,
-    notes: ['No feasibility lens applied after fitness scoring.'],
-  };
-}
-
 function boundedLens(lens: FitnessLens): FitnessLens {
   return {
     name: lens.name,
     multiplier: round(clamp(lens.multiplier, 0, 1), 3),
     notes: lens.notes,
   };
+}
+
+function lensForAxes(
+  lens: FitnessLens | FitnessLensId | undefined,
+  axes: { novelty: number; grounding: number },
+): FitnessLens {
+  if (!lens || lens === 'none') {
+    return {
+      name: 'none',
+      multiplier: 1,
+      notes: ['No operator lens applied after engine fitness.'],
+    };
+  }
+  if (lens === 'feasibility') {
+    return boundedLens({
+      name: 'feasibility',
+      multiplier: 0.82 + axes.grounding * 0.18,
+      notes: ['Post-fitness lens: favors grounded mechanisms without changing novelty/grounding axes.'],
+    });
+  }
+  if (lens === 'novelty') {
+    return boundedLens({
+      name: 'novelty',
+      multiplier: 0.88 + axes.novelty * 0.12,
+      notes: ['Post-fitness lens: preserves wilder candidates during exploratory selection.'],
+    });
+  }
+  return boundedLens(lens);
 }
 
 function dominates(left: FitnessRecord, right: FitnessRecord): boolean {
@@ -136,7 +158,6 @@ export function scoreCandidates(
   const generation = Math.max(0, options.generation ?? 0);
   const schedule = options.schedule || scheduleForGeneration(generation);
   const decay = engineDecayForGeneration(generation);
-  const lens = boundedLens(options.lens || defaultLens());
   const byCandidate = new Map<string, CriticVerdict[]>();
   for (const verdict of verdicts) {
     byCandidate.set(verdict.candidateId, [...(byCandidate.get(verdict.candidateId) || []), verdict]);
@@ -149,9 +170,10 @@ export function scoreCandidates(
         averageByCritic(rows, [/ground/i, /evidence/i, /mechanism/i, /falsifi/i]) ?? fallback;
       const noveltyAxis = round(clamp(novelty / 100, 0, 1));
       const groundingAxis = round(clamp(grounding / 100, 0, 1));
+      const lens = lensForAxes(options.lens, { novelty: noveltyAxis, grounding: groundingAxis });
       const weightedAxis =
         noveltyAxis * schedule.noveltyWeight + groundingAxis * schedule.groundingWeight;
-      const total = round(clamp(weightedAxis * decay * 100, 0, 100), 1);
+      const total = round(clamp(weightedAxis * decay * lens.multiplier * 100, 0, 100), 1);
       return {
         candidateId,
         total,

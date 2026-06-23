@@ -176,6 +176,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /fitness-metrics/);
   assert.match(source, /Pareto frontier/);
   assert.match(source, /proposalRating/);
+  assert.match(source, /fitnessLens/);
+  assert.match(source, /Fitness lens/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
   assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
@@ -454,11 +456,55 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.body.fitnessRecords[0].selection.frontier.pareto, true);
   assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
   assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');
+  assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'none');
   assert.equal(response.body.knowledgePacket.items.length, 3);
   assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));
   assert.ok(response.body.dashboardEvents.length > 0);
   assert.equal(fakeOpenRouter.calls.length, 0);
+});
+
+test('kernel dashboard route applies an approved fitness lens without exposing secrets', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-lens-'));
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_lens_fixture',
+        casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+        fitnessLens: 'feasibility',
+        generations: 1,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        KERNEL_API_KEY: 'must-not-be-in-browser',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'feasibility');
+  assert.ok(response.body.fitnessRecords[0].selection.lens.multiplier <= 1);
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route rejects unknown fitness lenses', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_bad_lens',
+      fitnessLens: 'magic',
+    }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.match(String(response.body.error), /fitnessLens/);
 });
 
 test('kernel dashboard route lists recent exported runs without an API key', async () => {

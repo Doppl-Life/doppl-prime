@@ -13,6 +13,7 @@ import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { readRunEvents, replayRunProjection } from './event-store.ts';
+import type { FitnessLensId } from './scoring.ts';
 
 type KernelRunRequest = {
   runId?: string;
@@ -26,6 +27,7 @@ type KernelRunRequest = {
   replayModelCallsPath?: string;
   liveModel?: boolean;
   model?: string;
+  fitnessLens?: string;
 };
 
 type KernelHttpRequest = {
@@ -644,6 +646,12 @@ function outDirFromUrl(url: URL): string {
   return url.searchParams.get('outDir') || defaultKernelArgs.outDir;
 }
 
+function parseFitnessLens(value: unknown): FitnessLensId {
+  if (value === 'feasibility' || value === 'novelty' || value === 'none') return value;
+  if (value === undefined || value === null || value === '') return 'none';
+  throw new Error('fitnessLens must be one of: none, feasibility, novelty');
+}
+
 function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
@@ -903,6 +911,7 @@ async function runFromRequestBody(
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
   const casePath = casePathFromRequest(parsed.casePath);
+  const fitnessLens = parseFitnessLens(parsed.fitnessLens);
   const generationProviders = await generationProvidersFromRequest(parsed, options);
   const run = await runKernel({
     ...defaultKernelArgs,
@@ -912,6 +921,7 @@ async function runFromRequestBody(
     knowledgePacketPath: parsed.knowledgePacketPath || defaultKernelArgs.knowledgePacketPath,
     generations,
     evolutionBudget: { maxUnits: budget },
+    fitnessLens,
     generationProviders,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
@@ -949,6 +959,7 @@ async function runDashboardCaseFromRequestBody(
       budget: generations,
       liveModel,
       model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
+      fitnessLens: parseFitnessLens(parsed.fitnessLens),
       outDir,
       proofBoardDir: parsed.proofBoardDir || defaultKernelArgs.proofBoardDir,
     }),

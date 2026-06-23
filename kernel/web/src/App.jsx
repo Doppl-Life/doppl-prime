@@ -39,6 +39,12 @@ const CASE_STUDIES = [
   },
 ];
 
+const FITNESS_LENSES = [
+  { id: 'none', label: 'No lens' },
+  { id: 'feasibility', label: 'Feasibility' },
+  { id: 'novelty', label: 'Novelty' },
+];
+
 const SAMPLE_RUN = {
   runId: 'react_flow_preview',
   caseId: 'fsd-ownership-unwind',
@@ -760,6 +766,7 @@ export default function App() {
   const [selectedCase, setSelectedCase] = useState(CASE_STUDIES[0]);
   const [runId, setRunId] = useState('react_flow_preview');
   const [model, setModel] = useState('openai/gpt-4.1-mini');
+  const [fitnessLens, setFitnessLens] = useState('none');
   const [status, setStatus] = useState('React Flow preview loaded. Run a real case to watch Doppl evolve.');
   const [history, setHistory] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -838,6 +845,7 @@ export default function App() {
           runId: `${caseStudy.id}_${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}`,
           casePath: caseStudy.path,
           model,
+          fitnessLens,
           liveModel: caseStudy.mode === 'live' && !forceFixture,
         }),
       });
@@ -908,6 +916,16 @@ export default function App() {
           <input id="run-id-input" value={runId} onChange={(event) => setRunId(event.target.value)} />
           <label htmlFor="model-input">Live model</label>
           <input id="model-input" value={model} onChange={(event) => setModel(event.target.value)} />
+          <label htmlFor="fitness-lens-input">Fitness lens</label>
+          <select
+            id="fitness-lens-input"
+            value={fitnessLens}
+            onChange={(event) => setFitnessLens(event.target.value)}
+          >
+            {FITNESS_LENSES.map((lens) => (
+              <option key={lens.id} value={lens.id}>{lens.label}</option>
+            ))}
+          </select>
           <button className="primary" disabled={isRunning} onClick={() => runSelectedCase(false)} type="button">
             {isRunning ? 'Running...' : 'Run selected case'}
           </button>

@@ -137,6 +137,50 @@ test('marks Pareto frontier candidates and selects from the frontier before domi
   assert.deepEqual(selectParents(records), ['wild', 'balanced']);
 });
 
+test('applies operator lenses after axis scoring without changing axes', () => {
+  const verdicts = [
+    {
+      candidateId: 'grounded',
+      criticId: 'novelty',
+      score: 50,
+      pressure: 'familiar',
+      revisionMandate: 'find the edge',
+    },
+    {
+      candidateId: 'grounded',
+      criticId: 'grounding',
+      score: 90,
+      pressure: 'well evidenced',
+      revisionMandate: 'keep it testable',
+    },
+    {
+      candidateId: 'loose',
+      criticId: 'novelty',
+      score: 50,
+      pressure: 'same novelty',
+      revisionMandate: 'prove it',
+    },
+    {
+      candidateId: 'loose',
+      criticId: 'grounding',
+      score: 40,
+      pressure: 'weak evidence',
+      revisionMandate: 'cite proof',
+    },
+  ];
+
+  const noLens = scoreCandidates(verdicts, { generation: 0 });
+  const feasibility = scoreCandidates(verdicts, { generation: 0, lens: 'feasibility' });
+  const groundedNoLens = noLens.find((record) => record.candidateId === 'grounded')!;
+  const groundedLens = feasibility.find((record) => record.candidateId === 'grounded')!;
+  const looseLens = feasibility.find((record) => record.candidateId === 'loose')!;
+
+  assert.equal(groundedLens.selection?.lens.name, 'feasibility');
+  assert.equal(groundedLens.selection?.axes.grounding, groundedNoLens.selection?.axes.grounding);
+  assert.ok(groundedLens.selection!.lens.multiplier > looseLens.selection!.lens.multiplier);
+  assert.ok(groundedLens.total < groundedNoLens.total);
+});
+
 test('compatibility is separate from fitness', () => {
   const compatibility = checkPairCompatibility('a', 'b');
   assert.equal(compatibility.parentA, 'a');

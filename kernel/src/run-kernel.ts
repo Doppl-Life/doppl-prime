@@ -10,7 +10,12 @@ import {
 } from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
 import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
-import { scoreCandidates, selectParents, checkPairCompatibility } from './scoring.ts';
+import {
+  scoreCandidates,
+  selectParents,
+  checkPairCompatibility,
+  type FitnessLensId,
+} from './scoring.ts';
 import { fuseCandidates } from './fusion.ts';
 import { createMemoryEventRecorder } from './event-store.ts';
 import {
@@ -51,6 +56,7 @@ export async function runKernel(input: {
   generationProviders?: GenerationProviders;
   generations?: number;
   evolutionBudget?: { maxUnits: number };
+  fitnessLens?: FitnessLensId;
 }): Promise<KernelRun> {
   const trace = createMemoryEventRecorder([], input.runId);
   const caseStudy = await loadCaseStudy(input.casePath);
@@ -154,7 +160,10 @@ export async function runKernel(input: {
       });
     }
 
-    const generationFitnessRecords = scoreCandidates(generationVerdicts, { generation });
+    const generationFitnessRecords = scoreCandidates(generationVerdicts, {
+      generation,
+      lens: input.fitnessLens,
+    });
     fitnessRecords.push(...generationFitnessRecords);
     for (const fitness of generationFitnessRecords) {
       trace.push('fitness.scored', {
@@ -164,6 +173,7 @@ export async function runKernel(input: {
         weights: fitness.selection?.weights,
         dial: fitness.selection?.dial,
         decay: fitness.selection?.decay,
+        lens: fitness.selection?.lens,
         generation,
       });
     }
