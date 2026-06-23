@@ -1097,7 +1097,11 @@ describe('runGenerationLoop (PD.10 commit 1 — per-run problem isolated as DATA
     const run = async (problem: string) => {
       const fake = makeFakeEventStore();
       await runGenerationLoop(
-        makeDeps({ config: configWithProblem(problem), eventStore: fake.store, gateway: makeFakeGateway() }),
+        makeDeps({
+          config: configWithProblem(problem),
+          eventStore: fake.store,
+          gateway: makeFakeGateway(),
+        }),
       );
       // Compare the GENERATION events only. The problem legitimately lives in `run.configured` (route-
       // appended, NOT emitted by this loop) — so it is excluded from the comparison; the loop's own

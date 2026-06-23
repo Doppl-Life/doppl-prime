@@ -503,7 +503,13 @@ function fakeOpenRouterClient(opts: { onCall?: () => void } = {}): OpenRouterCli
       } else {
         output = { critique: 'stub critique', confidence: 0.5, scores: { grounding: 4 } };
       }
-      return Promise.resolve({ id: 'fake-or-req', model: params.model, output, tokensIn: 1, tokensOut: 1 });
+      return Promise.resolve({
+        id: 'fake-or-req',
+        model: params.model,
+        output,
+        tokensIn: 1,
+        tokensOut: 1,
+      });
     },
   };
 }

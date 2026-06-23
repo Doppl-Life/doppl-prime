@@ -29,7 +29,13 @@ function clientReturning(
   return {
     complete(params): Promise<OpenRouterRawCompletion> {
       opts.spy?.(params);
-      return Promise.resolve({ id: 'fake-req-1', model: params.model, output, tokensIn: 5, tokensOut: 7 });
+      return Promise.resolve({
+        id: 'fake-req-1',
+        model: params.model,
+        output,
+        tokensIn: 5,
+        tokensOut: 7,
+      });
     },
   };
 }

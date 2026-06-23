@@ -22,7 +22,13 @@ function spyClient(onCall: () => void): OpenRouterClient {
   return {
     complete(params): Promise<OpenRouterRawCompletion> {
       onCall();
-      return Promise.resolve({ id: 'i', model: params.model, output: { ok: true }, tokensIn: 1, tokensOut: 1 });
+      return Promise.resolve({
+        id: 'i',
+        model: params.model,
+        output: { ok: true },
+        tokensIn: 1,
+        tokensOut: 1,
+      });
     },
   };
 }

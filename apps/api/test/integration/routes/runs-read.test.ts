@@ -228,7 +228,9 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
   // gap: the route is served through the production server builder, not just in isolation), returning the
   // injected boot catalog. main.ts wires `problemSets: config.problemSets` into this same buildServer.
   test('test_buildServer_serves_problem_sets', async () => {
-    const catalog = [{ id: 'p1', title: 'Demo problem', prompt: 'Solve a hard, well-scoped problem.' }];
+    const catalog = [
+      { id: 'p1', title: 'Demo problem', prompt: 'Solve a hard, well-scoped problem.' },
+    ];
     const app = buildServer({
       store,
       db,

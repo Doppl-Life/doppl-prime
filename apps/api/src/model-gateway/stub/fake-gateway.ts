@@ -87,7 +87,10 @@ export function createFakeGateway(config: FakeGatewayConfig = {}): ModelGateway 
  *   - `useStub:false` with NO `liveDeps` → an HONEST throw. We never silently fall back to the fake: a
  *     missing live config is a boot misconfiguration to surface, not to mask as a passing recorded run.
  */
-export function selectGateway(selection: GatewaySelection, liveDeps?: LiveGatewayDeps): ModelGateway {
+export function selectGateway(
+  selection: GatewaySelection,
+  liveDeps?: LiveGatewayDeps,
+): ModelGateway {
   if (selection.useStub) {
     return createFakeGateway(selection.fake);
   }

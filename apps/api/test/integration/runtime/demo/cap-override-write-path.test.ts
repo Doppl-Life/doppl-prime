@@ -102,7 +102,9 @@ describe('PD.4 cap-override write-path (spec §17/§11, rule #1)', () => {
       const persisted = await db
         .select()
         .from(runEvents)
-        .where(and(eq(runEvents.type, 'run.configured'), sql`${runEvents.payload}->>'seed' = ${seed}`));
+        .where(
+          and(eq(runEvents.type, 'run.configured'), sql`${runEvents.payload}->>'seed' = ${seed}`),
+        );
       expect(persisted).toHaveLength(0);
     } finally {
       await app.close();

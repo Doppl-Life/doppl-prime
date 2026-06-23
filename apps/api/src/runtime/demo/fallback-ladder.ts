@@ -72,7 +72,11 @@ export function createFallbackLadder(config: FallbackLadderConfig): FallbackLadd
       mode: 'live',
       caps: applyDemoCapOverride(config.maxima, config.demoOverrides),
     }),
-    prepared: Object.freeze({ kind: 'prepared', mode: 'live', runConfig: config.preparedRunConfig }),
+    prepared: Object.freeze({
+      kind: 'prepared',
+      mode: 'live',
+      runConfig: config.preparedRunConfig,
+    }),
     replay: Object.freeze({ kind: 'replay', mode: 'replay', replayRunId: config.replayRunId }),
   };
 
