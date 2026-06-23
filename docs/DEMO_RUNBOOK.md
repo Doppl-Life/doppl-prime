@@ -61,6 +61,14 @@ Optional knobs (defaults shown):
 
 Provider keys are **env-only** — never written to events, projections, Langfuse traces, or UI payloads (a redaction scrub runs at every persistence boundary, RULE #4).
 
+**Sourcing the env (no dotenv auto-load).** `loadConfig` reads `process.env` **directly** — there is no `.env` auto-load. Export the vars in the shell that runs the API. If you keep a gitignored `.env` at the **repo root** (not `apps/api/`), source it into that shell first:
+```bash
+set -a; . ./.env; set +a            # then run the API / smoke in the SAME shell
+# live smoke, for example:  set -a; . ./.env; set +a; DOPPL_GATEWAY=live pnpm -C apps/api test:smoke:live
+```
+
+**Web dashboard ↔ API (local dev — PD.14/15/16).** `pnpm -C apps/web dev` serves the dashboard on Vite and reaches the API through a **dev proxy** (`/api` → `http://localhost:3000`, prefix stripped, SSE-safe) — so **start the API on `:3000` first**. The API serves at root (no `/api` prefix); the proxy adds/strips it. Override the base with `VITE_API_BASE` (and `VITE_API_PROXY_TARGET` for the proxy upstream) to point at a non-default origin. The dashboard's read/live-SSE/operator-Start/Stop paths are all reconciled against the real API (PD.15/PD.16) — opening the dashboard against a running API just works.
+
 ---
 
 ## 4. Path A — Creds-free replay (the demo-of-record)
