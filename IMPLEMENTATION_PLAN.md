@@ -1690,7 +1690,7 @@ Focused re-run after the operation-start-markers amendment (impl tip `dc493a3`, 
 - [ ] Depends on: PD.4 (helpers) · PD.5 (problem sets) · PD.8a (`demo-recorded-001`); Blocks: the `/phase-exit PD` reachability re-run
 - [ ] Spec anchors: §17 (fallback ladder + cap-override), §11 (routes), §12 (dashboard), §5 (caps rule #1), §14 (rule #4 dedup)
 
-### PD.13 — Relax provider strict structured-output (keep the gateway validate/repair/reject) — unblocks the live winner (PD.8c finding)
+### PD.13 — Relax provider strict structured-output (keep the gateway validate/repair/reject) — unblocks the live winner (PD.8c finding) — ✅ DONE `cdef9e2` (landed after the 22a9ccf seal, per the lead's attempt-else-abandon→ship reconcile; re-applied post-revert + verified GREEN: api 662/662, security-reviewer INVARIANT CLEAN; json_object + schema-as-trusted-system-text, rule #5 unweakened, §38 pinned. Live-winner re-run = fresh impl, task #5 OPEN)
 
 > **User-decided option 2 (2026-06-23 via lead) — FIX NOW.** The PD.8c live run proved rules #1/#4/#7/#8 hold live but the winner was blocked: every `population_generator` call → OpenRouter HTTP 400 because the adapter sent `response_format:{strict:true, z.toJSONSchema(CandidateContent)}` and the discriminated-union schema (root `anyOf` + optional field) violates OpenAI's strict subset. Fix = relax the provider mode to `json_object`/`strict:false`; the gateway's Zod validate/repair(≤1)/reject stays the AUTHORITATIVE check (rule #5 UNWEAKENED — provider strict-mode was only an optimization). Brief `phase-d-018`.
 
@@ -1735,7 +1735,7 @@ Rows: task-checkboxes ✅ (PD.1–PD.11 headings ✅ DONE, per-slice Step-9 veri
 
 **PD phase checkbox + Acceptance(PD) stay gated** pending the reachability disposition. On a wire-slice OR a human waiver → re-tick + re-seal.
 
-**UPDATE 2026-06-23 — reachability BLOCK RESOLVED (user-decided option A).** PD.12 (`1b55ef4`/`3c304d8`/`b2c38c5`) wired both orphaned exports to production; **reachability RE-RUN CLEAR** (`docs/audits/PD-reachability-rerun.md` — `applyDemoCapOverride` ← POST /runs handler; `createFallbackLadder` + `runtime/demo` types ← GET /demo/fallback-ladder). PD.12 + PD.13 are additive + per-slice security-reviewed (INVARIANT CLEAN) — the initial full-phase fan-out (arch-drift/security/code-quality CLEAR) stands; not re-run for the 2 small additive slices. **Gate now awaits ONLY: PD.13 (structured-output fix — the PD.8c live-winner blocker) + the live-winner confirmation**, then the final `/orchestrate-end` seal + the PD checkbox tick.
+**UPDATE 2026-06-23 — reachability BLOCK RESOLVED (user-decided option A).** PD.12 (`1b55ef4`/`3c304d8`/`b2c38c5`) wired both orphaned exports to production; **reachability RE-RUN CLEAR** (`docs/audits/PD-reachability-rerun.md` — `applyDemoCapOverride` ← POST /runs handler; `createFallbackLadder` + `runtime/demo` types ← GET /demo/fallback-ladder). PD.12 + PD.13 are additive + per-slice security-reviewed (INVARIANT CLEAN) — the initial full-phase fan-out (arch-drift/security/code-quality CLEAR) stands; not re-run for the 2 small additive slices. **PD.13 LANDED `cdef9e2`** (the structured-output fix). **Gate now awaits ONLY: the live-winner confirmation (fresh impl re-runs `test:smoke:live`) + PD.14 (web↔API, next-round — gates the cody-merge)**, then the final `/orchestrate-end` seal + the PD checkbox tick.
 
 <!-- ▲ END EXAMPLE BLOCK [id=optional-demo-phase] ▲ -->
 
