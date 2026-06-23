@@ -31,6 +31,7 @@ shared, precise vocabulary the team can build against. Add to it whenever a good
 - **the five axes** — Novelty, Grounding, Falsifiability, Cost-efficiency, Relevance (judge-scored).
 - **temporal** — judge-set boolean; `true` means timing-bound, `false` means timeless.
 - **decay** — currently configured to `0`; the effective multiplier is `1`, so scores do not change with age.
+- **consensus-gap** — doctrine, not contract: the distance between what is true/useful and what the relevant crowd already sees or prices.
 
 ## Memory & signals
 

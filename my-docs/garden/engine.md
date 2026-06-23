@@ -67,6 +67,12 @@ detection.
 > Cost-efficiency, and Relevance are judge-only ratings with no engine instrument yet —
 > open: build instruments or leave judge-only.
 
+## Selection aim
+
+The selector contract is `novelty × grounding`. The project aim is larger: surface true, non-obvious, actionable implications.
+
+Consensus-gap names part of that aim. It is useful doctrine, but not a typed axis until we can define consensus among whom, against what record, and measured how.
+
 ## Decay — stubbed to zero
 
 Decay is configured to `0` for now. The engine keeps `temporal` as metadata, but active decay is a no-op: `decay = 0`, `decayFactor = 1`, and selection scores do not change with age.
@@ -143,11 +149,6 @@ but never requires a specific external skill loader to run. The durable kernel-o
 
 ## Open and deferred (carried so the burn doesn't erase the question)
 
-- **The second axis.** Open: is novelty × grounding the right space, or should the second axis
-  be *truth vs. consensus-gap*? A claim can be true, novel, and grounded yet have low
-  consensus-gap because every serious observer already prices it. The valuable doppl may be the
-  implication nobody has priced, not the surface claim. Keep enough score detail to test this
-  without rewriting the corpus.
 - **Pareto crowding.** Weighted sums miss candidates on a concave frontier. If runs repeatedly
   strand "interesting but never selected" candidates a human marks as keepers, add crowding
   distance to preserve branch diversity. Don't build it until the simple selector visibly loses

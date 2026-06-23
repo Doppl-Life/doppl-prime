@@ -60,7 +60,13 @@ The engine does not merely pick the best candidate. It breeds a stronger child f
 
 The selection dial still matters: diverge favors novelty under a grounding floor; converge favors grounding under a novelty floor.
 
-The second axis is still open. The current engine uses novelty × grounding, but truth × consensus-gap may be the better model. Keep score detail rich enough to test that without rewriting the corpus.
+## Selection Aim
+
+The engine is not looking for novelty for its own sake. It is trying to surface true, non-obvious, actionable implications.
+
+For now, `novelty × grounding` is the measurable selector. Novelty is the proxy for "not already in the visible record"; grounding is the proxy for "not merely clever."
+
+Consensus-gap names a goal we may later learn to measure, but it is not a typed contract yet.
 
 ## Lens
 
@@ -97,7 +103,5 @@ A future decay mechanism can bolt onto `temporal` without changing the node shap
 ## Open
 
 The measurement-to-rating bridge is still real work. We know measurements feed ratings; we have not finished the map.
-
-The second selection axis is still real work. Novelty × grounding may be enough, but truth × consensus-gap may be closer to the thing we actually value.
 
 The human ratings projection runner is intentionally open. The data structure is fixed; the mechanism can be a local command, scheduled job, GitHub Action, or service.
