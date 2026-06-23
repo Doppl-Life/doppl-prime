@@ -31,6 +31,11 @@ export type ModelClient = {
   complete(request: ModelCallRequest): Promise<ModelCallRecord>;
 };
 
+export type ReplayModelClientOptions = {
+  sourceRunId?: string;
+  targetRunId?: string;
+};
+
 export type RecordingModelClient = ModelClient & {
   records: ModelCallRecord[];
 };
@@ -89,16 +94,26 @@ export function parseJsonObjectResponse(outputText: string): Record<string, unkn
   return ensureObject(JSON.parse(stripJsonFence(outputText)));
 }
 
+function replayPrompt(prompt: string, options: ReplayModelClientOptions): string {
+  if (!options.sourceRunId || !options.targetRunId || options.sourceRunId === options.targetRunId) {
+    return prompt;
+  }
+  return prompt.split(options.targetRunId).join(options.sourceRunId);
+}
+
 export function createReplayModelClient(
   records: ModelCallRecord[],
+  options: ReplayModelClientOptions = {},
 ): ModelClient & { freshCalls(): number } {
   return {
     async complete(request) {
+      const sourceRunId = options.sourceRunId || request.runId;
+      const prompt = replayPrompt(request.prompt, options);
       const record = records.find(
         (candidate) =>
-          candidate.runId === request.runId &&
+          candidate.runId === sourceRunId &&
           candidate.purpose === request.purpose &&
-          candidate.prompt === request.prompt &&
+          candidate.prompt === prompt &&
           candidate.model === request.model,
       );
       if (!record) {

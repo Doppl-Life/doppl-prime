@@ -39,6 +39,35 @@ test('replay model client returns recorded responses without fresh calls', async
   assert.equal(replay.freshCalls(), 0);
 });
 
+test('replay model client can map a recorded source run to a new target run', async () => {
+  const replay = createReplayModelClient(
+    [
+      {
+        id: 'call_1',
+        runId: 'source_run',
+        purpose: 'candidate_generation',
+        provider: 'replay',
+        model: 'fixture-model',
+        prompt: 'generate for source_run',
+        outputText: '{"candidates":[]}',
+        metadata: {},
+      },
+    ],
+    { sourceRunId: 'source_run', targetRunId: 'target_run' },
+  );
+
+  const response = await replay.complete({
+    runId: 'target_run',
+    purpose: 'candidate_generation',
+    prompt: 'generate for target_run',
+    model: 'fixture-model',
+  });
+
+  assert.equal(response.runId, 'source_run');
+  assert.equal(response.outputText, '{"candidates":[]}');
+  assert.equal(replay.freshCalls(), 0);
+});
+
 test('model call records round-trip as newline-delimited JSON', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'doppl-model-calls-'));
   const filePath = path.join(dir, 'model-calls.jsonl');

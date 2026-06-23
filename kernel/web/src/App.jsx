@@ -930,6 +930,38 @@ export default function App() {
     }
   }
 
+  async function replayRun(item) {
+    if (!item?.runId || !item?.caseId) return;
+    setIsRunning(true);
+    setStatus(`Replaying ${item.runId}...`);
+    try {
+      const caseStudy = CASE_STUDIES.find((candidate) => candidate.id === item.caseId) || selectedCase;
+      const replayId = `${item.caseId}_replay_${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}`;
+      const response = await fetch('/kernel/dashboard/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runId: replayId,
+          casePath: caseStudy.path,
+          replayRunId: item.runId,
+          fitnessLens,
+          fitnessSchedule,
+          async: true,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `replay failed: ${response.status}`);
+      setRun(body);
+      setRunId(body.runId);
+      setStatus(`Replaying ${item.runId} as ${body.runId}.`);
+      streamRunEvents(body.runId, { fetchOnTerminal: true, reconnectUntilTerminal: true });
+      await refreshHistory();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+      setIsRunning(false);
+    }
+  }
+
   const candidates = run.candidates || [];
   const survivors = nodes.filter((node) => node.type === 'kernelNode' && node.data.status !== 'rejected');
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
@@ -1009,17 +1041,29 @@ export default function App() {
           </div>
           <div className="history-list">
             {history.slice(0, 9).map((item) => (
-              <button
+              <article
+                className="history-item"
                 key={`${item.caseId}-${item.runId}`}
-                onClick={() => {
-                  setRunId(item.runId);
-                  fetchRun(item.runId);
-                }}
-                type="button"
               >
-                <strong>{item.caseId}</strong>
-                <span>{item.runId}</span>
-              </button>
+                <button
+                  onClick={() => {
+                    setRunId(item.runId);
+                    fetchRun(item.runId);
+                  }}
+                  type="button"
+                >
+                  <strong>{item.caseId}</strong>
+                  <span>{item.runId}</span>
+                </button>
+                <button
+                  className="history-action"
+                  disabled={isRunning || !item.hasModelCalls}
+                  onClick={() => replayRun(item)}
+                  type="button"
+                >
+                  Replay
+                </button>
+              </article>
             ))}
           </div>
         </section>

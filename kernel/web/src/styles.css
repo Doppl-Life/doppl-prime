@@ -113,12 +113,33 @@ h2 {
   gap: 8px;
 }
 
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 74px;
+  gap: 6px;
+}
+
 .case-list button,
 .history-list button {
   width: 100%;
   min-height: 58px;
   padding: 10px 11px;
   text-align: left;
+}
+
+.history-list .history-action {
+  min-height: 58px;
+  padding: 0;
+  text-align: center;
+  color: #06101f;
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.history-list .history-action:disabled {
+  color: var(--muted);
+  background: #121a25;
+  border-color: var(--line);
 }
 
 .case-list button.active {

@@ -33,6 +33,7 @@ type KernelRunRequest = {
   replayModelCallsPath?: string;
   liveModel?: boolean;
   model?: string;
+  replayRunId?: string;
   fitnessLens?: string;
   fitnessSchedule?: string;
   async?: boolean;
@@ -760,6 +761,17 @@ async function readRunIndex(runId: string, rootDir: string): Promise<Record<stri
   }
 }
 
+async function replayModelCallsPathForRun(runId: string, rootDir: string): Promise<string> {
+  const runDir = await findRunDir(rootDir, runId);
+  if (!runDir) throw new Error(`replay source run not found: ${runId}`);
+  const index = await readRunIndex(runId, rootDir);
+  const trace = index.trace as { modelCallsPath?: unknown } | undefined;
+  if (!trace || typeof trace.modelCallsPath !== 'string') {
+    throw new Error(`replay source run has no model-call log: ${runId}`);
+  }
+  return path.join(runDir, safeArtifactPath(trace.modelCallsPath));
+}
+
 function safeArtifactPath(rawArtifactPath: string): string {
   const decoded = decodeURIComponent(rawArtifactPath);
   const normalized = path.normalize(decoded);
@@ -923,6 +935,7 @@ async function listDashboardRuns(rootDir: string): Promise<Array<Record<string, 
           await readFile(path.join(caseDir, runEntry.name, 'run-index.json'), 'utf8'),
         ) as Record<string, unknown>;
         const child = index.child as { id?: string } | undefined;
+        const trace = index.trace as { modelCallsPath?: unknown } | undefined;
         runs.push({
           runId: index.runId,
           caseId: index.caseId,
@@ -930,6 +943,7 @@ async function listDashboardRuns(rootDir: string): Promise<Array<Record<string, 
           child: child?.id ?? null,
           candidates: Array.isArray(index.candidates) ? index.candidates.length : 0,
           generations: Array.isArray(index.evolution) ? index.evolution.length : 0,
+          hasModelCalls: Boolean(trace && typeof trace.modelCallsPath === 'string'),
         });
       } catch {
         // Ignore partial run directories.
@@ -944,7 +958,7 @@ async function generationProvidersFromRequest(
   options: KernelHttpOptions,
 ): Promise<GenerationProviders | undefined> {
   if (parsed.liveModel && parsed.replayModelCallsPath) {
-    throw new Error('liveModel cannot be combined with replayModelCallsPath');
+    throw new Error('liveModel cannot be combined with replay model calls');
   }
   if (parsed.liveModel) {
     if (!parsed.model) throw new Error('model is required when liveModel is set');
@@ -957,11 +971,15 @@ async function generationProvidersFromRequest(
     });
   }
   if (!parsed.replayModelCallsPath) return undefined;
-  if (!parsed.model) throw new Error('model is required when replayModelCallsPath is set');
   const records = await readModelCallRecords(parsed.replayModelCallsPath);
+  const model = parsed.model || records[0]?.model;
+  if (!model) throw new Error('model is required when replayModelCallsPath is set');
   return createModelGenerationProviders({
-    client: createReplayModelClient(records),
-    model: parsed.model,
+    client: createReplayModelClient(records, {
+      sourceRunId: parsed.replayRunId,
+      targetRunId: parsed.runId,
+    }),
+    model,
   });
 }
 
@@ -976,7 +994,16 @@ async function runFromRequestBody(
   const casePath = casePathFromRequest(parsed.casePath);
   const fitnessLens = parseFitnessLens(parsed.fitnessLens);
   const fitnessSchedule = parseFitnessSchedule(parsed.fitnessSchedule);
-  const generationProviders = await generationProvidersFromRequest(parsed, options);
+  if (parsed.replayModelCallsPath && parsed.replayRunId) {
+    throw new Error('replayModelCallsPath cannot be combined with replayRunId');
+  }
+  const replayModelCallsPath = parsed.replayRunId
+    ? await replayModelCallsPathForRun(parsed.replayRunId, parsed.outDir || defaultKernelArgs.outDir)
+    : parsed.replayModelCallsPath;
+  const generationProviders = await generationProvidersFromRequest(
+    { ...parsed, replayModelCallsPath },
+    options,
+  );
   const run = await runKernel({
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
@@ -1041,6 +1068,9 @@ async function runDashboardCaseFromRequestBody(
   const dashboardCase = approvedDashboardCase(casePath);
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = Boolean(parsed.liveModel);
+  const replayRunId = typeof parsed.replayRunId === 'string' && parsed.replayRunId.trim()
+    ? parsed.replayRunId.trim()
+    : undefined;
   if (liveModel && !envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM')) {
     throw new KernelHttpError(403, 'live dashboard generation is disabled');
   }
@@ -1058,6 +1088,7 @@ async function runDashboardCaseFromRequestBody(
       generations,
       budget: generations,
       liveModel,
+      replayRunId,
       model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
       fitnessLens: parseFitnessLens(parsed.fitnessLens),
       fitnessSchedule: parseFitnessSchedule(parsed.fitnessSchedule),
@@ -1071,12 +1102,13 @@ async function runDashboardCaseFromRequestBody(
       runId,
       caseId: dashboardCase.id,
       caseTitle: dashboardCase.title,
-      runMode: liveModel ? 'live' : 'fixture',
+      runMode: replayRunId ? 'replay' : liveModel ? 'live' : 'fixture',
       status: 'running',
       async: true,
       generations: 0,
       candidateCount: 0,
       modelCalls: null,
+      replaySourceRunId: replayRunId ?? null,
       dashboardEvents: await readDashboardEvents(runId, outDir),
     };
   }
@@ -1089,7 +1121,7 @@ async function runDashboardCaseFromRequestBody(
     : undefined;
   return {
     ...runIndex,
-    runMode: liveModel ? 'live' : 'fixture',
+    runMode: replayRunId ? 'replay' : liveModel ? 'live' : 'fixture',
     generations: Array.isArray(runIndex.evolution) ? runIndex.evolution.length : 0,
     candidateCount: Array.isArray(runIndex.candidates) ? runIndex.candidates.length : 0,
     modelCalls: runIndex.trace &&
@@ -1098,6 +1130,7 @@ async function runDashboardCaseFromRequestBody(
       typeof runIndex.trace.modelCallsPath === 'string'
       ? { path: runIndex.trace.modelCallsPath }
       : null,
+    replaySourceRunId: replayRunId ?? null,
     dashboardArtifact: artifact?.content,
     dashboardEvents: await readDashboardEvents(runId, outDir),
   };

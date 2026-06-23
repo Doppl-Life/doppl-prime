@@ -200,6 +200,9 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(source, /runMode/);
   assert.match(source, /Run mode/);
   assert.match(source, /async: true/);
+  assert.match(source, /replayRunId/);
+  assert.match(source, /hasModelCalls/);
+  assert.match(source, /Replay/);
   assert.match(source, /fetchDashboardRunIndex/);
   assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
   assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
@@ -216,6 +219,7 @@ test('kernel dashboard styles keep graph controls readable without a minimap', a
   assert.match(styles, /\.fitness-metrics/);
   assert.match(styles, /\.schedule-panel/);
   assert.match(styles, /\.schedule-list/);
+  assert.match(styles, /\.history-action/);
   assert.doesNotMatch(styles, /\.react-flow-minimap/);
 });
 
@@ -606,6 +610,130 @@ test('kernel dashboard route can run enabled live generation without exposing se
   assert.equal(fakeOpenRouter.calls.length, 3);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route replays a model-backed run from recorded calls', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-replay-run-'));
+  const outDir = path.join(root, 'vault');
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'Replayable Live Recovery',
+      recoveredProblem:
+        'GLP-1 adoption changes the household reward budget before snack sales alone reveal it.',
+      hiddenConstraint: 'The useful measurement unit is treated household impulse spend.',
+      falsifier: 'Treated and untreated household impulse baskets remain identical.',
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'replayable_reward_budget',
+          agenomeId: 'ag_polymath',
+          title: 'Replayable Reward Budget',
+          summary: 'Track treated household reward categories as a single budget.',
+          mechanism: 'Replay the same model output through a later run id.',
+          claimedDelta: 'Turns an expensive live call into a reusable replay artifact.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'replayable_tripwire',
+          agenomeId: 'ag_blindside',
+          title: 'Replayable Checkout Tripwire',
+          summary: 'Watch checkout add-ons as the first visible public signal.',
+          mechanism: 'Use recorded model calls while keeping prompts server-side.',
+          claimedDelta: 'Lets operators inspect the run without another model call.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'replayable_reward_budget',
+          criticId: 'grounding',
+          score: 91,
+          pressure: 'The household panel is directly testable.',
+          revisionMandate: 'Preserve cohort definitions.',
+        },
+        {
+          candidateId: 'replayable_tripwire',
+          criticId: 'novelty',
+          score: 84,
+          pressure: 'Checkout behavior is an early non-obvious signal.',
+          revisionMandate: 'Separate treatment effects from retailer weakness.',
+        },
+      ],
+    }),
+  ]);
+
+  const source = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_replay_source',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        liveModel: true,
+        model: 'fixture-model',
+        generations: 1,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board-source'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(source.status, 200);
+  assert.equal(source.body.runMode, 'live');
+  assert.equal(source.body.modelCalls.path, 'model-calls.jsonl');
+  assert.equal(fakeOpenRouter.calls.length, 3);
+
+  const replay = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_replay_target',
+        casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+        replayRunId: 'dashboard_replay_source',
+        generations: 1,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board-replay'),
+      }),
+    },
+    {
+      env: {
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      async fetch() {
+        throw new Error('replay should not make a fresh model call');
+      },
+    },
+  );
+
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.runMode, 'replay');
+  assert.equal(replay.body.replaySourceRunId, 'dashboard_replay_source');
+  assert.equal(replay.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(replay.body.child.id, 'child_replayable_reward_budget_replayable_tripwire');
+  assert.ok(replay.body.modelCalls.path.endsWith('model-calls.jsonl'));
+  assert.doesNotMatch(JSON.stringify(replay.body), /server-side-model-key/);
+
+  const history = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs?outDir=${encodeURIComponent(outDir)}`,
+  });
+  assert.equal(history.status, 200);
+  assert.equal(
+    history.body.runs.find((run: { runId?: string }) => run.runId === 'dashboard_replay_source')
+      ?.hasModelCalls,
+    true,
+  );
 });
 
 test('kernel dashboard route requires a live demo token when configured', async () => {
