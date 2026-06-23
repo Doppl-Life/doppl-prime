@@ -68,6 +68,29 @@ export type FitnessRecord = {
     criticPressure: number;
     evidenceQuality: number;
   };
+  selection?: {
+    axes: {
+      novelty: number;
+      grounding: number;
+    };
+    weights: {
+      novelty: number;
+      grounding: number;
+    };
+    dial: 'diverge' | 'balanced' | 'converge';
+    generation: number;
+    decay: number;
+    lens: {
+      name: string;
+      multiplier: number;
+      notes: string[];
+    };
+    proposalRating: {
+      scale: '-5_to_5';
+      judge: number;
+      source: string;
+    };
+  };
   rationale: string;
 };
 
@@ -325,6 +348,29 @@ export function assertFitnessRecord(value: unknown): FitnessRecord {
     'evidenceQuality',
   ]) {
     assertNumberRangeField(components, field, 'FitnessRecord.components', 0, 100);
+  }
+  if (record.selection !== undefined) {
+    const selection = assertObject(record.selection, 'FitnessRecord.selection');
+    const axes = assertObject(selection.axes, 'FitnessRecord.selection.axes');
+    assertNumberRangeField(axes, 'novelty', 'FitnessRecord.selection.axes', 0, 1);
+    assertNumberRangeField(axes, 'grounding', 'FitnessRecord.selection.axes', 0, 1);
+    const weights = assertObject(selection.weights, 'FitnessRecord.selection.weights');
+    assertNumberRangeField(weights, 'novelty', 'FitnessRecord.selection.weights', 0, 1);
+    assertNumberRangeField(weights, 'grounding', 'FitnessRecord.selection.weights', 0, 1);
+    assertStringField(selection, 'dial', 'FitnessRecord.selection');
+    assertIntegerMinField(selection, 'generation', 'FitnessRecord.selection', 0);
+    assertNumberRangeField(selection, 'decay', 'FitnessRecord.selection', 0, 1);
+    const lens = assertObject(selection.lens, 'FitnessRecord.selection.lens');
+    assertStringField(lens, 'name', 'FitnessRecord.selection.lens');
+    assertNumberRangeField(lens, 'multiplier', 'FitnessRecord.selection.lens', 0, 1);
+    assertStringArrayField(lens, 'notes', 'FitnessRecord.selection.lens');
+    const proposalRating = assertObject(
+      selection.proposalRating,
+      'FitnessRecord.selection.proposalRating',
+    );
+    assertStringField(proposalRating, 'scale', 'FitnessRecord.selection.proposalRating');
+    assertNumberRangeField(proposalRating, 'judge', 'FitnessRecord.selection.proposalRating', -5, 5);
+    assertStringField(proposalRating, 'source', 'FitnessRecord.selection.proposalRating');
   }
   assertStringField(record, 'rationale', 'FitnessRecord');
   return record as FitnessRecord;

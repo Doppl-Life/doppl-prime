@@ -154,12 +154,16 @@ export async function runKernel(input: {
       });
     }
 
-    const generationFitnessRecords = scoreCandidates(generationVerdicts);
+    const generationFitnessRecords = scoreCandidates(generationVerdicts, { generation });
     fitnessRecords.push(...generationFitnessRecords);
     for (const fitness of generationFitnessRecords) {
       trace.push('fitness.scored', {
         candidateId: fitness.candidateId,
         total: fitness.total,
+        axes: fitness.selection?.axes,
+        weights: fitness.selection?.weights,
+        dial: fitness.selection?.dial,
+        decay: fitness.selection?.decay,
         generation,
       });
     }

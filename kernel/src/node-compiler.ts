@@ -27,18 +27,18 @@ function clampRating(value: number): number {
   return Math.max(-5, Math.min(5, Number(value.toFixed(1))));
 }
 
-function ratingFromFitness(total: number | undefined): number {
-  if (total === undefined || !Number.isFinite(total)) return 0;
-  return clampRating(total / 10 - 5);
+function selectedParentRatings(run: KernelRun): number[] {
+  if (run.selectedParents.length !== 2) return [];
+  return run.selectedParents
+    .map((parent) => run.fitnessRecords.find((record) => record.candidateId === parent.id))
+    .filter((record): record is NonNullable<typeof record> => Boolean(record))
+    .map((record) => record.selection?.proposalRating.judge ?? clampRating(record.total / 10 - 5));
 }
 
-function selectedParentFitness(run: KernelRun): number | undefined {
-  if (run.selectedParents.length !== 2) return undefined;
-  const totals = run.selectedParents
-    .map((parent) => run.fitnessRecords.find((record) => record.candidateId === parent.id)?.total)
-    .filter((total): total is number => typeof total === 'number');
-  if (!totals.length) return undefined;
-  return totals.reduce((sum, total) => sum + total, 0) / totals.length;
+function selectedParentRating(run: KernelRun): number {
+  const ratings = selectedParentRatings(run);
+  if (!ratings.length) return 0;
+  return clampRating(ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length);
 }
 
 function synopsis(value: string, maxLength = 240): string {
@@ -146,7 +146,7 @@ function problemRecoveryNode(
   ids: { self: string; root: string },
   options: Required<Pick<ProposalNodeCompileOptions, 'kernel'>>,
 ): ProposalNodeArtifact {
-  const judgeRating = ratingFromFitness(selectedParentFitness(run));
+  const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const recoverySynopsis = synopsis(run.problemRecovery.recoveredProblem);
   const markdown = `${frontmatter([
@@ -202,7 +202,7 @@ ${run.problemRecovery.falsifier}
 ${evaluationSection({
   judgeRating,
   scoreSource:
-    'Projected from current Dalton parent fitness. Replace with proposal held-out judge output in the rating/fitness phase.',
+    'Projected from Dalton internal selection fitness. Replace with proposal held-out judge output in the assay/control phase.',
   temporal: false,
   noveltyReason: 'Problem recovery is scored separately so a good answer to the wrong problem cannot hide.',
   groundingReason: `The recovery cites ${run.problemRecovery.citedKnowledge.join(', ') || 'no injected knowledge handles'}.`,
@@ -230,7 +230,7 @@ function dopplNode(
 ): ProposalNodeArtifact | undefined {
   const child = run.fusion?.child;
   if (!child) return undefined;
-  const judgeRating = ratingFromFitness(selectedParentFitness(run));
+  const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const recoverySynopsis = synopsis(run.problemRecovery.recoveredProblem);
   const parentSummary = run.fusion.parentCandidateIds.join(' + ');
@@ -289,7 +289,7 @@ ${child.summary}
 ${evaluationSection({
   judgeRating,
   scoreSource:
-    'Projected from current Dalton selected-parent fitness. Replace with proposal held-out judge output in the rating/fitness phase.',
+    'Projected from Dalton internal selected-parent fitness. Replace with proposal held-out judge output in the assay/control phase.',
   temporal: false,
   noveltyReason: 'The doppl fuses selected parent mechanisms rather than merely picking a single candidate.',
   groundingReason: `The doppl carries citations ${child.citedKnowledge.join(', ') || 'none'}.`,
