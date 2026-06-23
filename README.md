@@ -32,9 +32,7 @@ visible against real ideas.
     this kernel.
 12. **[`LESSONS_AND_BANGERS.md`](./LESSONS_AND_BANGERS.md)** — short durable
     lessons carried forward.
-13. **[`docs/lineage-ledger.schema.md`](./docs/lineage-ledger.schema.md)** — the
-   machine-readable delta/lineage memory contract for future runs.
-14. **[`GLOSSARY.md`](./GLOSSARY.md)** — local terms used by the kernel.
+13. **[`GLOSSARY.md`](./GLOSSARY.md)** — local terms used by the kernel.
 
 The kernel lives in `src/`. Human-facing views live in `tools/microscope/` and
 are disposable unless they prove reusable. Views project the trace; they do not

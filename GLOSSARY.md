@@ -72,7 +72,6 @@ term, leave it out.
 
 - **Def:** append-only memory of candidates, parents, mutations, claimed deltas,
   nearest priors, delta classes, convergence clusters, and watch triggers.
-- **See:** [`docs/lineage-ledger.schema.md`](./docs/lineage-ledger.schema.md)
 
 ### Claimed Delta
 

@@ -27,6 +27,8 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - `rating-inventory.md` — every scoring system, garden + jungle, and the conflicts to settle.
 - `discovery-skill.md` — kernel function: gather context (round trip).
 - `compiler-skill.md` — kernel function: render a stage's output into a node.
+- `engine.md` — the generate→select crucible behind each spine arrow, promoted from the
+  kernel so the hut can regrow it after the burn.
 - `flow.svg` — the flow diagram.
 
 ## Known divergences from the kernel (reconcile later, deliberately)

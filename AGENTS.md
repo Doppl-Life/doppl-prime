@@ -75,7 +75,6 @@ Log durable findings in one home:
 | Portable move or trap | `HEURISTICS.md` |
 | Reward hack or confirmed failure | `BUGS_AND_MITIGATIONS.md` |
 | Operational watch item | `OPERATIONAL_WATCHLIST.md` |
-| Lineage/delta schema change | `my-docs/lineage-ledger.schema.md` |
 | Term definition | `GLOSSARY.md` |
 | How to run/use the kernel | `README.md` or `tools/README.md` |
 

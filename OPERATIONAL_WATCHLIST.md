@@ -7,10 +7,6 @@ lineages have found the same attractor and need synthesis.
 Use this file for human-readable doctrine: what to notice, why it matters, what
 ledger evidence should reveal it, and how the next run should react.
 
-The machine-readable companion is [`docs/lineage-ledger.schema.md`](./docs/lineage-ledger.schema.md).
-Run outputs append evidence there eventually as JSONL or database rows. Watch
-items here give that evidence stable names.
-
 ## Relationship to other registers
 
 - `OPERATIONAL_WATCHLIST.md`: watch patterns in the reproduction process.
