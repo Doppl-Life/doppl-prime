@@ -3,7 +3,7 @@
 - **Date:** 2026-06-23
 - **Phase / track:** Phase D (demo) · track `phase-d`
 - **Predecessor:** `docs/sessions/phase-d-001-2026-06-22-demo-boot-spine-replay-loop.md`
-- **Successor:** _(next implementer session — fresh team, PD.8 resumes)_
+- **Successor:** [phase-d-008](phase-d-008-2026-06-23-web-api-wiring-reconciliation.md) (PD.8c live re-run + PD.14/15/16 web↔API wiring + reconciliation)
 - **Round:** Phase-D round 3 (sealed by the orchestrator at `61f0cf0`); team cycled at the clean PD.7 boundary (lead at WARN, user-approved).
 
 ## Why this session existed
