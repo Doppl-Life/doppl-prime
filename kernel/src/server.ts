@@ -17,6 +17,8 @@ import { readRunEvents, replayRunProjection } from './event-store.ts';
 type KernelRunRequest = {
   runId?: string;
   casePath?: string;
+  fixturePath?: string;
+  knowledgePacketPath?: string;
   generations?: number;
   budget?: number;
   outDir?: string;
@@ -50,25 +52,33 @@ const DASHBOARD_CASE_STUDIES = [
     id: 'fsd-ownership-unwind',
     title: 'FSD Ownership Unwind',
     path: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
     mode: 'fixture',
   },
   {
     id: 'glp1-snack-demand-destruction',
     title: 'GLP-1 Snack Demand',
     path: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
-    mode: 'live',
+    fixturePath: 'kernel/fixtures/glp1-snack-demand-destruction/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/glp1-snack-demand-destruction/knowledge-packet.json',
+    mode: 'fixture',
   },
   {
     id: 'ai-overviews-zero-click-publishing',
     title: 'AI Overviews Publishing',
     path: 'case-studies/ai-overviews-zero-click-publishing/problem-statement.md',
-    mode: 'live',
+    fixturePath: 'kernel/fixtures/ai-overviews-zero-click-publishing/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/ai-overviews-zero-click-publishing/knowledge-packet.json',
+    mode: 'fixture',
   },
   {
     id: 'starship-launch-cost-collapse',
     title: 'Starship Launch Cost',
     path: 'case-studies/starship-launch-cost-collapse/problem-statement.md',
-    mode: 'live',
+    fixturePath: 'kernel/fixtures/starship-launch-cost-collapse/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/starship-launch-cost-collapse/knowledge-packet.json',
+    mode: 'fixture',
   },
 ] as const;
 
@@ -898,6 +908,8 @@ async function runFromRequestBody(
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
     casePath,
+    fixturePath: parsed.fixturePath || defaultKernelArgs.fixturePath,
+    knowledgePacketPath: parsed.knowledgePacketPath || defaultKernelArgs.knowledgePacketPath,
     generations,
     evolutionBudget: { maxUnits: budget },
     generationProviders,
@@ -924,13 +936,15 @@ async function runDashboardCaseFromRequestBody(
   const casePath = casePathFromRequest(parsed.casePath);
   const dashboardCase = approvedDashboardCase(casePath);
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
-  const liveModel = dashboardCase.mode === 'live';
+  const liveModel = Boolean(parsed.liveModel);
   const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
   const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
   const summary = await runFromRequestBody(
     JSON.stringify({
       runId: parsed.runId || `${dashboardCase.id}_${Date.now()}`,
       casePath,
+      fixturePath: dashboardCase.fixturePath,
+      knowledgePacketPath: dashboardCase.knowledgePacketPath,
       generations,
       budget: generations,
       liveModel,

@@ -24,19 +24,19 @@ const CASE_STUDIES = [
     id: 'glp1-snack-demand-destruction',
     title: 'GLP-1 Snack Demand',
     path: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
-    mode: 'live',
+    mode: 'fixture',
   },
   {
     id: 'ai-overviews-zero-click-publishing',
     title: 'AI Overviews Publishing',
     path: 'case-studies/ai-overviews-zero-click-publishing/problem-statement.md',
-    mode: 'live',
+    mode: 'fixture',
   },
   {
     id: 'starship-launch-cost-collapse',
     title: 'Starship Launch Cost',
     path: 'case-studies/starship-launch-cost-collapse/problem-statement.md',
-    mode: 'live',
+    mode: 'fixture',
   },
 ];
 
@@ -146,6 +146,13 @@ function childForGeneration(run, generation) {
       ? `Exported to ${run.child.path}`
       : 'Selected parents fused into the next surviving candidate.',
   };
+}
+
+function budgetUnits(run) {
+  const value = run.budgetUsed ?? run.budget;
+  if (typeof value === 'number' || typeof value === 'string') return value;
+  if (value && typeof value === 'object') return value.usedUnits ?? value.maxUnits ?? 0;
+  return 0;
 }
 
 function readableTitle(value) {
@@ -406,7 +413,7 @@ export default function App() {
   const candidates = run.candidates || [];
   const survivors = nodes.filter((node) => node.type === 'kernelNode' && node.data.status !== 'rejected');
   const finalSurvivors = survivors.filter((node) => node.data.kind === 'child').slice(-4);
-  const budgetUsed = run.budgetUsed ?? run.budget?.usedUnits ?? run.budget ?? 0;
+  const budgetUsed = budgetUnits(run);
   const fusedCount = (run.fusionChildren || []).length || (run.child ? 1 : 0);
 
   return (

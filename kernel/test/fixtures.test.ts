@@ -20,6 +20,23 @@ test('loads deterministic run fixture data', async () => {
   assert.equal(fixture.critics.length, 9);
 });
 
+test('loads deterministic run fixture data for every dashboard case', async () => {
+  const caseIds = [
+    'fsd-ownership-unwind',
+    'glp1-snack-demand-destruction',
+    'ai-overviews-zero-click-publishing',
+    'starship-launch-cost-collapse',
+  ];
+
+  for (const caseId of caseIds) {
+    const fixture = await loadKernelFixture(`kernel/fixtures/${caseId}/run-fixture.json`);
+    assert.equal(fixture.caseId, caseId);
+    assert.equal(fixture.candidates.length, 3);
+    assert.equal(fixture.critics.length, 9);
+    assert.equal(new Set(fixture.candidates.map((candidate) => candidate.id)).size, 3);
+  }
+});
+
 test('rejects fixture candidates with invalid contract fields', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'doppl-fixture-'));
   const fixturePath = path.join(dir, 'bad-fixture.json');

@@ -403,62 +403,14 @@ test('kernel HTTP server runs a requested case study path with live model reques
 
 test('kernel dashboard route runs approved cases without exposing the kernel API key', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-case-'));
-  const fakeOpenRouter = createOpenRouterFetch([
-    JSON.stringify({
-      title: 'Dashboard GLP-1 Recovery',
-      recoveredProblem:
-        'The GLP-1 case is about impulse demand destruction across the household basket.',
-      hiddenConstraint: 'Reward suppression changes occasions rather than preferences.',
-      falsifier: 'Impulse basket add-ons grow in GLP-1 households.',
-    }),
-    JSON.stringify({
-      candidates: [
-        {
-          id: 'dashboard_reward',
-          agenomeId: 'ag_blindside',
-          title: 'Reward Suppression Index',
-          summary: 'Track impulse categories as one reward-linked demand pool.',
-          mechanism: 'Compare treated household baskets before and after GLP-1 adoption.',
-          claimedDelta: 'Escapes the reformulation-only consensus.',
-          citedKnowledge: ['K1', 'K2'],
-        },
-        {
-          id: 'dashboard_basket',
-          agenomeId: 'ag_first_principles',
-          title: 'Basket Shock Map',
-          summary: 'Rank categories by dependence on unplanned eating occasions.',
-          mechanism: 'Map basket share from grazing, checkout, and convenience trips.',
-          claimedDelta: 'Identifies first revenue lines to miss.',
-          citedKnowledge: ['K1'],
-        },
-      ],
-    }),
-    JSON.stringify({
-      verdicts: [
-        {
-          candidateId: 'dashboard_reward',
-          criticId: 'grounding',
-          score: 90,
-          pressure: 'The mechanism captures the cross-category effect.',
-          revisionMandate: 'Define the household panel.',
-        },
-        {
-          candidateId: 'dashboard_basket',
-          criticId: 'grounding',
-          score: 82,
-          pressure: 'The basket readout is concrete.',
-          revisionMandate: 'Separate grocery and convenience channels.',
-        },
-      ],
-    }),
-  ]);
+  const fakeOpenRouter = createOpenRouterFetch([]);
 
   const response = await handleKernelHttpRequest(
     {
       method: 'POST',
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
-        runId: 'dashboard_glp1_live',
+        runId: 'dashboard_glp1_fixture',
         casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
         model: 'fixture-model',
         outDir: path.join(root, 'vault'),
@@ -475,13 +427,13 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   );
 
   assert.equal(response.status, 200);
-  assert.equal(response.body.runId, 'dashboard_glp1_live');
+  assert.equal(response.body.runId, 'dashboard_glp1_fixture');
   assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
-  assert.equal(response.body.child.id, 'child_dashboard_reward_dashboard_basket');
-  assert.match(response.body.dashboardArtifact, /GLP-1 case is about impulse demand destruction/);
+  assert.equal(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
+  assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
   assert.ok(Array.isArray(response.body.dashboardEvents));
   assert.ok(response.body.dashboardEvents.length > 0);
-  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
+  assert.equal(fakeOpenRouter.calls.length, 0);
 });
 
 test('kernel dashboard route lists recent exported runs without an API key', async () => {
@@ -508,6 +460,68 @@ test('kernel dashboard route lists recent exported runs without an API key', asy
   assert.equal(response.body.runs[0].runId, 'dashboard_history_fixture');
   assert.equal(response.body.runs[0].caseId, 'fsd-ownership-unwind');
   assert.equal(response.body.runs[0].child, 'child_cand_liability_clock_cand_recovery_market');
+});
+
+test('kernel dashboard route runs all approved real case fixtures with unique results', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-all-cases-'));
+  const outDir = path.join(root, 'vault');
+  const cases = [
+    {
+      caseId: 'fsd-ownership-unwind',
+      casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+      expectedChild: 'child_cand_liability_clock_cand_recovery_market',
+      expectedRecovery: /autonomy removes the human-driver reason/i,
+    },
+    {
+      caseId: 'glp1-snack-demand-destruction',
+      casePath: 'case-studies/glp1-snack-demand-destruction/problem-statement.md',
+      expectedChild: 'child_cand_reward_budget_ledger_cand_food_noise_tripwire',
+      expectedRecovery: /reward system behind impulse eating occasions/i,
+    },
+    {
+      caseId: 'ai-overviews-zero-click-publishing',
+      casePath: 'case-studies/ai-overviews-zero-click-publishing/problem-statement.md',
+      expectedChild: 'child_cand_citation_share_market_cand_owned_audience_bridge',
+      expectedRecovery: /answer layers remove the click itself/i,
+    },
+    {
+      caseId: 'starship-launch-cost-collapse',
+      casePath: 'case-studies/starship-launch-cost-collapse/problem-statement.md',
+      expectedChild: 'child_cand_space_picks_shovels_cand_payload_class_unlock',
+      expectedRecovery: /launch-cost collapse re-prices every downstream constraint/i,
+    },
+  ];
+
+  const childIds: string[] = [];
+  const recoveryTexts: string[] = [];
+  for (const caseStudy of cases) {
+    const response = await handleKernelHttpRequest({
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: `${caseStudy.caseId}_dashboard_fixture_test`,
+        casePath: caseStudy.casePath,
+        generations: 2,
+        budget: 2,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.caseId, caseStudy.caseId);
+    assert.equal(response.body.child.id, caseStudy.expectedChild);
+    assert.equal(response.body.candidates.length, 6);
+    assert.equal(response.body.evolution.length, 2);
+    assert.match(String(response.body.dashboardArtifact), caseStudy.expectedRecovery);
+    assert.ok(Array.isArray(response.body.dashboardEvents));
+    assert.ok(response.body.dashboardEvents.some((event: { runId?: string }) => event.runId));
+    childIds.push(response.body.child.id);
+    recoveryTexts.push(String(response.body.dashboardArtifact));
+  }
+
+  assert.equal(new Set(childIds).size, cases.length);
+  assert.equal(new Set(recoveryTexts).size, cases.length);
 });
 
 test('kernel HTTP server requires an API key when configured', async () => {
