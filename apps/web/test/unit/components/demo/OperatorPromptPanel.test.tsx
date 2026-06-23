@@ -3,7 +3,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { validRun } from '@doppl/contracts';
 import { OperatorPromptPanel } from '../../../../src/components/demo/OperatorPromptPanel';
 import type { ProblemSet } from '../../../../src/data/operatorPromptClient';
 
@@ -18,6 +17,8 @@ const DEMO_DIR = resolve(process.cwd(), 'src/components/demo');
 const CATALOG: ProblemSet[] = [
   { id: 'demo-1', title: 'Cross-domain transfer demo', prompt: 'Find a cross-domain transfer.' },
 ];
+// PD.16 — POST /runs returns the command shape `{ runId }` (not a full Run); the panel passes it through.
+const STARTED = { runId: 'run_demo' };
 
 afterEach(() => cleanup());
 
@@ -28,7 +29,7 @@ function fakeClient(catalog: ProblemSet[] = CATALOG) {
       getProblemSets: () => Promise.resolve(catalog),
       startDemoRun: (partial: { seed: string }, opts?: { idempotencyKey?: string }) => {
         starts.push({ partial, opts });
-        return Promise.resolve(validRun);
+        return Promise.resolve(STARTED);
       },
     },
     starts,
@@ -57,7 +58,7 @@ describe('OperatorPromptPanel — demo operator-prompt panel (PD.5b behavior)', 
     await waitFor(() => expect(starts).toHaveLength(1));
     expect(starts[0]?.partial).toEqual({ seed: 'Design X' }); // partial — only the seed
     expect(starts[0]?.opts?.idempotencyKey).toBeTruthy();
-    expect(onStarted).toHaveBeenCalledWith(validRun);
+    expect(onStarted).toHaveBeenCalledWith(STARTED);
   });
 
   // fail-closed — an empty freeform submit is blocked (accessible alert), no run started.

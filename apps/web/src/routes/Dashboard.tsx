@@ -191,16 +191,16 @@ export function Dashboard({
               full-control RunConfigPanel stays alongside. Both hand the new run to the shell via onStarted. */}
           <OperatorPromptPanel
             runClient={runClient}
-            onStarted={(run) => setObservedRunId(run.id)}
+            onStarted={(run) => setObservedRunId(run.runId)}
           />
           {/* PD.12 — the operator 3-rung demo fallback ladder (low-cap-live · prepared · replay); start a
               rung's run or mount the recorded replay (the shell observes the resulting run). */}
           <FallbackLadderPanel
             runClient={runClient}
-            onStarted={(run) => setObservedRunId(run.id)}
+            onStarted={(run) => setObservedRunId(run.runId)}
             onReplay={(replayRunId) => setObservedRunId(replayRunId)}
           />
-          <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
+          <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.runId)} />
           {observedRunId && (
             <StopControl runId={observedRunId} store={store} runClient={runClient} />
           )}

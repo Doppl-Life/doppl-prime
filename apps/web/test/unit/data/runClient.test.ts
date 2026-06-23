@@ -1,12 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import {
-  validCandidateIdeaCrossDomain,
-  validModelRoute,
-  validRun,
-  validRunConfig,
-} from '@doppl/contracts';
+import { validCandidateIdeaCrossDomain, validModelRoute, validRunConfig } from '@doppl/contracts';
 import type { LineageGraphProjection } from '@doppl/contracts';
 import {
   createRunClient,
@@ -90,21 +85,15 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): the two mutating commands hit the correct method+path and validate the Run response;
   // repeated stop is client-side safe (idempotency is the API's terminal-state guard, not re-implemented).
   it('test_commands_post_and_validate_run', async () => {
-    const startFetch = fakeFetch(validRun);
+    // PD.16 — the command endpoints return `{ runId }` (start) / the stop wrapper, NOT a full Run.
+    const startFetch = fakeFetch({ runId: 'run_1' }, 201);
     const client = createRunClient({ baseUrl: BASE, fetch: startFetch });
-    const started = await client.startRun({
-      seed: 'scenario-alpha',
-      enabledSubtypes: ['cross_domain_transfer', 'zeitgeist_synthesis'],
-      caps: validRun.caps,
-      modelProfile: 'mvp-openrouter',
-      scoringPolicyVersion: 'scoring-v1',
-      rngSeed: 42,
-    });
-    expect(started).toEqual(validRun);
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_1');
     expect(startFetch.calls[0]?.url).toBe(`${BASE}/runs`);
     expect(startFetch.calls[0]?.init?.method).toBe('POST');
 
-    const stopFetch = fakeFetch(validRun);
+    const stopFetch = fakeFetch({ runId: 'run_1', status: 'completed', stopped: false });
     const c2 = createRunClient({ baseUrl: BASE, fetch: stopFetch });
     await c2.stopRun('run_1');
     await c2.stopRun('run_1');
@@ -116,7 +105,7 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): startRun forwards an idempotency key as an Idempotency-Key header so the API can dedup
   // a duplicate submit (the client never re-implements the dedup).
   it('test_start_run_sends_idempotency_key', async () => {
-    const fetch = fakeFetch(validRun);
+    const fetch = fakeFetch({ runId: 'run_1' }, 201);
     const client = createRunClient({ baseUrl: BASE, fetch });
     await client.startRun(validRunConfig, { idempotencyKey: 'idem-123' });
     expect(fetch.calls[0]?.init?.headers?.['Idempotency-Key']).toBe('idem-123');
@@ -248,5 +237,54 @@ describe('runClient — read-only REST seam', () => {
     expect(replay.runId).toBe('run_1');
     expect(replay.sequenceThrough).toBe(9);
     expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/replay`);
+  });
+
+  // ---- PD.16: the COMMAND endpoints consume the API's real shapes (NOT a full Run) ----------------
+
+  // spec(§11): POST /runs → 201 `{ runId }` — the caller needs only the new run id to switch the
+  // observed run (web-local result shape, not the frozen Run). RED: currently `Run.parse({runId})` throws.
+  it('runclient_startRun_consumes_runId_shape', async () => {
+    const fetch = fakeFetch({ runId: 'run_9' }, 201);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_9');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+    expect(fetch.calls[0]?.init?.method).toBe('POST');
+  });
+
+  // spec(§11): POST /runs → 200 `{ runId, idempotent: true }` on a duplicate key — same runId field.
+  it('runclient_startRun_consumes_idempotent_200', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', idempotent: true }, 200);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_9');
+    expect(started.idempotent).toBe(true);
+  });
+
+  it('runclient_startDemoRun_consumes_runId_shape', async () => {
+    const fetch = fakeFetch({ runId: 'run_demo' }, 201);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startDemoRun({ seed: 'a hard, well-scoped problem' });
+    expect(started.runId).toBe('run_demo');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+  });
+
+  // spec(§11, apps/api LESSON §85): POST /runs/:id/stop → 200 `{runId,status,stopped}` (already-terminal
+  // no-op) OR 202 `{runId,stopRequested}` (signaled) — the client consumes BOTH success shapes.
+  it('runclient_stopRun_consumes_stop_wrapper_200', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', status: 'completed', stopped: false }, 200);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const stopped = await client.stopRun('run_9');
+    expect(stopped.runId).toBe('run_9');
+    expect(stopped.stopped).toBe(false);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_9/stop`);
+  });
+
+  it('runclient_stopRun_consumes_202_stop_requested', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', stopRequested: true }, 202);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const stopped = await client.stopRun('run_9');
+    expect(stopped.runId).toBe('run_9');
+    expect(stopped.stopRequested).toBe(true);
   });
 });

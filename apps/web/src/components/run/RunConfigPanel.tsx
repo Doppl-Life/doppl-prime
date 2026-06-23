@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Run } from '../../data/contracts';
-import type { RunClient } from '../../data/runClient';
+import type { RunClient, StartRunResult } from '../../data/runClient';
 import {
   CAP_CEILING,
   DEFAULT_FORM,
@@ -22,7 +21,7 @@ import {
  */
 export interface RunConfigPanelProps {
   runClient: Pick<RunClient, 'startRun'>;
-  onStarted?: (run: Run) => void;
+  onStarted?: (run: StartRunResult) => void;
   initialValues?: RunConfigFormValues;
 }
 
@@ -64,7 +63,7 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
   const [form, setForm] = useState<RunConfigFormValues>(initialValues ?? DEFAULT_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [starting, setStarting] = useState(false);
-  const [startedRun, setStartedRun] = useState<Run | null>(null);
+  const [startedRun, setStartedRun] = useState<StartRunResult | null>(null);
 
   const setCap = (key: CapKey, value: number) =>
     setForm((f) => ({ ...f, caps: { ...f.caps, [key]: clampCap(key, value) } }));
@@ -246,7 +245,7 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
 
       {startedRun && (
         <p role="status" style={{ ...labelText, marginTop: 'var(--space-3)' }}>
-          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.id}</span>
+          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.runId}</span>
         </p>
       )}
     </section>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Run } from '../../data/contracts';
-import type { RunClient } from '../../data/runClient';
+import type { RunClient, StartRunResult } from '../../data/runClient';
 import type { ProblemSet } from '../../data/operatorPromptClient';
 import {
   DEFAULT_OPERATOR_PROMPT_FORM,
@@ -21,7 +20,7 @@ import {
  */
 export interface OperatorPromptPanelProps {
   runClient: Pick<RunClient, 'getProblemSets' | 'startDemoRun'>;
-  onStarted?: (run: Run) => void;
+  onStarted?: (run: StartRunResult) => void;
 }
 
 const field: CSSProperties = {
@@ -54,7 +53,7 @@ export function OperatorPromptPanel({ runClient, onStarted }: OperatorPromptPane
   const [form, setForm] = useState<OperatorPromptFormValues>(DEFAULT_OPERATOR_PROMPT_FORM);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [startedRun, setStartedRun] = useState<Run | null>(null);
+  const [startedRun, setStartedRun] = useState<StartRunResult | null>(null);
 
   // Fetch the prepared-problem catalog on mount (read-only; a fetch failure is shown, never thrown).
   useEffect(() => {
@@ -195,7 +194,7 @@ export function OperatorPromptPanel({ runClient, onStarted }: OperatorPromptPane
 
       {startedRun && (
         <p role="status" style={{ ...labelText, marginTop: 'var(--space-3)' }}>
-          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.id}</span>
+          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.runId}</span>
         </p>
       )}
     </section>

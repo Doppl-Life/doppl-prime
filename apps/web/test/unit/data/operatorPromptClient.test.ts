@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { validRun } from '@doppl/contracts';
 import {
   createRunClient,
   PayloadValidationError,
@@ -61,12 +60,13 @@ describe('runClient demo methods (PD.5b — GET /problem-sets + partial-{seed} P
   });
 
   // §17 — startDemoRun POSTs the PARTIAL body {seed} to /runs (the api deep-merges defaults; the panel
-  // never sends caps), forwards the Idempotency-Key, and returns the validated Run.
+  // never sends caps), forwards the Idempotency-Key, and returns the command shape {runId} (PD.16 — not
+  // a full Run; the caller switches the observed run by id).
   test('start_demo_run_posts_partial_seed', async () => {
-    const fetch = fakeFetch(validRun);
+    const fetch = fakeFetch({ runId: 'run_demo' }, 201);
     const client = createRunClient({ baseUrl: BASE, fetch });
     const run = await client.startDemoRun({ seed: 'Design X' }, { idempotencyKey: 'idem-9' });
-    expect(run).toEqual(validRun);
+    expect(run.runId).toBe('run_demo');
     expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
     expect(fetch.calls[0]?.init?.method).toBe('POST');
     expect(JSON.parse(fetch.calls[0]?.init?.body ?? '{}')).toEqual({ seed: 'Design X' }); // partial — only seed

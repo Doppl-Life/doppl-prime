@@ -157,7 +157,9 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   await page.route('**/api/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
-    if (path === '/api/runs' && method === 'POST') return route.fulfill({ json: run });
+    // PD.16 — POST /runs returns the command shape `{ runId }` (not a full Run); startRun consumes it.
+    if (path === '/api/runs' && method === 'POST')
+      return route.fulfill({ json: { runId: run.id } });
     if (path === '/api/runs') return route.fulfill({ json: [] });
     if (path === '/api/runs/run_1/lineage') return route.fulfill({ json: lineage });
     if (path.startsWith('/api/runs/run_1/events')) return route.fulfill({ json: events });

@@ -1,11 +1,5 @@
 import { z } from 'zod';
-import {
-  CandidateIdea,
-  LineageGraphProjection,
-  ModelRoute,
-  Run,
-  RunEventEnvelope,
-} from './contracts';
+import { CandidateIdea, LineageGraphProjection, ModelRoute, RunEventEnvelope } from './contracts';
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
@@ -54,8 +48,8 @@ export interface RunClient {
   getReplay(runId: string): Promise<RunStateView>;
   getCandidate(runId: string, candidateId: string): Promise<CandidateIdea>;
   listModelRoutes(): Promise<ModelRoute[]>;
-  startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<Run>;
-  stopRun(runId: string): Promise<Run>;
+  startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<StartRunResult>;
+  stopRun(runId: string): Promise<StopRunResult>;
   /**
    * GET /runs/:id/health (P6.8) — validated through the WEB-LOCAL `RunHealth` schema (no frozen
    * contract yet; reconcile/promote at the demo→cody merge).
@@ -70,7 +64,10 @@ export interface RunClient {
    * POST /runs with a PARTIAL `{ seed }` (PD.5b) — the demo operator-prompt start path; the api
    * deep-merges defaults (the panel never sends caps → the boot ceiling applies). PD.10 isolates the seed.
    */
-  startDemoRun(partial: { seed: string }, opts?: { idempotencyKey?: string }): Promise<Run>;
+  startDemoRun(
+    partial: { seed: string },
+    opts?: { idempotencyKey?: string },
+  ): Promise<StartRunResult>;
   /**
    * GET /demo/fallback-ladder (PD.12) — the operator 3-rung demo ladder descriptors, validated through
    * the WEB-LOCAL `RungDescriptor` mirror (api runtime config, no frozen contract — parallel to ProblemSet).
@@ -108,6 +105,21 @@ export type RunStateView = z.infer<typeof RunStateView>;
 // API omit-null serializer, so the frozen RunEventEnvelope re-parses).
 const EventsResponse = z.object({ runId: z.string(), events: RunEventEnvelopeArray });
 
+// PD.16 — WEB-LOCAL command-response shapes (the PD.15 read-path fix, command side; NOT Appendix-A
+// models). POST /runs → `{ runId }` (201) or `{ runId, idempotent: true }` (200 duplicate key);
+// POST /runs/:id/stop → `{ runId, status, stopped }` (200 already-terminal no-op) or
+// `{ runId, stopRequested }` (202 signaled async — apps/api LESSON §85). The caller needs only the
+// runId to switch the observed run; the run's full state arrives via the GET/SSE path.
+export const StartRunResult = z.object({ runId: z.string(), idempotent: z.boolean().optional() });
+export type StartRunResult = z.infer<typeof StartRunResult>;
+export const StopRunResult = z.object({
+  runId: z.string(),
+  status: z.string().optional(),
+  stopped: z.boolean().optional(),
+  stopRequested: z.boolean().optional(),
+});
+export type StopRunResult = z.infer<typeof StopRunResult>;
+
 export function createRunClient(options: RunClientOptions): RunClient {
   const { baseUrl } = options;
   const doFetch: FetchLike = options.fetch ?? ((url, init) => fetch(url, init));
@@ -133,10 +145,13 @@ export function createRunClient(options: RunClientOptions): RunClient {
 
   // The optional Idempotency-Key lets the API dedup a duplicate submit (the client never
   // re-implements the dedup — §11); the API + kernel remain the authoritative idempotency guard.
+  // PD.16 — set `content-type: application/json` ONLY when there's a body: a bodyless POST (stopRun)
+  // claiming application/json makes Fastify reject the empty body with a 400 (FST_ERR_CTP_EMPTY_JSON_BODY),
+  // which broke the operator Stop against the real API (the smoke caught it).
   const postInit = (body?: unknown, idempotencyKey?: string): FetchRequestInit => ({
     method: 'POST',
     headers: {
-      'content-type': 'application/json',
+      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
       ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -155,11 +170,13 @@ export function createRunClient(options: RunClientOptions): RunClient {
     getCandidate: (runId, candidateId) =>
       getJson(`/runs/${enc(runId)}/candidates/${enc(candidateId)}`, CandidateIdea),
     listModelRoutes: () => getJson('/model-routes', ModelRouteArray),
-    startRun: (config, opts) => getJson('/runs', Run, postInit(config, opts?.idempotencyKey)),
-    stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, Run, postInit()),
+    startRun: (config, opts) =>
+      getJson('/runs', StartRunResult, postInit(config, opts?.idempotencyKey)),
+    stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, StopRunResult, postInit()),
     getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
     getProblemSets: async () => (await getJson('/problem-sets', ProblemSetsResponse)).problemSets,
-    startDemoRun: (partial, opts) => getJson('/runs', Run, postInit(partial, opts?.idempotencyKey)),
+    startDemoRun: (partial, opts) =>
+      getJson('/runs', StartRunResult, postInit(partial, opts?.idempotencyKey)),
     getFallbackLadder: async () =>
       (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
   };

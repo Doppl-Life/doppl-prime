@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Run, RunConfig } from '../../data/contracts';
-import type { RunClient } from '../../data/runClient';
+import type { RunConfig } from '../../data/contracts';
+import type { RunClient, StartRunResult } from '../../data/runClient';
 import type { RungDescriptor } from '../../data/fallbackLadderClient';
 
 /**
@@ -17,7 +17,7 @@ export interface FallbackLadderPanelProps {
   runClient: Pick<RunClient, 'getFallbackLadder' | 'startRun'>;
   /** The replay rung hands its recorded runId to the shell (which mounts the labeled replay view). */
   onReplay: (replayRunId: string) => void;
-  onStarted?: (run: Run) => void;
+  onStarted?: (run: StartRunResult) => void;
 }
 
 const section: CSSProperties = {

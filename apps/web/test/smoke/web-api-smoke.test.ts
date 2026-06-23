@@ -168,6 +168,24 @@ describe.skipIf(!SMOKE_ENABLED)('PD.14 real web→proxy→API smoke (§11/§12/�
     expect(replay.runId).toBe(RUN_ID);
   });
 
+  // PD.16 (§11/§12/§17) — the operator START + STOP round-trip through the proxy against the real API:
+  // the reconciled runClient consumes POST /runs → {runId} and POST /runs/:id/stop → the stop wrapper.
+  // The recorded gateway can't drive a fresh run to completion, so we assert the WIRING (a real runId +
+  // the stop wrapper echoing it), NOT a terminal status (avoids a worker race). startDemoRun is the
+  // headline operator interaction (type a problem → Start); the seeded run is terminal so a new run starts.
+  test('smoke_operator_start_stop_through_proxy', async () => {
+    const client = createRunClient({ baseUrl: `http://127.0.0.1:${vitePort}/api` });
+
+    const started = await client.startDemoRun({
+      seed: 'PD.16 smoke probe — a hard, well-scoped problem',
+    });
+    expect(typeof started.runId).toBe('string');
+    expect(started.runId.length).toBeGreaterThan(0);
+
+    const stopped = await client.stopRun(started.runId);
+    expect(stopped.runId).toBe(started.runId);
+  });
+
   // spec(§11/§12 live window) — the SSE stream proxies UNBUFFERED: `/api/runs/:id/stream` delivers events
   // incrementally (≥2 separate `data:` frames while the stream stays open), not one buffered blob. (A
   // buffering proxy would deliver nothing until the upstream closes — which a terminal run never does —

@@ -1,8 +1,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import type { CSSProperties } from 'react';
 import { StatusBadge } from '../core/StatusBadge';
-import type { Run } from '../../data/contracts';
-import type { RunClient } from '../../data/runClient';
+import type { RunClient, StopRunResult } from '../../data/runClient';
 import type { RunStore } from '../../state/runStore';
 import { deriveStopControlState, selectRunStatus } from './runControl';
 
@@ -24,7 +23,7 @@ export interface StopControlProps {
   runId: string;
   store: Pick<RunStore, 'getState' | 'subscribe'>;
   runClient: Pick<RunClient, 'stopRun'>;
-  onStopped?: (run: Run) => void;
+  onStopped?: (run: StopRunResult) => void;
 }
 
 const buttonBase: CSSProperties = {

@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Run, RunConfig } from '../../../src/data/contracts';
+import type { RunConfig } from '../../../src/data/contracts';
 import { FallbackLadderPanel } from '../../../src/components/demo/FallbackLadderPanel';
+import type { StartRunResult } from '../../../src/data/runClient';
 import type { RungDescriptor } from '../../../src/data/fallbackLadderClient';
 
 /**
@@ -40,14 +41,14 @@ const RUNGS: RungDescriptor[] = [
 ];
 
 function makeClient(rungs: RungDescriptor[] | Error = RUNGS) {
-  const startedRun = { id: 'run_started' } as unknown as Run;
+  const startedRun: StartRunResult = { runId: 'run_started' };
   return {
     getFallbackLadder: vi.fn(() =>
       rungs instanceof Error ? Promise.reject(rungs) : Promise.resolve(rungs),
     ),
-    startRun: vi.fn<(config: RunConfig, opts?: { idempotencyKey?: string }) => Promise<Run>>(() =>
-      Promise.resolve(startedRun),
-    ),
+    startRun: vi.fn<
+      (config: RunConfig, opts?: { idempotencyKey?: string }) => Promise<StartRunResult>
+    >(() => Promise.resolve(startedRun)),
   };
 }
 

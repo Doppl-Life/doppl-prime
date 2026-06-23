@@ -3,7 +3,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { validRun } from '@doppl/contracts';
 import type { RunConfig } from '@doppl/contracts';
 import { RunConfigPanel } from '../../../../src/components/run/RunConfigPanel';
 import {
@@ -12,6 +11,8 @@ import {
 } from '../../../../src/components/run/runConfigForm';
 
 const RUN_DIR = resolve(process.cwd(), 'src/components/run');
+// PD.16 — POST /runs returns the command shape { runId }, not a full Run; the panel passes it through.
+const STARTED = { runId: 'run_started' };
 
 const validForm = (): RunConfigFormValues => ({
   ...DEFAULT_FORM,
@@ -27,7 +28,7 @@ function fakeStartClient() {
     client: {
       startRun: (config: RunConfig, opts?: { idempotencyKey?: string }) => {
         calls.push({ config, opts });
-        return Promise.resolve(validRun);
+        return Promise.resolve(STARTED);
       },
     },
     calls,
@@ -45,7 +46,7 @@ describe('RunConfigPanel — operator run-config panel', () => {
     fireEvent.click(start);
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.opts?.idempotencyKey).toBeTruthy();
-    expect(onStarted).toHaveBeenCalledWith(validRun);
+    expect(onStarted).toHaveBeenCalledWith(STARTED);
     // duplicate submit (post-start) doesn't create a second run.
     fireEvent.click(start);
     expect(calls).toHaveLength(1);
