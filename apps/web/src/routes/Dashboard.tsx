@@ -8,7 +8,8 @@ import type { EventSourceLike, FoldState, SseStream, SseStreamOptions } from '..
 import { createRunStore } from '../state/runStore';
 import type { RunStore } from '../state/runStore';
 import type { RunMode } from '../state/reducer';
-import { selectRunStatus } from '../components/run/runControl';
+import { isRunTerminal, selectRunStatus } from '../components/run/runControl';
+import { debounce } from '../lib/debounce';
 import { ModeBanner } from '../components/feedback/ModeBanner';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { RunConfigPanel } from '../components/run/RunConfigPanel';
@@ -49,6 +50,8 @@ export interface DashboardProps {
   createStream?: (options: SseStreamOptions) => SseStream;
   /** Injected for tests; defaults to a fresh createRunStore. */
   store?: RunStore;
+  /** PD.20 — debounce window (ms) for the live lineage/health re-fetch; injected small in tests. */
+  refetchDebounceMs?: number;
 }
 
 const shell: CSSProperties = {
@@ -119,6 +122,7 @@ export function Dashboard({
   eventSourceFactory = defaultEventSourceFactory,
   createStream = createSseStream,
   store: injectedStore,
+  refetchDebounceMs = 600,
 }: DashboardProps) {
   const [observedRunId, setObservedRunId] = useState(runId);
   // PD.17 — `mode` is run-switchable STATE (was a static prop): browsing a past run (the run-list or the
@@ -149,18 +153,29 @@ export function Dashboard({
   useEffect(() => {
     if (!observedRunId) return;
     let active = true;
+    // PD.20 — the evolving projections (lineage + health) are REBUILT-ON-READ by the API (§9); re-fetch
+    // them on the live SSE cadence so the graph grows live. A ONE-TIME fetch renders stale (the run
+    // evolves in the backend but the dashboard froze at 1 node — PD.15 fixed event delivery, not the
+    // projection rebuild). Run STATE stays live via the store SSE-fold (no double-fold here).
+    const refetchProjections = (): void => {
+      runClient
+        .getLineage(observedRunId)
+        .then((l) => active && setLineage(l))
+        .catch(() => undefined);
+      runClient
+        .getRunHealth(observedRunId)
+        .then((h) => active && setHealth(h))
+        .catch(() => undefined);
+    };
+    const debouncedRefetch = debounce(refetchProjections, refetchDebounceMs);
+
+    // Seed the raw events fold + the initial projections.
     runClient
       .getEvents(observedRunId)
       .then((evs) => active && setFold((prev) => foldEvents(evs, prev)))
       .catch(() => undefined);
-    runClient
-      .getLineage(observedRunId)
-      .then((l) => active && setLineage(l))
-      .catch(() => undefined);
-    runClient
-      .getRunHealth(observedRunId)
-      .then((h) => active && setHealth(h))
-      .catch(() => undefined);
+    refetchProjections();
+
     // Wire the deferred SSE-store IoC: store.applyEvent sink + poll fallback + resync-on-mount, and
     // accumulate the raw events FoldState the panels consume (delivery-level dedup).
     const stream = wireRunStream({
@@ -169,14 +184,34 @@ export function Dashboard({
       baseUrl,
       eventSourceFactory,
       createStream,
-      onEnvelope: (env) => setFold((f) => applyEnvelope(f, env)),
+      onEnvelope: (env) => {
+        setFold((f) => applyEnvelope(f, env));
+        // PD.20 — re-fetch the evolving projections on the SSE cadence (debounced — no hammering during
+        // an event burst); a TERMINAL envelope forces an immediate final re-fetch so the FINAL graph
+        // always renders even if debounced updates were coalesced.
+        if (isRunTerminal(env.type)) {
+          debouncedRefetch.cancel();
+          refetchProjections();
+        } else {
+          debouncedRefetch();
+        }
+      },
     });
 
     return () => {
       active = false;
+      debouncedRefetch.cancel();
       stream.close();
     };
-  }, [observedRunId, store, runClient, baseUrl, eventSourceFactory, createStream]);
+  }, [
+    observedRunId,
+    store,
+    runClient,
+    baseUrl,
+    eventSourceFactory,
+    createStream,
+    refetchDebounceMs,
+  ]);
 
   const runStatus = selectRunStatus(state, observedRunId);
   const winnerRef = useMemo(

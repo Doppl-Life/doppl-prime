@@ -1,15 +1,16 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
-import type { LineageGraphProjection } from '@doppl/contracts';
+import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
 import { Dashboard } from '../../../src/routes/Dashboard';
 import { createRunStore } from '../../../src/state/runStore';
 import type { RunClient } from '../../../src/data/runClient';
-import type { EventSourceLike, SseStream } from '../../../src/data/sseStream';
+import type { EventSourceLike, SseStream, SseStreamOptions } from '../../../src/data/sseStream';
 import type { RunMode } from '../../../src/state/reducer';
+import { makeEvent } from '../../fixtures/events';
 
 const ROUTES_DIR = resolve(process.cwd(), 'src/routes');
 
@@ -149,6 +150,85 @@ describe('Dashboard — shell + SSE-store wiring', () => {
     fireEvent.click((await screen.findByText('run_2')).closest('button')!);
     await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledWith('run_2')); // observed switch
     expect(screen.getByText('REPLAY')).toBeTruthy(); // the mode-lift → replay label
+  });
+
+  // PD.20 — capture the wired SseStreamOptions so the test drives onEvent (SSE delivery) directly.
+  function captureStream() {
+    let captured: SseStreamOptions | null = null;
+    const createStream = (opts: SseStreamOptions): SseStream => {
+      captured = opts;
+      return { lastEventId: () => null, close: vi.fn() };
+    };
+    return { createStream, fire: (env: RunEventEnvelope) => captured?.onEvent(env) };
+  }
+
+  // PD.20 (§12/§10, DEMO-CRITICAL) — a TERMINAL envelope forces an immediate final re-fetch of BOTH the
+  // lineage + health projections (the final graph always renders, bypassing the debounce).
+  it('terminal_envelope_forces_final_lineage_refetch', async () => {
+    const runClient = fakeClient();
+    const cap = captureStream();
+    render(
+      <Dashboard
+        runId="run_1"
+        runClient={runClient}
+        baseUrl="/api"
+        eventSourceFactory={eventSourceFactory}
+        createStream={cap.createStream}
+        refetchDebounceMs={50}
+      />,
+    );
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledTimes(1)); // mount fetch
+    await act(async () => {
+      cap.fire(makeEvent(9, 'run.completed'));
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledTimes(2)); // forced final re-fetch
+    expect(runClient.getRunHealth).toHaveBeenCalledTimes(2); // health on the same cadence
+  });
+
+  // PD.20 — a burst of non-terminal envelopes coalesces into ONE debounced re-fetch (not one per event).
+  it('sse_events_trigger_debounced_lineage_refetch', async () => {
+    const runClient = fakeClient();
+    const cap = captureStream();
+    render(
+      <Dashboard
+        runId="run_1"
+        runClient={runClient}
+        baseUrl="/api"
+        eventSourceFactory={eventSourceFactory}
+        createStream={cap.createStream}
+        refetchDebounceMs={20}
+      />,
+    );
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledTimes(1)); // mount fetch
+    act(() => {
+      cap.fire(makeEvent(1, 'generation.started'));
+      cap.fire(makeEvent(2, 'candidate.created', { candidateId: 'c1' }));
+      cap.fire(makeEvent(3, 'critic.reviewed', { candidateId: 'c1' }));
+    });
+    expect(runClient.getLineage).toHaveBeenCalledTimes(1); // debounced — not re-fetched yet
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledTimes(2)); // ONE coalesced re-fetch
+  });
+
+  // PD.20 — a pending debounced re-fetch is cancelled on unmount (no setState-after-unmount / leak).
+  it('refetch_cleanup_on_unmount', async () => {
+    const runClient = fakeClient();
+    const cap = captureStream();
+    const { unmount } = render(
+      <Dashboard
+        runId="run_1"
+        runClient={runClient}
+        baseUrl="/api"
+        eventSourceFactory={eventSourceFactory}
+        createStream={cap.createStream}
+        refetchDebounceMs={30}
+      />,
+    );
+    await waitFor(() => expect(runClient.getLineage).toHaveBeenCalledTimes(1)); // mount fetch
+    act(() => cap.fire(makeEvent(1, 'generation.started'))); // schedules a debounced re-fetch (30ms)
+    unmount(); // cancels the pending debounce
+    await new Promise((r) => setTimeout(r, 60)); // past the debounce window
+    expect(runClient.getLineage).toHaveBeenCalledTimes(1); // never re-fetched after unmount
   });
 
   // spec(rule #6): no apps/api import.
