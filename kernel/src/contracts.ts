@@ -199,6 +199,8 @@ export const RUN_EVENT_TYPES = [
   'agenome.energy_allocated',
   'agenome.energy_spent',
   'problem_recovery.created',
+  'control_baseline.created',
+  'control_baseline.scored',
   'generation.started',
   'generation.completed',
   'evolution.budget_exhausted',
@@ -247,6 +249,7 @@ export type KernelRun = {
   energyLedger: AgenomeEnergyLedgerEntry[];
   agenomes: Agenome[];
   problemRecovery: ProblemRecovery;
+  controlBaseline?: CandidateSolution;
   candidates: CandidateSolution[];
   criticVerdicts: CriticVerdict[];
   fitnessRecords: FitnessRecord[];
@@ -512,6 +515,7 @@ export function assertKernelRun(value: unknown): KernelRun {
   for (const entry of run.energyLedger) assertAgenomeEnergyLedgerEntry(entry);
   if (!Array.isArray(run.agenomes)) throw new Error('KernelRun.agenomes is required');
   for (const agenome of run.agenomes) assertAgenome(agenome);
+  if (run.controlBaseline) assertCandidateSolution(run.controlBaseline);
   for (const candidate of run.candidates || []) assertCandidateSolution(candidate);
   for (const verdict of run.criticVerdicts || []) assertCriticVerdict(verdict);
   for (const fitness of run.fitnessRecords || []) assertFitnessRecord(fitness);

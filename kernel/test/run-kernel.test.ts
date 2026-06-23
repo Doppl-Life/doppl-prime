@@ -113,6 +113,92 @@ test('runs through injected generation providers', async () => {
   assert.equal(run.fusion?.parentCandidateIds[0], 'injected_a');
 });
 
+test('runs a clean baseline outside evolutionary selection', async () => {
+  const run = await runKernel({
+    runId: 'run_clean_baseline',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+    generationProviders: {
+      problemRecovery: {
+        async recover({ caseStudy }) {
+          return {
+            id: `clean_recovery_${caseStudy.id}`,
+            caseId: caseStudy.id,
+            title: 'Clean Recovery',
+            recoveredProblem: 'Recover once and compare to a clean agent baseline.',
+            hiddenConstraint: 'The clean baseline must not enter parent selection.',
+            falsifier: 'The clean baseline becomes a fused parent.',
+            citedKnowledge: [],
+          };
+        },
+      },
+      cleanBaseline: {
+        async generate({ caseStudy }) {
+          return {
+            id: 'clean_agent_baseline',
+            caseId: caseStudy.id,
+            agenomeId: 'ag_clean_control',
+            generation: 0,
+            title: 'Clean Agent Baseline',
+            summary: 'A single-pass clean agent answer with no Doppl fusion.',
+            mechanism: 'Solve directly from the recovered problem and knowledge packet.',
+            claimedDelta: 'Provides a control lane for the Doppl survivor.',
+            citedKnowledge: [],
+          };
+        },
+      },
+      candidateGenerator: {
+        async generate({ caseStudy, generation }) {
+          return [
+            {
+              id: `evolved_${generation}_a`,
+              caseId: caseStudy.id,
+              agenomeId: 'ag_evolved_a',
+              generation,
+              title: 'Evolved A',
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+            {
+              id: `evolved_${generation}_b`,
+              caseId: caseStudy.id,
+              agenomeId: 'ag_evolved_b',
+              generation,
+              title: 'Evolved B',
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge: [],
+            },
+          ];
+        },
+      },
+      criticCouncil: {
+        async judge({ candidates }) {
+          return candidates.map((candidate, index) => ({
+            candidateId: candidate.id,
+            criticId: 'clean-control',
+            score: candidate.id === 'clean_agent_baseline' ? 70 : 90 - index,
+            pressure: `${candidate.id} pressure`,
+            revisionMandate: 'compare honestly',
+          }));
+        },
+      },
+    },
+  });
+
+  assert.equal(run.controlBaseline?.id, 'clean_agent_baseline');
+  assert.equal(run.candidates.some((candidate) => candidate.id === 'clean_agent_baseline'), false);
+  assert.deepEqual(run.fusion?.parentCandidateIds, ['evolved_0_a', 'evolved_0_b']);
+  assert.ok(run.fitnessRecords.some((record) => record.candidateId === 'clean_agent_baseline'));
+  assert.ok(run.events.some((event) => event.type === 'control_baseline.created'));
+  assert.ok(run.events.some((event) => event.type === 'control_baseline.scored'));
+});
+
 test('can evolve a child across multiple generations', async () => {
   const seenAgenomePools: string[][] = [];
   const run = await runKernel({

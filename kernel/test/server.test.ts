@@ -489,8 +489,8 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.match(response.body.candidates[0].mechanism, /panel/i);
   assert.equal(response.body.candidates.length, 12);
   assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 12);
-  assert.equal(response.body.criticVerdicts.length, 45);
-  assert.equal(response.body.fitnessRecords.length, 15);
+  assert.equal(response.body.criticVerdicts.length, 48);
+  assert.equal(response.body.fitnessRecords.length, 16);
   assert.equal(response.body.fitnessRecords[0].selection.frontier.pareto, true);
   assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
   assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');

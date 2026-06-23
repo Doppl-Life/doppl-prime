@@ -45,12 +45,17 @@ export type CandidateGenerator = {
   generate(input: CandidateGenerationInput): Promise<CandidateSolution[]>;
 };
 
+export type CleanBaselineGenerator = {
+  generate(input: CandidateGenerationInput): Promise<CandidateSolution>;
+};
+
 export type CriticCouncil = {
   judge(input: CriticJudgmentInput): Promise<CriticVerdict[]>;
 };
 
 export type GenerationProviders = {
   problemRecovery: ProblemRecoveryProvider;
+  cleanBaseline?: CleanBaselineGenerator;
   candidateGenerator: CandidateGenerator;
   criticCouncil: CriticCouncil;
 };
@@ -214,6 +219,30 @@ export async function createFixtureGenerationProviders(
           throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
         }
         return evolveCandidates(input);
+      },
+    },
+    cleanBaseline: {
+      async generate(input) {
+        const { caseStudy } = input;
+        if (fixture.caseId !== caseStudy.id) {
+          throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
+        }
+        const [candidate] = fixtureCandidatesFor(input);
+        const contextualCandidate = candidateWithAgenomeContext(
+          {
+            ...candidate!,
+            id: `clean_${candidate!.id}`,
+            title: `Clean ${candidate!.title}`,
+            summary: `Single-pass clean-agent control: ${candidate!.summary}`,
+            claimedDelta: `Control answer before Doppl fusion: ${candidate!.claimedDelta}`,
+          },
+          input,
+        );
+        return assertCandidateSolution({
+          ...contextualCandidate,
+          caseId: caseStudy.id,
+          generation: 0,
+        });
       },
     },
     criticCouncil: {

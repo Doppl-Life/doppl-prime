@@ -146,6 +146,7 @@ export async function runKernel(input: {
   const allocatedAgenomes = new Set<string>();
   let agenomePool = initialAgenomePool();
   const evolution: EvolutionGeneration[] = [];
+  let controlBaseline: CandidateSolution | undefined;
   let carryoverChild: CandidateSolution | undefined;
   let previousCriticVerdicts: CriticVerdict[] = [];
   let selectedParents: [CandidateSolution, CandidateSolution] | [] = [];
@@ -182,6 +183,65 @@ export async function runKernel(input: {
       units: allocationUnitsForAgenome(agenomeId),
       reason: 'spawn_budget_opened',
     });
+  }
+
+  if (generationProviders.cleanBaseline) {
+    traceModelOperation('control_baseline_generation');
+    controlBaseline = await generationProviders.cleanBaseline.generate({
+      runId: input.runId,
+      caseStudy,
+      problemRecovery,
+      knowledgePacket,
+      generation: 0,
+      agenomePool,
+    });
+    ensureAgenomeAllocation(controlBaseline.agenomeId, 0);
+    recordEnergy({
+      agenomeId: controlBaseline.agenomeId,
+      generation: 0,
+      kind: 'spend',
+      units: 1,
+      reason: 'control_baseline_generated',
+      candidateId: controlBaseline.id,
+    });
+    trace.push(
+      'control_baseline.created',
+      {
+        candidateId: controlBaseline.id,
+        agenomeId: controlBaseline.agenomeId,
+      },
+      { actor: 'selection_controller', candidateId: controlBaseline.id },
+    );
+    traceModelOperation('control_baseline_judgment');
+    const controlVerdicts = await generationProviders.criticCouncil.judge({
+      runId: input.runId,
+      caseStudy,
+      problemRecovery,
+      candidates: [controlBaseline],
+      knowledgePacket,
+    });
+    criticVerdicts.push(...controlVerdicts);
+    const [controlFitness] = scoreCandidates(controlVerdicts, {
+      generation: 0,
+      schedule: input.fitnessSchedule,
+      lens: input.fitnessLens,
+    });
+    if (controlFitness) {
+      fitnessRecords.push(controlFitness);
+      trace.push(
+        'control_baseline.scored',
+        {
+          candidateId: controlFitness.candidateId,
+          total: controlFitness.total,
+          axes: controlFitness.selection?.axes,
+          weights: controlFitness.selection?.weights,
+          dial: controlFitness.selection?.dial,
+          decay: controlFitness.selection?.decay,
+          lens: controlFitness.selection?.lens,
+        },
+        { actor: 'selection_controller', candidateId: controlFitness.candidateId },
+      );
+    }
   }
 
   for (let generation = 0; generation < generationCount; generation += 1) {
@@ -359,6 +419,7 @@ export async function runKernel(input: {
     energyLedger,
     agenomes,
     problemRecovery,
+    controlBaseline,
     candidates,
     criticVerdicts,
     fitnessRecords,

@@ -132,7 +132,22 @@ function latestFitnessRecord(run: KernelRun, candidateId: string): FitnessRecord
 }
 
 function candidateById(run: KernelRun, candidateId: string): CandidateSolution | undefined {
+  if (run.controlBaseline?.id === candidateId) return run.controlBaseline;
   return exportedSolutions(run).find((candidate) => candidate.id === candidateId);
+}
+
+function controlBaselineCandidate(run: KernelRun): CandidateSolution | undefined {
+  return run.controlBaseline ?? bestGenerationCandidate(run, 0);
+}
+
+function controlBaselineSelection(run: KernelRun): string {
+  return run.controlBaseline
+    ? 'clean_agent_baseline_provider'
+    : 'best_scored_generation_0_candidate';
+}
+
+function candidatePath(run: KernelRun, candidate: CandidateSolution): string {
+  return run.controlBaseline?.id === candidate.id ? 'control-baseline.md' : solutionFilename(candidate);
 }
 
 function proposalRating(record: FitnessRecord | undefined): number | null {
@@ -175,7 +190,7 @@ function assaySnapshot(
     return {
       type,
       candidateId: candidate.id,
-      path: solutionFilename(candidate),
+      path: candidatePath(run, candidate),
       title: candidate.title,
       summary: candidate.summary,
       fitnessTotal: record.total,
@@ -188,7 +203,7 @@ function assaySnapshot(
   return {
     type,
     candidateId: candidate.id,
-    path: solutionFilename(candidate),
+    path: candidatePath(run, candidate),
     title: candidate.title,
     summary: candidate.summary,
     fitnessTotal: parentAverage,
@@ -198,15 +213,16 @@ function assaySnapshot(
 }
 
 function controlBaseline(run: KernelRun): Record<string, unknown> | null {
-  const candidate = bestGenerationCandidate(run, 0);
+  const candidate = controlBaselineCandidate(run);
   if (!candidate) return null;
   const record = latestFitnessRecord(run, candidate.id);
+  const selection = controlBaselineSelection(run);
   return {
     artifact_type: 'control_baseline',
     path: 'control-baseline.md',
     sourceCandidateId: candidate.id,
-    sourceCandidatePath: solutionFilename(candidate),
-    selection: 'best_scored_generation_0_candidate',
+    sourceCandidatePath: candidatePath(run, candidate),
+    selection,
     candidate: {
       id: candidate.id,
       title: candidate.title,
@@ -228,7 +244,7 @@ function controlBaseline(run: KernelRun): Record<string, unknown> | null {
 }
 
 function assayControl(run: KernelRun): Record<string, unknown> | null {
-  const baseline = bestGenerationCandidate(run, 0);
+  const baseline = controlBaselineCandidate(run);
   const survivor = run.fusion?.child ?? run.selectedParents[0] ?? baseline;
   if (!baseline || !survivor) return null;
 
@@ -398,16 +414,17 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
 
 function controlBaselineMarkdown(run: KernelRun): string | null {
   const control = controlBaseline(run);
-  const candidate = bestGenerationCandidate(run, 0);
+  const candidate = controlBaselineCandidate(run);
   if (!control || !candidate) return null;
   const record = latestFitnessRecord(run, candidate.id);
+  const selection = controlBaselineSelection(run);
   return `${frontmatter({
     artifact_type: 'control_baseline',
     artifact_id: `control_${candidate.id}`,
     case_id: run.caseStudy.id,
     source_candidate_id: candidate.id,
-    source_candidate_path: solutionFilename(candidate),
-    selection: 'best_scored_generation_0_candidate',
+    source_candidate_path: candidatePath(run, candidate),
+    selection,
     ...calibrationFields(),
   })}
 # Clean Control Baseline: ${candidate.title}
@@ -424,7 +441,7 @@ ${candidate.claimedDelta}
 
 ## Control Selection
 
-Selected as the strongest scored generation-0 candidate before Doppl fusion and later-generation mutation pressure.
+${run.controlBaseline ? 'Generated as a separate clean-agent baseline before Doppl fusion and later-generation mutation pressure.' : 'Selected as the strongest scored generation-0 candidate before Doppl fusion and later-generation mutation pressure.'}
 
 Fitness total: ${record?.total ?? 'unscored'}
 Proposal rating: ${proposalRating(record) ?? 'n/a'}
