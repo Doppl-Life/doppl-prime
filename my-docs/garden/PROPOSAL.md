@@ -36,6 +36,26 @@ and **surfaced**.
 - **rating** — a judgment of worth on a **−5…+5** scale, as distinct from a **measurement** (a `0–1`
   instrument reading such as cosine similarity).
 
+## The conceptual model (read this first)
+
+doppl evolves ideas the way a population evolves: generate many candidates, apply selective pressure,
+breed the survivors into the next round. Two ideas govern that pressure and explain the structure
+below.
+
+- **Divergence and convergence.** A run can *diverge* — spread into many varied candidates
+  (exploration) — or *converge* — collapse toward the strongest few (exploitation). The architecture
+  already exposes this as a diverge/converge selection schedule (§8). Divergence is why one problem
+  can yield several doppls; convergence is why distinct lineages can independently reach the same
+  answer.
+- **r/K selection.** The two postures map to the ecological strategies: divergence is *r-like* (many
+  cheap offspring, broad search of unexploited space), convergence is *K-like* (few, heavily-invested
+  offspring, refined near the best). A run dials between them.
+- **Breeding, not picking.** A stage does not *select the best candidate* — it *breeds a stronger
+  child* from the whole population, taking the best traits from several. The bar is anti-fragility: a
+  child that gets stronger under the variation, not one that merely survives it.
+
+Stages, scoring, and signals below are all in service of applying that pressure legibly.
+
 ---
 
 ## 1 · A staged idea lifecycle: case_study → problem_recovery → doppl
@@ -62,6 +82,16 @@ single "final surviving idea" (§3, §12) and defers quality-diversity methods (
 prior stage), `Discovery` (what was found), `Growth` (the step's actual work and its scores), and
 `Path` (which stage comes next). The same shape at every stage.
 
+Inside `Growth`, the content is stage-specific. A `problem_recovery` node holds the recovery chain
+plus **Skin in the Game** — concrete, real-world-first moves to validate the problem (talk to users
+and people in the field before any desk research). A `doppl` node holds the **Claim**, its
+**Implications** (what it changes — who wins, who loses, what loses its substrate), and its
+**Opportunities** (the action surface — where to actually deploy or act on it). Any node may carry a
+rare **Sprouts** list (high-novelty side-ideas that aren't the conclusion, kept for later) and an
+**Evaluation** (the judge's per-axis scores and reasoning). This encodes a **bias to action**: a node
+isn't finished at analysis — a problem must say how you would test it, and a doppl must say what you
+would do; after a doppl, the next step is the human's action, not another node.
+
 **Why.** A single, uniform, portable artifact is readable by a person, an agent, or another tool with
 no special viewer, and it carries its own lineage, so any node explains itself.
 
@@ -84,8 +114,10 @@ results are persisted so a replay never re-calls the web (§4, §6).
 
 ## 4 · Stock: a persistent knowledge store
 
-**What.** A per-domain store of validated findings, grown over time. Discovery promotes a finding into
-the stock only if it clears the quality bar; near-duplicates are merged rather than re-added.
+**What.** A per-domain store of validated findings, grown over time. Two gates guard it: **admission**
+(only a high-signal *discovery* enters, not every casual *find*) and **enrichment** (a finding that
+duplicates one already in the stock is merged into it rather than re-added; a genuinely new one is
+added).
 
 **Why.** Today each run starts cold. A persistent, deduplicated store lets later runs build on earlier
 ones instead of re-deriving the same ground.
