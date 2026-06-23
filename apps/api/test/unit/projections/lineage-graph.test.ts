@@ -138,6 +138,26 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     for (const n of graph.nodes) expect(LineageNodeType.options).toContain(n.type);
   });
 
+  // PD.11 (spec §10) — a REAL-finalIdeaRef run (candidate status NOT pre-set) yields the winner candidate
+  // node with status 'selected' — the surface web `selectWinner` reads (finalIdeaData.ts). The winner is
+  // derived by the projection from run.completed.finalIdeaRef, not a hand-set payload.
+  test('test_finalIdeaRef_run_yields_selected_winner_node', () => {
+    const scored = { ...validCandidateIdeaCrossDomain, status: 'scored' as const };
+    const graph = buildLineageGraph(
+      buildCurrentState([
+        makeRow('candidate.created', { runId: 'run_1', sequence: 0, payload: scored }),
+        makeRow('run.completed', {
+          runId: 'run_1',
+          sequence: 1,
+          payload: { from: 'running', to: 'completed', finalIdeaRef: 'cand_1' },
+        }),
+      ]),
+    );
+    const node = graph.nodes.find((n) => n.id === 'cand_1');
+    expect(node?.type).toBe('candidate');
+    expect(node?.status).toBe('selected');
+  });
+
   // §2.5-seam producer-conformance — the builder output safeParses the frozen P0.13 contract.
   test('test_output_conforms_to_frozen_contract', () => {
     const graph = buildLineageGraph(buildCurrentState(fullRunEvents('run_1')));
