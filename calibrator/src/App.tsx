@@ -275,8 +275,8 @@ export function App() {
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
-      ? `problem_recovery:${selectedProblemRecovery?.problem_recovery_id ?? ""}`
-      : `solution:${selectedSolution?.solution_id ?? ""}`;
+      ? selectedProblemRecovery?.problem_recovery_id ?? ""
+      : selectedSolution?.solution_id ?? "";
   const activeQueueIndex = reviewQueue.findIndex((item) => item.target === ratingTarget && item.id === (ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : selectedSolution?.solution_id));
   const unratedCount = reviewQueue.filter((item) => item.artifact.human_ratings.length === 0).length;
   const nextUnratedItem = useMemo(() => {
@@ -479,9 +479,38 @@ export function App() {
           <span>Include audit artifacts</span>
         </label>
 
+        <div className="target-toggle" aria-label="Review type">
+          <button
+            type="button"
+            className={ratingTarget === "problem_recovery" ? "active" : ""}
+            disabled={visibleProblemRecoveries.length === 0}
+            onClick={() => {
+              setRatingTarget("problem_recovery");
+              setScore(null);
+              setSavedPath("");
+              setSourceDetailsOpen(false);
+            }}
+          >
+            Problem recoveries
+          </button>
+          <button
+            type="button"
+            className={ratingTarget === "solution" ? "active" : ""}
+            disabled={visibleSolutions.length === 0}
+            onClick={() => {
+              setRatingTarget("solution");
+              setScore(null);
+              setSavedPath("");
+              setSourceDetailsOpen(false);
+            }}
+          >
+            Doppls
+          </button>
+        </div>
+
         <div className="artifact-control">
           <div className="artifact-select-header">
-            <span>Review artifact</span>
+            <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</span>
             <button
               type="button"
               className="next-unrated-button"
@@ -494,32 +523,30 @@ export function App() {
             </button>
           </div>
           <select
-            aria-label="Review artifact"
+            aria-label={ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}
             value={activeArtifactValue}
             onChange={(event) => {
-              const [nextTarget, nextId] = event.target.value.split(":");
-              if (nextTarget === "problem_recovery") {
-                setRatingTarget("problem_recovery");
-                setSelectedProblemRecoveryId(nextId);
+              if (ratingTarget === "problem_recovery") {
+                setSelectedProblemRecoveryId(event.target.value);
               } else {
-                setRatingTarget("solution");
-                setSelectedSolutionId(nextId);
+                setSelectedSolutionId(event.target.value);
               }
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
             }}
           >
-            {visibleProblemRecoveries.map((recovery) => (
-              <option key={recovery.problem_recovery_id} value={`problem_recovery:${recovery.problem_recovery_id}`}>
-                {recovery.title}
-              </option>
-            ))}
-            {visibleSolutions.map((solution) => (
-              <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
-                {solution.title}
-              </option>
-            ))}
+            {ratingTarget === "problem_recovery"
+              ? visibleProblemRecoveries.map((recovery) => (
+                  <option key={recovery.problem_recovery_id} value={recovery.problem_recovery_id}>
+                    {recovery.title}
+                  </option>
+                ))
+              : visibleSolutions.map((solution) => (
+                  <option key={solution.solution_id} value={solution.solution_id}>
+                    {solution.title}
+                  </option>
+                ))}
           </select>
         </div>
       </section>

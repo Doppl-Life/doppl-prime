@@ -139,9 +139,13 @@ describe("App", () => {
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Accident-Economy Transition Ledger");
-    expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
+    expect(screen.getByRole("button", { name: "Problem recoveries" })).toHaveClass("active");
+    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
+    expect(screen.getByLabelText("Problem recovery")).not.toHaveTextContent("Accident-Economy Transition Ledger");
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+    expect(screen.getByLabelText("Doppl")).toHaveTextContent("Accident-Economy Transition Ledger");
+    expect(screen.getByLabelText("Doppl")).not.toHaveTextContent("Crash Substrate Exposure Map");
+    await userEvent.click(screen.getByRole("button", { name: "Problem recoveries" }));
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
@@ -224,7 +228,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).toHaveValue("fsd-accident-economy");
     expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
-    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
+    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
   it("renders a searchable rater allow-list and rejects unknown reviewers", async () => {
@@ -256,9 +260,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
     expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Review artifact")).toHaveValue(
-      "solution:dalton-fsd-accident-economy-001__solution",
-    );
+    expect(screen.getByLabelText("Doppl")).toHaveValue("dalton-fsd-accident-economy-001__solution");
   });
 
   it("formats compressed aGarden artifact markdown as readable sections", async () => {
@@ -278,9 +280,10 @@ describe("App", () => {
   it("submits a rating and shows the saved path", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(
-      screen.getByLabelText("Review artifact"),
-      "solution:dalton-fsd-accident-economy-001__solution",
+      screen.getByLabelText("Doppl"),
+      "dalton-fsd-accident-economy-001__solution",
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Reviewer email"), "melissa.hargis@challenger.gauntletai.com");
@@ -296,8 +299,8 @@ describe("App", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     await userEvent.selectOptions(
-      screen.getByLabelText("Review artifact"),
-      "problem_recovery:dalton-fsd-accident-economy-001__problem_recovery",
+      screen.getByLabelText("Problem recovery"),
+      "dalton-fsd-accident-economy-001__problem_recovery",
     );
     expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
@@ -397,9 +400,10 @@ describe("App", () => {
 
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(
-      screen.getByLabelText("Review artifact"),
-      "solution:dalton-fsd-accident-economy-001__solution",
+      screen.getByLabelText("Doppl"),
+      "dalton-fsd-accident-economy-001__solution",
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
@@ -410,7 +414,8 @@ describe("App", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     await userEvent.click(screen.getByLabelText("Include audit artifacts"));
-    await userEvent.selectOptions(screen.getByLabelText("Review artifact"), "solution:cody-accident-economy-map");
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "cody-accident-economy-map");
     expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Comparison set provenance")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
@@ -427,9 +432,10 @@ describe("App", () => {
 
   it("keeps artifact labels visible without blind review mode", async () => {
     render(<App />);
+    await userEvent.click(await screen.findByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(
-      await screen.findByLabelText("Review artifact"),
-      "solution:dalton-fsd-accident-economy-001__solution",
+      await screen.findByLabelText("Doppl"),
+      "dalton-fsd-accident-economy-001__solution",
     );
     expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();

@@ -132,6 +132,41 @@ p {
   padding: 0 10px;
 }
 
+.target-toggle {
+  align-self: end;
+  background: #0d1a2a;
+  border: 1px solid #40566c;
+  border-radius: 4px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 38px;
+  padding: 4px;
+}
+
+.target-toggle button {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: #c6d3e1;
+  font-size: 12px;
+  font-weight: 900;
+  min-width: 0;
+  padding: 6px 8px;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.target-toggle button.active {
+  background: #d8f7ef;
+  color: #0b514a;
+}
+
+.target-toggle button:disabled {
+  opacity: 0.45;
+}
+
 select,
 input,
 textarea {
@@ -357,8 +392,7 @@ textarea {
   overflow-wrap: anywhere;
 }
 
-.adapter-note,
-.blind-note {
+.adapter-note {
   border-top: 1px solid var(--line);
   font-size: 13px;
   font-weight: 850;
@@ -369,11 +403,6 @@ textarea {
 .adapter-note {
   background: #fff8e7;
   color: #4f3b12;
-}
-
-.blind-note {
-  background: #eefdf9;
-  color: #0f4f49;
 }
 
 .rating-dock {
@@ -498,6 +527,10 @@ textarea {
   .artifact-control {
     grid-column: 1 / -1;
   }
+
+  .target-toggle {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 760px) {
@@ -515,7 +548,7 @@ textarea {
   }
 
   .review-controls {
-    grid-template-columns: minmax(180px, 0.82fr) minmax(190px, auto) minmax(260px, 1.18fr);
+    grid-template-columns: minmax(170px, 0.76fr) minmax(190px, auto) minmax(210px, auto) minmax(300px, 1.18fr);
     padding: 0 20px 12px;
   }
 
@@ -537,7 +570,7 @@ textarea {
 
 @media (min-width: 1180px) {
   .review-controls {
-    grid-template-columns: minmax(180px, 220px) minmax(190px, 240px) minmax(420px, 1fr);
+    grid-template-columns: minmax(180px, 220px) minmax(190px, 240px) minmax(210px, 250px) minmax(360px, 1fr);
   }
 }
 
