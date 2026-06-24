@@ -266,8 +266,13 @@ describe("App", () => {
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     expect(screen.getByRole("heading", { name: "Trace" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Case study · Synopsis" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Growth — Problem recovery" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Claim Manual Underwriting Is Too Slow" })).toBeInTheDocument();
     expect(screen.getByText("FTC reports on algorithmic bias -> field: xai-frameworks")).toBeInTheDocument();
     expect(screen.queryByText(/span class/)).not.toBeInTheDocument();
+    for (const heading of screen.getAllByRole("heading")) {
+      expect(heading.textContent).not.toContain("#");
+    }
   });
 
   it("submits a rating and shows the saved path", async () => {

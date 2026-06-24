@@ -67,6 +67,8 @@ function displayMarkdown(text: string): string {
 function cleanHeading(text: string): string {
   const cleaned = text
     .replace(/^#{1,6}\s*/, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/#{1,6}/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase()
@@ -85,7 +87,15 @@ function cleanHeading(text: string): string {
 }
 
 function renderInlineText(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
+  return text
+    .replace(/<span\s+class=["']arrow["']\s*-?>/gi, " -> ")
+    .replace(/<\/span>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function MarkdownBlock({ text }: { text: string }) {
