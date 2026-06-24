@@ -3,6 +3,7 @@ import { AppShell } from '../components/app/AppShell';
 import { Dashboard } from '../routes/Dashboard';
 import { RunsHomeScreen } from '../routes/RunsHomeScreen';
 import { S2OrganismView } from '../routes/S2OrganismView';
+import { S5FinalIdeaScreen } from '../routes/S5FinalIdeaScreen';
 import { useRunClient } from '../data/RunClientProvider';
 import type { RunMode } from '../state/reducer';
 
@@ -14,11 +15,10 @@ import type { RunMode } from '../state/reducer';
  *                        RunListPanel reachable; the dedicated S1 Launcher lands in FV.3)
  *   /runs/:id          → S2 Organism View, LIVE (3-pane; FV.4)
  *   /runs/:id/replay   → S2 Organism View, REPLAY (FV.4)
- *   /runs/:id/final    → interim: the Dashboard observatory (renders FinalIdeaPanel on terminal);
- *                        dedicated S5 = FV.7
+ *   /runs/:id/final    → S5 Final-Idea / payoff screen (winner card + generational climb; FV.7)
  *   *                  → redirect to /
  * The observed run + mode come from the URL. The existing tested data layer (runClient/SSE/store) is
- * reused — S2OrganismView via the extracted useRunObservatory hook; /launch + /final via Dashboard.
+ * reused — S2OrganismView + S5FinalIdeaScreen via the extracted useRunObservatory hook; /launch via Dashboard.
  */
 function LaunchRoute() {
   const runClient = useRunClient();
@@ -40,19 +40,19 @@ function OrganismRoute({ mode }: { mode: RunMode }) {
   return <S2OrganismView key={`${mode}:${id}`} runId={id} mode={mode} runClient={runClient} />;
 }
 
-/** Interim Dashboard observatory for /runs/:id/final until FV.7 builds the dedicated S5. */
+/** S5 Final-Idea / payoff screen (FV.7) for /runs/:id/final. Keyed by id; mode='live' (the replay-final
+ *  label is FV.8). Clicking the winner's lineage ref jumps to the organism view to inspect that node. */
 function FinalRoute() {
   const { id = '' } = useParams();
   const runClient = useRunClient();
   const navigate = useNavigate();
   return (
-    <Dashboard
+    <S5FinalIdeaScreen
       key={`final:${id}`}
       runId={id}
       mode="live"
       runClient={runClient}
-      onObserveLive={(rid) => navigate(`/runs/${rid}`)}
-      onObserveReplay={(rid) => navigate(`/runs/${rid}/replay`)}
+      onSelectLineageNode={() => navigate(`/runs/${id}`)}
     />
   );
 }

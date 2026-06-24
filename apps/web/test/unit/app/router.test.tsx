@@ -167,12 +167,11 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_2/replay'));
   });
 
-  // spec(§12 / AC3): /runs/:id/final RESOLVES to the interim Dashboard view (which renders
-  // FinalIdeaPanel on terminal) — NOT a redirect to home; the dedicated S5 lands in FV.7. Pinning
-  // this stops the route silently falling through to the unknown→/ redirect.
-  it('test_route_final_resolves', async () => {
-    const { client } = renderAt('/runs/run_1/final');
-    await waitFor(() => expect(client.getRunHealth).toHaveBeenCalledWith('run_1'));
+  // spec(§12 / FV.7): /runs/:id/final mounts the dedicated S5FinalIdeaScreen (NOT the FV.1 interim
+  // Dashboard) — its distinct "Doppl final idea" landmark proves the repoint; the path is not redirected.
+  it('test_final_route_mounts_s5_screen', async () => {
+    renderAt('/runs/run_1/final');
+    expect(await screen.findByLabelText(/doppl final idea/i)).toBeTruthy(); // S5 landmark (not Dashboard)
     expect(screen.getByTestId('loc').textContent).toBe('/runs/run_1/final'); // not redirected
   });
 });
