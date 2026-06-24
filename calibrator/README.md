@@ -1,6 +1,8 @@
 # Doppl Calibrator
 
-Calibrator is a vault-first review workbench for rating Doppl problem recovery and solution artifacts. The markdown files under `../calibration-vault/` are the source of truth; the React app reads those files through a local Vite middleware and writes submitted human ratings back as markdown plus an append-only JSONL ledger.
+Calibrator is the Judgment UI for rating aGarden problem recovery and doppl nodes. The canonical shared data source is the sibling `../agarden/` checkout from `Doppl-Life/agarden`; the older `../calibration-vault/` reader remains as a compatibility fallback.
+
+The aGarden ratings ledger is the source of truth for human ratings. Node markdown stores the materialized projection, currently `scores.human` and `scores.n`.
 
 ## Run Locally
 
@@ -27,15 +29,15 @@ The app can run as a read-only static build because it falls back from `/api/ind
 npm --prefix calibrator run export:static
 ```
 
-Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing cases, problem recoveries, solutions, and score history; saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing case studies, problem recoveries, doppls, and score history. Saving ratings requires the local dev API or a future hosted backend.
 
-The future hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps markdown as the durable source of truth while allowing a signed-in server deployment to validate, write, and index rating submissions.
+The future hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
 
 ## Calibration History
 
-The app reads existing rating markdown from each case's `ratings/` folder and attaches those records to the matching problem recovery or solution in the generated index. Review panels show the current human average, rating count, judge-score delta when applicable, and recent notes so reviewers can see calibration evidence without leaving the workbench.
+In aGarden mode, the app reads root `ratings-ledger.json` and attaches each ledger entry to the matching problem recovery or doppl node in the generated index.
 
-In local writable mode, submitting a rating writes markdown plus the JSONL ledger event, then refreshes the vault index so the new rating appears immediately. In static preview mode, the same history is visible from the committed export, but the submit button stays disabled.
+In local writable mode, submitting a rating upserts exactly one current rating for `(node_id, rater_id)`, recomputes `scores.human` and `scores.n`, materializes that projection into the selected node markdown, then refreshes the index so the new rating appears immediately. In static GitHub Pages mode, the same history is visible from the committed export, but the submit button stays disabled.
 
 ## Canonical Markdown Input
 
@@ -109,15 +111,17 @@ The current `fsd-accident-economy-v0` set is marked `fixture_only`. The Cody-, M
 
 Importers should not create pseudo-solution artifacts when a branch has no case-specific output. Branch architecture/code provenance belongs in docs or importer logs, not in the review artifact selector.
 
-The review queue defaults to primary artifacts only: `source_status: imported` or `source_status: live_run`. Fixture, pending, and unknown-status artifacts are audit-only by default. Reviewers can include them with the audit toggle for provenance inspection, but they are not valid rating targets.
+The review queue shows primary rateable artifacts only: `source_status: imported` or `source_status: live_run`. Fixture, pending, and unknown-status artifacts stay out of the reviewer path because the Judgment UI should only present problem recoveries and doppls that can be rated.
 
 ## Review Controls
 
-Reviewers first choose a case study, then choose whether they are rating the recovered problem or one of the proposed solutions. The review surface is a single-column trace: case context, stated context, selected artifact, then hidden provenance details for audits.
+Reviewers first choose a case study, then use the vertical `Problem recoveries` / `Doppls` switch to choose the artifact type, then choose the specific rateable artifact from the matching dropdown.
 
-Problem recovery and solution artifacts both use the same bottom-docked `-5` to `+5` score slider plus optional notes. The active reviewer should be able to move through a calibration session without managing separate verdict categories or provenance filters.
+The review surface shows full-width case context, supplemental discovery context when it is not a duplicate of the case text, the selected artifact, and hidden source details for provenance.
 
-Blind review mode masks kernel/source labels, provenance metadata, source mapping notes, and obvious branch names in review text. Source details are collapsed by default and can be revealed with one audit toggle when reviewers need traceability.
+Problem recovery and doppl artifacts both use the same bottom-docked `-5` to `+5` score slider plus optional notes. The active reviewer should be able to move through a calibration session without managing verdict categories, audit filters, or provenance/debug artifacts.
+
+Source details are collapsed by default and can be revealed for the selected artifact when reviewers need traceability.
 
 ## Vault Shape
 

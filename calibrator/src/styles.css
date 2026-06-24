@@ -110,7 +110,7 @@ p {
 }
 
 .target-toggle {
-  align-self: end;
+  align-self: center;
   background: #0d1a2a;
   border: 1px solid #40566c;
   border-radius: 4px;
@@ -163,7 +163,7 @@ textarea {
 }
 
 .review-controls {
-  align-items: end;
+  align-items: center;
   border-top: 1px solid #40566c;
   display: grid;
   gap: 10px;
@@ -173,6 +173,7 @@ textarea {
 }
 
 .artifact-control {
+  align-self: center;
   display: grid;
   gap: 5px;
   min-width: 0;
@@ -226,6 +227,10 @@ textarea {
 
 .trace-step {
   padding: 14px;
+}
+
+.case-step {
+  grid-column: 1 / -1;
 }
 
 .selected-step {
