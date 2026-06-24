@@ -29,7 +29,9 @@ The app can run as a read-only static build because it falls back from `/api/ind
 npm --prefix calibrator run export:static
 ```
 
-Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing case studies, problem recoveries, doppls, and score history. Saving ratings requires the local dev API or a future hosted backend.
+Host `published/calibrator/` to show the calibrator online. The `calibration` branch includes a GitHub Pages workflow for deploying the committed `published/` folder. Static preview supports browsing case studies, problem recoveries, doppls, and score history. Saving ratings requires the local dev API or a hosted backend configured through `calibrator-config.js`.
+
+`calibrator-config.js` is intentionally public and must contain only non-secret browser configuration. To enable hosted writes later, set `window.DOPPL_CALIBRATOR_CONFIG.ratingsEndpoint` to the deployed ratings API URL. Do not put GitHub tokens, GitHub App keys, session secrets, or provider keys in this file.
 
 The future hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
 
@@ -37,7 +39,7 @@ The future hosted write path is specified in `../docs/calibrator-hosted-write-pa
 
 In aGarden mode, the app reads root `ratings-ledger.json` and attaches each ledger entry to the matching problem recovery or doppl node in the generated index.
 
-In local writable mode, submitting a rating upserts exactly one current rating for `(node_id, rater_id)`, recomputes `scores.human` and `scores.n`, materializes that projection into the selected node markdown, then refreshes the index so the new rating appears immediately. In static GitHub Pages mode, the same history is visible from the committed export, but the submit button stays disabled.
+In local writable mode, submitting a rating upserts exactly one current rating for `(node_id, rater_id)`, recomputes `scores.human` and `scores.n`, materializes that projection into the selected node markdown, then refreshes the index so the new rating appears immediately. In static GitHub Pages mode, the same history is visible from the committed export; the submit button stays disabled until a hosted ratings API endpoint is configured.
 
 ## Canonical Markdown Input
 

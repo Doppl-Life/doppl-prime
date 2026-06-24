@@ -14,9 +14,18 @@ import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
 
 type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
+const LOCAL_RATINGS_ENDPOINT = "/api/ratings";
 type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
   | { target: "solution"; id: string; artifact: CalibratorSolution };
+
+declare global {
+  interface Window {
+    DOPPL_CALIBRATOR_CONFIG?: {
+      ratingsEndpoint?: string;
+    };
+  }
+}
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -180,6 +189,10 @@ function artifactTitle(artifact: ReviewArtifact | null): string {
   return artifact.title;
 }
 
+function hostedRatingsEndpoint(): string {
+  return window.DOPPL_CALIBRATOR_CONFIG?.ratingsEndpoint?.trim() ?? "";
+}
+
 export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
@@ -199,6 +212,7 @@ export function App() {
   const [savedPath, setSavedPath] = useState("");
   const [error, setError] = useState("");
   const [isWritable, setIsWritable] = useState(false);
+  const [ratingsEndpoint, setRatingsEndpoint] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function loadIndex() {
@@ -206,6 +220,7 @@ export function App() {
       const apiResponse = await fetch("/api/index", { cache: "no-store" });
       if (apiResponse.ok) {
         setIsWritable(true);
+        setRatingsEndpoint(LOCAL_RATINGS_ENDPOINT);
         return (await apiResponse.json()) as CalibratorIndex;
       }
     } catch {
@@ -214,7 +229,9 @@ export function App() {
 
     const staticResponse = await fetch(`calibration-index.json?v=${Date.now()}`, { cache: "no-store" });
     if (!staticResponse.ok) throw new Error("Failed to load vault index");
-    setIsWritable(false);
+    const hostedEndpoint = hostedRatingsEndpoint();
+    setIsWritable(Boolean(hostedEndpoint));
+    setRatingsEndpoint(hostedEndpoint);
     return (await staticResponse.json()) as CalibratorIndex;
   }
 
@@ -348,8 +365,8 @@ export function App() {
       setError("This artifact is audit-only. Inspect it for provenance, but rate imported or live run outputs.");
       return;
     }
-    if (!isWritable) {
-      setError("Static preview is read-only. Run the local calibrator dev server to save ratings.");
+    if (!isWritable || !ratingsEndpoint) {
+      setError("Static preview is read-only until a hosted ratings API is configured.");
       return;
     }
     setError("");
@@ -357,7 +374,7 @@ export function App() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/ratings", {
+      const response = await fetch(ratingsEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -674,7 +691,7 @@ export function App() {
         >
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
         </button>
-        {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
+        {!isWritable ? <p className="mode-note">Rating writes require the local dev server or hosted ratings API.</p> : null}
         {error ? (
           <p role="alert" className="error">
             {error}

@@ -60,6 +60,16 @@ The hosted service should:
 
 The static GitHub Pages preview remains read-only. Writable hosted mode must be a separate deployment with server-side aGarden write access.
 
+The browser discovers that hosted deployment through the public `calibrator-config.js` file:
+
+```js
+window.DOPPL_CALIBRATOR_CONFIG = {
+  ratingsEndpoint: "https://example-host/api/agarden/ratings",
+};
+```
+
+That value is only a URL. It is not an authorization secret and must not grant write access by itself.
+
 Recommended credential model:
 
 - Use a GitHub App installed only on `Doppl-Life/agarden`.

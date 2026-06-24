@@ -111,6 +111,7 @@ const fixture: CalibratorIndex = {
 describe("App", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    delete window.DOPPL_CALIBRATOR_CONFIG;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
@@ -434,7 +435,47 @@ describe("App", () => {
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
-    expect(screen.getByText("Rating writes require the local dev server.")).toBeInTheDocument();
+    expect(screen.getByText("Rating writes require the local dev server or hosted ratings API.")).toBeInTheDocument();
+  });
+
+  it("submits through the hosted ratings endpoint when static preview is configured", async () => {
+    window.DOPPL_CALIBRATOR_CONFIG = {
+      ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
+    };
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response("not found", { status: 404 });
+      }
+      if (url.startsWith("calibration-index.json")) {
+        return new Response(JSON.stringify(fixture), { status: 200 });
+      }
+      if (url === "https://ratings.example.test/api/agarden/ratings" && init?.method === "POST") {
+        return new Response(
+          JSON.stringify({
+            ratingId: "hosted-rating",
+            relativePath: "ratings-ledger.json",
+          }),
+          { status: 201 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://ratings.example.test/api/agarden/ratings",
+      expect.objectContaining({ method: "POST" }),
+    );
   });
 
   it("keeps source details collapsed behind one toggle", async () => {
