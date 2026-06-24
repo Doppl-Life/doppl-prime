@@ -259,7 +259,8 @@ textarea {
   max-width: 920px;
 }
 
-.case-step .markdown-block {
+.case-step .markdown-block,
+.selected-step .markdown-block {
   max-width: none;
   width: 100%;
 }
