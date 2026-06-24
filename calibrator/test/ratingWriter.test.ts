@@ -20,7 +20,7 @@ describe("writeRatingMarkdown", () => {
         solution_id: "cody-accident-economy-map",
         score: 4,
         notes: "Strong map of second-order effects.",
-        reviewer_email: "reviewer@gauntletai.com",
+        reviewer_email: "melissa.hargis@challenger.gauntletai.com",
       },
     });
 
@@ -41,7 +41,7 @@ describe("writeRatingMarkdown", () => {
     expect(ledgerEvent.solution_id).toBe("cody-accident-economy-map");
     expect(ledgerEvent.score).toBe(4);
     expect(ledgerEvent.verdict).toBeUndefined();
-    expect(ledgerEvent.reviewer_email).toBe("reviewer@gauntletai.com");
+    expect(ledgerEvent.reviewer_email).toBe("melissa.hargis@challenger.gauntletai.com");
   });
 
   it("writes a problem recovery rating markdown file", async () => {

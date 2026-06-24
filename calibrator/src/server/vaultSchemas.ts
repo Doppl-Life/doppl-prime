@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedRater, normalizeRaterEmail } from "../raters";
 
 const IsoDateString = z.preprocess((value) => {
   if (value instanceof Date) return value.toISOString();
@@ -16,6 +17,10 @@ const ScoresProjection = z
     n: z.number().int().min(0).optional(),
   })
   .optional();
+const ReviewerEmail = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  return normalizeRaterEmail(value);
+}, z.string().email().optional().or(z.literal("")));
 
 export const CaseFrontmatter = z.object({
   artifact_type: z.literal("case"),
@@ -128,7 +133,7 @@ export const RatingSubmission = z
     problem_recovery_id: z.string().min(1).optional(),
     score: z.number().int().min(-5).max(5),
     notes: z.string().default(""),
-    reviewer_email: z.string().email().optional().or(z.literal("")),
+    reviewer_email: ReviewerEmail,
     reviewer_name: z.string().optional(),
   })
   .superRefine((value, ctx) => {
@@ -144,6 +149,13 @@ export const RatingSubmission = z
         code: z.ZodIssueCode.custom,
         path: ["problem_recovery_id"],
         message: "problem_recovery_id is required",
+      });
+    }
+    if (value.reviewer_email && !isAllowedRater(value.reviewer_email)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reviewer_email"],
+        message: "reviewer_email must be an allow-listed rater",
       });
     }
   });

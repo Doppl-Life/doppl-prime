@@ -12,8 +12,10 @@ import {
   reviewModeLabel,
   type ReviewArtifact,
 } from "./reviewability";
+import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
 
 type RatingTarget = "problem_recovery" | "solution";
+const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
 type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
   | { target: "solution"; id: string; artifact: CalibratorSolution; solutionIndex: number };
@@ -120,7 +122,13 @@ export function App() {
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
-  const [reviewerEmail, setReviewerEmail] = useState("");
+  const [reviewerEmail, setReviewerEmail] = useState(() => {
+    try {
+      return window.localStorage.getItem(REVIEWER_STORAGE_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [savedPath, setSavedPath] = useState("");
   const [error, setError] = useState("");
   const [isWritable, setIsWritable] = useState(false);
@@ -218,6 +226,7 @@ export function App() {
   const activeTitle = artifactTitle(activeReviewArtifact, blindMode, activeSolutionIndex);
   const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
+  const reviewerIsAllowed = isAllowedRater(reviewerEmail);
   const hiddenAuditCount =
     allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "audit").length +
     allSolutions.filter((artifact) => reviewMode(artifact) === "audit").length;
@@ -274,6 +283,10 @@ export function App() {
 
   async function submitRating() {
     if (!selectedCase || !activeReviewArtifact || score === null) return;
+    if (!reviewerIsAllowed) {
+      setError("Choose a reviewer from the allow-list before submitting.");
+      return;
+    }
     if (!activeIsSubmittable) {
       setError("This artifact is audit-only. Inspect it for provenance, but rate imported or live run outputs.");
       return;
@@ -298,7 +311,7 @@ export function App() {
             ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
           score,
           notes,
-          reviewer_email: reviewerEmail,
+          reviewer_email: normalizeRaterEmail(reviewerEmail),
         }),
       });
       const body = (await response.json()) as Partial<RatingSubmitResponse> & { error?: string };
@@ -328,6 +341,17 @@ export function App() {
     setScore(null);
     setSavedPath("");
     setSourceDetailsOpen(false);
+  }
+
+  function updateReviewerEmail(value: string) {
+    setReviewerEmail(value);
+    try {
+      if (isAllowedRater(value)) {
+        window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
+      }
+    } catch {
+      // Local storage is a convenience only; rating validation remains server-side.
+    }
   }
 
   if (error && !index) {
@@ -530,10 +554,19 @@ export function App() {
           <span>Reviewer email</span>
           <input
             type="email"
+            list="reviewer-email-options"
             value={reviewerEmail}
-            onChange={(event) => setReviewerEmail(event.target.value)}
+            onChange={(event) => updateReviewerEmail(event.target.value)}
             placeholder="name@gauntletai.com"
           />
+          <datalist id="reviewer-email-options">
+            {ALLOWED_RATERS.map((rater) => (
+              <option key={rater} value={rater} />
+            ))}
+          </datalist>
+          {reviewerEmail && !reviewerIsAllowed ? (
+            <span className="field-note">Choose a reviewer from the allow-list.</span>
+          ) : null}
         </label>
         <label className="field notes-field">
           <span>Notes</span>
@@ -570,7 +603,7 @@ export function App() {
         <button
           className="submit-button"
           type="button"
-          disabled={score === null || isSubmitting || !isWritable || !activeIsSubmittable}
+          disabled={score === null || isSubmitting || !isWritable || !activeIsSubmittable || !reviewerIsAllowed}
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}

@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
+import { ALLOWED_RATERS } from "../src/raters";
 import type { CalibratorIndex } from "../src/types";
 
 const fixture: CalibratorIndex = {
@@ -107,6 +108,7 @@ const fixture: CalibratorIndex = {
 
 describe("App", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string, init?: RequestInit) => {
@@ -144,7 +146,32 @@ describe("App", () => {
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
+  });
+
+  it("renders a searchable rater allow-list and rejects unknown reviewers", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    const reviewerInput = screen.getByLabelText("Reviewer email");
+    expect(reviewerInput).toHaveAttribute("list", "reviewer-email-options");
+    expect(
+      document.querySelector('datalist#reviewer-email-options option[value="melissa.hargis@challenger.gauntletai.com"]'),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll("datalist#reviewer-email-options option")).toHaveLength(ALLOWED_RATERS.length);
+
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(reviewerInput, "unknown@example.com");
+    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
+    expect(screen.getByText("Choose a reviewer from the allow-list.")).toBeInTheDocument();
+  });
+
+  it("loads the previously selected rater from local storage", async () => {
+    window.localStorage.setItem("doppl-calibrator-reviewer-email", "cody.clayton@challenger.gauntletai.com");
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByLabelText("Reviewer email")).toHaveValue("cody.clayton@challenger.gauntletai.com");
   });
 
   it("moves to the next unrated artifact in the review queue", async () => {
@@ -166,6 +193,7 @@ describe("App", () => {
       "solution:dalton-fsd-accident-economy-001__solution",
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "melissa.hargis@challenger.gauntletai.com");
     await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
     await userEvent.click(screen.getByRole("button", { name: "Submit doppl rating" }));
     await waitFor(() => {
@@ -183,6 +211,7 @@ describe("App", () => {
     );
     expect(screen.getByText("Crash-Volume Revenue Dependency")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "cody.clayton@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -196,9 +225,7 @@ describe("App", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/ratings",
       expect.objectContaining({
-        body: expect.stringContaining(
-          '"problem_recovery_id":"dalton-fsd-accident-economy-001__problem_recovery"',
-        ),
+        body: expect.stringContaining('"problem_recovery_id":"dalton-fsd-accident-economy-001__problem_recovery"'),
       }),
     );
   });
