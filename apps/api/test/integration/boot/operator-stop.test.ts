@@ -17,10 +17,11 @@ import { bootApp } from '../../../src/main';
  * `operatorStop` seam) at its next generation boundary, drains the current generation, and terminalizes
  * `run.stopped` (`running→stopping`, reason `operator_stop`, actor `runtime`) — the route appends NOTHING.
  *
- * The loop's kill-check runs at the TOP of each generation iteration, so a drain needs ≥2 generations: a
- * gated gateway holds the worker mid-gen-0, the stop is latched, the gate is released → gen-0 completes →
- * the gen-1 kill-check fires → `run.stopped`. Each test boots against its OWN database (the real
- * whole-DB `listRunIds`).
+ * The loop polls the kill at the top of each generation iteration AND in-loop between operations (BUG 2,
+ * run 6b714273): a stop latched mid-generation halts the loop within one bounded step (before the next
+ * agenome's generation / reproduction), draining the current generation. A gated gateway holds the worker
+ * mid-gen-0; on release the in-loop poll fires → drain → `run.stopped`. Each test boots against its OWN
+ * database (the real whole-DB `listRunIds`).
  */
 
 // ---- isolated-database harness ----------------------------------------------------------------
@@ -309,6 +310,40 @@ describe('operator-stop rewire — POST /runs/:id/stop signals the kill-and-drai
     const rows = await probeStore(url).readByRun(runId);
     // gen-0 ran (its generation.started is present); gen-1 NEVER started (killed at the boundary).
     expect(rows.filter((r) => r.type === 'generation.started')).toHaveLength(1);
+    expect(rows.some((r) => r.type === 'run.stopped')).toBe(true);
+    await close();
+  });
+
+  // spec(§5) rule #1 — BUG 2 (run 6b714273): a stop latched MID-GENERATION halts the loop WITHIN the
+  // generation (between operations), NOT only at a generation boundary. The runaway shape was a single
+  // generation that, once started, ran to completion (or force-kill) never re-checking the kill. Here the
+  // run has ONLY ONE generation but maxPopulation 2: the gateway gates gen-0's FIRST agenome → the stop is
+  // latched while gen-0 is mid-flight → on release the loop's in-loop poll (before the SECOND agenome's
+  // generation) sees the stop and drains. Pre-fix the loop never re-checked inside a generation, so with a
+  // single generation the stop was never observed and NO candidate.created was skipped.
+  test('stop_mid_generation_halts_within_one_generation', async () => {
+    const url = await freshDatabaseUrl();
+    const { gateway, open, reached } = gatedGateway();
+    const { onSettled, settled } = settledLatch();
+    const { app, close } = await bootApp({
+      env: bootEnv(url, { DOPPL_MAX_GENERATIONS: '1', DOPPL_MAX_POPULATION: '2' }),
+      port: 0,
+      host: '127.0.0.1',
+      gateway,
+      onSettled,
+    });
+    const port = addressPort(app.server);
+    const run = await postRun(port);
+    const { runId } = run.json as { runId: string };
+    await reached; // gen-0's first agenome is gated mid-flight — latch the stop now.
+    await postStop(port, runId);
+    open();
+    await settled;
+    const rows = await probeStore(url).readByRun(runId);
+    // The loop HALTED inside the single generation: the SECOND agenome's candidate was never produced
+    // (in-loop kill poll fired before it), and the run terminalized run.stopped — within ONE generation.
+    expect(rows.filter((r) => r.type === 'generation.started')).toHaveLength(1);
+    expect(rows.filter((r) => r.type === 'candidate.created').length).toBeLessThan(2);
     expect(rows.some((r) => r.type === 'run.stopped')).toBe(true);
     await close();
   });

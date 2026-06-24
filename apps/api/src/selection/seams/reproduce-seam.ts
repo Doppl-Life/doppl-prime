@@ -137,6 +137,12 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
   return async (ctx: ReproduceContext): Promise<void> => {
     const { runId, generationId, append, parents, scoredEvents } = ctx;
     const eligibleParents = projectSuccessorParents(parents, scoredEvents);
+    // BUG 1 (run 6b714273) — the offspring headroom is the KERNEL-COMPUTED `ctx.spawnBudget` (rule #1: a
+    // HINT clamped to `min(maxPopulation, remaining-energy headroom)`, computed by the loop over the
+    // persisted log — NEVER the seam's own raw `maxPopulation`, which ignored remaining caps and minted a
+    // fresh full-cap batch every generation). The kernel additionally backstops over-production post-reproduce.
+    // `deps.maxPopulation` is the belt-and-suspenders ceiling (the budget never exceeds it; the loop clamps).
+    const remainingPopulation = Math.min(ctx.spawnBudget, deps.maxPopulation);
     // assembleSuccessor runs allocate (caps-clamped, rule #1) → reproduce per slot (fusion/mutation_only/
     // abort), appending the offspring events through `append`. The returned population is discarded — the
     // successor is persisted as events; gen N+1 threading is the W3 boot root. `ctx.outcomes` is unused.
@@ -145,7 +151,7 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
         runId,
         generationId,
         eligibleParents,
-        remainingPopulation: deps.maxPopulation,
+        remainingPopulation,
         seed: deps.seed,
       },
       { gateway: deps.gateway, emit: append, newId: deps.newId, bounds: deps.bounds },
