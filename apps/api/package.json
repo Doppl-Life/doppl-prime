@@ -4,12 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
+    "dump-replay": "tsx src/event-store/scripts/dump-replay.ts",
+    "seed-demo": "tsx src/event-store/scripts/seed-demo.ts",
     "lint": "eslint .",
     "format:check": "prettier --check . --ignore-path ../../.prettierignore",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",
     "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
+    "test:smoke:demo": "vitest run --config vitest.integration.config.ts test/integration/demo",
+    "test:smoke:live": "vitest run --config vitest.integration.config.ts test/integration/demo/live-e2e-smoke.test.ts",
+    "capture:demo-fixture": "DOPPL_CAPTURE_FIXTURE=1 vitest run --config vitest.integration.config.ts test/integration/demo/demo-e2e-smoke.test.ts -t capture_demo_fixture",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
@@ -27,6 +34,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.5.0",
     "prettier": "^3.8.4",
+    "tsx": "^4.20.6",
     "typescript": "~6.0.3",
     "vitest": "^4.1.9"
   }

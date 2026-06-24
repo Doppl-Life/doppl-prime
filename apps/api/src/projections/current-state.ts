@@ -8,6 +8,7 @@ import { emptyCurrentState, type CurrentState } from './reducers/state';
 import { lifecycleReducer } from './reducers/lifecycle';
 import { entitiesReducer } from './reducers/entities';
 import { lineageReducer } from './reducers/lineage';
+import { winnerReducer } from './reducers/winner';
 
 /**
  * The concrete current-state projection (ARCHITECTURE.md §9), built ON TOP of P6.1's `buildProjection`
@@ -30,6 +31,8 @@ const REDUCERS: ReadonlyArray<ProjectionReducer<CurrentState>> = [
   lifecycleReducer,
   entitiesReducer,
   lineageReducer,
+  // PD.11 — appended LAST so the candidate row is materialized when `run.completed.finalIdeaRef` folds.
+  winnerReducer,
 ];
 
 /** The composed current-state reducer: every per-concern reducer runs per event; irrelevant events

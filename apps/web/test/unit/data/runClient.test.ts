@@ -1,12 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import {
-  validCandidateIdeaCrossDomain,
-  validModelRoute,
-  validRun,
-  validRunConfig,
-} from '@doppl/contracts';
+import { validCandidateIdeaCrossDomain, validModelRoute, validRunConfig } from '@doppl/contracts';
 import type { LineageGraphProjection } from '@doppl/contracts';
 import {
   createRunClient,
@@ -71,13 +66,17 @@ describe('runClient — read-only REST seam', () => {
     expect(Object.keys(client).sort()).toEqual(
       [
         'getCandidate',
+        'getCapMaxima',
         'getEvents',
+        'getFallbackLadder',
         'getLineage',
+        'getProblemSets',
         'getReplay',
         'getRun',
         'getRunHealth',
         'listModelRoutes',
         'listRuns',
+        'startDemoRun',
         'startRun',
         'stopRun',
       ].sort(),
@@ -87,21 +86,15 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): the two mutating commands hit the correct method+path and validate the Run response;
   // repeated stop is client-side safe (idempotency is the API's terminal-state guard, not re-implemented).
   it('test_commands_post_and_validate_run', async () => {
-    const startFetch = fakeFetch(validRun);
+    // PD.16 — the command endpoints return `{ runId }` (start) / the stop wrapper, NOT a full Run.
+    const startFetch = fakeFetch({ runId: 'run_1' }, 201);
     const client = createRunClient({ baseUrl: BASE, fetch: startFetch });
-    const started = await client.startRun({
-      seed: 'scenario-alpha',
-      enabledSubtypes: ['cross_domain_transfer', 'zeitgeist_synthesis'],
-      caps: validRun.caps,
-      modelProfile: 'mvp-openrouter',
-      scoringPolicyVersion: 'scoring-v1',
-      rngSeed: 42,
-    });
-    expect(started).toEqual(validRun);
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_1');
     expect(startFetch.calls[0]?.url).toBe(`${BASE}/runs`);
     expect(startFetch.calls[0]?.init?.method).toBe('POST');
 
-    const stopFetch = fakeFetch(validRun);
+    const stopFetch = fakeFetch({ runId: 'run_1', status: 'completed', stopped: false });
     const c2 = createRunClient({ baseUrl: BASE, fetch: stopFetch });
     await c2.stopRun('run_1');
     await c2.stopRun('run_1');
@@ -113,7 +106,7 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): startRun forwards an idempotency key as an Idempotency-Key header so the API can dedup
   // a duplicate submit (the client never re-implements the dedup).
   it('test_start_run_sends_idempotency_key', async () => {
-    const fetch = fakeFetch(validRun);
+    const fetch = fakeFetch({ runId: 'run_1' }, 201);
     const client = createRunClient({ baseUrl: BASE, fetch });
     await client.startRun(validRunConfig, { idempotencyKey: 'idem-123' });
     expect(fetch.calls[0]?.init?.headers?.['Idempotency-Key']).toBe('idem-123');
@@ -173,8 +166,126 @@ describe('runClient — read-only REST seam', () => {
   // spec(§11): the false-accept guard — a non-2xx body that happens to satisfy the schema (e.g. a 404
   // returning []) must surface as a transport error, NOT be accepted as a valid empty projection.
   it('test_non_ok_empty_array_not_accepted_as_projection', async () => {
-    const fetch = fakeFetch([], 404);
+    const fetch = fakeFetch({ runs: [] }, 404);
     const client = createRunClient({ baseUrl: BASE, fetch });
     await expect(client.listRuns()).rejects.toBeInstanceOf(TransportError);
+  });
+
+  // ---- PD.15: the client consumes the REAL API response-shapes (the PD.14 Finding fix, option C) ----
+
+  // spec(§11): GET /runs returns `{ runs: [summary] }` (not a bare Run[]) — the client unwraps it; a
+  // summary's `status` may be null (a run with no current-state status), a WEB-local shape (not frozen).
+  it('runclient_listRuns_consumes_runs_wrapper', async () => {
+    const fetch = fakeFetch({
+      runs: [
+        { runId: 'run_1', status: 'completed', sequenceThrough: 12 },
+        { runId: 'run_2', status: null, sequenceThrough: 0 },
+      ],
+    });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const runs = await client.listRuns();
+    expect(runs.map((r) => r.runId)).toEqual(['run_1', 'run_2']);
+    expect(runs[1]?.status).toBeNull();
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+  });
+
+  // spec(§11/§12): GET /runs/:id returns the current-state wrapper `{ runId, sequenceThrough, state }`.
+  it('runclient_getRun_consumes_current_state_wrapper', async () => {
+    const body = { runId: 'run_1', sequenceThrough: 5, state: { runs: {}, candidateIdeas: {} } };
+    const fetch = fakeFetch(body);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const run = await client.getRun('run_1');
+    expect(run.runId).toBe('run_1');
+    expect(run.sequenceThrough).toBe(5);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1`);
+  });
+
+  // spec(§11/§4): GET /runs/:id/events returns `{ runId, events: [...] }` — the client unwraps `.events`
+  // (null-free envelopes, post the API omit-null serializer) AND sends the canonical `?since=` cursor.
+  it('runclient_getEvents_unwraps_events_and_sends_since', async () => {
+    const env = {
+      id: 'ev1',
+      runId: 'run_1',
+      type: 'run.configured',
+      sequence: 0,
+      occurredAt: '2026-06-20T12:00:00.000Z',
+      actor: 'operator',
+      payload: {},
+      schemaVersion: 5,
+    };
+    const fetch = fakeFetch({ runId: 'run_1', events: [env] });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const events = await client.getEvents('run_1', { sinceSequence: 3 });
+    expect(events).toHaveLength(1);
+    expect(events[0]?.id).toBe('ev1');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/events?since=3`);
+  });
+
+  it('runclient_getEvents_no_cursor_omits_param', async () => {
+    const fetch = fakeFetch({ runId: 'run_1', events: [] });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    await client.getEvents('run_1');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/events`);
+  });
+
+  // spec(§11): GET /runs/:id/replay returns the replay-summary object `{ runId, sequenceThrough, state }`
+  // (not a bare envelope[]) — the client consumes the summary shape (the replay view is not yet wired).
+  it('runclient_getReplay_consumes_summary_shape', async () => {
+    const body = { runId: 'run_1', sequenceThrough: 9, state: { runs: {}, candidateIdeas: {} } };
+    const fetch = fakeFetch(body);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const replay = await client.getReplay('run_1');
+    expect(replay.runId).toBe('run_1');
+    expect(replay.sequenceThrough).toBe(9);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/replay`);
+  });
+
+  // ---- PD.16: the COMMAND endpoints consume the API's real shapes (NOT a full Run) ----------------
+
+  // spec(§11): POST /runs → 201 `{ runId }` — the caller needs only the new run id to switch the
+  // observed run (web-local result shape, not the frozen Run). RED: currently `Run.parse({runId})` throws.
+  it('runclient_startRun_consumes_runId_shape', async () => {
+    const fetch = fakeFetch({ runId: 'run_9' }, 201);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_9');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+    expect(fetch.calls[0]?.init?.method).toBe('POST');
+  });
+
+  // spec(§11): POST /runs → 200 `{ runId, idempotent: true }` on a duplicate key — same runId field.
+  it('runclient_startRun_consumes_idempotent_200', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', idempotent: true }, 200);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startRun(validRunConfig);
+    expect(started.runId).toBe('run_9');
+    expect(started.idempotent).toBe(true);
+  });
+
+  it('runclient_startDemoRun_consumes_runId_shape', async () => {
+    const fetch = fakeFetch({ runId: 'run_demo' }, 201);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const started = await client.startDemoRun({ seed: 'a hard, well-scoped problem' });
+    expect(started.runId).toBe('run_demo');
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs`);
+  });
+
+  // spec(§11, apps/api LESSON §85): POST /runs/:id/stop → 200 `{runId,status,stopped}` (already-terminal
+  // no-op) OR 202 `{runId,stopRequested}` (signaled) — the client consumes BOTH success shapes.
+  it('runclient_stopRun_consumes_stop_wrapper_200', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', status: 'completed', stopped: false }, 200);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const stopped = await client.stopRun('run_9');
+    expect(stopped.runId).toBe('run_9');
+    expect(stopped.stopped).toBe(false);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_9/stop`);
+  });
+
+  it('runclient_stopRun_consumes_202_stop_requested', async () => {
+    const fetch = fakeFetch({ runId: 'run_9', stopRequested: true }, 202);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const stopped = await client.stopRun('run_9');
+    expect(stopped.runId).toBe('run_9');
+    expect(stopped.stopRequested).toBe(true);
   });
 });

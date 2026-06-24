@@ -8,11 +8,16 @@ import type { EventSourceLike, FoldState, SseStream, SseStreamOptions } from '..
 import { createRunStore } from '../state/runStore';
 import type { RunStore } from '../state/runStore';
 import type { RunMode } from '../state/reducer';
-import { selectRunStatus } from '../components/run/runControl';
+import { isRunTerminal, selectRunStatus } from '../components/run/runControl';
+import { debounce } from '../lib/debounce';
 import { ModeBanner } from '../components/feedback/ModeBanner';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { RunConfigPanel } from '../components/run/RunConfigPanel';
+import { OperatorPromptPanel } from '../components/demo/OperatorPromptPanel';
+import { FallbackLadderPanel } from '../components/demo/FallbackLadderPanel';
+import { RunHealthPanel } from '../components/demo/RunHealthPanel';
 import { StopControl } from '../components/run/StopControl';
+import { RunListPanel } from '../components/run/RunListPanel';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
 import { GenerationComparison } from '../charts/GenerationComparison';
@@ -45,6 +50,8 @@ export interface DashboardProps {
   createStream?: (options: SseStreamOptions) => SseStream;
   /** Injected for tests; defaults to a fresh createRunStore. */
   store?: RunStore;
+  /** PD.20 — debounce window (ms) for the live lineage/health re-fetch; injected small in tests. */
+  refetchDebounceMs?: number;
 }
 
 const shell: CSSProperties = {
@@ -68,13 +75,6 @@ const trust: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   color: 'var(--success)',
-};
-const healthRow: CSSProperties = {
-  display: 'flex',
-  gap: 'var(--space-4)',
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-caption)',
-  color: 'var(--fg-muted)',
 };
 const grid: CSSProperties = { display: 'grid', gap: 'var(--space-5)' };
 const panelCard: CSSProperties = {
@@ -117,13 +117,27 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 export function Dashboard({
   runId,
   runClient,
-  mode = 'live',
+  mode: modeProp = 'live',
   baseUrl = '/api',
   eventSourceFactory = defaultEventSourceFactory,
   createStream = createSseStream,
   store: injectedStore,
+  refetchDebounceMs = 600,
 }: DashboardProps) {
   const [observedRunId, setObservedRunId] = useState(runId);
+  // PD.17 — `mode` is run-switchable STATE (was a static prop): browsing a past run (the run-list or the
+  // fallback replay rung) observes it in REPLAY mode; starting a fresh run returns to LIVE. Mode is a
+  // non-folded §2 label (the live/replay fold is identical) — only the ModeBanner reads it; the store
+  // recreates on either an observedRunId OR a mode change.
+  const [mode, setMode] = useState<RunMode>(modeProp);
+  const observeReplay = (id: string): void => {
+    setMode('replay');
+    setObservedRunId(id);
+  };
+  const observeLive = (id: string): void => {
+    setMode('live');
+    setObservedRunId(id);
+  };
   const store = useMemo(
     () => injectedStore ?? createRunStore({ runId: observedRunId, runClient, mode }),
     [injectedStore, observedRunId, runClient, mode],
@@ -139,18 +153,29 @@ export function Dashboard({
   useEffect(() => {
     if (!observedRunId) return;
     let active = true;
+    // PD.20 — the evolving projections (lineage + health) are REBUILT-ON-READ by the API (§9); re-fetch
+    // them on the live SSE cadence so the graph grows live. A ONE-TIME fetch renders stale (the run
+    // evolves in the backend but the dashboard froze at 1 node — PD.15 fixed event delivery, not the
+    // projection rebuild). Run STATE stays live via the store SSE-fold (no double-fold here).
+    const refetchProjections = (): void => {
+      runClient
+        .getLineage(observedRunId)
+        .then((l) => active && setLineage(l))
+        .catch(() => undefined);
+      runClient
+        .getRunHealth(observedRunId)
+        .then((h) => active && setHealth(h))
+        .catch(() => undefined);
+    };
+    const debouncedRefetch = debounce(refetchProjections, refetchDebounceMs);
+
+    // Seed the raw events fold + the initial projections.
     runClient
       .getEvents(observedRunId)
       .then((evs) => active && setFold((prev) => foldEvents(evs, prev)))
       .catch(() => undefined);
-    runClient
-      .getLineage(observedRunId)
-      .then((l) => active && setLineage(l))
-      .catch(() => undefined);
-    runClient
-      .getRunHealth(observedRunId)
-      .then((h) => active && setHealth(h))
-      .catch(() => undefined);
+    refetchProjections();
+
     // Wire the deferred SSE-store IoC: store.applyEvent sink + poll fallback + resync-on-mount, and
     // accumulate the raw events FoldState the panels consume (delivery-level dedup).
     const stream = wireRunStream({
@@ -159,14 +184,34 @@ export function Dashboard({
       baseUrl,
       eventSourceFactory,
       createStream,
-      onEnvelope: (env) => setFold((f) => applyEnvelope(f, env)),
+      onEnvelope: (env) => {
+        setFold((f) => applyEnvelope(f, env));
+        // PD.20 — re-fetch the evolving projections on the SSE cadence (debounced — no hammering during
+        // an event burst); a TERMINAL envelope forces an immediate final re-fetch so the FINAL graph
+        // always renders even if debounced updates were coalesced.
+        if (isRunTerminal(env.type)) {
+          debouncedRefetch.cancel();
+          refetchProjections();
+        } else {
+          debouncedRefetch();
+        }
+      },
     });
 
     return () => {
       active = false;
+      debouncedRefetch.cancel();
       stream.close();
     };
-  }, [observedRunId, store, runClient, baseUrl, eventSourceFactory, createStream]);
+  }, [
+    observedRunId,
+    store,
+    runClient,
+    baseUrl,
+    eventSourceFactory,
+    createStream,
+    refetchDebounceMs,
+  ]);
 
   const runStatus = selectRunStatus(state, observedRunId);
   const winnerRef = useMemo(
@@ -185,17 +230,33 @@ export function Dashboard({
         </span>
       </header>
 
-      {health && (
-        <section aria-label="Run health" style={healthRow}>
-          <span>generation {health.currentGeneration}</span>
-          <span>{health.candidatesInFlight} in flight</span>
-          <span>last event {health.lastEventAt ?? '—'}</span>
-        </section>
-      )}
+      {/* PD.6 — the continue-vs-switch health surface (signal + a colorblind-safe stale/absent flag),
+          extracted from the inline healthRow. Shown for the observed run; absent health is flagged. */}
+      {observedRunId && <RunHealthPanel health={health} />}
 
       <div style={grid}>
+        {/* PD.17 — the run-list / replay browser: browse past runs (GET /runs) → click → observe that run
+            in REPLAY mode (observeReplay; the shared replay-switch the fallback rung also uses). */}
+        <Panel title="Runs">
+          <RunListPanel
+            runClient={runClient}
+            onReplay={observeReplay}
+            observedRunId={observedRunId}
+          />
+        </Panel>
+
         <Panel title="Run">
-          <RunConfigPanel runClient={runClient} onStarted={(run) => setObservedRunId(run.id)} />
+          {/* PD.5b — the demo-forward operator-prompt path (prepared/freeform → partial {seed}); the
+              full-control RunConfigPanel stays alongside. A fresh start observes the new run in LIVE mode. */}
+          <OperatorPromptPanel runClient={runClient} onStarted={(run) => observeLive(run.runId)} />
+          {/* PD.12 — the operator 3-rung demo fallback ladder (low-cap-live · prepared · replay); start a
+              rung's run (LIVE) or mount the recorded replay (REPLAY — observeReplay, the shared switch). */}
+          <FallbackLadderPanel
+            runClient={runClient}
+            onStarted={(run) => observeLive(run.runId)}
+            onReplay={observeReplay}
+          />
+          <RunConfigPanel runClient={runClient} onStarted={(run) => observeLive(run.runId)} />
           {observedRunId && (
             <StopControl runId={observedRunId} store={store} runClient={runClient} />
           )}
@@ -225,6 +286,8 @@ export function Dashboard({
               events={fold.events}
               runClient={runClient}
               onSelectLineageNode={setSelectedCandidateId}
+              mode={store.getMode()}
+              runStatus={runStatus}
             />
           </Panel>
         )}

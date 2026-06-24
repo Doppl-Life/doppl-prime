@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Run } from '../../data/contracts';
-import type { RunClient } from '../../data/runClient';
+import type { RunClient, StartRunResult } from '../../data/runClient';
 import {
   CAP_CEILING,
   DEFAULT_FORM,
-  clampCap,
+  capCeilingFromRunCaps,
+  clampCapsToCeiling,
   validateForm,
   type CapKey,
   type FieldErrors,
@@ -21,8 +21,8 @@ import {
  * submission (validate-on-submit — accessible, says WHY). The persistent mount is the P7.14 shell.
  */
 export interface RunConfigPanelProps {
-  runClient: Pick<RunClient, 'startRun'>;
-  onStarted?: (run: Run) => void;
+  runClient: Pick<RunClient, 'startRun' | 'getCapMaxima'>;
+  onStarted?: (run: StartRunResult) => void;
   initialValues?: RunConfigFormValues;
 }
 
@@ -64,10 +64,34 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
   const [form, setForm] = useState<RunConfigFormValues>(initialValues ?? DEFAULT_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [starting, setStarting] = useState(false);
-  const [startedRun, setStartedRun] = useState<Run | null>(null);
+  const [startedRun, setStartedRun] = useState<StartRunResult | null>(null);
+  // PD.18 — the cap ceiling is FETCHED from the API maxima (defaultConfig.caps) so the form can't offer
+  // a value the route rejects (the cap-default 422). Default to the static CAP_CEILING; a successful
+  // fetch lowers it to the REAL maxima + clamps the current form caps. A fetch failure keeps the static
+  // fallback (never blocks the form). The kernel/route stays the sole cap authority (rule #1).
+  const [ceiling, setCeiling] = useState<RunConfigFormValues['caps']>(CAP_CEILING);
+
+  useEffect(() => {
+    let active = true;
+    runClient
+      .getCapMaxima()
+      .then((caps) => {
+        if (!active) return;
+        const fetched = capCeilingFromRunCaps(caps);
+        setCeiling(fetched);
+        setForm((f) => ({ ...f, caps: clampCapsToCeiling(f.caps, fetched) }));
+      })
+      .catch(() => undefined); // keep the static CAP_CEILING fallback
+    return () => {
+      active = false;
+    };
+  }, [runClient]);
 
   const setCap = (key: CapKey, value: number) =>
-    setForm((f) => ({ ...f, caps: { ...f.caps, [key]: clampCap(key, value) } }));
+    setForm((f) => ({
+      ...f,
+      caps: { ...f.caps, [key]: Math.max(1, Math.min(value, ceiling[key])) },
+    }));
   const toggleSubtype = (key: keyof RunConfigFormValues['enabledSubtypes']) =>
     setForm((f) => ({
       ...f,
@@ -161,13 +185,13 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
       {CAP_FIELDS.map(({ key, label }) => (
         <div key={key} style={field}>
           <label htmlFor={`rc-${key}`} style={labelText}>
-            {label} (max {CAP_CEILING[key]})
+            {label} (max {ceiling[key]})
           </label>
           <input
             id={`rc-${key}`}
             type="number"
             min={1}
-            max={CAP_CEILING[key]}
+            max={ceiling[key]}
             value={form.caps[key]}
             onChange={(e) => setCap(key, Number(e.target.value))}
             aria-invalid={invalid(key)}
@@ -246,7 +270,7 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
 
       {startedRun && (
         <p role="status" style={{ ...labelText, marginTop: 'var(--space-3)' }}>
-          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.id}</span>
+          Run started: <span style={{ fontFamily: 'var(--font-mono)' }}>{startedRun.runId}</span>
         </p>
       )}
     </section>

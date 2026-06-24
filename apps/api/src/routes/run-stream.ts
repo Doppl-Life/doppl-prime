@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { EventStore } from '../event-store';
 import { streamRunEvents, type EventBridgeOptions } from '../sse/event-bridge';
+import { serializeEnvelope } from './_support/serializeEnvelope';
 
 /**
  * P6.9 — the SSE run-event stream (ARCHITECTURE.md §11/§4). `GET /runs/:id/stream` emits the run's
@@ -72,7 +73,9 @@ export function registerRunStreamRoutes(app: FastifyInstance, deps: RunStreamRou
         ...deps.sse,
         signal: controller.signal,
       })) {
-        raw.write(`id:${event.sequence}\ndata:${JSON.stringify(event)}\n\n`);
+        // PD.15 — omit null/undefined optionals on the wire so the frozen RunEventEnvelope re-parses
+        // on the consumer (the live SSE no longer silently drops null-bearing events). Read-path only.
+        raw.write(`id:${event.sequence}\ndata:${JSON.stringify(serializeEnvelope(event))}\n\n`);
       }
     } finally {
       raw.end();

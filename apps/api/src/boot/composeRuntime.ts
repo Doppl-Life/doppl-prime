@@ -48,6 +48,10 @@ export interface ComposeRuntimeInput {
    * the boot config drives the run.
    */
   readonly perRunConfig?: RunConfig;
+  /** PD.3 — the operator-stop poll fn (the boot `operatorStopRegistry.checker(runId)`). Set on the worker
+   *  deps → the loop's `detectKill` polls it at each generation boundary → drain-then-terminalize run.stopped
+   *  (§5). Absent → no operator-stop seam (today's behavior). */
+  readonly operatorStop?: () => boolean;
 }
 
 /**
@@ -74,6 +78,8 @@ function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
     caps,
     runConfig: {
       ...boot.runConfig,
+      // PD.10 — thread the per-run PROBLEM (RunConfig.seed) so it reaches the generation loop (was dropped).
+      seed: perRun.seed,
       rngSeed: perRun.rngSeed,
       enabledSubtypes: perRun.enabledSubtypes,
       caps,
@@ -153,5 +159,6 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     seams: { verify, score, reproduce },
     nextPopulation,
     listRunIds,
+    ...(input.operatorStop !== undefined ? { operatorStop: input.operatorStop } : {}),
   };
 }

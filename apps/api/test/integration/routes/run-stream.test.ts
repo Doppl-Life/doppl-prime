@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { validCandidateIdeaCrossDomain, validCriticReview } from '@doppl/contracts';
+import {
+  RunEventEnvelope,
+  validCandidateIdeaCrossDomain,
+  validCriticReview,
+} from '@doppl/contracts';
 import { createEventStore, type AppendInput, type EventStore } from '../../../src/event-store';
 import { buildServer, DEFAULT_RUN_CONFIG } from '../../../src/server';
 
@@ -113,6 +117,37 @@ describe('GET /runs/:id/stream — SSE run-event stream (spec §11/§4)', () => 
       const frames = parseSse(res.payload);
       expect(frames.map((f) => f.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]); // ordered
       expect(frames.every((f) => f.id === f.data.sequence)).toBe(true); // id === sequence
+    } finally {
+      await app.close();
+    }
+  });
+
+  // PD.15 (§4/§11, the DEMO-CRITICAL fix) — the SSE frame serializer omits null/undefined optionals so
+  // the frozen RunEventEnvelope re-parses on the consumer: the live SSE no longer silently DROPS every
+  // null-bearing event (pre-fix the web's per-frame RunEventEnvelope.parse threw → onError → dropped).
+  test('test_sse_frames_omit_null_optionals_reparse', async () => {
+    await seedStreamRun('stream-omit-null');
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/runs/stream-omit-null/stream' });
+      expect(res.statusCode).toBe(200);
+      const frames = parseSse(res.payload);
+      expect(frames.length).toBeGreaterThan(0);
+      for (const frame of frames) {
+        const data = frame.data as unknown as Record<string, unknown>;
+        for (const key of [
+          'generationId',
+          'agenomeId',
+          'candidateId',
+          'correlationId',
+          'langfuseTraceId',
+          'langfuseObservationId',
+        ]) {
+          expect(data[key]).not.toBeNull(); // ABSENT (undefined), never `null`
+        }
+        expect(() => RunEventEnvelope.parse(data)).not.toThrow(); // the consumer no longer drops it
+      }
     } finally {
       await app.close();
     }

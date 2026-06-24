@@ -13,6 +13,10 @@ docs/
 # Drizzle-generated migration artifacts (SQL chain + meta snapshots/journal) — generated, not prettier-managed
 **/event-store/migrations/
 
+# Committed replay fixtures (PD.1 dump-replay output) — generated JSON; the dump writer owns the format
+# (JSON.stringify), so re-records stay clean without a manual prettier pass.
+fixtures/replay/
+
 # Playwright transient artifacts (P7.15 e2e) — generated, not prettier-managed
 apps/web/test-results/
 apps/web/playwright-report/

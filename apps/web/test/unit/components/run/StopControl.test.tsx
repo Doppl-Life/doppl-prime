@@ -3,15 +3,17 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { validRun } from '@doppl/contracts';
-import type { Run, RunEventType } from '@doppl/contracts';
+import type { RunEventType } from '@doppl/contracts';
 import { StopControl } from '../../../../src/components/run/StopControl';
+import type { StopRunResult } from '../../../../src/data/runClient';
 import { createRunStore } from '../../../../src/state/runStore';
 import { foldEvents } from '../../../../src/state/reducer';
 import { makeEvent } from '../../../fixtures/events';
 
 const RUN_DIR = resolve(process.cwd(), 'src/components/run');
 const RUN_ID = 'run_1';
+// PD.16 — POST /runs/:id/stop returns the command wrapper (202 {runId,stopRequested}), not a full Run.
+const STOPPED: StopRunResult = { runId: RUN_ID, stopRequested: true };
 
 afterEach(() => cleanup()); // unmount between tests so screen queries don't see prior renders
 
@@ -25,10 +27,10 @@ function makeStore(types: RunEventType[]) {
 /** A deferred stopRun fake: records calls, lets the test resolve/reject the in-flight command. */
 function deferredStopClient() {
   const calls: string[] = [];
-  let pending: { resolve: (r: Run) => void; reject: (e: unknown) => void } | null = null;
+  let pending: { resolve: (r: StopRunResult) => void; reject: (e: unknown) => void } | null = null;
   const stopRun = vi.fn((runId: string) => {
     calls.push(runId);
-    return new Promise<Run>((resolve, reject) => {
+    return new Promise<StopRunResult>((resolve, reject) => {
       pending = { resolve, reject };
     });
   });
@@ -50,7 +52,7 @@ describe('StopControl — operator run-stop control', () => {
   // spec(§11): clicking Stop issues the idempotent POST /runs/:id/stop via runClient.stopRun ONCE
   // per click intent; the handler doesn't re-implement the dedup/terminal guard (the API owns it).
   it('test_stop_issues_idempotent_post_stop', async () => {
-    const stopRun = vi.fn(() => Promise.resolve(validRun));
+    const stopRun = vi.fn(() => Promise.resolve(STOPPED));
     const onStopped = vi.fn();
     render(
       <StopControl
@@ -63,13 +65,13 @@ describe('StopControl — operator run-stop control', () => {
     fireEvent.click(screen.getByRole('button', { name: /stop run/i }));
     await waitFor(() => expect(stopRun).toHaveBeenCalledTimes(1));
     expect(stopRun).toHaveBeenCalledWith(RUN_ID);
-    await waitFor(() => expect(onStopped).toHaveBeenCalledWith(validRun));
+    await waitFor(() => expect(onStopped).toHaveBeenCalledWith(STOPPED));
   });
 
   // spec(§11): the control disables + relabels ONLY from store state — the run-terminal event types
   // {run.completed,run.failed,run.stopped}; a non-terminal status keeps it enabled "Stop run".
   it('test_terminal_state_disables_from_store', () => {
-    const stopRun = vi.fn(() => Promise.resolve(validRun));
+    const stopRun = vi.fn(() => Promise.resolve(STOPPED));
     for (const term of ['run.completed', 'run.stopped', 'run.failed'] as const) {
       const { unmount } = render(
         <StopControl
@@ -108,7 +110,7 @@ describe('StopControl — operator run-stop control', () => {
   // spec(REQ-O-003): a click when already terminal, or a second click while a stop is in flight,
   // does not error and does not issue a second/contradictory command.
   it('test_repeated_click_after_terminal_safe', async () => {
-    const stopRun = vi.fn(() => Promise.resolve(validRun));
+    const stopRun = vi.fn(() => Promise.resolve(STOPPED));
     const { unmount } = render(
       <StopControl
         runId={RUN_ID}
@@ -131,7 +133,7 @@ describe('StopControl — operator run-stop control', () => {
   // spec(REQ-F-012/REQ-O-002): issuing stop does not clear/mutate the store's failures[] or entities
   // — preserved partial evidence remains (asserted by reference-equality — the control never writes).
   it('test_stop_is_non_destructive', async () => {
-    const stopRun = vi.fn(() => Promise.resolve(validRun));
+    const stopRun = vi.fn(() => Promise.resolve(STOPPED));
     const store = makeStore(['run.started']);
     act(() => {
       store.applyEvent(makeEvent(1, 'candidate.created', { candidateId: 'cand_1' }));

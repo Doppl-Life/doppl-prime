@@ -3,8 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { validRun } from '@doppl/contracts';
-import type { RunConfig } from '@doppl/contracts';
+import type { RunCaps, RunConfig } from '@doppl/contracts';
 import { RunConfigPanel } from '../../../../src/components/run/RunConfigPanel';
 import {
   DEFAULT_FORM,
@@ -12,6 +11,17 @@ import {
 } from '../../../../src/components/run/runConfigForm';
 
 const RUN_DIR = resolve(process.cwd(), 'src/components/run');
+// PD.16 — POST /runs returns the command shape { runId }, not a full Run; the panel passes it through.
+const STARTED = { runId: 'run_started' };
+// PD.18 — a low .env cap ceiling (GET /config/caps) that clamps the over-ceiling DEFAULT_FORM caps.
+const LOW_MAXIMA: RunCaps = {
+  maxPopulation: 12,
+  maxGenerations: 6,
+  energyBudget: 1000,
+  maxSpawnDepth: 4,
+  maxToolCalls: 80,
+  wallClockTimeoutMs: 480_000,
+};
 
 const validForm = (): RunConfigFormValues => ({
   ...DEFAULT_FORM,
@@ -27,8 +37,11 @@ function fakeStartClient() {
     client: {
       startRun: (config: RunConfig, opts?: { idempotencyKey?: string }) => {
         calls.push({ config, opts });
-        return Promise.resolve(validRun);
+        return Promise.resolve(STARTED);
       },
+      // PD.18 — default to a failed maxima fetch → the static CAP_CEILING fallback (keeps these tests'
+      // ceiling behavior unchanged + no mount state-update). The clamp test injects a resolving one.
+      getCapMaxima: () => Promise.reject(new Error('test: no maxima')),
     },
     calls,
   };
@@ -45,10 +58,37 @@ describe('RunConfigPanel — operator run-config panel', () => {
     fireEvent.click(start);
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.opts?.idempotencyKey).toBeTruthy();
-    expect(onStarted).toHaveBeenCalledWith(validRun);
+    expect(onStarted).toHaveBeenCalledWith(STARTED);
     // duplicate submit (post-start) doesn't create a second run.
     fireEvent.click(start);
     expect(calls).toHaveLength(1);
+  });
+
+  // PD.18 — the form fetches GET /config/caps on mount + clamps its cap inputs (max + value) to the REAL
+  // maxima, so a low .env ceiling no longer leaves an over-ceiling default that 422s on submit.
+  it('run_config_form_clamps_to_fetched_maxima', async () => {
+    const client = {
+      startRun: () => Promise.resolve(STARTED),
+      getCapMaxima: () => Promise.resolve(LOW_MAXIMA),
+    };
+    render(<RunConfigPanel runClient={client} />);
+    const pop = (await screen.findByLabelText(/population/i)) as HTMLInputElement;
+    await waitFor(() => expect(pop.value).toBe('12')); // DEFAULT_FORM 18 → 12 (clamped to the fetched max)
+    expect(pop.getAttribute('max')).toBe('12');
+    const energy = screen.getByLabelText(/energy budget/i) as HTMLInputElement;
+    expect(energy.value).toBe('1000'); // 12000 → 1000
+  });
+
+  // PD.18 — a failed maxima fetch falls back to the static CAP_CEILING (the form never blocks).
+  it('run_config_form_falls_back_on_fetch_failure', async () => {
+    const client = {
+      startRun: () => Promise.resolve(STARTED),
+      getCapMaxima: () => Promise.reject(new Error('network')),
+    };
+    render(<RunConfigPanel runClient={client} />);
+    const pop = (await screen.findByLabelText(/population/i)) as HTMLInputElement;
+    await waitFor(() => expect(pop.getAttribute('max')).toBe('20')); // static fallback
+    expect(pop.value).toBe('18'); // DEFAULT_FORM value unchanged (no clamp)
   });
 
   // spec(§12): invalid settings produce inline, programmatically-associated field errors + block submit.

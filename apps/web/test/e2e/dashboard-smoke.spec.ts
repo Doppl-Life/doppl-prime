@@ -157,8 +157,12 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   await page.route('**/api/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
-    if (path === '/api/runs' && method === 'POST') return route.fulfill({ json: run });
-    if (path === '/api/runs') return route.fulfill({ json: [] });
+    // PD.16 — POST /runs returns the command shape `{ runId }` (not a full Run); startRun consumes it.
+    if (path === '/api/runs' && method === 'POST')
+      return route.fulfill({ json: { runId: run.id } });
+    // PD.17 — RunListPanel calls listRuns on mount; the real API + the PD.15 client use the `{runs}`
+    // wrapper, so the GET /runs mock returns `{ runs: [] }` (the panel renders its empty state cleanly).
+    if (path === '/api/runs') return route.fulfill({ json: { runs: [] } });
     if (path === '/api/runs/run_1/lineage') return route.fulfill({ json: lineage });
     if (path.startsWith('/api/runs/run_1/events')) return route.fulfill({ json: events });
     if (path === '/api/runs/run_1/candidates/cand_1') return route.fulfill({ json: candidate });
@@ -199,4 +203,9 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   await expect(finalIdea.getByText('subtype checks', { exact: true })).toBeVisible();
   await expect(finalIdea.getByText('fitness', { exact: true })).toBeVisible();
   await expect(finalIdea.getByText('energy', { exact: true })).toBeVisible();
+
+  // 5. PD.7 — the transfer-evidence rung is labeled for the run mode (live here) + the winner's
+  //    prior-art evidenceRef resolves in-tier via the shared EvidenceRefLink.
+  await expect(finalIdea.getByText(/live allowlisted \(non-executing\)/i)).toBeVisible();
+  await expect(finalIdea.getByText('AIRS 2003')).toBeVisible();
 });

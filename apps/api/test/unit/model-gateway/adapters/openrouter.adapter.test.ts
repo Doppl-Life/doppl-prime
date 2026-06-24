@@ -97,7 +97,7 @@ interface RecordedCall {
   model: string;
   messages: { role: ChatRole; content: string }[];
   maxTokens?: number | undefined;
-  responseFormat?: { name: string; strict: true; schema: unknown } | undefined;
+  responseFormat?: { type: 'json_object' } | undefined;
   timeoutMs: number;
 }
 
@@ -342,24 +342,107 @@ describe('openrouter adapter — rule #8 (no energy accounting) + rule #9 (SDK b
   });
 });
 
-describe('openrouter adapter — strict structured output requested, not validated here (spec §6)', () => {
-  // spec(§6) — when the request carries a (Zod) schema and the role supports structured outputs, strict
-  // structured-output mode is requested from the SDK; the raw output is returned UNVALIDATED (P2.4 owns
-  // validate/repair/reject — the adapter does not validate).
-  test('test_strict_structured_output_requested', async () => {
+describe('openrouter adapter — relaxed structured output (json_object); gateway is authoritative (spec §6/§14)', () => {
+  // spec(§6, PD.13) — a structured request uses provider json_object mode, NOT a strict json_schema:
+  // OpenAI's strict structured-output subset 400s a root-`anyOf` discriminated-union schema (the PD.8c
+  // live finding; curl-confirmed strict:true AND strict:false both 400 on a root anyOf). The schema is
+  // conveyed to the model as a TRUSTED system instruction (text); the raw output is returned UNVALIDATED
+  // (the gateway owns validate/repair/reject — rule #5).
+  test('adapter_structured_request_uses_relaxed_mode', async () => {
     const schema = z.strictObject({ idea: z.string() });
-    const rawButValidShapeMismatch = { idea: 'kept-raw' };
-    const { client, calls } = makeClient([{ kind: 'success', output: rawButValidShapeMismatch }]);
+    const raw = { idea: 'kept-raw' };
+    const { client, calls } = makeClient([{ kind: 'success', output: raw }]);
     const providerCall = createOpenRouterProviderCall({
       registry: makeRegistry({ structuredOutputs: true }),
       client,
       retry: NO_WAIT,
     });
     const result = await providerCall({ role: TEST_ROLE, prompt: 'generate', schema });
-    expect(calls[0]?.responseFormat?.strict).toBe(true);
-    expect(calls[0]?.responseFormat?.schema).toBeDefined();
-    // returned as-is (no validation/normalization in the adapter)
-    expect(result.output).toBe(rawButValidShapeMismatch);
+    expect(calls[0]?.responseFormat).toEqual({ type: 'json_object' }); // relaxed, never strict json_schema
+    // the schema is given to the model as a trusted system instruction (text) — incl. a JSON mention
+    // (json_object mode requires it) + the schema's shape; candidate stays DATA (§38 isolation intact).
+    const systemText = calls[0]!.messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n');
+    expect(systemText).toMatch(/json/i);
+    expect(systemText).toContain('idea');
+    expect(result.output).toBe(raw); // returned as-is — the adapter does not validate
+  });
+
+  // spec(§6, PD.13) — the relaxed mode is capability-driven (adapter-level), uniform across structured roles.
+  test('relaxed_mode_applies_to_all_structured_roles', async () => {
+    const schema = z.strictObject({ idea: z.string() });
+    for (const role of [TEST_ROLE, FALLBACK_ROLE] as const) {
+      const { client, calls } = makeClient([{ kind: 'success', output: { idea: 'x' } }]);
+      const providerCall = createOpenRouterProviderCall({
+        registry: makeRegistry({ structuredOutputs: true }),
+        client,
+        retry: NO_WAIT,
+      });
+      await providerCall({ role, prompt: 'generate', schema });
+      expect(calls[0]?.responseFormat).toEqual({ type: 'json_object' });
+    }
+  });
+
+  // spec(§14 / §38 — rule #5 isolation) — the schema-as-system-text is candidate-INDEPENDENT: for a given
+  // structured role, the SYSTEM message (instruction + schema text) is BYTE-IDENTICAL across two different
+  // candidate inputs; only the user-message DATA differs. The added system-text must never become
+  // candidate-derived (the §38 byte-identical-instruction property the user's guardrail requires).
+  test('test_structured_system_message_candidate_independent', async () => {
+    const schema = z.strictObject({ idea: z.string() });
+    const { client, calls } = makeClient([
+      { kind: 'success', output: { idea: 'a' } },
+      { kind: 'success', output: { idea: 'b' } },
+    ]);
+    const providerCall = createOpenRouterProviderCall({
+      registry: makeRegistry({ structuredOutputs: true }),
+      client,
+      retry: NO_WAIT,
+    });
+    const base = (candidate: string): ModelGatewayRequest => ({
+      role: TEST_ROLE,
+      schema,
+      messages: [
+        { role: 'system', content: 'fixed role instruction' },
+        { role: 'user', content: candidate },
+      ],
+    });
+    await providerCall(base('candidate ALPHA'));
+    await providerCall(base('candidate BETA'));
+    const systemOf = (call: RecordedCall): string =>
+      call.messages
+        .filter((m) => m.role === 'system')
+        .map((m) => m.content)
+        .join('\n');
+    expect(systemOf(calls[0]!)).toBe(systemOf(calls[1]!)); // instruction + schema-text byte-identical
+    const userOf = (call: RecordedCall): string =>
+      call.messages.find((m) => m.role === 'user')!.content;
+    expect(userOf(calls[0]!)).not.toBe(userOf(calls[1]!)); // only the candidate DATA differs
+  });
+
+  // spec(§14 rule #5 — LOAD-BEARING) — relaxing the provider mode does NOT weaken validation: the gateway
+  // STILL validates against the request schema → a malformed output (initial + the ≤1 repair) is REJECTED,
+  // never accepted-and-appended. Provider strict-mode was only an optimization; the gateway is the
+  // authoritative check (LESSONS §23/§91).
+  test('gateway_still_rejects_invalid_output_under_relaxed_mode', async () => {
+    const schema = z.strictObject({ idea: z.string() });
+    const { client } = makeClient([
+      { kind: 'success', output: { wrong: 'shape' } }, // initial — invalid
+      { kind: 'success', output: { still: 'wrong' } }, // the ≤1 repair — also invalid
+    ]);
+    const providerCall = createOpenRouterProviderCall({
+      registry: makeRegistry({ structuredOutputs: true }),
+      client,
+      retry: NO_WAIT,
+    });
+    const gateway = createGateway({
+      providerCall,
+      capabilityFor: () => ({ structuredOutputs: true, embeddings: false }),
+    });
+    const res = await gateway.call({ role: TEST_ROLE, prompt: 'generate', schema });
+    expect(res.accepted).toBe(false);
+    expect(res.validationResult).toBe('rejected');
   });
 
   // spec(§6) — when the role does NOT support structured outputs, no responseFormat is requested even

@@ -37,8 +37,13 @@ export interface StartRunInfra {
   readonly newId: () => string;
   /** Called on a worker error — the run's failure is authoritative in the log; this is for logging only. */
   readonly onError?: (runId: string, err: unknown) => void;
-  /** Called after the worker SETTLES (success or error) — a determinism hook for tests; omit in production. */
+  /** Called after the worker SETTLES (success or error) — a determinism hook for tests + the boot's
+   *  operator-stop registry cleanup; omit when neither is needed. */
   readonly onSettled?: (runId: string) => void;
+  /** PD.3 — the operator-stop poll-fn factory (the boot `operatorStopRegistry.checker`). When present,
+   *  `createStartRun` threads `operatorStop: operatorStopFor(runId)` into the worker so the loop drains on a
+   *  latched stop. Absent → no operator-stop seam (the run ends only via caps / completion). */
+  readonly operatorStopFor?: (runId: string) => () => boolean;
 }
 
 /**
@@ -67,6 +72,9 @@ export function createStartRun(infra: StartRunInfra): (runId: string) => void {
           newId: infra.newId,
           runId,
           ...(perRunConfig !== undefined ? { perRunConfig } : {}),
+          ...(infra.operatorStopFor !== undefined
+            ? { operatorStop: infra.operatorStopFor(runId) }
+            : {}),
         }),
       );
     })()

@@ -148,6 +148,33 @@ describe('buildReplaySummary — replay-determinism over the persisted log (spec
     expect(replay.state.candidateIdeas['cand_1']).toBeDefined();
   });
 
+  // PD.11 (spec §16/§9, rule #7) — digest.selectedCandidateId is DERIVED from run.completed.finalIdeaRef
+  // (candidate status NOT pre-set), AND the shared reducer keeps replay state-equivalent to the captured
+  // projection (canonicalize equal) on that real-finalIdeaRef run.
+  test('test_finalIdeaRef_run_digest_selected', () => {
+    const scored = { ...validCandidateIdeaCrossDomain, status: 'scored' as const };
+    const events = [
+      makeRow('run.configured', {
+        runId: 'run_1',
+        sequence: 0,
+        payload: { seed: 's', rngSeed: 1 },
+      }),
+      makeRow('candidate.created', { runId: 'run_1', sequence: 1, payload: scored }),
+      makeRow('fitness.scored', { runId: 'run_1', sequence: 2, payload: validFitnessScore }),
+      makeRow('run.completed', {
+        runId: 'run_1',
+        sequence: 3,
+        payload: { from: 'running', to: 'completed', finalIdeaRef: 'cand_1' },
+      }),
+    ];
+    const replay = buildReplaySummary(events);
+    expect(replay.digest.selectedCandidateId).toBe('cand_1'); // derived from finalIdeaRef, not hand-set
+    expect(replay.state.candidateIdeas['cand_1']?.status).toBe('selected');
+    // state-equivalence preserved by the shared currentStateReducer (rule #7).
+    const captured = buildCurrentState(events);
+    expect(canonicalize(replay.state)).toBe(canonicalize(captured.state));
+  });
+
   // seed-to-summary — the digest carries seed (run.configured), generation count, final selected
   // candidate, and the fitness-over-time digest.
   test('test_replay_summary_header', () => {

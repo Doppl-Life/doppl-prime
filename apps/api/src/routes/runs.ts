@@ -8,6 +8,7 @@ import {
 import type { EventStore } from '../event-store';
 import { buildCurrentState } from '../projections';
 import { createIdempotencyStore } from '../middleware/idempotency';
+import { applyDemoCapOverride } from '../runtime/demo';
 
 /**
  * The REST write path (ARCHITECTURE.md §11/§14/§15). POST /runs + POST /runs/:id/stop append
@@ -40,6 +41,12 @@ export interface RunRoutesDeps {
    * no execution) unchanged. Wired to the boot composition (`createStartRun`) in `buildServer`.
    */
   onRunConfigured?: (runId: string) => void;
+  /**
+   * PD.3 — latch an operator stop for `runId` (the boot `operatorStopRegistry.request`). `POST /runs/:id/stop`
+   * SIGNALS the in-flight worker through this; the worker drains + terminalizes `run.stopped` (rule #2 — the
+   * route appends NO terminal). `buildServer` supplies a no-op default when boot wires no registry.
+   */
+  requestStop: (runId: string) => void;
 }
 
 /** The cap field that exceeds its maximum (lowering-only rule), or null if every cap is within ceiling. */
@@ -95,16 +102,40 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
         .send({ error: 'invalid_config', message: 'request body must be a JSON object' });
     }
 
+    // Separate the PD.12 demo cap-override from the RunConfig body BEFORE validation — RunConfig is
+    // strict, so an unknown `demoOverride` key would 400. It's a demo cap-LOWERING convenience (a route-
+    // body field, NOT part of the frozen RunConfig — zero new contract surface).
+    const { demoOverride, ...runConfigBody } = asRecord(request.body);
+
     // Fail-fast config validation (§15) — an invalid config appends NO run.configured.
     let config: RunConfig;
     try {
       config = validateRunConfig({
         defaults: deps.defaultConfig as unknown as Record<string, unknown>,
-        file: asRecord(request.body),
+        file: runConfigBody,
         env: {},
       });
     } catch (error) {
       return reply.status(400).send({ error: 'invalid_config', message: (error as Error).message });
+    }
+
+    // Demo cap-override (PD.12, §17/§5) — when present, the caps come ENTIRELY from
+    // `applyDemoCapOverride(maxima, override)`: every overridden field is LOWERED, every other field is
+    // the maximum (the override supersedes any submitted `caps` — a deliberate demo convenience). It
+    // only-LOWERS within maxima (throws → 422 on above-maxima / non-positive / bogus field) and is
+    // defense-in-depth operator input, NEVER a 2nd cap authority — the authoritative `overCapField`
+    // below still runs on the result (rule #1, LESSONS §89).
+    if (isPlainObject(demoOverride)) {
+      try {
+        config = {
+          ...config,
+          caps: applyDemoCapOverride(deps.defaultConfig.caps, demoOverride as Partial<RunCaps>),
+        };
+      } catch (error) {
+        return reply
+          .status(422)
+          .send({ error: 'cap_override_exceeds_max', message: (error as Error).message });
+      }
     }
 
     // Cap-override rejection (§11) — a cap above the validated maxima is refused, never clamped up.
@@ -143,20 +174,17 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
       return reply.status(404).send({ error: 'run_not_found', runId });
     }
     const status = buildCurrentState(events).state.runs[runId]?.status;
-    // Idempotent: stopping an already-terminal run is a no-op success (no second terminal append).
+    // Idempotent: stopping an already-terminal run is a no-op success (no signal, no second terminal append).
     if (status !== undefined && TERMINAL_RUN_STATUSES.has(status)) {
       return reply.status(200).send({ runId, status, stopped: false });
     }
-    // Append the terminal event — append-only, so prior events (partial evidence) are preserved.
-    await deps.store.append({
-      id: deps.newId(),
-      runId,
-      type: 'run.stopped',
-      actor: 'operator',
-      payload: {},
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-    });
-    if (activeRunId === runId) activeRunId = null;
-    return reply.status(200).send({ runId, status: 'stopped', stopped: true });
+    // Non-terminal: SIGNAL the in-flight worker (latch `operatorStop`) — the worker's loop picks it up at its
+    // next generation boundary, drains the current generation, and terminalizes `run.stopped` (running→
+    // stopping, actor `runtime`). The route appends NOTHING (the worker owns the terminal — rule #2). A direct
+    // in-route terminal append is buggy against a live worker (the loop polls the signal, not the log).
+    // Do NOT clear `activeRunId`: the run is still draining/non-terminal until the worker terminalizes, so a
+    // concurrent `POST /runs` still gets 409 (the `isActive()` log re-validation is the source of truth).
+    deps.requestStop(runId);
+    return reply.status(202).send({ runId, stopRequested: true });
   });
 }

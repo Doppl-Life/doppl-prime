@@ -4,6 +4,7 @@ import type { ModelGatewayRequest, ProviderCapability, ProviderMeta } from '@dop
 import type { ModelGateway } from '../port';
 import type { ProviderResult } from '../structured-output';
 import { createGateway } from '../gateway';
+import { createLiveGateway, type LiveGatewayDeps } from '../live-gateway';
 import {
   ROLE_FIXTURES,
   STUB_PROBE_INVALID_OUTPUT,
@@ -77,14 +78,27 @@ export function createFakeGateway(config: FakeGatewayConfig = {}): ModelGateway 
 }
 
 /**
- * Thin selection seam: return the fake when `useStub`. Reads NO env/file — resolving `useStub` from
- * defaults<file<env is the boot caller's job via `validateRunConfig` (lesson §4 IO-at-boundary; the
- * validateRunConfig carry-forward). The real provider-backed gateway lands in P2.5; until then
- * `useStub:false` is unsupported. Full registry-based selection wires in P2.2.
+ * Thin recorded-vs-live multiplexer (PD.9). Reads NO env/file — resolving `useStub` from
+ * defaults<file<env is the boot caller's job (lesson §4 IO-at-boundary; the validateRunConfig
+ * carry-forward), and the live `liveDeps` (registry + provider client) are built at the boot boundary
+ * (`main.ts`) only when `DOPPL_GATEWAY=live`:
+ *   - `useStub:true`  → the deterministic recorded fake (unchanged).
+ *   - `useStub:false` + `liveDeps` → the real OpenRouter-backed gateway (`createLiveGateway`).
+ *   - `useStub:false` with NO `liveDeps` → an HONEST throw. We never silently fall back to the fake: a
+ *     missing live config is a boot misconfiguration to surface, not to mask as a passing recorded run.
  */
-export function selectGateway(selection: GatewaySelection): ModelGateway {
+export function selectGateway(
+  selection: GatewaySelection,
+  liveDeps?: LiveGatewayDeps,
+): ModelGateway {
   if (selection.useStub) {
     return createFakeGateway(selection.fake);
   }
-  throw new Error('real ModelGateway is not yet available — wire the OpenRouter adapter (P2.5)');
+  if (liveDeps === undefined) {
+    throw new Error(
+      'live ModelGateway requires liveDeps {registry, client} (DOPPL_GATEWAY=live) — none supplied; ' +
+        'refusing to silently fall back to the recorded fake',
+    );
+  }
+  return createLiveGateway(liveDeps);
 }

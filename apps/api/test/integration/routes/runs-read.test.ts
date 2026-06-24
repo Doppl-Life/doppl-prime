@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import {
+  RunEventEnvelope,
   validCandidateIdeaCrossDomain,
   validCriticReview,
   validFitnessScore,
@@ -135,6 +136,36 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
     }
   });
 
+  // PD.15 (§4/§11) — GET /runs/:id/events omits null/undefined optionals on the wire (the shared
+  // serializer) so the frozen RunEventEnvelope re-parses on the consumer (the web getEvents no longer
+  // PayloadValidationErrors on DB-null optionals). Pre-fix: nulls present → parse throws (the Finding).
+  test('test_get_events_omit_null_optionals_reparse', async () => {
+    await seedRun('read-omit-null');
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/runs/read-omit-null/events' });
+      expect(res.statusCode).toBe(200);
+      const events = (res.json() as { events: Record<string, unknown>[] }).events;
+      expect(events.length).toBeGreaterThan(0);
+      for (const event of events) {
+        for (const key of [
+          'generationId',
+          'agenomeId',
+          'candidateId',
+          'correlationId',
+          'langfuseTraceId',
+          'langfuseObservationId',
+        ]) {
+          expect(event[key]).not.toBeNull(); // ABSENT (undefined), never `null`
+        }
+        expect(() => RunEventEnvelope.parse(event)).not.toThrow(); // the frozen consumer re-parses
+      }
+    } finally {
+      await app.close();
+    }
+  });
+
   // §11/§9 — /lineage returns the LineageGraphProjection (sequenceThrough); /replay the replay summary.
   test('test_get_lineage_and_replay', async () => {
     await seedRun('read-proj');
@@ -219,6 +250,57 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
       await app.inject({ method: 'GET', url: '/runs/read-immutable/lineage' });
       await app.inject({ method: 'GET', url: '/runs/read-immutable/replay' });
       expect((await store.readByRun('read-immutable')).length).toBe(before); // no append from reads
+    } finally {
+      await app.close();
+    }
+  });
+
+  // PD.5a (§11/§17) — buildServer REGISTERS GET /problem-sets (closes the unit-tested-but-unregistered
+  // gap: the route is served through the production server builder, not just in isolation), returning the
+  // injected boot catalog. main.ts wires `problemSets: config.problemSets` into this same buildServer.
+  test('test_buildServer_serves_problem_sets', async () => {
+    const catalog = [
+      { id: 'p1', title: 'Demo problem', prompt: 'Solve a hard, well-scoped problem.' },
+    ];
+    const app = buildServer({
+      store,
+      db,
+      defaultConfig: DEFAULT_RUN_CONFIG,
+      newId: () => 'id-ps',
+      problemSets: catalog,
+    });
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/problem-sets' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ problemSets: catalog });
+    } finally {
+      await app.close();
+    }
+  });
+
+  // PD.18 (§11/§5) — GET /config/caps serves the boot defaultConfig.caps (the SAME maxima overCapField
+  // enforces) so the RunConfigPanel clamps to the real ceiling (fixing the cap-default 422). Read-only.
+  test('test_config_caps_returns_configured_maxima', async () => {
+    const caps = {
+      maxPopulation: 12,
+      maxGenerations: 6,
+      energyBudget: 1000,
+      maxSpawnDepth: 4,
+      maxToolCalls: 80,
+      wallClockTimeoutMs: 480_000,
+    };
+    const app = buildServer({
+      store,
+      db,
+      defaultConfig: { ...DEFAULT_RUN_CONFIG, caps },
+      newId: () => 'id-caps',
+    });
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/config/caps' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ caps });
     } finally {
       await app.close();
     }

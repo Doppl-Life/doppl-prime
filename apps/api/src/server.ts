@@ -5,9 +5,13 @@ import type { EventStore } from './event-store';
 import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
+import { registerProblemSetsRoutes } from './routes/problem-sets';
+import { registerDemoLadderRoutes } from './routes/demo-ladder';
+import { registerCapMaximaRoutes } from './routes/cap-maxima';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
 import type { EventBridgeOptions } from './sse/event-bridge';
+import type { ProblemSets } from './runtime/config/configSchema';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -51,6 +55,9 @@ export interface BuildServerDeps {
   bodyLimit?: number;
   /** The configured ModelRoute set served by GET /model-routes (defaults to empty). */
   modelRoutes?: readonly ModelRoute[];
+  /** PD.5a — the boot prepared-problem catalog served by GET /problem-sets (defaults to empty). Wired from
+   *  `main.ts` `config.problemSets`; the PD.5b operator panel reads it to populate its selector. */
+  problemSets?: ProblemSets;
   /**
    * SSE bridge poll options for GET /runs/:id/stream (P6.9). Defaults to a live stream (real
    * abort-aware sleep + unbounded idle polls); tests inject a no-op sleep + bounded maxIdlePolls.
@@ -59,6 +66,9 @@ export interface BuildServerDeps {
   /** P5.11 — additive optional execution trigger passed to POST /runs (the boot `createStartRun`). Absent
    *  → append-only, no execution (today's behavior). Fire-and-forget; the 201 does not block on the run. */
   onRunConfigured?: (runId: string) => void;
+  /** PD.3 — latch an operator stop (the boot `operatorStopRegistry.request`); `POST /runs/:id/stop` signals
+   *  the in-flight worker through it. Absent → a no-op default (the route still 202s; nothing drains). */
+  requestStop?: (runId: string) => void;
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
@@ -81,6 +91,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
     newId: deps.newId,
+    requestStop: deps.requestStop ?? ((): void => {}),
     ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
   });
   registerRunReadRoutes(app, { store: deps.store, db: deps.db });
@@ -90,5 +101,13 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
   });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
+  registerProblemSetsRoutes(app, { problemSets: deps.problemSets ?? [] });
+  registerDemoLadderRoutes(app, {
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    problemSets: deps.problemSets ?? [],
+  });
+  // PD.18 — serve the validated cap maxima (defaultConfig.caps) so the RunConfigPanel clamps to the
+  // REAL ceiling (fixing the cap-default 422). Read-only; overCapField stays the sole cap authority.
+  registerCapMaximaRoutes(app, { defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG });
   return app;
 }

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, inject, test } from 'vitest';
 import pg from 'pg';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../src/event-store';
 import { buildServer, DEFAULT_RUN_CONFIG } from '../../../src/server';
 
@@ -35,13 +36,14 @@ const validBody = {
   rngSeed: 1,
 };
 
-function makeApp(bodyLimit?: number) {
+function makeApp(opts: { bodyLimit?: number; requestStop?: (runId: string) => void } = {}) {
   return buildServer({
     store,
     db,
     defaultConfig: DEFAULT_RUN_CONFIG,
     newId: () => `id-${idCounter++}`,
-    ...(bodyLimit !== undefined ? { bodyLimit } : {}),
+    ...(opts.bodyLimit !== undefined ? { bodyLimit: opts.bodyLimit } : {}),
+    ...(opts.requestStop !== undefined ? { requestStop: opts.requestStop } : {}),
   });
 }
 
@@ -157,24 +159,50 @@ describe('POST /runs + /runs/:id/stop — REST write path (spec §11/§14/§15)'
     }
   });
 
-  // §11 — stop is idempotent: stop on active → terminal + partial evidence preserved; stop again on
-  // already-terminal → no-op success (no second run.stopped).
-  test('test_stop_idempotent_terminal_noop', async () => {
-    const app = makeApp();
+  // §5/rule #2 — stop on a NON-terminal run is an async SIGNAL: it latches `requestStop`, appends NOTHING,
+  // and returns 202 stopRequested. The worker (not the route) owns the terminal — so no run.stopped here.
+  test('test_stop_nonterminal_signals_async_202', async () => {
+    const requested: string[] = [];
+    const app = makeApp({ requestStop: (runId) => requested.push(runId) });
     await app.ready();
     try {
       const created = await app.inject({ method: 'POST', url: '/runs', payload: validBody });
       const runId = (created.json() as { runId: string }).runId;
 
-      const stop1 = await app.inject({ method: 'POST', url: `/runs/${runId}/stop` });
-      expect(stop1.statusCode).toBe(200);
-      expect(await countType(runId, 'run.stopped')).toBe(1);
-      // partial evidence preserved (append-only — run.configured still in the log).
-      expect(await countType(runId, 'run.configured')).toBe(1);
+      const stop = await app.inject({ method: 'POST', url: `/runs/${runId}/stop` });
+      expect(stop.statusCode).toBe(202);
+      expect(stop.json()).toMatchObject({ runId, stopRequested: true });
+      expect(requested).toEqual([runId]); // the worker was signalled.
+      expect(await countType(runId, 'run.stopped')).toBe(0); // the route appended NO terminal (rule #2).
+      expect(await countType(runId, 'run.configured')).toBe(1); // append-only — config preserved.
+    } finally {
+      await app.close();
+    }
+  });
 
-      const stop2 = await app.inject({ method: 'POST', url: `/runs/${runId}/stop` });
-      expect(stop2.statusCode).toBe(200); // already-terminal → no-op success
-      expect(await countType(runId, 'run.stopped')).toBe(1); // no second terminal append
+  // rule #2 — stop on an ALREADY-terminal run is idempotent: 200 stopped:false, no signal, no second terminal.
+  test('test_stop_terminal_idempotent_noop', async () => {
+    const requested: string[] = [];
+    const app = makeApp({ requestStop: (runId) => requested.push(runId) });
+    await app.ready();
+    try {
+      const created = await app.inject({ method: 'POST', url: '/runs', payload: validBody });
+      const runId = (created.json() as { runId: string }).runId;
+      // Terminalize the run as the worker would (the kill-and-drain terminal), then stop again.
+      await store.append({
+        id: `term-${runId}`,
+        runId,
+        type: 'run.stopped',
+        actor: 'runtime',
+        payload: { from: 'running', to: 'stopping', reason: 'operator_stop' },
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+      });
+
+      const stop = await app.inject({ method: 'POST', url: `/runs/${runId}/stop` });
+      expect(stop.statusCode).toBe(200); // already-terminal → no-op success
+      expect((stop.json() as { stopped: boolean }).stopped).toBe(false);
+      expect(requested).toEqual([]); // no signal on a terminal run.
+      expect(await countType(runId, 'run.stopped')).toBe(1); // no second terminal append.
     } finally {
       await app.close();
     }
@@ -182,7 +210,7 @@ describe('POST /runs + /runs/:id/stop — REST write path (spec §11/§14/§15)'
 
   // §14 — the bodyLimit ingestion gate rejects an over-limit request body before the per-type ceiling.
   test('test_body_limit_rejects_oversize_request', async () => {
-    const app = makeApp(256); // tiny bodyLimit
+    const app = makeApp({ bodyLimit: 256 }); // tiny bodyLimit
     await app.ready();
     try {
       const huge = { ...validBody, seed: 'x'.repeat(2_000) };

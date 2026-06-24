@@ -40,7 +40,8 @@ export interface OpenRouterCompletionParams {
   model: string;
   messages: { role: ChatRole; content: string }[];
   maxTokens?: number;
-  responseFormat?: { name: string; strict: true; schema: unknown };
+  /** PD.13 — relaxed structured mode marker (provider `json_object`); the schema is conveyed in-message. */
+  responseFormat?: { type: 'json_object' };
 }
 
 /** The normalized raw completion the client returns — `output` is unvalidated (P2.4 validates). */
@@ -92,21 +93,41 @@ function buildParams(
   request: ModelGatewayRequest,
   structured: boolean,
 ): OpenRouterCompletionParams {
-  const messages = request.messages
+  const baseMessages = request.messages
     ? request.messages.map((message) => ({ role: message.role, content: message.content }))
     : [{ role: 'user' as ChatRole, content: request.prompt ?? '' }];
-  const params: OpenRouterCompletionParams = { model: modelId, messages };
+  const params: OpenRouterCompletionParams = { model: modelId, messages: baseMessages };
   if (request.maxTokens !== undefined) {
     params.maxTokens = request.maxTokens;
   }
   if (structured && isZodSchema(request.schema)) {
-    params.responseFormat = {
-      name: `${request.role}_output`,
-      strict: true,
-      schema: z.toJSONSchema(request.schema),
-    };
+    // PD.13 — RELAXED structured-output mode: provider `json_object`. OpenAI's strict json_schema subset
+    // 400s a root-`anyOf` discriminated-union / optional-field schema (the PD.8c live finding;
+    // curl-confirmed strict:true AND strict:false both require a root object). The schema is conveyed to
+    // the model as a TRUSTED, candidate-INDEPENDENT system instruction (text) PREPENDED to the messages —
+    // preserving §38 isolation (the candidate stays DATA in its user message; the instruction is
+    // byte-identical regardless of candidate). The gateway's Zod validate/repair(≤1)/reject remains the
+    // AUTHORITATIVE check (rule #5); provider strict-mode was only an optimization.
+    params.responseFormat = { type: 'json_object' };
+    params.messages = [
+      { role: 'system' as ChatRole, content: structuredSchemaInstruction(request.schema) },
+      ...baseMessages,
+    ];
   }
   return params;
+}
+
+/**
+ * The trusted, candidate-INDEPENDENT instruction conveying the target JSON shape under `json_object` mode
+ * (which carries no schema): it gives the model the exact shape AND satisfies json_object's required "JSON"
+ * mention. Derived only from the request `schema` (never from candidate text) → byte-identical per role
+ * (§38). The gateway still validates the output against this same schema (rule #5).
+ */
+function structuredSchemaInstruction(schema: ZodType): string {
+  return (
+    'Respond with ONLY a single JSON object and no other text. The JSON object MUST conform to this ' +
+    `JSON Schema:\n${JSON.stringify(z.toJSONSchema(schema))}`
+  );
 }
 
 /**
@@ -234,18 +255,8 @@ export function createOpenRouterClient(env: Record<string, string | undefined>):
           model: params.model,
           messages: params.messages,
           ...(params.maxTokens !== undefined ? { max_tokens: params.maxTokens } : {}),
-          ...(params.responseFormat
-            ? {
-                response_format: {
-                  type: 'json_schema' as const,
-                  json_schema: {
-                    name: params.responseFormat.name,
-                    strict: true,
-                    schema: params.responseFormat.schema as Record<string, unknown>,
-                  },
-                },
-              }
-            : {}),
+          // PD.13 — relaxed structured mode: provider `json_object` (the schema rides in-message, not here).
+          ...(params.responseFormat ? { response_format: { type: 'json_object' as const } } : {}),
         },
         { timeout: opts.timeoutMs },
       );
