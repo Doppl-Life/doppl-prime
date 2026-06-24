@@ -102,6 +102,11 @@ export function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig
       ...(perRun.generationOperators !== undefined
         ? { generationOperators: perRun.generationOperators }
         : {}),
+      // FB.4 — thread the per-run generationBias dial so the loop executes the recorded diverge/converge
+      // value (was dropped). `!== undefined` preserves an explicit neutral 0 (an engaged-but-neutral dial);
+      // the dial maps to a TRUSTED band fragment + a clamped temperature on the population_generator request
+      // only — prompt + sampling, no cap/energy effect (rule #1/#8), never the judge/critic path (rule #6).
+      ...(perRun.generationBias !== undefined ? { generationBias: perRun.generationBias } : {}),
     },
   };
 }

@@ -31,6 +31,8 @@ const LLM_CALL_TELEMETRY_FIELD_SNAPSHOT = [
   'rawReasoning',
   'providerMeta',
   'truncated',
+  // frontend-v2 FB.4 (sv7→8): the executed generation sampling params (records the dial's temperature).
+  'samplingParams',
 ];
 
 // rule #6 — the held-out judge anchor field-sets this amendment must NOT move.
@@ -69,10 +71,11 @@ describe('FB.6 — raw reasoning/response capture amendment (spec §4)', () => {
     expect(LlmCallTelemetry.safeParse(noFlag).success).toBe(false);
   });
 
-  it('test_current_schema_version_is_7_additive', () => {
-    // spec(§4): the deliberate monotonic bump 6→7, pinned by literal; old envelopes still validate
-    // (readers accept schemaVersion ≤ current — additive/backward-compatible).
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
+  it('test_current_schema_version_at_least_7_since_fb6', () => {
+    // spec(§4): FB.6 introduced sv7; later additive bumps keep it ≥7 (the EXACT current pin lives in
+    // field-sets.test.ts — this amendment-local test asserts FB.6's floor + that v5/6/7 envelopes still
+    // validate, the additive/backward-compat guarantee that is FB.6's concern).
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(7);
     for (const v of [1, 5, 6, 7]) {
       expect(
         RunEventEnvelope.safeParse({ ...validRunEventEnvelope, schemaVersion: v }).success,
@@ -84,7 +87,7 @@ describe('FB.6 — raw reasoning/response capture amendment (spec §4)', () => {
   it('test_llm_call_telemetry_field_set_snapshot', () => {
     // spec(§4) spec(§2.5): the new high-traffic model's field-name set == the frozen snapshot.
     expect(objectFieldNames(LlmCallTelemetry)).toEqual(sorted(LLM_CALL_TELEMETRY_FIELD_SNAPSHOT));
-    expect(LLM_CALL_TELEMETRY_FIELD_SNAPSHOT).toHaveLength(9);
+    expect(LLM_CALL_TELEMETRY_FIELD_SNAPSHOT).toHaveLength(10);
   });
 
   it('test_immutable_rule6_surface_unchanged', () => {

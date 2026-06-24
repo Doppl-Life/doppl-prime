@@ -27,6 +27,7 @@ export * from './gateway/model-role';
 export * from './gateway/model-route';
 export * from './gateway/provider-capability';
 export * from './gateway/provider-meta';
+export * from './gateway/sampling-params';
 export * from './projections/lineage-graph';
 export * from './projections/projection-watermark';
 export * from './run/generation-operator';

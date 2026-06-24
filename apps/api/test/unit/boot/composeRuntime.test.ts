@@ -96,11 +96,29 @@ describe('FB.3 — mergePerRunConfig threads the per-run generationOperators', (
   test('test_merge_per_run_threads_operators', () => {
     // FB.3 — the recorded per-run generationOperators are carried into the per-run config (no longer
     // dropped) so the generation loop executes what was recorded (recorded == executed).
-    const withOps: RunConfig = { ...perRun(), generationOperators: ['polymath', 'first_principles'] };
+    const withOps: RunConfig = {
+      ...perRun(),
+      generationOperators: ['polymath', 'first_principles'],
+    };
     const merged = mergePerRunConfig(BOOT, withOps);
     expect(merged.runConfig.generationOperators).toEqual(['polymath', 'first_principles']);
     // an absent operator set leaves the field absent (additive/optional) — backward-compatible.
     expect(mergePerRunConfig(BOOT, perRun()).runConfig.generationOperators).toBeUndefined();
+  });
+});
+
+describe('FB.4 — mergePerRunConfig threads the per-run generationBias', () => {
+  test('test_merge_per_run_threads_generation_bias', () => {
+    // FB.4 — the recorded per-run generationBias is carried into the per-run config (no longer dropped)
+    // so the generation loop executes the recorded dial (recorded == executed).
+    const withBias: RunConfig = { ...perRun(), generationBias: -0.8 };
+    expect(mergePerRunConfig(BOOT, withBias).runConfig.generationBias).toBe(-0.8);
+    // an explicit neutral 0 is preserved (an engaged-but-neutral dial is a real choice, recorded).
+    expect(
+      mergePerRunConfig(BOOT, { ...perRun(), generationBias: 0 }).runConfig.generationBias,
+    ).toBe(0);
+    // an absent bias leaves the field absent (additive/optional) — backward-compatible.
+    expect(mergePerRunConfig(BOOT, perRun()).runConfig.generationBias).toBeUndefined();
   });
 });
 

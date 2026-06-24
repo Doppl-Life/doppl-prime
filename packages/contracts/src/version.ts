@@ -25,7 +25,11 @@
  *    raw response/reasoning, scrubbed at the persistence boundary rule #4, truncated-with-marker under the
  *    1 MiB ceiling, replay-read rule #7). GENERATION output only — the rule-#6 judge/scoring anchor is
  *    BYTE-IDENTICAL across this bump.
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–6 envelopes still validate (the
+ *  - 7 → 8 (frontend-v2 FB.4, diverge/converge dial amendment): +`samplingParams{temperature?}` (the shared
+ *    `SamplingParams`) on `ModelGatewayRequest` (the dial sets `temperature` on the population_generator
+ *    request ONLY — rule #6 SOLO) + on `LlmCallTelemetry` (records the EXECUTED temperature, replay-read
+ *    rule #7). GENERATION sampling only — the rule-#6 judge/scoring anchor is BYTE-IDENTICAL across this bump.
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–7 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;

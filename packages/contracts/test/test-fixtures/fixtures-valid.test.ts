@@ -81,13 +81,13 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
   });
 
   it('canonical_fixtures_still_valid_at_current_version', () => {
-    // spec(§16) [frontend-v2 FB.6 raw-capture amendment]: the canonical envelope fixture is re-recorded
-    // at the CURRENT schema version (7 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal
-    // pin); the full CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14
-    // surface survives the sv6→7 amendment (additive: +RunEventType llm_call_telemetry + the
-    // LlmCallTelemetry payload model; rule-#6 judge anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
-    expect(validRunEventEnvelope.schemaVersion).toBe(7);
+    // spec(§16) [frontend-v2 FB.4 dial amendment]: the canonical envelope fixture is re-recorded at the
+    // CURRENT schema version (8 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal pin); the
+    // full CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14 surface
+    // survives the sv7→8 amendment (additive: +samplingParams{temperature?} on ModelGatewayRequest +
+    // LlmCallTelemetry; rule-#6 judge anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+    expect(validRunEventEnvelope.schemaVersion).toBe(8);
   });
 
   it('types_are_single_source', () => {

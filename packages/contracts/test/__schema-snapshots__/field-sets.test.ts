@@ -99,7 +99,9 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     //      + the closed GenerationOperator enum; rule-#6 judge/scoring anchor byte-identical).
     // 6→7 (frontend-v2 FB.6 raw-capture: +RunEventType llm_call_telemetry + the LlmCallTelemetry payload
     //      model; deep-telemetry of GENERATION output, rule-#6 judge/scoring anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
+    // 7→8 (frontend-v2 FB.4 diverge/converge dial: +samplingParams{temperature?} on ModelGatewayRequest +
+    //      LlmCallTelemetry; GENERATION sampling only, rule-#6 judge/scoring anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(8);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {

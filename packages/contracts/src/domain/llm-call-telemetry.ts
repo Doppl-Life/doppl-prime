@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ModelRole } from '../gateway/model-role';
 import { ProviderMeta } from '../gateway/provider-meta';
+import { SamplingParams } from '../gateway/sampling-params';
 
 /**
  * LlmCallTelemetry — the persisted deep-telemetry capture of a SINGLE successful generation LLM call
@@ -33,6 +34,8 @@ export const LlmCallTelemetry = z.strictObject({
   providerMeta: ProviderMeta.optional(),
   /** Queryable marker — `true` iff a raw field was truncated to fit under the payload ceiling. */
   truncated: z.boolean(),
+  /** FB.4 (sv7→8) — the EXECUTED sampling params (the dial's temperature); replay reads them (rule #7). */
+  samplingParams: SamplingParams.optional(),
 });
 
 export type LlmCallTelemetry = z.infer<typeof LlmCallTelemetry>;

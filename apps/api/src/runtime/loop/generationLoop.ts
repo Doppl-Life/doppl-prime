@@ -11,6 +11,7 @@ import type {
 } from '@doppl/contracts';
 import { CURRENT_SCHEMA_VERSION, wrapUntrusted } from '@doppl/contracts';
 import { composeOperatorFraming } from './generationOperators';
+import { composeBiasFraming, biasToTemperature } from './generationBias';
 import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../event-store';
 import type { AppConfig } from '../config/configSchema';
 import { enforceCap } from '../caps/capEnforcer';
@@ -56,13 +57,18 @@ export function buildPopulationRequest(
   systemPrompt: string,
   problem: string,
   operators?: readonly GenerationOperator[],
+  bias?: number,
 ): ModelGatewayRequest {
+  // FB.4 — the diverge/converge dial's TRUSTED band fragment ('' when absent/neutral → byte-identical to the
+  // baseline). The dial is "engaged" exactly when this is non-empty (non-neutral); a neutral/absent dial adds
+  // neither framing nor a temperature nudge.
+  const biasFraming = composeBiasFraming(bias);
   return {
     role: 'population_generator',
     messages: [
       {
         role: 'system',
-        content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}${composeOperatorFraming(operators)}`,
+        content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}${composeOperatorFraming(operators)}${biasFraming}`,
       },
       { role: 'user', content: wrapUntrusted(problem) },
     ],
@@ -70,6 +76,12 @@ export function buildPopulationRequest(
     // the model output: a malformed output is REJECTED (→ the loop's graceful agenome.failed), never
     // accepted-then-crashed at the candidate.created append.
     schema: CandidateContent,
+    // FB.4 (rule #6 SOLO) — the dial's clamped temperature nudge, applied to the population_generator request
+    // ONLY, and only when the dial is ENGAGED (non-neutral) so a neutral/absent dial keeps the request shape
+    // byte-identical to the baseline. The critic/judge requests (assembleIsolatedRequest) set no
+    // samplingParams, so the dial is structurally unable to reach the evaluation path. The EXECUTED value is
+    // recorded into llm_call_telemetry (recorded == executed; replay reads it, never re-derives — rule #7).
+    ...(biasFraming !== '' ? { samplingParams: { temperature: biasToTemperature(bias) } } : {}),
   };
 }
 
@@ -412,13 +424,16 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     for (let a = 0; a < population.length; a += 1) {
       const agenome = population[a]!;
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
-      const { response, toolCalls, attemptFailures } = await gateway.generate(
-        buildPopulationRequest(
-          agenome.systemPrompt,
-          config.runConfig.seed,
-          config.runConfig.generationOperators,
-        ),
+      // FB.4 — thread the per-run generationBias dial into the population_generator request (band fragment +
+      // clamped temperature). Captured in a var so the EXACT executed samplingParams are recorded into the
+      // llm_call_telemetry capture below (recorded == executed; replay reads it, never re-derives — rule #7).
+      const populationRequest = buildPopulationRequest(
+        agenome.systemPrompt,
+        config.runConfig.seed,
+        config.runConfig.generationOperators,
+        config.runConfig.generationBias,
       );
+      const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest);
       for (const toolCall of toolCalls ?? []) {
         await appendEvent(
           'tool_call.started',
@@ -501,6 +516,12 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
           rawResponse: rawCapture.value,
           truncated: rawCapture.truncated,
           providerMeta: response.providerMeta,
+          // FB.4 — record the EXACT executed sampling params (the dial's clamped temperature) so the run is
+          // auditable and replay reads the recorded outcome, never re-samples (rule #7). Present only when the
+          // dial was engaged (the request carried samplingParams); additive/optional otherwise.
+          ...(populationRequest.samplingParams
+            ? { samplingParams: populationRequest.samplingParams }
+            : {}),
         },
         { generationId, agenomeId: agenome.id },
       );

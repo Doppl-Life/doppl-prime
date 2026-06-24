@@ -40,6 +40,8 @@ export interface OpenRouterCompletionParams {
   model: string;
   messages: { role: ChatRole; content: string }[];
   maxTokens?: number;
+  /** FB.4 — the generation call's sampling temperature (the diverge/converge dial's clamped nudge). */
+  temperature?: number;
   /** PD.13 — relaxed structured mode marker (provider `json_object`); the schema is conveyed in-message. */
   responseFormat?: { type: 'json_object' };
 }
@@ -99,6 +101,11 @@ function buildParams(
   const params: OpenRouterCompletionParams = { model: modelId, messages: baseMessages };
   if (request.maxTokens !== undefined) {
     params.maxTokens = request.maxTokens;
+  }
+  // FB.4 — thread the request's sampling temperature (the diverge/converge dial's clamped nudge) to the
+  // provider call, the same way maxTokens is threaded. Absent samplingParams → provider default (unchanged).
+  if (request.samplingParams?.temperature !== undefined) {
+    params.temperature = request.samplingParams.temperature;
   }
   if (structured && isZodSchema(request.schema)) {
     // PD.13 — RELAXED structured-output mode: provider `json_object`. OpenAI's strict json_schema subset
@@ -255,6 +262,8 @@ export function createOpenRouterClient(env: Record<string, string | undefined>):
           model: params.model,
           messages: params.messages,
           ...(params.maxTokens !== undefined ? { max_tokens: params.maxTokens } : {}),
+          // FB.4 — the diverge/converge dial's sampling temperature (the OpenAI-compatible SDK accepts it).
+          ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
           // PD.13 — relaxed structured mode: provider `json_object` (the schema rides in-message, not here).
           ...(params.responseFormat ? { response_format: { type: 'json_object' as const } } : {}),
         },

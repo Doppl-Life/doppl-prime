@@ -41,6 +41,7 @@ import { CandidateContent } from '../../../../src/runtime/loop/candidateContent'
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
+  buildPopulationRequest,
   transitionGenerationOrThrow,
   transitionAgenomeOrThrow,
   GENERATION_ISOLATION_FRAMING,
@@ -54,6 +55,8 @@ import {
   type VerifySeam,
 } from '../../../../src/runtime/loop/generationLoop';
 import { OPERATOR_FRAGMENTS } from '../../../../src/runtime/loop/generationOperators';
+import { BIAS_FRAGMENTS, biasToTemperature } from '../../../../src/runtime/loop/generationBias';
+import { assembleIsolatedRequest } from '../../../../src/verifier/isolation/candidate-as-data';
 
 /**
  * P3.10b generation-loop SKELETON (ARCHITECTURE.md §5/§3/§4/§6, KEY SAFETY RULES #1/#2/#9).
@@ -1160,7 +1163,10 @@ describe('runGenerationLoop (FB.3 — operators shape the generation framing)', 
 // FB.6 — the loop captures each SUCCESSFUL generation LLM call's raw response as an llm_call_telemetry
 // event (deep telemetry): rule #4 scrub-on-append (reuse), 1 MiB truncate-with-marker, rule #7
 // replay-reads, rule #1/#8 capture-is-not-a-spend. A failed call appends no capture (rule #8).
-function captureGateway(output: unknown, providerMeta: ProviderMeta = validProviderMeta): GenerationGateway {
+function captureGateway(
+  output: unknown,
+  providerMeta: ProviderMeta = validProviderMeta,
+): GenerationGateway {
   return {
     generate: async () => ({
       response: { accepted: true, validationResult: 'accepted', output, providerMeta },
@@ -1277,6 +1283,87 @@ describe('runGenerationLoop (FB.6 — raw reasoning/response capture)', () => {
     expect(energySpent).toBe(spawned + created); // capture added NO energy.spent
     expect(types.filter((t) => t === 'llm_call_telemetry')).toHaveLength(created);
     expect(result.generationsRun).toBe(1); // caps honored — capture didn't change loop bounds
+  });
+});
+
+// FB.4 — the diverge/converge dial: bias maps to a band fragment (generation system message) + a clamped
+// temperature on the population_generator request ONLY. The rule-#6 SOLO pin: the judge/critic requests
+// carry NO bias temperature/framing. The executed temperature is recorded into llm_call_telemetry (rule #7).
+describe('runGenerationLoop (FB.4 — diverge/converge dial)', () => {
+  test('test_bias_framing_and_temperature_on_generation_request', () => {
+    // §5/§6: a non-neutral bias → the band fragment in the SYSTEM message + samplingParams.temperature on
+    // the request; the problem stays isolated in the wrapUntrusted user message (rule #5 unchanged).
+    const req = buildPopulationRequest('sys prompt', 'the problem', undefined, 0.8);
+    const [sys, user] = req.messages!;
+    expect(sys!.content).toContain(BIAS_FRAGMENTS.strong_diverge);
+    expect(sys!.content).toContain(GENERATION_ISOLATION_FRAMING);
+    expect(req.samplingParams?.temperature).toBeCloseTo(biasToTemperature(0.8), 10);
+    expect(user!.content).toBe(wrapUntrusted('the problem'));
+    expect(user!.content).not.toContain(BIAS_FRAGMENTS.strong_diverge);
+  });
+
+  test('test_judge_and_critic_requests_have_no_bias_temperature', () => {
+    // ★ rule #6 SOLO (load-bearing): the dial reaches GENERATION only. The single chokepoint that builds
+    // EVERY critic/judge/check request (assembleIsolatedRequest) takes no bias and sets no samplingParams —
+    // so the final_judge + critic calls structurally cannot carry a bias-derived temperature or framing,
+    // while the population_generator request DOES. Two-sided proof.
+    const gen = buildPopulationRequest('sys', 'prob', undefined, -0.9);
+    expect(gen.samplingParams?.temperature).toBeCloseTo(biasToTemperature(-0.9), 10);
+    for (const role of ['final_judge', 'critic'] as const) {
+      const req = assembleIsolatedRequest({
+        role,
+        instruction: 'evaluate this',
+        candidate: 'cand',
+      });
+      expect(req.samplingParams).toBeUndefined(); // no bias-derived temperature
+      const sys = req.messages!.find((m) => m.role === 'system')!.content;
+      for (const fragment of Object.values(BIAS_FRAGMENTS)) {
+        if (fragment !== '') expect(sys).not.toContain(fragment); // no bias framing
+      }
+    }
+  });
+
+  test('test_bias_does_not_touch_caps_or_energy', () => {
+    // rule #1/#8: the dial touches the prompt + the sampling param only — the request carries no cap/energy.
+    const req = buildPopulationRequest('sys', 'prob', undefined, 0.8);
+    expect(Object.keys(req).sort()).toEqual(['messages', 'role', 'samplingParams', 'schema']);
+    const blob = JSON.stringify(req).toLowerCase();
+    expect(blob).not.toContain('maxpopulation');
+    expect(blob).not.toContain('energybudget');
+    expect(blob).not.toContain('caps');
+  });
+
+  test('test_telemetry_records_executed_temperature', () => {
+    // the appended llm_call_telemetry records the EXACT executed sampling params (recorded == executed).
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 1 });
+    const config = { ...base, runConfig: { ...base.runConfig, generationBias: 0.8 } };
+    const fake = makeFakeEventStore();
+    return runGenerationLoop(makeDeps({ eventStore: fake.store, config })).then(() => {
+      const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+      expect(tel).toHaveLength(1);
+      const payload = tel[0]!.payload as Record<string, unknown>;
+      const sampling = payload.samplingParams as { temperature?: number } | undefined;
+      expect(sampling?.temperature).toBeCloseTo(biasToTemperature(0.8), 10);
+    });
+  });
+
+  test('test_replay_reads_recorded_temperature_no_provider', async () => {
+    // rule #7: replay reconstructs the recorded temperature from the persisted capture — no biasToTemperature
+    // re-derive, no provider call (replayEvents folds the rows; imports no gateway seam).
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 1 });
+    const config = { ...base, runConfig: { ...base.runConfig, generationBias: -0.9 } };
+    const fake = makeFakeEventStore();
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(makeDeps({ eventStore: fake.store, gateway, config }));
+    const callsAfterRun = requests.length;
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    const tel = replayed.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1);
+    const sampling = (tel[0]!.payload as Record<string, unknown>).samplingParams as {
+      temperature?: number;
+    };
+    expect(sampling.temperature).toBeCloseTo(biasToTemperature(-0.9), 10);
+    expect(requests.length).toBe(callsAfterRun); // replay added NO provider call
   });
 });
 

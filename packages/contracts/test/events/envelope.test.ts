@@ -118,10 +118,10 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_7', () => {
-    // spec(§4) [frontend-v2 FB.6 raw-capture amendment]: the registry-pinned current schema version is
-    // 7 (bumped 6→7 for the additive RunEventType llm_call_telemetry + the LlmCallTelemetry payload
-    // model). The exported constant is the single source the reader's ≤-current ceiling tracks.
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
+  it('current_schema_version_is_8', () => {
+    // spec(§4) [frontend-v2 FB.4 diverge/converge dial amendment]: the registry-pinned current schema
+    // version is 8 (bumped 7→8 for the additive samplingParams{temperature?} on ModelGatewayRequest +
+    // LlmCallTelemetry). The exported constant is the single source the reader's ≤-current ceiling tracks.
+    expect(CURRENT_SCHEMA_VERSION).toBe(8);
   });
 });

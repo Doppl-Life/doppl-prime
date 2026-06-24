@@ -170,7 +170,8 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
   ],
   ModelRoute: ['role', 'provider', 'modelId', 'capability', 'fallbackRouteIds'],
   ProviderCapability: ['structuredOutputs', 'embeddings', 'toolCalling', 'streaming'],
-  ModelGatewayRequest: ['role', 'prompt', 'messages', 'schema', 'maxTokens'],
+  // frontend-v2 FB.4 (sv7→8): +samplingParams{temperature?} — the generation dial's executed sampling.
+  ModelGatewayRequest: ['role', 'prompt', 'messages', 'schema', 'maxTokens', 'samplingParams'],
   ModelGatewayResponse: [
     'accepted',
     'output',
@@ -195,7 +196,8 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'providerMeta',
     'langfuseTraceId',
   ],
-  // frontend-v2 FB.6 — deep-telemetry capture of a successful generation LLM call (high-traffic model).
+  // frontend-v2 FB.6 — deep-telemetry capture of a successful generation LLM call (high-traffic model);
+  // FB.4 (sv7→8) added samplingParams (the executed dial temperature).
   LlmCallTelemetry: [
     'id',
     'runId',
@@ -206,5 +208,6 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'rawReasoning',
     'providerMeta',
     'truncated',
+    'samplingParams',
   ],
 };
