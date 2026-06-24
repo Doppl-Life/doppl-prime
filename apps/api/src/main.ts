@@ -9,11 +9,13 @@ import { createEventStore, runMigrations } from './event-store';
 import {
   createModelRegistry,
   createOpenRouterClient,
+  createOllamaClient,
   loadModelRegistry,
   selectGateway,
   type GatewaySelection,
   type ModelGateway,
   type OpenRouterClient,
+  type OllamaClient,
 } from './model-gateway';
 import { REQUIRED_CREDENTIAL_ENV } from './model-gateway/registry';
 import { DEFAULT_MODEL_REGISTRY } from './config/model-registry.config';
@@ -90,6 +92,12 @@ export interface BootOverrides {
    * (a fake `OpenRouterClient`). Ignored on the recorded default (no provider client is built — Q4 lazy).
    */
   readonly openRouterClient?: OpenRouterClient;
+  /**
+   * FB.1 — the KEYLESS ollama provider client used ONLY on the `DOPPL_GATEWAY=live` branch (default
+   * `createOllamaClient(env)` — reads `OLLAMA_BASE_URL`, no key). Injected so the live boot branch is
+   * exercised WITHOUT a network call (a fake `OllamaClient`). Ignored on the recorded default (lazy).
+   */
+  readonly ollamaClient?: OllamaClient;
 }
 
 /** The committed fixtures dir at the repo root (`fixtures/replay/`), resolved from this module's location. */
@@ -124,7 +132,11 @@ function resolveGateway(
   if (selection.useStub) return selectGateway(selection); // recorded — no provider client constructed
   const registry = createModelRegistry(loadModelRegistry({ defaults: DEFAULT_MODEL_REGISTRY }));
   const client = overrides.openRouterClient ?? createOpenRouterClient(env);
-  return selectGateway(selection, { registry, client });
+  // FB.1 — the keyless ollama client is always constructed on the live branch (no key, cheap) so an
+  // ollama-routed role (per-run modelRouteOverride, FB.2) is servable; provider-dispatch in
+  // createLiveGateway selects it by route.provider. OpenRouter remains the default for the demo routes.
+  const ollamaClient = overrides.ollamaClient ?? createOllamaClient(env);
+  return selectGateway(selection, { registry, client, ollamaClient });
 }
 
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).

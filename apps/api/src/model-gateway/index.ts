@@ -39,6 +39,17 @@ export type {
 export { withRetry, ProviderTimeoutError } from './adapters/retry';
 export type { RetryOutcome, RetryDeps, RetryPolicy, AttemptFailure } from './adapters/retry';
 
+// Local-provider (ollama) generation adapter (FB.1) — a second live provider behind the gateway via
+// `createLiveGateway`'s provider-dispatch. KEYLESS (OLLAMA_BASE_URL, no key — rule #4); HTTP behind the
+// seam (rule #9). Mirrors the OpenRouter adapter (raw output, withRetry, 0-token ProviderCallError).
+export { createOllamaProviderCall, createOllamaClient } from './adapters/ollama.adapter';
+export type {
+  OllamaClient,
+  OllamaAdapterDeps,
+  OllamaCompletionParams,
+  OllamaRawCompletion,
+} from './adapters/ollama.adapter';
+
 // Direct-OpenAI embedding adapter (P2.6) — the `embedding`-role `providerCall` (SDK behind the port,
 // rule #9) returning the authoritative vector + modelId + dimension for selection to persist.
 export {
