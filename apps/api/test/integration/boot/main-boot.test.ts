@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, inject, test } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, inject, test, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -327,6 +327,29 @@ describe('bootApp — PD.3 production boot root (real PG, testcontainers)', () =
     await close();
   });
 
+  // PD.19 (§17/§13) — boot emits a clear startup line AFTER listen so `pnpm start` isn't silent (the
+  // Fastify logger is disabled → app.log is a no-op). console.log is a process-stdout signal, NOT a
+  // run_event (rule #2; the line carries host:port only — no secret, rule #4).
+  test('boot_logs_listening_line', async () => {
+    const url = await freshDatabaseUrl();
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      const { close } = await bootApp({
+        env: bootEnv(url),
+        port: 0,
+        host: '127.0.0.1',
+        gateway: recordedDemoGateway(),
+      });
+      const loggedListening = spy.mock.calls
+        .flat()
+        .some((arg: unknown) => typeof arg === 'string' && /listening on http:\/\//i.test(arg));
+      expect(loggedListening).toBe(true);
+      await close();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   // Resource lifecycle — close() ends the pg pool + stops the server (no open-handle leak across tests).
   test('bootApp_close_tears_down', async () => {
     const url = await freshDatabaseUrl();
@@ -400,6 +423,23 @@ describe('bootApp seed step — PD.3-completion migrate→seed→start (real PG)
       host: '127.0.0.1',
     });
     expect(app.server.listening).toBe(true); // boot succeeds; nothing seeded
+    await close();
+  });
+
+  // PD.19 (§17) — with DOPPL_FIXTURE_DIR OMITTED (no override), boot seeds from the MODULE-RELATIVE
+  // default (repo fixtures/replay via import.meta.url — CWD-independent), proving the .env.example
+  // omission is safe: the COMMITTED demo-recorded-001 fixture loads with no ENOENT (the user's bug).
+  test('boot_seeds_from_default_fixture_dir', async () => {
+    const url = await freshDatabaseUrl();
+    const { app, close } = await bootApp({
+      env: bootEnv(url, { DOPPL_SEED_FIXTURE: 'demo-recorded-001' }),
+      // NO fixtureDir override → exercises main.ts DEFAULT_FIXTURE_DIR (module-relative, any CWD).
+      port: 0,
+      host: '127.0.0.1',
+    });
+    const rows = await probeStore(url).readByRun('demo-recorded-001');
+    expect(rows.length).toBeGreaterThan(0); // committed fixture seeded from the default dir — no ENOENT
+    expect(app.server.listening).toBe(true);
     await close();
   });
 

@@ -53,12 +53,21 @@ const CODE_ALLOWLIST: readonly string[] = [
   ...BOOT_ORCHESTRATION_ENV,
 ];
 
+// PD.19 — vars the code reads (so they stay in CODE_ALLOWLIST) but that are OMITTED from .env.example
+// because they have a correct CWD-independent code default + no fail-fast boot requirement. Documenting a
+// RELATIVE value would break the documented `pnpm -C apps/api start` (DOPPL_FIXTURE_DIR → ENOENT). The
+// example lists the allowlist MINUS these; the credential required-set check (below) is untouched.
+const CODE_DEFAULTED_OMITTABLE = new Set<string>(['DOPPL_FIXTURE_DIR']);
+const EXPECTED_EXAMPLE_KEYS = [...new Set(CODE_ALLOWLIST)].filter(
+  (k) => !CODE_DEFAULTED_OMITTABLE.has(k),
+);
+
 describe('.env.example drift-guard — single-sourced from the boot env allowlist (spec §15)', () => {
   // spec(§15) — the example lists EXACTLY the code allowlist (required creds ∪ ENV_ALLOWLIST ∪ boot vars),
   // imported from code → a future allowlist change fails until the example is updated (no drift).
   test('env_example_lists_exactly_the_code_allowlist', () => {
     const keys = parseEnvExample().map((r) => r.key);
-    expect([...new Set(keys)].sort()).toEqual([...new Set(CODE_ALLOWLIST)].sort());
+    expect([...new Set(keys)].sort()).toEqual([...EXPECTED_EXAMPLE_KEYS].sort());
   });
 
   // spec(§14 / rule #4) — every credential var carries an OBVIOUS placeholder, never a real-key-shaped value.
@@ -96,9 +105,19 @@ describe('.env.example drift-guard — single-sourced from the boot env allowlis
       expect(/\bREQUIRED\b/.test(row.comment), `${cred} must be marked REQUIRED`).toBe(true);
     }
     for (const opt of [...ENV_ALLOWLIST_VARS, ...BOOT_ORCHESTRATION_ENV]) {
+      if (CODE_DEFAULTED_OMITTABLE.has(opt)) continue; // omitted from the example (code-defaulted)
       const row = rows.find((r) => r.key === opt)!;
       expect(/\bOPTIONAL\b/.test(row.comment), `${opt} must be marked OPTIONAL`).toBe(true);
     }
+  });
+
+  // PD.19 (§15/§17) — DOPPL_FIXTURE_DIR is OMITTED from .env.example: a relative value breaks the
+  // documented `pnpm -C apps/api start` (CWD=apps/api → ENOENT); the code's module-relative default
+  // resolves from any CWD, so it's code-defaulted/optional — present in BOOT_ORCHESTRATION_ENV but not
+  // required in the example.
+  test('env_example_omits_relative_fixture_dir', () => {
+    const keys = parseEnvExample().map((r) => r.key);
+    expect(keys).not.toContain('DOPPL_FIXTURE_DIR');
   });
 
   // spec(§15) — converse of the equality: no `.env.example` key outside the closed code allowlist (a

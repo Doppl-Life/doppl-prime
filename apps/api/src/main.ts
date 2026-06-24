@@ -226,6 +226,15 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
 
     await app.listen({ host, port });
 
+    // PD.19 — a clear startup line so `pnpm start` isn't silent (the Fastify logger is disabled →
+    // `app.log` is a no-op). console.log is a process-stdout signal, NOT a run_event (rule #2); it
+    // carries host:port only (no secret — rule #4). boundPort handles PORT-from-env AND the ephemeral
+    // port 0 (tests) via the actual bound address.
+    const boundAddr = app.server.address();
+    const boundPort = typeof boundAddr === 'object' && boundAddr !== null ? boundAddr.port : port;
+    const displayHost = host === '0.0.0.0' ? 'localhost' : host;
+    console.log(`Doppl API listening on http://${displayHost}:${boundPort}`);
+
     const close = async (): Promise<void> => {
       await app.close();
       await pool.end();
