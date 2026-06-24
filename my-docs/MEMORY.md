@@ -25,11 +25,17 @@ kernel owner must not accidentally undo.
 
 ### The hut is canon - 2026-06-22
 
-- **Chose:** make `my-docs/the-hut/**` the operating canon for the model. When the
-  hut and the running kernel disagree, the hut wins; the kernel follows.
-- **Over:** treating the kernel code/specs as the source of truth for the model.
-- **Because:** the model is being shaped deliberately in the hut; the kernel is
-  legacy reconciled on purpose, not bedrock.
+- **Chose:** `my-docs/the-hut/**` is the protected inner source of truth for the
+  model. A decision shaped in the hut is the truth carried outward; when the hut and
+  the running kernel disagree, the hut wins and the kernel follows. Canon here means
+  authoring authority, not a runtime role — the hut produces no nodes and sits outside
+  the run chain (seed → discovery → engine → compile → sink → agarden).
+- **Over:** treating the kernel code/specs as the source of truth, or letting the
+  garden's standing assumptions and the jungle's calcified legacy drift back into an
+  unfrozen decision.
+- **Because:** the model is shaped deliberately in the hut; the kernel is legacy
+  reconciled on purpose, not bedrock. The insulation is the point — it keeps a wet
+  decision clean before it freezes.
 - **Revisit if:** the hut is deliberately frozen into the kernel; then the
   frozen contract moves into `contracts/**` and the kernel.
 
@@ -92,13 +98,6 @@ kernel owner must not accidentally undo.
   leakage guard (`pnpm case-study:lint`).
 - **Revisit if:** the corpus moves to a production evaluation harness with stricter
   roles.
-
-### Skill lineage is registry, not storage - 2026-06-21
-
-- **Chose:** skill expressions stay in their owning runtime dirs; `skills/LINEAGE.md`
-  tracks pedigree.
-- **Over:** moving every skill into one tree or symlinking external folders.
-- **Revisit if:** a portable skill needs a real storage home.
 
 ### Distill, do not bulk import - 2026-06-21
 

@@ -1,3 +1,20 @@
 {
-  "vault": "../agarden"
+  "vault": "../agarden",
+  "maxNodesPerRun": 2,
+  "cognition": {
+    "reasoning": "claude",
+    "judge": "claude"
+  },
+  "discovery": {
+    "youtube": ["gemini", "firecrawl"],
+    "x": ["grok", "firecrawl"],
+    "web": ["firecrawl", "gemini"]
+  },
+  "tools": {
+    "claude": { "cmd": "claude", "headless": ["-p"] },
+    "codex": { "cmd": "codex", "headless": ["exec"] },
+    "gemini": { "cmd": "gemini", "headless": ["-p"] },
+    "grok": { "cmd": "grok", "headless": ["-p"] },
+    "firecrawl": { "cmd": "firecrawl", "headless": ["search"] }
+  }
 }

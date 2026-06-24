@@ -139,8 +139,7 @@ unit it breeds; a child always states its delta.
 **Operators come from mutagen skills.** A child is bred by a named operator
 (`breakthrough`, `addition-by-subtraction`, `breakout`, `blindside`, `first-principles`,
 `constraint-injection`, `polymath`). The engine records *which* operator produced each child
-but never requires a specific external skill loader to run. The durable kernel-owned record is
-`skills/LINEAGE.md`; skill expressions themselves are optional inputs.
+but never requires a specific external skill loader to run; skill expressions themselves are optional inputs.
 
 ## Open and deferred
 

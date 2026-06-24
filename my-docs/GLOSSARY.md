@@ -199,3 +199,51 @@ The node graph is the lineage memory; there is no separate ledger.
 
 - **Def:** a rare, high-novelty side-idea surfaced mid-run that isn't the
   conclusion. Kept on the node for later; pruned by hand.
+
+## Topology
+
+The metaphor that locates the work: where the code lives, what threatens it, where
+the inner workshop is, and where the app writes what it produces. Only the garden is
+code on the run path; the agarden is the produced artifacts; the hut is upstream of
+both.
+
+### The garden
+
+- **Def:** the codebase we want — the cultivated, good code: the running kernel
+  (`src/`, `tools/`) and the frozen canon it follows (`contracts/`, `mechanics/`).
+  What the hut's decisions venture out into. Distinct from the agarden; the garden is
+  code, the agarden is produced artifacts.
+
+### The jungle
+
+- **Def:** the bad legacy code outside the garden — encroaching, calcified surface
+  that reinserts itself and drags the work backward. The hut is insulated against it;
+  the garden is kept clear of it.
+
+### The hut
+
+- **Def:** the protected inner workspace (`my-docs/the-hut/`) where the model is
+  shaped before it freezes into canon. What is decided in the hut is the truth a
+  venture carries outward — held authoritative by design so the garden's standing
+  assumptions and the jungle's calcified legacy can't muddle a decision while it is
+  still wet. A development surface, not a runtime stage: the hut produces no artifacts
+  and is absent from the run chain.
+
+### The agarden
+
+- **Def:** the artifact vault (`../agarden`, also the git repo `Doppl-Life/agarden`)
+  — where the kernel writes what a run produces: all flow nodes
+  (`flow/<slug>/<slug>.md`), all stock (`stock/<slug>.md`), and the ratings ledger
+  (`ratings-ledger.json`). An Obsidian vault that is also a git repo. The sink
+  ([`../mechanics/kernel/sink.md`](../mechanics/kernel/sink.md)) is its only writer;
+  the destination is one config value, `doppl.config.json` → `vault`. Not the garden:
+  the garden is code, the agarden is output.
+
+### The Agora
+
+- **Def:** the human-facing app over the agarden. It surfaces nodes for people to
+  rate (rater identified by email) and writes each score to the ratings ledger — the
+  source that materializes a node's `scores.human` / `scores.n` (see
+  [`../contracts/human-ratings-ledger.md`](../contracts/human-ratings-ledger.md)). Its
+  job is the judge-vs-human delta: read nodes, collect ratings, update the ledger.
+  Pressure, not storage — it holds no artifacts.

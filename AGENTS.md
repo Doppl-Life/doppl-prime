@@ -95,8 +95,7 @@ Do not dump transient debug notes into registers. One idea, one home.
 
 ## Skills and mutations
 
-Skill expressions are external and optional. The kernel-owned surface is the lineage registry
-at `skills/LINEAGE.md`, checked by `tools/skill-lineage.ts`.
+Skill expressions are external and optional.
 
 Use mutagen skills when the work is creative or strategic:
 

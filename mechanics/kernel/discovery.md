@@ -30,10 +30,13 @@ What discovery does NOT do — other functions own these:
 ## Procedure
 
 1. **Read the stock field first.** Pull what's already known for `field_id`. Free, and first.
-2. **Reach the web** through the modular backend (see Backends). Collect raw finds.
-3. **Clear the signal bar.** Keep only high-signal finds; drop noise and easy/light hits. This is a
-   gate (in or out), set high — not casual discovery, and not a rating.
-4. **Write keepers to the stock field** with provenance; don't duplicate what's already there.
+2. **Fetch** through the routed tool — web→firecrawl, youtube→gemini, x→grok, with fail-safe fallback
+   down the chain to the reasoning provider's own search (see Backends). Collect raw material.
+3. **The judge admits.** The judge (`cognition.judge`) reads the retrieved material and decides what
+   clears the bar — high-signal, novel, grounded, non-duplicate. A gate (in or out), set high. This is
+   the judge's *admission* function, distinct from rating Growth: the agent that decides what enters
+   the garden.
+4. **Write keepers to the stock field** through the sink, with provenance; don't duplicate what's there.
 5. **Return** the kept context to the calling stage.
 
 ## Backends (modular — add a tool, don't hardcode)

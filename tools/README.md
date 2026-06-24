@@ -18,7 +18,6 @@ selection is leakage.
 | Least-action calibration | no direct command | Typed mechanism-economy fixtures, prompt packaging, weighted fitness components, scoring, and calibration. |
 | Knowledge-space boundary | no direct command | Typed memory packet/collapse contracts, provenance guards, and replay-safe invariants. |
 | Crucible calibration | no direct command | Typed belief-revision protocol, archetypes, and anti-herding judge checks. |
-| Skill lineage | `node --experimental-strip-types tools/skill-lineage.ts` | No-dependency registry check for `skills/LINEAGE.md`. |
 
 Canonical sources:
 
@@ -30,6 +29,5 @@ Canonical sources:
 - Least-action calibration: `tools/least-action.ts`.
 - Knowledge-space boundary: `tools/knowledge-space.ts`.
 - Crucible calibration: `tools/crucible.ts`.
-- Skill-lineage drift check: `tools/skill-lineage.ts`.
 
 The proof board and rendered nodes are projections of the trace; they are not the trace.
