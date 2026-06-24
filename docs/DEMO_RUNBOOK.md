@@ -53,7 +53,7 @@ Optional knobs (defaults shown):
 |---|---|---|
 | `DOPPL_GATEWAY` | `recorded` | `recorded` (replay) or `live` (real LLMs) |
 | `DOPPL_SEED_FIXTURE` | _(unset)_ | runId to seed before serving (e.g. `demo-recorded-001`); unset → no-seed live boot |
-| `DOPPL_FIXTURE_DIR` | repo `fixtures/replay/` | where seed reads the fixture |
+| `DOPPL_FIXTURE_DIR` | _(unset → module-relative `fixtures/replay/`)_ | where seed reads the fixture. **Leave it unset** — the default resolves CWD-independently (so `pnpm -C apps/api start` works). If you override, use an **absolute** path; a RELATIVE value breaks the per-package run (CWD = `apps/api` → ENOENT). _(PD.19; not in `.env.example` by design.)_ |
 | `DOPPL_MAX_POPULATION` / `DOPPL_MAX_GENERATIONS` / `DOPPL_ENERGY_BUDGET` | config defaults | kernel caps (only lower within validated maxima) |
 | `DOPPL_RNG_SEED` | config default | deterministic RNG seed |
 | `HOST` / `PORT` | `0.0.0.0` / `3000` | API listen address |
