@@ -4,7 +4,7 @@
 - **Phase:** Phase D (local-first demo path)
 - **Track:** phase-d (demo) · area: api + web (web hat for PD.14/16; api+web for PD.15)
 - **Predecessor session:** [phase-d-007](phase-d-007-2026-06-23-final-idea-proof-panel-pd7.md)
-- **Successor session:** _(none yet — PD.16 is the last buildable slice; next is the lead-owned phase-d→cody merge + user sign-off)_
+- **Successor session:** [phase-d-010](phase-d-010-2026-06-23-demo-polish-round.md) (demo-polish round — PD.17/18/19/20)
 - **Commits:** `fb27d73` (PD.14) · `3b3d476` (PD.15) · `fd32890` (PD.16). PD.8c live re-run = validation-only (no commit).
 
 ## Why this session existed
