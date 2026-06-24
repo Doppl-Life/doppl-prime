@@ -67,10 +67,11 @@ The browser discovers that hosted deployment through the public `calibrator-conf
 ```js
 window.DOPPL_CALIBRATOR_CONFIG = {
   ratingsEndpoint: "https://example-host/api/agarden/ratings",
+  requiresAccessCode: true,
 };
 ```
 
-That value is only a URL. It is not an authorization secret and must not grant write access by itself.
+Those values are public browser configuration. They are not authorization secrets and must not grant write access by themselves. When `requiresAccessCode` is true, the browser asks the reviewer for a session access code and sends it as `Authorization: Bearer <code>`. The code itself must be distributed out of band and stored only as the Railway `CALIBRATOR_WRITE_TOKEN` variable.
 
 Recommended credential model:
 

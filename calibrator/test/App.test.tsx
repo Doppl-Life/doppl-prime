@@ -499,8 +499,11 @@ describe("App", () => {
 
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByLabelText("Access code")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Access code"), "review-session-secret");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
 
     await waitFor(() => {
@@ -508,7 +511,10 @@ describe("App", () => {
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "https://ratings.example.test/api/agarden/ratings",
-      expect.objectContaining({ method: "POST" }),
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ authorization: "Bearer review-session-secret" }),
+      }),
     );
   });
 

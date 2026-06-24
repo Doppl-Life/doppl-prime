@@ -14,6 +14,7 @@ import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
 
 type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
+const ACCESS_CODE_STORAGE_KEY = "doppl-calibrator-access-code";
 const LOCAL_RATINGS_ENDPOINT = "/api/ratings";
 type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
@@ -23,6 +24,7 @@ declare global {
   interface Window {
     DOPPL_CALIBRATOR_CONFIG?: {
       ratingsEndpoint?: string;
+      requiresAccessCode?: boolean;
     };
   }
 }
@@ -266,6 +268,11 @@ function hostedRatingsEndpoint(): string {
   return window.DOPPL_CALIBRATOR_CONFIG?.ratingsEndpoint?.trim() ?? "";
 }
 
+function hostedEndpointRequiresAccessCode(endpoint: string): boolean {
+  if (!endpoint || endpoint === LOCAL_RATINGS_ENDPOINT) return false;
+  return window.DOPPL_CALIBRATOR_CONFIG?.requiresAccessCode ?? true;
+}
+
 export function App() {
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
@@ -282,10 +289,18 @@ export function App() {
       return "";
     }
   });
+  const [accessCode, setAccessCode] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(ACCESS_CODE_STORAGE_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [savedPath, setSavedPath] = useState("");
   const [error, setError] = useState("");
   const [isWritable, setIsWritable] = useState(false);
   const [ratingsEndpoint, setRatingsEndpoint] = useState("");
+  const requiresAccessCode = hostedEndpointRequiresAccessCode(ratingsEndpoint);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function loadIndex() {
@@ -442,14 +457,22 @@ export function App() {
       setError("Static preview is read-only until a hosted ratings API is configured.");
       return;
     }
+    if (requiresAccessCode && !accessCode.trim()) {
+      setError("Enter the reviewer access code before submitting.");
+      return;
+    }
     setError("");
     setSavedPath("");
     setIsSubmitting(true);
 
     try {
+      const headers: HeadersInit = { "content-type": "application/json" };
+      if (requiresAccessCode) {
+        headers.authorization = `Bearer ${accessCode.trim()}`;
+      }
       const response = await fetch(ratingsEndpoint, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers,
         body: JSON.stringify({
           case_id: selectedCase.case_id,
           rating_target: ratingTarget,
@@ -510,6 +533,16 @@ export function App() {
       }
     } catch {
       // Local storage is a convenience only; rating validation remains server-side.
+    }
+  }
+
+  function updateAccessCode(value: string) {
+    setAccessCode(value);
+    try {
+      // Session storage keeps the code out of committed config and clears it with the browser session.
+      window.sessionStorage.setItem(ACCESS_CODE_STORAGE_KEY, value);
+    } catch {
+      // Ignore storage failures; the controlled input still works for the current render.
     }
   }
 
@@ -716,24 +749,38 @@ export function App() {
       </section>
 
       <footer className="rating-dock" aria-label="Rating controls">
-        <label className="field reviewer-field">
-          <span>Reviewer email</span>
-          <input
-            type="email"
-            list="reviewer-email-options"
-            value={reviewerEmail}
-            onChange={(event) => updateReviewerEmail(event.target.value)}
-            placeholder="name@gauntletai.com"
-          />
-          <datalist id="reviewer-email-options">
-            {ALLOWED_RATERS.map((rater) => (
-              <option key={rater} value={rater} />
-            ))}
-          </datalist>
-          {reviewerEmail && !reviewerIsAllowed ? (
-            <span className="field-note">Choose a reviewer from the allow-list.</span>
+        <div className="session-fields">
+          <label className="field reviewer-field">
+            <span>Reviewer email</span>
+            <input
+              type="email"
+              list="reviewer-email-options"
+              value={reviewerEmail}
+              onChange={(event) => updateReviewerEmail(event.target.value)}
+              placeholder="name@gauntletai.com"
+            />
+            <datalist id="reviewer-email-options">
+              {ALLOWED_RATERS.map((rater) => (
+                <option key={rater} value={rater} />
+              ))}
+            </datalist>
+            {reviewerEmail && !reviewerIsAllowed ? (
+              <span className="field-note">Choose a reviewer from the allow-list.</span>
+            ) : null}
+          </label>
+          {requiresAccessCode ? (
+            <label className="field access-code-field">
+              <span>Access code</span>
+              <input
+                type="password"
+                value={accessCode}
+                onChange={(event) => updateAccessCode(event.target.value)}
+                autoComplete="current-password"
+                placeholder="Session code"
+              />
+            </label>
           ) : null}
-        </label>
+        </div>
         <div className="slider-row">
           <label htmlFor="score-slider">
             <span>Score</span>
@@ -762,7 +809,8 @@ export function App() {
             isSubmitting ||
             !isWritable ||
             !activeIsSubmittable ||
-            !reviewerIsAllowed
+            !reviewerIsAllowed ||
+            (requiresAccessCode && !accessCode.trim())
           }
           onClick={submitRating}
         >

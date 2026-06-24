@@ -446,12 +446,19 @@ textarea {
   min-width: 0;
 }
 
+.session-fields {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 .rating-dock .field span,
 .slider-row label span {
   color: var(--muted);
 }
 
-.reviewer-field input {
+.reviewer-field input,
+.access-code-field input {
   min-width: 0;
 }
 
@@ -676,8 +683,12 @@ textarea {
     padding: 7px 10px 8px;
   }
 
-  .rating-dock .reviewer-field {
+  .rating-dock .session-fields {
     grid-column: 1 / -1;
+  }
+
+  .session-fields {
+    gap: 5px;
   }
 
   .slider-row {
