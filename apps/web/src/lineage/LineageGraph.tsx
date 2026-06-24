@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { LineageGraphProjection, RunEventEnvelope } from '../data/contracts';
+import type { LineageGraphProjection, LineageNodeType, RunEventEnvelope } from '../data/contracts';
 import { lineageToFlow, pickFreshestProjection } from './lineageToFlow';
+import type { LineageNodeData } from './lineageToFlow';
 import { layoutGraph } from './layout';
 import { deriveInFlight } from './inFlight';
 import { lineageNodeTypes } from './nodeTypes';
@@ -22,6 +23,9 @@ export interface LineageGraphProps {
   projection: LineageGraphProjection;
   /** The run-store event stream (live or replay) — drives the in-flight sub-state + activity feed. */
   events?: readonly RunEventEnvelope[];
+  /** FV.5a — node-click → the inspector drawer (the FV.4 carry-forward gap). Fires with the clicked
+   *  node's id, its dataRef (inspector/evidence link target), and its projection node type. */
+  onNodeClick?: (nodeId: string, dataRef: string, nodeType: LineageNodeType) => void;
 }
 
 const section: CSSProperties = {
@@ -53,7 +57,7 @@ const feed: CSSProperties = {
   color: 'var(--fg-muted)',
 };
 
-export function LineageGraph({ projection, events }: LineageGraphProps) {
+export function LineageGraph({ projection, events, onNodeClick }: LineageGraphProps) {
   // Track the freshest projection by `sequenceThrough` — a stale watermark never replaces a newer view.
   const [shown, setShown] = useState<LineageGraphProjection>(projection);
   useEffect(() => {
@@ -83,6 +87,10 @@ export function LineageGraph({ projection, events }: LineageGraphProps) {
             nodesConnectable={false}
             fitView
             proOptions={{ hideAttribution: true }}
+            onNodeClick={(_, node) => {
+              const data = node.data as LineageNodeData;
+              onNodeClick?.(node.id, data.dataRef, data.nodeType);
+            }}
           >
             <Background />
             <Controls showInteractive={false} />

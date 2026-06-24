@@ -35,29 +35,61 @@ function fullProjection(overrides: Partial<LineageGraphProjection> = {}): Lineag
 const byId = (nodes: LineageRfNode[]) => Object.fromEntries(nodes.map((n) => [n.id, n]));
 
 describe('lineageToFlow — pure LineageGraphProjection → React Flow mapping', () => {
-  // spec(§10/§12): the closed 6 LineageNodeType map to the 5 rendered types — critic+check merge to
-  // criticCheck; candidate+status:'selected' → selectedWinner; generation = backbone; each node
-  // carries its accessible status spec + dataRef link target.
-  it('test_lineageToFlow_maps_six_types_to_five', () => {
+  // spec(§10/§12, FV.5a declutter): the KEPT projection types map to their rendered types — agenome,
+  // candidate, generation backbone, candidate+status:'selected' → selectedWinner; each node carries its
+  // accessible status spec + dataRef link target. (critic/check/score are dropped — see below.)
+  it('test_lineageToFlow_maps_kept_types_to_rendered', () => {
     const { nodes, edges } = lineageToFlow(fullProjection());
     const n = byId(nodes);
     expect(n.g0!.type).toBe('generation'); // backbone
     expect(n.a0!.type).toBe('agenome');
     expect(n.c0!.type).toBe('candidate');
-    expect(n.cr0!.type).toBe('criticCheck'); // critic + check collapse...
-    expect(n.ck0!.type).toBe('criticCheck'); // ...to one rendered type
-    expect(n.sc0!.type).toBe('score');
     expect(n.w0!.type).toBe('selectedWinner'); // candidate + status:'selected'
 
     // accessible status spec resolved (shape+label+icon) when status present; absent otherwise.
     expect(n.a0!.data.statusSpec?.label).toBe('active');
     expect(n.a0!.data.statusSpec?.glyph).toBeTruthy();
     expect(n.g0!.data.statusSpec).toBeUndefined();
-    // dataRef preserved as the inspector/evidence link target; metrics passed through.
+    // dataRef preserved as the inspector/evidence link target.
     expect(n.a0!.data.dataRef).toBe('agn_0');
-    expect(n.sc0!.data.metrics?.total).toBe(0.8);
     // edges keep the projection's relation type for legibility (spawned/produced/...).
     expect(edges.map((e) => e.data?.edgeType).sort()).toEqual(['produced', 'spawned']);
+  });
+
+  // spec(FV.5a §12 declutter): the organism graph is the agenome+candidate backbone ONLY — critic /
+  // check / score (incl. judge-as-score) detail nodes are filtered out (they move to the node-click
+  // inspector). The backbone (generation/agenome/candidate/selectedWinner) survives.
+  it('test_lineage_to_flow_drops_critic_check_score', () => {
+    const { nodes } = lineageToFlow(fullProjection());
+    const ids = nodes.map((nn) => nn.id);
+    expect(ids).toEqual(expect.arrayContaining(['g0', 'a0', 'c0', 'w0'])); // backbone kept
+    expect(ids).not.toContain('cr0'); // critic dropped
+    expect(ids).not.toContain('ck0'); // check dropped
+    expect(ids).not.toContain('sc0'); // score dropped
+    const types = new Set(nodes.map((nn) => nn.type));
+    expect(types.has('criticCheck')).toBe(false);
+    expect(types.has('score')).toBe(false);
+  });
+
+  // spec(§10 graph integrity): an edge incident to a dropped (critic/check/score) node is removed — no
+  // edge references a missing node; the agenome→candidate backbone edges remain.
+  it('test_lineage_to_flow_drops_incident_edges_no_dangling', () => {
+    const proj = fullProjection({
+      edges: [
+        { id: 'e-sp', source: 'g0', target: 'a0', type: 'spawned' },
+        { id: 'e-gen', source: 'a0', target: 'c0', type: 'generated' },
+        { id: 'e-rev', source: 'c0', target: 'cr0', type: 'reviewed_by' }, // → dropped node
+        { id: 'e-chk', source: 'c0', target: 'ck0', type: 'checked_by' }, // → dropped node
+        { id: 'e-scr', source: 'c0', target: 'sc0', type: 'scored_by' }, // → dropped node
+      ],
+    });
+    const { nodes, edges } = lineageToFlow(proj);
+    const nodeIds = new Set(nodes.map((nn) => nn.id));
+    for (const e of edges) {
+      expect(nodeIds.has(e.source)).toBe(true); // no dangling / no reference to a dropped node
+      expect(nodeIds.has(e.target)).toBe(true);
+    }
+    expect(edges.map((e) => e.id).sort()).toEqual(['e-gen', 'e-sp']); // only the backbone survives
   });
 
   // spec(LESSONS §30 defensive): an edge with a missing source/target endpoint is DROPPED (React Flow

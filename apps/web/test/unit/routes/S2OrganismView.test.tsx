@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
@@ -275,6 +275,51 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(getEvents.mock.calls.length).toBe(before); // no refetch on scrub
     expect(client.startRun).not.toHaveBeenCalled();
     expect(client.stopRun).not.toHaveBeenCalled();
+  });
+
+  // ── FV.5a node-click inspector ────────────────────────────────────────────────────────────────
+  // spec(§12): clicking a CANDIDATE node opens the drawer with CandidateInspector + the fitness
+  // breakdown + critic gauntlet + subtype checks (the detail that left the decluttered graph).
+  it('test_candidate_click_opens_candidate_inspector', async () => {
+    renderView('live');
+    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy(); // getCandidate loaded
+    expect(screen.getByLabelText('Candidate fitness breakdown')).toBeTruthy();
+    expect(screen.getByLabelText(/no reviews yet/i)).toBeTruthy(); // critic gauntlet mounted
+    expect(screen.getByLabelText(/no checks yet/i)).toBeTruthy(); // subtype checks mounted
+  });
+
+  // spec(§12, no dead clicks): clicking an AGENOME node opens the drawer with the basic agenome summary.
+  it('test_agenome_click_opens_agenome_summary', async () => {
+    renderView('live');
+    fireEvent.click((await screen.findByText('Agenome 0')).closest('.react-flow__node')!);
+    const inspector = await screen.findByLabelText('Agenome inspector');
+    expect(within(inspector).getByText('agn_0')).toBeTruthy(); // scoped — the roster also lists agn_0
+  });
+
+  // spec(rule #9 read-only): node-click + inspector render issue NO runClient command/POST.
+  it('test_node_click_read_only', async () => {
+    const client = fakeClient();
+    renderView('live', client);
+    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    await screen.findByLabelText('Candidate inspector');
+    expect(client.startRun).not.toHaveBeenCalled();
+    expect(client.stopRun).not.toHaveBeenCalled();
+    expect(client.startDemoRun).not.toHaveBeenCalled();
+  });
+
+  // spec(drawer UX): selecting a different node swaps content; Close returns to the placeholder.
+  it('test_inspector_swaps_and_closes', async () => {
+    renderView('live');
+    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy();
+
+    fireEvent.click((await screen.findByText('Agenome 0')).closest('.react-flow__node')!);
+    expect(await screen.findByLabelText('Agenome inspector')).toBeTruthy(); // swapped
+    expect(screen.queryByLabelText('Candidate inspector')).toBeNull(); // candidate content gone
+
+    fireEvent.click(screen.getByLabelText('Close inspector'));
+    expect(screen.getByText(/inspect its details/i)).toBeTruthy(); // back to the placeholder
   });
 
   // spec(_adherence, DS rule 3/5): the new shell/roster/drawer/hook files use var(--token) only — no

@@ -8,6 +8,7 @@ import { createRunStore } from '../state/runStore';
 import type { RunStore } from '../state/runStore';
 import type { RunMode, ViewState } from '../state/reducer';
 import { isRunTerminal, selectRunStatus } from '../components/run/runControl';
+import type { SelectedNode } from '../components/run/NodeInspectorContent';
 import { debounce } from '../lib/debounce';
 // wireRunStream lives alongside Dashboard; importing it keeps the IoC identical to the tested path.
 import { wireRunStream } from './dashboardWiring';
@@ -45,8 +46,9 @@ export interface RunObservatory {
   lineage: LineageGraphProjection | null;
   health: RunHealth | null;
   runStatus: ReturnType<typeof selectRunStatus>;
-  selectedCandidateId: string | null;
-  setSelectedCandidateId: (id: string | null) => void;
+  /** FV.5a — the unified node selection driving the inspector drawer (candidate OR agenome). */
+  selectedNode: SelectedNode | null;
+  setSelectedNode: (node: SelectedNode | null) => void;
 }
 
 /** Module-stable default so the effect deps don't churn every render (an inline default would be a
@@ -71,7 +73,7 @@ export function useRunObservatory({
   const [fold, setFold] = useState<FoldState>(emptyFoldState);
   const [lineage, setLineage] = useState<LineageGraphProjection | null>(null);
   const [health, setHealth] = useState<RunHealth | null>(null);
-  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
   const state = useSyncExternalStore(store.subscribe, store.getState);
 
@@ -137,7 +139,7 @@ export function useRunObservatory({
     lineage,
     health,
     runStatus,
-    selectedCandidateId,
-    setSelectedCandidateId,
+    selectedNode,
+    setSelectedNode,
   };
 }

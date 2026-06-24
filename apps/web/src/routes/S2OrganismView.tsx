@@ -10,6 +10,7 @@ import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { StopControl } from '../components/run/StopControl';
 import { AgentRoster } from '../components/run/AgentRoster';
 import { InspectorDrawer } from '../components/run/InspectorDrawer';
+import { NodeInspectorContent } from '../components/run/NodeInspectorContent';
 import { ReplayScrubber } from '../components/run/ReplayScrubber';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
@@ -148,7 +149,11 @@ export function S2OrganismView({
       </section>
 
       <section style={center}>
-        <LineageGraph projection={obs.lineage ?? emptyLineage(runId)} events={panelEvents} />
+        <LineageGraph
+          projection={obs.lineage ?? emptyLineage(runId)}
+          events={panelEvents}
+          onNodeClick={(_id, dataRef, type) => obs.setSelectedNode({ dataRef, type })}
+        />
         <div style={chartStrip}>
           <FitnessOverTime events={panelEvents} />
           <EnergyPanel events={panelEvents} onSelectAgenome={() => undefined} />
@@ -156,9 +161,17 @@ export function S2OrganismView({
       </section>
 
       <InspectorDrawer
-        selectedId={obs.selectedCandidateId}
-        onClose={() => obs.setSelectedCandidateId(null)}
-      />
+        selectedId={obs.selectedNode?.dataRef ?? null}
+        onClose={() => obs.setSelectedNode(null)}
+      >
+        <NodeInspectorContent
+          selectedNode={obs.selectedNode}
+          runId={runId}
+          runClient={runClient}
+          events={panelEvents}
+          lineage={obs.lineage}
+        />
+      </InspectorDrawer>
     </main>
   );
 }

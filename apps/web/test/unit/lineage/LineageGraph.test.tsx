@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { LineageGraphProjection } from '@doppl/contracts';
 import { LineageGraph } from '../../../src/lineage/LineageGraph';
 import { LineageNodeCard } from '../../../src/lineage/nodeTypes';
@@ -39,10 +39,15 @@ beforeAll(() => {
 
 afterEach(() => cleanup());
 
-/** Resolve one LineageNode's mapped React Flow node data (exercises the real lineageToFlow mapping). */
+/** Resolve one LineageNode's mapped React Flow node data (exercises the real lineageToFlow mapping).
+ *  Pass an EMPTY dropTypes so the card-rendering test can still build data for a `score` node — the
+ *  FV.5a declutter filters which types the GRAPH shows, but the LineageNodeCard still renders all 6. */
 function dataFor(node: LineageGraphProjection['nodes'][number]): LineageNodeData {
-  return lineageToFlow({ runId: 'run_1', nodes: [node], edges: [], sequenceThrough: 1 }).nodes[0]!
-    .data;
+  return lineageToFlow(
+    { runId: 'run_1', nodes: [node], edges: [], sequenceThrough: 1 },
+    new Set(),
+    new Set(),
+  ).nodes[0]!.data;
 }
 
 describe('LineageNodeCard — accessible custom node rendering', () => {
@@ -125,6 +130,18 @@ describe('LineageGraph — React Flow lineage panel', () => {
     rerender(<LineageGraph projection={stale} />); // stale watermark → NOT applied
     await waitFor(() => expect(summary()).toMatch(/sequence 20/));
     expect(summary()).toMatch(/6 nodes/); // still the newer view
+  });
+
+  // spec(FV.5a — the FV.4 carry-forward gap): clicking a flow node fires onNodeClick(nodeId, dataRef,
+  // nodeType) — the wiring the node-click inspector consumes. (criticCheck/score are decluttered, so the
+  // agenome backbone node is the click target.)
+  it('test_lineage_graph_onnodeclick_fires', async () => {
+    const onNodeClick = vi.fn();
+    render(<LineageGraph projection={multiNodeLineage} onNodeClick={onNodeClick} />);
+    const node = (await screen.findByText('Agenome 0')).closest('.react-flow__node');
+    expect(node).toBeTruthy();
+    fireEvent.click(node!);
+    expect(onNodeClick).toHaveBeenCalledWith('a0', 'agn_0', 'agenome');
   });
 
   // smoke: mounts without throwing and surfaces the live activity feed derived from the event stream.
