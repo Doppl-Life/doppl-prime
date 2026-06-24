@@ -325,11 +325,19 @@ type TraceSection<S extends GrowthStage> =
 Discovery is what was found, not what was concluded. It accretes across the chain and cites the
 stock field it came from or wrote to. Discovery is not scored; Growth is scored.
 
-Each finding deep-links the exact stock discovery it used, as an Obsidian-compatible wikilink
-of the form `[[field-id#^discovery_anchor]]` — never a bare slug. The anchor matches the
-`^discovery_id` block anchor that [stock.md](./stock.md) emits on each load-bearing fact, so
-the link resolves to the precise block in the rendered field. The link lives on the same line
-as the finding text, after a `→`.
+A finding is **source-shaped, not claim-shaped**: it names the source and the specific data point
+or observation that source carried, in citation form. The synthesized claim, with mechanism and
+implication, lives on the stock fact this finding cites — not here. Multiple findings can point
+at the same stock anchor; each contributes a distinct piece of evidence to the same admitted
+claim. The heading (`### …`) is a short scan-able label for the data point; the body line is
+the source itself.
+
+Each finding deep-links the exact stock discovery it admitted into, as an Obsidian-compatible
+wikilink of the form `[[field-id#^discovery_anchor]]` — never a bare slug. The anchor matches
+the `^discovery_id` block anchor that [stock.md](./stock.md) emits on each load-bearing fact,
+so the link resolves to the precise block in the rendered field. The link lives on the same
+line as the finding text, after a `→`. Hovering the link in Obsidian previews the synthesized
+fact, so the finding does not need to restate it.
 
 ### Markdown shape
 
@@ -338,11 +346,11 @@ as the finding text, after a `→`.
 
 ### Refining bottleneck
 
-Refining capacity, not raw lithium, is the binding constraint. → [[battery-supply-b8e2c6f0#^refining-bind]]
+NAIC 2025 specialty-lines report: refined-lithium spreads widened 38% while raw spot stayed flat. → [[battery-supply-b8e2c6f0#^refining-bind]]
 
 ### Offtake lock
 
-Yuan-denominated offtake pulls supply off the spot market. → [[battery-supply-b8e2c6f0#^offtake-lock]]
+Benchmark Mineral 2025 offtake tracker: 71% of qualified refined capacity is locked in yuan-settled long-dated contracts. → [[battery-supply-b8e2c6f0#^offtake-lock]]
 ```
 
 ### Type contract
@@ -359,10 +367,10 @@ type SourceRef = {
 };
 
 type DiscoveryEntry = MarkdownSubsection<`### ${string}`, {
-  found: string;
+  found: string;             // source-shaped citation: named source + data point, not a claim
   field: FieldRef;
-  discovery_anchor: string; // matches the `^anchor` block anchor on the stock load-bearing fact
-  sources?: SourceRef[];
+  discovery_anchor: string;  // matches the `^anchor` on the stock load-bearing fact this finding admitted into
+  sources?: SourceRef[];     // structured metadata for the source(s) named in `found`
 }>;
 
 type DiscoverySection = MarkdownSection<'## Discovery', DiscoveryEntry[]>;
