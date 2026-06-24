@@ -144,6 +144,88 @@ describe("createHostedAgardenRatingHandler", () => {
     expect(parsed.data.scores).toEqual({ judge: 2, human: 4, n: 1 });
   });
 
+  it("rejects hosted writes when bearer auth is required but missing", async () => {
+    const client = new FakeGitClient();
+    const handler = createHostedAgardenRatingHandler({
+      readIndex: async () => index,
+      createClient: () => client,
+      allowedOrigins: ["https://doppl-life.github.io"],
+      authToken: "secret-review-code",
+      requireAuth: true,
+    });
+
+    const response = await handler(
+      request({
+        case_id: "case-a",
+        rating_target: "problem_recovery",
+        problem_recovery_id: "node-pr",
+        node_id: "node-pr",
+        score: 4,
+        reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("www-authenticate")).toContain("Bearer");
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://doppl-life.github.io");
+    expect(body.error).toBe("Unauthorized");
+    expect(client.commits).toHaveLength(0);
+  });
+
+  it("allows hosted writes when the bearer token matches", async () => {
+    const client = new FakeGitClient();
+    const handler = createHostedAgardenRatingHandler({
+      readIndex: async () => index,
+      createClient: () => client,
+      authToken: "secret-review-code",
+      requireAuth: true,
+      now: () => new Date("2026-06-24T17:00:00.000Z"),
+    });
+
+    const response = await handler(
+      request(
+        {
+          case_id: "case-a",
+          rating_target: "problem_recovery",
+          problem_recovery_id: "node-pr",
+          node_id: "node-pr",
+          score: 5,
+          reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+        },
+        { headers: { authorization: "Bearer secret-review-code" } },
+      ),
+    );
+
+    expect(response.status).toBe(201);
+    expect(client.commits).toHaveLength(1);
+  });
+
+  it("fails closed when hosted auth is required but no token is configured", async () => {
+    const client = new FakeGitClient();
+    const handler = createHostedAgardenRatingHandler({
+      readIndex: async () => index,
+      createClient: () => client,
+      requireAuth: true,
+    });
+
+    const response = await handler(
+      request({
+        case_id: "case-a",
+        rating_target: "problem_recovery",
+        problem_recovery_id: "node-pr",
+        node_id: "node-pr",
+        score: 4,
+        reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("auth is not configured");
+    expect(client.commits).toHaveLength(0);
+  });
+
   it("rejects invalid raters before creating a commit", async () => {
     const client = new FakeGitClient();
     const handler = createHostedAgardenRatingHandler({

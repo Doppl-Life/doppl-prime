@@ -8,6 +8,8 @@ export interface HostedAgardenRatingApiConfig {
   readIndex(): Promise<CalibratorIndex>;
   createClient(): Promise<GitAgardenClient> | GitAgardenClient;
   allowedOrigins?: string[];
+  authToken?: string;
+  requireAuth?: boolean;
   now?: () => Date;
 }
 
@@ -54,6 +56,30 @@ function errorMessage(error: unknown, status: number): string {
   return error instanceof Error ? error.message : "Rating submission failed";
 }
 
+function bearerToken(request: Request): string {
+  const authorization = request.headers.get("authorization") ?? "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() ?? "";
+}
+
+function authFailure(
+  config: HostedAgardenRatingApiConfig,
+  request: Request,
+): { body: unknown; status: number; headers?: HeadersInit } | null {
+  if (!config.requireAuth) return null;
+  if (!config.authToken) {
+    return { body: { error: "Hosted ratings auth is not configured" }, status: 503 };
+  }
+  if (bearerToken(request) !== config.authToken) {
+    return {
+      body: { error: "Unauthorized" },
+      status: 401,
+      headers: { "www-authenticate": 'Bearer realm="doppl-calibrator-ratings"' },
+    };
+  }
+  return null;
+}
+
 export function createHostedAgardenRatingHandler(config: HostedAgardenRatingApiConfig) {
   return async function handleHostedAgardenRating(request: Request): Promise<Response> {
     const headers = corsHeaders(request, config.allowedOrigins);
@@ -64,6 +90,11 @@ export function createHostedAgardenRatingHandler(config: HostedAgardenRatingApiC
 
     if (request.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, 405, headers);
+    }
+
+    const unauthorized = authFailure(config, request);
+    if (unauthorized) {
+      return jsonResponse(unauthorized.body, unauthorized.status, { ...headers, ...unauthorized.headers });
     }
 
     try {

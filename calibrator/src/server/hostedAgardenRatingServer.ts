@@ -19,6 +19,10 @@ function optionalEnv(name: string, fallback: string): string {
   return process.env[name]?.trim() || fallback;
 }
 
+function envValue(name: string): string | undefined {
+  return process.env[name]?.trim() || undefined;
+}
+
 function allowedOrigins(): string[] {
   const raw = process.env.CALIBRATOR_ALLOWED_ORIGINS;
   if (!raw) return DEFAULT_ALLOWED_ORIGINS;
@@ -65,6 +69,8 @@ export function createProductionHostedAgardenRatingHandler() {
 
   return createHostedAgardenRatingHandler({
     allowedOrigins: allowedOrigins(),
+    authToken: envValue("CALIBRATOR_WRITE_TOKEN"),
+    requireAuth: process.env.CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES !== "true",
     async readIndex(): Promise<CalibratorIndex> {
       return JSON.parse(await readFile(indexPath, "utf8")) as CalibratorIndex;
     },

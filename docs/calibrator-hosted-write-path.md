@@ -90,6 +90,7 @@ Required environment variables:
 - `GITHUB_APP_ID`
 - `GITHUB_APP_INSTALLATION_ID`
 - `GITHUB_APP_PRIVATE_KEY`
+- `CALIBRATOR_WRITE_TOKEN`
 
 Optional environment variables:
 
@@ -99,11 +100,13 @@ Optional environment variables:
 - `AGARDEN_BRANCH`, default `main`
 - `CALIBRATOR_INDEX_PATH`, default `calibrator/public/calibration-index.json`
 - `CALIBRATOR_ALLOWED_ORIGINS`, comma-separated, default `https://doppl-life.github.io,http://127.0.0.1:5178`
+- `CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES=true`, local/testing escape hatch only; do not set in production
 
 ## Validation
 
 The server must reject:
 
+- missing or mismatched `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` in hosted production mode
 - scores outside `-5` to `+5`
 - non-integer scores
 - missing `solution_id` for solution ratings

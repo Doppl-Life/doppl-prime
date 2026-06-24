@@ -121,7 +121,7 @@ Reviewers first choose a case study, then use the vertical `Problem recoveries` 
 
 The review surface shows full-width case context, supplemental discovery context when it is not a duplicate of the case text, the selected artifact, and hidden source details for provenance.
 
-Problem recovery and doppl artifacts both use the same bottom-docked `-5` to `+5` score slider plus optional notes. The active reviewer should be able to move through a calibration session without managing verdict categories, audit filters, or provenance/debug artifacts.
+Problem recovery and doppl artifacts both use the same bottom-docked `-5` to `+5` score slider. The active reviewer should be able to move through a calibration session without managing verdict categories, notes fields, audit filters, or provenance/debug artifacts.
 
 Source details are collapsed by default and can be revealed for the selected artifact when reviewers need traceability.
 
