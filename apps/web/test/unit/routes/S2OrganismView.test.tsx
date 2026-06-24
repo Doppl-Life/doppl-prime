@@ -206,6 +206,21 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(cap.close).toHaveBeenCalled(); // stream closed on unmount
   });
 
+  // spec(FV.6 §11/§12, Step-7.5 wiring + rule #7): the 3 live-telemetry DS panels (ActivityTicker,
+  // HealthIndicator, RunEnergyGauge) mount fed by the hook, with `mode` threaded — live shows the
+  // ticker "live" affordance; a replay render shows "replaying" (same pure selectors, no live calls).
+  it('test_s2_mounts_telemetry_live_and_replay', async () => {
+    renderView('live');
+    expect(await screen.findByText('Activity')).toBeTruthy(); // ActivityTicker title
+    expect(screen.getByText('live')).toBeTruthy(); // ticker live affordance (banner is "● LIVE")
+    expect(screen.getAllByText(/in-flight/i).length).toBeGreaterThan(0); // HealthIndicator phrase
+    expect(screen.getByText('doppl_energy')).toBeTruthy(); // RunEnergyGauge unit label
+
+    cleanup();
+    renderView('replay');
+    expect(await screen.findByText('replaying')).toBeTruthy(); // ticker replay affordance
+  });
+
   // spec(_adherence, DS rule 3/5): the new shell/roster/drawer/hook files use var(--token) only — no
   // raw hex, no raw px strings (bare numeric geometry EXEMPT per the lineage adherence precedent).
   it('test_no_raw_hex_or_px_in_shell', () => {

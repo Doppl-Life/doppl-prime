@@ -4,7 +4,7 @@ import type { RunClient } from '../data/runClient';
 import type { EventSourceLike, SseStream, SseStreamOptions } from '../data/sseStream';
 import type { RunStore } from '../state/runStore';
 import type { RunMode } from '../state/reducer';
-import { ModeBanner } from '../components/ds';
+import { ModeBanner, ActivityTicker, HealthIndicator, RunEnergyGauge } from '../components/ds';
 import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { StopControl } from '../components/run/StopControl';
 import { AgentRoster } from '../components/run/AgentRoster';
@@ -12,7 +12,9 @@ import { InspectorDrawer } from '../components/run/InspectorDrawer';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
 import { EnergyPanel } from '../panels/EnergyPanel';
+import { energyBudgetProgress } from '../panels/energyData';
 import { useRunObservatory } from './useRunObservatory';
+import { deriveHealthStatus, deriveTickerEvents, toHealthSummary } from './observatoryTelemetry';
 
 /**
  * S2OrganismView (FV.4) — the 3-pane organism centerpiece at /runs/:id (live) + /runs/:id/replay
@@ -72,6 +74,9 @@ const chartStrip: CSSProperties = {
   gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))',
   gap: 'var(--space-4)',
 };
+// The ActivityTicker fills its container (height:100%); bound it so the live feed scrolls in the rail.
+// FV.9 design-review owns final placement/legibility — FV.6 lands it wired + rendering.
+const tickerWrap: CSSProperties = { height: '20rem' };
 
 export function S2OrganismView({
   runId,
@@ -94,6 +99,13 @@ export function S2OrganismView({
     refetchDebounceMs,
   });
 
+  // FV.6 live telemetry — PURE selectors over the hook's fold.events + health projection (read-only,
+  // rule #9; replay-identical, rule #7). nowMs injected at render keeps the selectors pure (Step-2.5 Q5).
+  const tickerEvents = deriveTickerEvents(obs.fold.events);
+  const healthSummary = toHealthSummary(obs.health, Date.now());
+  const healthStatus = deriveHealthStatus(healthSummary);
+  const energy = energyBudgetProgress(obs.fold.events);
+
   return (
     <main aria-label="Doppl organism view" style={shell}>
       <div style={bannerRow}>
@@ -103,8 +115,13 @@ export function S2OrganismView({
       <section aria-label="Organism left rail" style={leftRail}>
         <h3 style={railHeading}>Run controls</h3>
         <StopControl runId={runId} store={obs.store} runClient={runClient} />
+        <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
+        <RunEnergyGauge spent={energy.spent} budget={energy.budget ?? 0} mode={mode} />
         <h3 style={railHeading}>Agent roster</h3>
         <AgentRoster lineage={obs.lineage} />
+        <div style={tickerWrap}>
+          <ActivityTicker events={tickerEvents} mode={mode} />
+        </div>
       </section>
 
       <section style={center}>
