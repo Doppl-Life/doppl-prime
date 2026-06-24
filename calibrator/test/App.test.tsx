@@ -147,8 +147,8 @@ describe("App", () => {
     expect(screen.getByLabelText("Doppl")).not.toHaveTextContent("Crash Substrate Exposure Map");
     await userEvent.click(screen.getByRole("button", { name: "Problem recoveries" }));
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
-    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Include audit artifacts")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Current review status")).not.toBeInTheDocument();
     expect(screen.queryByText("Vault")).not.toBeInTheDocument();
     expect(screen.queryByText("1 case")).not.toBeInTheDocument();
@@ -275,6 +275,33 @@ describe("App", () => {
     for (const heading of screen.getAllByRole("heading")) {
       expect(heading.textContent).not.toContain("#");
     }
+  });
+
+  it("deduplicates discovery context paragraphs already shown in the case study", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response(
+          JSON.stringify({
+            ...fixture,
+            cases: [
+              {
+                ...fixture.cases[0],
+                body: "# Case\n\nShared paragraph.\n\nCase-only paragraph.",
+                problem: { body: "Shared paragraph.\n\nProblem-only paragraph.", source: "case-study" },
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getAllByText("Shared paragraph.")).toHaveLength(1);
+    expect(screen.getByText("Problem-only paragraph.")).toBeInTheDocument();
   });
 
   it("submits a rating and shows the saved path", async () => {
@@ -413,21 +440,15 @@ describe("App", () => {
   it("keeps source details collapsed behind one toggle", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.click(screen.getByLabelText("Include audit artifacts"));
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
-    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "cody-accident-economy-map");
-    expect((await screen.findAllByText("Crash Substrate Exposure Map")).length).toBeGreaterThan(0);
+    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "dalton-fsd-accident-economy-001__solution");
+    expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Comparison set provenance")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Show source details +" }));
-    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent(
-      "FSD Accident Economy Kernel Comparison v0",
-    );
-    expect(screen.getByLabelText("Comparison set provenance")).toHaveTextContent("fixture only");
-    expect(screen.getByText("Seeded representative artifact.")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
-    expect(screen.getByText("Audit-only artifacts are visible for provenance but are not rateable.")).toBeInTheDocument();
+    expect(screen.getByText("source status")).toBeInTheDocument();
+    expect(screen.getByText("imported")).toBeInTheDocument();
+    expect(screen.queryByText("Audit-only artifacts are visible for provenance but are not rateable.")).not.toBeInTheDocument();
   });
 
   it("keeps artifact labels visible without blind review mode", async () => {

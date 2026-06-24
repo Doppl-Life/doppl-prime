@@ -109,29 +109,6 @@ p {
   color: #c6d3e1;
 }
 
-.toggle-field {
-  align-items: center;
-  color: #c6d3e1;
-  display: flex;
-  font-size: 13px;
-  font-weight: 900;
-  gap: 8px;
-}
-
-.toggle-field input {
-  accent-color: var(--teal);
-  height: 18px;
-  width: 18px;
-}
-
-.audit-toggle {
-  align-self: end;
-  border: 1px solid #40566c;
-  border-radius: 4px;
-  min-height: 38px;
-  padding: 0 10px;
-}
-
 .target-toggle {
   align-self: end;
   background: #0d1a2a;
@@ -139,8 +116,8 @@ p {
   border-radius: 4px;
   display: grid;
   gap: 4px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  min-height: 38px;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 78px;
   padding: 4px;
 }
 
@@ -520,10 +497,6 @@ textarea {
     padding: 0 18px 10px;
   }
 
-  .audit-toggle {
-    min-height: 38px;
-  }
-
   .artifact-control {
     grid-column: 1 / -1;
   }
@@ -548,7 +521,7 @@ textarea {
   }
 
   .review-controls {
-    grid-template-columns: minmax(170px, 0.76fr) minmax(190px, auto) minmax(210px, auto) minmax(300px, 1.18fr);
+    grid-template-columns: minmax(180px, 0.82fr) minmax(210px, auto) minmax(360px, 1.18fr);
     padding: 0 20px 12px;
   }
 
@@ -570,7 +543,7 @@ textarea {
 
 @media (min-width: 1180px) {
   .review-controls {
-    grid-template-columns: minmax(180px, 220px) minmax(190px, 240px) minmax(210px, 250px) minmax(360px, 1fr);
+    grid-template-columns: minmax(180px, 220px) minmax(210px, 250px) minmax(460px, 1fr);
   }
 }
 

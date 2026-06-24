@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   CalibratorIndex,
   CalibratorProblemRecovery,
-  CalibratorRating,
   CalibratorSolution,
   RatingSubmitResponse,
 } from "./types";
@@ -21,10 +20,6 @@ type ReviewQueueItem =
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
-}
-
-function plural(count: number, singular: string): string {
-  return `${count} ${singular}${count === 1 ? "" : "s"}`;
 }
 
 function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
@@ -98,13 +93,32 @@ function renderInlineText(text: string): string {
     .trim();
 }
 
-function MarkdownBlock({ text }: { text: string }) {
-  const cleanedText = displayMarkdown(text);
-  const blocks = cleanedText
+function comparableText(text: string): string {
+  return renderInlineText(text)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function markdownBlocks(text: string): string[] {
+  return displayMarkdown(text)
     .split(/\n{2,}/)
     .flatMap((block) => block.replace(/\s+(#{2,4}\s+)/g, "\n\n$1").split(/\n{2,}/))
     .map((block) => block.trim())
     .filter(Boolean);
+}
+
+function supplementalMarkdown(baseText: string, candidateText: string): string {
+  const baseBlocks = new Set(markdownBlocks(baseText).map(comparableText).filter(Boolean));
+  const uniqueBlocks = markdownBlocks(candidateText).filter((block) => {
+    const comparable = comparableText(block);
+    return comparable && !baseBlocks.has(comparable);
+  });
+  return uniqueBlocks.join("\n\n");
+}
+
+function MarkdownBlock({ text }: { text: string }) {
+  const blocks = markdownBlocks(text);
   return (
     <div className="markdown-block">
       {blocks.map((block) => {
@@ -172,7 +186,6 @@ export function App() {
   const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<string | null>(null);
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
-  const [includeAuditArtifacts, setIncludeAuditArtifacts] = useState(false);
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [score, setScore] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
@@ -233,9 +246,8 @@ export function App() {
   const allSolutions = useMemo(() => selectedCase?.solutions ?? [], [selectedCase]);
   const visibleSolutions = useMemo(() => {
     if (!selectedCase) return [];
-    if (includeAuditArtifacts) return allSolutions;
     return allSolutions.filter((artifact) => reviewMode(artifact) === "primary");
-  }, [allSolutions, includeAuditArtifacts, selectedCase]);
+  }, [allSolutions, selectedCase]);
   const selectedSolution = useMemo(
     () =>
       visibleSolutions.find((solution) => solution.solution_id === selectedSolutionId) ??
@@ -245,9 +257,8 @@ export function App() {
   );
   const visibleProblemRecoveries = useMemo(() => {
     if (!selectedCase) return [];
-    if (includeAuditArtifacts) return allProblemRecoveries;
     return allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "primary");
-  }, [allProblemRecoveries, includeAuditArtifacts, selectedCase]);
+  }, [allProblemRecoveries, selectedCase]);
   const selectedProblemRecovery = useMemo(
     () =>
       visibleProblemRecoveries.find((recovery) => recovery.problem_recovery_id === selectedProblemRecoveryId) ??
@@ -278,7 +289,6 @@ export function App() {
       ? selectedProblemRecovery?.problem_recovery_id ?? ""
       : selectedSolution?.solution_id ?? "";
   const activeQueueIndex = reviewQueue.findIndex((item) => item.target === ratingTarget && item.id === (ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : selectedSolution?.solution_id));
-  const unratedCount = reviewQueue.filter((item) => item.artifact.human_ratings.length === 0).length;
   const nextUnratedItem = useMemo(() => {
     if (reviewQueue.length === 0) return null;
     const start = activeQueueIndex >= 0 ? activeQueueIndex + 1 : 0;
@@ -293,6 +303,10 @@ export function App() {
     if (!comparisonSetId) return null;
     return (index?.comparison_sets ?? []).find((set) => set.comparison_set_id === comparisonSetId) ?? null;
   }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
+  const discoveryContextText = useMemo(() => {
+    if (!selectedCase) return "";
+    return supplementalMarkdown(selectedCase.body, selectedCase.problem.body);
+  }, [selectedCase]);
 
   useEffect(() => {
     if (!selectedCase) return;
@@ -465,20 +479,6 @@ export function App() {
           </select>
         </label>
 
-        <label className="toggle-field audit-toggle">
-          <input
-            type="checkbox"
-            checked={includeAuditArtifacts}
-            onChange={(event) => {
-              setIncludeAuditArtifacts(event.target.checked);
-              setScore(null);
-              setSavedPath("");
-              setSourceDetailsOpen(false);
-            }}
-          />
-          <span>Include audit artifacts</span>
-        </label>
-
         <div className="target-toggle" aria-label="Review type">
           <button
             type="button"
@@ -558,10 +558,12 @@ export function App() {
           <MarkdownBlock text={selectedCase.body} />
         </article>
 
-        <article className="trace-step">
-          <p className="trace-label">Discovery Context</p>
-          <MarkdownBlock text={selectedCase.problem.body} />
-        </article>
+        {discoveryContextText ? (
+          <article className="trace-step">
+            <p className="trace-label">Discovery Context</p>
+            <MarkdownBlock text={discoveryContextText} />
+          </article>
+        ) : null}
 
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
@@ -673,9 +675,6 @@ export function App() {
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
-        {activeReviewArtifact && !activeIsSubmittable ? (
-          <p className="mode-note">Audit-only artifacts are visible for provenance but are not rateable.</p>
-        ) : null}
         {error ? (
           <p role="alert" className="error">
             {error}
