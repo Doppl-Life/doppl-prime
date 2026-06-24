@@ -1,8 +1,48 @@
-# Kernel Glossary
+# Glossary
 
-Engine-mechanics terms the running kernel uses. The **model** vocabulary (doppl, node, stage,
-stock, the spine) lives in the hut — see [`my-docs/the-hut/LEXICON.md`](my-docs/the-hut/LEXICON.md).
-Only terms the kernel actually uses belong here.
+The single vocabulary — both the **model** terms (doppl, node, stage, stock, the spine) and the **engine-mechanics** terms the running kernel uses. Engine behavior is specified in [`../mechanics/`](../mechanics); the typed shapes in [`../contracts/`](../contracts).
+
+## Model
+
+### Flow
+
+- **Def:** the chain of decisions, folded one immutable node per step.
+
+### Node
+
+- **Def:** one step in a flow: `## Trace` + `## Discovery` + `## Growth` (+ `### Evaluation`) + `## Path`. See [`../contracts/node.md`](../contracts/node.md).
+
+### Stage
+
+- **Def:** `case_study → problem_recovery → doppl`. Each stage is an attempt to breed anti-fragile, useful children from a population — not pick-the-winner.
+
+### Doppl
+
+- **Def:** the amorphous leaf — the unlock / solution / idea. Our name for it.
+
+### Seed
+
+- **Def:** an original, hand-planted case study; the inciting agenome a chain grows from, with no parent (`prev_id: null`).
+
+### Reseed / forest loop
+
+- **Def:** a doppl turned into a fresh case study to start a new island, carrying `prev_id: [[doppl]]`. The one back-edge in the graph; lets a lineage grow past the three-stage spine.
+
+### Stock
+
+- **Def:** persistent domain memory the flow reads from and writes to — admitted discoveries grouped by field. See [`../contracts/stock.md`](../contracts/stock.md).
+
+### Discovery (the tool / the bar)
+
+- **Def:** a one-job kernel function — gather high-signal context (web + stock), clear a bar, write keepers to stock, return. Not a stage; see [`../mechanics/kernel/discovery.md`](../mechanics/kernel/discovery.md). A *find* is anything retrieved; a *discovery* is a find that clears the bar and enters stock.
+
+### Anti-fragile
+
+- **Def:** the bar for a bred child — it should get stronger under variation, not merely survive.
+
+### Consensus-gap
+
+- **Def:** doctrine, not contract — the distance between what is true/useful and what the relevant crowd already sees or prices.
 
 ## Core
 
@@ -10,7 +50,7 @@ Only terms the kernel actually uses belong here.
 
 - **Def:** the reusable operation `generate -> evaluate -> select -> generate
   again`, parameterized by direction, reproduction unit, fitness source, and
-  schedule. See [`my-docs/the-hut/engine.md`](my-docs/the-hut/engine.md).
+  schedule. See [`../mechanics/kernel/engine.md`](../mechanics/kernel/engine.md).
 
 ### Direction
 
@@ -47,7 +87,7 @@ Only terms the kernel actually uses belong here.
 ### Rating
 
 - **Def:** a `−5…+5` judgment of worth (the judge's and the human's output). See
-  [`my-docs/the-hut/rating-model.md`](my-docs/the-hut/rating-model.md).
+  [`../contracts/rating.md`](../contracts/rating.md).
 
 ### Novelty
 
@@ -77,7 +117,7 @@ Only terms the kernel actually uses belong here.
 - **Def:** observer-relative feasibility or fit applied after intrinsic fitness.
   The engine scores what is novel, grounded, and durable; the lens asks whether it
   is worth acting on for this user. (Open: may fold into the judge's
-  Cost-efficiency/Relevance rating axes — see `engine.md`.)
+  Cost-efficiency/Relevance rating axes — see `../mechanics/kernel/engine.md`.)
 
 ### Mechanism Cost
 

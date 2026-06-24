@@ -1,25 +1,28 @@
 # AGENTS.md
 
-## The hut is canon
+## Canon and the hut
 
-`my-docs/the-hut/` defines the model and is where we operate from. When the
-hut and the running kernel (`src/`, `tools/`, `contracts/`) disagree, **the hut wins**;
-the kernel follows, deliberately. Change the decision in the hut first; the kernel
-catches up as its own planned step. "It's still in the kernel" is not an argument for keeping
-a concept the hut has cut.
+The frozen model lives in two homes: `contracts/**` (typed MarkScript artifact shapes) and
+`mechanics/**` (kernel behavior — engine, discovery, compiler). Vocabulary is `my-docs/GLOSSARY.md`.
+`my-docs/the-hut/` is the **proposal space** — where unfrozen decisions are still being shaped.
 
-The hut is canon but **provisional** — live until we freeze it on purpose. Do not let it
-quietly grow back into what the old kernel assumed.
+When canon (contracts/mechanics) and the running kernel (`src/`, `tools/`) disagree, **canon wins**;
+the kernel follows, deliberately. Change the decision in canon first; the kernel catches up as its
+own planned step. "It's still in the kernel" is not an argument for keeping a concept canon has cut.
+
+The hut is **provisional** — live until a decision freezes out into contracts/mechanics. Do not let
+it quietly grow back into what the old kernel assumed, and do not leave a hut draft beside a frozen
+contract.
 
 ## Working rules
 
-- Do not change `src/**` kernel semantics unless the user explicitly asks. (The hut being
-  canon tells you *what* to build toward; it is not standing permission to rewrite the engine.)
+- Do not change `src/**` kernel semantics unless the user explicitly asks. (Canon tells you
+  *what* to build toward; it is not standing permission to rewrite the engine.)
 - Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
   the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Contracts live under `contracts/**`; the model lives in `my-docs/the-hut/**`; durable kernel
-  decisions live in `MEMORY.md`.
+- Contracts live under `contracts/**`, kernel behavior under `mechanics/**`, unfrozen proposals in
+  `my-docs/the-hut/**`; durable kernel decisions live in `my-docs/MEMORY.md`.
 - This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
   derivative paths.
 - After a cleanup pass, remove the cleanup machinery unless it enforces a durable contract.
@@ -66,15 +69,16 @@ Log durable findings in one home:
 
 | Finding | File |
 | --- | --- |
-| The model (stages, node, rating, engine, vocabulary) | `my-docs/the-hut/**` |
-| Build contract or evaluation doctrine | `contracts/**` |
-| Active fork or ownership decision | `MEMORY.md` |
-| Durable lesson or banger | `LESSONS_AND_BANGERS.md` |
-| Portable move or trap | `HEURISTICS.md` |
-| Reward hack or confirmed failure | `BUGS_AND_MITIGATIONS.md` |
-| Operational watch item | `OPERATIONAL_WATCHLIST.md` |
-| Kernel invariant | `INVARIANTS.md` |
-| Term definition | `GLOSSARY.md` |
+| Typed artifact shape (node, rating, stock, trace, projection) | `contracts/**` |
+| Kernel behavior (engine, discovery, compiler) | `mechanics/**` |
+| Term / vocabulary | `my-docs/GLOSSARY.md` |
+| Unfrozen proposal | `my-docs/the-hut/**` |
+| Active fork or ownership decision | `my-docs/MEMORY.md` |
+| Durable lesson or banger | `my-docs/LESSONS_AND_BANGERS.md` |
+| Portable move or trap | `my-docs/HEURISTICS.md` |
+| Reward hack or confirmed failure | `my-docs/BUGS_AND_MITIGATIONS.md` |
+| Operational watch item | `my-docs/OPERATIONAL_WATCHLIST.md` |
+| Kernel invariant | `my-docs/INVARIANTS.md` |
 | How to run/use the kernel | `README.md` or `tools/README.md` |
 
 Do not dump transient debug notes into registers. One idea, one home.

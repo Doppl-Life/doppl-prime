@@ -10,16 +10,16 @@ infrastructure was just unscalable and unreproducible. Doppl makes it so.
 
 ## Where the truth lives
 
-**The hut is canon.** `my-docs/the-hut/` is where the model is defined and where we
-operate from. When the hut and the running kernel (`src/`, `tools/`) disagree, **the
-hut wins** — the kernel follows, deliberately. Start there:
+**The model is frozen into `contracts/` (typed shapes) and `mechanics/` (kernel behavior);**
+`my-docs/the-hut/` holds what is still being decided. When canon and the running kernel
+(`src/`, `tools/`) disagree, canon wins — the kernel follows, deliberately. Map:
 
 - [`my-docs/the-hut/README.md`](my-docs/the-hut/README.md) — start here: how to read the hut.
 - [`my-docs/the-hut/PROPOSAL.md`](my-docs/the-hut/PROPOSAL.md) — the unified frame. **Read first.**
-- [`my-docs/the-hut/object-model.md`](my-docs/the-hut/object-model.md) — stages, the node, the flow.
-- [`my-docs/the-hut/engine.md`](my-docs/the-hut/engine.md) — the generate→select crucible behind each stage.
-- [`my-docs/the-hut/rating-model.md`](my-docs/the-hut/rating-model.md) — the −5…+5 scoring source of truth.
-- [`my-docs/the-hut/LEXICON.md`](my-docs/the-hut/LEXICON.md) — the vocabulary.
+- [`contracts/node.md`](contracts/node.md) — stages, the node, the flow.
+- [`mechanics/kernel/engine.md`](mechanics/kernel/engine.md) — the generate→select crucible behind each stage.
+- [`contracts/rating.md`](contracts/rating.md) — the −5…+5 scoring source of truth.
+- [`my-docs/GLOSSARY.md`](my-docs/GLOSSARY.md) — the vocabulary.
 
 ## The spine
 
@@ -29,7 +29,7 @@ case_study → problem_recovery → doppl → (the human's action)
 
 A **case_study** is the seed. **problem_recovery** recovers the real problem behind the
 surface symptom. A **doppl** is the finished answer — the unlock. Each arrow is one pass of
-the crucible (`engine.md`): generate candidates → score (novelty × grounding measurements) →
+the crucible (`mechanics/kernel/engine.md`): generate candidates → score (novelty × grounding measurements) →
 select survivors under a diverge/converge dial → lens. A problem may yield more than one
 doppl.
 
@@ -45,7 +45,7 @@ Fitness keeps **novelty and grounding** as separate 0–1 measurements, never co
 selection. **Decay** is the engine's time axis: a `temporal` (zeitgeist) idea decays on a
 180-day half-life; a transfer (timeless) idea does not. Feasibility is a **lens** applied
 after selection. These 0–1 measurements map into the judge's −5…+5 **ratings**
-(`rating-model.md`); they are not ratings themselves.
+(`contracts/rating.md`); they are not ratings themselves.
 
 ## Run it
 

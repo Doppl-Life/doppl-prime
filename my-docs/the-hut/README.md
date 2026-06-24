@@ -1,42 +1,32 @@
-# The Hut — where we scheme (single source of truth, still wet)
+# The Hut — the proposal space (still wet)
 
-These files define the model we are building. This folder is the safe space. We operate from here.
+Where unfrozen decisions are shaped before they freeze out into canon. The frozen model lives in
+[`../../contracts/`](../../contracts) (typed shapes), [`../../mechanics/`](../../mechanics) (kernel
+behavior), and [`../GLOSSARY.md`](../GLOSSARY.md) (vocabulary). This folder holds only what is still
+being decided.
 
-**Canon, but provisional.** This is where we scheme together; it is not solidified. We shape the
-hut — the hut does not shape us. Beware the inverse of the jungle trap: don't let the hut
-quietly grow back into what it "wants" to be. Decisions here are live until we freeze them on purpose.
+**Provisional by design.** Decisions here are live until frozen on purpose. When a decision settles,
+it moves out to contracts/mechanics and its hut draft is deleted — don't let the hut grow a second
+copy of something that already froze.
 
 ## Rule of the hut
 
-- **This folder beats the kernel.** When these files and the live kernel (`src/`, `tools/`, `contracts/`)
-  disagree, this folder wins. The kernel is the jungle: legacy, reconciled later, deliberately.
-- **"It's still in the kernel" is not an argument.** A concept being load-bearing there doesn't make
-  it true here. A sprout in the kernel may be a weed here.
-- **Decisions are made here, in writing.** Change the decision here first; the kernel follows.
-- **No panic runs into the jungle.** It differs on purpose. Reconciliation is its own planned step.
+- **A live proposal beats the kernel.** When a hut decision and the running kernel (`src/`, `tools/`)
+  disagree, the decision wins once frozen; the kernel follows, deliberately.
+- **Decide here in writing, then freeze out.** Change the decision here first; freeze it into
+  contracts/mechanics; the kernel catches up as its own step.
+- **No panic runs into the jungle.** The kernel differs on purpose. Reconciliation is planned.
 
 ## The files
 
-- `PROPOSAL.md` — the proposed changes, for the team's review. **Start here.**
-- `LEXICON.md` — the vocabulary we've legitimized (add to it as we coin terms).
-- `object-model.md` — stages, the node, dependencies, the diagram.
-- `case-study-template.md` — the seed node (minimal).
-- `node-template.md` — **the** node: one shape for every non-seed stage (shown as a full leaf).
-- `stock-template.md` — the stock field.
-- `rating-model.md` — the single source of truth for scoring.
-- `rating-inventory.md` — every scoring system, hut + jungle, and the conflicts to settle.
-- `markscript.md` — the markdown-plus-TypeScript contract idiom used by the draft contracts.
-- `discovery-skill.md` — kernel function: gather context (round trip).
-- `compiler-skill.md` — kernel function: render a stage's output into a node.
-- `engine.md` — the generate→select crucible behind each spine arrow, promoted from the
-  kernel so the hut can regrow it after the burn.
+- `PROPOSAL.md` — the current frame and open proposals. **Start here.**
+- `README.md` — this file.
 - `flow.svg` — the flow diagram.
 
 ## Known divergences from the kernel (reconcile later, deliberately)
 
-- `subtype` — kernel: 9-value flavor + decay driver. Here: cut, except `temporal` (boolean) for decay.
-- Verdicts `dead/obvious/interesting/investigate/keeper` — kernel: live. Here: dead; one −5…+5 human score.
-- Decay — here: active decay is `0`; `temporal` preserves the seam for a later mechanism.
-- Leaf name — here: `doppl` (was `pepsi`).
-- Identity — kernel: UUIDv4 `id` + `root` + `prev` in frontmatter. Here: `SlugId` (`{slug}-{shortId}`), lineage as a body `prev_id` wikilink, no stored `root` (walk `prev_id` to find it).
-- Reseed — kernel: `case_study` is always a root. Here: a doppl may be reseeded into a fresh `case_study` (the forest loop), so a case study may carry a non-null `prev_id`.
+- Decay — canon: active decay is `0`; `temporal` preserves the seam for a later mechanism.
+- Leaf name — canon: `doppl` (was `pepsi`).
+- Identity — canon: `SlugId` (`{slug}-{shortId}`), lineage as a body `prev_id` wikilink, no stored `root` (walk `prev_id`).
+- Reseed — canon: a doppl may reseed into a fresh `case_study` (the forest loop), carrying a non-null `prev_id`.
+- Lineage memory — canon: the node graph is the memory (`doppelgangers` + derived `convergence`); no separate ledger.

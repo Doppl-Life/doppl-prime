@@ -32,7 +32,7 @@ type SpecRef =
   | 'rating.md'
   | 'human-ratings-ledger.md'
   | 'stock.md'
-  | 'compiler-skill.md';
+  | 'mechanics/kernel/compiler.md';
 
 type Provenance =
   | { mode: 'render_verbatim'; from: TracePath }
@@ -59,7 +59,7 @@ type ProjectionLedger = ProjectionEntry[];
 
 | node field | source | mode | owner |
 | --- | --- | --- | --- |
-| `id` | minted from `RunTrace.selection.compiled_candidate.headline` (kebab + 8-char id), frozen | `mint` | compiler-skill.md |
+| `id` | minted from `RunTrace.selection.compiled_candidate.headline` (kebab + 8-char id), frozen | `mint` | mechanics/kernel/compiler.md |
 | `stage` | `RunTrace.identity.stage` | `render` | run-trace.md |
 | `kernel` | `RunTrace.identity.kernel` | `render` | run-trace.md |
 | `temporal` | `RunTrace.judge.result.temporal` | `render` | rating.md |

@@ -66,7 +66,7 @@ skill expresses ──► produces ideas in a run ──► Agora posts (sprout/
               (recorded in LINEAGE.md bedrock col)    to source skill
 ```
 
-A skill whose ideas keep earning strong ratings ([rating-model](../my-docs/the-hut/rating-model.md))
+A skill whose ideas keep earning strong ratings ([rating-model](../contracts/rating.md))
 earns the right to spawn mutated children and gets more energy budget; one whose ideas draw
 negative ratings starves toward `deprecated`. A skill can be a strong **sprouter** (great
 process/generativity) but bear weak **doppls** (poor conclusions) — those are different

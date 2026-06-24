@@ -52,7 +52,7 @@ guiding implementation, cut it.
   governing logics under one umbrella. Forcing either shape loses signal. (Pepsi is the
   metaphor — one doppl vs. several distinct doppls.)
 - **Carry forward:** decide one doppl vs. many before judging output quality; a problem may
-  yield more than one doppl (`my-docs/the-hut/object-model.md`).
+  yield more than one doppl (`contracts/node.md`).
 
 ### Discovery feeds seeds, not authority - 2026-06-21
 

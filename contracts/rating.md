@@ -4,6 +4,8 @@ How nodes are scored, so the judge's and the human's numbers mean the same thing
 
 This uses the same MarkScript idiom as `node.md`: explain the section, show the rendered shape where there is one, then state the TypeScript contract for what must be recoverable.
 
+**Two raters, two shapes, one scale.** The *judge* fills the full rubric and boils it to one number; the *human* gives a single slider — never five axes. Both speak the same `−5…+5`, where negative is not "it doesn't work" but "even if it works, it's bad" (cut off your head to cure a headache: maximally effective, maximally wrong). Positive is real contribution, `0` is neutral, negative is value-subtracting.
+
 ## Contract primitives
 
 There are only two numeric scales in the system.
@@ -51,6 +53,8 @@ rating = round(measurement * 5); // 0 -> 0, 0.5 -> +3, 1 -> +5
 ```
 
 A measurement cannot produce a negative rating. Negative ratings are judge-only: a judgment that an idea is misleading or value-subtracting.
+
+**Open — the full bridge.** Which `0…1` instrument informs which axis, and how, is not finished (similarity → novelty, signal strength → grounding, …); the engine bridges Novelty/Grounding/Falsifiability and defaults the judge-only axes to `0`. The scale itself is not new: the discovery/source layer (`tools/source-radar.ts`) already rates on this `−5…+5`. Only the core's instrument→axis map is still being settled.
 
 ### Type contract
 

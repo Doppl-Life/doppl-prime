@@ -38,7 +38,7 @@ kernel owner must not accidentally undo.
 - **Chose:** burn the pepsi pipeline, the verdict/judgment stack, the
   viewer/deploy/microscope surface, the superseded engine specs, the original-Prime
   `docs/**` quarantine, and the old eval fixtures. Before burning, promote the
-  generate→select engine contract into `my-docs/the-hut/engine.md`.
+  generate→select engine contract into `mechanics/kernel/engine.md`.
 - **Over:** surgically de-vocabularying dead surfaces, or burning the engine without
   first salvaging its contract.
 - **Because:** the hut holds the model's spirit but not the engine internals; the

@@ -31,7 +31,7 @@ Given several **seed fixtures** (AI-unlock theses or problem statements), it:
 3. **Recurses** — expands fixture-authored generation-2 child packets from selected
    survivors under hard caps.
 4. **Decays / lenses** — applies engine decay during selection and feasibility after selection.
-5. **Shows** — a compact board first; nodes (`my-docs/the-hut/node-template.md`) render the
+5. **Shows** — a compact board first; nodes (`contracts/node.md`) render the
    machine trace into portable, human-readable artifacts.
 
 The proof it works: **the same harness runs multiple seeds and makes selection behavior

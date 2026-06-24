@@ -22,7 +22,7 @@ selection is leakage.
 Canonical sources:
 
 - Trace truth: `src/trace.ts` via `buildRunTrace()`.
-- The engine contract: [`my-docs/the-hut/engine.md`](../my-docs/the-hut/engine.md).
+- The engine contract: [`mechanics/kernel/engine.md`](../mechanics/kernel/engine.md).
 - Judgment agreement math: `tools/agreement.ts`.
 - Source radar knowledge: `tools/source-radar.ts`.
 - Least-action calibration: `tools/least-action.ts`.

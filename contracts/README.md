@@ -8,17 +8,9 @@ The MarkScript contracts for the model — what each durable artifact must conta
 
 Every cross-document reference in these artifacts is an **Obsidian-compatible wikilink**: `[[slug-id]]` to address a file, `[[slug-id#^block-anchor]]` to address a specific block within it. Plain slug strings (`field: battery-supply`) are not links — Obsidian will not resolve them in the graph view. When a contract names a field, source, or discovery, render it as a wikilink. Lineage (`prev_id`) and any other link-bearing values live in the markdown body, never frontmatter, because Obsidian does not resolve `[[...]]` inside YAML.
 
-## Defined in the hut (canon)
+## The model in one breath
 
-The engine and evaluation contracts currently live in the hut, which is canon:
-
-- [`my-docs/the-hut/engine.md`](../my-docs/the-hut/engine.md) — the generate/evaluate/select
-  runtime, the dial, fitness measurements, decay, caps, lineage, and the trace boundary.
-- [`my-docs/the-hut/rating-model.md`](../my-docs/the-hut/rating-model.md) — the −5…+5 rating, the two raters, and the zero-decay temporal seam.
-- [`my-docs/the-hut/object-model.md`](../my-docs/the-hut/object-model.md) — stages, the node, the
-  stock, and the signals.
-
-No contract files are frozen yet. When a hut contract is frozen, add it here.
+Two object classes: the **flow** (the chain, folded one immutable node per step) and **stock** (durable domain memory the flow reads and writes). The spine is `case_study → problem_recovery → doppl`; each arrow is one pass of the engine, and **discovery** is a tool the growth stages call, not a stage. A doppl can be reseeded into a fresh case study — the forest loop. The contracts below are the typed shapes these objects take; how the kernel *behaves* (engine, discovery, compiler) lives in [`../mechanics/`](../mechanics).
 
 ## Draft MarkScript contracts
 
@@ -32,4 +24,4 @@ These are working contracts, not frozen kernel contracts yet:
 - [`stock.md`](./stock.md) — the stock field source/projection contract.
 
 If a new doctrine affects how the kernel runs or is judged, freeze it here. If it only records
-why we chose a fork, put it in [`../MEMORY.md`](../MEMORY.md).
+why we chose a fork, put it in [`../my-docs/MEMORY.md`](../my-docs/MEMORY.md).
