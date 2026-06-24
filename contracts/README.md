@@ -4,6 +4,10 @@ The MarkScript contracts for the model — what each durable artifact must conta
 
 > Not to be confused with the kernel's **boundary contracts** — the runtime module-I/O packets — which live beside their code at [`src/contracts/`](../src/contracts/README.md). These are *model artifact* contracts; those are *runtime boundary* contracts.
 
+## Cross-document links
+
+Every cross-document reference in these artifacts is an **Obsidian-compatible wikilink**: `[[slug-id]]` to address a file, `[[slug-id#^block-anchor]]` to address a specific block within it. Plain slug strings (`field: battery-supply`) are not links — Obsidian will not resolve them in the graph view. When a contract names a field, source, or discovery, render it as a wikilink. Lineage (`prev_id`) and any other link-bearing values live in the markdown body, never frontmatter, because Obsidian does not resolve `[[...]]` inside YAML.
+
 ## Defined in the hut (canon)
 
 The engine and evaluation contracts currently live in the hut, which is canon:

@@ -5,6 +5,9 @@ selective pressure, breed the survivors into the next round. One engine —
 *generation under selection* — run along a spine of stages, scored, and rendered into
 portable nodes.
 
+**PSaaS — Problem-Solving as a Service.** Consulting has always been this; the
+infrastructure was just unscalable and unreproducible. Doppl makes it so.
+
 ## Where the truth lives
 
 **The hut is canon.** `my-docs/the-hut/` is where the model is defined and where we

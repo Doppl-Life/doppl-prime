@@ -673,7 +673,7 @@ function lst(a){return (a&&a.length)?a.map(x=>`- ${esc(x)}`).join('\n'):'- —';
 function buildBody(stage,c,trace,fit,axes){
   const head=`# ${esc(c.title||synopsisOf(stage,c))}\n`;
   const traceMd='## Trace\n'+(trace.length?trace.map(t=>`### ${STAGE[t.stage].label.replace(/^./,m=>m.toUpperCase())} · synopsis\n\n${esc(t.synopsis)}`).join('\n\n'):'_(no prior stage)_')+'\n';
-  const disc='## Discovery\n'+((c.evidence&&c.evidence.length)?c.evidence.map((e,i)=>`### Finding ${i+1}\n\n${esc(e)} <span class="arrow">→ field: ${esc((c.substrate||'context').split(/\s+/).slice(0,2).join('-').toLowerCase())}</span>`).join('\n\n'):'_(no external finds this pass)_')+'\n';
+  const disc='## Discovery\n'+((c.evidence&&c.evidence.length)?c.evidence.map((e,i)=>`### Finding ${i+1}\n\n${esc(e)} → field: ${esc((c.substrate||'context').split(/\s+/).slice(0,2).join('-').toLowerCase())}`).join('\n\n'):'_(no external finds this pass)_')+'\n';
   let growth;
   if(stage==='problem_recovery'){
     growth=`## Growth — Problem recovery\n### Surface complaint\n${esc(c.surfaceComplaint||'—')}\n### Deleted assumption\n${esc(c.deletedAssumption||'—')}\n### Hidden variable\n${esc(c.hiddenVariable||'—')}\n### Actual problem\n${esc(c.actualProblem||'—')}\n### Candidate response\n${esc(c.candidateResponse||'—')}\n### Skin in the Game\n${lst(c.skinInTheGame)}\n`+((c.sprouts&&c.sprouts.length)?`### Sprouts\n${lst(c.sprouts)}\n`:'');
@@ -918,7 +918,7 @@ async function runCampaign(){
 /* ============================ markdown render ============================ */
 function mdToHtml(md){
   const lines=md.split('\n');let html='',inList=false;
-  const inline=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/&lt;span class="arrow"&gt;(.*?)&lt;\/span&gt;/g,'<span class="arrow">$1</span>');
+  const inline=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
   for(let ln of lines){
     if(/^- /.test(ln)){if(!inList){html+='<ul>';inList=true;}html+='<li>'+inline(ln.slice(2))+'</li>';continue;}
     if(inList){html+='</ul>';inList=false;}
@@ -1333,7 +1333,7 @@ function wire(){
 }
 function renderSuggest(){const s=['Strongest doppls?','Recurring themes?','What should I grow next?','What can I prune?'];$('#chatSuggest').innerHTML=s.map(x=>`<span class="chip" data-q="${esc(x)}">${esc(x)}</span>`).join('');$$('#chatSuggest .chip').forEach(el=>el.onclick=()=>sendChat(el.dataset.q));}
 function wireTips(){
-  document.querySelectorAll('.col.left [title]').forEach(el=>{
+  document.querySelectorAll('[title]').forEach(el=>{
     if(!el.dataset.tip)el.dataset.tip=el.getAttribute('title');
     el.removeAttribute('title');
   });

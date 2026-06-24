@@ -325,6 +325,12 @@ type TraceSection<S extends GrowthStage> =
 Discovery is what was found, not what was concluded. It accretes across the chain and cites the
 stock field it came from or wrote to. Discovery is not scored; Growth is scored.
 
+Each finding deep-links the exact stock discovery it used, as an Obsidian-compatible wikilink
+of the form `[[field-id#^discovery_anchor]]` — never a bare slug. The anchor matches the
+`^discovery_id` block anchor that [stock.md](./stock.md) emits on each load-bearing fact, so
+the link resolves to the precise block in the rendered field. The link lives on the same line
+as the finding text, after a `→`.
+
 ### Markdown shape
 
 ```markdown
@@ -332,19 +338,19 @@ stock field it came from or wrote to. Discovery is not scored; Growth is scored.
 
 ### Refining bottleneck
 
-Refining capacity, not raw lithium, is the binding constraint. → field: battery-supply
+Refining capacity, not raw lithium, is the binding constraint. → [[battery-supply-b8e2c6f0#^refining-bind]]
 
 ### Offtake lock
 
-Yuan-denominated offtake pulls supply off the spot market. → field: battery-supply
+Yuan-denominated offtake pulls supply off the spot market. → [[battery-supply-b8e2c6f0#^offtake-lock]]
 ```
 
 ### Type contract
 
 ```ts
 type FieldRef = {
-  id?: SlugId;
-  name: string;
+  id: SlugId;
+  name?: string;
 };
 
 type SourceRef = {
@@ -355,6 +361,7 @@ type SourceRef = {
 type DiscoveryEntry = MarkdownSubsection<`### ${string}`, {
   found: string;
   field: FieldRef;
+  discovery_anchor: string; // matches the `^anchor` block anchor on the stock load-bearing fact
   sources?: SourceRef[];
 }>;
 
