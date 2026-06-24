@@ -14,15 +14,20 @@ export interface CalibratorRating {
 }
 
 export interface CalibratorSolution {
+  node_id?: string;
   case_id: string;
   solution_id: string;
   title: string;
+  parent_ids?: string[];
+  child_ids?: string[];
+  source_path?: string;
+  ledger_path?: string;
   stage?: "doppl";
   temporal?: boolean;
   next?: "terminal" | null;
   scores?: {
-    judge?: number;
-    human?: number;
+    judge?: number | null;
+    human?: number | null;
     n?: number;
   };
   source_type: "kernel" | "manual" | "unknown";
@@ -52,15 +57,20 @@ export interface CalibratorSolution {
 }
 
 export interface CalibratorProblemRecovery {
+  node_id?: string;
   case_id: string;
   problem_recovery_id: string;
   title: string;
+  parent_ids?: string[];
+  child_ids?: string[];
+  source_path?: string;
+  ledger_path?: string;
   stage?: "problem_recovery";
   temporal?: boolean;
   next?: "doppl" | "terminal" | null;
   scores?: {
-    judge?: number;
-    human?: number;
+    judge?: number | null;
+    human?: number | null;
     n?: number;
   };
   source_type: "kernel" | "manual" | "unknown";
@@ -83,8 +93,10 @@ export interface CalibratorProblemRecovery {
 }
 
 export interface CalibratorCase {
+  node_id?: string;
   case_id: string;
   title: string;
+  source_kind?: "vault" | "agarden";
   visibility: string;
   source_paths: string[];
   body: string;
@@ -109,6 +121,7 @@ export interface CalibratorComparisonSet {
 
 export interface CalibratorIndex {
   generated_at: string;
+  source_kind?: "vault" | "agarden";
   comparison_sets: CalibratorComparisonSet[];
   cases: CalibratorCase[];
 }

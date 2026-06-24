@@ -1,9 +1,9 @@
 import type { Plugin } from "vite";
-import { readVaultIndex } from "./vaultReader";
 import { defaultVaultRoot } from "./vaultPaths";
 import { writeRatingMarkdown } from "./ratingWriter";
 import { RatingSubmission } from "./vaultSchemas";
 import { canSubmitRating } from "../reviewability";
+import { readDefaultCalibratorIndex } from "./indexReader";
 
 async function readJsonBody(req: import("node:http").IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
@@ -20,7 +20,10 @@ function sendJson(res: import("node:http").ServerResponse, status: number, body:
 }
 
 async function assertRateableTarget(submission: RatingSubmission): Promise<void> {
-  const index = await readVaultIndex(defaultVaultRoot);
+  const index = await readDefaultCalibratorIndex();
+  if (index.source_kind === "agarden") {
+    throw new Error("aGarden rating writes require the node-ledger writer, which is not wired yet.");
+  }
   const caseItem = index.cases.find((item) => item.case_id === submission.case_id);
   if (!caseItem) throw new Error(`Unknown case_id "${submission.case_id}"`);
 
@@ -44,7 +47,7 @@ export function createCalibratorDevApi(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         try {
           if (req.method === "GET" && req.url === "/api/index") {
-            sendJson(res, 200, await readVaultIndex(defaultVaultRoot));
+            sendJson(res, 200, await readDefaultCalibratorIndex());
             return;
           }
 

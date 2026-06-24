@@ -24,6 +24,38 @@ function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
 }
 
+function plural(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function sourceKindLabel(sourceKind: CalibratorIndex["source_kind"]): string {
+  return sourceKind === "agarden" ? "aGarden" : "Vault";
+}
+
+function projectionLabel(artifact: ReviewArtifact | null): string {
+  const scores = artifact?.scores;
+  if (!scores || scores.human === null || scores.human === undefined || !scores.n) return "no human score";
+  return `human ${scoreLabel(scores.human)} / ${scores.n}`;
+}
+
+function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
+  return (
+    caseItem.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
+    caseItem.problem_recoveries[0]
+  );
+}
+
+function firstRateableSolution(caseItem: CalibratorIndex["cases"][number]) {
+  return caseItem.solutions.find((artifact) => reviewMode(artifact) === "primary") ?? caseItem.solutions[0];
+}
+
+function firstReviewableCase(index: CalibratorIndex) {
+  return (
+    index.cases.find((caseItem) => firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem)) ??
+    index.cases[0]
+  );
+}
+
 function blindDopplLabel(index: number): string {
   return `Doppl ${String.fromCharCode(65 + (index % 26))}`;
 }
@@ -41,10 +73,20 @@ function maskProvenanceText(text: string): string {
     .replace(/\bbranch markdown\b/gi, "source markdown");
 }
 
+function displayMarkdown(text: string): string {
+  const lines = text.split("\n").filter((line) => !/^prev:\s*/.test(line.trim()));
+  const firstContentIndex = lines.findIndex((line) => line.trim());
+  if (firstContentIndex >= 0 && /^#\s+/.test(lines[firstContentIndex])) {
+    lines.splice(firstContentIndex, 1);
+  }
+  return lines.join("\n").trim();
+}
+
 function MarkdownBlock({ text }: { text: string }) {
+  const cleanedText = displayMarkdown(text);
   return (
     <div className="markdown-block">
-      {text
+      {cleanedText
         .split(/\n{2,}/)
         .map((block) => block.trim())
         .filter(Boolean)
@@ -155,13 +197,10 @@ export function App() {
     loadIndex()
       .then((data) => {
         setIndex(data);
-        const firstCase = data.cases[0];
+        const firstCase = firstReviewableCase(data);
         if (firstCase) {
-          const firstPrimaryProblemRecovery =
-            firstCase.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
-            firstCase.problem_recoveries[0];
-          const firstPrimarySolution =
-            firstCase.solutions.find((artifact) => reviewMode(artifact) === "primary") ?? firstCase.solutions[0];
+          const firstPrimaryProblemRecovery = firstRateableProblemRecovery(firstCase);
+          const firstPrimarySolution = firstRateableSolution(firstCase);
           setSelectedCaseId(firstCase.case_id);
           setSelectedProblemRecoveryId(firstPrimaryProblemRecovery?.problem_recovery_id ?? null);
           setSelectedSolutionId(firstPrimarySolution?.solution_id ?? null);
@@ -227,6 +266,8 @@ export function App() {
   const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
+  const activeSourceAllowsWrites = index?.source_kind !== "agarden";
+  const totalArtifacts = allProblemRecoveries.length + allSolutions.length;
   const hiddenAuditCount =
     allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "audit").length +
     allSolutions.filter((artifact) => reviewMode(artifact) === "audit").length;
@@ -400,12 +441,8 @@ export function App() {
             value={selectedCaseId}
             onChange={(event) => {
               const nextCase = index.cases.find((item) => item.case_id === event.target.value);
-              const nextPrimaryProblemRecovery =
-                nextCase?.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
-                nextCase?.problem_recoveries[0];
-              const nextPrimarySolution =
-                nextCase?.solutions.find((artifact) => reviewMode(artifact) === "primary") ??
-                nextCase?.solutions[0];
+              const nextPrimaryProblemRecovery = nextCase ? firstRateableProblemRecovery(nextCase) : undefined;
+              const nextPrimarySolution = nextCase ? firstRateableSolution(nextCase) : undefined;
               setSelectedCaseId(event.target.value);
               setSelectedProblemRecoveryId(nextPrimaryProblemRecovery?.problem_recovery_id ?? null);
               setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
@@ -471,8 +508,12 @@ export function App() {
         </label>
 
         <div className="review-status" aria-label="Current review status">
+          <strong className="source-chip">{sourceKindLabel(index.source_kind)}</strong>
+          <strong>{plural(index.cases.length, "case")}</strong>
+          <strong>{plural(totalArtifacts, "artifact")}</strong>
           <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl leaf"}</span>
           {activeReviewArtifact ? <strong>{reviewModeLabel(activeReviewArtifact)}</strong> : null}
+          <strong>{projectionLabel(activeReviewArtifact)}</strong>
           <strong>{activeRatingCount} ratings</strong>
           <strong>{unratedCount} unrated</strong>
           {!includeAuditArtifacts && hiddenAuditCount > 0 ? <em>{hiddenAuditCount} audit hidden</em> : null}
@@ -603,12 +644,22 @@ export function App() {
         <button
           className="submit-button"
           type="button"
-          disabled={score === null || isSubmitting || !isWritable || !activeIsSubmittable || !reviewerIsAllowed}
+          disabled={
+            score === null ||
+            isSubmitting ||
+            !isWritable ||
+            !activeIsSubmittable ||
+            !reviewerIsAllowed ||
+            !activeSourceAllowsWrites
+          }
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
+        {isWritable && !activeSourceAllowsWrites ? (
+          <p className="mode-note">aGarden ratings need the node-ledger writer before writes are enabled.</p>
+        ) : null}
         {activeReviewArtifact && !activeIsSubmittable ? (
           <p className="mode-note">Audit-only artifacts are visible for provenance but are not rateable.</p>
         ) : null}

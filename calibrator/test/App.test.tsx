@@ -8,6 +8,7 @@ import type { CalibratorIndex } from "../src/types";
 
 const fixture: CalibratorIndex = {
   generated_at: "2026-06-22T00:00:00.000Z",
+  source_kind: "vault",
   comparison_sets: [
     {
       comparison_set_id: "fsd-accident-economy-v0",
@@ -142,6 +143,8 @@ describe("App", () => {
     expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
+    expect(screen.getByLabelText("Review setup")).toHaveTextContent("Vault");
+    expect(screen.getByLabelText("Review setup")).toHaveTextContent("1 case");
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
@@ -149,6 +152,75 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
+  });
+
+  it("summarizes an aGarden-backed index in the setup bar", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response(
+          JSON.stringify({
+            ...fixture,
+            source_kind: "agarden",
+            cases: [
+              ...fixture.cases,
+              {
+                case_id: "houston-baggage-claim-complaints-57251c2c",
+                title: "Houston Baggage Claim Complaints",
+                visibility: "internal",
+                source_paths: [],
+                body: "# Houston",
+                problem: { body: "# Context", source: "agarden" },
+                problem_recoveries: [],
+                solutions: [],
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByLabelText("Review setup")).toHaveTextContent("aGarden");
+    expect(screen.getByLabelText("Review setup")).toHaveTextContent("2 cases");
+    expect(screen.getByLabelText("Case study")).toHaveTextContent("Houston Baggage Claim Complaints");
+  });
+
+  it("opens on the first reviewable aGarden case when an earlier case has no child artifacts", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response(
+          JSON.stringify({
+            ...fixture,
+            source_kind: "agarden",
+            cases: [
+              {
+                case_id: "houston-baggage-claim-complaints-57251c2c",
+                title: "Houston Baggage Claim Complaints",
+                visibility: "internal",
+                source_paths: [],
+                body: "# Houston",
+                problem: { body: "# Context", source: "agarden" },
+                problem_recoveries: [],
+                solutions: [],
+              },
+              ...fixture.cases,
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Case study")).toHaveValue("fsd-accident-economy");
+    expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
   it("renders a searchable rater allow-list and rejects unknown reviewers", async () => {
