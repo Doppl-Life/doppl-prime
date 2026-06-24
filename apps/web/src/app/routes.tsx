@@ -1,22 +1,24 @@
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '../components/app/AppShell';
 import { Dashboard } from '../routes/Dashboard';
+import { RunsHomeScreen } from '../routes/RunsHomeScreen';
 import { useRunClient } from '../data/RunClientProvider';
 import type { RunMode } from '../state/reducer';
 
 /**
- * AppRoutes — the FV.1 route table behind the AppShell layout (ARCHITECTURE.md §12):
- *   /                  → home (the existing Dashboard's launcher + run-list, runId="")
- *   /launch            → interim redirect to / (the dedicated S1 Launcher lands in FV.3)
+ * AppRoutes — the route table behind the AppShell layout (ARCHITECTURE.md §12):
+ *   /                  → S0 RunsHomeScreen (listRuns → cards; FV.2)
+ *   /launch            → interim: the existing Dashboard launcher (runId="") so the New Run flow
+ *                        reaches a working start-a-run view (FV.2 — preserves the demo + keeps
+ *                        RunListPanel reachable; the dedicated S1 Launcher lands in FV.3)
  *   /runs/:id          → the observatory in LIVE mode (runId from the URL)
  *   /runs/:id/replay   → the observatory in REPLAY mode
- *   /runs/:id/final    → interim: the observatory (it renders FinalIdeaPanel on terminal); the
- *                        dedicated S5 Final Idea lands in FV.7
+ *   /runs/:id/final    → interim: the observatory (renders FinalIdeaPanel on terminal); dedicated S5 = FV.7
  *   *                  → redirect to /
- * The observed run + mode come from the URL (not Dashboard-internal state); the launcher/run-list nav
- * callbacks route through useNavigate. The existing tested data layer (runClient/SSE/store) is reused.
+ * The observed run + mode come from the URL; the launcher/run-list nav callbacks route through
+ * useNavigate. The existing tested data layer (runClient/SSE/store) is reused.
  */
-function HomeRoute() {
+function LaunchRoute() {
   const runClient = useRunClient();
   const navigate = useNavigate();
   return (
@@ -51,8 +53,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<HomeRoute />} />
-        <Route path="launch" element={<Navigate to="/" replace />} />
+        <Route index element={<RunsHomeScreen />} />
+        <Route path="launch" element={<LaunchRoute />} />
         <Route path="runs/:id" element={<RunRoute mode="live" />} />
         <Route path="runs/:id/replay" element={<RunRoute mode="replay" />} />
         <Route path="runs/:id/final" element={<RunRoute mode="live" />} />

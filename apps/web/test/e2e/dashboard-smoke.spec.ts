@@ -177,7 +177,13 @@ test('dashboard happy path: start → live events fold → final-idea links reso
 
   await page.goto('/');
 
-  // 1. app loads — the shell + ModeBanner + the run-launcher are visible.
+  // 1. app loads — FV.2: / is the S0 Runs Home (the listRuns mock returns {runs:[]} → empty state +
+  //    New Run CTA). New Run → /launch interim launcher (the demo-continuity repoint).
+  await expect(page.getByText(/no runs yet/i)).toBeVisible();
+  await page.getByRole('button', { name: /new run/i }).click();
+  await expect(page).toHaveURL(/\/launch$/);
+
+  // the interim Dashboard launcher at /launch — the shell + ModeBanner + run-launcher are visible.
   await expect(page.getByRole('heading', { name: /run observatory/i })).toBeVisible();
   await expect(page.getByText(/LIVE/)).toBeVisible(); // ModeBanner live indicator (AC2)
   const launcher = page.getByLabel('Run configuration');

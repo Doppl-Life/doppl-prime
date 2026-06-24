@@ -105,18 +105,29 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(await screen.findByText('REPLAY')).toBeTruthy();
   });
 
-  // spec(§12): / renders the home (launcher + run-list), NOT a run observatory (no run-health fetch).
+  // spec(§12): / renders the S0 RunsHomeScreen (FV.2 — empty state here, listRuns→[]), NOT a run
+  // observatory (no run-health fetch). The launcher moved to /launch.
   it('test_route_root_shows_home', async () => {
     const { client } = renderAt('/');
-    expect(await screen.findByText(/Start a demo run/i)).toBeTruthy();
-    expect(client.getRunHealth).not.toHaveBeenCalled(); // empty runId → no observatory health fetch
+    // the S0 RunsHomeScreen-specific New Run CTA (the old Dashboard launcher had none) — distinguishes
+    // S0 from the FV.1 interim Dashboard mount.
+    expect(await screen.findByRole('button', { name: /new run/i })).toBeTruthy();
+    expect(client.getRunHealth).not.toHaveBeenCalled(); // home is not an observatory
   });
 
-  // spec(route-table completeness): an unknown path redirects to home.
+  // spec(route-table completeness): an unknown path redirects to the S0 home.
   it('test_unknown_route_redirects_home', async () => {
     renderAt('/totally/unknown/path');
-    expect(await screen.findByText(/Start a demo run/i)).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /new run/i })).toBeTruthy(); // → S0 home
     expect(screen.getByTestId('loc').textContent).toBe('/');
+  });
+
+  // spec(§12 / FV.2 demo-continuity): /launch interim-mounts the existing Dashboard launcher (NOT a
+  // redirect to /), so the New Run flow reaches a working start-a-run view until FV.3 builds S1.
+  it('test_launch_route_mounts_interim_launcher', async () => {
+    renderAt('/launch');
+    expect(await screen.findByText(/Start a demo run/i)).toBeTruthy();
+    expect(screen.getByTestId('loc').textContent).toBe('/launch'); // not redirected
   });
 
   // spec(§12): the AppShell global chrome (◆ Doppl wordmark + theme toggle) renders on EVERY route.
@@ -130,11 +141,12 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(screen.getByRole('button', { name: /theme/i })).toBeTruthy();
   });
 
-  // spec(§12): starting a run (launcher onStarted) navigates to /runs/:id — no internal state switch.
+  // spec(§12): starting a run (the /launch launcher onStarted) navigates to /runs/:id — no internal
+  // state switch (FV.2: the launcher now lives at /launch, not /).
   it('test_start_run_navigates_to_run_route', async () => {
     const client = fakeClient();
     client.startDemoRun = vi.fn(() => Promise.resolve({ runId: 'run_new' }));
-    renderAt('/', client);
+    renderAt('/launch', client);
     fireEvent.click(await screen.findByLabelText(/freeform prompt/i));
     fireEvent.change(screen.getByLabelText(/problem prompt/i), {
       target: { value: 'logistics under uncertainty' },
@@ -143,13 +155,14 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_new'));
   });
 
-  // spec(§12): clicking a run in the run-list navigates to its replay route (/runs/:id/replay).
+  // spec(§12): clicking a run in the /launch Dashboard run-list navigates to its replay route
+  // (FV.2: the RunListPanel stays reachable via the /launch interim mount).
   it('test_run_list_click_navigates_to_replay', async () => {
     const client = fakeClient();
     client.listRuns = vi.fn(() =>
       Promise.resolve([{ runId: 'run_2', status: 'completed', sequenceThrough: 5 }]),
     ) as RunClient['listRuns'];
-    renderAt('/', client);
+    renderAt('/launch', client);
     fireEvent.click((await screen.findByText('run_2')).closest('button')!);
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_2/replay'));
   });
