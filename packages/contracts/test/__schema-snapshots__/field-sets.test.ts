@@ -101,7 +101,9 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     //      model; deep-telemetry of GENERATION output, rule-#6 judge/scoring anchor byte-identical).
     // 7→8 (frontend-v2 FB.4 diverge/converge dial: +samplingParams{temperature?} on ModelGatewayRequest +
     //      LlmCallTelemetry; GENERATION sampling only, rule-#6 judge/scoring anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+    // 8→9 (frontend-v2 FB.8 judge per-axis rationale: +OPTIONAL axisRationales on JudgeResult — explanatory
+    //      judge output only; acceptance stays runner-computed, rule-#6 judge/scoring anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(9);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {

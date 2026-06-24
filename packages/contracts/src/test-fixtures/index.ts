@@ -361,6 +361,14 @@ export const validJudgeResult: JudgeResult = {
   rubricPolicyVersion: 'judge-v1',
   providerMeta: validProviderMeta,
   langfuseTraceId: 'trace_judge_1',
+  // FB.8 (sv8→9) — OPTIONAL per-axis one-line rationale (explanatory output; never feeds acceptance).
+  axisRationales: {
+    grounding: 'Cites two prior-art sources but one is tangential.',
+    novelty: 'Cross-domain transplant not seen in the surveyed space.',
+    feasibility: 'Buildable, though the materials cost is unaddressed.',
+    falsification_survival: 'Survives the obvious counterexample; edge cases untested.',
+    subtype_check_pass: 'Meets the cross_domain_transfer subtype contract.',
+  },
 };
 
 /**

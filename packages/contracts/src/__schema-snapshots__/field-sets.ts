@@ -195,6 +195,7 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'rubricPolicyVersion',
     'providerMeta',
     'langfuseTraceId',
+    'axisRationales',
   ],
   // frontend-v2 FB.6 — deep-telemetry capture of a successful generation LLM call (high-traffic model);
   // FB.4 (sv7→8) added samplingParams (the executed dial temperature).

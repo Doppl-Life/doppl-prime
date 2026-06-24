@@ -29,7 +29,13 @@
  *    `SamplingParams`) on `ModelGatewayRequest` (the dial sets `temperature` on the population_generator
  *    request ONLY — rule #6 SOLO) + on `LlmCallTelemetry` (records the EXECUTED temperature, replay-read
  *    rule #7). GENERATION sampling only — the rule-#6 judge/scoring anchor is BYTE-IDENTICAL across this bump.
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–7 envelopes still validate (the
+ *  - 8 → 9 (frontend-v2 FB.8, judge per-axis rationale amendment): +OPTIONAL `axisRationales` (a partial
+ *    `FinalJudgeAxis`→string record) on `JudgeResult` — the held-out judge's per-axis one-line EXPLANATION,
+ *    emitted alongside its scores and surfaced in the UI (FV.5b). EXPLANATORY OUTPUT only: `acceptance` stays
+ *    runner-computed from `axisScores` × the immutable rubric weights, and the rule-#6 anchor (`ScoringPolicy`
+ *    / `FinalJudgeRubric` / `FinalJudgeAxis`, incl. `immutableToAgents`) is BYTE-IDENTICAL across this bump —
+ *    the rationale explains the floor, it cannot move it.
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–8 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;

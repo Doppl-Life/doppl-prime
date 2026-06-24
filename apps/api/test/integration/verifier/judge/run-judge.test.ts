@@ -116,3 +116,70 @@ describe('runJudge — judge.review_started→judge.reviewed pair through the re
     expect(types).not.toContain('judge.reviewed');
   });
 });
+
+// FB.8 — the held-out judge emits a per-axis one-line rationale ALONGSIDE its scores; the runner persists it
+// into JudgeResult.axisRationales WHEN the model supplied all 5, omits it otherwise — and in BOTH cases the
+// acceptance + axisScores are byte-identical to the no-rationale run (rule #6: the rationale explains the
+// floor, it never moves it; acceptance stays runner-computed from axisScores × the immutable rubric weights).
+const FULL_RATIONALES = {
+  grounding: 'cites two prior-art sources',
+  novelty: 'cross-domain transplant not seen in the surveyed space',
+  feasibility: 'buildable with off-the-shelf parts',
+  falsification_survival: 'survives the obvious counterexample',
+  subtype_check_pass: 'meets the cross_domain_transfer subtype contract',
+};
+
+describe('runJudge — FB.8 per-axis rationale (explanatory output; acceptance unaffected, rule #6)', () => {
+  test('test_fb8_persists_axis_rationales_when_complete', async () => {
+    const runId = 'run-judge-fb8-complete';
+    const judged = await runJudge({
+      gateway: judgeGateway({ ...PER_AXIS_OUTPUT, rationales: FULL_RATIONALES }),
+      store,
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: runContext(runId),
+    });
+    // acceptance + scores UNCHANGED by the rationale (rule #6 — the score is still runner-computed).
+    expect(judged?.acceptance).toBe(EXPECTED_ACCEPTANCE);
+    expect(judged?.axisScores).toEqual(PER_AXIS_OUTPUT);
+    // the rationale is persisted in the authoritative judge.reviewed payload.
+    const reviewed = (await store.readByRun(runId)).find((r) => r.type === 'judge.reviewed');
+    const parsed = JudgeResult.safeParse(reviewed?.payload);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.axisRationales).toEqual(FULL_RATIONALES);
+      expect(parsed.data.acceptance).toBe(EXPECTED_ACCEPTANCE);
+    }
+  });
+
+  test('test_fb8_omits_rationales_when_partial', async () => {
+    // a partial rationale set (model dropped an axis) → the optional field is OMITTED (never a partial,
+    // exhaustive-record rejection that would lose the score); acceptance + scores unchanged.
+    const runId = 'run-judge-fb8-partial';
+    const { subtype_check_pass: _drop, ...partial } = FULL_RATIONALES;
+    void _drop;
+    const judged = await runJudge({
+      gateway: judgeGateway({ ...PER_AXIS_OUTPUT, rationales: partial }),
+      store,
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: runContext(runId),
+    });
+    expect(judged?.acceptance).toBe(EXPECTED_ACCEPTANCE);
+    expect(judged?.axisRationales).toBeUndefined();
+    const reviewed = (await store.readByRun(runId)).find((r) => r.type === 'judge.reviewed');
+    expect(JudgeResult.safeParse(reviewed?.payload).success).toBe(true);
+  });
+
+  test('test_fb8_omits_rationales_when_absent', async () => {
+    // no rationales at all (pre-FB.8 model) → axisRationales undefined; acceptance + scores byte-identical.
+    const runId = 'run-judge-fb8-absent';
+    const judged = await runJudge({
+      gateway: judgeGateway(PER_AXIS_OUTPUT),
+      store,
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: runContext(runId),
+    });
+    expect(judged?.axisRationales).toBeUndefined();
+    expect(judged?.acceptance).toBe(EXPECTED_ACCEPTANCE);
+    expect(judged?.axisScores).toEqual(PER_AXIS_OUTPUT);
+  });
+});

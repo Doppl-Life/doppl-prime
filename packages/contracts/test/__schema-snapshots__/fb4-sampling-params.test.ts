@@ -55,9 +55,10 @@ describe('FB.4 — samplingParams amendment (sv7→8) (spec §4 / §6)', () => {
     ).toBe(false);
   });
 
-  it('test_current_schema_version_is_8', () => {
-    // spec(§4): the deliberate monotonic bump 7→8, pinned by literal; old envelopes still validate.
-    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+  it('test_current_schema_version_at_least_8_since_fb4', () => {
+    // spec(§4): the FB.4 dial amendment landed AT OR ABOVE sv8 (the current-pin lives in the canonical
+    // spots + the latest amendment's test — fb0/fb6 precedent); old envelopes (incl. v8) still validate.
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(8);
     for (const v of [1, 6, 7, 8]) {
       expect(
         RunEventEnvelope.safeParse({ ...validRunEventEnvelope, schemaVersion: v }).success,
