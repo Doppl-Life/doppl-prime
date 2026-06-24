@@ -13,7 +13,8 @@ shared, precise vocabulary the team can build against. Add to it whenever a good
 - **doppl** — the amorphous leaf: the unlock / solution / idea. Our name for it.
 - **Pepsi** — the *metaphor* for one-vs-many doppls (the perfect Pepsi vs. the perfect Pepsis). Not a
   schema term.
-- **seed** — the case study; the inciting agenome everything grows from.
+- **seed** — an original, hand-planted case study; the inciting agenome a chain grows from, with no parent (`prev_id: null`).
+- **reseed / forest loop** — a doppl turned into a fresh case study to start a new island, carrying `prev_id: [[doppl]]`. The one back-edge in the graph; it lets a lineage grow past the three-stage spine.
 
 ## Discovery & stock
 

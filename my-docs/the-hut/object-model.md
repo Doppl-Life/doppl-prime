@@ -13,6 +13,12 @@ name, `stage: case_study`, `next: problem_recovery`, and the case itself. No Tra
 just a start; it does not call discovery. Seeding it into the kernel is what turns it into the
 evolutionary crucible of the later stages.
 
+A case study is usually planted by hand — an original **seed** with no parent (`prev_id: null`). It can
+also be **reseeded** from a doppl: an unlock becomes the seed of a new island, carrying
+`prev_id: [[doppl]]`. That back-edge is the **forest loop** — the only edge that points from a leaf
+back to a new root — and it is how a lineage grows past the three-stage spine. A reseeded case study is
+still an unscored start; only its `prev_id` differs from a hand-planted seed.
+
 ## Stages
 
 1. `case_study` — the seed.

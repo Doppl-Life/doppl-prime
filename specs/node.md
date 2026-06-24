@@ -121,7 +121,7 @@ The spine is fixed:
 case_study → problem_recovery → doppl → (the human's action)
 ```
 
-No `doppl` without a recovered problem. No problem without a case study. A problem may produce more than one `doppl`; each is its own node.
+No `doppl` without a recovered problem. No problem without a case study. A problem may produce more than one `doppl`; each is its own node. A `doppl` may also be **reseeded** as a fresh `case_study` to start a new island — the one back-edge in the graph, carried by `prev_id`, which does not change the three-stage spine.
 
 ### Type contract
 
@@ -224,8 +224,10 @@ type HeadlineSection = MarkdownSection<HeadlineHeading, string>;
 
 `prev_id` links a node to its parent. It is the first body line after the headline, so a reader walks
 the chain without opening frontmatter. The value is an Obsidian wikilink to the parent `SlugId`
-(`[[slug-id]]`) so the graph resolves; the case study root has no parent and renders `prev_id: null`.
-Lineage lives in the body, never frontmatter, because Obsidian does not resolve `[[...]]` inside YAML.
+(`[[slug-id]]`) so the graph resolves. An original **seed** case study has no parent and renders
+`prev_id: null`; a case study **reseeded** from a doppl (the forest loop) carries `prev_id: [[doppl-id]]`
+like any other node. Lineage lives in the body, never frontmatter, because Obsidian does not resolve
+`[[...]]` inside YAML.
 
 ### Markdown shape
 

@@ -8,7 +8,7 @@ It owns the **edges**, not the nodes. The node shape is owned by [`node.md`](./n
 
 This contract covers **growth-stage compiled nodes** (`problem_recovery`, `doppl`): the nodes the compiler renders from a `RunTrace`.
 
-The seed (`case_study`) is **authored, not compiled**. It has no run, no trace, and no projection. Its fields (`id`, `name`, `next`) come from the author, and it renders `prev_id: null` in the body. Everything below is about what the compiler may do, so it does not apply to the seed.
+The seed (`case_study`) is **authored, not compiled**. It has no run, no trace, and no projection. Its fields (`id`, `name`, `next`) come from the author. An original seed renders `prev_id: null`; a case study **reseeded** from a doppl carries `prev_id: [[doppl-id]]` but is still not engine-compiled — it is spawned from a leaf, not bred by a run. Everything below is about what the compiler may do, so it does not apply to the case study.
 
 ## Provenance vocabulary
 
