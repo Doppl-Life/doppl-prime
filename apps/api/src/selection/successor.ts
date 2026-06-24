@@ -124,6 +124,29 @@ export async function assembleSuccessor(
     for (let i = 0; i < spawns; i += 1) schedule.push(anchor);
   }
 
+  // DEFENSE-IN-DEPTH (anti-extinction): a NON-EMPTY pool whose heuristic weights are all zero — e.g.
+  // every parent's novelty degraded to 0 (no `novelty.scored`), or a wholly zero-fitness generation —
+  // makes `allocate` return all-zero spawns, so the schedule above is EMPTY and the loop below would
+  // produce NO offspring AND emit NO event (a SILENT extinction: the run dies after this generation with
+  // no reproduction/abort marker — the live demo-blocker). The pool is non-empty here, so this is NOT the
+  // 0-eligible-parents case (`reproduction_aborted_insufficient_parents`, which `reproduce` owns per slot
+  // and the kernel terminalizes as `survivors:0`) — the correct outcome is to STILL reproduce. Anchor the
+  // single most-deserving parent (best fitness; tie-break canonical id asc — deterministic, so replay is
+  // byte-faithful, rule #7) for ONE slot, clamped to the remaining headroom (rule #1 — never raises a cap;
+  // `remainingPopulation < 1` keeps the schedule empty, deferring to the kernel's survivors:0 terminal).
+  if (schedule.length === 0 && input.remainingPopulation >= 1) {
+    const fallbackAnchor = [...pool].sort((a, b) =>
+      b.fitness !== a.fitness
+        ? b.fitness - a.fitness
+        : a.agenome.id < b.agenome.id
+          ? -1
+          : a.agenome.id > b.agenome.id
+            ? 1
+            : 0,
+    )[0];
+    if (fallbackAnchor !== undefined) schedule.push(fallbackAnchor);
+  }
+
   const population: SuccessorChild[] = [];
   for (const [slot, anchor] of schedule.entries()) {
     const partners: SuccessorParent[] =

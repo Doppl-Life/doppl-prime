@@ -123,7 +123,13 @@ async function seedScored(
     id: `${candidateId}-fit`,
     candidateId,
     total: w.total,
-    components: { ...validFitnessScore.components, energy_efficiency: w.energyEff },
+    // Mirror production: the scorer folds the CONSUMED novelty into `components.novelty` (the value the
+    // reproduction projection reads); keep the seeded component in sync with the seeded novelty.scored.
+    components: {
+      ...validFitnessScore.components,
+      novelty: w.novelty,
+      energy_efficiency: w.energyEff,
+    },
   };
   await append(runId, 'fitness.scored', 'selection_controller', fit, { candidateId });
   const nov: NoveltyScore = {
@@ -135,6 +141,52 @@ async function seedScored(
     score: w.novelty,
   };
   await append(runId, 'novelty.scored', 'selection_controller', nov, { candidateId });
+}
+
+// Seed one scored candidate whose NOVELTY DEGRADED: candidate.created + fitness.scored (with a NON-ZERO
+// `components.novelty` — the degraded lexical estimate the scorer still folds into fitness) + a
+// `novelty_scoring_degraded` marker, but NO `novelty.scored` event. This is the live-run shape when the
+// embedding provider fails (only novelty degrades; generation/critic/judge/fitness all succeed) — the
+// reproduction allocator must still see a non-zero novelty (read from the fitness component) so the
+// lineage reproduces instead of the run going extinct after gen 0 (the demo-blocker).
+async function seedScoredDegraded(
+  runId: string,
+  agenomeId: string,
+  candidateId: string,
+  w: { total: number; noveltyComponent: number; energyEff: number },
+): Promise<void> {
+  const cand: CandidateIdea = {
+    ...validCandidateIdeaCrossDomain,
+    id: candidateId,
+    runId,
+    generationId: GEN,
+    agenomeId,
+  };
+  await append(runId, 'candidate.created', 'runtime', cand, { agenomeId, candidateId });
+  const fit: FitnessScore = {
+    ...validFitnessScore,
+    id: `${candidateId}-fit`,
+    candidateId,
+    total: w.total,
+    components: {
+      ...validFitnessScore.components,
+      novelty: w.noveltyComponent,
+      energy_efficiency: w.energyEff,
+    },
+  };
+  await append(runId, 'fitness.scored', 'selection_controller', fit, { candidateId });
+  await append(
+    runId,
+    'novelty_scoring_degraded',
+    'selection_controller',
+    {
+      candidateId,
+      reason: 'embedding_response_rejected',
+      method: 'lexical_jaccard',
+      estimatedScore: w.noveltyComponent,
+    },
+    { candidateId },
+  );
 }
 
 // A fake fusion-synthesis provider injected into the REAL createGateway (LESSONS §24): returns a valid
@@ -323,6 +375,60 @@ describe('createReproduceSeam — selection reproduction over the real persisted
     const tie = projectSuccessorParents([parent(tieRun, 'agn_1')], await store.readByRun(tieRun));
     expect(tie[0]!.novelty).toBe(0.1);
     expect(tie[0]!.noveltyVector).toEqual([1, 0, 0]);
+  });
+
+  // spec(§8) — DEGRADED-NOVELTY projection: a parent whose novelty came via `novelty_scoring_degraded`
+  // (no `novelty.scored` event) but whose `fitness.scored.components.novelty > 0` must project a NON-ZERO
+  // `novelty` (read from the fitness component, populated on both happy + degraded paths). Before the fix
+  // the projection sourced novelty ONLY from `novelty.scored` → degraded parents got novelty 0, zeroing
+  // the allocation weight (fitness × 0 × energyEff) → 0 spawns → silent extinction. The embedding vector
+  // is absent on degrade (→ noveltyVector undefined → parentDistance treats as max-distant).
+  test('test_degraded_novelty_projects_nonzero_from_fitness_component', async () => {
+    const runId = 'repro-degraded-projection';
+    await seedScoredDegraded(runId, 'agn_1', 'cand_1', {
+      total: 1.72,
+      noveltyComponent: 1,
+      energyEff: 0.019,
+    });
+    const projected = projectSuccessorParents(
+      [parent(runId, 'agn_1')],
+      await store.readByRun(runId),
+    );
+    expect(projected).toHaveLength(1);
+    expect(projected[0]!.fitness).toBe(1.72);
+    expect(projected[0]!.novelty).toBe(1); // from components.novelty, NOT 0 (no novelty.scored event)
+    expect(projected[0]!.energyEfficiency).toBe(0.019);
+    expect(projected[0]!.noveltyVector).toBeUndefined(); // degraded → no embedding vector
+  });
+
+  // spec(§8/§3) — DEGRADED-NOVELTY end-to-end (the live demo-blocker): two parents whose novelty degraded
+  // (no `novelty.scored`, but `components.novelty > 0`) MUST still reproduce — `agenome.fused` is emitted,
+  // never a silent eventless successor. Before the fix both parents projected novelty 0 → allocate
+  // returned all-zero spawns → assembleSuccessor emitted NOTHING → gen N+1 empty → run dies after gen 0.
+  test('test_degraded_novelty_still_reproduces', async () => {
+    const runId = 'repro-degraded-reproduces';
+    await seedScoredDegraded(runId, 'agn_1', 'cand_1', {
+      total: 2.0,
+      noveltyComponent: 1,
+      energyEff: 0.019,
+    });
+    await seedScoredDegraded(runId, 'agn_2', 'cand_2', {
+      total: 1.667,
+      noveltyComponent: 1,
+      energyEff: 0.019,
+    });
+    const scoredEvents = await store.readByRun(runId);
+    const seam = createReproduceSeam(
+      buildDeps(runId, fusionGateway('merged child prompt'), { maxPopulation: 4 }),
+    );
+    await seam(
+      reproduceCtx(runId, [parent(runId, 'agn_1'), parent(runId, 'agn_2')], scoredEvents, 'fusion'),
+    );
+    const rows = await store.readByRun(runId);
+    const offspring = rows.filter(
+      (r) => r.type === 'agenome.fused' || r.type === 'agenome.reproduced',
+    );
+    expect(offspring.length).toBeGreaterThan(0);
   });
 
   // spec(§8) rule #1 — allocation is a hint clamped to maxPopulation; the successor population never

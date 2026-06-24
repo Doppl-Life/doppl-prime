@@ -39,6 +39,7 @@ export interface ReproduceSeamDeps {
 interface BestCandidate {
   candidateId: string;
   total: number;
+  novelty: number;
   energyEfficiency: number;
   sequence: number;
 }
@@ -48,7 +49,17 @@ interface BestCandidate {
  * `scoredEvents` (rule #7 — read back, never recompute). For each parent agenome: its BEST candidate
  * (highest `fitness.scored.total`, tie-break LOWEST sequence — deterministic, mirrors LESSONS §68)
  * supplies the fitness, energy-efficiency (`fitness.scored.components.energy_efficiency`), novelty
- * (`NoveltyScore.score`) + novelty vector (`NoveltyScore.vector`). A degraded-novelty best candidate
+ * (`fitness.scored.components.novelty`) + novelty vector (`NoveltyScore.vector` from `novelty.scored`).
+ *
+ * The novelty VALUE is read from the persisted FITNESS COMPONENT (`components.novelty`), not from
+ * `novelty.scored`: the scorer populates `components.novelty` on BOTH the happy path AND the degrade path
+ * (the lexical estimate — score-fitness.ts `noveltyEntry`), whereas `novelty.scored` is emitted ONLY on
+ * the happy path. Sourcing it from `novelty.scored` made a degraded-novelty parent (embedding failed →
+ * `novelty_scoring_degraded`, no `novelty.scored`) project `novelty: 0`, which zeroed its allocation
+ * weight (fitness × 0 × energyEff) and — when ALL parents degraded — collapsed the whole pool to
+ * `totalWeight 0` → 0 spawns → a SILENT extinction after gen 0 (the live demo-blocker). Reading novelty
+ * from the same component the scorer used keeps reproduction alive whenever fitness scored at all. The
+ * embedding VECTOR stays `novelty.scored`-only (it has no lexical fallback): a degraded best candidate
  * yields `noveltyVector: undefined` → `parentDistance` treats it as max-distant (never NaN/throw). A
  * parent with no scored candidate is skipped (no heuristic basis).
  */
@@ -58,10 +69,10 @@ export function projectSuccessorParents(
 ): SuccessorParent[] {
   // candidateId → agenomeId (from candidate.created — fitness.scored carries only candidateId).
   const candidateAgenome = new Map<string, string>();
-  // candidateId → best-by-lowest-sequence fitness {total, energyEfficiency, sequence}.
+  // candidateId → best-by-lowest-sequence fitness {total, novelty, energyEfficiency, sequence}.
   const fitnessByCandidate = new Map<string, BestCandidate>();
-  // candidateId → novelty {score, vector}.
-  const noveltyByCandidate = new Map<string, { score: number; vector: readonly number[] }>();
+  // candidateId → embedding vector (from novelty.scored — happy-path only; absent on degrade).
+  const vectorByCandidate = new Map<string, readonly number[]>();
 
   for (const row of scoredEvents) {
     if (row.type === 'candidate.created') {
@@ -75,18 +86,18 @@ export function projectSuccessorParents(
         fitnessByCandidate.set(row.candidateId, {
           candidateId: row.candidateId,
           total: parsed.data.total,
+          // novelty VALUE from the fitness component — populated on BOTH the happy + degrade paths (see
+          // the function doc): the allocation weight survives a degraded-novelty generation.
+          novelty: parsed.data.components.novelty ?? 0,
           energyEfficiency: parsed.data.components.energy_efficiency ?? 0,
           sequence: row.sequence,
         });
       }
     } else if (row.type === 'novelty.scored' && row.candidateId !== null) {
       const parsed = NoveltyScore.safeParse(row.payload);
-      if (parsed.success) {
-        noveltyByCandidate.set(row.candidateId, {
-          score: parsed.data.score,
-          vector: parsed.data.vector,
-        });
-      }
+      // Capture ONLY the embedding vector (the value rides the fitness component above) — the vector has
+      // no lexical fallback, so a degraded candidate has none → parentDistance treats it as max-distant.
+      if (parsed.success) vectorByCandidate.set(row.candidateId, parsed.data.vector);
     }
   }
 
@@ -106,15 +117,16 @@ export function projectSuccessorParents(
       }
     }
     if (best === undefined) continue; // no scored candidate → no heuristic basis (skip).
-    const novelty = noveltyByCandidate.get(best.candidateId);
+    const vector = vectorByCandidate.get(best.candidateId);
     // Omit noveltyVector when novelty degraded (exactOptionalPropertyTypes — never assign `undefined`);
     // `parentDistance` treats a missing vector as max-distant.
-    const vectorPart = novelty === undefined ? {} : { noveltyVector: novelty.vector };
+    const vectorPart = vector === undefined ? {} : { noveltyVector: vector };
     result.push({
       agenome: parent,
       ...vectorPart,
       fitness: best.total,
-      novelty: novelty?.score ?? 0,
+      // novelty VALUE from the fitness component (survives a degraded-novelty generation — see the doc).
+      novelty: best.novelty,
       energyEfficiency: best.energyEfficiency,
     });
   }
