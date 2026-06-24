@@ -66,6 +66,7 @@ describe('runClient — read-only REST seam', () => {
     expect(Object.keys(client).sort()).toEqual(
       [
         'getCandidate',
+        'getCapMaxima',
         'getEvents',
         'getFallbackLadder',
         'getLineage',

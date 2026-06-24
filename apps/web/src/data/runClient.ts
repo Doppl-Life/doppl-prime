@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { CandidateIdea, LineageGraphProjection, ModelRoute, RunEventEnvelope } from './contracts';
+import {
+  CandidateIdea,
+  LineageGraphProjection,
+  ModelRoute,
+  RunCaps,
+  RunEventEnvelope,
+} from './contracts';
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
@@ -73,10 +79,20 @@ export interface RunClient {
    * the WEB-LOCAL `RungDescriptor` mirror (api runtime config, no frozen contract — parallel to ProblemSet).
    */
   getFallbackLadder(): Promise<RungDescriptor[]>;
+  /**
+   * GET /config/caps (PD.18) — the API's validated cap maxima (`defaultConfig.caps`, the ceiling
+   * `overCapField` enforces). The RunConfigPanel clamps its inputs to this REAL ceiling (fixes the
+   * cap-default 422). Serves the frozen `RunCaps` read-only — no new contract surface.
+   */
+  getCapMaxima(): Promise<RunCaps>;
 }
 
 const RunEventEnvelopeArray = z.array(RunEventEnvelope);
 const ModelRouteArray = z.array(ModelRoute);
+
+// PD.18 — GET /config/caps returns `{ caps }` (the frozen RunCaps, served read-only); the client unwraps
+// `.caps`. WEB-LOCAL wrapper (not an Appendix-A model); the caps value reuses the frozen RunCaps schema.
+const CapMaximaResponse = z.object({ caps: RunCaps });
 
 // PD.15 — WEB-LOCAL response shapes for the API's real REST wrappers (the PD.14 Finding fix, option C).
 // These are web data-client types, NOT Appendix-A models (the dashboard defines no frozen contract).
@@ -179,5 +195,6 @@ export function createRunClient(options: RunClientOptions): RunClient {
       getJson('/runs', StartRunResult, postInit(partial, opts?.idempotencyKey)),
     getFallbackLadder: async () =>
       (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
+    getCapMaxima: async () => (await getJson('/config/caps', CapMaximaResponse)).caps,
   };
 }

@@ -278,4 +278,31 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
       await app.close();
     }
   });
+
+  // PD.18 (§11/§5) — GET /config/caps serves the boot defaultConfig.caps (the SAME maxima overCapField
+  // enforces) so the RunConfigPanel clamps to the real ceiling (fixing the cap-default 422). Read-only.
+  test('test_config_caps_returns_configured_maxima', async () => {
+    const caps = {
+      maxPopulation: 12,
+      maxGenerations: 6,
+      energyBudget: 1000,
+      maxSpawnDepth: 4,
+      maxToolCalls: 80,
+      wallClockTimeoutMs: 480_000,
+    };
+    const app = buildServer({
+      store,
+      db,
+      defaultConfig: { ...DEFAULT_RUN_CONFIG, caps },
+      newId: () => 'id-caps',
+    });
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/config/caps' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ caps });
+    } finally {
+      await app.close();
+    }
+  });
 });

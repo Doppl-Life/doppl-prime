@@ -69,6 +69,8 @@ function fakeClient(): RunClient {
     startDemoRun: vi.fn(),
     // PD.12 — the shell mounts FallbackLadderPanel, which fetches the rung descriptors on mount.
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
+    // PD.18 — RunConfigPanel fetches the cap maxima on mount; reject → static-fallback (no state update).
+    getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
   } as unknown as RunClient;
 }
 

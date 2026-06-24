@@ -60,9 +60,42 @@ export const DEFAULT_FORM: RunConfigFormValues = {
 
 const SUBTYPE_KEYS = ['cross_domain_transfer', 'zeitgeist_synthesis'] as const;
 
-/** Lowering-only clamp: never returns a value above the ceiling (nor below 1). */
+/** Lowering-only clamp against the STATIC ceiling: never returns above the ceiling (nor below 1). */
 export function clampCap(key: CapKey, value: number): number {
   return Math.max(1, Math.min(value, CAP_CEILING[key]));
+}
+
+/**
+ * PD.18 — map the API's FETCHED cap maxima (the frozen `RunCaps` from `defaultConfig.caps`) to the
+ * form-caps ceiling shape: the contract's `wallClockTimeoutMs` (ms) → the form's `wallClockMinutes`.
+ * The RunConfigPanel fetches `/config/caps` + clamps to this REAL ceiling (a static mirror drifts above
+ * a low `.env` ceiling → the cap-default 422). The kernel/route stays the sole cap authority (rule #1).
+ */
+export function capCeilingFromRunCaps(caps: RunCaps): RunConfigFormValues['caps'] {
+  return {
+    maxPopulation: caps.maxPopulation,
+    maxGenerations: caps.maxGenerations,
+    energyBudget: caps.energyBudget,
+    maxSpawnDepth: caps.maxSpawnDepth,
+    maxToolCalls: caps.maxToolCalls,
+    wallClockMinutes: Math.floor(caps.wallClockTimeoutMs / 60_000),
+  };
+}
+
+/** PD.18 — lower each form cap to `[1, ceiling]` against a (fetched or static) ceiling (lowering-only). */
+export function clampCapsToCeiling(
+  caps: RunConfigFormValues['caps'],
+  ceiling: RunConfigFormValues['caps'],
+): RunConfigFormValues['caps'] {
+  const lower = (key: CapKey): number => Math.max(1, Math.min(caps[key], ceiling[key]));
+  return {
+    maxPopulation: lower('maxPopulation'),
+    maxGenerations: lower('maxGenerations'),
+    energyBudget: lower('energyBudget'),
+    maxSpawnDepth: lower('maxSpawnDepth'),
+    maxToolCalls: lower('maxToolCalls'),
+    wallClockMinutes: lower('wallClockMinutes'),
+  };
 }
 
 /** Map the form to a RunConfig shape (wallClockMinutes → wallClockTimeoutMs). No validation. */
