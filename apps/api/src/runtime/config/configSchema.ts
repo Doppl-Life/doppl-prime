@@ -36,10 +36,31 @@ export const DEFAULT_CAPS: RunCaps = {
   wallClockTimeoutMs: 600_000,
 };
 
-/** Default ScoringPolicy — structure frozen; weight VALUES are the deferred-open piece (§8). */
+/**
+ * Default ScoringPolicy — structure frozen; weight VALUES are the deferred-open piece (§8).
+ *
+ * KEY SAFETY RULE #6 (the held-out judge is the bedrock anchor): the weight KEYS are the REAL fitness
+ * component keys the scorer produces (`novelty`, `energy_efficiency`, `critic_scores`, `subtype_check`,
+ * `judge_acceptance`) — the prior `mvp-1` keys (`grounding`/`feasibility`/`falsification`) matched NO
+ * produced component, so `judge_acceptance` + `critic_scores` were weighted by NOTHING and the held-out
+ * judge was decorative. `judge_acceptance` carries the DOMINANT weight (3) so the immutable judge LEADS
+ * selection pressure (the floor the organism cannot lift); `critic_scores`/`novelty`/`subtype_check` are
+ * full evidence signals (1); `energy_efficiency` is a modest tiebreak (0.5 — kept small so "do nothing →
+ * max efficiency" cannot dominate, mirroring the rubric's 0.1 energy tiebreak philosophy). The scorer
+ * brings every component onto [0,1] before weighting and emits a normalized weighted AVERAGE in [0,1].
+ *
+ * Immutability-via-versioning (rule #6): bumped `mvp-1` → `mvp-2` so the weight change is explicit and
+ * recorded — every FitnessScore produced under it carries `policyVersion: 'mvp-2'`.
+ */
 export const DEFAULT_SCORING_POLICY: ScoringPolicy = {
-  version: 'mvp-1',
-  weights: { grounding: 1, novelty: 1, feasibility: 1, falsification: 1, subtype_check: 1 },
+  version: 'mvp-2',
+  weights: {
+    novelty: 1,
+    energy_efficiency: 0.5,
+    critic_scores: 1,
+    subtype_check: 1,
+    judge_acceptance: 3,
+  },
 };
 
 /** Default per-run configuration (the `defaults` layer for `validateRunConfig`). */
@@ -48,7 +69,9 @@ export const DEFAULT_RUN_CONFIG: Record<string, unknown> = {
   enabledSubtypes: ['cross_domain_transfer', 'zeitgeist_synthesis'],
   caps: DEFAULT_CAPS,
   modelProfile: 'mvp',
-  scoringPolicyVersion: 'mvp-1',
+  // Coherent with DEFAULT_SCORING_POLICY.version (the run's scoring-policy version selector) — bumped
+  // mvp-1 → mvp-2 alongside the policy weight fix (rule #6 immutability-via-versioning).
+  scoringPolicyVersion: 'mvp-2',
   rngSeed: 42,
 };
 

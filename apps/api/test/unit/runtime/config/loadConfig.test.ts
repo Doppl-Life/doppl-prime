@@ -2,6 +2,14 @@ import { describe, expect, test } from 'vitest';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import type { AppConfig, LoadConfigInput } from '../../../../src/runtime/config/loadConfig';
 import { DEFAULT_COST_MAP } from '../../../../src/runtime/energy/costMap';
+import { DEFAULT_SCORING_POLICY } from '../../../../src/runtime/config/configSchema';
+import {
+  CRITIC_SCORES_KEY,
+  ENERGY_EFFICIENCY_KEY,
+  JUDGE_ACCEPTANCE_KEY,
+  NOVELTY_KEY,
+  SUBTYPE_CHECK_KEY,
+} from '../../../../src/selection';
 
 /**
  * P3.1 boot config loader (ARCHITECTURE.md §5/§15/§14, KEY SAFETY RULE #4 credential boundary).
@@ -50,6 +58,54 @@ describe('loadConfig — valid composition + immutability (§5)', () => {
     expect(() => {
       (cfg.caps as { maxPopulation: number }).maxPopulation = 999;
     }).toThrow();
+  });
+});
+
+/**
+ * BUG-A — DEFAULT_SCORING_POLICY must weight the REAL fitness component keys (rule #6 — the held-out
+ * judge is the bedrock anchor). Pre-fix the weights keyed on grounding/feasibility/falsification (which
+ * NO component produces), so judge_acceptance + critic_scores were weighted by NOTHING → the judge was
+ * decorative. The fix sets the weight keys to the real component keys and bumps version mvp-1 → mvp-2
+ * (immutability-via-versioning — the change is explicit + recorded).
+ */
+describe('DEFAULT_SCORING_POLICY — real component keys + version bump (rule #6, BUG-A)', () => {
+  const REAL_COMPONENT_KEYS = [
+    NOVELTY_KEY,
+    ENERGY_EFFICIENCY_KEY,
+    CRITIC_SCORES_KEY,
+    SUBTYPE_CHECK_KEY,
+    JUDGE_ACCEPTANCE_KEY,
+  ];
+
+  // the held-out judge + critics MUST be weighted > 0 — they actually count now.
+  test('judge_and_critics_are_weighted', () => {
+    expect(DEFAULT_SCORING_POLICY.weights[JUDGE_ACCEPTANCE_KEY]).toBeGreaterThan(0);
+    expect(DEFAULT_SCORING_POLICY.weights[CRITIC_SCORES_KEY]).toBeGreaterThan(0);
+  });
+
+  // every weight key is a REAL component key (no phantom grounding/feasibility/falsification keys that
+  // match no produced component) — so no weight is spent on nothing.
+  test('weight_keys_are_exactly_the_real_component_keys', () => {
+    expect(Object.keys(DEFAULT_SCORING_POLICY.weights).sort()).toEqual(
+      [...REAL_COMPONENT_KEYS].sort(),
+    );
+  });
+
+  // the held-out judge is the DOMINANT anchor (rule #6 — the floor the organism cannot lift): its weight
+  // is the single largest, so judge acceptance leads selection pressure.
+  test('judge_acceptance_is_the_dominant_weight', () => {
+    const weights = DEFAULT_SCORING_POLICY.weights;
+    const judge = weights[JUDGE_ACCEPTANCE_KEY]!;
+    for (const key of REAL_COMPONENT_KEYS) {
+      if (key === JUDGE_ACCEPTANCE_KEY) continue;
+      expect(judge).toBeGreaterThanOrEqual(weights[key]!);
+    }
+  });
+
+  // immutability-via-versioning: the policy version is bumped to mvp-2 so the weight change is explicit
+  // and recorded; nothing keys off the old 'mvp-1' literal.
+  test('policy_version_bumped_to_mvp_2', () => {
+    expect(DEFAULT_SCORING_POLICY.version).toBe('mvp-2');
   });
 });
 

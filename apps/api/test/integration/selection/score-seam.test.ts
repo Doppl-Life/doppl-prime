@@ -30,7 +30,16 @@ import {
   type ProviderCallFn,
 } from '../../../src/model-gateway';
 import { createScoreSeam, type CullPolicy, type ScoreSeamDeps } from '../../../src/selection';
+import { CRITIC_SCORE_MAX } from '../../../src/selection/components/critic-scores';
+import { JUDGE_AXIS_MAX_SCORE } from '../../../src/selection/components/judge-acceptance';
 import type { ScoreSeam, SeamContext } from '../../../src/runtime';
+
+// Max acceptance under the test rubric (validFinalJudgeRubric: 5 axes × weight 1) — the scorer divides
+// JudgeResult.acceptance by this to normalize the held-out-judge component onto [0,1].
+const JUDGE_MAX_ACCEPTANCE = validFinalJudgeRubric.axes.reduce(
+  (sum, axis) => sum + JUDGE_AXIS_MAX_SCORE * (validFinalJudgeRubric.weights[axis] ?? 0),
+  0,
+);
 
 /**
  * P5.6/P5.7 score-seam wiring — integration (testcontainers, real PG). `createScoreSeam(deps)` is
@@ -58,7 +67,9 @@ const TEST_POLICY: ScoringPolicy = {
   },
 };
 
-const NO_CULL: CullPolicy = { minFitness: -1 };
+// A policy that culls NOTHING: an enormous spread multiplier pushes the relative threshold to −∞ (no best
+// total falls below it), so the score-path tests that aren't about culling never accidentally cull.
+const NO_CULL: CullPolicy = { relativeStdDevK: Number.POSITIVE_INFINITY, minSurvivors: 2 };
 
 let pool: pg.Pool;
 let db: NodePgDatabase;
@@ -235,8 +246,9 @@ describe('createScoreSeam — selection score path over the real persisted log',
     ]);
   });
 
-  // spec(§7/§8) rule #6 + LESSONS §42/§13 — judge acceptance joins by candidateId, read VERBATIM; a
-  // candidate with no judge.reviewed gets the not-accepted-by-default 0.
+  // spec(§7/§8) rule #6 + LESSONS §42/§13 — judge acceptance joins by candidateId, read VERBATIM then
+  // NORMALIZED to [0,1] (÷ the rubric's max acceptance) for the weighted average; a candidate with no
+  // judge.reviewed gets the not-accepted-by-default 0.
   test('test_judge_acceptance_join_by_candidateId', async () => {
     const runId = 'seam-judge-join';
     const judgeForA: JudgeResult = { ...validJudgeResult, candidateId: 'cand_1', acceptance: 0.82 };
@@ -252,7 +264,10 @@ describe('createScoreSeam — selection score path over the real persisted log',
       ctxFor(runId),
     );
     const rows = await store.readByRun(runId);
-    expect(fitnessOf(rows, 'cand_1').components.judge_acceptance).toBe(0.82);
+    expect(fitnessOf(rows, 'cand_1').components.judge_acceptance).toBeCloseTo(
+      0.82 / JUDGE_MAX_ACCEPTANCE,
+      12,
+    );
     expect(fitnessOf(rows, 'cand_2').components.judge_acceptance).toBe(0);
   });
 
@@ -275,7 +290,8 @@ describe('createScoreSeam — selection score path over the real persisted log',
     await seam([candidate(runId, 'agn_1', 'cand_1', 's1')], ctxFor(runId));
     const fit = fitnessOf(await store.readByRun(runId), 'cand_1');
     expect(fit.components.energy_efficiency).toBeCloseTo(1 / 96, 10);
-    expect(fit.components.critic_scores).toBeCloseTo(3.5, 10);
+    // critic raw value 3.5 → NORMALIZED 3.5 / CRITIC_SCORE_MAX (5) = 0.7 (no raw magnitude in the average).
+    expect(fit.components.critic_scores).toBeCloseTo(3.5 / CRITIC_SCORE_MAX, 10);
     expect(fit.components.subtype_check).toBe(1);
   });
 
@@ -329,25 +345,37 @@ describe('createScoreSeam — selection score path over the real persisted log',
     expect(fitnessOf(rows, 'cand_1').explanation).toContain('estimated');
   });
 
-  // spec(§8) — cull runs once AFTER all candidates are scored: a weak agenome (best total below
-  // cullPolicy.minFitness) is culled with its score snapshot; nothing below threshold → no event.
+  // spec(§8) BUG-B — cull runs once AFTER all candidates are scored, RELATIVE to the generation's fitness
+  // distribution (best total below mean − k·stddev), clamped by the population floor. A generation of 3
+  // eligible agenomes (two strong, one clear weak outlier) culls exactly the outlier with its snapshot; a
+  // tight distribution culls nothing.
   test('test_cull_emits_once_after_all_scored', async () => {
     const runId = 'seam-cull';
-    // Strong agenome: high-confidence critic scores → critic_scores value 5 → total > 1.
-    const strongReview: CriticReview = {
+    // Two strong agenomes (high-confidence critic scores → high total) + one weak (no critic evidence).
+    const strongReview = (candidateId: string): CriticReview => ({
       ...validCriticReview,
-      candidateId: 'cand_strong',
+      candidateId,
       scores: { a: 5, b: 5 },
       confidence: 1,
-    };
-    await seed(runId, 'critic.reviewed', 'critic', strongReview, { candidateId: 'cand_strong' });
+    });
+    await seed(runId, 'critic.reviewed', 'critic', strongReview('cand_s1'), {
+      candidateId: 'cand_s1',
+    });
+    await seed(runId, 'critic.reviewed', 'critic', strongReview('cand_s2'), {
+      candidateId: 'cand_s2',
+    });
     const cands = [
-      candidate(runId, 'agn_strong', 'cand_strong', 's1'),
-      candidate(runId, 'agn_weak', 'cand_weak', 's2'),
+      candidate(runId, 'agn_s1', 'cand_s1', 's1'),
+      candidate(runId, 'agn_s2', 'cand_s2', 's2'),
+      candidate(runId, 'agn_weak', 'cand_weak', 's3'),
     ];
-    const vectors: Record<string, number[]> = { s1: [1, 0, 0], s2: [0, 1, 0] };
-    const gw = embeddingGateway((s) => vectors[s] ?? [0, 0, 1]);
-    const seam = createScoreSeam(buildDeps(runId, gw, { cullPolicy: { minFitness: 1 } }));
+    const vectors: Record<string, number[]> = { s1: [1, 0, 0], s2: [0, 1, 0], s3: [0, 0, 1] };
+    const gw = embeddingGateway((s) => vectors[s] ?? [1, 1, 1]);
+    // relativeStdDevK 0.5 (tighter than default 1) so the clear weak outlier falls below the threshold;
+    // minSurvivors 2 keeps the two strong lineages.
+    const seam = createScoreSeam(
+      buildDeps(runId, gw, { cullPolicy: { relativeStdDevK: 0.5, minSurvivors: 2 } }),
+    );
     await seam(cands, ctxFor(runId));
     const rows = await store.readByRun(runId);
 
@@ -362,25 +390,27 @@ describe('createScoreSeam — selection score path over the real persisted log',
     );
     expect(culledRows[0]!.sequence).toBeGreaterThan(lastFitnessSeq);
 
-    // Nothing below threshold → NO lineage.culled.
+    // A TIGHT distribution (all three similar) → NO lineage.culled.
     const runId2 = 'seam-no-cull';
-    await seed(
-      runId2,
-      'critic.reviewed',
-      'critic',
-      { ...strongReview },
-      { candidateId: 'cand_strong' },
-    );
+    await seed(runId2, 'critic.reviewed', 'critic', strongReview('cand_s1'), {
+      candidateId: 'cand_s1',
+    });
+    await seed(runId2, 'critic.reviewed', 'critic', strongReview('cand_s2'), {
+      candidateId: 'cand_s2',
+    });
+    await seed(runId2, 'critic.reviewed', 'critic', strongReview('cand_s3'), {
+      candidateId: 'cand_s3',
+    });
     const seam2 = createScoreSeam(
-      buildDeps(
-        runId2,
-        embeddingGateway((s) => vectors[s] ?? [0, 0, 1]),
-      ),
+      buildDeps(runId2, embeddingGateway((s) => vectors[s] ?? [1, 1, 1]), {
+        cullPolicy: { relativeStdDevK: 1, minSurvivors: 2 },
+      }),
     );
     await seam2(
       [
-        candidate(runId2, 'agn_strong', 'cand_strong', 's1'),
-        candidate(runId2, 'agn_weak', 'cand_weak', 's2'),
+        candidate(runId2, 'agn_s1', 'cand_s1', 's1'),
+        candidate(runId2, 'agn_s2', 'cand_s2', 's2'),
+        candidate(runId2, 'agn_s3', 'cand_s3', 's3'),
       ],
       ctxFor(runId2),
     );

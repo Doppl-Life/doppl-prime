@@ -310,7 +310,9 @@ describe('createSuccessorThreading — the real nextPopulation hook over real PG
       spawnBudgetDelta: 1,
       toolPermissionAllowlist: ['web_search'],
     };
-    const noCull: CullPolicy = { minFitness: -1 }; // nothing culled → all candidates are eligible parents.
+    // nothing culled → all candidates are eligible parents (an enormous spread multiplier pushes the
+    // relative threshold to −∞, so no best total falls below it).
+    const noCull: CullPolicy = { relativeStdDevK: Number.POSITIVE_INFINITY, minSurvivors: 2 };
 
     await runGenerationLoop({
       runId,

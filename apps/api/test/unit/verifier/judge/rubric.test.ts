@@ -105,4 +105,24 @@ describe('loadJudgeRubric — immutable-anchor load + completeness enforcement (
     expect(DEFAULT_JUDGE_RUBRIC.immutableToAgents).toBe(true);
     expect(Object.isFrozen(DEFAULT_JUDGE_RUBRIC)).toBe(true);
   });
+
+  // BUG-A REGRESSION (rule #6 — the held-out judge rubric is the bedrock anchor, immutable to agents): the
+  // scoring-weights fix (which makes judge_acceptance + critic_scores actually count) MUST NOT touch the
+  // judge rubric. Pin DEFAULT_JUDGE_RUBRIC byte-for-byte: a change here is a change to the immutable floor
+  // the organism cannot lift, and must be a deliberate, reviewed event — never an incidental edit.
+  test('test_default_rubric_byte_identical_immutable_anchor', () => {
+    expect(DEFAULT_JUDGE_RUBRIC).toEqual({
+      axes: ['grounding', 'novelty', 'feasibility', 'falsification_survival', 'subtype_check_pass'],
+      weights: {
+        grounding: 1,
+        novelty: 1,
+        feasibility: 1,
+        falsification_survival: 1,
+        subtype_check_pass: 1,
+        energy_efficiency: 0.1,
+      },
+      policyVersion: 'final-judge-mvp-1',
+      immutableToAgents: true,
+    });
+  });
 });

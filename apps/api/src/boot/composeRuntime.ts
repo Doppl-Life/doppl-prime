@@ -89,11 +89,15 @@ function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
 
 /**
  * MVP boot defaults — `cullPolicy` + `MutationBounds` are NOT yet on `AppConfig` (a config-schema
- * follow-up). `minFitness: 0` is permissive (a fitness total is ≥ 0, so nothing is culled at MVP). The
- * mutation tool allowlist is DERIVED from the seed set's `toolPermissions` union → mutation never invents
- * a tool outside the seeded space (rule alignment; no privilege invention).
+ * follow-up). The cull is RELATIVE to each generation's fitness distribution: an agenome is culled when its
+ * best total falls below `mean − 1·stddev` (`relativeStdDevK: 1`), so clearly-weak lineages are removed but
+ * a tight distribution erodes nothing — the prior `minFitness: 0` never fired (a total is ≥ 0, so nothing
+ * was ever culled). `minSurvivors: 2` is the POPULATION FLOOR: the cull never drops the eligible population
+ * below the 2 parents fusion needs to reproduce (complements the extinction-guard in `successor.ts`). The
+ * mutation tool allowlist is DERIVED from the seed set's `toolPermissions` union → mutation never invents a
+ * tool outside the seeded space (rule alignment; no privilege invention).
  */
-const MVP_CULL_POLICY: CullPolicy = { minFitness: 0 };
+const MVP_CULL_POLICY: CullPolicy = { relativeStdDevK: 1, minSurvivors: 2 };
 
 function mvpMutationBounds(config: AppConfig): MutationBounds {
   const toolPermissionAllowlist = [

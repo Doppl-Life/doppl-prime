@@ -23,11 +23,31 @@ import type { FinalJudgeRubric, JudgeResult } from '@doppl/contracts';
 /** The shared `FitnessScore.components` key for this component — P5.6 composes the value under it. */
 export const JUDGE_ACCEPTANCE_KEY = 'judge_acceptance';
 
+/**
+ * The per-axis maximum score of the held-out-judge rubric (the 0–{@link JUDGE_AXIS_MAX_SCORE} scale).
+ * The 0–5 axis scale is a runtime/scoring concern (lesson §6 — the contract pins SHAPE only), so it is a
+ * single named constant here, mirroring the `judge-call.ts` `0–5` instruction. `acceptance` is the
+ * weighted sum `Σ axisScore·weight`, so the maximum acceptance under a rubric is
+ * `JUDGE_AXIS_MAX_SCORE · Σ(axis weights)` (see {@link judgeAcceptance}'s `maxValue`).
+ */
+export const JUDGE_AXIS_MAX_SCORE = 5;
+
 export interface JudgeAcceptanceResult {
   /** True only when a valid, policy-matched acceptance was read; false for absence / version mismatch. */
   present: boolean;
-  /** `JudgeResult.acceptance` verbatim when present; the neutral 0 (no acceptance evidence) otherwise. */
+  /** `JudgeResult.acceptance` verbatim when present; the neutral 0 (no acceptance evidence) otherwise.
+   * KEY SAFETY RULE #6: this is the judge's measurement read verbatim from the persisted log — NEVER
+   * recomputed or rescaled here. Normalization to [0,1] for the weighted fitness average is the SCORER's
+   * job (P5.6 `score-fitness.ts`), via {@link maxValue} — the verbatim value stays the recorded signal. */
   value: number;
+  /**
+   * The maximum representable acceptance under THIS rubric — `JUDGE_AXIS_MAX_SCORE · Σ(axis weights)` (e.g.
+   * 5 · 5 = 25 for the 5-axis equal-weight MVP rubric). The SCORER divides `value` by `maxValue` to bring
+   * the raw 0–maxValue acceptance onto the [0,1] scale the other fitness components use (the CRITICAL scale
+   * fix — a raw 0–25 acceptance must not dominate the 0–1 components). Always ≥ 0; a degenerate all-zero
+   * rubric weight-sum yields 0 (the scorer treats `maxValue ≤ 0` as "no normalization basis" → component 0).
+   */
+  maxValue: number;
   explanation: string;
   /** The immutable rubric's policyVersion this component validated against. */
   policyVersion: string;
@@ -51,6 +71,20 @@ function assertImmutableRubricLoaded(rubric: FinalJudgeRubric): void {
   }
 }
 
+/**
+ * maxAcceptanceFor — the maximum representable acceptance under `rubric`: every axis at the per-axis max
+ * (`JUDGE_AXIS_MAX_SCORE`) weighted by its rubric weight, mirroring `judge-call.ts`'s `computeAcceptanceMetric`
+ * (iterate AXES only — a non-axis weight like the energy tiebreak is excluded). This is the normalization
+ * basis the scorer divides by — derived from the same immutable rubric, never recomputing the judge's value.
+ */
+function maxAcceptanceFor(rubric: FinalJudgeRubric): number {
+  let max = 0;
+  for (const axis of rubric.axes) {
+    max += JUDGE_AXIS_MAX_SCORE * (rubric.weights[axis] ?? 0);
+  }
+  return max;
+}
+
 export function judgeAcceptance(
   judgeResult: JudgeResult | undefined,
   rubric: FinalJudgeRubric,
@@ -58,12 +92,14 @@ export function judgeAcceptance(
   // Load gate first — a misconfigured immutable anchor fails CLOSED regardless of the result.
   assertImmutableRubricLoaded(rubric);
   const policyVersion = rubric.policyVersion;
+  const maxValue = maxAcceptanceFor(rubric);
 
   // Absence boundary — not accepted by default (no fabricated acceptance).
   if (judgeResult === undefined) {
     return {
       present: false,
       value: 0,
+      maxValue,
       explanation: 'No held-out-judge result for this candidate — not accepted by default.',
       policyVersion,
     };
@@ -74,6 +110,7 @@ export function judgeAcceptance(
     return {
       present: false,
       value: 0,
+      maxValue,
       explanation:
         `Held-out-judge result policyVersion ${judgeResult.rubricPolicyVersion} does not match the ` +
         `immutable rubric policyVersion ${policyVersion} — version mismatch, not accepted.`,
@@ -88,6 +125,7 @@ export function judgeAcceptance(
   return {
     present: true,
     value: judgeResult.acceptance,
+    maxValue,
     explanation:
       `Held-out-judge acceptance ${judgeResult.acceptance} (read verbatim) under rubric policyVersion ` +
       `${judgeResult.rubricPolicyVersion}; per-axis scores: ${axisDetail}.`,
