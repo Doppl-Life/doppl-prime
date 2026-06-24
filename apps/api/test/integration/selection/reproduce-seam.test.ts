@@ -236,6 +236,7 @@ function reproduceCtx(
   parents: Agenome[],
   scoredEvents: Awaited<ReturnType<EventStore['readByRun']>>,
   mode: 'mutation_only' | 'fusion',
+  spawnBudget = 4, // the kernel-computed offspring budget (rule #1); the seam clamps min(this, maxPopulation).
 ): ReproduceContext {
   return {
     runId,
@@ -245,6 +246,7 @@ function reproduceCtx(
     outcomes: NOOP_OUTCOMES,
     scoredEvents,
     mode,
+    spawnBudget,
   };
 }
 
@@ -503,6 +505,7 @@ describe('createReproduceSeam — selection reproduction over the real persisted
       outcomes: NOOP_OUTCOMES,
       scoredEvents,
       mode: 'fusion',
+      spawnBudget: 2,
     });
     const rows = await store.readByRun(runId);
 
@@ -547,6 +550,7 @@ describe('createReproduceSeam — selection reproduction over the real persisted
       outcomes: NOOP_OUTCOMES,
       scoredEvents: await store.readByRun(mutRun),
       mode: 'mutation_only',
+      spawnBudget: 4,
     });
     const mutRows = await store.readByRun(mutRun);
     const mutParents = [{ agenome: mp, noveltyVector: [1, 0, 0] }];

@@ -1258,3 +1258,131 @@ describe('runGenerationLoop (PD.10 commit 2 — generation output validation, §
     expect(fake.appendedTypes()).not.toContain('agenome.failed'); // not rejected
   });
 });
+
+/**
+ * SAFETY-INVARIANT (rule #1) — two runaway-live-run regressions exposed by run 6b714273.
+ *
+ * BUG 1 (population/spawn cap in reproduction): the reproduce seam was handed the FULL `maxPopulation`
+ * every generation regardless of remaining energy headroom — the loop trusted the seam to bound offspring.
+ * The kernel must compute the reproduction spawn budget = `min(maxPopulation, remaining-energy headroom)`
+ * and pass it to the seam (a HINT clamped to min(remaining caps), kernel-enforced), AND backstop it: if a
+ * (misbehaving) seam appends MORE offspring than the budget this generation, the kernel detects the breach
+ * and kills (un-bypassable — a prompt/hint can never raise a cap).
+ *
+ * BUG 2 (kill switch not enforced in-loop): `detectKill` ran ONLY at the top of each generation iteration,
+ * so a stop set DURING a generation's work was not seen until the NEXT generation boundary — a single
+ * generation could run away to completion (or be force-killed) with the stop never observed. The loop must
+ * poll the kill between operations so a set stop halts it within one bounded step (before the next spawn /
+ * candidate / reproduction), draining the current generation + terminalizing run.stopped.
+ */
+describe('runGenerationLoop — rule #1 in-loop cap + kill enforcement (run 6b714273 regressions)', () => {
+  // BUG 2 — a stop latched mid-generation (after generation.started, during candidate production) halts the
+  // loop WITHIN the generation: NO further candidate.created after the stop, and run.stopped is emitted —
+  // even though only ONE generation is configured (the pre-fix loop never re-checked inside a generation,
+  // so a single-generation runaway never saw the stop until a boundary that never came).
+  test('kill_set_mid_generation_halts_within_one_operation', async () => {
+    const fake = makeFakeEventStore();
+    let createdSoFar = 0;
+    let stopLatched = false;
+    // operatorStop flips true the instant the FIRST candidate is persisted — i.e. mid-gen-0, AFTER
+    // generation.started, BEFORE the loop would otherwise produce the second agenome's candidate.
+    const operatorStop = (): boolean => {
+      if (stopLatched) return true;
+      createdSoFar = fake.rows.filter((r) => r.type === 'candidate.created').length;
+      if (createdSoFar >= 1) {
+        stopLatched = true;
+        return true;
+      }
+      return false;
+    };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        operatorStop,
+        // ONE generation, FOUR agenomes — the runaway shape: without an in-loop check the loop would
+        // produce all 4 candidates + reproduce, never seeing the stop (maxGenerations=1 → no boundary).
+        caps: { maxGenerations: 1, maxPopulation: 4 },
+      }),
+    );
+    const created = fake.rows.filter((r) => r.type === 'candidate.created');
+    // HALTED within the generation: the loop stopped after the first candidate (≤ a small bounded number,
+    // NOT all 4) — the stop was observed between operations, not deferred to a generation boundary.
+    expect(created.length).toBeLessThan(4);
+    expect(created.length).toBeGreaterThanOrEqual(1);
+    // the stop was honored → run.stopped terminal, and reproduction never ran (no offspring after the halt).
+    expect(fake.appendedTypes()).toContain('run.stopped');
+    expect(fake.appendedTypes()).not.toContain('agenome.reproduced');
+    expect(fake.appendedTypes()).not.toContain('agenome.fused');
+  });
+
+  // BUG 1 — the loop passes a kernel-computed reproduction spawn budget on ReproduceContext, clamped to
+  // min(maxPopulation, remaining-energy headroom). A spy seam records the budget it received: with energy
+  // headroom for fewer than maxPopulation spawns, the budget must be the SMALLER headroom (the kernel
+  // clamp), never the raw maxPopulation hint.
+  test('reproduction_budget_clamped_to_remaining_caps', async () => {
+    let observedBudget: number | undefined;
+    const spyReproduce: ReproduceSeam = async (ctx) => {
+      observedBudget = (ctx as { spawnBudget?: number }).spawnBudget;
+      await ctx.append({
+        id: `${ctx.generationId}-reproduced`,
+        runId: ctx.runId,
+        generationId: ctx.generationId,
+        type: 'agenome.reproduced',
+        actor: 'agenome',
+        payload: { mode: ctx.mode },
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+      });
+    };
+    const fake = makeFakeEventStore();
+    // perSpawn = 50 (DEFAULT_COST_MAP). gen-0 spawns 2 agenomes (2×50=100) + 2 llm debits, etc. Set a small
+    // energyBudget so the remaining-energy headroom at reproduction permits FEWER than maxPopulation(=8)
+    // offspring — the budget the loop passes must reflect that headroom, not the raw cap.
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        seams: { verify: appendingVerify, score: appendingScore, reproduce: spyReproduce },
+        caps: { maxGenerations: 1, maxPopulation: 8, energyBudget: 300 },
+      }),
+    );
+    expect(observedBudget).toBeDefined();
+    // the budget is a kernel clamp ≤ maxPopulation AND ≤ the remaining-energy headroom (in spawn-units).
+    expect(observedBudget!).toBeLessThanOrEqual(8);
+    expect(observedBudget!).toBeLessThan(8); // energy headroom (budget 300) bites BELOW the raw cap.
+    expect(observedBudget!).toBeGreaterThanOrEqual(0);
+  });
+
+  // BUG 1 (backstop) — a MISBEHAVING reproduce seam that appends MORE offspring than the kernel-supplied
+  // spawn budget this generation is CAUGHT kernel-side: the loop detects the over-production and kills
+  // (cap_breach), never letting a hint/seam raise the cap. The un-bypassable enforcer (rule #1).
+  test('over_producing_reproduce_seam_triggers_kernel_kill', async () => {
+    // a seam that ignores the budget and floods the generation with offspring far beyond maxPopulation.
+    const floodReproduce: ReproduceSeam = async (ctx) => {
+      for (let i = 0; i < 50; i += 1) {
+        await ctx.append({
+          id: `${ctx.generationId}-flood-${i}`,
+          runId: ctx.runId,
+          generationId: ctx.generationId,
+          type: 'agenome.reproduced',
+          actor: 'agenome',
+          payload: { mode: ctx.mode },
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+        });
+      }
+    };
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        seams: { verify: appendingVerify, score: appendingScore, reproduce: floodReproduce },
+        // ≥2 generations so a kill at the gen-1 boundary is observable; the over-production is in gen-0.
+        caps: { maxGenerations: 3, maxPopulation: 2, energyBudget: 100_000 },
+      }),
+    );
+    // the kernel detected the offspring over-production → killed the run (no further generations scheduled).
+    const types = fake.appendedTypes();
+    expect(types.some((t) => t === 'run.failed' || t === 'run.stopped')).toBe(true);
+    // gen-1 NEVER started — the runaway was halted, not allowed to keep minting full-cap batches.
+    const genStarts = fake.rows.filter((r) => r.type === 'generation.started');
+    expect(genStarts).toHaveLength(1);
+  });
+});

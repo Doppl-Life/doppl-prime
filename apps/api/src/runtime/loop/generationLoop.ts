@@ -12,6 +12,8 @@ import { CURRENT_SCHEMA_VERSION, wrapUntrusted } from '@doppl/contracts';
 import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../event-store';
 import type { AppConfig } from '../config/configSchema';
 import { enforceCap } from '../caps/capEnforcer';
+import { clampSpawnBudget } from '../spawn/spawnBudgetClamp';
+import { energyForSpawn } from '../energy/costMap';
 import { canTransitionGeneration } from '../state/generationStateMachine';
 import { canTransitionAgenome } from '../state/agenomeStateMachine';
 import { materializeGen0 } from '../seed/gen0SeedSet';
@@ -119,6 +121,15 @@ export interface ReproduceContext extends SeamContext {
   readonly scoredEvents: readonly RunEventRow[];
   /** The loop's mode hint by eligible-parent count: 1 → mutation_only (degenerate), ≥2 → fusion. */
   readonly mode: 'mutation_only' | 'fusion';
+  /**
+   * KEY SAFETY RULE #1 — the KERNEL-COMPUTED offspring spawn budget for THIS generation: a HINT clamped to
+   * `min(maxPopulation, remaining-energy headroom)` (computed kernel-side over the persisted log, NEVER
+   * trusted to the seam). The seam MUST cap its offspring to this budget; the kernel additionally backstops
+   * it (an over-producing seam is detected post-reproduce → cap_breach kill — the un-bypassable enforcer).
+   * Bug 6b714273: the seam previously hardcoded the raw `maxPopulation`, ignoring remaining caps + minting
+   * a fresh full-cap batch every generation (runaway offspring growth).
+   */
+  readonly spawnBudget: number;
 }
 
 /**
@@ -339,6 +350,27 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     return null;
   };
 
+  // BUG 2 (run 6b714273) — IN-LOOP kill poll between operations (rule #1: a set kill HALTS scheduling within
+  // one bounded step). The boundary check (top of each generation) is too coarse: a stop latched DURING a
+  // generation's work — between agenome spawns / candidate generations / before reproduction — was not seen
+  // until the NEXT generation began (a runaway single generation never saw it). This polls the SAME
+  // `detectKill`; on a trigger it drains the CURRENT generation (passed as the lone active GenerationRef so
+  // `executeKillAndDrain` terminalizes it) + the run, captures the killSummary, and returns true so the
+  // caller breaks out of the in-flight generation immediately — no further spawn/candidate/reproduce work.
+  const maybeKillInLoop = async (
+    current: { id: string; status: GenerationStatus } | null,
+  ): Promise<boolean> => {
+    const trigger = await detectKill();
+    if (trigger === null) return false;
+    killSummary = await executeKillAndDrain(
+      trigger,
+      'running',
+      current === null ? [] : [{ id: current.id, status: current.status }],
+      appendEvent,
+    );
+    return true;
+  };
+
   // Gen-0 population: materialized ONCE, clamped to maxPopulation; spawned once (agenome.spawned per
   // agenome, each gated by enforceCap('maxPopulation', …) — belt-and-suspenders with the materialize
   // clamp). The population persists across generations (successor-population threading deferred).
@@ -396,7 +428,15 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     const candidates: CandidateIdea[] = [];
     const candidateAgenome = new Map<string, Agenome>();
     const failedAgenomeIds: string[] = [];
+    let aborted = false; // set by an IN-LOOP kill (BUG 2) — drains the current generation + halts scheduling.
     for (let a = 0; a < population.length; a += 1) {
+      // BUG 2 — poll the kill BEFORE generating each agenome's candidate so a stop latched mid-generation
+      // halts the loop within one bounded step (no further candidates after the stop). The current
+      // generation is `running` here → drained to generation_failed; the run terminalizes per the trigger.
+      if (await maybeKillInLoop({ id: generationId, status: 'running' })) {
+        aborted = true;
+        break;
+      }
       const agenome = population[a]!;
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
       const { response, toolCalls, attemptFailures } = await gateway.generate(
@@ -472,6 +512,11 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       );
     }
 
+    // BUG 2 — an IN-LOOP kill during candidate production already drained THIS generation
+    // (`generation_failed` via executeKillAndDrain) + terminalized the run; halt scheduling immediately
+    // (LATCHING — no verify/score/reproduce, no further generations). The run terminal is in the log.
+    if (aborted) break;
+
     // Below the survival threshold (incl. all-fail / 0 created) → running→failed + generation_failed; no
     // verify/score/reproduce. Whether a failed generation ENDS the run is run-terminal classification (P3.11).
     if (candidates.length < minSurvival) {
@@ -520,10 +565,36 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       continue;
     }
 
+    // BUG 2 — poll the kill BEFORE reproduction (a stop latched during scoring halts the loop before it
+    // schedules a fresh batch of offspring). The current generation is scoring → drained to generation_failed.
+    if (await maybeKillInLoop({ id: generationId, status: 'scoring' })) {
+      break;
+    }
+
+    // BUG 1 (run 6b714273) — the KERNEL computes the reproduction offspring spawn budget (rule #1): a HINT
+    // clamped to `min(maxPopulation, remaining-energy headroom)`. The seam previously hardcoded the raw
+    // `maxPopulation`, so it minted a fresh FULL cap of offspring EVERY generation regardless of remaining
+    // caps (runaway growth). `remaining-energy headroom in spawn-units` = floor(remainingEnergy / perSpawn)
+    // (perSpawn 0 → energy doesn't bound spawns → headroom is the cap). The seam MUST cap offspring to this;
+    // the kernel backstops it below (over-production → cap_breach kill — the un-bypassable enforcer).
+    const remainingEnergy = Math.max(
+      0,
+      caps.energyBudget - cumulativeSpend(scoredEvents, { kind: 'run', id: runId }),
+    );
+    const perSpawn = energyForSpawn(config.costMap);
+    const energyHeadroom =
+      perSpawn > 0 ? Math.floor(remainingEnergy / perSpawn) : caps.maxPopulation;
+    const spawnBudget = clampSpawnBudget(
+      caps.maxPopulation,
+      Math.min(caps.maxPopulation, energyHeadroom),
+    ).effectiveSpawns;
+
     // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
     // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
     status = transitionGenerationOrThrow(status, 'reproducing');
     await appendEvent('generation.reproducing', { generationId }, { generationId });
+    // The kernel-owned offspring event types (RunEventRow.type is the DB column string — match by value).
+    const offspringTypes = new Set<string>(['agenome.fused', 'agenome.reproduced']);
     await seams.reproduce({
       runId,
       generationId,
@@ -532,7 +603,25 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       outcomes,
       scoredEvents,
       mode: eligibleParents.length === 1 ? 'mutation_only' : 'fusion',
+      spawnBudget,
     });
+
+    // BUG 1 backstop (rule #1 — un-bypassable) — COUNT the offspring the seam actually appended for THIS
+    // generation and KILL if it exceeded the kernel-supplied spawnBudget. A seam/hint can never raise a cap:
+    // an over-producing reproduce path is a cap breach, terminalized like any other (no silent runaway).
+    const postReproduce = await eventStore.readByRun(runId);
+    const offspringThisGen = postReproduce.filter(
+      (r) => r.generationId === generationId && offspringTypes.has(r.type),
+    ).length;
+    if (offspringThisGen > spawnBudget) {
+      killSummary = await executeKillAndDrain(
+        { kind: 'cap_breach', dimension: 'maxPopulation' },
+        'running',
+        [{ id: generationId, status: 'reproducing' }],
+        appendEvent,
+      );
+      break;
+    }
 
     // Complete — validate the terminal transition through the guard (no assign; status is not read after).
     transitionGenerationOrThrow(status, 'completed');
