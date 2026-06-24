@@ -74,7 +74,7 @@ function maskProvenanceText(text: string): string {
 }
 
 function displayMarkdown(text: string): string {
-  const lines = text.split("\n").filter((line) => !/^prev:\s*/.test(line.trim()));
+  const lines = text.split("\n").filter((line) => !/^prev(_id)?:\s*/.test(line.trim()));
   const firstContentIndex = lines.findIndex((line) => line.trim());
   if (firstContentIndex >= 0 && /^#\s+/.test(lines[firstContentIndex])) {
     lines.splice(firstContentIndex, 1);
@@ -658,7 +658,7 @@ export function App() {
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
         {isWritable && !activeSourceAllowsWrites ? (
-          <p className="mode-note">aGarden ratings need the node-ledger writer before writes are enabled.</p>
+          <p className="mode-note">aGarden ratings need the ratings-ledger writer before writes are enabled.</p>
         ) : null}
         {activeReviewArtifact && !activeIsSubmittable ? (
           <p className="mode-note">Audit-only artifacts are visible for provenance but are not rateable.</p>

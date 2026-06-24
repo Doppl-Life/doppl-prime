@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import matter from "gray-matter";
 import type {
   CalibratorCase,
@@ -42,8 +42,10 @@ function titleFromContent(content: string, fallback: string): string {
 }
 
 function parentIdsFromContent(content: string): string[] {
-  const prev = content.match(/^prev:\s*(.+)$/m)?.[1] ?? "";
-  return Array.from(prev.matchAll(/\[\[([^\]]+)\]\]/g)).map((match) => match[1]).filter(Boolean);
+  const wikilinkPrev = content.match(/^prev:\s*(.+)$/m)?.[1] ?? "";
+  const wikilinkIds = Array.from(wikilinkPrev.matchAll(/\[\[([^\]]+)\]\]/g)).map((match) => match[1]);
+  const prevId = content.match(/^prev_id:\s*(.+)$/m)?.[1]?.trim().replace(/^\[\[|\]\]$/g, "");
+  return [...wikilinkIds, ...(prevId && prevId !== "null" ? [prevId] : [])].filter(Boolean);
 }
 
 async function readAgardenMarkdown(agardenRoot: string, path: string): Promise<ParsedAgardenNode | null> {
@@ -109,7 +111,7 @@ function toProblemRecovery(caseId: string, node: ParsedAgardenNode): CalibratorP
     parent_ids: node.parentIds,
     child_ids: node.childIds,
     source_path: node.relativePath,
-    ledger_path: join(dirname(node.relativePath), "run-ledger.md"),
+    ledger_path: "ratings-ledger.json",
     stage: "problem_recovery",
     temporal: node.frontmatter.temporal,
     next: node.frontmatter.next === "doppl" || node.frontmatter.next === "terminal" ? node.frontmatter.next : undefined,
@@ -131,7 +133,7 @@ function toSolution(caseId: string, node: ParsedAgardenNode): CalibratorSolution
     parent_ids: node.parentIds,
     child_ids: node.childIds,
     source_path: node.relativePath,
-    ledger_path: join(dirname(node.relativePath), "run-ledger.md"),
+    ledger_path: "ratings-ledger.json",
     stage: "doppl",
     temporal: node.frontmatter.temporal,
     next: node.frontmatter.next === "terminal" ? "terminal" : null,
@@ -178,13 +180,14 @@ async function readRootCase(agardenRoot: string, dirname: string): Promise<Calib
 }
 
 export async function readAgardenIndex(agardenRoot: string): Promise<CalibratorIndex> {
-  const entries = await readdir(agardenRoot, { withFileTypes: true });
+  const graphRoot = resolve(agardenRoot, "flow");
+  const entries = await readdir(graphRoot, { withFileTypes: true });
   const dirs = entries
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .map((entry) => entry.name)
     .sort();
 
-  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(agardenRoot, dirname)))).filter(
+  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(graphRoot, dirname)))).filter(
     (item): item is CalibratorCase => Boolean(item),
   );
 

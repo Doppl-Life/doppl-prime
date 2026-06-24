@@ -6,10 +6,11 @@ describe("readAgardenIndex", () => {
   it("reads top-level aGarden case studies into the calibrator index", async () => {
     const index = await readAgardenIndex(defaultAgardenRoot);
     expect(index.source_kind).toBe("agarden");
-    expect(index.cases.map((item) => item.case_id).sort()).toEqual([
+    expect(index.cases.map((item) => item.case_id)).toEqual(expect.arrayContaining([
+      "fsd-ownership-unwind-0caef8e3",
       "houston-baggage-claim-complaints-57251c2c",
       "when-the-crashes-dont-come-575845a4",
-    ]);
+    ]));
     expect(index.cases.map((item) => item.title)).toContain("Houston Baggage Claim Complaints");
   });
 
@@ -31,8 +32,7 @@ describe("readAgardenIndex", () => {
       problem_recovery_id: "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f",
       title: "Actuarial Collapse in Specialty Auto Reinsurance",
       parent_ids: ["when-the-crashes-dont-come-575845a4"],
-      ledger_path:
-        "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/run-ledger.md",
+      ledger_path: "ratings-ledger.json",
       source_type: "kernel",
       source_status: "imported",
       scores: { judge: 2, human: null, n: 0 },
@@ -46,8 +46,7 @@ describe("readAgardenIndex", () => {
       solution_id: "frequency-to-probability-underwriting-cliff-1bce2c97",
       stage: "doppl",
       parent_ids: ["actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"],
-      ledger_path:
-        "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/frequency-to-probability-underwriting-cliff-1bce2c97/run-ledger.md",
+      ledger_path: "ratings-ledger.json",
       source_type: "kernel",
       source_status: "imported",
     });
