@@ -259,6 +259,48 @@ textarea {
   max-width: 920px;
 }
 
+.case-step .markdown-block {
+  max-width: none;
+  width: 100%;
+}
+
+.case-section-list {
+  display: grid;
+  gap: 8px;
+}
+
+.case-section {
+  border: 1px solid #d9e3ec;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.case-section > button {
+  align-items: center;
+  background: #f5f8fa;
+  border: 0;
+  color: #132234;
+  display: flex;
+  font-size: 13px;
+  font-weight: 900;
+  justify-content: space-between;
+  letter-spacing: 0.04em;
+  min-height: 40px;
+  padding: 10px 12px;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.case-section > button[aria-expanded="true"] {
+  background: #eaf4f2;
+  color: #0f5f58;
+}
+
+.case-section > .markdown-block {
+  border-top: 1px solid #d9e3ec;
+  padding: 12px;
+}
+
 .markdown-block h3 {
   font-size: 17px;
   line-height: 1.2;
@@ -419,10 +461,6 @@ textarea {
   line-height: 1.2;
 }
 
-.notes-field textarea {
-  min-height: 44px;
-}
-
 .slider-row {
   display: grid;
   gap: 6px;
@@ -541,8 +579,14 @@ textarea {
   }
 
   .rating-dock {
-    grid-template-columns: minmax(200px, 260px) minmax(260px, 1fr) minmax(190px, 240px) minmax(160px, 190px);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(0, 3fr);
     padding: 10px 14px;
+  }
+
+  .rating-dock .error,
+  .rating-dock .saved-path,
+  .rating-dock .mode-note {
+    grid-column: 1 / -1;
   }
 }
 

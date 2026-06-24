@@ -11,6 +11,7 @@
     "generate:index": "tsx src/server/generateIndex.ts",
     "import:solutions": "tsx src/server/importers/importSolutions.ts",
     "import:kernel-runs": "tsx src/server/importers/importKernelRuns.ts",
+    "serve:ratings": "tsx src/server/hostedAgardenRatingServer.ts",
     "export:static": "npm run generate:index && npm run build && tsx src/server/exportStatic.ts"
   },
   "dependencies": {

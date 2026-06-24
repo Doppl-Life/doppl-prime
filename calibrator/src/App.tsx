@@ -151,6 +151,79 @@ function MarkdownBlock({ text }: { text: string }) {
   );
 }
 
+interface CaseSection {
+  key: string;
+  title: string;
+  body: string;
+}
+
+function caseSections(text: string): CaseSection[] {
+  const normalized = displayMarkdown(text);
+  const lines = normalized.split("\n");
+  const sections: CaseSection[] = [];
+  let currentTitle = "";
+  let currentLines: string[] = [];
+
+  function pushCurrent() {
+    const body = currentLines.join("\n").trim();
+    if (currentTitle && body) {
+      sections.push({
+        key: `${sections.length}-${comparableText(currentTitle)}`,
+        title: cleanHeading(currentTitle),
+        body,
+      });
+    }
+  }
+
+  for (const line of lines) {
+    const heading = line.match(/^#{2,4}\s+(.+)$/);
+    if (heading) {
+      pushCurrent();
+      currentTitle = heading[1];
+      currentLines = [];
+    } else if (currentTitle) {
+      currentLines.push(line);
+    }
+  }
+  pushCurrent();
+
+  return sections;
+}
+
+function CaseStudyBlock({
+  text,
+  openSections,
+  onToggleSection,
+}: {
+  text: string;
+  openSections: Set<string>;
+  onToggleSection(sectionKey: string): void;
+}) {
+  const sections = caseSections(text);
+  if (sections.length === 0) return <MarkdownBlock text={text} />;
+
+  return (
+    <div className="case-section-list">
+      {sections.map((section) => {
+        const isOpen = openSections.has(section.key);
+        return (
+          <section className="case-section" key={section.key}>
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              onClick={() => onToggleSection(section.key)}
+            >
+              <span>{section.title}</span>
+              <span aria-hidden="true">{isOpen ? "-" : "+"}</span>
+            </button>
+            {isOpen ? <MarkdownBlock text={section.body} /> : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
   const fields = [
     ["source status", artifact.source_status],
@@ -200,8 +273,8 @@ export function App() {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
+  const [openCaseSections, setOpenCaseSections] = useState<Set<string>>(() => new Set());
   const [score, setScore] = useState<number | null>(null);
-  const [notes, setNotes] = useState("");
   const [reviewerEmail, setReviewerEmail] = useState(() => {
     try {
       return window.localStorage.getItem(REVIEWER_STORAGE_KEY) ?? "";
@@ -385,7 +458,7 @@ export function App() {
             ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
           node_id: activeReviewArtifact.node_id,
           score,
-          notes,
+          notes: "",
           reviewer_email: normalizeRaterEmail(reviewerEmail),
         }),
       });
@@ -397,7 +470,6 @@ export function App() {
       const refreshed = await loadIndex();
       setIndex(refreshed);
       setSavedPath(body.relativePath ?? "");
-      setNotes("");
       setScore(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rating submission failed");
@@ -416,6 +488,18 @@ export function App() {
     setScore(null);
     setSavedPath("");
     setSourceDetailsOpen(false);
+  }
+
+  function toggleCaseSection(sectionKey: string) {
+    setOpenCaseSections((current) => {
+      const next = new Set(current);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+      } else {
+        next.add(sectionKey);
+      }
+      return next;
+    });
   }
 
   function updateReviewerEmail(value: string) {
@@ -483,6 +567,7 @@ export function App() {
               setSelectedProblemRecoveryId(nextPrimaryProblemRecovery?.problem_recovery_id ?? null);
               setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
               setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
+              setOpenCaseSections(new Set());
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
@@ -572,7 +657,11 @@ export function App() {
         <article className="trace-step case-step">
           <p className="trace-label">Case Study</p>
           <h2>{selectedCase.title}</h2>
-          <MarkdownBlock text={selectedCase.body} />
+          <CaseStudyBlock
+            text={selectedCase.body}
+            openSections={openCaseSections}
+            onToggleSection={toggleCaseSection}
+          />
         </article>
 
         {discoveryContextText ? (
@@ -644,18 +733,6 @@ export function App() {
           {reviewerEmail && !reviewerIsAllowed ? (
             <span className="field-note">Choose a reviewer from the allow-list.</span>
           ) : null}
-        </label>
-        <label className="field notes-field">
-          <span>Notes</span>
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder={
-              ratingTarget === "problem_recovery"
-                ? "Optional note on the recovered problem"
-                : "Optional note on the doppl"
-            }
-          />
         </label>
         <div className="slider-row">
           <label htmlFor="score-slider">

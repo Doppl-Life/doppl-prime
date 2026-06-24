@@ -155,6 +155,7 @@ describe("App", () => {
     expect(screen.queryByText("1 case")).not.toBeInTheDocument();
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Notes")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
@@ -305,6 +306,40 @@ describe("App", () => {
     expect(screen.getByText("Problem-only paragraph.")).toBeInTheDocument();
   });
 
+  it("collapses case study sections by default and expands them on demand", async () => {
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response(
+          JSON.stringify({
+            ...fixture,
+            cases: [
+              {
+                ...fixture.cases[0],
+                body:
+                  "# When the Crashes Don't Come\n\n## Context\n\nContext body.\n\n## The Situation\n\nSituation body.\n\n## Decision Point\n\nDecision body.\n\n## Synopsis\n\nSynopsis body.",
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByRole("button", { name: "Context" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "The Situation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Decision Point" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Synopsis" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Context body.")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Context" }));
+    expect(screen.getByRole("button", { name: "Context" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Context body.")).toBeInTheDocument();
+  });
+
   it("submits a rating and shows the saved path", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
@@ -315,7 +350,6 @@ describe("App", () => {
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Reviewer email"), "melissa.hargis@challenger.gauntletai.com");
-    await userEvent.type(screen.getByLabelText("Notes"), "Useful solution.");
     await userEvent.click(screen.getByRole("button", { name: "Submit doppl rating" }));
     await waitFor(() => {
       expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();

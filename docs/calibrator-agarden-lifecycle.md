@@ -108,8 +108,8 @@ Remaining work:
 2. **Add hosted ratings API route skeleton.** Done.
    The browser already has a `ratingsEndpoint` seam and the server writer/client cores exist. `calibrator/src/server/hostedAgardenRatingApi.ts` now covers request parsing, validation, CORS preflight, response shape, and calls into the tested GitHub writer.
 
-3. **Deploy hosted ratings API with server-held GitHub App credentials.** Next.
-   This is where real writes become possible. Use GitHub App credentials installed only on `Doppl-Life/agarden`; never expose them through Pages.
+3. **Deploy hosted ratings API with server-held GitHub App credentials.** In progress.
+   This is where real writes become possible. Use GitHub App credentials installed only on `Doppl-Life/agarden`; never expose them through Pages. `npm --prefix calibrator run serve:ratings` now starts a plain Node server with `GET /health` and `POST /api/agarden/ratings`.
 
 4. **Smoke hosted writes against a test branch.**
    Prove ledger upsert plus node projection commit in GitHub before touching `agarden/main`.

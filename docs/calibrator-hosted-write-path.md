@@ -79,6 +79,27 @@ Recommended credential model:
 - Give the app contents read/write permission for `agarden`; avoid broad org permissions.
 - Never ship those values in `published/`, Vite client env, or GitHub Pages assets.
 
+The deployable server entrypoint is:
+
+```bash
+npm --prefix calibrator run serve:ratings
+```
+
+Required environment variables:
+
+- `GITHUB_APP_ID`
+- `GITHUB_APP_INSTALLATION_ID`
+- `GITHUB_APP_PRIVATE_KEY`
+
+Optional environment variables:
+
+- `PORT`, default `8787`
+- `AGARDEN_OWNER`, default `Doppl-Life`
+- `AGARDEN_REPO`, default `agarden`
+- `AGARDEN_BRANCH`, default `main`
+- `CALIBRATOR_INDEX_PATH`, default `calibrator/public/calibration-index.json`
+- `CALIBRATOR_ALLOWED_ORIGINS`, comma-separated, default `https://doppl-life.github.io,http://127.0.0.1:5178`
+
 ## Validation
 
 The server must reject:
