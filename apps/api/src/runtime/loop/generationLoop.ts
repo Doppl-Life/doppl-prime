@@ -26,6 +26,7 @@ import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
 import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 import { CandidateContent } from './candidateContent';
+import { CAPTURE_FIELD_MAX_BYTES, truncateCaptureField } from '../../event-store/truncate-capture';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
@@ -480,6 +481,29 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         agenomeId: agenome.id,
         candidateId,
       });
+      // FB.6 — capture the SUCCESSFUL generation call's raw response as deep telemetry (§4/§5/§6). The
+      // opaque output is serialized + TRUNCATED-WITH-MARKER under the field budget BEFORE append, so a
+      // large capture never fails the §4 ceiling; the append-path scrub then redacts any embedded secret
+      // (rule #4 reuse — no new scrub). A FAILED call took the `continue` above → no capture (rule #8 — a
+      // capture is not a productive spend, it rides the already-debited call). Replay reads it (rule #7).
+      const rawCapture = truncateCaptureField(
+        JSON.stringify(response.output ?? null),
+        CAPTURE_FIELD_MAX_BYTES,
+      );
+      await appendEvent(
+        'llm_call_telemetry',
+        {
+          id: `${candidateId}-telemetry`,
+          runId,
+          generationId,
+          agenomeId: agenome.id,
+          role: 'population_generator',
+          rawResponse: rawCapture.value,
+          truncated: rawCapture.truncated,
+          providerMeta: response.providerMeta,
+        },
+        { generationId, agenomeId: agenome.id },
+      );
       // llm energy on the accepted call — actual derives from the REAL providerMeta usage (rule #8).
       await debitEnergy(
         'llm',

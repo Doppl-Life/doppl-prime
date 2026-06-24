@@ -68,6 +68,8 @@ const EVENT_TYPE_SNAPSHOT = [
   'fusion.started',
   'tool_call.started',
   'tool_call.finished',
+  // frontend-v2 FB.6 (sv6→7): deep-telemetry capture of a successful generation LLM call's raw output.
+  'llm_call_telemetry',
 ];
 
 const ACTOR_SNAPSHOT = [
@@ -95,7 +97,9 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     // 4→5 (terminal-event amendment: +run.cancelled/generation.skipped/agenome.failed/candidate.rejected),
     // 5→6 (frontend-v2 FB.0 run-controls: +RunConfig generationOperators/generationBias/modelRouteOverride
     //      + the closed GenerationOperator enum; rule-#6 judge/scoring anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+    // 6→7 (frontend-v2 FB.6 raw-capture: +RunEventType llm_call_telemetry + the LlmCallTelemetry payload
+    //      model; deep-telemetry of GENERATION output, rule-#6 judge/scoring anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(7);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {
@@ -104,7 +108,7 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(sorted(RunEventType.options)).toEqual(sorted(EVENT_TYPE_SNAPSHOT));
     expect(sorted(Actor.options)).toEqual(sorted(ACTOR_SNAPSHOT));
     expect(ENVELOPE_FIELD_SNAPSHOT).toHaveLength(14);
-    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(41);
+    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(42);
     expect(ACTOR_SNAPSHOT).toHaveLength(7);
   });
 });

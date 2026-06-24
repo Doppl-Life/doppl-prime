@@ -156,10 +156,11 @@ describe('FB.0 — RunConfig run-controls amendment (spec §4 / §6 / §2.5)', (
     expect(RUN_CONFIG_FIELD_SNAPSHOT_V6).toHaveLength(9);
   });
 
-  it('test_current_schema_version_is_6', () => {
-    // spec(§4): the deliberate monotonic bump 5→6, pinned by literal so it can't move silently; old
-    // envelopes still validate (the contract accepts any positive int; ≤ current is the reader's job).
-    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  it('test_current_schema_version_at_least_6_since_fb0', () => {
+    // spec(§4): FB.0 introduced sv6; later additive bumps keep it ≥6 (the EXACT current-version pin lives
+    // in field-sets.test.ts — this amendment-local test only asserts FB.0's floor + that v5/v6 envelopes
+    // still validate, the additive/backward-compat guarantee that is FB.0's actual concern).
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(6);
     expect(RunEventEnvelope.safeParse({ ...validRunEventEnvelope, schemaVersion: 5 }).success).toBe(
       true,
     );

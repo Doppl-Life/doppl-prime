@@ -17,6 +17,7 @@ import {
   NoveltyScore,
   FitnessScore,
   JudgeResult,
+  LlmCallTelemetry,
 } from '@doppl/contracts';
 
 const HIGH_TRAFFIC_SNAPSHOT = [
@@ -28,6 +29,8 @@ const HIGH_TRAFFIC_SNAPSHOT = [
   'fitness.scored',
   // judge-output amendment: held-out judge acceptance result.
   'judge.reviewed',
+  // frontend-v2 FB.6: deep-telemetry capture of a successful generation LLM call.
+  'llm_call_telemetry',
 ];
 
 const EXPECTED_MAPPING = {
@@ -38,15 +41,16 @@ const EXPECTED_MAPPING = {
   'novelty.scored': NoveltyScore,
   'fitness.scored': FitnessScore,
   'judge.reviewed': JudgeResult,
+  'llm_call_telemetry': LlmCallTelemetry,
 } as const;
 
 const sorted = (a: readonly string[]): string[] => [...a].sort();
 
 describe('schema snapshot — high-traffic payload map (spec §4 / §2.5)', () => {
   it('schema_snapshot_payload_map', () => {
-    // the high-traffic key-set is frozen to exactly seven members
+    // the high-traffic key-set is frozen to exactly eight members (FB.6 added llm_call_telemetry)
     expect(sorted(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP))).toEqual(sorted(HIGH_TRAFFIC_SNAPSHOT));
-    expect(HIGH_TRAFFIC_SNAPSHOT).toHaveLength(7);
+    expect(HIGH_TRAFFIC_SNAPSHOT).toHaveLength(8);
 
     // every high-traffic key is a valid RunEventType member (no orphan key outside the registry)
     for (const key of HIGH_TRAFFIC_SNAPSHOT) {

@@ -40,6 +40,7 @@ import { CullingEvent } from '../domain/culling-event';
 import { LineageGraphProjection, LineageNode, LineageEdge } from '../projections/lineage-graph';
 import { FinalJudgeRubric } from '../verifier/final-judge-rubric';
 import { JudgeResult } from '../verifier/judge-result';
+import { LlmCallTelemetry } from '../domain/llm-call-telemetry';
 
 export const validRunCaps: RunCaps = {
   maxPopulation: 10,
@@ -233,6 +234,17 @@ export const validEnergyEvent: EnergyEvent = {
   unit: 'doppl_energy',
   reason: 'idea_generation_completed',
   providerMeta: validProviderMeta,
+};
+
+export const validLlmCallTelemetry: LlmCallTelemetry = {
+  id: 'tel_1',
+  runId: 'run_1',
+  generationId: 'gen_1',
+  agenomeId: 'agn_1',
+  role: 'population_generator',
+  rawResponse: '{"title":"a cross-domain idea","summary":"..."}',
+  providerMeta: validProviderMeta,
+  truncated: false,
 };
 
 export const validReproductionEvent: ReproductionEvent = {
@@ -432,7 +444,8 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
   { name: 'LineageEdge', schema: LineageEdge, value: validLineageEdge },
   { name: 'FinalJudgeRubric', schema: FinalJudgeRubric, value: validFinalJudgeRubric },
   { name: 'JudgeResult', schema: JudgeResult, value: validJudgeResult },
-  // the 7 high-traffic payload-map narrowings — same canonical value, narrowed schema.
+  { name: 'LlmCallTelemetry', schema: LlmCallTelemetry, value: validLlmCallTelemetry },
+  // the 8 high-traffic payload-map narrowings — same canonical value, narrowed schema.
   {
     name: 'payload:energy.spent',
     schema: resolvePayloadSchema('energy.spent'),
@@ -467,5 +480,10 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
     name: 'payload:judge.reviewed',
     schema: resolvePayloadSchema('judge.reviewed'),
     value: validJudgeResult,
+  },
+  {
+    name: 'payload:llm_call_telemetry',
+    schema: resolvePayloadSchema('llm_call_telemetry'),
+    value: validLlmCallTelemetry,
   },
 ];

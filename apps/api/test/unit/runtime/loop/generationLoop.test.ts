@@ -11,6 +11,8 @@ import {
   CRITIC_INPUT_SENTINEL,
   CURRENT_SCHEMA_VERSION,
   HIGH_TRAFFIC_PAYLOAD_MAP,
+  LlmCallTelemetry,
+  MAX_PAYLOAD_BYTES,
   REDACTION_PLACEHOLDER,
   RunEventEnvelope,
   validateEventPayload,
@@ -28,7 +30,11 @@ import type {
   EventStore,
   RunEventRow,
 } from '../../../../src/event-store';
-import { scrubEventPayload } from '../../../../src/event-store';
+import { replayEvents, scrubEventPayload } from '../../../../src/event-store';
+import {
+  CAPTURE_FIELD_MAX_BYTES,
+  TRUNCATION_MARKER,
+} from '../../../../src/event-store/truncate-capture';
 import { createGateway, type ProviderCallFn } from '../../../../src/model-gateway';
 import { executeKillAndDrain } from '../../../../src/runtime/loop/killDrain';
 import { CandidateContent } from '../../../../src/runtime/loop/candidateContent';
@@ -1148,6 +1154,129 @@ describe('runGenerationLoop (FB.3 — operators shape the generation framing)', 
     expect(sys!.content).not.toContain(PROBLEM); // problem not in the trusted instruction
     expect(user!.content).toBe(wrapUntrusted(PROBLEM)); // problem only inside the wrapped user message
     expect(user!.content).not.toContain(OPERATOR_FRAGMENTS.polymath); // fragments not in the user message
+  });
+});
+
+// FB.6 — the loop captures each SUCCESSFUL generation LLM call's raw response as an llm_call_telemetry
+// event (deep telemetry): rule #4 scrub-on-append (reuse), 1 MiB truncate-with-marker, rule #7
+// replay-reads, rule #1/#8 capture-is-not-a-spend. A failed call appends no capture (rule #8).
+function captureGateway(output: unknown, providerMeta: ProviderMeta = validProviderMeta): GenerationGateway {
+  return {
+    generate: async () => ({
+      response: { accepted: true, validationResult: 'accepted', output, providerMeta },
+    }),
+  };
+}
+
+describe('runGenerationLoop (FB.6 — raw reasoning/response capture)', () => {
+  test('test_generation_loop_appends_llm_call_telemetry', async () => {
+    // spec(§5) reachability: a successful generation call appends one llm_call_telemetry per candidate,
+    // role population_generator, actor runtime, correlated by generationId/agenomeId; payload validates
+    // as the frozen LlmCallTelemetry model.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(2); // one per successful candidate (maxPopulation 2)
+    for (const row of tel) {
+      expect(row.actor).toBe('runtime');
+      expect(row.generationId).toBeDefined();
+      expect(row.agenomeId).toBeDefined();
+      const payload = row.payload as Record<string, unknown>;
+      expect(payload.role).toBe('population_generator');
+      expect(typeof payload.rawResponse).toBe('string');
+      expect(payload.truncated).toBe(false);
+      expect(LlmCallTelemetry.safeParse(payload).success).toBe(true);
+    }
+  });
+
+  test('test_failed_call_appends_no_capture', async () => {
+    // rule #8: a FAILED generation call appends NO capture (it already emits provider_call_failed).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 10 }),
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    expect(fake.rows.filter((r) => r.type === 'llm_call_telemetry')).toHaveLength(0);
+    expect(fake.appendedTypes().filter((t) => t === 'provider_call_failed').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  test('test_captured_secret_is_scrubbed_before_append', async () => {
+    // rule #4 (secret-surface): a secret in the raw output is REDACTED in the APPENDED event — the
+    // existing append-path scrub runs on the capture (reuse, no new scrub).
+    const SECRET = 'sk-abcdefghijklmnopqrstuvwxyz0123456789';
+    const fake = makeFakeEventStore();
+    const output = { ...CANDIDATE_CONTENT, summary: `the answer is ${SECRET} use it` };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: captureGateway(output),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1);
+    const raw = (tel[0]!.payload as Record<string, unknown>).rawResponse as string;
+    expect(raw).not.toContain(SECRET); // the secret never reaches the persisted event
+    expect(raw).toContain(REDACTION_PLACEHOLDER);
+  });
+
+  test('test_oversized_capture_truncated_with_marker', async () => {
+    // 1 MiB ceiling: an oversized raw response is truncated-with-marker so the payload stays under the
+    // ceiling and the append SUCCEEDS (not the current reject); truncated flag set + queryable.
+    const fake = makeFakeEventStore();
+    const big = 'x'.repeat(500_000); // > CAPTURE_FIELD_MAX_BYTES (384 KiB), < 1 MiB
+    const output = { ...CANDIDATE_CONTENT, summary: big };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: captureGateway(output),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1); // append succeeded (truncation kept it under the ceiling)
+    const payload = tel[0]!.payload as Record<string, unknown>;
+    expect(payload.truncated).toBe(true);
+    expect((payload.rawResponse as string).endsWith(TRUNCATION_MARKER)).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(payload), 'utf8')).toBeLessThan(MAX_PAYLOAD_BYTES);
+    expect(CAPTURE_FIELD_MAX_BYTES).toBeGreaterThan(0);
+  });
+
+  test('test_replay_reads_capture_no_provider', async () => {
+    // rule #7: replay reconstructs the llm_call_telemetry from the persisted log with no provider call
+    // (replayEvents folds the rows; it imports no gateway/embedding/web seam — provider-free by construction).
+    const fake = makeFakeEventStore();
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, gateway, caps: { maxGenerations: 1, maxPopulation: 1 } }),
+    );
+    const callsAfterRun = requests.length;
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    expect(replayed.filter((r) => r.type === 'llm_call_telemetry')).toHaveLength(1);
+    expect(requests.length).toBe(callsAfterRun); // replay added NO provider call
+  });
+
+  test('test_capture_does_not_change_energy_or_caps', async () => {
+    // rule #1/#8: the capture is not a productive spend — it adds no energy.spent event and changes no cap
+    // (energy.spent count == one spawn-debit + one llm-debit each; the capture rides the already-debited call).
+    const fake = makeFakeEventStore();
+    const result = await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    const types = fake.appendedTypes();
+    const energySpent = types.filter((t) => t === 'energy.spent').length;
+    const spawned = types.filter((t) => t === 'agenome.spawned').length;
+    const created = types.filter((t) => t === 'candidate.created').length;
+    expect(energySpent).toBe(spawned + created); // capture added NO energy.spent
+    expect(types.filter((t) => t === 'llm_call_telemetry')).toHaveLength(created);
+    expect(result.generationsRun).toBe(1); // caps honored — capture didn't change loop bounds
   });
 });
 

@@ -12,6 +12,7 @@ export * from './domain/culling-event';
 export * from './domain/energy-event';
 export * from './domain/evidence-ref';
 export * from './domain/generation';
+export * from './domain/llm-call-telemetry';
 export * from './domain/reproduction-event';
 export * from './domain/run';
 export * from './domain/subtype';

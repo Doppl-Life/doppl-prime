@@ -195,4 +195,16 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'providerMeta',
     'langfuseTraceId',
   ],
+  // frontend-v2 FB.6 — deep-telemetry capture of a successful generation LLM call (high-traffic model).
+  LlmCallTelemetry: [
+    'id',
+    'runId',
+    'generationId',
+    'agenomeId',
+    'role',
+    'rawResponse',
+    'rawReasoning',
+    'providerMeta',
+    'truncated',
+  ],
 };
