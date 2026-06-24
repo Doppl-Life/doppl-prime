@@ -141,6 +141,20 @@ stats, so the feature works with no key. Conversations persist across reloads.
 
 ---
 
+## Contract alignment
+
+This spike emits the current contract model directly — no migration step:
+
+- **Ids are `SlugId`.** Each node's `id` is `{slug}-{shortId}` (kebab of the headline + an 8-char key), minted once and frozen, per [`../contracts/node.md`](../contracts/node.md). Run and candidate ids stay `run-…` / `c-…` machine handles, which the contract allows.
+- **Export is contract-shaped.** The markdown export writes YAML frontmatter + a body `prev_id: [[parent]]` wikilink (`null` at an original seed), so exported nodes are valid vault files with no separate migration.
+- **Reseed is the forest loop.** Campaigns reseed a doppl leaf into a fresh `case_study` carrying `prev_id: [[doppl]]`, exactly as the contract blesses it.
+
+One internal note: the app keeps `root` and a one-element `prev` array on the runtime record for the force-layout (island grouping). Those are graph state, not part of the exported artifact — the contract governs the file, and the file has no `root`.
+
+The model lives in [`../my-docs/the-hut/`](../my-docs/the-hut); the contracts in [`../contracts/`](../contracts/README.md).
+
+---
+
 ## Notes & limits
 
 - **Offline-demo candidates are intentionally simple** — they synthesise from your seed's vocabulary to

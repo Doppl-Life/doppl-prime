@@ -535,6 +535,7 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
 /* ============================ util ============================ */
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const slugId=name=>(((name||'untitled').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60))||'untitled')+'-'+uuid().replace(/-/g,'').slice(0,8);
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const r3=v=>Math.round(v*1000)/1000, r1=v=>Math.round(v*10)/10;
 const nowISO=()=>new Date().toISOString();
@@ -839,7 +840,7 @@ async function runStage(parentNode,dial,opts={}){
     const trace=(parentNode.trace||[]).concat([{stage:parentNode.stage,synopsis:parentNode.synopsis||parentNode.name||''}]);
     for(const c of sel.selected){
       const{axes,judge}=judgeBridge(c.fitness);const lz=lens(c);
-      const node={id:uuid(),stage:child,headline:c.title,synopsis:synopsisOf(child,c),root:parentNode.root,prev:[parentNode.id],
+      const node={id:slugId(c.title),stage:child,headline:c.title,synopsis:synopsisOf(child,c),root:parentNode.root,prev:[parentNode.id],
         kernel:'prime',temporal:c.temporal,scores:{judge,human:null,n:0},doppelgangers:0,
         trace,body:buildBody(child,c,trace,c.fitness,axes),fitness:c.fitness,axes,lens:lz,operatorId:(c.delta.changes.find(x=>x.startsWith('operator:'))||'operator:mixed').split(':')[1],
         dial,runId,createdAt:nowISO()};
@@ -858,7 +859,7 @@ async function runStage(parentNode,dial,opts={}){
 }
 
 async function reseedNode(leaf,silent){
-  const id=uuid();
+  const id=slugId(leaf.headline);
   const node={id,stage:'case_study',name:leaf.headline,context:'Reseeded from doppl '+leaf.id.slice(0,8)+'. '+(leaf.synopsis||''),synopsis:leaf.synopsis||leaf.headline,next:'problem_recovery',root:id,prev:[leaf.id],createdAt:nowISO(),
     body:`# ${esc(leaf.headline)}\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\n${esc(leaf.synopsis||leaf.headline)}`};
   await DB.put('nodes',node);
@@ -1076,7 +1077,7 @@ async function reseed(leaf){return reseedNode(leaf,false);}
 async function plantSeed(){
   const name=$('#seedName').value.trim(),ctx=$('#seedContext').value.trim(),syn=$('#seedSynopsis').value.trim()||name;
   if(!name&&!ctx){toast('Give the seed a name or a situation','err');return;}
-  const id=uuid();
+  const id=slugId(name||syn);
   const node={id,stage:'case_study',name:name||syn,context:ctx,synopsis:syn||name,next:'problem_recovery',root:id,prev:[],createdAt:nowISO(),
     body:`# ${esc(name||syn)}\n\n## Context\n\n${esc(ctx||'—')}\n\n## Synopsis\n\n${esc(syn||name)}`};
   await DB.put('nodes',node);$('#seedName').value='';$('#seedContext').value='';$('#seedSynopsis').value='';
@@ -1111,10 +1112,20 @@ function readProvForm(){const m=Provider.cfg.mode;
   else if(m==='openai'){Provider.cfg.openai.base=$('#pf_base').value.trim();Provider.cfg.openai.key=$('#pf_key').value.trim();Provider.cfg.openai.model=$('#pf_model').value.trim();}}
 
 /* export */
+function nodeToMd(n){
+  const fm=['---','id: '+n.id,'stage: '+n.stage];
+  if(n.stage==='case_study'){fm.push('name: '+JSON.stringify(n.name||n.headline||n.synopsis||''));fm.push('next: '+(NEXT[n.stage]||'problem_recovery'));}
+  else{if(n.kernel)fm.push('kernel: '+n.kernel);fm.push('temporal: '+(n.temporal?'true':'false'));fm.push('next: '+(NEXT[n.stage]==null?'null':NEXT[n.stage]));const s=n.scores||{judge:0,human:null,n:0};fm.push('scores: { judge: '+s.judge+', human: '+(s.human==null?'null':s.human)+', n: '+(s.n||0)+' }');fm.push('doppelgangers: '+(n.doppelgangers||0));}
+  fm.push('---');
+  const parent=(n.prev||[])[0],prevLine='prev_id: '+(parent?'[['+parent+']]':'null');
+  const body=(n.body||'').replace(/^\s+/,''),nl=body.indexOf('\n');
+  const head=nl<0?body:body.slice(0,nl),rest=(nl<0?'':body.slice(nl+1)).replace(/^\n+/,'');
+  return fm.join('\n')+'\n\n'+head+'\n\n'+prevLine+(rest?'\n\n'+rest:'');
+}
 async function exportAll(){
   const nodes=await DB.all('nodes'),runs=await DB.all('runs'),ratings=await DB.all('ratings');
   const bundle={exported:nowISO(),nodes,runs,ratings};
-  const md=nodes.map(n=>`<!-- ${n.id} | stage:${n.stage} | root:${n.root} | prev:${(n.prev||[]).join(',')} -->\n${n.body||''}`).join('\n\n---\n\n');
+  const md=nodes.map(nodeToMd).join('\n\n---\n\n');
   dl('doppl-export.json',JSON.stringify(bundle,null,2),'application/json');
   setTimeout(()=>dl('doppl-nodes.md',md,'text/markdown'),200);
   toast('Exported JSON + markdown','ok');
