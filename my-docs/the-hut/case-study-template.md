@@ -1,7 +1,7 @@
 ---
 # SEED NODE — the case study. The inciting agenome; everything grows from here.
 # Minimal by design: no Trace (nothing precedes it), no rubric (it is not a claim yet).
-id: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44   # UUIDv4 · durable key, link target
+id: battery-yuan-resource-constraint-7c3a9b12   # SlugId · {slug}-{8char} · frozen durable link target
 stage: case_study
 name: "Battery / yuan resource constraint"   # human display name; may change without breaking links
 next: problem_recovery                       # the stage this seed feeds
@@ -9,6 +9,9 @@ next: problem_recovery                       # the stage this seed feeds
 
 # Battery / yuan resource constraint
 <!-- headline = the case study in one line. -->
+
+prev_id: null
+<!-- the seed has no parent; lineage lives in the body, never frontmatter -->
 
 ## Context
 

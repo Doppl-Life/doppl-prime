@@ -11,19 +11,19 @@ Stock uses stable ids for fields and discoveries. Timestamps are ISO 8601 string
 ### Type contract
 
 ```ts
-type Uuid = string;
+type SlugId = string; // `{slug}-{shortId}`; matches node.md; durable link key
 type Iso8601 = string;
 type NonEmptyArray<T> = [T, ...T[]];
 
 type Measurement = number; // 0...1; runtime validator enforces the range
 
 type FieldRef = {
-  id: Uuid;
+  id: SlugId;
   name: string;
 };
 
 type SourceRef = {
-  id?: Uuid;
+  id?: SlugId;
   label: string;
   url?: string;
   retrieved_at?: Iso8601;
@@ -51,7 +51,7 @@ type AdmissionRuling = {
 };
 
 type AdmittedDiscovery = {
-  id: Uuid;
+  id: SlugId;
   field: FieldRef;
   claim: string;
   keywords: string[];
@@ -102,7 +102,7 @@ type EnrichmentRuling =
   | {
       gate: 'enrichment';
       decision: 'merge';
-      target_id: Uuid;
+      target_id: SlugId;
       reason: string;
     }
   | {
@@ -137,7 +137,7 @@ The counts in frontmatter are projections: `discoveries` counts admitted discove
 
 ```markdown
 ---
-id: b8e2c6f0-3a1d-4c9e-8b7a-5f2d1e0c9a4b
+id: battery-supply-b8e2c6f0
 name: "Battery supply"
 keywords: [battery, lithium, refining, offtake]
 discoveries: 37
@@ -158,7 +158,7 @@ updated: 2026-06-22T00:00:00.000Z
 
 ```ts
 type StockFieldFrontmatter = {
-  id: Uuid;
+  id: SlugId;
   name: string;
   keywords: string[];
   discoveries: number;
@@ -168,7 +168,7 @@ type StockFieldFrontmatter = {
 };
 
 type StockDiscoverySummary = {
-  discovery_id: Uuid;
+  discovery_id: SlugId;
   claim: string;
   grounded: string;
   sources?: SourceRef[];

@@ -552,7 +552,7 @@ type PathSection<S extends GrowthStage> = MarkdownSection<'## Path', {
 
 ## Identity and signals
 
-Every node has a stable SlugId `id`; links point at the id, never the headline. Cross-node links — `prev_id` and any field or source refs — are Obsidian wikilinks (`[[slug-id]]`) to that id, so the slug must stay stable even when a headline is reworded. `doppelgangers` is the one fact dedup destroys, so it is stored. Convergence is a derived query over the node graph, never stored.
+Every node has a stable SlugId `id`; links point at the id, never the headline. Cross-node links — `prev_id` and any field or source refs — are Obsidian wikilinks (`[[slug-id]]`) to that id, so the slug must stay stable even when a headline is reworded. `doppelgangers` is the one fact dedup destroys, so it is stored; it is born `0` at compile and incremented by the dedup pass over the node graph, never computed by the compiler. Convergence is a derived query over the node graph, never stored.
 
 ### Type contract
 

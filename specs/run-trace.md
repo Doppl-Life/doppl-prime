@@ -8,8 +8,8 @@ A node is a rendered projection of a `RunTrace`. The node's `## Trace` section i
 
 `RunTrace` coordinates contracts owned elsewhere. It does not redefine them.
 
-- Shared primitives used across specs: `Uuid`, `Iso8601`, and `NonEmptyArray`.
-- `[node.md](./node.md)` owns `Stage`, `GrowthStage`, and `KernelName`.
+- Shared primitives used across specs: `Iso8601` and `NonEmptyArray`. `SlugId` (the durable node/stock link key) is owned by `[node.md](./node.md)`. `Uuid` is used only for run-internal machine handles — `run_id` and candidate ids — which are not node or stock artifacts and never become Obsidian links.
+- `[node.md](./node.md)` owns `Stage`, `GrowthStage`, `KernelName`, and `SlugId`.
 - `[rating.md](./rating.md)` owns `Measurement`, `Rating`, `Decay`, and `JudgeResult`.
 - `[stock.md](./stock.md)` owns stock records and rendered stock field shape.
 
@@ -54,28 +54,28 @@ The engine reads the parent nodes, the portable prior synopses needed for the re
 
 The trace stores ids and payloads needed to explain the run. It does not copy full prior node bodies.
 
-`parent_nodes` is spine-ordered: root first, immediate parent last. For current growth-stage traces it is non-empty. If a seed-ingest trace is ever defined, an empty list would mean the run has no parent.
+`parent_nodes` is spine-ordered `SlugId`s: root first, immediate parent last. For current growth-stage traces it is non-empty. If a seed-ingest trace is ever defined, an empty list would mean the run has no parent.
 
 ### Type contract
 
 ```ts
 type TraceSynopsis = {
   stage: Stage;
-  node_id: Uuid;
+  node_id: SlugId;
   synopsis: string;
 };
 
 type RunDiscoveryInput = {
-  field_id: Uuid;
+  field_id: SlugId;
   entries: {
-    discovery_id?: Uuid;
+    discovery_id?: SlugId;
     found: string;
     field: string;
   }[];
 };
 
 type RunInputs = {
-  parent_nodes: Uuid[];
+  parent_nodes: SlugId[];
   trace_synopses: TraceSynopsis[];
   discovery: RunDiscoveryInput;
 };
@@ -246,7 +246,7 @@ The handoff is derived from `RunTrace`; it is not stored as a second copy inside
 ```ts
 type CompilerHandoff<S extends GrowthStage> = {
   stage: S;
-  parent_nodes: Uuid[];
+  parent_nodes: SlugId[];
   trace_synopses: TraceSynopsis[];
   discovery: RunDiscoveryInput;
   compiled_candidate: Candidate;
@@ -255,7 +255,7 @@ type CompilerHandoff<S extends GrowthStage> = {
 
 type CompileStep = {
   output: {
-    node_id: Uuid;
+    node_id: SlugId;
     path?: string;
   };
 };

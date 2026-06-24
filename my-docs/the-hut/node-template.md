@@ -19,18 +19,18 @@ Both variants are shown in full below, so the writer knows exactly what each mus
 
 ```markdown
 ---
-id: 4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f   # UUIDv4
+id: refined-supply-access-is-the-real-battery-constraint-4d1e8f0a   # SlugId · {slug}-{8char}, frozen at birth
 stage: problem_recovery
-root: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44     # the seed case_study id
-prev: [7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44]
 kernel: melissa                  # [optional] Cody | Melissa | Michael | Dalton | prime
 temporal: false                  # true = zeitgeist (decays) · false = transfer (timeless)
 next: doppl                      # deterministic by stage: problem_recovery → doppl
 scores: { judge: 3, human: null, n: 0 } # born judge-only; human/n are materialized from the ratings ledger
-doppelgangers: 0                 # near-duplicate ideas deduped into this node
+doppelgangers: 0                 # born 0; the dedup pass increments it — the compiler never computes it
 ---
 
 # Refined-supply access is the real battery constraint
+
+prev_id: [[battery-yuan-resource-constraint-7c3a9b12]]   # immediate parent (Obsidian wikilink); null at the seed
 
 ## Trace
 
@@ -91,10 +91,8 @@ next: doppl
 
 ```markdown
 ---
-id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d   # UUIDv4
+id: own-the-refining-bottleneck-not-the-lithium-a1b2c3d4   # SlugId · {slug}-{8char}, frozen at birth
 stage: doppl
-root: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44
-prev: [4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f]   # the problem_recovery node
 kernel: melissa
 temporal: false
 next: null
@@ -103,6 +101,8 @@ doppelgangers: 0
 ---
 
 # Own the refining bottleneck, not the lithium
+
+prev_id: [[refined-supply-access-is-the-real-battery-constraint-4d1e8f0a]]   # the problem_recovery node
 
 ## Trace
 

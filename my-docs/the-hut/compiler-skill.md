@@ -28,12 +28,16 @@ Takes the compiled candidate and judge evaluation from [`../../specs/run-trace.m
 - **`temporal` comes from the judge.** It is a judgment (is this timing-bound?), emitted as the
   judge's final output just before compile. The compiler never guesses it.
 - **Human scores are absent at birth.** A node is compiled judge-only: `scores: { judge, human: null, n: 0 }`. The human number is materialized later from the human ratings ledger (`rating-model.md`), never by the compiler.
+- **`doppelgangers` is born `0`.** The compiler always writes `0`; the dedup pass over the node graph increments it later. The compiler never computes a dedup count.
 
 ## Procedure
 
-1. **Frontmatter** — mint a UUIDv4 `id`; set `stage`, `root` (seed id), `prev` (parent id[s]),
-   `kernel`, `temporal` (from the judge), `next` (fixed by stage:
-   `case_study → problem_recovery → doppl → null`), `scores: { judge, human: null, n: 0 }`.
+1. **Frontmatter** — mint a `SlugId` `id` (kebab-case the headline, append an 8-char short id; frozen
+   at birth); set `stage`, `kernel`, `temporal` (from the judge), `next` (fixed by stage:
+   `case_study → problem_recovery → doppl → null`), `scores: { judge, human: null, n: 0 }`,
+   `doppelgangers: 0`. Lineage is not frontmatter: write `prev_id` as the first body line after the
+   headline — an Obsidian wikilink to the immediate parent's SlugId, or `null` at the seed. The root
+   is not stored; it is recovered by walking `prev_id` to `null`.
 2. **Headline** — one line summarizing the Growth result. Becomes the next node's Trace synopsis.
 3. **`## Trace`** — copy each prior stage's synopsis **verbatim** from `parent`. Never reword, never
    merge, add nothing.
@@ -49,7 +53,8 @@ Takes the compiled candidate and judge evaluation from [`../../specs/run-trace.m
 ## Hard rules
 
 - The compiler renders; it does not rewrite. Synopses are copied verbatim.
-- `id` is a fresh UUIDv4. Links point at ids, never headlines.
+- `id` is a fresh `SlugId` minted from the headline at birth, then frozen. Links point at ids
+  (`[[slug-id]]`), never live headlines — the slug keeps the birth headline even after a reword.
 - Humans never see a per-axis form — only the single `scores.human`. Per-axis lives in `### Evaluation`.
 
 ## Reconcile later (jungle)

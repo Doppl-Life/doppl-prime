@@ -77,9 +77,13 @@ never merged. Only the synopsis travels; full thinking stays home.
 
 ## Identity
 
-Every node and field has a **UUIDv4** `id` — the durable link key. Names/headlines are separate and
-change freely. Each node also carries a `doppelgangers` count — how many near-duplicate ideas were
-deduped into it (the one fact dedup destroys; everything else is derived).
+Every node and field has a **SlugId** `id` — `{slug}-{shortId}`, where the slug is the kebab-cased
+headline at birth and `shortId` is an 8-character key. It is the durable Obsidian wikilink target
+(`[[slug-id]]`); names/headlines change freely, but the id is frozen once minted. Lineage lives in the
+body, not frontmatter: `prev_id` is a wikilink to the immediate parent (`null` at the seed), and the
+root is recovered by walking `prev_id` to `null` — no `root` field is stored. Each node also carries a
+`doppelgangers` count — how many near-duplicate ideas were deduped into it (the one fact dedup
+destroys; everything else is derived).
 
 ## Temporal
 
@@ -89,8 +93,9 @@ Each node carries `temporal` — a **boolean**. `true` = timing-bound. `false` =
 
 The node graph itself is the lineage memory. Two signals read off it; only one is stored.
 
-- **doppelgangers** (stored) — a per-node count of near-duplicate ideas deduped into it. Powers
-  "this keeps coming up" displays, and when it piles up on low-rated ideas, a **process-health
+- **doppelgangers** (stored) — a per-node count of near-duplicate ideas deduped into it. Born `0` at
+  compile and incremented by the dedup pass over the node graph — the compiler never computes it.
+  Powers "this keeps coming up" displays, and when it piles up on low-rated ideas, a **process-health
   signal** — the generator is stuck or the fitness is miscalibrated (an autopsy cue).
 - **convergence** (derived) — distinct ideas clustering on the same target, found by a query over
   the graph and viewed through **novelty and usefulness**. Never stored; it's a lens you run.
