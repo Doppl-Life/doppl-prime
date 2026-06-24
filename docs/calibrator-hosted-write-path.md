@@ -8,6 +8,8 @@ Updated: 2026-06-24
 
 The calibrator's production write path must update the canonical aGarden repository without exposing GitHub credentials to browser code.
 
+For the broader read/write/projection lifecycle and prioritized implementation order, see `docs/calibrator-agarden-lifecycle.md`.
+
 The durable source of truth is:
 
 - `Doppl-Life/agarden` markdown nodes under the aGarden folder tree

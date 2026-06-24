@@ -1,0 +1,60 @@
+name: Refresh Calibrator From aGarden
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types:
+      - agarden-updated
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: calibrator-agarden-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout doppl-prime calibration
+        uses: actions/checkout@v4
+        with:
+          ref: calibration
+          path: doppl-prime
+
+      - name: Checkout aGarden main
+        uses: actions/checkout@v4
+        with:
+          repository: Doppl-Life/agarden
+          ref: main
+          path: agarden
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: doppl-prime/calibrator/package-lock.json
+
+      - name: Install calibrator dependencies
+        run: npm ci --prefix doppl-prime/calibrator
+
+      - name: Export calibrator from latest aGarden
+        run: |
+          AGARDEN_GENERATED_AT="$(git -C agarden log -1 --format=%cI)"
+          DOPPL_CALIBRATOR_GENERATED_AT="$AGARDEN_GENERATED_AT" npm --prefix doppl-prime/calibrator run export:static
+
+      - name: Commit refreshed calibrator export
+        run: |
+          git -C doppl-prime config user.name "loopstrangest"
+          git -C doppl-prime config user.email "loopstrangest@users.noreply.github.com"
+          if [ -z "$(git -C doppl-prime status --porcelain calibrator/public/calibration-index.json published/calibrator)" ]; then
+            echo "No calibrator export changes."
+            exit 0
+          fi
+          git -C doppl-prime add calibrator/public/calibration-index.json published/calibrator
+          git -C doppl-prime commit -m "chore: refresh calibrator agarden export"
+          git -C doppl-prime push origin HEAD:calibration

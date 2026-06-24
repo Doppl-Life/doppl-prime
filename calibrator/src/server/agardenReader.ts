@@ -257,7 +257,7 @@ export async function readAgardenIndex(agardenRoot: string): Promise<CalibratorI
   );
 
   return {
-    generated_at: new Date().toISOString(),
+    generated_at: process.env.DOPPL_CALIBRATOR_GENERATED_AT || new Date().toISOString(),
     source_kind: "agarden",
     comparison_sets: [],
     cases,
