@@ -147,7 +147,7 @@ function makeFakeEventStore(secretValues: readonly string[] = []) {
 
 function makeFakeGateway(
   opts: {
-    toolCalls?: readonly { toolName: string }[];
+    toolCalls?: readonly { toolName: string; query?: string; result?: string }[];
     rejectFirst?: number;
     providerMeta?: ProviderMeta;
     attemptFailures?: readonly { attempt: number; reason: string }[];
@@ -1364,6 +1364,120 @@ describe('runGenerationLoop (FB.4 — diverge/converge dial)', () => {
     };
     expect(sampling.temperature).toBeCloseTo(biasToTemperature(-0.9), 10);
     expect(requests.length).toBe(callsAfterRun); // replay added NO provider call
+  });
+});
+
+// FB.7 — tool-call detail: the loop relays the gateway-surfaced tool call's actual `query` (started) +
+// `query`+`result` (finished) into the generic tool_call payloads, TRUNCATED-WITH-MARKER under the §4 field
+// budget (reusing FB.6's truncateCaptureField) and SCRUBBED by the existing append path (rule #4); replay
+// reads them with no provider (rule #7). Absent detail → byte-identical {toolName} baseline.
+describe('runGenerationLoop (FB.7 — tool-call detail)', () => {
+  test('test_tool_call_started_carries_query', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [{ toolName: 'web_search', query: 'wind-resistant umbrella' }],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const started = fake.rows.find((r) => r.type === 'tool_call.started');
+    expect((started!.payload as { toolName?: string }).toolName).toBe('web_search');
+    expect((started!.payload as { query?: string }).query).toBe('wind-resistant umbrella');
+    expect((started!.payload as { queryTruncated?: boolean }).queryTruncated).toBe(false);
+  });
+
+  test('test_tool_call_finished_carries_query_and_result', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'web_search', query: 'umbrella designs', result: 'top 5 patents …' },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).toBe('umbrella designs');
+    expect((finished!.payload as { result?: string }).result).toBe('top 5 patents …');
+    expect((finished!.payload as { resultTruncated?: boolean }).resultTruncated).toBe(false);
+  });
+
+  test('test_tool_call_detail_truncated_with_marker', async () => {
+    // an over-budget result is truncated-with-marker (never reject) — the queryable resultTruncated flag set.
+    const huge = 'x'.repeat(CAPTURE_FIELD_MAX_BYTES + 5000);
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ toolCalls: [{ toolName: 'web_search', result: huge }] }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    const result = (finished!.payload as { result?: string }).result!;
+    expect((finished!.payload as { resultTruncated?: boolean }).resultTruncated).toBe(true);
+    expect(result.endsWith(TRUNCATION_MARKER)).toBe(true);
+    expect(Buffer.byteLength(result, 'utf8')).toBeLessThanOrEqual(CAPTURE_FIELD_MAX_BYTES);
+  });
+
+  test('test_tool_call_secret_redacted', async () => {
+    // rule #4: a planted secret in the (scrubbable string) tool-call detail IS redacted on the append round-trip.
+    const injected = 'planted-toolcall-secret-value';
+    const fake = makeFakeEventStore([injected]);
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'web_search', query: `lookup ${injected}`, result: `found ${injected}` },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).not.toContain(injected);
+    expect((finished!.payload as { result?: string }).result).not.toContain(injected);
+    expect((finished!.payload as { query?: string }).query).toContain(REDACTION_PLACEHOLDER);
+  });
+
+  test('test_tool_call_detail_replay_no_provider', async () => {
+    // rule #7: replay reconstructs the tool_call detail from the persisted events alone — replayEvents folds
+    // the rows and imports no gateway seam (no provider call by construction).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [{ toolName: 'web_search', query: 'q', result: 'r' }],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    const finished = replayed.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).toBe('q');
+    expect((finished!.payload as { result?: string }).result).toBe('r');
+  });
+
+  test('test_tool_call_no_detail_backward_compatible', async () => {
+    // absent query/result → the payload is just {toolName} (byte-identical to the pre-FB.7 baseline).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ toolCalls: [{ toolName: 'web_search' }] }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const started = fake.rows.find((r) => r.type === 'tool_call.started');
+    expect(Object.keys(started!.payload as object).sort()).toEqual(['toolName']);
   });
 });
 

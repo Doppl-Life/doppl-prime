@@ -1868,8 +1868,8 @@ Rows: task-checkboxes ✅ (PD.1–PD.11 headings ✅ DONE, per-slice Step-9 veri
 - [ ] Persist each agenome's raw model response (+ provider reasoning where present) as a new event / provenance field correlated to `candidate.created`; validated structured candidate stays authoritative (rule #5 unchanged)
 - [ ] Redaction scrub runs BEFORE append (rule #4); 1 MiB ceiling truncate-with-marker (never silent); replay reads it, no provider call (rule #7); no-secret assertion
 
-### FB.7 — tool-call detail
-- [ ] Enrich `tool_call.started/finished` payloads with the actual `query` + (redacted) `results`; scrub + ceiling as FB.6; replay-faithful
+### FB.7 — tool-call detail — ✅ DONE (this round; direct-drive)
+- [x] Enriched `tool_call.started` (query) + `tool_call.finished` (query + raw result) generic payloads with the actual detail; `ToolCallObservation` (runtime port) gained optional `query?`/`result?`; each field truncated-with-marker via FB.6's `truncateCaptureField` (+ queryable `queryTruncated`/`resultTruncated`) then scrubbed by the EXISTING append-path scrub (rule #4 reuse, no 3rd scrub); replay reads it no-provider (rule #7); tool energy unchanged (rule #1/#8); absent detail → byte-identical `{toolName}`. **NO contract change** (tool_call = GENERIC_PAYLOAD_SCHEMA, no schemaVersion bump). apps/api unit 730 + integration 185/7-skip; security-reviewer INVARIANT (rule #4). LESSON §107.
 
 ### FB.8 — judge per-axis rationale
 - [ ] `JudgeResult` gains `axisRationales` (axis→string); the held-out-judge prompt emits a one-line rationale per axis; rubric/weights/immutability anchor UNTOUCHED (rule #6 — explains the floor, never moves it)

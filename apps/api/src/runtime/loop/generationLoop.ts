@@ -109,6 +109,11 @@ export function buildPopulationRequest(
 /** A provider tool call surfaced by the gateway for the loop to relay (observability — §4/§12). */
 export interface ToolCallObservation {
   readonly toolName: string;
+  /** FB.7 — the actual tool query (e.g. a web_search string); relayed into tool_call.started/finished,
+   * truncated-with-marker under the §4 field budget + scrubbed by the append path (rule #4). Optional. */
+  readonly query?: string;
+  /** FB.7 — the (raw) tool result; relayed into tool_call.finished, truncated + scrubbed as `query`. Optional. */
+  readonly result?: string;
 }
 
 /**
@@ -435,9 +440,24 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       );
       const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest);
       for (const toolCall of toolCalls ?? []) {
+        // FB.7 — relay the actual query (started) + query/result (finished) as tool-call detail, each
+        // TRUNCATED-WITH-MARKER under the §4 field budget (reuse FB.6's helper) so an oversized capture never
+        // fails the payload ceiling; the append-path scrub then redacts any embedded secret (rule #4 reuse).
+        // Replay reads the persisted detail with no provider (rule #7). Absent detail → byte-identical baseline.
+        const q =
+          toolCall.query !== undefined
+            ? truncateCaptureField(toolCall.query, CAPTURE_FIELD_MAX_BYTES)
+            : undefined;
+        const r =
+          toolCall.result !== undefined
+            ? truncateCaptureField(toolCall.result, CAPTURE_FIELD_MAX_BYTES)
+            : undefined;
         await appendEvent(
           'tool_call.started',
-          { toolName: toolCall.toolName },
+          {
+            toolName: toolCall.toolName,
+            ...(q ? { query: q.value, queryTruncated: q.truncated } : {}),
+          },
           {
             generationId,
             agenomeId: agenome.id,
@@ -445,7 +465,11 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         );
         await appendEvent(
           'tool_call.finished',
-          { toolName: toolCall.toolName },
+          {
+            toolName: toolCall.toolName,
+            ...(q ? { query: q.value, queryTruncated: q.truncated } : {}),
+            ...(r ? { result: r.value, resultTruncated: r.truncated } : {}),
+          },
           {
             generationId,
             agenomeId: agenome.id,
