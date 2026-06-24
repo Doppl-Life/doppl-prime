@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T14:53:17.645Z",
+  "generated_at": "2026-06-24T15:28:19.883Z",
   "source_kind": "agarden",
   "comparison_sets": [],
   "cases": [
@@ -1385,7 +1385,41 @@
           "source_status": "imported",
           "kernel": "prime",
           "body": "# Algorithmic Wear-Staking for Municipal Solvency\n\nprev_id: [[fiscal-recalibration-via-wear-based-ruc-cff16230]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nLegacy fiscal architecture cannot capture value from predictable, optimized mobility because it taxes volume and error rather than infrastructure impact\n\n## Discovery\n### Finding 1\n\nFHWA 2024 report on 18% faster pavement degradation per mile from heavy AV convoys <span class=\"arrow\">→ field: legacy-road-tax</span>\n\n### Finding 2\n\nMoody's mobility RUC predictability metrics exceeding 92% <span class=\"arrow\">→ field: legacy-road-tax</span>\n\n### Finding 3\n\nCalifornia AB 105 enabling OBU data sharing for infrastructure pricing <span class=\"arrow\">→ field: legacy-road-tax</span>\n\n### Finding 4\n\nDOT pilot data showing telematics can reduce predictive maintenance costs by 34% <span class=\"arrow\">→ field: legacy-road-tax</span>\n\n## Growth — Doppl\n### Claim\nMunicipalities should replace static road usage charges with real-time, telemetry-pegged infrastructure wear tokens that dynamically price axle load and suspension stress rather than distance traveled.\n### Implications\n- AV fleet operators lose discretionary routing incentives but gain predictable maintenance-cost offsets\n- Municipal finance departments shift from tax-collection agencies to data-validation nodes\n- Bond underwriters will reprice road infrastructure assets based on algorithmic degradation models rather than historical fuel-tax baselines\n### Opportunities\n- Pilot dynamic tolling corridors in dense AV logistics zones using OBU telematics APIs\n- Contract with asphalt analytics firms to translate telemetry into localized fatigue coefficients\n- Issue wear-backed municipal bonds tied to real-time pavement health dashboards\n### Sprouts\n- Cross-jurisdictional wear-credit clearinghouses\n- AV fleet maintenance scheduling optimized against toll-minimization algorithms\n- Public-private micro-repair drones funded by wear-token liquidity\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n4 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
-          "human_ratings": []
+          "human_ratings": [
+            {
+              "rating_id": "rating_algorithmic-wear-staking-for-municipal-solvency-f494cbee_mhabermas_doppl_dev",
+              "rating_target": "solution",
+              "case_id": "when-the-crashes-dont-come-575845a4",
+              "solution_id": "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+              "score": 4,
+              "reviewer_email": "mhabermas@doppl.dev",
+              "submitted_at": "2026-06-23T16:02:11.000Z",
+              "app_version": "calibrator-v0",
+              "body": ""
+            },
+            {
+              "rating_id": "rating_algorithmic-wear-staking-for-municipal-solvency-f494cbee_dkraft_doppl_dev",
+              "rating_target": "solution",
+              "case_id": "when-the-crashes-dont-come-575845a4",
+              "solution_id": "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+              "score": 4,
+              "reviewer_email": "dkraft@doppl.dev",
+              "submitted_at": "2026-06-23T16:18:47.000Z",
+              "app_version": "calibrator-v0",
+              "body": ""
+            },
+            {
+              "rating_id": "rating_algorithmic-wear-staking-for-municipal-solvency-f494cbee_jrivera_doppl_dev",
+              "rating_target": "solution",
+              "case_id": "when-the-crashes-dont-come-575845a4",
+              "solution_id": "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+              "score": 3,
+              "reviewer_email": "jrivera@doppl.dev",
+              "submitted_at": "2026-06-23T17:05:30.000Z",
+              "app_version": "calibrator-v0",
+              "body": ""
+            }
+          ]
         },
         {
           "node_id": "infrastructure-compute-swap-tolling-e12f5945",

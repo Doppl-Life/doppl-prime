@@ -131,6 +131,7 @@ export const RatingSubmission = z
     rating_target: RatingTarget.default("solution"),
     solution_id: z.string().min(1).optional(),
     problem_recovery_id: z.string().min(1).optional(),
+    node_id: z.string().min(1).optional(),
     score: z.number().int().min(-5).max(5),
     notes: z.string().default(""),
     reviewer_email: ReviewerEmail,

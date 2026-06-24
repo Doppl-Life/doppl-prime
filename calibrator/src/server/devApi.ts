@@ -1,9 +1,11 @@
 import type { Plugin } from "vite";
-import { defaultVaultRoot } from "./vaultPaths";
+import { defaultAgardenRoot, defaultVaultRoot } from "./vaultPaths";
 import { writeRatingMarkdown } from "./ratingWriter";
 import { RatingSubmission } from "./vaultSchemas";
 import { canSubmitRating } from "../reviewability";
 import { readDefaultCalibratorIndex } from "./indexReader";
+import { writeAgardenRating } from "./agardenRatingService";
+import type { CalibratorIndex } from "../types";
 
 async function readJsonBody(req: import("node:http").IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
@@ -19,11 +21,7 @@ function sendJson(res: import("node:http").ServerResponse, status: number, body:
   res.end(JSON.stringify(body));
 }
 
-async function assertRateableTarget(submission: RatingSubmission): Promise<void> {
-  const index = await readDefaultCalibratorIndex();
-  if (index.source_kind === "agarden") {
-    throw new Error("aGarden rating writes require the ratings-ledger writer, which is not wired yet.");
-  }
+function assertRateableTarget(index: CalibratorIndex, submission: RatingSubmission): void {
   const caseItem = index.cases.find((item) => item.case_id === submission.case_id);
   if (!caseItem) throw new Error(`Unknown case_id "${submission.case_id}"`);
 
@@ -54,7 +52,17 @@ export function createCalibratorDevApi(): Plugin {
           if (req.method === "POST" && req.url === "/api/ratings") {
             const body = await readJsonBody(req);
             const submission = RatingSubmission.parse(body);
-            await assertRateableTarget(submission);
+            const index = await readDefaultCalibratorIndex();
+            if (index.source_kind === "agarden") {
+              const result = await writeAgardenRating({
+                agardenRoot: defaultAgardenRoot,
+                index,
+                submission,
+              });
+              sendJson(res, 201, result);
+              return;
+            }
+            assertRateableTarget(index, submission);
             const result = await writeRatingMarkdown({
               vaultRoot: defaultVaultRoot,
               submission,

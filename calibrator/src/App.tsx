@@ -265,7 +265,6 @@ export function App() {
   const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
-  const activeSourceAllowsWrites = index?.source_kind !== "agarden";
   const totalArtifacts = allProblemRecoveries.length + allSolutions.length;
   const hiddenAuditCount =
     allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "audit").length +
@@ -349,6 +348,7 @@ export function App() {
           solution_id: ratingTarget === "solution" ? selectedSolution?.solution_id : undefined,
           problem_recovery_id:
             ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
+          node_id: activeReviewArtifact.node_id,
           score,
           notes,
           reviewer_email: normalizeRaterEmail(reviewerEmail),
@@ -658,17 +658,13 @@ export function App() {
             isSubmitting ||
             !isWritable ||
             !activeIsSubmittable ||
-            !reviewerIsAllowed ||
-            !activeSourceAllowsWrites
+            !reviewerIsAllowed
           }
           onClick={submitRating}
         >
           {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server.</p> : null}
-        {isWritable && !activeSourceAllowsWrites ? (
-          <p className="mode-note">aGarden ratings need the ratings-ledger writer before writes are enabled.</p>
-        ) : null}
         {activeReviewArtifact && !activeIsSubmittable ? (
           <p className="mode-note">Audit-only artifacts are visible for provenance but are not rateable.</p>
         ) : null}

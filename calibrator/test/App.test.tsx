@@ -303,6 +303,69 @@ describe("App", () => {
     );
   });
 
+  it("submits aGarden ratings with the selected node id", async () => {
+    const fetchMock = vi.mocked(fetch);
+    const agardenFixture: CalibratorIndex = {
+      generated_at: "2026-06-24T00:00:00.000Z",
+      source_kind: "agarden",
+      comparison_sets: [],
+      cases: [
+        {
+          node_id: "case-a",
+          case_id: "case-a",
+          title: "Case A",
+          source_kind: "agarden",
+          visibility: "internal",
+          source_paths: ["flow/case-a/case-a.md"],
+          body: "# Case A",
+          problem: { body: "Problem", source: "agarden" },
+          problem_recoveries: [
+            {
+              node_id: "node-pr",
+              case_id: "case-a",
+              problem_recovery_id: "node-pr",
+              title: "Problem Recovery",
+              source_path: "flow/case-a/problem-recovery/node-pr.md",
+              ledger_path: "ratings-ledger.json",
+              source_type: "kernel",
+              source_status: "imported",
+              body: "# Problem Recovery",
+              human_ratings: [],
+            },
+          ],
+          solutions: [],
+        },
+      ],
+    };
+    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(agardenFixture), { status: 200 });
+      if (url === "/api/ratings" && init?.method === "POST") {
+        return new Response(
+          JSON.stringify({ ratingId: "node-pr:dalton", relativePath: "ratings-ledger.json", scores: { human: 4, n: 1 } }),
+          { status: 201 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "Case A" });
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/ratings",
+      expect.objectContaining({
+        body: expect.stringContaining('"node_id":"node-pr"'),
+      }),
+    );
+  });
+
   it("falls back to the static index in read-only preview mode", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();

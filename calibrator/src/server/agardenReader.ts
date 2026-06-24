@@ -1,13 +1,29 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import matter from "gray-matter";
+import { z } from "zod";
 import type {
   CalibratorCase,
   CalibratorIndex,
   CalibratorProblemRecovery,
+  CalibratorRating,
   CalibratorSolution,
 } from "../types";
 import { AgardenNodeFrontmatter } from "./agardenSchemas";
+
+const AgardenLedgerRating = z.object({
+  rater_id: z.string().min(1),
+  score: z.number().int().min(-5).max(5),
+  rate_date: z.string().min(1),
+});
+
+const AgardenLedgerEntry = z.object({
+  node_id: z.string().min(1),
+  ratings: z.array(AgardenLedgerRating).default([]),
+});
+
+const AgardenRatingsLedger = z.array(AgardenLedgerEntry);
+type AgardenLedgerEntry = z.infer<typeof AgardenLedgerEntry>;
 
 interface ParsedAgardenNode {
   id: string;
@@ -67,6 +83,18 @@ async function readAgardenMarkdown(agardenRoot: string, path: string): Promise<P
   };
 }
 
+async function readRatingsLedger(agardenRoot: string): Promise<Map<string, AgardenLedgerEntry>> {
+  try {
+    const raw = await readFile(join(agardenRoot, "ratings-ledger.json"), "utf8");
+    const entries = AgardenRatingsLedger.parse(JSON.parse(raw));
+    return new Map(entries.map((entry) => [entry.node_id, entry]));
+  } catch (error) {
+    const code = error instanceof Error && "code" in error ? (error as NodeJS.ErrnoException).code : undefined;
+    if (code === "ENOENT") return new Map();
+    throw error;
+  }
+}
+
 async function collectMarkdownFiles(path: string): Promise<string[]> {
   const entries = await readdir(path, { withFileTypes: true });
   const files: string[] = [];
@@ -102,7 +130,33 @@ function problemBodyForCase(caseNode: ParsedAgardenNode): { body: string; source
   };
 }
 
-function toProblemRecovery(caseId: string, node: ParsedAgardenNode): CalibratorProblemRecovery {
+function ratingsForNode(
+  caseId: string,
+  node: ParsedAgardenNode,
+  target: "problem_recovery" | "solution",
+  ledger: Map<string, AgardenLedgerEntry>,
+): CalibratorRating[] {
+  const entry = ledger.get(node.id);
+  if (!entry) return [];
+  return entry.ratings.map((rating) => ({
+    rating_id: `rating_${node.id}_${rating.rater_id.replace(/[^a-z0-9_-]+/gi, "_").replace(/_+$/g, "")}`,
+    rating_target: target,
+    case_id: caseId,
+    problem_recovery_id: target === "problem_recovery" ? node.id : undefined,
+    solution_id: target === "solution" ? node.id : undefined,
+    score: rating.score,
+    reviewer_email: rating.rater_id,
+    submitted_at: rating.rate_date,
+    app_version: "calibrator-v0",
+    body: "",
+  }));
+}
+
+function toProblemRecovery(
+  caseId: string,
+  node: ParsedAgardenNode,
+  ledger: Map<string, AgardenLedgerEntry>,
+): CalibratorProblemRecovery {
   return {
     node_id: node.id,
     case_id: caseId,
@@ -120,11 +174,15 @@ function toProblemRecovery(caseId: string, node: ParsedAgardenNode): CalibratorP
     source_status: "imported",
     kernel: node.frontmatter.kernel,
     body: node.content,
-    human_ratings: [],
+    human_ratings: ratingsForNode(caseId, node, "problem_recovery", ledger),
   };
 }
 
-function toSolution(caseId: string, node: ParsedAgardenNode): CalibratorSolution {
+function toSolution(
+  caseId: string,
+  node: ParsedAgardenNode,
+  ledger: Map<string, AgardenLedgerEntry>,
+): CalibratorSolution {
   return {
     node_id: node.id,
     case_id: caseId,
@@ -142,11 +200,15 @@ function toSolution(caseId: string, node: ParsedAgardenNode): CalibratorSolution
     source_status: "imported",
     kernel: node.frontmatter.kernel,
     body: node.content,
-    human_ratings: [],
+    human_ratings: ratingsForNode(caseId, node, "solution", ledger),
   };
 }
 
-async function readRootCase(agardenRoot: string, dirname: string): Promise<CalibratorCase | null> {
+async function readRootCase(
+  agardenRoot: string,
+  dirname: string,
+  ledger: Map<string, AgardenLedgerEntry>,
+): Promise<CalibratorCase | null> {
   const casePath = join(agardenRoot, dirname);
   const caseMarkdownPath = join(casePath, `${dirname}.md`);
   if (!(await pathExists(caseMarkdownPath))) return null;
@@ -162,8 +224,10 @@ async function readRootCase(agardenRoot: string, dirname: string): Promise<Calib
 
   const problemRecoveries = descendants
     .filter((node) => node.stage === "problem_recovery")
-    .map((node) => toProblemRecovery(caseNode.id, node));
-  const solutions = descendants.filter((node) => node.stage === "doppl").map((node) => toSolution(caseNode.id, node));
+    .map((node) => toProblemRecovery(caseNode.id, node, ledger));
+  const solutions = descendants
+    .filter((node) => node.stage === "doppl")
+    .map((node) => toSolution(caseNode.id, node, ledger));
 
   return {
     node_id: caseNode.id,
@@ -181,13 +245,14 @@ async function readRootCase(agardenRoot: string, dirname: string): Promise<Calib
 
 export async function readAgardenIndex(agardenRoot: string): Promise<CalibratorIndex> {
   const graphRoot = resolve(agardenRoot, "flow");
+  const ledger = await readRatingsLedger(agardenRoot);
   const entries = await readdir(graphRoot, { withFileTypes: true });
   const dirs = entries
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .map((entry) => entry.name)
     .sort();
 
-  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(graphRoot, dirname)))).filter(
+  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(graphRoot, dirname, ledger)))).filter(
     (item): item is CalibratorCase => Boolean(item),
   );
 

@@ -56,12 +56,14 @@ describe("vault schemas", () => {
         case_id: "fsd-accident-economy",
         rating_target: "problem_recovery",
         problem_recovery_id: "pr_fsd_accident_economy",
+        node_id: "agarden-node-123",
         score: 4,
         notes: "Recovered the real economic dependency problem.",
       }),
     ).toMatchObject({
       rating_target: "problem_recovery",
       problem_recovery_id: "pr_fsd_accident_economy",
+      node_id: "agarden-node-123",
       score: 4,
     });
   });

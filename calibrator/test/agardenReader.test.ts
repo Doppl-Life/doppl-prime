@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { defaultAgardenRoot } from "../src/server/vaultPaths";
 import { readAgardenIndex } from "../src/server/agardenReader";
@@ -60,5 +63,67 @@ describe("readAgardenIndex", () => {
       problem_recoveries: [],
       solutions: [],
     });
+  });
+
+  it("attaches ratings-ledger entries to matching aGarden nodes", async () => {
+    const agardenRoot = await mkdtemp(join(tmpdir(), "agarden-reader-"));
+    const caseRoot = join(agardenRoot, "flow/case-a");
+    await mkdir(join(caseRoot, "problem-recovery"), { recursive: true });
+    await writeFile(
+      join(caseRoot, "case-a.md"),
+      `---
+id: case-a
+stage: case_study
+name: Case A
+---
+# Case A
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(caseRoot, "problem-recovery/node-pr.md"),
+      `---
+id: node-pr
+stage: problem_recovery
+name: Problem Recovery
+kernel: dalton
+---
+# Problem Recovery
+
+prev: [[case-a]]
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(agardenRoot, "ratings-ledger.json"),
+      JSON.stringify(
+        [
+          {
+            node_id: "node-pr",
+            ratings: [
+              {
+                rater_id: "dalton.dinderman@challenger.gauntletai.com",
+                score: 5,
+                rate_date: "2026-06-24T16:00:00.000Z",
+              },
+            ],
+          },
+        ],
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const index = await readAgardenIndex(agardenRoot);
+    expect(index.cases[0]?.problem_recoveries[0]?.human_ratings).toEqual([
+      expect.objectContaining({
+        rating_id: "rating_node-pr_dalton_dinderman_challenger_gauntletai_com",
+        rating_target: "problem_recovery",
+        problem_recovery_id: "node-pr",
+        reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+        score: 5,
+      }),
+    ]);
   });
 });
