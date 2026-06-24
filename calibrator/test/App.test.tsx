@@ -163,6 +163,17 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
   });
 
+  it("shows the parent problem recovery above the doppl with collapsed sections", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByText("Parent Problem Recovery")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    expect(screen.queryByText("The recovered problem is visible.")).not.toBeInTheDocument();
+  });
+
   it("summarizes an aGarden-backed index by rateable cases only", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();

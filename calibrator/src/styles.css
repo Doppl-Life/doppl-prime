@@ -233,6 +233,10 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.parent-recovery-step {
+  grid-column: 1 / -1;
+}
+
 .selected-step {
   border-left: 5px solid var(--teal);
   padding: 18px;
@@ -260,6 +264,7 @@ textarea {
 }
 
 .case-step .markdown-block,
+.parent-recovery-step .markdown-block,
 .selected-step .markdown-block {
   max-width: none;
   width: 100%;
@@ -581,6 +586,7 @@ textarea {
     padding: 14px 20px 16px;
   }
 
+  .parent-recovery-step,
   .selected-step,
   .source-disclosure {
     grid-column: 1 / -1;

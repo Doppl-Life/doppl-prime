@@ -41,6 +41,25 @@ function firstRateableSolution(caseItem: CalibratorIndex["cases"][number]) {
   return caseItem.solutions.find((artifact) => reviewMode(artifact) === "primary");
 }
 
+function problemRecoveryNodeKey(recovery: CalibratorProblemRecovery): string[] {
+  return [recovery.node_id, recovery.problem_recovery_id].filter(Boolean) as string[];
+}
+
+function findParentProblemRecovery(
+  solution: CalibratorSolution | null,
+  recoveries: CalibratorProblemRecovery[],
+): CalibratorProblemRecovery | null {
+  if (!solution) return null;
+  const parentIds = new Set(solution.parent_ids ?? []);
+  if (parentIds.size > 0) {
+    const parent = recoveries.find((recovery) =>
+      problemRecoveryNodeKey(recovery).some((key) => parentIds.has(key)),
+    );
+    if (parent) return parent;
+  }
+  return recoveries.find((recovery) => reviewMode(recovery) === "primary") ?? recoveries[0] ?? null;
+}
+
 function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
   return Boolean(firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem));
 }
@@ -281,6 +300,7 @@ export function App() {
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [openCaseSections, setOpenCaseSections] = useState<Set<string>>(() => new Set());
+  const [openParentRecoverySections, setOpenParentRecoverySections] = useState<Set<string>>(() => new Set());
   const [score, setScore] = useState<number | null>(null);
   const [reviewerEmail, setReviewerEmail] = useState(() => {
     try {
@@ -370,6 +390,13 @@ export function App() {
       visibleProblemRecoveries[0] ??
       null,
     [visibleProblemRecoveries, selectedProblemRecoveryId],
+  );
+  const parentProblemRecovery = useMemo(
+    () =>
+      ratingTarget === "solution"
+        ? findParentProblemRecovery(selectedSolution, allProblemRecoveries)
+        : null,
+    [allProblemRecoveries, ratingTarget, selectedSolution],
   );
   const reviewQueue = useMemo<ReviewQueueItem[]>(() => {
     const problemRecoveryItems: ReviewQueueItem[] = visibleProblemRecoveries.map((artifact) => ({
@@ -511,10 +538,23 @@ export function App() {
     setScore(null);
     setSavedPath("");
     setSourceDetailsOpen(false);
+    setOpenParentRecoverySections(new Set());
   }
 
   function toggleCaseSection(sectionKey: string) {
     setOpenCaseSections((current) => {
+      const next = new Set(current);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+      } else {
+        next.add(sectionKey);
+      }
+      return next;
+    });
+  }
+
+  function toggleParentRecoverySection(sectionKey: string) {
+    setOpenParentRecoverySections((current) => {
       const next = new Set(current);
       if (next.has(sectionKey)) {
         next.delete(sectionKey);
@@ -601,6 +641,7 @@ export function App() {
               setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
               setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
               setOpenCaseSections(new Set());
+              setOpenParentRecoverySections(new Set());
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
@@ -624,6 +665,7 @@ export function App() {
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
+              setOpenParentRecoverySections(new Set());
             }}
           >
             Problem recoveries
@@ -637,6 +679,7 @@ export function App() {
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
+              setOpenParentRecoverySections(new Set());
             }}
           >
             Doppls
@@ -669,6 +712,7 @@ export function App() {
               setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
+              setOpenParentRecoverySections(new Set());
             }}
           >
             {ratingTarget === "problem_recovery"
@@ -697,10 +741,15 @@ export function App() {
           />
         </article>
 
-        {discoveryContextText ? (
-          <article className="trace-step">
-            <p className="trace-label">Discovery Context</p>
-            <MarkdownBlock text={discoveryContextText} />
+        {ratingTarget === "solution" && parentProblemRecovery ? (
+          <article className="trace-step parent-recovery-step">
+            <p className="trace-label">Parent Problem Recovery</p>
+            <h2>{parentProblemRecovery.title}</h2>
+            <CaseStudyBlock
+              text={parentProblemRecovery.body}
+              openSections={openParentRecoverySections}
+              onToggleSection={toggleParentRecoverySection}
+            />
           </article>
         ) : null}
 
@@ -709,6 +758,13 @@ export function App() {
           <h2>{activeTitle}</h2>
           {activeReviewArtifact ? <MarkdownBlock text={activeReviewArtifact.body} /> : null}
         </article>
+
+        {discoveryContextText ? (
+          <article className="trace-step">
+            <p className="trace-label">Discovery Context</p>
+            <MarkdownBlock text={discoveryContextText} />
+          </article>
+        ) : null}
 
         <section className="source-disclosure">
           <button type="button" onClick={() => setSourceDetailsOpen((open) => !open)}>
