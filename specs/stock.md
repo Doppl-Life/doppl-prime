@@ -133,6 +133,8 @@ The rendered stock field is a projection grouped by field. It is what humans and
 
 The counts in frontmatter are projections: `discoveries` counts admitted discoveries in the field, and `finds_screened` counts screened finds considered for the field.
 
+A load-bearing fact is a compressed admission of source material, not the source itself: the claim is the heading, the `synopsis` carries the mechanism and the implication, and a grounding line states why it cleared the bar. The synopsis is a compression — its length tracks how much the admitted source carried, not a fixed cap. Each fact ends with a stable block anchor (`^discovery_id`) so a node can deep-link the exact discovery it used (`[[field-id#^discovery_id]]`); the node cites that lighter reference rather than restating the fact. **Provisional:** synopsis length and grounding-line format are still being tuned.
+
 ### Markdown shape
 
 ```markdown
@@ -148,10 +150,19 @@ updated: 2026-06-22T00:00:00.000Z
 
 # Battery supply
 
+Domain memory for how refined-supply access — not raw lithium — governs battery cost and availability.
+
 ## Load-bearing facts
 
-- accident liability shifts from driver to manufacturer faster than premiums reprice · grounded: 3 sources, 1 dated signal
-- used-car residuals soften first in AV-pilot metros · grounded: held-out metro data
+### Refining capacity is the binding constraint, not raw lithium
+
+Raw lithium is abundant on paper; the bottleneck is qualified refining and the offtake that locks it up. A buyer with extraction exposure but no refined-supply access is long the wrong leg, and reprices when refined spreads widen.
+_Grounded: 3 sources · 1 dated signal · novelty 0.74_ ^refining-bind
+
+### Yuan-denominated offtake pulls supply off the spot market
+
+Long-dated, yuan-settled offtake removes refined units from the spot pool before they clear, so visible spot inventory understates how tight access really is.
+_Grounded: 2 sources · held-out trade-flow data_ ^offtake-lock
 ```
 
 ### Type contract
@@ -168,9 +179,10 @@ type StockFieldFrontmatter = {
 };
 
 type StockDiscoverySummary = {
-  discovery_id: SlugId;
-  claim: string;
-  grounded: string;
+  discovery_id: SlugId; // also the Obsidian block anchor (`^discovery_id`) a node deep-links
+  claim: string;        // the load-bearing fact, stated as the entry heading
+  synopsis: string;     // compressed mechanism + implication; length tracks the admitted source
+  grounded: string;     // why it cleared the bar: signal + dated sources
   sources?: SourceRef[];
 };
 
@@ -179,15 +191,19 @@ type MarkdownSection<Heading extends string, Body> = {
   body: Body;
 };
 
+type MarkdownSubsection<Heading extends string, Body> = MarkdownSection<Heading, Body>;
+
 type MarkdownFile<Frontmatter, Body> = {
   frontmatter: Frontmatter;
   body: Body;
 };
 
-type LoadBearingFactsSection = MarkdownSection<'## Load-bearing facts', StockDiscoverySummary[]>;
+type LoadBearingFact = MarkdownSubsection<`### ${string}`, StockDiscoverySummary>;
+
+type LoadBearingFactsSection = MarkdownSection<'## Load-bearing facts', LoadBearingFact[]>;
 
 type StockFieldFile = MarkdownFile<StockFieldFrontmatter, [
-  headline: MarkdownSection<`# ${string}`, string>,
+  description: MarkdownSection<`# ${string}`, string>, // one-line domain description as the headline body
   facts: LoadBearingFactsSection,
 ]>;
 ```
