@@ -45,7 +45,7 @@ export const HIGH_TRAFFIC_PAYLOAD_MAP: Partial<Record<RunEventType, z.ZodType>> 
   'judge.reviewed': JudgeResult,
   // frontend-v2 FB.6 — the deep-telemetry capture narrows to its frozen model (same schema validates the
   // write + the model). Raw fields are truncated-with-marker before append + scrubbed at the boundary.
-  'llm_call_telemetry': LlmCallTelemetry,
+  llm_call_telemetry: LlmCallTelemetry,
 };
 
 /**

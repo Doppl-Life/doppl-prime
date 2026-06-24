@@ -62,9 +62,9 @@ describe('FB.6 — raw reasoning/response capture amendment (spec §4)', () => {
         .success,
     ).toBe(true);
     expect(resolvePayloadSchema('llm_call_telemetry')).toBe(LlmCallTelemetry);
-    expect(LlmCallTelemetry.safeParse({ ...validLlmCallTelemetry, apiKey: 'sk-secret' }).success).toBe(
-      false,
-    );
+    expect(
+      LlmCallTelemetry.safeParse({ ...validLlmCallTelemetry, apiKey: 'sk-secret' }).success,
+    ).toBe(false);
     // truncated is a REQUIRED queryable marker (a reader always knows if the capture is partial).
     const { truncated, ...noFlag } = validLlmCallTelemetry;
     void truncated;

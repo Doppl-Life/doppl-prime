@@ -41,7 +41,7 @@ const EXPECTED_MAPPING = {
   'novelty.scored': NoveltyScore,
   'fitness.scored': FitnessScore,
   'judge.reviewed': JudgeResult,
-  'llm_call_telemetry': LlmCallTelemetry,
+  llm_call_telemetry: LlmCallTelemetry,
 } as const;
 
 const sorted = (a: readonly string[]): string[] => [...a].sort();
