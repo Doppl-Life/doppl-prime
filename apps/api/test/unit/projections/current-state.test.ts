@@ -132,6 +132,71 @@ describe('buildCurrentState — concrete reducer over the P6.1 fold (spec §9)',
     expect(exhaustedThenDone.state.runs['r_e2']?.status).toBe('completed');
   });
 
+  // §3/§8/§9 (lineage-projection bug fix) — a reproduction event (agenome.fused / agenome.mutated /
+  // agenome.reproduced) materializes the CHILD agenome (payload.childAgenomeId) into state.agenomes as a
+  // freshly-born offspring: status 'seeded' (mirrors agenome.spawned + successor-threading's rehome), and
+  // generationId = the child's OWN gen N+1 (derived from the envelope's parent gen via the loop's
+  // "<runId>-gen<N>" → "<runId>-gen<N+1>" convention), NOT the parent gen. Before this fix the child never
+  // entered state.agenomes, so its candidates floated disconnected in the lineage graph.
+  test('test_reproduction_materializes_child_agenome', () => {
+    const runId = 'run_1';
+    // The reproduce seam emits the reproduction event DURING the parent's generation (envelope.generationId
+    // = parent gen N); the child is re-homed to gen N+1 later by successor-threading (no event). The payload
+    // carries the distinct child id + parent ids.
+    const childOfFusion = { ...validReproductionEvent, childAgenomeId: 'child_fused' };
+    const childOfReproduced = {
+      ...validReproductionEvent,
+      mode: 'mutation_only' as const,
+      parentAgenomeIds: ['agn_5'],
+      childAgenomeId: 'child_mut',
+      crossoverPoints: [],
+    };
+    const { state } = buildCurrentState([
+      makeRow('agenome.fused', {
+        runId,
+        generationId: `${runId}-gen0`,
+        sequence: 0,
+        payload: childOfFusion,
+      }),
+      makeRow('agenome.reproduced', {
+        runId,
+        generationId: `${runId}-gen0`,
+        sequence: 1,
+        payload: childOfReproduced,
+      }),
+    ]);
+    // both children entered state.agenomes (the bug: they never did) ...
+    expect(state.agenomes['child_fused']).toBeDefined();
+    expect(state.agenomes['child_mut']).toBeDefined();
+    // ... as freshly-born offspring (status 'seeded') homed to their OWN gen N+1 (gen1, derived from gen0).
+    expect(state.agenomes['child_fused']?.status).toBe('seeded');
+    expect(state.agenomes['child_fused']?.generationId).toBe(`${runId}-gen1`);
+    expect(state.agenomes['child_mut']?.status).toBe('seeded');
+    expect(state.agenomes['child_mut']?.generationId).toBe(`${runId}-gen1`);
+    expect(state.agenomes['child_fused']?.runId).toBe(runId);
+  });
+
+  // Defensive (projection never throws on a stray payload) — a reproduction event whose envelope
+  // generationId does NOT match the "<runId>-gen<N>" convention falls back to the envelope generationId for
+  // the child's home (no crash, no NaN gen), and an unparseable payload folds to a no-op.
+  test('test_reproduction_child_generation_fallback_and_noop', () => {
+    const runId = 'run_1';
+    const { state } = buildCurrentState([
+      // non-conventional generationId → child inherits the envelope generationId verbatim (graceful).
+      makeRow('agenome.fused', {
+        runId,
+        generationId: 'odd_gen',
+        sequence: 0,
+        payload: { ...validReproductionEvent, childAgenomeId: 'child_odd' },
+      }),
+      // unparseable reproduction payload → no child row, no throw.
+      makeRow('agenome.fused', { runId, generationId: `${runId}-gen0`, sequence: 1, payload: {} }),
+    ]);
+    expect(state.agenomes['child_odd']?.generationId).toBe('odd_gen');
+    expect(state.agenomes['child_odd']?.status).toBe('seeded');
+    expect(Object.keys(state.agenomes)).toEqual(['child_odd']); // the {} payload added no row
+  });
+
   // §3/§9 (Step-2.5 TWEAK #2) — the generation-phase markers verifying/scoring/reproducing ARE durable
   // GenerationStatus phases (the frozen enum has them; these markers are their only source) → applied
   // to status. (The other 8 operation markers stay no-op — see test_non_current_state_event_is_noop.)

@@ -158,6 +158,50 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     expect(node?.status).toBe('selected');
   });
 
+  // §8/§10 (lineage-projection bug fix) — a fused/mutated CHILD agenome renders a proper structure: an
+  // `agenome` node for the child, a generation→agenome edge to its OWN gen N+1, and the candidate it
+  // produced edged to it (`generated`). Before the fix the child agenome never entered state.agenomes, so
+  // the agenome node + both edges were absent and the gen-N+1 candidate floated disconnected.
+  test('test_fused_child_renders_agenome_node_and_connects_candidate', () => {
+    const runId = 'run_repro';
+    const childId = 'child_fused';
+    // gen0: parent reproduces (event homed to parent gen0; child is gen1). gen1: the gen1 generation node
+    // exists (generation.started) and the child produces a candidate carrying agenomeId=child, gen=gen1.
+    const childCandidate = {
+      ...validCandidateIdeaCrossDomain,
+      id: 'cand_child',
+      agenomeId: childId,
+      generationId: `${runId}-gen1`,
+    };
+    const graph = buildLineageGraph(
+      buildCurrentState([
+        makeRow('generation.started', { runId, generationId: `${runId}-gen0`, sequence: 0 }),
+        makeRow('agenome.fused', {
+          runId,
+          generationId: `${runId}-gen0`,
+          sequence: 1,
+          payload: { ...validReproductionEvent, childAgenomeId: childId },
+        }),
+        makeRow('generation.started', { runId, generationId: `${runId}-gen1`, sequence: 2 }),
+        makeRow('candidate.created', { runId, sequence: 3, payload: childCandidate }),
+      ]),
+    );
+    // the child agenome is a real node ...
+    const childNode = graph.nodes.find((n) => n.id === childId);
+    expect(childNode?.type).toBe('agenome');
+    // ... linked to its OWN generation (gen1) ...
+    const genEdge = graph.edges.find(
+      (e) => e.source === `${runId}-gen1` && e.target === childId,
+    );
+    expect(genEdge).toBeDefined();
+    // ... and its candidate connects to it (no longer floating).
+    const candEdge = graph.edges.find((e) => e.source === childId && e.target === 'cand_child');
+    expect(candEdge?.type).toBe('generated');
+    // every node still in the frozen closed-6 set; output conforms to the contract.
+    for (const n of graph.nodes) expect(LineageNodeType.options).toContain(n.type);
+    expect(LineageGraphProjection.safeParse(graph).success).toBe(true);
+  });
+
   // §2.5-seam producer-conformance — the builder output safeParses the frozen P0.13 contract.
   test('test_output_conforms_to_frozen_contract', () => {
     const graph = buildLineageGraph(buildCurrentState(fullRunEvents('run_1')));
