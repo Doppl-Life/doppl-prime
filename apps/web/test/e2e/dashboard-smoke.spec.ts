@@ -195,14 +195,18 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   await launcher.getByRole('button', { name: /start run/i }).click();
   await expect(page).toHaveURL(/\/runs\/run_1$/); // FV.1 — observed run is URL-derived
 
-  // 2. run loads — the lineage graph renders the served fixture (the selected-winner node).
+  // 2. run loads — FV.4: /runs/run_1 is the S2 3-pane Organism View; the CENTER lineage graph renders
+  //    the served fixture (the selected-winner node).
+  await expect(page.getByLabel('Doppl organism view')).toBeVisible(); // the 3-pane shell
   await expect(page.getByLabel('Lineage graph')).toBeVisible();
   await expect(page.getByText('Winner idea')).toBeVisible();
 
   // 3. live events fold — the SSE marker advances the lineage activity feed (post-event locator, no sleep).
   await expect(page.getByTestId('lineage-activity')).toContainText(/review/i);
 
-  // 4. final-idea proof links resolve — the winner + its proof sections render for the selected winner.
+  // 4. final-idea proof — FV.4: the dedicated S5 is FV.7, so the final-idea proof panel lives at the
+  //    interim /runs/:id/final route (Dashboard). Navigate there for the proof assertions.
+  await page.goto('/runs/run_1/final');
   const finalIdea = page.getByLabel('Final surviving idea');
   await expect(
     finalIdea.getByRole('heading', { name: /immune-inspired cold-start/i }),
