@@ -86,3 +86,16 @@ guiding implementation, cut it.
   an operator.
 - **Carry forward:** gate promotion on `bedrock` evidence; honest "no verdict
   ledger evidence yet" beats a confident fabricated benchmark.
+
+### Calibrate boldness to the blast radius - 2026-06-23
+
+- **Lesson:** Agent risk-aversion is calibrated to a human cost structure — slow
+  undo, limited working memory, sequential exploration — that does not hold when a
+  change is committed-and-revertable and verified by `proof`. Optimal cut-depth
+  scales to reversibility × verifiability, not to inherited refactor-pain. "If you
+  don't have to put anything back, you didn't cut enough" — *when the cut is
+  reversible and verifiable.*
+- **Carry forward:** measure the net (clean tree, branch distance from `main`,
+  green checks) before estimating risk; burn hard where git + checks cover it, stay
+  careful for irreversible or external side-effects. See [`HEURISTICS.md`](HEURISTICS.md)
+  "Cut to the safety net" and the agent/human git pairing in [`AGENTS.md`](AGENTS.md).

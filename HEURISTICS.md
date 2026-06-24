@@ -40,6 +40,11 @@ prompt, critic mandate, or scoring check.
   strongest lever, not the obstacle.
 - **Render the native shape.** Show the real contract or mechanism first, then
   translate around it.
+- **Cut to the safety net.** Scale cut-depth to reversibility × verifiability, not
+  to human refactor-pain. Where git + `proof` fully cover a change, burn hard — "if
+  you don't have to put anything back, you didn't cut enough." *Kill filter:* only
+  where the action is actually reversible and verifiable; never for external
+  side-effects (push, deploy, message) or untracked work the ledger can't restore.
 
 ## Traps
 
@@ -70,3 +75,6 @@ prompt, critic mandate, or scoring check.
   marker into a durable artifact name, command, heading, or concept.
 - **Fake authority.** A stale file at a prestigious path makes the wrong thing
   feel binding.
+- **Human-unit timidity.** Pricing a cut in human cost — hours to unwind, can't
+  hold the tree in your head — when undo is free and checks are automated. Measure
+  the net; don't estimate the fear.

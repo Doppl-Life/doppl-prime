@@ -9,7 +9,6 @@
     "proof": "node --experimental-strip-types tools/run.ts",
     "build": "pnpm typecheck && pnpm proof",
     "proof:export": "node --experimental-strip-types tools/run.ts --export-proof-board",
-    "case-study:lint": "node --experimental-strip-types tools/case-study-seed-lint.ts",
     "clear:run-data": "node --experimental-strip-types tools/clear-run-data.ts"
   },
   "devDependencies": {

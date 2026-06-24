@@ -25,6 +25,12 @@ quietly grow back into what the old kernel assumed.
 - After a cleanup pass, remove the cleanup machinery unless it enforces a durable contract.
   Temporary scans, lists of dead names, and one-off guards do not survive the cleanup they
   enabled.
+- Cut to the safety net; the human holds the ledger. Scale cut-depth to reversibility, not
+  human refactor-pain: where git + `pnpm proof` cover a change, burn hard ("if you don't have
+  to put anything back, you didn't cut enough"). This is safe because the labor is split —
+  **you delete, the human commits.** The agent makes reversible cuts; the human owns
+  stage/commit/unstage/reset, which is the net (see Shell and tools). Never burn irreversible
+  or external side-effects this way. Full move in [`HEURISTICS.md`](HEURISTICS.md).
 
 ## Duplicate surfaces
 
@@ -106,6 +112,3 @@ pnpm typecheck
 pnpm build
 pnpm proof
 ```
-
-For case-study edits, run `pnpm case-study:lint` to confirm seed-visible material leaks no
-evaluator-only language.

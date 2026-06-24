@@ -50,7 +50,6 @@ after selection. These 0–1 measurements map into the judge's −5…+5 **ratin
 pnpm build          # typecheck + the multi-seed proof board
 pnpm proof          # the proof board alone
 pnpm proof:export   # replay artifacts under out/proof-board/** (ephemeral, gitignored)
-pnpm case-study:lint   # verify seed-visible case material leaks no evaluator-only language
 pnpm clear:run-data    # clear local out/** run data
 ```
 

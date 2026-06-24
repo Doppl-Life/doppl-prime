@@ -5,6 +5,24 @@ kernel owner must not accidentally undo.
 
 ## Entries
 
+### Case-study corpus moved to the agarden repo - 2026-06-23
+
+- **Chose:** the case studies live in the [agarden](https://github.com/Doppl-Life/agarden)
+  Obsidian vault as `case_study` nodes (`slug-id/slug-id.md` + frontmatter, `solution.md`
+  beside them). The in-repo `case-studies/**` corpus was migrated and deleted, and the tooling
+  hard-wired to it was burned: `tools/case-study-corpus.ts`, `tools/case-study-seed-lint.ts`,
+  the `pnpm case-study:lint` script, and the proof-board case-study enrichment in `run.ts`.
+  The engine already runs off `fixtures/*.json`, so `pnpm proof`/`build` are unaffected.
+  doppl-prime is the engine + contracts; agarden is the seed/vault data.
+- **Over:** keeping the seed corpus vendored in the kernel repo, or leaving a path-coupled
+  loader pointed at a deleted folder.
+- **Because:** the seeds are now an Obsidian-native, slug-linked vault meant to be shared and
+  grown across people; that is data, not engine. The hard-wired corpus path was a
+  dependency-inversion failure — burn it rather than tombstone it. This fired the
+  access-boundary entry's "corpus moves" revisit condition.
+- **Revisit if:** the kernel needs to read live seeds again — build a seed source as an injected
+  abstraction (point it at an agarden checkout), not a hard-coded in-repo path.
+
 ### The hut is canon - 2026-06-22
 
 - **Chose:** make `my-docs/the-hut/**` the operating canon for the model. When the

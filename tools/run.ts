@@ -5,8 +5,6 @@ import { fileURLToPath } from 'node:url';
 import type { Dial, RunTrace, SeedFixture, SelectionResult } from '../src/contracts/index.ts';
 import { assertSeedFixture } from '../src/contracts/index.ts';
 import { buildRunTrace } from '../src/trace.ts';
-import { loadCaseStudyPublicView, loadCaseStudySeedView } from './case-study-corpus.ts';
-import type { CaseStudyPublicView } from './case-study-corpus.ts';
 import { capstoneDemoLens } from './lens-config.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -15,13 +13,6 @@ const PROOF_BOARD_SCHEMA_VERSION = 'kernel.proof-board.v1';
 
 type ProofCaseSummary = {
   seed: string;
-  caseStudy?: {
-    slug: string;
-    title: string;
-    status: CaseStudyPublicView['status'];
-    seed: string;
-    seedMarkdownBytes: number;
-  };
   generated: number;
   rejected: number;
   exploreKeeps: string[];
@@ -47,13 +38,6 @@ type Args = {
   fixturesDir: string;
   outDir: string;
   exportProofBoard: boolean;
-};
-
-const seedCaseStudySlugs: Record<string, string> = {
-  'seed-ai-power': 'ai-firm-power-constraint',
-  'seed-fsd-unlock': 'full-self-driving-unlock',
-  'seed-glp1': 'glp1-snack-demand-destruction',
-  'seed-starship': 'starship-launch-cost-collapse',
 };
 
 function parseArgs(argv: string[]): Args {
@@ -109,33 +93,6 @@ async function loadFixture(filePath: string): Promise<SeedFixture> {
   return assertSeedFixture(raw);
 }
 
-function caseStudySlugForSeed(seedId: string): string | undefined {
-  if (seedCaseStudySlugs[seedId]) return seedCaseStudySlugs[seedId];
-  if (seedId.startsWith('seed-')) return seedId.slice('seed-'.length);
-  return undefined;
-}
-
-async function loadProofCaseStudy(trace: RunTrace): Promise<ProofCaseSummary['caseStudy']> {
-  const slug = caseStudySlugForSeed(trace.seed.id);
-  if (!slug) return undefined;
-  try {
-    const [publicView, seedView] = await Promise.all([
-      loadCaseStudyPublicView(slug),
-      loadCaseStudySeedView(slug),
-    ]);
-    return {
-      slug,
-      title: publicView.title,
-      status: publicView.status,
-      seed: publicView.paths.caseStudy,
-      seedMarkdownBytes: seedView.caseStudyMarkdown.length,
-    };
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined;
-    throw error;
-  }
-}
-
 function selectionForDial(trace: RunTrace, dial: Dial): SelectionResult {
   if (trace.comparison.focus.schedule.dial === dial) return trace.comparison.focus;
   return trace.comparison.alternate;
@@ -173,12 +130,11 @@ function swap(trace: RunTrace): string {
   return `rank: ${titleFor(trace, rankShift.id)} <> ${titleFor(trace, proof[index].id)}`;
 }
 
-function summarize(trace: RunTrace, caseStudy?: ProofCaseSummary['caseStudy']): ProofCaseSummary {
+function summarize(trace: RunTrace): ProofCaseSummary {
   const explore = selectionForDial(trace, 'diverge');
   const proof = selectionForDial(trace, 'converge');
   return {
     seed: trace.seed.title,
-    caseStudy,
     generated: trace.lineage.generated.length,
     rejected: trace.lineage.rejected.length,
     exploreKeeps: selectedTitles(explore),
@@ -188,8 +144,8 @@ function summarize(trace: RunTrace, caseStudy?: ProofCaseSummary['caseStudy']): 
   };
 }
 
-function buildSnapshot(traces: RunTrace[], caseStudies: Array<ProofCaseSummary['caseStudy']>): ProofBoardSnapshot {
-  const cases = traces.map((trace, index) => summarize(trace, caseStudies[index]));
+function buildSnapshot(traces: RunTrace[]): ProofBoardSnapshot {
+  const cases = traces.map((trace) => summarize(trace));
   return {
     schemaVersion: PROOF_BOARD_SCHEMA_VERSION,
     cases,
@@ -239,8 +195,7 @@ async function main(): Promise<void> {
   const paths = await fixturePaths(args);
   const fixtures = await Promise.all(paths.map(loadFixture));
   const traces = fixtures.map((fixture) => buildRunTrace(fixture, args.dial, { lenses: [capstoneDemoLens] }));
-  const caseStudies = await Promise.all(traces.map(loadProofCaseStudy));
-  const snapshot = buildSnapshot(traces, caseStudies);
+  const snapshot = buildSnapshot(traces);
 
   console.log(renderBoard(snapshot));
   if (args.exportProofBoard) {

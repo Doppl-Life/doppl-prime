@@ -25,7 +25,7 @@ Files are for replay and investigation after the human already knows what happen
 | Source contracts | `src/contracts/index.ts` | yes | Load-bearing boundary definitions. |
 | The model | `my-docs/the-hut/**` | yes | Canon: the engine, rating, object model, vocabulary. |
 | Fixture inputs | `fixtures/*.json` | yes | Reproducible seed material. |
-| Case-study corpus | `case-studies/**` | yes | The seeds; `case-study.md` is seed-visible, `solution.md` is judge-only. |
+| Case-study corpus | external — [Doppl-Life/agarden](https://github.com/Doppl-Life/agarden) | n/a | The seeds. Migrated out of this repo; they live in the agarden Obsidian vault as `case_study` nodes (`slug-id/slug-id.md` + frontmatter), `solution.md` beside them, judge-only. |
 | Generated run output | `out/**` | no | Ephemeral inspection output; regenerate with `pnpm proof:export`. |
 | Promoted proof | `records/<slug>/...` | only by decision | Keep when a run becomes evidence for a design decision or regression. |
 
