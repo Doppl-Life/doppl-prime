@@ -59,6 +59,11 @@ const BASE: CSSProperties = {
   padding: 'var(--space-2) var(--space-4)',
   borderRadius: 'var(--radius-full)',
   letterSpacing: '0.02em',
+  // Rule #2: the banner OWNS the top z-banner layer so a recording can never be occluded by a panel.
+  // z-index only applies on a positioned element, so the banner positions itself (relative) rather
+  // than depending on the shell to do it. (FV.0 reconciliation vs docs/doppl-design-system.)
+  position: 'relative',
+  zIndex: 'var(--z-banner)',
 };
 
 // Amber hatch via a token (color-mix over --warning) + spacing-token stops — no raw rgba/px.

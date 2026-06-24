@@ -15,6 +15,7 @@
   --motion-mutate-ms: 700ms; /* @kind other */ /* amber shimmer sweep across a mutated node */
   --motion-gen-advance-ms: 800ms; /* @kind other */ /* camera / tier shift as generation N+1 appears */
   --motion-chart-climb-ms: 600ms; /* @kind other */ /* FitnessOverTimeChart line draws upward */
+  --motion-shimmer-ms: 1400ms; /* @kind other */ /* LoadingState skeleton shimmer sweep (loop) */
 
   --motion-fast: 150ms; /* @kind other */ /* hover, focus, micro-interactions */
   --motion-base: 240ms; /* @kind other */ /* drawer/modal open, tab switch */
