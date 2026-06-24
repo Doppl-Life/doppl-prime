@@ -24,6 +24,8 @@ export {
   EnergyEvent,
   FitnessScore,
   NoveltyScore,
+  JudgeResult,
+  LlmCallTelemetry,
   LineageGraphProjection,
   LineageNode,
   LineageEdge,

@@ -11,6 +11,7 @@ import { CriticGauntletPanel } from '../../panels/CriticGauntletPanel';
 import { SubtypeCheckPanel } from '../../panels/SubtypeCheckPanel';
 import { candidateFitness } from '../../panels/candidateFitness';
 import { deriveEnergyByAgenome } from '../../panels/energyData';
+import { deriveAgenomeTelemetry, deriveJudgeRationale } from '../../panels/nodeTelemetry';
 
 /**
  * NodeInspectorContent (FV.5a) — the node-click drawer content router. The lineage graph is decluttered
@@ -49,6 +50,21 @@ const label: CSSProperties = {
 };
 const muted: CSSProperties = { color: 'var(--fg-muted)' };
 const monoId: CSSProperties = { fontFamily: 'var(--font-mono)', fontWeight: 600 };
+// FV.5b — a scrollable raw-capture block (the persisted text is already scrubbed + truncated-with-marker).
+const pre: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-mono)',
+  color: 'var(--fg-default)',
+  background: 'var(--bg-surface)',
+  border: 'thin solid var(--border-subtle)',
+  borderRadius: 'var(--radius-sm)',
+  padding: 'var(--space-2)',
+  margin: 0,
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  maxHeight: '18rem',
+  overflow: 'auto',
+};
 
 export function NodeInspectorContent({
   selectedNode,
@@ -62,6 +78,9 @@ export function NodeInspectorContent({
   if (selectedNode.type === 'candidate') {
     const candidateId = selectedNode.dataRef;
     const fit = candidateFitness(events, candidateId);
+    // FV.5b — the held-out judge's per-axis rationale (FB.8), displayed verbatim (emit-only, rule #6).
+    const judge = deriveJudgeRationale(events, candidateId);
+    const judgeAxes = judge ? Object.keys(judge.axisRationales) : [];
     return (
       <div style={stack}>
         <CandidateInspector runId={runId} candidateId={candidateId} runClient={runClient} />
@@ -87,6 +106,21 @@ export function NodeInspectorContent({
 
         <CriticGauntletPanel events={events} candidateId={candidateId} />
         <SubtypeCheckPanel events={events} candidateId={candidateId} />
+
+        {judge !== null && judgeAxes.length > 0 && (
+          <section aria-label="Held-out judge rationale" style={subsection}>
+            <span style={label}>held-out judge — per-axis rationale (FB.8)</span>
+            {judgeAxes.map((axis) => (
+              <div key={axis}>
+                <span style={monoId}>{axis}</span>
+                {judge.axisScores[axis] !== undefined && (
+                  <span style={muted}> ({judge.axisScores[axis]}/5)</span>
+                )}
+                <span> — {judge.axisRationales[axis]}</span>
+              </div>
+            ))}
+          </section>
+        )}
       </div>
     );
   }
@@ -97,6 +131,9 @@ export function NodeInspectorContent({
       null;
     const energy =
       deriveEnergyByAgenome(events).find((r) => r.agenomeId === selectedNode.dataRef) ?? null;
+    // FV.5b — the deep generation telemetry for this agenome: raw capture (FB.6) + executed temperature
+    // (FB.4) + tool-call detail (FB.7), all displayed verbatim from the persisted scrubbed events.
+    const telemetry = deriveAgenomeTelemetry(events, selectedNode.dataRef);
     return (
       <section aria-label="Agenome inspector" style={stack}>
         <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -106,9 +143,40 @@ export function NodeInspectorContent({
           )}
         </header>
         <div style={label}>energy: {energy !== null ? `${energy.total} doppl_energy` : '—'}</div>
-        <p style={muted}>
-          Deep agenome detail (persona, system prompt, tools) arrives with the FB.6 telemetry.
-        </p>
+
+        {telemetry.llmCalls.length > 0 && (
+          <section aria-label="Generation telemetry" style={subsection}>
+            <span style={label}>generation calls — raw capture (FB.6)</span>
+            {telemetry.llmCalls.map((c, i) => (
+              <div key={i} style={subsection}>
+                <span style={muted}>
+                  {c.role}
+                  {c.temperature !== undefined && ` · temp ${c.temperature.toFixed(2)}`}
+                  {c.truncated && ' · truncated'}
+                </span>
+                <pre style={pre}>{c.rawResponse}</pre>
+                {c.rawReasoning !== undefined && <pre style={pre}>{c.rawReasoning}</pre>}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {telemetry.toolCalls.length > 0 && (
+          <section aria-label="Tool calls" style={subsection}>
+            <span style={label}>tool calls (FB.7)</span>
+            {telemetry.toolCalls.map((t, i) => (
+              <div key={i} style={subsection}>
+                <span style={monoId}>{t.toolName}</span>
+                {t.query !== undefined && <div style={muted}>query: {t.query}</div>}
+                {t.result !== undefined && <div style={muted}>result: {t.result}</div>}
+              </div>
+            ))}
+          </section>
+        )}
+
+        {telemetry.llmCalls.length === 0 && telemetry.toolCalls.length === 0 && (
+          <p style={muted}>No generation telemetry captured for this agenome yet.</p>
+        )}
       </section>
     );
   }

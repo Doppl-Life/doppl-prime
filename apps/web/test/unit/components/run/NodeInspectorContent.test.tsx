@@ -5,6 +5,8 @@ import {
   validCandidateIdeaCrossDomain,
   validEnergyEvent,
   validFitnessScore,
+  validJudgeResult,
+  validLlmCallTelemetry,
 } from '@doppl/contracts';
 import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
 import { NodeInspectorContent } from '../../../../src/components/run/NodeInspectorContent';
@@ -39,6 +41,44 @@ function energyEvent(agenomeId: string): RunEventEnvelope {
     runId: 'run_1',
     agenomeId,
     payload: { ...validEnergyEvent, agenomeId },
+  });
+}
+// FV.5b deep-telemetry events.
+function judgeEvent(candidateId: string): RunEventEnvelope {
+  return makeEvent(3, 'judge.reviewed', {
+    runId: 'run_1',
+    candidateId,
+    payload: {
+      ...validJudgeResult,
+      candidateId,
+      axisRationales: {
+        grounding: 'cites two prior-art sources',
+        novelty: 'cross-domain transplant',
+        feasibility: 'buildable',
+        falsification_survival: 'survives the counterexample',
+        subtype_check_pass: 'meets the subtype contract',
+      },
+    },
+  });
+}
+function llmTelemetryEvent(agenomeId: string): RunEventEnvelope {
+  return makeEvent(1, 'llm_call_telemetry', {
+    runId: 'run_1',
+    agenomeId,
+    payload: {
+      ...validLlmCallTelemetry,
+      agenomeId,
+      rawResponse: 'RAW_GEN_OUTPUT_XYZ',
+      samplingParams: { temperature: 0.94 },
+      truncated: false,
+    },
+  });
+}
+function toolCallEvent(agenomeId: string): RunEventEnvelope {
+  return makeEvent(2, 'tool_call.finished', {
+    runId: 'run_1',
+    agenomeId,
+    payload: { toolName: 'web_search', query: 'TOOL_QUERY_XYZ', result: 'TOOL_RESULT_XYZ' },
   });
 }
 
@@ -97,6 +137,42 @@ describe('NodeInspectorContent — node-click drawer content router (FV.5a)', ()
     expect(screen.getByText('agn_0')).toBeTruthy(); // the agenome id
     expect(screen.getByText('active')).toBeTruthy(); // status from the lineage-node lookup
     expect(screen.getByText(/doppl_energy/i)).toBeTruthy(); // energy from deriveEnergyByAgenome
+  });
+
+  // FV.5b (FB.8): a CANDIDATE node surfaces the held-out judge's per-axis rationale verbatim (emit-only).
+  it('test_candidate_judge_rationale_renders', async () => {
+    render(
+      <NodeInspectorContent
+        selectedNode={{ dataRef: 'cand_0', type: 'candidate' }}
+        runId="run_1"
+        runClient={client()}
+        events={[judgeEvent('cand_0')]}
+        lineage={lineage}
+      />,
+    );
+    const section = await screen.findByLabelText('Held-out judge rationale');
+    expect(section.textContent).toMatch(/grounding/);
+    expect(section.textContent).toMatch(/cites two prior-art sources/); // the rationale, verbatim
+  });
+
+  // FV.5b (FB.6/FB.4/FB.7): an AGENOME node surfaces the raw generation capture + executed temperature +
+  // the tool-call detail — all from the persisted (scrubbed) events, displayed verbatim.
+  it('test_agenome_deep_telemetry_renders', () => {
+    render(
+      <NodeInspectorContent
+        selectedNode={{ dataRef: 'agn_0', type: 'agenome' }}
+        runId="run_1"
+        runClient={client()}
+        events={[llmTelemetryEvent('agn_0'), toolCallEvent('agn_0')]}
+        lineage={lineage}
+      />,
+    );
+    expect(screen.getByLabelText('Generation telemetry')).toBeTruthy();
+    expect(screen.getByText(/RAW_GEN_OUTPUT_XYZ/)).toBeTruthy(); // FB.6 raw capture
+    expect(screen.getByText(/temp 0\.94/)).toBeTruthy(); // FB.4 executed temperature
+    expect(screen.getByLabelText('Tool calls')).toBeTruthy();
+    expect(screen.getByText(/TOOL_QUERY_XYZ/)).toBeTruthy(); // FB.7 query
+    expect(screen.getByText(/TOOL_RESULT_XYZ/)).toBeTruthy(); // FB.7 result
   });
 
   // spec(drawer UX): a null selection renders nothing (the drawer shows its own placeholder); swapping
