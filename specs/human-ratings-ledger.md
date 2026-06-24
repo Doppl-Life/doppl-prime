@@ -13,7 +13,7 @@ Human scores use the rating scale from `rating.md`. Individual ratings are integ
 ### Type contract
 
 ```ts
-type Uuid = string;
+type SlugId = string; // `{slug}-{shortId}`; matches node.md; durable link key
 type Iso8601 = string;
 type RaterEmail = string;
 
@@ -33,10 +33,10 @@ A database can store this as a table keyed by `(node_id, rater_id)`. A file stor
 
 ```json
 {
-  "node_id": "4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f",
+  "node_id": "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f",
   "ratings": [
     { "rater_id": "mh@example.com", "score": 3, "rate_date": "2026-06-23T15:04:05.000Z" },
-    { "rater_id": "dk@example.com", "score": 4, "rate_date": "2026-06-23T15:05:10.000Z" }
+    { "rater_id": "dd@example.com", "score": 4, "rate_date": "2026-06-23T15:05:10.000Z" }
   ]
 }
 ```
@@ -51,7 +51,7 @@ type HumanRating = {
 };
 
 type HumanNodeRatings = {
-  node_id: Uuid;
+  node_id: SlugId;
   ratings: HumanRating[];
 };
 ```
@@ -65,7 +65,7 @@ Submitting a human rating upserts the current rating for that `(node_id, rater_i
 ```ts
 type UpsertHumanRating = {
   input: {
-    node_id: Uuid;
+    node_id: SlugId;
     rating: HumanRating;
   };
   output: HumanNodeRatings;
@@ -106,7 +106,7 @@ The mechanism is intentionally open. A local command, scheduled job, GitHub Acti
 
 ```ts
 type HumanScoresPatch = {
-  node_id: Uuid;
+  node_id: SlugId;
   scores: HumanScoresProjection;
 };
 
@@ -122,7 +122,7 @@ Two current ratings for the same node:
 
 ```json
 {
-  "node_id": "4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f",
+  "node_id": "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f",
   "ratings": [
     { "rater_id": "mh@example.com", "score": 3, "rate_date": "2026-06-23T15:04:05.000Z" },
     { "rater_id": "dk@example.com", "score": 4, "rate_date": "2026-06-23T15:05:10.000Z" }

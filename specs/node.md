@@ -17,7 +17,7 @@ Each section below has three layers:
 The TypeScript is not trying to replace markdown. It names what must be recoverable from the markdown after parsing.
 
 ```ts
-type Uuid = string; // UUIDv4; durable link key
+type SlugId = string; // `{slug}-{shortId}`; slug = kebab node name, shortId = 8-char lowercase alphanumeric (`[a-z0-9]{8}`, hex in practice); durable link key
 type NonEmptyArray<T> = [T, ...T[]];
 type Rating = -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
 type RatingLabel = '-5' | '-4' | '-3' | '-2' | '-1' | '0' | '+1' | '+2' | '+3' | '+4' | '+5';
@@ -65,11 +65,13 @@ stage: problem_recovery
 
 # Headline
 
+prev_id: [[<prev-slug-id>]]
+
 ## Trace
 
 ## Discovery
 
-## Growth — <Name of Growth>
+## Growth — {Problem Recovery | Doppl}
 
 ## Path
 ```
@@ -79,6 +81,7 @@ stage: problem_recovery
 ```ts
 type BaseBody<Tail extends unknown[]> = [
   headline: HeadlineSection,
+  lineage: PrevIdLine,
   ...tail: Tail,
 ];
 
@@ -130,31 +133,38 @@ type Stages = CaseStudyStage | ProblemRecoveryStage | DopplStage;
 
 Frontmatter is the file's identity and routing layer. It is a discriminated union on `stage`. `next` is pinned by stage, so the type enforces the spine.
 
-The seed has no scores, no `temporal`, no `prev`, and no `doppelgangers`: it is a start, not a claim. Growth-stage nodes carry lineage, the judge score, the materialized human score projection, and dedup signal.
+The seed has no scores, no `temporal`, and no `doppelgangers`: it is a start, not a claim. Growth-stage nodes carry the judge score, the materialized human score projection, and dedup signal. Lineage is not a frontmatter field — it lives in the body as `prev_id` (see [Lineage](#lineage)), because Obsidian does not resolve `[[...]]` wikilinks inside YAML.
 
 ### Markdown shape
 
 ```markdown
 ---
-id: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44
+id: when-the-crashes-dont-come-575845a4
 stage: case_study
 name: "Battery / yuan resource constraint"
 next: problem_recovery
 ---
+
+# {Header}
+
+prev_id: null
+
 ```
 
 ```markdown
 ---
-id: 4d1e8f0a-2b3c-4d5e-8f90-1a2b3c4d5e6f
+id: actuarial-collapse-in-specialty-auto-reinsurance-59cd965f
 stage: problem_recovery
-root: 7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44
-prev: [7c3a9b12-4f5e-4a01-9c2d-1e6b8a0f3d44]
 kernel: melissa
 temporal: false
 next: doppl
 scores: { judge: 3, human: null, n: 0 }
 doppelgangers: 0
 ---
+
+# {Header}
+
+prev_id: [[when-the-crashes-dont-come-575845a4]]
 ```
 
 ### Type contract
@@ -166,7 +176,7 @@ type KernelName = 'cody' | 'melissa' | 'michael' | 'dalton' | 'prime';
 type Scores = ScoresProjection;
 
 type BaseFrontmatter<S extends Stage> = {
-  id: Uuid;
+  id: SlugId;
   stage: S;
   next: NextOf<S>;
 };
@@ -176,8 +186,6 @@ type CaseStudyFrontmatter = BaseFrontmatter<'case_study'> & {
 };
 
 type BaseGrowthFrontmatter<S extends GrowthStage> = BaseFrontmatter<S> & {
-  root: Uuid;
-  prev: NonEmptyArray<Uuid>;
   kernel?: KernelName;
   temporal: boolean;
   scores: Scores;
@@ -210,6 +218,33 @@ copied verbatim into downstream Trace. Names and headlines may change; links poi
 type HeadlineHeading = `# ${string}`;
 
 type HeadlineSection = MarkdownSection<HeadlineHeading, string>;
+```
+
+## Lineage
+
+`prev_id` links a node to its parent. It is the first body line after the headline, so a reader walks
+the chain without opening frontmatter. The value is an Obsidian wikilink to the parent `SlugId`
+(`[[slug-id]]`) so the graph resolves; the case study root has no parent and renders `prev_id: null`.
+Lineage lives in the body, never frontmatter, because Obsidian does not resolve `[[...]]` inside YAML.
+
+### Markdown shape
+
+```markdown
+# Actuarial Collapse in Specialty Auto Reinsurance
+
+prev_id: [[when-the-crashes-dont-come-575845a4]]
+```
+
+```markdown
+# When the Crashes Don't Come
+
+prev_id: null
+```
+
+### Type contract
+
+```ts
+type PrevIdLine = { prev_id: SlugId | null };
 ```
 
 ## Case study body
@@ -306,12 +341,12 @@ Yuan-denominated offtake pulls supply off the spot market. → field: battery-su
 
 ```ts
 type FieldRef = {
-  id?: Uuid;
+  id?: SlugId;
   name: string;
 };
 
 type SourceRef = {
-  id?: Uuid;
+  id?: SlugId;
   label: string;
 };
 
@@ -517,9 +552,7 @@ type PathSection<S extends GrowthStage> = MarkdownSection<'## Path', {
 
 ## Identity and signals
 
-Every node has a stable UUIDv4 `id`; links point at the id, never the headline. `doppelgangers` is
-the one fact dedup destroys, so it is stored. Convergence is a derived query over the node graph,
-never stored.
+Every node has a stable SlugId `id`; links point at the id, never the headline. Cross-node links — `prev_id` and any field or source refs — are Obsidian wikilinks (`[[slug-id]]`) to that id, so the slug must stay stable even when a headline is reworded. `doppelgangers` is the one fact dedup destroys, so it is stored. Convergence is a derived query over the node graph, never stored.
 
 ### Type contract
 

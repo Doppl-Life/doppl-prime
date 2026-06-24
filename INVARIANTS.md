@@ -77,3 +77,14 @@ these, it changes the kernel contract.
 24. **Distill, do not bulk import.** Historical source is raw material. Bring
     in only the mechanisms that make this kernel better, safer, or easier to
     judge.
+
+## Nodes
+
+25. **A node's slug is frozen at creation.** A SlugId (`{slug}-{shortId}`) is
+    minted once from the node's name and never recomputed. Headlines may be
+    reworded; the slug — and every inbound `[[wikilink]]` that points at it —
+    must not move.
+26. **A node is read-only except its human projection.** After creation the only
+    fields ever overwritten are `scores.human` and `scores.n`, patched by the
+    human-ratings projection job. Judge score, growth, discovery, lineage, and
+    identity are immutable in place.
