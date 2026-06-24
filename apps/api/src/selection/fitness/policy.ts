@@ -18,7 +18,14 @@ export interface Contribution {
 }
 
 export interface ScoringResult {
+  /** The raw weighted sum `Σ weightₖ·valueₖ`. The fitness scorer (P5.6) divides this by {@link weightSum}
+   * to obtain the [0,1] normalized weighted AVERAGE it persists as `FitnessScore.total`. */
   total: number;
+  /** `Σ weightₖ` over the policy's RECOGNIZED component weights (weight keys with a matching component
+   * value) — the divisor for the normalized weighted average. A weight key with no matching component
+   * does NOT contribute to the divisor (it would otherwise deflate the average toward 0 for a signal that
+   * was never produced). 0 when no recognized component is weighted (the scorer maps that to a defined 0). */
+  weightSum: number;
   contributions: Record<string, Contribution>;
 }
 
@@ -34,15 +41,19 @@ export function applyScoringPolicy(
   const keys = new Set([...Object.keys(policy.weights), ...Object.keys(componentValues)]);
   const contributions: Record<string, Contribution> = {};
   let total = 0;
+  let weightSum = 0;
   for (const key of keys) {
     const value = componentValues[key] ?? 0;
     const weight = policy.weights[key] ?? 0;
     const contribution = weight * value;
     contributions[key] = { value, weight, contribution };
     total += contribution;
+    // Only a weight applied to a PRODUCED component counts toward the average's divisor (a weight key
+    // with no matching component value contributed nothing to `total`, so it must not deflate the mean).
+    if (key in componentValues) weightSum += weight;
   }
 
-  return { total, contributions };
+  return { total, weightSum, contributions };
 }
 
 /** Stable component-key constants — P5.7/P5.11 + the policy weights agree on these (no key drift). */

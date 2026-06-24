@@ -18,6 +18,16 @@ import type { CriticReview } from '@doppl/contracts';
  * `contributingReviewCount`, not a silent "averaged 0"); all-zero-confidence → plain mean of per-review
  * means (the information isn't discarded). No normalization — range-scaling is `ScoringPolicy`'s job.
  */
+/**
+ * The assumed per-score maximum of a critic's numeric `scores` (the 0–{@link CRITIC_SCORE_MAX} scale). The
+ * `CriticReview.scores` record is an OPEN `z.number()` (the contract pins shape only, lesson §6) and the
+ * mandate prompts do not enforce a numeric scale, so the critic-council fitness component value can be any
+ * non-negative magnitude. The SCORER (P5.6) divides the value by this max to bring it onto the [0,1] scale
+ * the other components use, mirroring the held-out judge's 0–5 axis scale — so a critic emitting larger
+ * raw numbers cannot dominate the weighted fitness average.
+ */
+export const CRITIC_SCORE_MAX = 5;
+
 export interface CriticScoresResult {
   value: number;
   /** Total reviews supplied (lets P5.6 tell "0 reviews" from "reviews averaging 0"). */

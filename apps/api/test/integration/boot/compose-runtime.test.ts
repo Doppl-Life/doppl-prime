@@ -16,6 +16,15 @@ import { loadConfig } from '../../../src/runtime/config/loadConfig';
 import { runWorker } from '../../../src/runtime';
 import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
 import { composeRunWorkerDeps } from '../../../src/boot/composeRuntime';
+import { DEFAULT_JUDGE_RUBRIC } from '../../../src/verifier/judge/rubric';
+import { JUDGE_AXIS_MAX_SCORE } from '../../../src/selection/components/judge-acceptance';
+
+// The maximum acceptance representable under the production rubric (Σ axis weights × the per-axis max) —
+// the score seam divides JudgeResult.acceptance by this to bring the held-out-judge component onto [0,1].
+const JUDGE_MAX_ACCEPTANCE = DEFAULT_JUDGE_RUBRIC.axes.reduce(
+  (sum, axis) => sum + JUDGE_AXIS_MAX_SCORE * (DEFAULT_JUDGE_RUBRIC.weights[axis] ?? 0),
+  0,
+);
 
 /**
  * P5.11 boot composition root — function-level e2e (testcontainers, real PG). `composeRunWorkerDeps`
@@ -143,8 +152,10 @@ describe('composeRunWorkerDeps — boot composition root function-level e2e (rea
     const judgeRows = rows.filter((r) => r.type === 'judge.reviewed');
     expect(judgeRows.length).toBeGreaterThan(0);
     // For each judged candidate, the score seam's fitness.scored.components.judge_acceptance equals the
-    // persisted JudgeResult.acceptance VERBATIM — proving the score seam validated against the SAME rubric
-    // (version matched), so the candidateId-join produced a PRESENT value, not the version-mismatch 0.
+    // persisted JudgeResult.acceptance NORMALIZED to [0,1] (÷ the rubric's max acceptance) — proving the
+    // score seam validated against the SAME rubric (version matched), so the candidateId-join produced a
+    // PRESENT value, not the version-mismatch 0. The acceptance is read VERBATIM upstream (rule #6); the
+    // scorer only RESCALES the derived fitness component so a raw 0-25 metric does not dominate the average.
     let pinned = false;
     for (const jr of judgeRows) {
       const judge = JudgeResult.parse(jr.payload);
@@ -153,8 +164,13 @@ describe('composeRunWorkerDeps — boot composition root function-level e2e (rea
       );
       if (fitnessRow === undefined) continue;
       const fitness = FitnessScore.parse(fitnessRow.payload);
-      expect(fitness.components.judge_acceptance).toBe(judge.acceptance);
-      expect(judge.acceptance).toBeGreaterThan(0); // a real, present acceptance (not the absent default 0).
+      expect(fitness.components.judge_acceptance).toBeCloseTo(
+        judge.acceptance / JUDGE_MAX_ACCEPTANCE,
+        12,
+      );
+      expect(fitness.components.judge_acceptance).toBeGreaterThan(0); // present (not the absent default 0).
+      expect(fitness.components.judge_acceptance).toBeLessThanOrEqual(1); // normalized, never raw 0-25.
+      expect(judge.acceptance).toBeGreaterThan(0); // a real, present acceptance.
       pinned = true;
     }
     expect(pinned).toBe(true);

@@ -43,7 +43,8 @@ function check(status: CheckResult['status'], id: string): CheckResult {
     : { id, candidateId: 'cand_1', checkType: 'citation_resolves', status, evidenceRefs: [] };
 }
 
-// Policy whose weight keys match the five component keys (all weight 1 → total = sum of components).
+// Policy whose weight keys match the five REAL component keys. total is a NORMALIZED weighted AVERAGE
+// in [0,1] (Σ wₖ·normₖ / Σ wₖ): with all weights 1, total = mean of the five normalized component values.
 const policy: ScoringPolicy = {
   version: 'scoring-v1',
   weights: {
@@ -55,20 +56,33 @@ const policy: ScoringPolicy = {
   },
 };
 
+// CRITIC_SCORE_MAX = 5 (the assumed 0-5 critic scale, mirrored from the judge axis scale). A critic value
+// of 0.7 (well under 5) normalizes to 0.14.
+const CRITIC_SCORE_MAX = 5;
+// A judge acceptance of 20 over a 25-max rubric (5 axes × max 5, equal weights) normalizes to 0.8.
+const JUDGE_MAX = 25;
+
 function baseInput(overrides: Partial<ScoreFitnessInput> = {}): ScoreFitnessInput {
   return {
     runId: 'run_1',
     generationId: 'gen_1',
     candidateId: 'cand_1',
-    novelty: { degraded: false, noveltyScore: validNoveltyScore }, // score 0.72
-    energyEfficiency: { value: 0.9, explanation: 'energy' },
+    novelty: { degraded: false, noveltyScore: validNoveltyScore }, // score 0.72 (already 0-1)
+    energyEfficiency: { value: 0.9, explanation: 'energy' }, // 0-1 by construction
     criticScores: {
-      value: 0.7,
+      value: 0.7, // raw critic value → normalized 0.7/5 = 0.14
       reviewCount: 2,
       contributingReviewCount: 2,
       explanation: 'critic',
     },
-    judgeAcceptance: { present: true, value: 1, explanation: 'judge', policyVersion: 'scoring-v1' },
+    // judge raw acceptance 20 over a 25-max rubric → normalized 0.8 (NOT verbatim 20 into the average).
+    judgeAcceptance: {
+      present: true,
+      value: 20,
+      maxValue: JUDGE_MAX,
+      explanation: 'judge',
+      policyVersion: 'scoring-v1',
+    },
     checkResults: [check('passed', 'c1'), check('failed', 'c2')], // pass fraction 0.5
     ...overrides,
   };
@@ -134,6 +148,7 @@ describe('scoreFitness — policy-versioned decomposed fitness', () => {
         judgeAcceptance: {
           present: false,
           value: 0,
+          maxValue: JUDGE_MAX,
           explanation: 'absent',
           policyVersion: 'scoring-v1',
         },
@@ -193,15 +208,20 @@ describe('scoreFitness — policy-versioned decomposed fitness', () => {
   });
 
   // 14 — KEY SAFETY RULE #7: total is deterministic + a pure compose (no gateway in deps — structural);
-  // component values come from the passed-in results, never re-derived from a provider.
+  // component values come from the passed-in results, never re-derived from a provider. total is a
+  // NORMALIZED weighted AVERAGE in [0,1] over the five normalized components (all weights 1 → plain mean).
   test('total_deterministic_no_gateway', async () => {
     const { emit } = recorder();
     const { emit: emit2 } = recorder();
     const a = await scoreFitness(baseInput(), policy, { emit, newId: idFactory() });
     const b = await scoreFitness(baseInput(), policy, { emit: emit2, newId: idFactory() });
     expect(a.total).toBe(b.total);
-    // total = sum of the five components (all weights 1): 0.72+0.9+0.7+0.5+1.
-    expect(a.total).toBeCloseTo(0.72 + 0.9 + 0.7 + 0.5 + 1, 12);
+    // normalized components: novelty 0.72, energy 0.9, critic 0.7/5=0.14, subtype 0.5, judge 20/25=0.8.
+    // total = mean of the five (all weights 1) = (0.72+0.9+0.14+0.5+0.8)/5.
+    const expectedTotal = (0.72 + 0.9 + 0.7 / CRITIC_SCORE_MAX + 0.5 + 20 / JUDGE_MAX) / 5;
+    expect(a.total).toBeCloseTo(expectedTotal, 12);
+    expect(a.total).toBeGreaterThanOrEqual(0);
+    expect(a.total).toBeLessThanOrEqual(1); // total stays in the DS 0-1 convention.
   });
 
   // 15 — spec(§4): exactly one fitness.scored via the emitter; payload validates; correct envelope.
@@ -234,13 +254,13 @@ describe('scoreFitness — policy-versioned decomposed fitness', () => {
     };
     const { emit } = recorder();
     const result = await scoreFitness(baseInput(), distinctPolicy, { emit, newId: idFactory() });
-    // components: novelty 0.72, energy 0.9, critic 0.7, subtype 0.5, judge 1.
+    // NORMALIZED components: novelty 0.72, energy 0.9, critic 0.7/5=0.14, subtype 0.5, judge 20/25=0.8.
     const expected: Array<[string, number, number]> = [
       ['novelty', 0.72, 2],
       ['energy_efficiency', 0.9, 0.5],
-      ['critic_scores', 0.7, 1],
+      ['critic_scores', 0.7 / CRITIC_SCORE_MAX, 1],
       ['subtype_check', 0.5, 3],
-      ['judge_acceptance', 1, 0.25],
+      ['judge_acceptance', 20 / JUDGE_MAX, 0.25],
     ];
     for (const [key, value, weight] of expected) {
       expect(result.explanation).toContain(key);
@@ -288,23 +308,131 @@ describe('scoreFitness — policy-versioned decomposed fitness', () => {
     expect(result.explanation).toMatch(/energy_efficiency.*(non-finite|finite|flag)/is);
   });
 
-  // 20 — anchor fail-CLOSED (rule #6/§8): a finite-but-overflowing weighted sum (Infinity total — a path
-  // the component-side guard can't catch, since each value is itself finite) fails closed: scoreFitness
-  // THROWS and emits NOTHING, so a non-finite total can never be persisted as the fitness anchor (the
-  // frozen FitnessScore.total z.number() rejects Infinity at parse, before the emit). Regression pin.
-  test('non_finite_total_fails_closed_no_emit', async () => {
-    const overflowPolicy: ScoringPolicy = {
+  // 20 — all-zero-weight boundary (rule #6/§8 — the average's divisor): a policy whose weights are all 0
+  // makes Σweights = 0; a naive average would divide by zero → NaN total (silently corrupts the anchor in
+  // P5.7 cull/parent-selection). The scorer returns a DEFINED finite 0 instead (no acceptance signal can
+  // move a zero-weight policy), never NaN, and still emits one valid fitness.scored.
+  test('all_zero_weight_total_defined_finite_not_nan', async () => {
+    const zeroPolicy: ScoringPolicy = {
       version: 'scoring-v1',
-      weights: { ...policy.weights, energy_efficiency: 10 },
+      weights: {
+        novelty: 0,
+        energy_efficiency: 0,
+        critic_scores: 0,
+        subtype_check: 0,
+        judge_acceptance: 0,
+      },
     };
     const { emit, events } = recorder();
-    await expect(
-      scoreFitness(
-        baseInput({ energyEfficiency: { value: 1e308, explanation: 'huge but finite' } }),
-        overflowPolicy,
-        { emit, newId: idFactory() },
-      ),
-    ).rejects.toThrow();
-    expect(events).toHaveLength(0); // fail-closed BEFORE the emit — nothing persisted.
+    const result = await scoreFitness(baseInput(), zeroPolicy, { emit, newId: idFactory() });
+    expect(Number.isNaN(result.total)).toBe(false);
+    expect(Number.isFinite(result.total)).toBe(true);
+    expect(result.total).toBe(0);
+    expect(() => FitnessScore.parse(result)).not.toThrow();
+    expect(events.filter((e) => e.type === 'fitness.scored')).toHaveLength(1);
+  });
+
+  // 21 — BUG-A REGRESSION (rule #6 — the held-out judge is the bedrock anchor): the judge MUST move the
+  // total. With the DEFAULT-shaped weights (judge_acceptance weighted), a high-judge candidate strictly
+  // outranks an otherwise-identical low-judge one. Pre-fix the default weights keyed on grounding/
+  // feasibility/falsification (which NO component produces), so judge_acceptance was weighted by NOTHING
+  // and this delta was exactly 0 — the judge was decorative.
+  test('judge_acceptance_moves_total_high_beats_low', async () => {
+    const { emit: e1 } = recorder();
+    const { emit: e2 } = recorder();
+    const highJudge = await scoreFitness(
+      baseInput({
+        judgeAcceptance: {
+          present: true,
+          value: 25, // max acceptance → normalized 1.0
+          maxValue: JUDGE_MAX,
+          explanation: 'high',
+          policyVersion: 'scoring-v1',
+        },
+      }),
+      policy,
+      { emit: e1, newId: idFactory() },
+    );
+    const lowJudge = await scoreFitness(
+      baseInput({
+        judgeAcceptance: {
+          present: true,
+          value: 0, // min acceptance → normalized 0.0
+          maxValue: JUDGE_MAX,
+          explanation: 'low',
+          policyVersion: 'scoring-v1',
+        },
+      }),
+      policy,
+      { emit: e2, newId: idFactory() },
+    );
+    expect(highJudge.total).toBeGreaterThan(lowJudge.total);
+  });
+
+  // 22 — BUG-A REGRESSION: critic_scores MUST move the total (it was weighted by nothing pre-fix). A
+  // high-critic candidate strictly outranks an otherwise-identical low-critic one under the default weights.
+  test('critic_scores_moves_total_high_beats_low', async () => {
+    const { emit: e1 } = recorder();
+    const { emit: e2 } = recorder();
+    const highCritic = await scoreFitness(
+      baseInput({
+        criticScores: { value: 5, reviewCount: 2, contributingReviewCount: 2, explanation: 'high' },
+      }),
+      policy,
+      { emit: e1, newId: idFactory() },
+    );
+    const lowCritic = await scoreFitness(
+      baseInput({
+        criticScores: { value: 0, reviewCount: 2, contributingReviewCount: 2, explanation: 'low' },
+      }),
+      policy,
+      { emit: e2, newId: idFactory() },
+    );
+    expect(highCritic.total).toBeGreaterThan(lowCritic.total);
+  });
+
+  // 23 — CRITICAL SCALE BUG (rule #6): judge_acceptance is RAW 0-25 (5 axes × 0-5) while every other
+  // component is 0-1. It MUST be normalized to 0-1 (÷ maxValue) BEFORE the weighted average, so a raw 25
+  // does NOT dominate. Pin the stored component: components.judge_acceptance is the NORMALIZED value, and
+  // it never exceeds 1 even at the raw max.
+  test('judge_acceptance_normalized_not_raw', async () => {
+    const { emit } = recorder();
+    const result = await scoreFitness(
+      baseInput({
+        judgeAcceptance: {
+          present: true,
+          value: 25, // raw max
+          maxValue: JUDGE_MAX,
+          explanation: 'raw-max',
+          policyVersion: 'scoring-v1',
+        },
+      }),
+      policy,
+      { emit, newId: idFactory() },
+    );
+    expect(result.components.judge_acceptance).toBe(1); // 25/25 — normalized, NOT raw 25.
+    expect(result.components.judge_acceptance).toBeLessThanOrEqual(1);
+    // total stays a true 0-1 average — a maxed judge cannot blow it past 1.
+    expect(result.total).toBeLessThanOrEqual(1);
+  });
+
+  // 24 — judge absent → normalized component is the neutral 0 (no acceptance evidence), never moving the
+  // total upward. maxValue defaults harmlessly on the absent path (value 0 → 0 regardless of divisor).
+  test('judge_absent_normalized_zero', async () => {
+    const { emit } = recorder();
+    const result = await scoreFitness(
+      baseInput({
+        judgeAcceptance: {
+          present: false,
+          value: 0,
+          maxValue: JUDGE_MAX,
+          explanation: 'absent',
+          policyVersion: 'scoring-v1',
+        },
+      }),
+      policy,
+      { emit, newId: idFactory() },
+    );
+    expect(result.components.judge_acceptance).toBe(0);
   });
 });
