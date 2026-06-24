@@ -1918,7 +1918,13 @@ Rows: task-checkboxes ✅ (PD.1–PD.11 headings ✅ DONE, per-slice Step-9 veri
 - [ ] Replay entry S0→S2 in REPLAY mode (amber/hatched/static); step scrubber over persisted events (`getReplay`/`getEvents`). Backend: EXISTS (replay calls no providers — rule #7).
 
 ### FV.9 — `/phase-exit FV` + polish
-- [ ] Arch-drift + reachability fan-out; projector-legibility + a11y + reduced-motion pass (`/design-review`, `/qa`); merge to cody.
+- [x] **STATIC phase-exit gate — CLEAR (2026-06-24, direct-drive 5-auditor workflow).** arch-drift (§10/§11/§12) CLEAR 0-drift; reachability CLEAR (all 4 FV routes + every FV component reachable from main.tsx); rule-#2/#6/#9 adversarial audit CLEAR (web is read-only + emit-only — the dial + judge rationale are display/input-only, the single mutating surface is the 2 idempotent commands, no apps/api import); DS-adherence CLEAR (FV.3/5b token-only, status shape+icon+label, labeled/aria controls); completeness ADVISORY (healthy deferred ledger). web unit 302/302.
+- [ ] **CARRY-FORWARD (advisory, non-blocking — recorded at the FV phase-exit):**
+  - **Dead-code cleanup:** the interim `Dashboard.tsx` + its exclusive sub-tree (`RunListPanel`, `FallbackLadderPanel`/`OperatorPromptPanel`/`RunHealthPanel`, `operatorPromptForm`/`runHealthStale`) are orphaned after the FV multi-route repoint (only their tests import them). Remove in an FV cleanup slice (auditor: defer acceptable, not a wiring gap).
+  - **RunsHomeScreen px literal** (`minmax(280px,…)`, FV.2) — a responsive-grid card-min-width geometry literal (LESSON §15 exempt); advisory only.
+  - **Live `/design-review` + `/qa`** real-browser projector-legibility/a11y/reduced-motion pass — a STATIC audit can't cover it; run against the live API (`:3000`).
+  - (+ FV.3b model-picker UI; FB.7 tool-call timeline Phase-D-gated — recorded above.)
+- [ ] merge frontend-v2 → cody (the combined FB+FV merge — gate now CLEAR).
 
 ---
 ## Trims / Nice-to-Haves Catalog
