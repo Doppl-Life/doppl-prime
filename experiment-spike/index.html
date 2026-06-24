@@ -287,6 +287,16 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
 .chat-in{display:flex;gap:8px;padding:11px 13px;border-top:1px solid var(--line);align-items:flex-end}
 .chat-in textarea{flex:1;min-height:38px;max-height:120px;padding:9px 11px;font-size:13.5px}
 .chat-in .btn{flex:0 0 auto;width:38px;height:38px;padding:0;justify-content:center;font-size:17px}
+
+/* custom tooltip (instant) */
+#tip{
+  position:fixed;z-index:200;max-width:280px;padding:7px 10px;
+  background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm);
+  font-size:12px;line-height:1.45;color:var(--text);box-shadow:var(--sh);
+  pointer-events:none;opacity:0;transform:translateY(-2px);
+  transition:opacity .08s ease,transform .08s ease;
+}
+#tip.show{opacity:1;transform:none}
 </style>
 </head>
 <body>
@@ -312,67 +322,67 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
     <aside class="col left">
       <div class="scroll">
         <div class="section">
-          <h3>Seed a thought <span class="n">case study · postulation</span></h3>
+          <h3 title="A seed is a raw postulation — a case, observation, or contradiction you want to test. Plant one and the lab grows problem-recovery and doppl branches off it.">Seed a thought <span class="n">case study · postulation</span></h3>
           <div class="field">
-            <label>Name</label>
-            <input class="input" id="seedName" placeholder="Battery / yuan resource constraint" />
-            <label>The situation it grows from</label>
-            <textarea id="seedContext" placeholder="Drop a raw postulation, a case, an observation, a contradiction you noticed…"></textarea>
-            <label>Synopsis <span class="hint" style="display:inline">— one line, travels into Trace</span></label>
-            <input class="input" id="seedSynopsis" placeholder="Battery supply is read as a raw-materials scarcity story." />
-            <button class="btn primary" id="btnSeed" style="width:100%;margin-top:12px;justify-content:center">⊕ Plant seed</button>
+            <label title="Short label for the seed. Shown on the graph node and in the library.">Name</label>
+            <input class="input" id="seedName" placeholder="Battery / yuan resource constraint" title="Short label for the seed. Shown on the graph node and in the library." />
+            <label title="Raw context: the observation, claim, or contradiction you want to test. Used verbatim as the substrate for generation.">The situation it grows from</label>
+            <textarea id="seedContext" placeholder="Drop a raw postulation, a case, an observation, a contradiction you noticed…" title="Raw context: the observation, claim, or contradiction you want to test. Used verbatim as the substrate for generation."></textarea>
+            <label title="One-line summary that travels into the run trace and exports. Optional but helpful for readability.">Synopsis <span class="hint" style="display:inline">— one line, travels into Trace</span></label>
+            <input class="input" id="seedSynopsis" placeholder="Battery supply is read as a raw-materials scarcity story." title="One-line summary that travels into the run trace and exports. Optional but helpful for readability." />
+            <button class="btn primary" id="btnSeed" style="width:100%;margin-top:12px;justify-content:center" title="Add this seed to the library. It won't be scored until you grow children from it.">⊕ Plant seed</button>
             <div class="hint">A seed is a start, not a claim — no scores until it grows.</div>
           </div>
         </div>
 
         <div class="section">
-          <h3>Run controls <span class="n">the dial</span></h3>
+          <h3 title="One-shot generation from the selected node. The dial decides what kind of children to grow; the caps decide how many.">Run controls <span class="n">the dial</span></h3>
           <div class="field">
-            <label>Direction</label>
+            <label title="The fitness dial. Diverge prioritizes novelty (fan out, explore new framings); converge prioritizes grounding (test against reality, recover the real problem).">Direction</label>
             <div class="dial" id="dial">
-              <button data-dir="diverge" data-on="0">◇ diverge · novelty</button>
-              <button data-dir="converge" data-on="1">◆ converge · grounding</button>
+              <button data-dir="diverge" data-on="0" title="Diverge — prioritize novelty; grounding only as a floor. Use to fan out doppls and explore.">◇ diverge · novelty</button>
+              <button data-dir="converge" data-on="1" title="Converge — prioritize grounding; novelty only as a floor. Use to recover the real problem behind the surface complaint.">◆ converge · grounding</button>
             </div>
             <div class="hint" id="dialHint">Converge: priority grounding, novelty as a floor. Used to recover the real problem.</div>
             <div class="row" style="margin-top:10px">
-              <div><label>Generate</label><input class="input" id="capGen" type="number" value="8" min="2" max="40"/></div>
-              <div><label>Keep</label><input class="input" id="capKeep" type="number" value="3" min="1" max="10"/></div>
+              <div><label title="How many candidate children to draft this run. Larger = more options, more model cost.">Generate</label><input class="input" id="capGen" type="number" value="8" min="2" max="40" title="How many candidate children to draft this run. Larger = more options, more model cost."/></div>
+              <div><label title="How many of the generated candidates survive selection and land in the graph. The rest are discarded.">Keep</label><input class="input" id="capKeep" type="number" value="3" min="1" max="10" title="How many of the generated candidates survive selection and land in the graph. The rest are discarded."/></div>
             </div>
           </div>
-          <label class="tag" style="padding:0 14px">Operators · mutagen skills</label>
+          <label class="tag" style="padding:0 14px" title="Mutagen skills applied during generation. Each operator forces a distinct move (e.g. subtraction = best cut; blindside = buried failure mode). Click chips to toggle; hover for the move.">Operators · mutagen skills</label>
           <div class="ops" id="opChips"></div>
         </div>
 
         <div class="section">
-          <h3>Campaign <span class="n">grow many generations</span></h3>
+          <h3 title="Run many generations automatically. Grows a whole tree of children, grandchildren, etc. from the selected seed (or all seeds), with the dial scheduled across passes.">Campaign <span class="n">grow many generations</span></h3>
           <div class="field">
             <div class="row">
-              <div><label>Depth</label><input class="input" id="campDepth" type="number" value="4" min="1" max="20"/></div>
-              <div><label>Max nodes</label><input class="input" id="campMax" type="number" value="40" min="3" max="400"/></div>
+              <div><label title="How many hops from the seed the campaign will reach before stopping a branch. Reseeding can extend a lineage as a new island past this limit.">Depth</label><input class="input" id="campDepth" type="number" value="4" min="1" max="20" title="How many hops from the seed the campaign will reach before stopping a branch."/></div>
+              <div><label title="Hard ceiling on total nodes the campaign creates before stopping. Safety brake against runaway growth.">Max nodes</label><input class="input" id="campMax" type="number" value="40" min="3" max="400" title="Hard ceiling on total nodes the campaign creates before stopping."/></div>
             </div>
-            <label>Traversal</label>
+            <label title="How the campaign walks the tree. BFS grows wide first (all siblings before going deeper); DFS goes deep along one branch before backtracking.">Traversal</label>
             <div class="seg" id="campTrav">
-              <button data-t="bfs" class="on">BFS · breadth</button>
-              <button data-t="dfs">DFS · depth</button>
+              <button data-t="bfs" class="on" title="Breadth-first — exhaust every sibling at one depth before going deeper. Gives a wide, balanced tree.">BFS · breadth</button>
+              <button data-t="dfs" title="Depth-first — chase one branch to depth before backtracking. Gives long lineages and fewer siblings.">DFS · depth</button>
             </div>
-            <label>Dial schedule</label>
+            <label title="How the dial moves across passes. Auto alternates (converge to recover the problem, diverge to grow doppls). Or pin it to one direction.">Dial schedule</label>
             <div class="seg" id="campDial">
-              <button data-d="auto" class="on">Auto</button>
-              <button data-d="converge">Converge</button>
-              <button data-d="diverge">Diverge</button>
+              <button data-d="auto" class="on" title="Auto — alternate the dial: converge to recover the problem at each stage, diverge to grow doppls.">Auto</button>
+              <button data-d="converge" title="Hold converge for every pass — grounding-first across the whole campaign.">Converge</button>
+              <button data-d="diverge" title="Hold diverge for every pass — novelty-first across the whole campaign.">Diverge</button>
             </div>
-            <label class="ck"><input type="checkbox" id="campReseed" checked/> Reseed leaves to grow past depth 3</label>
-            <label class="ck"><input type="checkbox" id="campAll"/> Start from every seed (not just selected)</label>
+            <label class="ck" title="When a branch hits the depth limit, treat its leaf as a new seed and keep growing. Lets a lineage continue as a new island past depth."><input type="checkbox" id="campReseed" checked/> Reseed leaves to grow past depth 3</label>
+            <label class="ck" title="Run the campaign on every seed in the library, not just the selected one. Use for a full sweep."><input type="checkbox" id="campAll"/> Start from every seed (not just selected)</label>
             <div class="row" style="margin-top:12px">
-              <button class="btn primary" id="btnCampaign" style="justify-content:center">▶ Run campaign</button>
-              <button class="btn" id="btnStop" style="flex:0 0 auto;display:none">■ Stop</button>
+              <button class="btn primary" id="btnCampaign" style="justify-content:center" title="Start the campaign with the settings above.">▶ Run campaign</button>
+              <button class="btn" id="btnStop" style="flex:0 0 auto;display:none" title="Stop the campaign after the current pass. Nodes already created stay.">■ Stop</button>
             </div>
             <div class="hint">Auto dial = converge to recover the problem, diverge to grow doppls. Depth counts hops from the origin; reseeding lets a lineage continue as new islands.</div>
           </div>
         </div>
 
         <div class="section">
-          <h3>Library <span class="n" id="libCount">0 nodes</span></h3>
+          <h3 title="Every node you've planted or grown. Click a row to inspect it, score it, or grow its next stage.">Library <span class="n" id="libCount">0 nodes</span></h3>
           <div id="libList"></div>
         </div>
       </div>
@@ -530,6 +540,7 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
 </div>
 
 <div class="toasts" id="toasts"></div>
+<div id="tip" role="tooltip"></div>
 <script>
 'use strict';
 /* ============================ util ============================ */
@@ -1091,7 +1102,7 @@ function setDial(dir){$$('#dial button').forEach(b=>b.dataset.on=b.dataset.dir==
   $('#dialHint').textContent=dir==='diverge'?'Diverge: priority novelty, grounding as a floor. Used to fan out doppls and explore.':'Converge: priority grounding, novelty as a floor. Used to recover the real problem.';}
 
 /* operator chips */
-function renderOps(){$('#opChips').innerHTML=OPERATORS.map(o=>`<span class="chip" data-id="${o.id}" data-on="${SELECTED_OPS.has(o.id)?1:0}" title="${esc(o.persona)}">${o.label}</span>`).join('');
+function renderOps(){$('#opChips').innerHTML=OPERATORS.map(o=>`<span class="chip" data-id="${o.id}" data-on="${SELECTED_OPS.has(o.id)?1:0}" data-tip="${esc(o.persona)}">${o.label}</span>`).join('');
   $$('#opChips .chip').forEach(el=>el.onclick=()=>{const id=el.dataset.id;if(SELECTED_OPS.has(id)){if(SELECTED_OPS.size>1)SELECTED_OPS.delete(id);}else SELECTED_OPS.add(id);el.dataset.on=SELECTED_OPS.has(id)?1:0;});}
 
 /* settings modal */
@@ -1321,9 +1332,37 @@ function wire(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){sm.classList.remove('show');am.classList.remove('show');}});
 }
 function renderSuggest(){const s=['Strongest doppls?','Recurring themes?','What should I grow next?','What can I prune?'];$('#chatSuggest').innerHTML=s.map(x=>`<span class="chip" data-q="${esc(x)}">${esc(x)}</span>`).join('');$$('#chatSuggest .chip').forEach(el=>el.onclick=()=>sendChat(el.dataset.q));}
+function wireTips(){
+  document.querySelectorAll('.col.left [title]').forEach(el=>{
+    if(!el.dataset.tip)el.dataset.tip=el.getAttribute('title');
+    el.removeAttribute('title');
+  });
+  const tip=$('#tip');let cur=null;
+  function place(el){
+    const r=el.getBoundingClientRect(),tw=tip.offsetWidth,th=tip.offsetHeight,pad=8;
+    let left=r.left,top=r.bottom+6;
+    if(left+tw>innerWidth-pad)left=innerWidth-tw-pad;
+    if(left<pad)left=pad;
+    if(top+th>innerHeight-pad)top=r.top-th-6;
+    tip.style.left=left+'px';tip.style.top=top+'px';
+  }
+  document.addEventListener('mouseover',e=>{
+    const t=e.target.closest('[data-tip]');
+    if(!t||t===cur)return;
+    cur=t;tip.textContent=t.dataset.tip;tip.classList.add('show');place(t);
+  });
+  document.addEventListener('mouseout',e=>{
+    if(!cur)return;
+    const to=e.relatedTarget;
+    if(to&&cur.contains(to))return;
+    if(to&&to.closest&&to.closest('[data-tip]')===cur)return;
+    tip.classList.remove('show');cur=null;
+  });
+  window.addEventListener('scroll',()=>{tip.classList.remove('show');cur=null;},true);
+}
 async function boot(){
   await DB.open();await Provider.load();await loadChat();
-  Graph.init();renderOps();wire();refreshPill();
+  Graph.init();renderOps();wire();wireTips();refreshPill();
   await Graph.sync();Graph.fit();await renderLibrary();await renderBoard();
 }
 boot();
