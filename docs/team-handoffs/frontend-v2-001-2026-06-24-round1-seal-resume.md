@@ -4,7 +4,7 @@
 **Track:** frontend-v2
 **Worktree:** `../Capstone-frontend-v2` (branch `track/frontend-v2`) — persists across this cycle; the fresh team works HERE.
 **Predecessor handoff:** `docs/team-handoffs/phase-d-002-2026-06-24-phase-d-complete-frontend-v2-handoff.md`
-**Successor handoff:** _(filled in when the next /team-end runs)_
+**Successor handoff:** `docs/sessions/frontend-v2-002-2026-06-24-autonomous-fb-fv-completion-merge.md` (the round resumed direct-drive — completed FB + FV, both phase-exits, and the frontend-v2→cody merge; closed via `/session-end`, not `/team-end`).
 **Round-seal commit at handoff:** `61c4754`
 
 ## Why this handoff exists
