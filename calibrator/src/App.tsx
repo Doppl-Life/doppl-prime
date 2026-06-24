@@ -39,21 +39,19 @@ function projectionLabel(artifact: ReviewArtifact | null): string {
 }
 
 function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
-  return (
-    caseItem.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary") ??
-    caseItem.problem_recoveries[0]
-  );
+  return caseItem.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary");
 }
 
 function firstRateableSolution(caseItem: CalibratorIndex["cases"][number]) {
-  return caseItem.solutions.find((artifact) => reviewMode(artifact) === "primary") ?? caseItem.solutions[0];
+  return caseItem.solutions.find((artifact) => reviewMode(artifact) === "primary");
+}
+
+function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
+  return Boolean(firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem));
 }
 
 function firstReviewableCase(index: CalibratorIndex) {
-  return (
-    index.cases.find((caseItem) => firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem)) ??
-    index.cases[0]
-  );
+  return index.cases.find(hasRateableArtifacts);
 }
 
 function blindDopplLabel(index: number): string {
@@ -213,9 +211,10 @@ export function App() {
   }, []);
 
   const selectedCase = useMemo(
-    () => index?.cases.find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
+    () => index?.cases.filter(hasRateableArtifacts).find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
     [index, selectedCaseId],
   );
+  const reviewableCases = useMemo(() => index?.cases.filter(hasRateableArtifacts) ?? [], [index]);
   const allProblemRecoveries = useMemo(() => selectedCase?.problem_recoveries ?? [], [selectedCase]);
   const allSolutions = useMemo(() => selectedCase?.solutions ?? [], [selectedCase]);
   const visibleSolutions = useMemo(() => {
@@ -407,12 +406,22 @@ export function App() {
     );
   }
 
-  if (!index || !selectedCase) {
+  if (!index) {
     return (
       <main className="app-shell">
         <p className="eyebrow">Doppl Life</p>
         <h1>Calibrator</h1>
         <p>Loading vault index...</p>
+      </main>
+    );
+  }
+
+  if (reviewableCases.length === 0 || !selectedCase) {
+    return (
+      <main className="app-shell">
+        <p className="eyebrow">Doppl Life</p>
+        <h1>Calibrator</h1>
+        <p>No rateable problem recoveries or doppls are available.</p>
       </main>
     );
   }
@@ -440,7 +449,7 @@ export function App() {
           <select
             value={selectedCaseId}
             onChange={(event) => {
-              const nextCase = index.cases.find((item) => item.case_id === event.target.value);
+              const nextCase = reviewableCases.find((item) => item.case_id === event.target.value);
               const nextPrimaryProblemRecovery = nextCase ? firstRateableProblemRecovery(nextCase) : undefined;
               const nextPrimarySolution = nextCase ? firstRateableSolution(nextCase) : undefined;
               setSelectedCaseId(event.target.value);
@@ -452,7 +461,7 @@ export function App() {
               setSourceDetailsOpen(false);
             }}
           >
-            {index.cases.map((caseItem) => (
+            {reviewableCases.map((caseItem) => (
               <option key={caseItem.case_id} value={caseItem.case_id}>
                 {caseItem.title}
               </option>
@@ -509,7 +518,7 @@ export function App() {
 
         <div className="review-status" aria-label="Current review status">
           <strong className="source-chip">{sourceKindLabel(index.source_kind)}</strong>
-          <strong>{plural(index.cases.length, "case")}</strong>
+          <strong>{plural(reviewableCases.length, "case")}</strong>
           <strong>{plural(totalArtifacts, "artifact")}</strong>
           <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl leaf"}</span>
           {activeReviewArtifact ? <strong>{reviewModeLabel(activeReviewArtifact)}</strong> : null}

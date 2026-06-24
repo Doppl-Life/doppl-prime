@@ -154,7 +154,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
   });
 
-  it("summarizes an aGarden-backed index in the setup bar", async () => {
+  it("summarizes an aGarden-backed index by rateable cases only", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();
       if (url === "/api/index") {
@@ -185,11 +185,11 @@ describe("App", () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     expect(screen.getByLabelText("Review setup")).toHaveTextContent("aGarden");
-    expect(screen.getByLabelText("Review setup")).toHaveTextContent("2 cases");
-    expect(screen.getByLabelText("Case study")).toHaveTextContent("Houston Baggage Claim Complaints");
+    expect(screen.getByLabelText("Review setup")).toHaveTextContent("1 case");
+    expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
   });
 
-  it("opens on the first reviewable aGarden case when an earlier case has no child artifacts", async () => {
+  it("hides empty aGarden cases so reviewers only see rateable work", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();
       if (url === "/api/index") {
@@ -220,6 +220,7 @@ describe("App", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).toHaveValue("fsd-accident-economy");
+    expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
     expect(screen.getByLabelText("Review artifact")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
