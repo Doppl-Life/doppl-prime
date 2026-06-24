@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "tsx src/main.ts",
-    "dev": "tsx watch src/main.ts",
+    "start": "tsx --env-file-if-exists=../../.env src/main.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
     "dump-replay": "tsx src/event-store/scripts/dump-replay.ts",
     "seed-demo": "tsx src/event-store/scripts/seed-demo.ts",
     "lint": "eslint .",
