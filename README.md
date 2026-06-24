@@ -52,9 +52,15 @@ after selection. These 0–1 measurements map into the judge's −5…+5 **ratin
 ```bash
 pnpm build          # typecheck + the multi-seed proof board
 pnpm proof          # the proof board alone
+pnpm grow           # grow a seed end-to-end into the vault (flow/ + stock/)
 pnpm proof:export   # replay artifacts under out/proof-board/** (ephemeral, gitignored)
 pnpm clear:run-data    # clear local out/** run data
 ```
+
+`pnpm grow` runs a seed through discovery → engine → compile and writes contract-shaped markdown to
+the vault named in `doppl.config.json` (`vault`, default `../agarden`). The sink
+([`mechanics/kernel/sink.md`](mechanics/kernel/sink.md)) is the only writer. Pass a path as the 2nd
+arg to override, e.g. `pnpm grow fixtures/fsd-seed.json out/vault`.
 
 The proof board prints one line per seed:
 `seed → generated → rejected → Explore keeps → Proof keeps → swap → failed checks`.

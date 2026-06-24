@@ -50,6 +50,8 @@ Discovery must be told where things live and how to write them:
 - `write_method` — how a keeper is appended or merged.
 - `backend` — which discovery backend to use for this call.
 
+`stock_location` and `write_method` are the **sink's** concern ([`sink.md`](./sink.md)): discovery reads and writes stock *through the sink*, whose destination is configured once (`doppl.config.json`). Only `backend` is discovery's own choice per call.
+
 The stock source/projection shape is defined in [`../../contracts/stock.md`](../../contracts/stock.md).
 
 ## Boundaries

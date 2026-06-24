@@ -146,7 +146,8 @@ stats, so the feature works with no key. Conversations persist across reloads.
 This spike emits the current contract model directly — no migration step:
 
 - **Ids are `SlugId`.** Each node's `id` is `{slug}-{shortId}` (kebab of the headline + an 8-char key), minted once and frozen, per [`../contracts/node.md`](../contracts/node.md). Run and candidate ids stay `run-…` / `c-…` machine handles, which the contract allows.
-- **Export is contract-shaped.** The markdown export writes YAML frontmatter + a body `prev_id: [[parent]]` wikilink (`null` at an original seed), so exported nodes are valid vault files with no separate migration.
+- **Export is contract-shaped.** The markdown export writes YAML frontmatter + a body `prev_id: [[parent]]` wikilink (`null` at an original seed) per node — valid vault content with no migration.
+- **Into the vault by hand (manual drop).** A browser can't write the filesystem, so the spike's path to the configured vault (`../agarden`) is: Export, then place the files into `flow/` yourself, alongside what the kernel writes. The sink ([`../mechanics/kernel/sink.md`](../mechanics/kernel/sink.md)) is the kernel's writer; the spike just hands you the same shape. **Caveat:** the export is currently one concatenated `doppl-nodes.md` (nodes separated by `---`), not per-node files — a true drop means splitting it, or adding a vault-shaped (zip) export later.
 - **Reseed is the forest loop.** Campaigns reseed a doppl leaf into a fresh `case_study` carrying `prev_id: [[doppl]]`, exactly as the contract blesses it.
 
 One internal note: the app keeps `root` and a one-element `prev` array on the runtime record for the force-layout (island grouping). Those are graph state, not part of the exported artifact — the contract governs the file, and the file has no `root`.

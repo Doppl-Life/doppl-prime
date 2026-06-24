@@ -6,11 +6,12 @@ import { readFileSync } from 'node:fs';
 import type { SeedFixture } from '../src/contracts/index.ts';
 import { buildRunTrace } from '../src/trace.ts';
 import { compileCaseStudy, compileProblemRecovery } from '../src/io/compile-node.ts';
+import { loadConfig } from '../src/io/config.ts';
 import { discover, offlineBackend } from '../src/io/discovery.ts';
 import { createVaultSink } from '../src/io/sink.ts';
 
 const fixturePath = process.argv[2] || 'fixtures/fsd-seed.json';
-const vaultDir = process.argv[3] || 'out/vault';
+const vaultDir = process.argv[3] || loadConfig().vault;
 
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as SeedFixture;
 const sink = createVaultSink(vaultDir);
