@@ -29,8 +29,8 @@ Current state:
 
 Remaining work:
 
-- Add a `doppl-prime` workflow that checks out both `doppl-prime/calibration` and `Doppl-Life/agarden/main`, regenerates the calibrator static export, commits changed `published/**`, and lets the existing Pages deployment publish it. Done in `.github/workflows/refresh-calibrator-agarden.yml`.
-- Trigger that refresh on a schedule and manually at first. Done: the workflow supports hourly schedule, manual dispatch, and future `repository_dispatch` with type `agarden-updated`.
+- Add a `doppl-prime` workflow that checks out both `doppl-prime/calibration` and `Doppl-Life/agarden/main`, regenerates the calibrator static export, commits changed `published/**`, and lets the existing Pages deployment publish it. Implemented as `.github/workflows/refresh-calibrator-agarden.yml` on `calibration`.
+- Make that refresh actually automatic. Remaining: GitHub scheduled/manual workflows are only discoverable from the repository default branch, so the `calibration` copy is an implementation template until either a default-branch workflow is approved or an external dispatcher with scoped credentials calls it.
 - Later, add a repository-dispatch trigger from `agarden` after pushes to `main` if a scoped secret or GitHub App token is approved for cross-repo dispatch.
 - Add a visible generated-at/source commit marker if reviewers need to know exactly which aGarden commit they are rating.
 
@@ -102,13 +102,13 @@ Remaining work:
 
 ## Prioritized Work Order
 
-1. **Automate latest aGarden read refresh.** In progress.
+1. **Automate latest aGarden read refresh.** Partially implemented.
    This makes the live calibrator reflect new aGarden nodes and score projections without manual local exports. It is also low-risk because it does not write to `agarden`.
 
-2. **Add hosted ratings API route skeleton.**
-   The browser already has a `ratingsEndpoint` seam and the server writer/client cores exist. The next slice is the route boundary: request parsing, validation, CORS, response shape, and server-only config checks.
+2. **Add hosted ratings API route skeleton.** Done.
+   The browser already has a `ratingsEndpoint` seam and the server writer/client cores exist. `calibrator/src/server/hostedAgardenRatingApi.ts` now covers request parsing, validation, CORS preflight, response shape, and calls into the tested GitHub writer.
 
-3. **Deploy hosted ratings API with server-held GitHub App credentials.**
+3. **Deploy hosted ratings API with server-held GitHub App credentials.** Next.
    This is where real writes become possible. Use GitHub App credentials installed only on `Doppl-Life/agarden`; never expose them through Pages.
 
 4. **Smoke hosted writes against a test branch.**

@@ -1,5 +1,10 @@
 name: Refresh Calibrator From aGarden
 
+# Note: GitHub only runs scheduled/manual workflows from the repository default
+# branch. This workflow is carried on `calibration` as the refresh implementation
+# for the calibrator branch, but fully automatic schedule/manual dispatch requires
+# either a default-branch copy or an approved external dispatcher.
+
 on:
   workflow_dispatch:
   repository_dispatch:
