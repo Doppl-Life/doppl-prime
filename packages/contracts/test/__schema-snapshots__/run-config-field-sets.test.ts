@@ -20,6 +20,10 @@ const RUN_CONFIG_FIELD_SNAPSHOT = [
   'modelProfile',
   'scoringPolicyVersion',
   'rngSeed',
+  // frontend-v2 FB.0 (sv5→6): 3 additive OPTIONAL run-control fields (generation inputs, rule-#6-safe).
+  'generationOperators',
+  'generationBias',
+  'modelRouteOverride',
 ];
 
 const SUBTYPE_SNAPSHOT = ['cross_domain_transfer', 'zeitgeist_synthesis'];
@@ -32,7 +36,7 @@ describe('schema snapshots — RunCaps / RunConfig / Subtype (spec §4 / §2.5)'
     expect(sorted(Object.keys(RunConfig.shape))).toEqual(sorted(RUN_CONFIG_FIELD_SNAPSHOT));
     expect(sorted(Subtype.options)).toEqual(sorted(SUBTYPE_SNAPSHOT));
     expect(RUN_CAPS_FIELD_SNAPSHOT).toHaveLength(6);
-    expect(RUN_CONFIG_FIELD_SNAPSHOT).toHaveLength(6);
+    expect(RUN_CONFIG_FIELD_SNAPSHOT).toHaveLength(9);
     expect(SUBTYPE_SNAPSHOT).toHaveLength(2);
   });
 });

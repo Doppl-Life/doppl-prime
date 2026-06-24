@@ -81,13 +81,13 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
   });
 
   it('canonical_fixtures_still_valid_at_current_version', () => {
-    // spec(§16) [terminal-event amendment]: the canonical envelope fixture is re-recorded at the CURRENT
-    // schema version (5 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal pin); the full
-    // CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives
-    // the sv4→5 terminal-event amendment (additive: +run.cancelled/generation.skipped/agenome.failed/
-    // candidate.rejected).
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
-    expect(validRunEventEnvelope.schemaVersion).toBe(5);
+    // spec(§16) [frontend-v2 FB.0 run-controls amendment]: the canonical envelope fixture is re-recorded
+    // at the CURRENT schema version (6 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal
+    // pin); the full CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14
+    // surface survives the sv5→6 amendment (additive: +RunConfig generationOperators/generationBias/
+    // modelRouteOverride + the closed GenerationOperator enum; rule-#6 judge anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+    expect(validRunEventEnvelope.schemaVersion).toBe(6);
   });
 
   it('types_are_single_source', () => {

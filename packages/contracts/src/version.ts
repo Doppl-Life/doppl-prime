@@ -16,7 +16,11 @@
  *  - 4 → 5 (terminal-event amendment): +`run.cancelled` / `generation.skipped` / `agenome.failed` /
  *    `candidate.rejected` `RunEventType` members — the 4 reachable §3/§5 terminals the registry was
  *    missing, so every state-machine terminal is rule-#2 replayable (closes the audited gap).
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1/2/3/4 envelopes still validate (the
+ *  - 5 → 6 (frontend-v2 FB.0, run-controls amendment): +3 OPTIONAL `RunConfig` run-control fields
+ *    (`generationOperators` / `generationBias` / `modelRouteOverride`) + the closed `GenerationOperator`
+ *    enum. GENERATION inputs only (rule #5 DATA, rule-#6-safe) — the held-out judge / scoring anchor
+ *    (`ScoringPolicy` / `FinalJudgeRubric` / `FinalJudgeAxis`) is BYTE-IDENTICAL across this bump.
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1/2/3/4/5 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;

@@ -59,6 +59,22 @@ export const validRunConfig: RunConfig = {
   rngSeed: 42,
 };
 
+/**
+ * The frontend-v2 FB.0 run-controls variant — the canonical `RunConfig` exercising all three additive
+ * optional controls (mutagen operators, the diverge/converge `generationBias`, a partial per-role
+ * `modelRouteOverride`). Kept distinct from `validRunConfig` (which stays the no-controls baseline) so
+ * the fixture-lockstep gate keeps ONE canonical `RunConfig`; this variant is consumed directly by the
+ * FB.0 schema tests, not registered in `CANONICAL_FIXTURES`.
+ */
+export const validRunConfigWithControls: RunConfig = {
+  ...validRunConfig,
+  generationOperators: ['polymath', 'first_principles'],
+  generationBias: 0.5,
+  modelRouteOverride: {
+    population_generator: { provider: 'ollama', modelId: 'llama3.1' },
+  },
+};
+
 export const validRunEventEnvelope: RunEventEnvelope = {
   id: 'evt_1',
   runId: 'run_1',

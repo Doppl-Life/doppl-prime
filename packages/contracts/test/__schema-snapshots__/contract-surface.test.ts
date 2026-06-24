@@ -57,6 +57,7 @@ import {
   GenerationStatus,
   LineageNodeType,
   FinalJudgeAxis,
+  GenerationOperator,
 } from '@doppl/contracts';
 
 const sorted = (a: readonly string[]): string[] => [...a].sort();
@@ -114,6 +115,13 @@ const UNION_SWEEP = [
   { name: 'GenerationStatus', schema: GenerationStatus, valid: 'pending', invalid: 'halted' },
   { name: 'LineageNodeType', schema: LineageNodeType, valid: 'candidate', invalid: 'cluster' },
   { name: 'FinalJudgeAxis', schema: FinalJudgeAxis, valid: 'grounding', invalid: 'vibes' },
+  // frontend-v2 FB.0: the closed mutagen-operator allowlist joins the exhaustive out-of-set gate.
+  {
+    name: 'GenerationOperator',
+    schema: GenerationOperator,
+    valid: 'first_principles',
+    invalid: 'first-principles',
+  },
 ];
 
 describe('contract-test surface — field-set snapshot + union sweep + barrel (spec §16 / §2.5 / §4)', () => {
@@ -153,7 +161,7 @@ describe('contract-test surface — field-set snapshot + union sweep + barrel (s
   it('every_closed_union_rejects_out_of_set', () => {
     // spec(§4) lesson §1: positive-guard-first — a valid member parses AND an out-of-set value rejects,
     // for every closed union (cross-track agreement on the enumerated value set).
-    expect(UNION_SWEEP).toHaveLength(17);
+    expect(UNION_SWEEP).toHaveLength(18);
     for (const { name, schema, valid, invalid } of UNION_SWEEP) {
       expect(schema.parse(valid), `${name} member`).toBe(valid);
       expect(schema.safeParse(invalid).success, `${name} rejects ${invalid}`).toBe(false);

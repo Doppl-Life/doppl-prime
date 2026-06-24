@@ -40,7 +40,18 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'payload',
     'schemaVersion',
   ],
-  RunConfig: ['seed', 'enabledSubtypes', 'caps', 'modelProfile', 'scoringPolicyVersion', 'rngSeed'],
+  RunConfig: [
+    'seed',
+    'enabledSubtypes',
+    'caps',
+    'modelProfile',
+    'scoringPolicyVersion',
+    'rngSeed',
+    // frontend-v2 FB.0 (sv5→6) — 3 additive OPTIONAL run-control fields (generation inputs, rule-#6-safe).
+    'generationOperators',
+    'generationBias',
+    'modelRouteOverride',
+  ],
   RunCaps: [
     'maxPopulation',
     'maxGenerations',

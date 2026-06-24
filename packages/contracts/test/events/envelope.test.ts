@@ -118,10 +118,11 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_5', () => {
-    // spec(§4) [terminal-event amendment]: the registry-pinned current schema version is 5 (bumped 4→5
-    // for the additive run.cancelled/generation.skipped/agenome.failed/candidate.rejected terminal
-    // events). The exported constant is the single source the reader's ≤-current ceiling tracks.
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+  it('current_schema_version_is_6', () => {
+    // spec(§4) [frontend-v2 FB.0 run-controls amendment]: the registry-pinned current schema version is
+    // 6 (bumped 5→6 for the additive RunConfig generationOperators/generationBias/modelRouteOverride
+    // fields + the closed GenerationOperator enum). The exported constant is the single source the
+    // reader's ≤-current ceiling tracks.
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
   });
 });

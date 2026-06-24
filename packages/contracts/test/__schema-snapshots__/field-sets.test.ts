@@ -92,8 +92,10 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     // Deliberate schemaVersion bumps pinned by literal so they can't move silently (kernel-020
     // linearized): 1→2 (P0.1-amend RunEventType markers), 2→3 (P0.16 judge.reviewed + JudgeResult),
     // 3→4 (kernel P0.15-amend GenerationStatus +degraded & P0.5-amend CandidateStatus +repairing, folded),
-    // 4→5 (terminal-event amendment: +run.cancelled/generation.skipped/agenome.failed/candidate.rejected).
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    // 4→5 (terminal-event amendment: +run.cancelled/generation.skipped/agenome.failed/candidate.rejected),
+    // 5→6 (frontend-v2 FB.0 run-controls: +RunConfig generationOperators/generationBias/modelRouteOverride
+    //      + the closed GenerationOperator enum; rule-#6 judge/scoring anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {
