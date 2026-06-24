@@ -13,7 +13,7 @@ const EMBEDDING_ONLY: ProviderCapability = { structuredOutputs: false, embedding
 const NONE: ProviderCapability = { structuredOutputs: false, embeddings: false };
 
 const CHEAP_TIER = 'openai/gpt-4o-mini';
-const STRONG_TIER = 'anthropic/claude-3.5-sonnet';
+const STRONG_TIER = 'openai/gpt-4o';
 
 export const DEFAULT_MODEL_REGISTRY: RegistryConfig = {
   population_generator: {
