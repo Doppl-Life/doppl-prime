@@ -1,6 +1,6 @@
 # Calibrator Hosted Write Path
 
-Status: proposed contract
+Status: active implementation contract
 Branch: `calibration`
 Updated: 2026-06-24
 
@@ -85,6 +85,22 @@ The deployable server entrypoint is:
 ```bash
 npm --prefix calibrator run serve:ratings
 ```
+
+The deployed Railway service currently uses this entrypoint for:
+
+- `GET /health`
+- `POST /api/agarden/ratings`
+
+The smoke-test command is:
+
+```bash
+CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
+CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE=<session access code> \
+CALIBRATOR_SMOKE_ALLOW_WRITE=true \
+npm --prefix calibrator run smoke:hosted-ratings
+```
+
+The smoke script is intentionally skipped unless all required environment variables are present. Run it only after confirming Railway targets the safe `AGARDEN_BRANCH=calibrator-ratings-smoke` branch. It posts one rating upsert for the first primary aGarden artifact in the current static index, then prints commit/projection metadata without printing the access code.
 
 Required environment variables:
 

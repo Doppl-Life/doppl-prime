@@ -25,6 +25,7 @@ Current state:
 - Local development already reads the sibling `../agarden/` checkout by default.
 - Static export already serializes aGarden nodes into `calibrator/public/calibration-index.json` and `published/calibrator/calibration-index.json`.
 - The live GitHub Pages calibrator shows only the last committed static export from `doppl-prime/calibration`.
+- Empty/non-rateable aGarden cases and non-primary artifacts are filtered out of the reviewer path, so reviewers see only problem recoveries and doppls they can rate.
 - There is no fully automatic cross-repo refresh from `Doppl-Life/agarden/main` to the live Pages bundle yet.
 
 Remaining work:
@@ -56,16 +57,17 @@ Current state:
 - A tested server-only GitHub writer core exists.
 - A tested server-only GitHub API client exists, including GitHub App installation-token exchange.
 - The GitHub Pages app now has `calibrator-config.js`, a public non-secret runtime config file. If `ratingsEndpoint` is empty, Pages remains read-only. If it points at a hosted ratings API, the browser can post there.
-- No hosted production ratings API has been deployed yet.
+- A Railway `calibrator-ratings` service is deployed from `doppl-prime/calibrator` with `GET /health` and `POST /api/agarden/ratings`.
+- Hosted writes fail closed unless `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` matches the server-only Railway variable.
+- The browser has a session-scoped `Access code` field for hosted mode. It stores the entered code only in `sessionStorage`; no access code or GitHub credential is committed to the static app.
+- Railway has `CALIBRATOR_WRITE_TOKEN`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and `AGARDEN_BRANCH=calibrator-ratings-smoke` configured. `GITHUB_APP_INSTALLATION_ID` is still blocked on Doppl-Life owner approval of the `doppl-agarden-ratings` GitHub App install.
 
 Remaining work:
 
-- Add the actual hosted `POST /api/agarden/ratings` route.
-- Deploy it somewhere server-capable, likely Railway or another server runtime.
-- Store GitHub App credentials only in server environment variables.
-- Decide the first production auth posture. The current allow-list validates identity claims but is not true authentication.
-- Add CORS restrictions for the GitHub Pages origin.
-- Smoke-test against a test branch or dry-run target before writing to `agarden/main`.
+- After owner approval, set `GITHUB_APP_INSTALLATION_ID` on the Railway service.
+- Smoke-test the hosted write path against `Doppl-Life/agarden` branch `calibrator-ratings-smoke`.
+- Point `published/calibrator/calibrator-config.js` at the Railway endpoint only after the smoke write proves ledger upsert plus node projection.
+- Decide the longer-term reviewer auth posture. The current access code plus allow-list is a practical session gate, not full per-user authentication.
 
 ### 3. Ratings Ledger Scores Are Projected Back Into Nodes
 
@@ -92,11 +94,12 @@ Current state:
 - The server-only GitHub writer core already commits `ratings-ledger.json` and the node markdown projection together.
 - The reader already attaches ledger ratings back to their matching problem recovery or doppl artifacts.
 - The deployed Pages app shows whatever score projections and ratings existed in the last committed static export.
+- A reviewer-specific queue is implemented: `Next unrated` means unrated by the selected allow-listed reviewer, based on ledger-backed ratings in the index.
 
 Remaining work:
 
-- Wire the hosted API route to the tested GitHub writer.
-- Ensure the route rebuilds or triggers a refresh of the static calibrator index after successful writes.
+- Complete the hosted API smoke test once the GitHub App installation ID is available.
+- Ensure a successful hosted write rebuilds or triggers a refresh of the static calibrator index after committing to aGarden.
 - Decide whether the API response should optimistically update the browser immediately, wait for the next static refresh, or both.
 - Add an operational check that detects ledger/node projection drift and reports it.
 
@@ -111,8 +114,17 @@ Remaining work:
 3. **Deploy hosted ratings API with server-held GitHub App credentials.** In progress.
    This is where real writes become possible. Use GitHub App credentials installed only on `Doppl-Life/agarden`; never expose them through Pages. `npm --prefix calibrator run serve:ratings` now starts a plain Node server with `GET /health` and `POST /api/agarden/ratings`.
 
-4. **Smoke hosted writes against a test branch.**
-   Prove ledger upsert plus node projection commit in GitHub before touching `agarden/main`.
+4. **Smoke hosted writes against a test branch.** Next.
+   Prove ledger upsert plus node projection commit in GitHub before touching `agarden/main`. The command is:
+
+   ```bash
+   CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
+   CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE=<session access code> \
+   CALIBRATOR_SMOKE_ALLOW_WRITE=true \
+   npm --prefix calibrator run smoke:hosted-ratings
+   ```
+
+   Run this only after Railway is confirmed to target `AGARDEN_BRANCH=calibrator-ratings-smoke`. The script prints only response metadata, never the access code.
 
 5. **Enable production writes from Pages.**
    Set `calibrator-config.js` to the hosted API URL only after the route and GitHub App write flow are verified.
@@ -125,6 +137,6 @@ Remaining work:
 
 ## Current Short Version
 
-- Latest nodes shown automatically: local yes, production partially; needs GitHub Action refresh from `agarden/main`.
-- Ratings written automatically to ledger: local yes, production server core yes, hosted route/deploy no.
-- Ledger scores shown in nodes: local yes, server writer core yes, production route/deploy and static refresh no.
+- Latest nodes shown automatically: local yes, production partially; needs a discoverable/triggered GitHub Action refresh from `agarden/main`.
+- Ratings written automatically to ledger: local yes; hosted API deployed and gated; real GitHub writes are waiting on the GitHub App installation ID and smoke test.
+- Ledger scores shown in nodes: local yes; server writer core yes; production projection should work after the hosted smoke write, but static refresh after write still remains.

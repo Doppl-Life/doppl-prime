@@ -12,6 +12,7 @@
     "import:solutions": "tsx src/server/importers/importSolutions.ts",
     "import:kernel-runs": "tsx src/server/importers/importKernelRuns.ts",
     "serve:ratings": "tsx src/server/hostedAgardenRatingServer.ts",
+    "smoke:hosted-ratings": "tsx scripts/smokeHostedRatings.ts",
     "start": "npm run serve:ratings",
     "export:static": "npm run generate:index && npm run build && tsx src/server/exportStatic.ts"
   },

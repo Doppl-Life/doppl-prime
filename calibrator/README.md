@@ -35,7 +35,18 @@ Host `published/calibrator/` to show the calibrator online. The `calibration` br
 
 Hosted write mode can also set `requiresAccessCode: true`. In that mode, reviewers enter a session access code in the rating dock and the browser sends it as a Bearer token. The access code must live only in the hosted API environment as `CALIBRATOR_WRITE_TOKEN`; it must not be committed or hardcoded into the static app.
 
-The future hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
+The hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
+
+The Railway ratings API can be smoke-tested after the GitHub App installation is approved and Railway is confirmed to target the safe `calibrator-ratings-smoke` branch:
+
+```bash
+CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
+CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE=<session access code> \
+CALIBRATOR_SMOKE_ALLOW_WRITE=true \
+npm --prefix calibrator run smoke:hosted-ratings
+```
+
+Without those environment variables, the smoke command exits as skipped and performs no writes.
 
 ## Calibration History
 
