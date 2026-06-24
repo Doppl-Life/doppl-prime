@@ -183,9 +183,11 @@ test('dashboard happy path: start → live events fold → final-idea links reso
   const launcher = page.getByLabel('Run configuration');
   await expect(launcher).toBeVisible();
 
-  // 4 (start). Configure + start the run → the shell observes run_1.
+  // 4 (start). Configure + start the run → FV.1: starting navigates to the run's real URL (/runs/run_1)
+  // where the observatory mounts (was an internal state switch pre-FV.1).
   await launcher.getByLabel(/seed prompt/i).fill('cross-domain transfer demo');
   await launcher.getByRole('button', { name: /start run/i }).click();
+  await expect(page).toHaveURL(/\/runs\/run_1$/); // FV.1 — observed run is URL-derived
 
   // 2. run loads — the lineage graph renders the served fixture (the selected-winner node).
   await expect(page.getByLabel('Lineage graph')).toBeVisible();
