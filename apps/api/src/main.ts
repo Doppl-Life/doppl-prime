@@ -8,11 +8,13 @@ import { loadConfig } from './runtime/config/loadConfig';
 import { createEventStore, runMigrations } from './event-store';
 import {
   createModelRegistry,
+  createOpenAIEmbeddingClient,
   createOpenRouterClient,
   loadModelRegistry,
   selectGateway,
   type GatewaySelection,
   type ModelGateway,
+  type OpenAIEmbeddingClient,
   type OpenRouterClient,
 } from './model-gateway';
 import { REQUIRED_CREDENTIAL_ENV } from './model-gateway/registry';
@@ -90,6 +92,14 @@ export interface BootOverrides {
    * (a fake `OpenRouterClient`). Ignored on the recorded default (no provider client is built — Q4 lazy).
    */
   readonly openRouterClient?: OpenRouterClient;
+  /**
+   * The direct-OpenAI EMBEDDING provider client used ONLY on the `DOPPL_GATEWAY=live` branch (default
+   * `createOpenAIEmbeddingClient(env)`). Injected so the live boot branch is exercised WITHOUT a network
+   * call (a fake `OpenAIEmbeddingClient`). Wired so the `embedding` role reaches the OpenAI adapter instead
+   * of being misrouted to OpenRouter chat-completions (the novelty-degradation root cause). Ignored on the
+   * recorded default (no provider client is built — Q4 lazy).
+   */
+  readonly embeddingClient?: OpenAIEmbeddingClient;
 }
 
 /** The committed fixtures dir at the repo root (`fixtures/replay/`), resolved from this module's location. */
@@ -112,8 +122,11 @@ function gatewaySelectionFromEnv(env: Record<string, string | undefined>): Gatew
  * Resolve the boot ModelGateway (PD.9). A direct `overrides.gateway` wins (the run-executing tests inject
  * a recorded multi-role fake). Otherwise: the recorded default builds NO provider client/registry (local-
  * first stays dependency-light — Q4 lazy); `DOPPL_GATEWAY=live` builds the live deps (registry from
- * DEFAULT_MODEL_REGISTRY + the OpenRouter client from env, or the injected test client) and delegates to
- * `selectGateway` → `createLiveGateway`. The API key stays env-only inside the client (rule #4).
+ * DEFAULT_MODEL_REGISTRY + the OpenRouter chat client AND the direct-OpenAI embedding client from env, or
+ * the injected test clients) and delegates to `selectGateway` → `createLiveGateway`, which dispatches the
+ * `embedding` role to the OpenAI adapter (so novelty gets real embeddings instead of always degrading).
+ * Both API keys stay env-only inside their clients (rule #4); both are guaranteed present here because
+ * `loadConfig`/`assertProviderCredentials` already failed fast on a missing OPENROUTER/OPENAI key at boot.
  */
 function resolveGateway(
   env: Record<string, string | undefined>,
@@ -124,7 +137,8 @@ function resolveGateway(
   if (selection.useStub) return selectGateway(selection); // recorded — no provider client constructed
   const registry = createModelRegistry(loadModelRegistry({ defaults: DEFAULT_MODEL_REGISTRY }));
   const client = overrides.openRouterClient ?? createOpenRouterClient(env);
-  return selectGateway(selection, { registry, client });
+  const embeddingClient = overrides.embeddingClient ?? createOpenAIEmbeddingClient(env);
+  return selectGateway(selection, { registry, client, embeddingClient });
 }
 
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).

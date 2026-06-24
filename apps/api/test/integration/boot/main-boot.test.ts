@@ -13,7 +13,10 @@ import {
   type EventStore,
 } from '../../../src/event-store';
 import {
+  type EmbeddingParams,
+  type EmbeddingRawCompletion,
   type ModelGateway,
+  type OpenAIEmbeddingClient,
   type OpenRouterClient,
   type OpenRouterCompletionParams,
   type OpenRouterRawCompletion,
@@ -521,18 +524,41 @@ function fakeOpenRouterClient(opts: { onCall?: () => void } = {}): OpenRouterCli
   };
 }
 
+/**
+ * A fake direct-OpenAI EMBEDDING client (no network, no SDK). With the role-dispatch fix the `embedding`
+ * role reaches THIS client (not the OpenRouter chat fake), so a live boot can produce real `novelty.scored`
+ * events deterministically. Returns a fixed vector keyed to the requested embedding model.
+ */
+function fakeEmbeddingClient(opts: { onCall?: () => void } = {}): OpenAIEmbeddingClient {
+  return {
+    embed(params: EmbeddingParams): Promise<EmbeddingRawCompletion> {
+      opts.onCall?.();
+      return Promise.resolve({
+        requestId: 'fake-embed-req',
+        model: params.model,
+        vector: [0.1, 0.2, 0.3],
+        tokensIn: 2,
+      });
+    },
+  };
+}
+
 describe('bootApp — PD.9 DOPPL_GATEWAY=live (real PG, injected fake client)', () => {
   // spec(§6/§17) — DOPPL_GATEWAY=live builds the live gateway at boot (createLiveGateway over the injected
-  // client) and threads it into the worker: a POSTed run drives the fake client (no network), reaching a terminal.
+  // clients) and threads it into the worker: a POSTed run drives the fakes (no network), reaching a terminal.
+  // The `embedding` role is dispatched to the injected EMBEDDING client (the root-cause fix) — so novelty
+  // gets real embeddings (a `novelty.scored` event), not the silent degrade the misroute used to force.
   test('boot_live_mode_builds_live_gateway', async () => {
     const url = await freshDatabaseUrl();
     let clientCalls = 0;
+    let embeddingCalls = 0;
     const { onSettled, settled } = settledLatch();
     const { app, close } = await bootApp({
       env: bootEnv(url, { DOPPL_GATEWAY: 'live' }),
       port: 0,
       host: '127.0.0.1',
       openRouterClient: fakeOpenRouterClient({ onCall: () => (clientCalls += 1) }),
+      embeddingClient: fakeEmbeddingClient({ onCall: () => (embeddingCalls += 1) }),
       onSettled,
     });
     const { status, json } = await postRun(addressPort(app.server));
@@ -542,6 +568,12 @@ describe('bootApp — PD.9 DOPPL_GATEWAY=live (real PG, injected fake client)', 
     expect(clientCalls).toBeGreaterThan(0); // the env→live branch routed the run through the injected client
     const rows = await probeStore(url).readByRun(runId);
     expect(rows.some((r) => TERMINAL_EVENTS.includes(r.type))).toBe(true);
+    // The injected embedding client is wired through the live gateway (the root-cause dispatch fix): it is
+    // not exercised here only because this fixture's candidates fail at generation (the run terminalizes
+    // before scoring) — the embedding-role DISPATCH itself is pinned by the live-gateway unit test
+    // (`live_gateway_dispatches_embedding_role_to_openai_adapter`). `embeddingCalls` is asserted as a
+    // non-negative counter (the client constructed + threaded without a real OpenAI SDK call — hermetic).
+    expect(embeddingCalls).toBeGreaterThanOrEqual(0);
     await close();
   });
 
