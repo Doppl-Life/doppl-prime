@@ -270,10 +270,42 @@ describe("App", () => {
   it("moves to the next unrated artifact in the review queue", async () => {
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
     expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
     expect(screen.getByLabelText("Doppl")).toHaveValue("dalton-fsd-accident-economy-001__solution");
+  });
+
+  it("shows the selected reviewer's existing rating and skips items they already rated", async () => {
+    const personalizedFixture: CalibratorIndex = structuredClone(fixture);
+    personalizedFixture.cases[0].problem_recoveries[1].human_ratings = [
+      {
+        rating_id: "rating_dalton_pr",
+        rating_target: "problem_recovery",
+        case_id: "fsd-accident-economy",
+        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        score: 3,
+        reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+        submitted_at: "2026-06-24T12:00:00.000Z",
+        app_version: "calibrator-v0",
+        body: "Useful.",
+      },
+    ];
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(personalizedFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+
+    expect(screen.getByText("Your current rating for this item is +3.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
+    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    expect(screen.getByText("You have not rated this item yet.")).toBeInTheDocument();
   });
 
   it("formats compressed aGarden artifact markdown as readable sections", async () => {

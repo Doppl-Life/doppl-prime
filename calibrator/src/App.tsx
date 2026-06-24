@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   CalibratorIndex,
+  CalibratorRating,
   CalibratorProblemRecovery,
   CalibratorSolution,
   RatingSubmitResponse,
@@ -31,6 +32,16 @@ declare global {
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
+}
+
+function ratingReviewerEmail(rating: CalibratorRating): string {
+  return normalizeRaterEmail(rating.reviewer_email ?? rating.reviewer_name ?? "");
+}
+
+function reviewerRating(artifact: ReviewArtifact | null, reviewerEmail: string): CalibratorRating | null {
+  const normalizedReviewer = normalizeRaterEmail(reviewerEmail);
+  if (!artifact || !normalizedReviewer) return null;
+  return artifact.human_ratings.find((rating) => ratingReviewerEmail(rating) === normalizedReviewer) ?? null;
 }
 
 function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
@@ -415,21 +426,23 @@ export function App() {
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const activeTitle = artifactTitle(activeReviewArtifact);
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
+  const normalizedReviewerEmail = normalizeRaterEmail(reviewerEmail);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
+  const activeReviewerRating = reviewerRating(activeReviewArtifact, normalizedReviewerEmail);
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
       ? selectedProblemRecovery?.problem_recovery_id ?? ""
       : selectedSolution?.solution_id ?? "";
   const activeQueueIndex = reviewQueue.findIndex((item) => item.target === ratingTarget && item.id === (ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : selectedSolution?.solution_id));
   const nextUnratedItem = useMemo(() => {
-    if (reviewQueue.length === 0) return null;
+    if (reviewQueue.length === 0 || !reviewerIsAllowed) return null;
     const start = activeQueueIndex >= 0 ? activeQueueIndex + 1 : 0;
     for (let offset = 0; offset < reviewQueue.length; offset += 1) {
       const candidate = reviewQueue[(start + offset) % reviewQueue.length];
-      if (candidate.artifact.human_ratings.length === 0) return candidate;
+      if (!reviewerRating(candidate.artifact, normalizedReviewerEmail)) return candidate;
     }
     return null;
-  }, [activeQueueIndex, reviewQueue]);
+  }, [activeQueueIndex, normalizedReviewerEmail, reviewerIsAllowed, reviewQueue]);
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
@@ -856,6 +869,13 @@ export function App() {
             <span>0</span>
             <span>+5</span>
           </div>
+          {reviewerIsAllowed && activeReviewArtifact ? (
+            <p className="reviewer-rating-note">
+              {activeReviewerRating
+                ? `Your current rating for this item is ${scoreLabel(activeReviewerRating.score)}.`
+                : "You have not rated this item yet."}
+            </p>
+          ) : null}
         </div>
         <button
           className="submit-button"
