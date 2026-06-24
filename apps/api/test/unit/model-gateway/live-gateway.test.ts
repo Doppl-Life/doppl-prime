@@ -4,7 +4,10 @@ import {
   createLiveGateway,
   createModelRegistry,
   createOpenRouterClient,
+  type EmbeddingParams,
+  type EmbeddingRawCompletion,
   type ModelRegistry,
+  type OpenAIEmbeddingClient,
   type OpenRouterClient,
   type OpenRouterCompletionParams,
   type OpenRouterRawCompletion,
@@ -35,6 +38,24 @@ function clientReturning(
         output,
         tokensIn: 5,
         tokensOut: 7,
+      });
+    },
+  };
+}
+
+/** A fake embedding client that returns a fixed vector + records the params it was called with. */
+function embeddingClientReturning(
+  vector: number[],
+  opts: { spy?: (params: EmbeddingParams) => void } = {},
+): OpenAIEmbeddingClient {
+  return {
+    embed(params): Promise<EmbeddingRawCompletion> {
+      opts.spy?.(params);
+      return Promise.resolve({
+        requestId: 'fake-embed-req-1',
+        model: params.model,
+        vector,
+        tokensIn: 3,
       });
     },
   };
@@ -112,5 +133,54 @@ describe('createLiveGateway — P2.5 adapter composed behind the port (spec §6,
       schema: OK_SCHEMA,
     });
     expect(JSON.stringify(res)).not.toContain(SECRET); // no response/providerMeta field carries the key
+  });
+
+  // spec(§6) ROOT-CAUSE FIX — role dispatch: an `embedding`-role call routes to the OpenAI embedding
+  // adapter (the injected `embeddingClient`), NOT to the OpenRouter chat-completions client. Before the
+  // fix the live gateway built ONLY the OpenRouter providerCall, so every `role:'embedding'` call was
+  // misrouted to OpenRouter's chat endpoint with an embedding model → always failed → novelty always
+  // degraded. The adapter returns {vector, embeddingModelId, dimension}, which matches the embedding
+  // role's no-schema path → accepted (never the silent degrade).
+  test('live_gateway_dispatches_embedding_role_to_openai_adapter', async () => {
+    let embedSeen: EmbeddingParams | undefined;
+    let openRouterCalled = false;
+    const embeddingClient = embeddingClientReturning([0.1, 0.2, 0.3], {
+      spy: (p) => (embedSeen = p),
+    });
+    const client = clientReturning(
+      { ok: true },
+      { spy: () => (openRouterCalled = true) },
+    );
+    const gateway = createLiveGateway({ registry: REGISTRY, client, embeddingClient });
+
+    const res = await gateway.call({ role: 'embedding', prompt: 'embed this summary' });
+
+    expect(res.accepted).toBe(true);
+    expect(res.output).toEqual({
+      vector: [0.1, 0.2, 0.3],
+      embeddingModelId: REGISTRY.resolve('embedding').modelId,
+      dimension: 3,
+    });
+    // The EMBEDDING adapter was used (the OpenAI client saw the embedding route's model), and the
+    // OpenRouter chat client was NOT touched on this call.
+    expect(embedSeen?.model).toBe(REGISTRY.resolve('embedding').modelId);
+    expect(embedSeen?.input).toBe('embed this summary');
+    expect(openRouterCalled).toBe(false);
+  });
+
+  // spec(§6) ROOT-CAUSE FIX — a NON-embedding role still routes to OpenRouter (the dispatch must not
+  // capture every role): a `critic` call hits the chat client, never the embedding client.
+  test('live_gateway_non_embedding_role_still_routes_to_openrouter', async () => {
+    let openRouterModel: string | undefined;
+    let embeddingCalled = false;
+    const client = clientReturning({ ok: true }, { spy: (p) => (openRouterModel = p.model) });
+    const embeddingClient = embeddingClientReturning([0.9], { spy: () => (embeddingCalled = true) });
+    const gateway = createLiveGateway({ registry: REGISTRY, client, embeddingClient });
+
+    const res = await gateway.call({ role: 'critic', prompt: 'review', schema: OK_SCHEMA });
+
+    expect(res.accepted).toBe(true);
+    expect(openRouterModel).toBe(REGISTRY.resolve('critic').modelId);
+    expect(embeddingCalled).toBe(false);
   });
 });
