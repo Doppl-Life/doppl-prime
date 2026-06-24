@@ -3,6 +3,10 @@
 When we land on a term that's *right*, it goes here. This is how we give the madness legitimacy: a
 shared, precise vocabulary the team can build against. Add to it whenever a good term appears.
 
+## Category
+
+- **PSaaS** — Problem-Solving as a Service. The category Doppl inhabits. Consulting has always been PSaaS; the infrastructure was just unscalable, unreproducible, and artisanal. Doppl makes it so: one engine, many problems, reproducible lineage.
+
 ## Structure
 
 - **flow** — the chain of decisions, folded one immutable node per step.

@@ -247,7 +247,7 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
   <div class="wrap">
     <div class="sec-hd reveal">
       <div class="kicker">the timeline</div>
-      <h2>34 commits, June 18–23</h2>
+      <h2>42 commits, June 18–24</h2>
       <p>Each commit shows its diff as a bar — growth in green, pruning in amber. Milestones carry an annotation explaining what changed and why it mattered. The burn is the one you can see from across the room.</p>
     </div>
     <div class="tl-controls reveal" id="tlControls">
@@ -308,7 +308,7 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
     </div>
     <div class="closing reveal">
       <div class="lead">
-        <p>After the burn, what remains is small and load-bearing. <b>The garden is canon.</b> When the garden and the running kernel disagree, the garden wins and the kernel follows.</p>
+        <p>After the burn, what remains is small and load-bearing. <b>The hut is canon.</b> When the hut and the running kernel disagree, the hut wins and the kernel follows. The garden is the downstream vault — aGarden — where actual runs live.</p>
         <p>One kernel — <b>generate → fitness → select → lens → judge → compile</b> — runs in one direction at a time on a single dial: diverge for reach, converge for grounding. Fitness keeps <b>novelty × grounding</b> as two warring axes, never collapsed before selection, with a regret sibling that proves the dial mattered. A node is a <b>projection of the RunTrace</b>, never a second source of truth.</p>
         <p>This log's siblings — the <b>system-design document</b> and the <b>local field-lab app</b> built alongside it — are downstream renderers of exactly this contract. They project the trace; the specimen is the trace.</p>
       </div>
@@ -370,11 +370,22 @@ const COMMITS=[
   note:'The fire: 121 files, <b>−24,712 lines</b>. "The garden is canon" becomes explicit doctrine — when the garden and the running kernel disagree, the garden wins. The governing rule of the whole project is now visible in a single diff: <b>cut faster than you promote</b>.'},
 {h:'c8b0c6f',a:'MichaelHabermas',d:'2026-06-23',t:'10:43',f:12,ins:665,del:173,s:'Remove obsolete files and update documentation for clarity',ph:6,ms:0},
 {h:'82cfd42',a:'MichaelHabermas',d:'2026-06-23',t:'11:06',f:2,ins:273,del:64,s:'Refactor node and rating documentation for clarity and structure',ph:7,ms:0},
-{h:'fa9872d',a:'MichaelHabermas',d:'2026-06-23',t:'12:40',f:17,ins:664,del:335,s:'Enhance documentation clarity and structure across multiple files',ph:7,ms:0},
+{h:'fa9872d',a:'MichaelHabermas',d:'2026-06-23',t:'12:40',f:17,ins:664,del:335,s:'Enhance documentation clarity and structure across multiple files',ph:7,ms:1,tag:'MarkScript',
+  note:'A language is invented. <b>MarkScript</b> is a framework for typing markdown without killing the markdown — the authored artifact stays plain text a human can read directly, while a TypeScript contract states what a parser must recover from it. Three readers must be able to use a MarkScript section without help: a human, a parser, and a validator. If only one succeeds, it\'s not MarkScript yet. The principle — <b>one concept, one owner; build down, not up; history does not belong in a contract</b> — becomes the house style for every spec in the hut.'},
 {h:'040a4cb',a:'MichaelHabermas',d:'2026-06-23',t:'13:23',f:3,ins:14,del:8,s:'Enhance engine and proposal documentation with selection aim and consensus-gap concepts',ph:7,ms:1,tag:'the aim',
   note:'Selection gets its purpose stated: surface what is <b>true, non-obvious, and actionable</b>. The <b>consensus-gap</b> enters the lexicon — the distance between what is true/useful and what the crowd already prices. Today\'s <code>novelty × grounding</code> is named as a proxy for a future <code>truth × consensus-gap</code>.'},
 {h:'a626b5f',a:'MichaelHabermas',d:'2026-06-23',t:'13:54',f:5,ins:286,del:11,s:'Update documentation to clarify RunTrace and its role in node compilation',ph:7,ms:1,tag:'trace is truth',
   note:'The capstone: <b>RunTrace</b> is named the source of truth. A compiled node is a <i>projection</i> of the trace, never a second authority. The engine pass now reads end-to-end as <b>generate → fitness → select → lens → judge → compile</b> — every visible surface derives from one contract.'},
+{h:'e540001',a:'MichaelHabermas',d:'2026-06-23',t:'15:27',f:33,ins:2291,del:65,s:'Refactor AGENTS.md and related documentation to establish \'the hut\' as the canonical model',ph:7,ms:1,tag:'hut is canon',
+  note:'The vocabulary settles. <b>The garden is renamed the hut</b> — the hut is where you work; the garden is the downstream vault. With the rename comes the sharpest statement yet of the model\'s shape: the three-stage spine (<code>case_study → problem_recovery → doppl</code>) is written into <b>object-model.md</b> as load-bearing doctrine. <b>projection.md</b> is born (112 lines): every surface — the board, the node, the vault — is a <i>projection</i> of one RunTrace contract, not a second source of truth. <b>aGarden</b> is named the downstream instance: the Obsidian vault where actual runs live. The hut generates the model; aGarden shows it running.'},
+{h:'c76169e',a:'MichaelHabermas',d:'2026-06-23',t:'18:54',f:1,ins:2,del:2,s:'Update README.md to change local server port from 5173 to 8000 for improved accessibility',ph:7,ms:0},
+{h:'8441f97',a:'MichaelHabermas',d:'2026-06-23',t:'22:24',f:3,ins:66,del:22,s:'Enhance node and rating documentation with new concepts and structure',ph:7,ms:0},
+{h:'486ddf7',a:'MichaelHabermas',d:'2026-06-23',t:'22:40',f:72,ins:50,del:1842,s:'Refactor documentation to reflect case-study corpus migration and enhance clarity',ph:7,ms:1,tag:'corpus to agarden',
+  note:'Third burn of the branch: 72 files, <b>−1,842 lines</b>. The <code>case-studies/</code> directory is deleted wholesale, along with its tooling — <code>case-study-corpus.ts</code> and <code>case-study-seed-lint.ts</code>. The corpus does not vanish; it <b>migrates to aGarden</b>, reformatted as proper flow nodes carrying SlugIds and the four-section structure the hut now owns. Raw case-study files were ore; aGarden nodes are the promoted fixture. <b>Distill, do not bulk import</b> — applied to the corpus itself.'},
+{h:'6c6c49e',a:'MichaelHabermas',d:'2026-06-23',t:'22:59',f:8,ins:60,del:51,s:'Update documentation to reflect the transition from UUIDv4 to SlugId and enhance node lineage clarity',ph:7,ms:0},
+{h:'622c5b1',a:'MichaelHabermas',d:'2026-06-23',t:'23:45',f:2,ins:37,del:10,s:'Enhance stock documentation with refined load-bearing facts and improved clarity',ph:7,ms:0},
+{h:'d0ca679',a:'MichaelHabermas',d:'2026-06-23',t:'23:49',f:4,ins:14,del:5,s:'Enhance lexicon and object model documentation with new concepts and clarity',ph:7,ms:0},
+{h:'8055db3',a:'MichaelHabermas',d:'2026-06-24',t:'07:58',f:20,ins:79,del:71,s:'Update documentation to reflect changes in contracts and clarify model structure',ph:7,ms:0},
 ];
 
 /* ---------- phases ---------- */
@@ -385,7 +396,7 @@ const PHASES=[
 {i:4,date:'Jun 22',t:'The conscience',c:'var(--doppl)',w:72,p:'A 205-file commit gives the kernel a memory: invariants, bugs, lessons, watchlist. The burn-and-rebuild begins.'},
 {i:5,date:'Jun 22',t:'Ledger out, crucible in',c:'var(--novelty)',w:80,p:'The separate lineage ledger is deleted; the node graph becomes the memory. engine.md writes the generate→select crucible down before more is built on it.'},
 {i:6,date:'Jun 23',t:'The burn',c:'var(--del)',w:92,p:'121 files, −24,712 lines. "The garden is canon" becomes doctrine. Fake authority is deleted faster than new surface is promoted.'},
-{i:7,date:'Jun 23',t:'Sharpen the contracts',c:'var(--grounding)',w:100,p:'Node, rating, selection-aim and RunTrace contracts are sharpened. A node becomes a projection of the trace; selection gets its aim.'},
+{i:7,date:'Jun 23–24',t:'Sharpen, name, and migrate',c:'var(--grounding)',w:100,p:'The vocabulary settles: the garden is renamed the hut, projection.md is born, and the corpus migrates to aGarden. UUIDv4 yields to SlugId. New terms enter the lexicon — sprout, reseed, forest loop, anti-fragile. Contracts move under src/contracts/. The model is small, load-bearing, and legible.'},
 ];
 
 /* ---------- decisions (MEMORY.md) ---------- */
@@ -397,6 +408,7 @@ const DECISIONS=[
 {n:'2026-06-21',t:'Trace is source of truth',chose:'buildRunTrace() is the canonical pipeline; every view is a projection of one trace contract.',over:'View-specific assembly, static narratives, or generated reports acting as truth.',because:'One specimen, many masks — the trace is the specimen.',revisit:'When a new artifact needs data not expressible in RunTrace; extend the contract deliberately.'},
 {n:'2026-06-21',t:'Case-study access boundary',chose:'Generation reads case packets; judgment may read solution packets.',over:'Wholesale answer-key visibility.',because:'Leakage turns evaluation into answer coaching. Enforced by the seed leakage guard.',revisit:'When the corpus moves to a production harness with stricter roles.'},
 {n:'2026-06-21',t:'Distill, do not bulk import',chose:'Distill raw conversations and legacy source into the garden/specs/MEMORY, then delete the raw copies.',over:'Preserving a live museum of transcripts and inherited planning docs.',because:'Old source becomes fake authority unless it is a build contract or an explicit decision.',revisit:'When a source is legally required as provenance for a promoted fixture.'},
+{n:'2026-06-24',t:'PSaaS — naming the category',chose:'Problem-Solving as a Service. This is the category Doppl inhabits.',over:'AI ideation tool, insight engine, decision-support platform, or leaving it unnamed.',because:'Consulting has always been PSaaS — the infrastructure was just unscalable, unreproducible, and artisanal. The SaaS suffix means infrastructure. Apply it to problem-solving and you are making a claim: we productized the thing. Doppl is making that claim.',revisit:'When the market names it first.'},
 {n:'2026-06-22',t:'Cleanup machinery does not survive cleanup',chose:'After a cleanup pass, delete the temporary scans, dead-name lists, and one-off guards created to perform it.',over:'Preserving "not this" machinery inside the kernel after the old surface is gone.',because:'Remembering the rejected frame turns cleanup residue into new fake authority.',revisit:'When a cleanup check becomes an object-level contract with a named owner.'},
 ];
 
@@ -455,12 +467,13 @@ const TRAPS=[
 ['Fake authority','A stale file at a prestigious path makes the wrong thing feel binding.'],
 ];
 const STATE=[
-['var(--doppl)','The garden is canon','garden wins ties against the running kernel'],
+['var(--doppl)','The hut is canon','hut wins ties against the running kernel; garden = downstream vault'],
 ['var(--novelty)','One dial, one direction','diverge for reach · converge for grounding'],
 ['var(--grounding)','novelty × grounding','two axes, never collapsed before selection'],
 ['var(--problem)','RunTrace is truth','every node is a projection of one trace'],
 ['var(--novelty)','doppelgangers + convergence','the node graph is the memory; convergence is derived'],
 ['var(--grounding)','temporal decay','zeitgeist decays at 180 days · transfer never'],
+['var(--seed)','aGarden is the corpus','the Obsidian vault where actual runs live · case-studies burned into it'],
 ];
 
 /* ====================== render ====================== */
