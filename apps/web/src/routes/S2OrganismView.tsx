@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { LineageGraphProjection } from '../data/contracts';
 import type { RunClient } from '../data/runClient';
@@ -9,12 +10,14 @@ import type { ModeBannerMode } from '../components/feedback/ModeBanner';
 import { StopControl } from '../components/run/StopControl';
 import { AgentRoster } from '../components/run/AgentRoster';
 import { InspectorDrawer } from '../components/run/InspectorDrawer';
+import { ReplayScrubber } from '../components/run/ReplayScrubber';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
 import { EnergyPanel } from '../panels/EnergyPanel';
 import { energyBudgetProgress } from '../panels/energyData';
 import { useRunObservatory } from './useRunObservatory';
 import { deriveHealthStatus, deriveTickerEvents, toHealthSummary } from './observatoryTelemetry';
+import { foldAtStep } from './replayScrubber';
 
 /**
  * S2OrganismView (FV.4) — the 3-pane organism centerpiece at /runs/:id (live) + /runs/:id/replay
@@ -77,6 +80,7 @@ const chartStrip: CSSProperties = {
 // The ActivityTicker fills its container (height:100%); bound it so the live feed scrolls in the rail.
 // FV.9 design-review owns final placement/legibility — FV.6 lands it wired + rendering.
 const tickerWrap: CSSProperties = { height: '20rem' };
+const scrubberRow: CSSProperties = { gridColumn: '1 / -1', display: 'flex' };
 
 export function S2OrganismView({
   runId,
@@ -99,18 +103,37 @@ export function S2OrganismView({
     refetchDebounceMs,
   });
 
-  // FV.6 live telemetry — PURE selectors over the hook's fold.events + health projection (read-only,
-  // rule #9; replay-identical, rule #7). nowMs injected at render keeps the selectors pure (Step-2.5 Q5).
-  const tickerEvents = deriveTickerEvents(obs.fold.events);
+  // FV.8 replay scrubber — re-fold events[0..N] CLIENT-SIDE (pure foldAtStep — NO refetch/provider,
+  // rule #7) so the room can step through a recorded run. Replay-mode-only; the live path is unchanged
+  // (panelEvents === obs.fold.events, foldAtStep never called). Default = END (full run shown first;
+  // scrub BACK to step through). The lineage node-structure stays full API-projected — only its
+  // in-flight overlay rewinds via the prefix events (per-step node reconstruction = FV.9/later).
+  const isReplay = mode === 'replay';
+  const totalSteps = obs.fold.events.length;
+  const [scrubStep, setScrubStep] = useState<number | null>(null);
+  const effectiveStep = scrubStep ?? totalSteps;
+  const panelEvents = isReplay
+    ? foldAtStep(obs.fold.events, effectiveStep).events
+    : obs.fold.events;
+
+  // FV.6 live telemetry — PURE selectors over the (possibly step-rewound) fold + the health projection
+  // (read-only, rule #9; replay-identical, rule #7). nowMs injected at render keeps the selectors pure.
+  const tickerEvents = deriveTickerEvents(panelEvents);
   const healthSummary = toHealthSummary(obs.health, Date.now());
   const healthStatus = deriveHealthStatus(healthSummary);
-  const energy = energyBudgetProgress(obs.fold.events);
+  const energy = energyBudgetProgress(panelEvents);
 
   return (
     <main aria-label="Doppl organism view" style={shell}>
       <div style={bannerRow}>
         <ModeBanner mode={bannerMode(obs.store.getMode(), obs.runStatus)} />
       </div>
+
+      {isReplay && (
+        <div style={scrubberRow}>
+          <ReplayScrubber totalSteps={totalSteps} value={effectiveStep} onChange={setScrubStep} />
+        </div>
+      )}
 
       <section aria-label="Organism left rail" style={leftRail}>
         <h3 style={railHeading}>Run controls</h3>
@@ -125,10 +148,10 @@ export function S2OrganismView({
       </section>
 
       <section style={center}>
-        <LineageGraph projection={obs.lineage ?? emptyLineage(runId)} events={obs.fold.events} />
+        <LineageGraph projection={obs.lineage ?? emptyLineage(runId)} events={panelEvents} />
         <div style={chartStrip}>
-          <FitnessOverTime events={obs.fold.events} />
-          <EnergyPanel events={obs.fold.events} onSelectAgenome={() => undefined} />
+          <FitnessOverTime events={panelEvents} />
+          <EnergyPanel events={panelEvents} onSelectAgenome={() => undefined} />
         </div>
       </section>
 

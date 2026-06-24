@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
@@ -219,6 +219,62 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     cleanup();
     renderView('replay');
     expect(await screen.findByText('replaying')).toBeTruthy(); // ticker replay affordance
+  });
+
+  // ── FV.8 replay scrubber ──────────────────────────────────────────────────────────────────────
+  const replayEvents: RunEventEnvelope[] = [
+    makeEvent(1, 'run.started'),
+    makeEvent(2, 'generation.started'),
+    makeEvent(3, 'candidate.created', { candidateId: 'c1' }),
+    makeEvent(4, 'agenome.spawned', { agenomeId: 'a1' }),
+    makeEvent(5, 'run.completed'),
+  ];
+  function clientWithEvents(evs: RunEventEnvelope[]): RunClient {
+    const c = fakeClient();
+    c.getEvents = vi.fn(() => Promise.resolve(evs)) as RunClient['getEvents'];
+    return c;
+  }
+
+  // spec(FV.8 replay-only): mode='replay' mounts the ReplayScrubber; mode='live' does NOT (the live
+  // path is streaming, unchanged).
+  it('test_scrubber_only_in_replay_mode', async () => {
+    renderView('replay');
+    expect(await screen.findByLabelText(/replay step/i)).toBeTruthy(); // scrubber present in replay
+    cleanup();
+    renderView('live');
+    expect(screen.queryByLabelText(/replay step/i)).toBeNull(); // absent in live
+  });
+
+  // spec(§12 step-through, rule #7): scrubbing to N<M re-folds events[0..N] client-side so the fold-
+  // derived ActivityTicker rewinds (the later event's row disappears).
+  it('test_scrub_rewinds_fold_derived_panels', async () => {
+    const client = clientWithEvents(replayEvents);
+    renderView('replay', client);
+    await screen.findByText('#5'); // full run: the ticker shows the last event row
+    fireEvent.change(screen.getByLabelText(/replay step/i), { target: { value: '2' } });
+    expect(screen.queryByText('#5')).toBeNull(); // rewound past it
+    expect(screen.getByText('#2')).toBeTruthy(); // the step-2 prefix still shows #2
+  });
+
+  // spec(default-position): entering replay positions the scrubber at the END (full run shown first).
+  it('test_scrubber_defaults_to_full_run', async () => {
+    const client = clientWithEvents(replayEvents);
+    renderView('replay', client);
+    await screen.findByText('#5');
+    expect(screen.getByText(/step 5 of 5/i)).toBeTruthy(); // default = max index (5 of 5)
+  });
+
+  // spec(rule #7 / #9): scrubbing re-derives the fold CLIENT-SIDE — NO getEvents refetch, no command.
+  it('test_scrub_no_refetch_no_provider', async () => {
+    const client = clientWithEvents(replayEvents);
+    renderView('replay', client);
+    await screen.findByText('#5');
+    const getEvents = client.getEvents as ReturnType<typeof vi.fn>;
+    const before = getEvents.mock.calls.length;
+    fireEvent.change(screen.getByLabelText(/replay step/i), { target: { value: '2' } });
+    expect(getEvents.mock.calls.length).toBe(before); // no refetch on scrub
+    expect(client.startRun).not.toHaveBeenCalled();
+    expect(client.stopRun).not.toHaveBeenCalled();
   });
 
   // spec(_adherence, DS rule 3/5): the new shell/roster/drawer/hook files use var(--token) only — no
