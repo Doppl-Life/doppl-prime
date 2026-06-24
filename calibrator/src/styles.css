@@ -160,50 +160,38 @@ textarea {
   padding: 0 18px 14px;
 }
 
-.artifact-select-field select {
+.artifact-control {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.artifact-select-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.artifact-select-header span {
+  color: #c6d3e1;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.artifact-control select {
   font-weight: 800;
 }
 
-.review-status {
-  align-items: center;
-  border: 1px solid #40566c;
-  border-radius: 4px;
-  color: #d9e7f3;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 11px;
-  font-weight: 900;
-  gap: 10px;
-  min-height: 38px;
-  min-width: 0;
-  padding: 6px 10px;
-  text-transform: uppercase;
-}
-
-.review-status strong,
-.review-status em {
-  background: #263c55;
-  border-radius: 999px;
-  color: #f8fafc;
-  font-style: normal;
-  padding: 3px 8px;
-}
-
-.review-status .source-chip {
-  background: #d7f7ef;
-  color: #0e4f49;
-}
-
 .next-unrated-button {
-  background: var(--teal);
-  border: 0;
+  background: #263c55;
+  border: 1px solid #40566c;
   border-radius: 999px;
-  color: #fff;
-  font-size: 11px;
+  color: #d9e7f3;
+  font-size: 12px;
   font-weight: 900;
-  min-height: 26px;
-  padding: 4px 10px;
-  text-transform: uppercase;
+  min-height: 22px;
+  padding: 2px 9px;
 }
 
 .next-unrated-button:disabled {
@@ -507,11 +495,7 @@ textarea {
     min-height: 38px;
   }
 
-  .review-status {
-    display: none;
-  }
-
-  .artifact-select-field {
+  .artifact-control {
     grid-column: 1 / -1;
   }
 }
@@ -533,10 +517,6 @@ textarea {
   .review-controls {
     grid-template-columns: minmax(180px, 0.82fr) minmax(190px, auto) minmax(260px, 1.18fr);
     padding: 0 20px 12px;
-  }
-
-  .review-status {
-    grid-column: 1 / -1;
   }
 
   .trace-surface {

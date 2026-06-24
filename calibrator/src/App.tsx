@@ -9,7 +9,6 @@ import type {
 import {
   canSubmitRating,
   reviewMode,
-  reviewModeLabel,
   type ReviewArtifact,
 } from "./reviewability";
 import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
@@ -18,7 +17,7 @@ type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
 type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
-  | { target: "solution"; id: string; artifact: CalibratorSolution; solutionIndex: number };
+  | { target: "solution"; id: string; artifact: CalibratorSolution };
 
 function scoreLabel(score: number): string {
   return score > 0 ? `+${score}` : String(score);
@@ -26,16 +25,6 @@ function scoreLabel(score: number): string {
 
 function plural(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? "" : "s"}`;
-}
-
-function sourceKindLabel(sourceKind: CalibratorIndex["source_kind"]): string {
-  return sourceKind === "agarden" ? "aGarden" : "Vault";
-}
-
-function projectionLabel(artifact: ReviewArtifact | null): string {
-  const scores = artifact?.scores;
-  if (!scores || scores.human === null || scores.human === undefined || !scores.n) return "no human score";
-  return `human ${scoreLabel(scores.human)} / ${scores.n}`;
 }
 
 function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
@@ -52,23 +41,6 @@ function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
 
 function firstReviewableCase(index: CalibratorIndex) {
   return index.cases.find(hasRateableArtifacts);
-}
-
-function blindDopplLabel(index: number): string {
-  return `Doppl ${String.fromCharCode(65 + (index % 26))}`;
-}
-
-function maskProvenanceText(text: string): string {
-  return text
-    .replace(/\bCody\b/g, "Kernel")
-    .replace(/\bcody\b/g, "kernel")
-    .replace(/\bMelissa\b/g, "Kernel")
-    .replace(/\bmelissa\b/g, "kernel")
-    .replace(/\bMichael\b/g, "Kernel")
-    .replace(/\bmichael\b/g, "kernel")
-    .replace(/\borigin\/kernel/g, "origin/kernel")
-    .replace(/\bbranch solution\b/gi, "source solution")
-    .replace(/\bbranch markdown\b/gi, "source markdown");
 }
 
 function displayMarkdown(text: string): string {
@@ -179,15 +151,9 @@ function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
   );
 }
 
-function artifactTitle(artifact: ReviewArtifact | null, blindMode: boolean, solutionIndex: number): string {
+function artifactTitle(artifact: ReviewArtifact | null): string {
   if (!artifact) return "No artifact selected";
-  if ("solution_id" in artifact && blindMode && solutionIndex >= 0) return blindDopplLabel(solutionIndex);
   return artifact.title;
-}
-
-function artifactBody(artifact: ReviewArtifact | null, blindMode: boolean): string {
-  if (!artifact) return "";
-  return blindMode ? maskProvenanceText(artifact.body) : artifact.body;
 }
 
 export function App() {
@@ -196,7 +162,6 @@ export function App() {
   const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<string | null>(null);
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
-  const [blindMode, setBlindMode] = useState(false);
   const [includeAuditArtifacts, setIncludeAuditArtifacts] = useState(false);
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [score, setScore] = useState<number | null>(null);
@@ -268,9 +233,6 @@ export function App() {
       null,
     [visibleSolutions, selectedSolutionId],
   );
-  const selectedSolutionIndex = selectedSolution
-    ? visibleSolutions.findIndex((solution) => solution.solution_id === selectedSolution.solution_id)
-    : -1;
   const visibleProblemRecoveries = useMemo(() => {
     if (!selectedCase) return [];
     if (includeAuditArtifacts) return allProblemRecoveries;
@@ -289,25 +251,18 @@ export function App() {
       id: artifact.problem_recovery_id,
       artifact,
     }));
-    const solutionItems: ReviewQueueItem[] = visibleSolutions.map((artifact, solutionIndex) => ({
+    const solutionItems: ReviewQueueItem[] = visibleSolutions.map((artifact) => ({
       target: "solution",
       id: artifact.solution_id,
       artifact,
-      solutionIndex,
     }));
     return [...problemRecoveryItems, ...solutionItems];
   }, [visibleProblemRecoveries, visibleSolutions]);
   const activeReviewArtifact =
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
-  const activeSolutionIndex = ratingTarget === "solution" ? selectedSolutionIndex : -1;
-  const activeTitle = artifactTitle(activeReviewArtifact, blindMode, activeSolutionIndex);
-  const activeRatingCount = activeReviewArtifact?.human_ratings.length ?? 0;
+  const activeTitle = artifactTitle(activeReviewArtifact);
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
-  const totalArtifacts = allProblemRecoveries.length + allSolutions.length;
-  const hiddenAuditCount =
-    allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "audit").length +
-    allSolutions.filter((artifact) => reviewMode(artifact) === "audit").length;
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
       ? `problem_recovery:${selectedProblemRecovery?.problem_recovery_id ?? ""}`
@@ -472,14 +427,6 @@ export function App() {
           <p className="eyebrow">Doppl Life</p>
           <h1>Calibrator</h1>
         </div>
-        <label className="toggle-field compact">
-          <input
-            type="checkbox"
-            checked={blindMode}
-            onChange={(event) => setBlindMode(event.target.checked)}
-          />
-          <span>Blind</span>
-        </label>
       </header>
 
       <section className="review-controls" aria-label="Review setup">
@@ -522,8 +469,20 @@ export function App() {
           <span>Include audit artifacts</span>
         </label>
 
-        <label className="field artifact-select-field">
-          <span>Review artifact</span>
+        <div className="artifact-control">
+          <div className="artifact-select-header">
+            <span>Review artifact</span>
+            <button
+              type="button"
+              className="next-unrated-button"
+              disabled={!nextUnratedItem}
+              onClick={() => {
+                if (nextUnratedItem) selectReviewItem(nextUnratedItem);
+              }}
+            >
+              Next unrated
+            </button>
+          </div>
           <select
             aria-label="Review artifact"
             value={activeArtifactValue}
@@ -543,39 +502,15 @@ export function App() {
           >
             {visibleProblemRecoveries.map((recovery) => (
               <option key={recovery.problem_recovery_id} value={`problem_recovery:${recovery.problem_recovery_id}`}>
-                {recovery.title} [{reviewModeLabel(recovery)}] ({recovery.human_ratings.length} ratings)
+                {recovery.title}
               </option>
             ))}
-            {visibleSolutions.map((solution, index) => (
+            {visibleSolutions.map((solution) => (
               <option key={solution.solution_id} value={`solution:${solution.solution_id}`}>
-                {blindMode ? blindDopplLabel(index) : solution.title} [{reviewModeLabel(solution)}] (
-                {solution.human_ratings.length} ratings)
+                {solution.title}
               </option>
             ))}
           </select>
-        </label>
-
-        <div className="review-status" aria-label="Current review status">
-          <strong className="source-chip">{sourceKindLabel(index.source_kind)}</strong>
-          <strong>{plural(reviewableCases.length, "case")}</strong>
-          <strong>{plural(totalArtifacts, "artifact")}</strong>
-          <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl leaf"}</span>
-          {activeReviewArtifact ? <strong>{reviewModeLabel(activeReviewArtifact)}</strong> : null}
-          <strong>{projectionLabel(activeReviewArtifact)}</strong>
-          <strong>{activeRatingCount} ratings</strong>
-          <strong>{unratedCount} unrated</strong>
-          {!includeAuditArtifacts && hiddenAuditCount > 0 ? <em>{hiddenAuditCount} audit hidden</em> : null}
-          {!isWritable ? <em>Static preview</em> : null}
-          <button
-            type="button"
-            className="next-unrated-button"
-            disabled={!nextUnratedItem}
-            onClick={() => {
-              if (nextUnratedItem) selectReviewItem(nextUnratedItem);
-            }}
-          >
-            Next unrated
-          </button>
         </div>
       </section>
 
@@ -594,10 +529,7 @@ export function App() {
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
-          {blindMode ? (
-            <p className="blind-note">Source labels, branch names, and provenance metadata are hidden.</p>
-          ) : null}
-          {activeReviewArtifact ? <MarkdownBlock text={artifactBody(activeReviewArtifact, blindMode)} /> : null}
+          {activeReviewArtifact ? <MarkdownBlock text={activeReviewArtifact.body} /> : null}
         </article>
 
         <section className="source-disclosure">
@@ -630,7 +562,7 @@ export function App() {
                 </section>
               ) : null}
               <KernelMeta artifact={activeReviewArtifact} />
-              {!blindMode && activeReviewArtifact.adapter_notes ? (
+              {activeReviewArtifact.adapter_notes ? (
                 <p className="adapter-note">{activeReviewArtifact.adapter_notes}</p>
               ) : null}
             </div>

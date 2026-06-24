@@ -144,8 +144,10 @@ describe("App", () => {
     expect(screen.getByLabelText("Review artifact")).not.toHaveTextContent("Crash Substrate Exposure Map");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
     expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Discovery Context");
-    expect(screen.getByLabelText("Review setup")).toHaveTextContent("Vault");
-    expect(screen.getByLabelText("Review setup")).toHaveTextContent("1 case");
+    expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Current review status")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vault")).not.toBeInTheDocument();
+    expect(screen.queryByText("1 case")).not.toBeInTheDocument();
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
@@ -185,8 +187,8 @@ describe("App", () => {
 
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByLabelText("Review setup")).toHaveTextContent("aGarden");
-    expect(screen.getByLabelText("Review setup")).toHaveTextContent("1 case");
+    expect(screen.queryByText("aGarden")).not.toBeInTheDocument();
+    expect(screen.queryByText("1 case")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
   });
 
@@ -292,7 +294,7 @@ describe("App", () => {
       screen.getByLabelText("Review artifact"),
       "problem_recovery:dalton-fsd-accident-economy-001__problem_recovery",
     );
-    expect(screen.getByText("Crash-Volume Revenue Dependency")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Reviewer email"), "cody.clayton@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
@@ -418,17 +420,15 @@ describe("App", () => {
     expect(screen.getByText("Audit-only artifacts are visible for provenance but are not rateable.")).toBeInTheDocument();
   });
 
-  it("masks source labels in blind review mode", async () => {
+  it("keeps artifact labels visible without blind review mode", async () => {
     render(<App />);
     await userEvent.selectOptions(
       await screen.findByLabelText("Review artifact"),
       "solution:dalton-fsd-accident-economy-001__solution",
     );
     expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
-    await userEvent.click(screen.getByLabelText("Blind"));
-    expect(screen.getAllByText("Doppl A").length).toBeGreaterThan(0);
-    expect(screen.queryByText("Accident-Economy Transition Ledger")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
+    expect(screen.queryByText("Doppl A")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
-    expect(screen.getByText("Source labels, branch names, and provenance metadata are hidden.")).toBeInTheDocument();
   });
 });
