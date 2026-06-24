@@ -1860,7 +1860,9 @@ Rows: task-checkboxes ✅ (PD.1–PD.11 headings ✅ DONE, per-slice Step-9 veri
 - [ ] **Invariant test: the held-out judge rubric + scoring policy are byte-identical for dial=diverge vs dial=converge** (rule #6 anchor unmoved)
 
 ### FB.5 — `/phase-exit FB` + announce-before-merge → merge to cody
-- [ ] Arch-drift + reachability + security fan-out CLEAR; merge frontend-v2 FB surface to cody under announce-before-merge
+- [x] **Phase-exit audits run (2026-06-24, direct-drive):** arch-drift-auditor **CLEAR** (18/18 statements across ARCH §4/§5/§6/§7 verified; 0 drift); per-slice security-reviewer INVARIANT CLEAN on every FB safety slice (FB.1/2/3/4/6/7/8). reachability-auditor 6/7 REACHABLE.
+- [ ] **CARRY-FORWARD (accepted deferral — NOT a regression):** FB.7's tool-call detail relay (`ToolCallObservation.query`/`.result` → `tool_call.*` payloads) is UNREACHABLE in production — `toGenerationGateway` (`apps/api/src/boot/composeRuntime.ts:135-141`) returns only `{response}` and never populates `GenerateResult.toolCalls` (the frozen `ModelGatewayResponse` can't carry tool-call side-data; the OpenRouter adapter doesn't extract provider tool calls yet). The WHOLE relay (incl. the original `{toolName}`) was already dead in prod — a PRE-EXISTING Phase-D (tool-energy / web-search grounding) deferral, not introduced by FB.7. **Wiring task (Phase-D):** `toGenerationGateway` must surface provider tool-call observations (extract from the OpenRouter response, carry via a runtime-local channel like `attemptFailures`) into `GenerateResult.toolCalls` → then FB.7's relay + FV.5b's tool-call timeline go live. _(origin: 2026-06-24 FB phase-exit reachability audit.)_
+- [ ] merge frontend-v2 FB+FV surface to cody under announce-before-merge (the single combined merge after `/phase-exit FV` — per the user's "phase-exit both → merge")
 
 **Cluster B — deep telemetry:**
 
