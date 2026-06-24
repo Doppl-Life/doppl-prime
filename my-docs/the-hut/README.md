@@ -23,10 +23,6 @@ copy of something that already froze.
 - `README.md` — this file.
 - `flow.svg` — the flow diagram.
 
-## Known divergences from the kernel (reconcile later, deliberately)
+## Reconciling the kernel
 
-- Decay — canon: active decay is `0`; `temporal` preserves the seam for a later mechanism.
-- Leaf name — canon: `doppl` (was `pepsi`).
-- Identity — canon: `SlugId` (`{slug}-{shortId}`), lineage as a body `prev_id` wikilink, no stored `root` (walk `prev_id`).
-- Reseed — canon: a doppl may reseed into a fresh `case_study` (the forest loop), carrying a non-null `prev_id`.
-- Lineage memory — canon: the node graph is the memory (`doppelgangers` + derived `convergence`); no separate ledger.
+The kernel still differs from canon in places; bringing it in line is a planned step, not a fact to memorize. Why each decision was made lives in [`../MEMORY.md`](../MEMORY.md); what canon *is* lives in [`../../contracts/`](../../contracts) and [`../../mechanics/`](../../mechanics).

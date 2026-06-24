@@ -56,7 +56,3 @@ Takes the compiled candidate and judge evaluation from [`../../contracts/run-tra
 - `id` is a fresh `SlugId` minted from the headline at birth, then frozen. Links point at ids
   (`[[slug-id]]`), never live headlines — the slug keeps the birth headline even after a reword.
 - Humans never see a per-axis form — only the single `scores.human`. Per-axis lives in `### Evaluation`.
-
-## Reconcile later (jungle)
-
-The kernel emits a `RunTrace`. The old `kernel.pepsi-output.v1` projection has been burned; the compiler is its replacement: it writes nodes, not the old Pepsi packet.

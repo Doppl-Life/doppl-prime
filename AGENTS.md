@@ -11,8 +11,18 @@ the kernel follows, deliberately. Change the decision in canon first; the kernel
 own planned step. "It's still in the kernel" is not an argument for keeping a concept canon has cut.
 
 The hut is **provisional** — live until a decision freezes out into contracts/mechanics. Do not let
-it quietly grow back into what the old kernel assumed, and do not leave a hut draft beside a frozen
+it quietly grow back toward what the kernel assumes, and do not leave a hut draft beside a frozen
 contract.
+
+## The thing is the thing (no history in canon)
+
+Canon — `contracts/`, `mechanics/`, the model — states what **is**, in present tense. It never narrates
+what was. Do not write "the old X", "burned", "replaced the old", "no longer", "formerly", "promoted
+from", "reconcile later (jungle)", or name a removed/dead concept to warn against it — naming a dead
+thing sends the next agent hunting for it, which is the exact harm. If you feel the urge to explain a
+change, you are writing history: stop, and describe the present. The only home for *why* a decision was
+made is `my-docs/MEMORY.md`; kernel↔canon reconciliation is a present-tense task, never a catalog of
+old concepts.
 
 ## Working rules
 
@@ -21,7 +31,7 @@ contract.
 - Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
   the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Contracts live under `contracts/**`, kernel behavior under `mechanics/**`, unfrozen proposals in
+- Contracts live under `contracts/**`, kernel behavior under `mechanics/kernel/**`, unfrozen proposals in
   `my-docs/the-hut/**`; durable kernel decisions live in `my-docs/MEMORY.md`.
 - This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
   derivative paths.
@@ -70,7 +80,7 @@ Log durable findings in one home:
 | Finding | File |
 | --- | --- |
 | Typed artifact shape (node, rating, stock, trace, projection) | `contracts/**` |
-| Kernel behavior (engine, discovery, compiler) | `mechanics/**` |
+| Kernel behavior (engine, discovery, compiler) | `mechanics/kernel/**` |
 | Term / vocabulary | `my-docs/GLOSSARY.md` |
 | Unfrozen proposal | `my-docs/the-hut/**` |
 | Active fork or ownership decision | `my-docs/MEMORY.md` |

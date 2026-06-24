@@ -52,8 +52,8 @@ Discovery must be told where things live and how to write them:
 
 The stock source/projection shape is defined in [`../../contracts/stock.md`](../../contracts/stock.md).
 
-## Reconcile later (jungle)
+## Boundaries
 
-`tools/source-radar.ts` already has the source recipes (the backends) and source-quality signals.
-Its −5…+5 lens scoring and its decay/expiry are **not** discovery's job here: scoring belongs to
-whatever filter sets the bar; decay/expiry belongs to the stock-maintenance function.
+Source recipes (the backends) and source-quality signals live in `tools/source-radar.ts`. Scoring
+and decay/expiry are not discovery's job: scoring belongs to the filter that sets the bar;
+decay/expiry belongs to the stock-maintenance function.

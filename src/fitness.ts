@@ -187,7 +187,7 @@ function scoreFromDetails(details: FitnessScore['componentDetails']): Pick<Fitne
 
 function decayFor(candidate: Candidate, asOf: string): FitnessScore['decay'] {
   const ageDays = daysBetween(candidate.observedAt, asOf);
-  // Canon rule (mechanics/engine.md): zeitgeist (temporal) decays toward zero on a 180-day
+  // Canon rule (mechanics/kernel/engine.md): zeitgeist (temporal) decays toward zero on a 180-day
   // half-life; a transfer (timeless) does not decay.
   const halfLifeDays = candidate.temporal ? 180 : 0;
   const factor = candidate.temporal ? clampScore(Math.pow(0.5, ageDays / halfLifeDays)) : 1;

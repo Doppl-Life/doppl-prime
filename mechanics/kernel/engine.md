@@ -1,13 +1,9 @@
-# The Engine — the generate→select crucible (promoted from the kernel)
+# The Engine — the generate→select crucible
 
-The hut names the spine — `case_study → problem_recovery → doppl` — and says *each spine
-arrow is the kernel: one pass of the generate→select crucible* (`../../contracts/node.md`). This file
-is that crucible written down, so the hut holds enough to regrow it when the jungle burns.
-
-**Promoted, not imported.** This is the distilled contract of `src/generate.ts`,
-`src/fitness.ts`, `src/select.ts`, `src/lens.ts`, `src/trace.ts` — the mechanism, in the
-hut's dialect. The jungle code is the origin; this doc is the authority. When they
-disagree, this wins (rule of the hut).
+Each spine arrow — `case_study → problem_recovery → doppl` — is one pass of the
+generate→select crucible over a population (`../../contracts/node.md`). This doc is the
+authority for that mechanism; `src/generate.ts`, `src/fitness.ts`, `src/select.ts`,
+`src/lens.ts`, and `src/trace.ts` implement it.
 
 ## What one spine arrow does
 
@@ -115,10 +111,9 @@ carries lineage: `parent`, `generation`, `operatorId`, and an explicit **delta**
 changed besides wording). Packets with no delta are **rejected before scoring** — rehash never
 reaches fitness.
 
-> Reconciliation: this is the jungle's `LineageLedger`. The hut replaces the separate
-> ledger with *the node graph is the memory* — `doppelgangers` (a stored count of deduped
-> near-duplicates, born `0` and incremented by the dedup pass) + `convergence` (a derived query). The **delta-on-every-child** rule
-> survives; the separate ledger schema does not.
+> Lineage memory is the node graph itself — `doppelgangers` (a stored count of deduped
+> near-duplicates, born `0` and incremented by the dedup pass) + `convergence` (a derived
+> query). There is no separate ledger; every child states its delta.
 
 ## Caps — finite by construction
 
@@ -147,7 +142,7 @@ unit it breeds; a child always states its delta.
 but never requires a specific external skill loader to run. The durable kernel-owned record is
 `skills/LINEAGE.md`; skill expressions themselves are optional inputs.
 
-## Open and deferred (carried so the burn doesn't erase the question)
+## Open and deferred
 
 - **Pareto crowding.** Weighted sums miss candidates on a concave frontier. If runs repeatedly
   strand "interesting but never selected" candidates a human marks as keepers, add crowding
@@ -156,10 +151,9 @@ but never requires a specific external skill loader to run. The durable kernel-o
 - **Energy caps.** Today's caps are structural (generations, children/parent, population). The
   deferred layer is budgeted cost — output tokens, tool calls, wall-clock, money — with a
   lineage that overruns its budget dying or pausing, never borrowing invisible compute.
-- **Mechanism cost.** Named in the old contract as a fitness component, never implemented in
-  the instruments. In the hut it lives as the judge's **Cost-efficiency** rating axis, not
-  an engine measurement — unless a named consumer needs it scored upstream.
+- **Mechanism cost.** Lives as the judge's **Cost-efficiency** rating axis, not an engine
+  measurement — unless a named consumer needs it scored upstream.
 
 ## The trace is the spine
 
-One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../contracts/run-trace.md`](../../contracts/run-trace.md). The compiler (`compiler.md`) is the projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.
+One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../contracts/run-trace.md`](../../contracts/run-trace.md). The compiler (`compiler.md`) is the projection writer: it turns a pass's survivor + the judge's evaluation into a node.

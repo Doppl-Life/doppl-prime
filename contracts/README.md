@@ -10,7 +10,7 @@ Every cross-document reference in these artifacts is an **Obsidian-compatible wi
 
 ## The model in one breath
 
-Two object classes: the **flow** (the chain, folded one immutable node per step) and **stock** (durable domain memory the flow reads and writes). The spine is `case_study → problem_recovery → doppl`; each arrow is one pass of the engine, and **discovery** is a tool the growth stages call, not a stage. A doppl can be reseeded into a fresh case study — the forest loop. The contracts below are the typed shapes these objects take; how the kernel *behaves* (engine, discovery, compiler) lives in [`../mechanics/`](../mechanics).
+Two object classes: the **flow** (the chain, folded one immutable node per step) and **stock** (durable domain memory the flow reads and writes). The spine is `case_study → problem_recovery → doppl`; each arrow is one pass of the engine, and **discovery** is a tool the growth stages call, not a stage. A doppl can be reseeded into a fresh case study — the forest loop. The contracts below are the typed shapes these objects take; how the kernel *behaves* (engine, discovery, compiler) lives in [`../mechanics/kernel/`](../mechanics/kernel).
 
 ## Draft MarkScript contracts
 
