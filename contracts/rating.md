@@ -6,6 +6,16 @@ This uses the same MarkScript idiom as `node.md`: explain the section, show the 
 
 **Two raters, two shapes, one scale.** The *judge* fills the full rubric and boils it to one number; the *human* gives a single slider — never five axes. Both speak the same `−5…+5`, where negative is not "it doesn't work" but "even if it works, it's bad" (cut off your head to cure a headache: maximally effective, maximally wrong). Positive is real contribution, `0` is neutral, negative is value-subtracting.
 
+## External contracts
+
+This contract imports shapes owned elsewhere. It does not redefine them.
+
+- [@markscript.md](./markscript.md) owns the structural standard library (`MarkdownSection`, `MarkdownSubsection`).
+- [@node.md](./node.md) owns `Stage` and `GrowthStage`.
+- [@human-ratings-ledger.md](./human-ratings-ledger.md) owns `HumanScoresProjection`.
+
+`rating.md` owns the two numeric scales (`Measurement`, `Rating`), `OneDecimal`, and the judge evaluation.
+
 ## Contract primitives
 
 There are only two numeric scales in the system.
@@ -87,8 +97,7 @@ Discovery is not scored; it clears a signal bar elsewhere.
 ### Type contract
 
 ```ts
-type GrowthStage = 'problem_recovery' | 'doppl';
-
+// GrowthStage is owned by node.md.
 type ScoredSurface<S extends GrowthStage> = {
   stage: S;
   section: 'Growth';
@@ -193,10 +202,8 @@ Actionable for the allocator context.
 ```ts
 type AxisHeading<A extends JudgeAxis> = `#### ${A} ${RatingLabel}`;
 
-type RenderedAxisEvaluation<A extends JudgeAxis> = {
-  heading: AxisHeading<A>;
-  body: AxisEvaluation<A>;
-};
+type RenderedAxisEvaluation<A extends JudgeAxis> =
+  MarkdownSubsection<AxisHeading<A>, AxisEvaluation<A>>;
 
 type RenderedJudgeEvaluation = [
   novelty: RenderedAxisEvaluation<'Novelty'>,
@@ -206,10 +213,7 @@ type RenderedJudgeEvaluation = [
   relevance: RenderedAxisEvaluation<'Relevance'>,
 ];
 
-type EvaluationSection = {
-  heading: '### Evaluation';
-  axes: RenderedJudgeEvaluation;
-};
+type EvaluationSection = MarkdownSection<'### Evaluation', RenderedJudgeEvaluation>;
 
 type JudgeResult<S extends GrowthStage> = {
   surface: ScoredSurface<S>;

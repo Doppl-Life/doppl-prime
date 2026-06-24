@@ -33,11 +33,7 @@ function mergePools(seed: SeedFixture['seed'], pools: CandidatePool[]): Candidat
   return {
     seed,
     candidates: pools.flatMap((pool) => pool.candidates),
-    lineage: {
-      seedId: seed.id,
-      generated: pools.flatMap((pool) => pool.lineage.generated),
-      rejected: pools.flatMap((pool) => pool.lineage.rejected),
-    },
+    rejected: pools.flatMap((pool) => pool.rejected),
   };
 }
 
@@ -100,7 +96,7 @@ function generationSummary(
     parentCandidateIds: parents.map((candidate) => candidate.id),
     generatedCandidateIds: generated.candidates.map((candidate) => candidate.id),
     selectedCandidateIds: selectedIds,
-    rejectedNodeIds: generated.lineage.rejected.map((node) => node.id),
+    rejectedPacketIds: generated.rejected.map((child) => child.sourcePacketId),
     quality,
     detail,
   };
@@ -170,7 +166,7 @@ export function buildRunTrace(fixture: SeedFixture, dial: Dial, options: { caps?
         id: 'machine-trace-emitted',
         label: 'The kernel emits a machine trace without requiring a human projection in the engine contract.',
         passed: true,
-        detail: 'RunTrace contains lineage, generation summaries, lens results, goal checks, and selection comparison.',
+        detail: 'RunTrace contains rejected children, generation summaries, lens results, goal checks, and selection comparison.',
       },
       {
         id: 'bounded-recursion',
@@ -194,7 +190,7 @@ export function buildRunTrace(fixture: SeedFixture, dial: Dial, options: { caps?
     seed: fixture.seed,
     caps,
     candidateCount: combinedPool.candidates.length,
-    lineage: combinedPool.lineage,
+    rejected: combinedPool.rejected,
     generations: finalGenerationSummaries,
     boundaryContracts,
     events,

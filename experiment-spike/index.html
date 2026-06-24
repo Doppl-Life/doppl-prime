@@ -871,7 +871,7 @@ async function runStage(parentNode,dial,opts={}){
 
 async function reseedNode(leaf,silent){
   const id=slugId(leaf.headline);
-  const node={id,stage:'case_study',name:leaf.headline,context:'Reseeded from doppl '+leaf.id.slice(0,8)+'. '+(leaf.synopsis||''),synopsis:leaf.synopsis||leaf.headline,next:'problem_recovery',root:id,prev:[leaf.id],createdAt:nowISO(),
+  const node={id,stage:'case_study',name:leaf.headline,context:'Reseeded from the doppl "'+leaf.headline+'". '+(leaf.synopsis||''),synopsis:leaf.synopsis||leaf.headline,next:'problem_recovery',root:id,prev:[leaf.id],createdAt:nowISO(),
     body:`# ${esc(leaf.headline)}\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\n${esc(leaf.synopsis||leaf.headline)}`};
   await DB.put('nodes',node);
   if(!silent){await Graph.sync();renderLibrary();Graph.fit();selectNode(id);toast('New island planted from leaf','ok');}

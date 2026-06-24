@@ -1,10 +1,6 @@
 // Defines the machine contracts shared by kernel modules.
 export type Dial = 'diverge' | 'converge';
 
-// Case-study classification (the seed's flavor). Distinct from a candidate's `temporal`
-// decay axis and from the discovery layer's source-freshness subtype.
-export type CaseStudySubtype = 'cross_domain_transfer' | 'zeitgeist_synthesis';
-
 export const RUN_TRACE_SCHEMA_VERSION = 'kernel.run-trace.v2';
 
 export type SpaceKind = 'datastore' | 'module' | 'human' | 'artifact';
@@ -128,27 +124,18 @@ export type SeedFixture = {
 export type CandidatePool = {
   seed: Seed;
   candidates: Candidate[];
-  lineage: LineageLedger;
+  rejected: RejectedChild[];
 };
 
-export type LineageNode = {
-  id: string;
-  parentId: string;
+// A no-delta source packet rejected before scoring. The kept children are `candidates`,
+// each carrying its own lineage; the node graph is the memory, so there is no separate ledger.
+export type RejectedChild = {
+  sourcePacketId: string;
   parent: ParentRef;
   generation: number;
   operatorId: string;
-  operatorLabel: string;
-  sourcePacketIds: string[];
   title: string;
-  delta?: CandidateDelta;
-  status: 'generated' | 'rejected';
-  rejectionReason?: string;
-};
-
-export type LineageLedger = {
-  seedId: string;
-  generated: LineageNode[];
-  rejected: LineageNode[];
+  reason: string;
 };
 
 export type GenerationQuality = 'improved' | 'drifted' | 'duplicated' | 'not_run';
@@ -158,7 +145,7 @@ export type GenerationSummary = {
   parentCandidateIds: string[];
   generatedCandidateIds: string[];
   selectedCandidateIds: string[];
-  rejectedNodeIds: string[];
+  rejectedPacketIds: string[];
   stoppedBy?: string;
   quality: GenerationQuality;
   detail: string;
@@ -339,7 +326,7 @@ export type RunTrace = {
   seed: Seed;
   caps: RunCaps;
   candidateCount: number;
-  lineage: LineageLedger;
+  rejected: RejectedChild[];
   generations: GenerationSummary[];
   boundaryContracts: BoundaryContract[];
   events: TraceEvent[];

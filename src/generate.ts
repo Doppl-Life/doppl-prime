@@ -2,9 +2,8 @@
 import type {
   Candidate,
   CandidatePool,
-  LineageLedger,
-  LineageNode,
   ParentRef,
+  RejectedChild,
   ReproductionOperator,
   RunCaps,
   SeedFixture,
@@ -38,20 +37,16 @@ function parentFor(seedId: string, packet: SourcePacket): ParentRef {
     : { kind: 'seed', id: seedId };
 }
 
-function rejectNode(seedId: string, packet: SourcePacket, operators: ReproductionOperator[]): LineageNode {
+function rejectedChild(seedId: string, packet: SourcePacket, operators: ReproductionOperator[]): RejectedChild {
   const operator = operatorFor(packet, operators);
   const parent = parentFor(seedId, packet);
   return {
-    id: `reject-${packet.id}`,
-    parentId: parent.id,
+    sourcePacketId: packet.id,
     parent,
     generation: packetGeneration(packet),
     operatorId: operator.id,
-    operatorLabel: operator.label,
-    sourcePacketIds: [packet.id],
     title: packet.title,
-    status: 'rejected',
-    rejectionReason: packet.noDeltaReason || 'No candidate delta was produced.',
+    reason: packet.noDeltaReason || 'No candidate delta was produced.',
   };
 }
 
@@ -80,21 +75,6 @@ function generateCandidate(seedId: string, packet: SourcePacket, operators: Repr
     evidence: packet.evidence || [],
     metricHints: packet.metrics,
     observedAt: packet.observedAt,
-  };
-}
-
-function generatedNode(candidate: Candidate): LineageNode {
-  return {
-    id: candidate.id,
-    parentId: candidate.parentId,
-    parent: candidate.parent,
-    generation: candidate.generation,
-    operatorId: candidate.operatorId,
-    operatorLabel: candidate.operatorLabel,
-    sourcePacketIds: candidate.sourcePacketIds,
-    title: candidate.title,
-    delta: candidate.delta,
-    status: 'generated',
   };
 }
 
@@ -154,19 +134,14 @@ export function generateCandidatePool(fixture: SeedFixture, options: GenerateOpt
     : capPackets(fixture.seed.id, packetsForGeneration(fixture, resolved), resolved);
   const rejected = packets
     .filter((packet) => packet.noDeltaReason)
-    .map((packet) => rejectNode(fixture.seed.id, packet, fixture.operators));
+    .map((packet) => rejectedChild(fixture.seed.id, packet, fixture.operators));
   const candidates = packets
     .filter((packet) => !packet.noDeltaReason)
     .map((packet) => generateCandidate(fixture.seed.id, packet, fixture.operators));
-  const lineage: LineageLedger = {
-    seedId: fixture.seed.id,
-    generated: candidates.map(generatedNode),
-    rejected,
-  };
   const pool = {
     seed: fixture.seed,
     candidates,
-    lineage,
+    rejected,
   };
 
   return {
@@ -193,8 +168,8 @@ export function generateCandidatePool(fixture: SeedFixture, options: GenerateOpt
         {
           id: 'no-delta-rejects-visible',
           label: 'No-delta source packets are rejected before selection.',
-          passed: rejected.every((node) => node.rejectionReason) &&
-            rejected.every((node) => !pool.candidates.some((candidate) => candidate.sourcePacketIds.includes(node.sourcePacketIds[0]))),
+          passed: rejected.every((child) => child.reason) &&
+            rejected.every((child) => !pool.candidates.some((candidate) => candidate.sourcePacketIds.includes(child.sourcePacketId))),
           detail: `${rejected.length} no-delta packets rejected before fitness.`,
         },
         {

@@ -20,8 +20,8 @@ model's **artifact** contracts (node, stock, rating, …) live separately at
 | `trace` | `lens` | `KernelRun + LensResult[]` | `RunTrace` (`kernel.run-trace.v2`) | `ProofBoard` |
 
 `SeedFixture` contains the seed, source packets, and operators. `CandidatePool`
-contains generated candidates plus their lineage (parent, generation, operator,
-delta). `FitnessScore` contains novelty, grounding, decay, component details, and
+contains the kept candidates — each carrying its own lineage (parent, generation,
+operator, delta) — plus the no-delta `rejected` children. `FitnessScore` contains novelty, grounding, decay, component details, and
 scoring provenance. Feasibility stays in `LensResult`, outside `FitnessScore`.
 
 ## Rule

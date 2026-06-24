@@ -8,10 +8,10 @@ A node is a rendered projection of a `RunTrace`. The node's `## Trace` section i
 
 `RunTrace` coordinates contracts owned elsewhere. It does not redefine them.
 
-- Shared primitives used across contracts: `Iso8601` and `NonEmptyArray`. `SlugId` (the durable node/stock link key) is owned by `[node.md](./node.md)`. `Uuid` is used only for run-internal machine handles — `run_id` and candidate ids — which are not node or stock artifacts and never become Obsidian links.
-- `[node.md](./node.md)` owns `Stage`, `GrowthStage`, `KernelName`, and `SlugId`.
-- `[rating.md](./rating.md)` owns `Measurement`, `Rating`, `Decay`, and `JudgeResult`.
-- `[stock.md](./stock.md)` owns stock records and rendered stock field shape.
+- [@markscript.md](./markscript.md) owns the structural standard library: `SlugId` (the durable node/stock link key), `Iso8601`, and `NonEmptyArray`. `Uuid` is used only for run-internal machine handles — `run_id` and candidate ids — which are not node or stock artifacts and never become Obsidian links.
+- [@node.md](./node.md) owns `Stage`, `GrowthStage`, and `KernelName`.
+- [@rating.md](./rating.md) owns `Measurement`, `Rating`, `Decay`, and `JudgeResult`.
+- [@stock.md](./stock.md) owns stock records and rendered stock field shape.
 
 ## Trace primitives
 

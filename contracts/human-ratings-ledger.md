@@ -4,21 +4,25 @@ The human ratings ledger is the source of record for human scores. A node stores
 
 In this file, ledger means the current human rating state the service reads from. The demo contract is one current rating per `(node_id, rater_id)`, where `rater_id` is the rater's email.
 
+## External contracts
+
+This contract references shapes owned elsewhere. It does not redefine them.
+
+- [@markscript.md](./markscript.md) owns `SlugId` and `Iso8601`.
+- [@rating.md](./rating.md) owns `Rating` and `OneDecimal`.
+
+`human-ratings-ledger.md` owns the ledger shapes and the `HumanScoresProjection`.
+
 ## Contract primitives
 
-Human scores use the rating scale from `rating.md`. Individual ratings are integers. The projected average is numeric and rounded to at most one decimal place.
+Human scores use the rating scale from [`rating.md`](./rating.md). Individual ratings are integers. The projected average is numeric and rounded to at most one decimal place.
 
 `Iso8601` is the string timestamp format, for example `2026-06-23T15:04:05.000Z`. The field name is `rate_date`.
 
 ### Type contract
 
 ```ts
-type SlugId = string; // `{slug}-{shortId}`; matches node.md; durable link key
-type Iso8601 = string;
 type RaterEmail = string;
-
-type Rating = -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
-type OneDecimal = number; // runtime validator enforces at most one decimal place
 
 type HumanAverage = OneDecimal; // -5...+5
 ```

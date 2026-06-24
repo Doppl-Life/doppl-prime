@@ -8,20 +8,19 @@ The intent is to make markdown read like the authored artifact while each sectio
 
 ## Contract idiom
 
-Each section below has three layers:
+Each section below follows the MarkScript three-layer form ([`markscript.md`](./markscript.md)): what the section means, the markdown shape the compiler renders, and the TypeScript contract for the parsed shape. The TypeScript names what must be recoverable from the markdown after parsing.
 
-- what the section means;
-- the markdown shape the compiler should render;
-- the TypeScript contract for the parsed shape.
+## External contracts
 
-The TypeScript is not trying to replace markdown. It names what must be recoverable from the markdown after parsing.
+This contract imports shapes owned elsewhere. It does not redefine them.
+
+- [@markscript.md](./markscript.md) owns the structural standard library (`MarkdownFile`, `MarkdownSection`, `MarkdownSubsection`, `SlugId`).
+- [@rating.md](./rating.md) owns `Rating`, `RatingLabel`, `JudgeAxis`, `AxisEvaluation`, `EvaluationSection`, and `ScoresProjection`.
+- [@stock.md](./stock.md) owns `FieldRef` and `SourceRef`.
+
+The node owns the stage spine:
 
 ```ts
-type SlugId = string; // `{slug}-{shortId}`; slug = kebab node name, shortId = 8-char lowercase alphanumeric (`[a-z0-9]{8}`, hex in practice); durable link key
-type NonEmptyArray<T> = [T, ...T[]];
-type Rating = -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
-type RatingLabel = '-5' | '-4' | '-3' | '-2' | '-1' | '0' | '+1' | '+2' | '+3' | '+4' | '+5';
-
 type Stage = 'case_study' | 'problem_recovery' | 'doppl';
 
 type BaseStage<S extends Stage, Next extends Stage | null> = {
@@ -36,18 +35,6 @@ type DopplStage = BaseStage<'doppl', null>;
 type StageContract = CaseStudyStage | ProblemRecoveryStage | DopplStage;
 type GrowthStage = ProblemRecoveryStage['stage'] | DopplStage['stage'];
 type NextOf<S extends Stage> = Extract<StageContract, { stage: S }>['next'];
-
-type MarkdownFile<Frontmatter, Body> = {
-  frontmatter: Frontmatter;
-  body: Body;
-};
-
-type MarkdownSection<Heading extends string, Body> = {
-  heading: Heading;
-  body: Body;
-};
-
-type MarkdownSubsection<Heading extends string, Body> = MarkdownSection<Heading, Body>;
 ```
 
 ## File shape
@@ -355,17 +342,9 @@ Benchmark Mineral 2025 offtake tracker: 71% of qualified refined capacity is loc
 
 ### Type contract
 
+`FieldRef` and `SourceRef` are owned by [`stock.md`](./stock.md).
+
 ```ts
-type FieldRef = {
-  id: SlugId;
-  name?: string;
-};
-
-type SourceRef = {
-  id?: SlugId;
-  label: string;
-};
-
 type DiscoveryEntry = MarkdownSubsection<`### ${string}`, {
   found: string;             // source-shaped citation: named source + data point, not a claim
   field: FieldRef;
@@ -515,24 +494,7 @@ Actionable for the allocator context.
 
 ### Type contract
 
-```ts
-type Axis = 'Novelty' | 'Grounding' | 'Falsifiability' | 'Cost-efficiency' | 'Relevance';
-type AxisHeading = `#### ${Axis} ${RatingLabel}`;
-
-type AxisEvaluation<A extends Axis> = MarkdownSubsection<AxisHeading, {
-  axis: A;
-  score: Rating;
-  reasoning: string;
-}>;
-
-type EvaluationSection = MarkdownSection<'### Evaluation', [
-  novelty: AxisEvaluation<'Novelty'>,
-  grounding: AxisEvaluation<'Grounding'>,
-  falsifiability: AxisEvaluation<'Falsifiability'>,
-  costEfficiency: AxisEvaluation<'Cost-efficiency'>,
-  relevance: AxisEvaluation<'Relevance'>,
-]>;
-```
+[`rating.md`](./rating.md) owns the judge axes and the rendered evaluation — `JudgeAxis`, `AxisEvaluation`, and `EvaluationSection`. Growth embeds that `EvaluationSection`: a `MarkdownSection` keyed `'### Evaluation'`, one `MarkdownSubsection` per axis.
 
 ## Path
 

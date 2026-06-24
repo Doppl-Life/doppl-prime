@@ -12,6 +12,10 @@ Every cross-document reference in these artifacts is an **Obsidian-compatible wi
 
 Two object classes: the **flow** (the chain, folded one immutable node per step) and **stock** (durable domain memory the flow reads and writes). The spine is `case_study → problem_recovery → doppl`; each arrow is one pass of the engine, and **discovery** is a tool the growth stages call, not a stage. A doppl can be reseeded into a fresh case study — the forest loop. The contracts below are the typed shapes these objects take; how the kernel *behaves* (engine, discovery, compiler) lives in [`../mechanics/kernel/`](../mechanics/kernel).
 
+## MarkScript
+
+[`markscript.md`](./markscript.md) is the self-contained framework these contracts are written in. It also owns the structural standard library — the types (`MarkdownFile`, `MarkdownSection`, `MarkdownSubsection`, `NonEmptyArray`, `SlugId`, `Iso8601`) every contract imports rather than redeclares. One concept gets one owner: each type is declared in a single contract and pulled in elsewhere by `@`-referencing the owning file in an **External contracts** section.
+
 ## Draft MarkScript contracts
 
 These are working contracts, not frozen kernel contracts yet:

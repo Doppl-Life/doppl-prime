@@ -4,6 +4,15 @@ A stock field is durable domain memory: admitted discoveries that future stages 
 
 Stock is not raw search output, and it is not Growth. Discovery finds; stock remembers; stages conclude.
 
+## External contracts
+
+This contract imports shapes owned elsewhere. It does not redefine them.
+
+- [@markscript.md](./markscript.md) owns the structural standard library (`MarkdownFile`, `MarkdownSection`, `MarkdownSubsection`, `NonEmptyArray`, `SlugId`, `Iso8601`).
+- [@rating.md](./rating.md) owns `Measurement`.
+
+`stock.md` owns `FieldRef` and `SourceRef`.
+
 ## Contract primitives
 
 Stock uses stable ids for fields and discoveries. Timestamps are ISO 8601 strings. Gate readings are measurements, not ratings.
@@ -11,12 +20,6 @@ Stock uses stable ids for fields and discoveries. Timestamps are ISO 8601 string
 ### Type contract
 
 ```ts
-type SlugId = string; // `{slug}-{shortId}`; matches node.md; durable link key
-type Iso8601 = string;
-type NonEmptyArray<T> = [T, ...T[]];
-
-type Measurement = number; // 0...1; runtime validator enforces the range
-
 type FieldRef = {
   id: SlugId;
   name: string;
@@ -184,18 +187,6 @@ type StockDiscoverySummary = {
   synopsis: string;     // compressed mechanism + implication; length tracks the admitted source
   grounded: string;     // why it cleared the bar: signal + dated sources
   sources?: SourceRef[];
-};
-
-type MarkdownSection<Heading extends string, Body> = {
-  heading: Heading;
-  body: Body;
-};
-
-type MarkdownSubsection<Heading extends string, Body> = MarkdownSection<Heading, Body>;
-
-type MarkdownFile<Frontmatter, Body> = {
-  frontmatter: Frontmatter;
-  body: Body;
 };
 
 type LoadBearingFact = MarkdownSubsection<`### ${string}`, StockDiscoverySummary>;

@@ -135,8 +135,8 @@ function summarize(trace: RunTrace): ProofCaseSummary {
   const proof = selectionForDial(trace, 'converge');
   return {
     seed: trace.seed.title,
-    generated: trace.lineage.generated.length,
-    rejected: trace.lineage.rejected.length,
+    generated: trace.candidateCount,
+    rejected: trace.rejected.length,
     exploreKeeps: selectedTitles(explore),
     proofKeeps: selectedTitles(proof),
     swap: swap(trace),

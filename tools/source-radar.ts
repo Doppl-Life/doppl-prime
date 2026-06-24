@@ -1,6 +1,4 @@
-import type { CaseStudySubtype } from '../src/contracts/index.ts';
-
-export type DiscoverySubtype = CaseStudySubtype | 'neither';
+export type DiscoverySubtype = 'cross_domain_transfer' | 'zeitgeist_synthesis' | 'neither';
 export type SourceTier = 'free' | 'curl_cffi' | 'firecrawl' | 'browser' | 'dispatch' | 'unknown';
 export type SourceRecipeStatus = 'working' | 'broken' | 'untested' | 'unknown';
 export type SourceOutcomeStatus = 'productive' | 'marginal' | 'polluting' | 'looks_good_but_isnt' | 'unproven' | 'unreachable';

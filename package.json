@@ -9,7 +9,8 @@
     "proof": "node --experimental-strip-types tools/run.ts",
     "build": "pnpm typecheck && pnpm proof",
     "proof:export": "node --experimental-strip-types tools/run.ts --export-proof-board",
-    "clear:run-data": "node --experimental-strip-types tools/clear-run-data.ts"
+    "clear:run-data": "node --experimental-strip-types tools/clear-run-data.ts",
+    "grow": "node --experimental-strip-types tools/grow.ts"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
