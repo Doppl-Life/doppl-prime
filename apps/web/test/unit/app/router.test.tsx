@@ -122,11 +122,12 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(screen.getByTestId('loc').textContent).toBe('/');
   });
 
-  // spec(§12 / FV.2 demo-continuity): /launch interim-mounts the existing Dashboard launcher (NOT a
-  // redirect to /), so the New Run flow reaches a working start-a-run view until FV.3 builds S1.
-  it('test_launch_route_mounts_interim_launcher', async () => {
+  // spec(§12 / FV.3): /launch mounts the dedicated S1 Run Launcher (NOT a redirect to /), so the New Run
+  // flow reaches the prompt-source + FB-run-controls launcher.
+  it('test_launch_route_mounts_s1_launcher', async () => {
     renderAt('/launch');
-    expect(await screen.findByText(/Start a demo run/i)).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: /launch a run/i })).toBeTruthy();
+    expect(screen.getByLabelText('breakthrough')).toBeTruthy(); // the FB mutagen-operator picker (FV.3)
     expect(screen.getByTestId('loc').textContent).toBe('/launch'); // not redirected
   });
 
@@ -141,30 +142,17 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(screen.getByRole('button', { name: /theme/i })).toBeTruthy();
   });
 
-  // spec(§12): starting a run (the /launch launcher onStarted) navigates to /runs/:id — no internal
-  // state switch (FV.2: the launcher now lives at /launch, not /).
+  // spec(§12 / FV.3): starting a run from the S1 launcher (RunConfigPanel onStarted) navigates to
+  // /runs/:id. The launcher lives at /launch; the run-list lives at S0 (/), not here.
   it('test_start_run_navigates_to_run_route', async () => {
     const client = fakeClient();
-    client.startDemoRun = vi.fn(() => Promise.resolve({ runId: 'run_new' }));
+    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_new' }));
     renderAt('/launch', client);
-    fireEvent.click(await screen.findByLabelText(/freeform prompt/i));
-    fireEvent.change(screen.getByLabelText(/problem prompt/i), {
+    fireEvent.change(await screen.findByLabelText(/seed prompt/i), {
       target: { value: 'logistics under uncertainty' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /start demo run/i }));
+    fireEvent.click(screen.getByRole('button', { name: /start run/i }));
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_new'));
-  });
-
-  // spec(§12): clicking a run in the /launch Dashboard run-list navigates to its replay route
-  // (FV.2: the RunListPanel stays reachable via the /launch interim mount).
-  it('test_run_list_click_navigates_to_replay', async () => {
-    const client = fakeClient();
-    client.listRuns = vi.fn(() =>
-      Promise.resolve([{ runId: 'run_2', status: 'completed', sequenceThrough: 5 }]),
-    ) as RunClient['listRuns'];
-    renderAt('/launch', client);
-    fireEvent.click((await screen.findByText('run_2')).closest('button')!);
-    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_2/replay'));
   });
 
   // spec(§12 / FV.7): /runs/:id/final mounts the dedicated S5FinalIdeaScreen (NOT the FV.1 interim

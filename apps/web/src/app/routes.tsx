@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '../components/app/AppShell';
-import { Dashboard } from '../routes/Dashboard';
+import { S1LauncherScreen } from '../routes/S1LauncherScreen';
 import { RunsHomeScreen } from '../routes/RunsHomeScreen';
 import { S2OrganismView } from '../routes/S2OrganismView';
 import { S5FinalIdeaScreen } from '../routes/S5FinalIdeaScreen';
@@ -10,9 +10,8 @@ import type { RunMode } from '../state/reducer';
 /**
  * AppRoutes — the route table behind the AppShell layout (ARCHITECTURE.md §12):
  *   /                  → S0 RunsHomeScreen (listRuns → cards; FV.2)
- *   /launch            → interim: the existing Dashboard launcher (runId="") so the New Run flow
- *                        reaches a working start-a-run view (FV.2 — preserves the demo + keeps
- *                        RunListPanel reachable; the dedicated S1 Launcher lands in FV.3)
+ *   /launch            → S1 Run Launcher (prompt-source picker + the RunConfigPanel with the FB
+ *                        run-controls: mutagen-operator picker + diverge/converge dial; FV.3)
  *   /runs/:id          → S2 Organism View, LIVE (3-pane; FV.4)
  *   /runs/:id/replay   → S2 Organism View, REPLAY (FV.4)
  *   /runs/:id/final    → S5 Final-Idea / payoff screen (winner card + generational climb; FV.7)
@@ -23,13 +22,9 @@ import type { RunMode } from '../state/reducer';
 function LaunchRoute() {
   const runClient = useRunClient();
   const navigate = useNavigate();
+  // FV.3 — the dedicated S1 launcher; Start navigates to the live organism view for the new run.
   return (
-    <Dashboard
-      runId=""
-      runClient={runClient}
-      onObserveLive={(id) => navigate(`/runs/${id}`)}
-      onObserveReplay={(id) => navigate(`/runs/${id}/replay`)}
-    />
+    <S1LauncherScreen runClient={runClient} onStarted={(run) => navigate(`/runs/${run.runId}`)} />
   );
 }
 

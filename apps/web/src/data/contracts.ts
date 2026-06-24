@@ -14,6 +14,7 @@ export {
   RunStatus,
   RunConfig,
   RunCaps,
+  GenerationOperator,
   RunEventEnvelope,
   RunEventType,
   CandidateIdea,

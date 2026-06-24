@@ -104,6 +104,32 @@ describe('RunConfigPanel — operator run-config panel', () => {
     expect(calls).toHaveLength(0); // submission blocked
   });
 
+  // FV.3 — the FB run-controls thread into the started RunConfig: a selected mutagen operator + an engaged
+  // diverge/converge dial reach startRun (recorded == what the operator set). Both bias GENERATION only.
+  it('test_fb_controls_thread_into_started_run', async () => {
+    const { client, calls } = fakeStartClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    fireEvent.click(screen.getByLabelText('breakthrough')); // select an operator
+    fireEvent.click(screen.getByLabelText('polymath'));
+    const dial = screen.getByLabelText(/diverge converge dial/i);
+    fireEvent.change(dial, { target: { value: '0.6' } }); // engage the dial (diverge)
+    fireEvent.click(screen.getByRole('button', { name: /start/i }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.config.generationOperators).toEqual(['breakthrough', 'polymath']);
+    expect(calls[0]?.config.generationBias).toBeCloseTo(0.6, 10);
+  });
+
+  // FV.3 — a default (untouched) launcher start carries NO FB controls (byte-identical to a pre-FB run);
+  // the dial + operators are opt-in (rule #6 — a default run exposes no generation bias).
+  it('test_default_start_omits_fb_controls', async () => {
+    const { client, calls } = fakeStartClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    fireEvent.click(screen.getByRole('button', { name: /start/i }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.config.generationOperators).toBeUndefined();
+    expect(calls[0]?.config.generationBias).toBeUndefined();
+  });
+
   // spec(_adherence): no raw hex / no raw px in the component (tokens via var() only).
   it('test_no_raw_hex_or_px', () => {
     const files = readdirSync(RUN_DIR).filter((n) => n.endsWith('.ts') || n.endsWith('.tsx'));

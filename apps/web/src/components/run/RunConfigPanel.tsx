@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { GenerationOperator } from '../../data/contracts';
 import type { RunClient, StartRunResult } from '../../data/runClient';
 import {
   CAP_CEILING,
@@ -97,6 +98,23 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
       ...f,
       enabledSubtypes: { ...f.enabledSubtypes, [key]: !f.enabledSubtypes[key] },
     }));
+  // FV.3 — the FB run-controls. operators: toggle membership in the closed 7-enum (FB.3); generationBias:
+  // the diverge/converge dial ∈ [−1,1] (FB.4). Both bias GENERATION only — no judge/scoring lever here.
+  const toggleOperator = (op: GenerationOperator) =>
+    setForm((f) => ({
+      ...f,
+      operators: f.operators.includes(op)
+        ? f.operators.filter((o) => o !== op)
+        : [...f.operators, op],
+    }));
+  const setBias = (value: number) =>
+    setForm((f) => ({ ...f, generationBias: Math.max(-1, Math.min(1, value)) }));
+  const biasLabel =
+    form.generationBias > 0
+      ? `diverge +${form.generationBias.toFixed(1)}`
+      : form.generationBias < 0
+        ? `converge ${form.generationBias.toFixed(1)}`
+        : 'neutral 0.0';
 
   const handleStart = () => {
     if (starting || startedRun) return; // disabled while-starting + after-success → no 2nd run
@@ -181,6 +199,45 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
           </span>
         )}
       </fieldset>
+
+      {/* FV.3 — mutagen-operator picker (FB.3). The closed 7-enum; selected operators steer GENERATION as
+          trusted framing (the api isolates them, rule #5). Optional — none selected → no operator framing. */}
+      <fieldset style={{ ...field, border: 'none', padding: 0, margin: 0 }}>
+        <legend style={labelText}>Mutagen operators — optional ideation lenses</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+          {GenerationOperator.options.map((op) => (
+            <label key={op} style={{ ...labelText, display: 'inline-flex', gap: 'var(--space-1)' }}>
+              <input
+                type="checkbox"
+                checked={form.operators.includes(op)}
+                onChange={() => toggleOperator(op)}
+              />{' '}
+              {op}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* FV.3 — the diverge/converge dial (FB.4). ∈ [−1,1], 0 neutral. Biases GENERATION only (breadth↔depth);
+          the held-out judge + scoring are untouched (rule #6). The numeric value is shown (DS rule 1/4 — never
+          color/position alone). */}
+      <div style={field}>
+        <label htmlFor="rc-bias" style={labelText}>
+          Diverge / converge dial —{' '}
+          <span style={{ fontFamily: 'var(--font-mono)' }}>{biasLabel}</span>
+        </label>
+        <input
+          id="rc-bias"
+          type="range"
+          min={-1}
+          max={1}
+          step={0.1}
+          value={form.generationBias}
+          onChange={(e) => setBias(Number(e.target.value))}
+          aria-label="Generation diverge converge dial"
+          aria-valuetext={biasLabel}
+        />
+      </div>
 
       {CAP_FIELDS.map(({ key, label }) => (
         <div key={key} style={field}>
