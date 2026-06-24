@@ -46,7 +46,8 @@ const fixture: CalibratorIndex = {
           source_type: "kernel",
           source_status: "imported",
           kernel: "dalton",
-          body: "# Imported recovered problem body",
+          body:
+            "# Imported recovered problem body\n\nTRACE ### CASE STUDY · SYNOPSIS\n\nFTC reports on algorithmic bias <span class=\"arrow\"-> field: xai-frameworks</span>\n\nGROWTH — PROBLEM RECOVERY ### CLAIM MANUAL UNDERWRITING IS TOO SLOW\n\nThe recovered problem is visible.",
           human_ratings: [],
         },
       ],
@@ -256,6 +257,15 @@ describe("App", () => {
     expect(screen.getByLabelText("Review artifact")).toHaveValue(
       "solution:dalton-fsd-accident-economy-001__solution",
     );
+  });
+
+  it("formats compressed aGarden artifact markdown as readable sections", async () => {
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    expect(screen.getByRole("heading", { name: "Trace" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Case study · Synopsis" })).toBeInTheDocument();
+    expect(screen.getByText("FTC reports on algorithmic bias -> field: xai-frameworks")).toBeInTheDocument();
+    expect(screen.queryByText(/span class/)).not.toBeInTheDocument();
   });
 
   it("submits a rating and shows the saved path", async () => {

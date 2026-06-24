@@ -230,6 +230,7 @@ textarea {
 
 .selected-step {
   border-left: 5px solid var(--teal);
+  padding: 18px;
 }
 
 .trace-label {
@@ -250,6 +251,7 @@ textarea {
 
 .markdown-block {
   color: #26364d;
+  max-width: 920px;
 }
 
 .markdown-block h3 {
@@ -259,20 +261,40 @@ textarea {
 }
 
 .markdown-block h4 {
-  color: var(--muted);
+  border-top: 1px solid #d9e3ec;
+  color: #0f766e;
   font-size: 11px;
-  margin: 12px 0 6px;
+  letter-spacing: 0.1em;
+  margin: 18px 0 8px;
+  padding-top: 12px;
   text-transform: uppercase;
+}
+
+.markdown-block h4:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.markdown-block h5 {
+  color: #506176;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  margin: 13px 0 5px;
+  overflow-wrap: anywhere;
+  text-transform: none;
 }
 
 .markdown-block p,
 .markdown-block li {
   font-size: 14px;
-  overflow-wrap: anywhere;
+  line-height: 1.62;
+  overflow-wrap: break-word;
 }
 
 .markdown-block p {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .markdown-block p:last-child,

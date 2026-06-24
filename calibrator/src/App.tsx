@@ -72,7 +72,19 @@ function maskProvenanceText(text: string): string {
 }
 
 function displayMarkdown(text: string): string {
-  const lines = text.split("\n").filter((line) => !/^prev(_id)?:\s*/.test(line.trim()));
+  const normalized = text
+    .replace(/<span\s+class=["']arrow["']\s*-?>/gi, " -> ")
+    .replace(/<\/span>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+->\s+/g, " -> ")
+    .replace(
+      /(^|\n)(TRACE|DISCOVERY|EVALUATION|PATH NEXT|GROWTH\s*[—-]\s*(?:PROBLEM RECOVERY|DOPPL))[ \t]+(#{2,4}[ \t]+)/gim,
+      "$1## $2\n\n$3",
+    )
+    .replace(/\s+(#{2,4}\s+)/g, "\n\n$1")
+    .replace(/^(TRACE|DISCOVERY|EVALUATION|PATH NEXT|GROWTH\s*[—-]\s*(?:PROBLEM RECOVERY|DOPPL))[ \t]*$/gim, "## $1")
+    .replace(/\n{3,}/g, "\n\n");
+  const lines = normalized.split("\n").filter((line) => !/^prev(_id)?:\s*/.test(line.trim()));
   const firstContentIndex = lines.findIndex((line) => line.trim());
   if (firstContentIndex >= 0 && /^#\s+/.test(lines[firstContentIndex])) {
     lines.splice(firstContentIndex, 1);
@@ -80,28 +92,55 @@ function displayMarkdown(text: string): string {
   return lines.join("\n").trim();
 }
 
+function cleanHeading(text: string): string {
+  const cleaned = text
+    .replace(/^#{1,6}\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/(^|[\s·/—-])([a-z])/g, (_match, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`)
+    .replace(/\bcase study\b/gi, "Case study")
+    .replace(/\bsynopsis\b/gi, "Synopsis")
+    .replace(/\bfinding\b/gi, "Finding")
+    .replace(/\bai\b/gi, "AI")
+    .replace(/\bxai\b/gi, "XAI")
+    .replace(/\bftc\b/gi, "FTC")
+    .replace(/\becb\b/gi, "ECB")
+    .replace(/\bcsail\b/gi, "CSAIL")
+    .replace(/\bproblem recovery\b/gi, "Problem recovery")
+    .replace(/\bdoppl\b/gi, "Doppl");
+  return cleaned;
+}
+
+function renderInlineText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function MarkdownBlock({ text }: { text: string }) {
   const cleanedText = displayMarkdown(text);
+  const blocks = cleanedText
+    .split(/\n{2,}/)
+    .flatMap((block) => block.replace(/\s+(#{2,4}\s+)/g, "\n\n$1").split(/\n{2,}/))
+    .map((block) => block.trim())
+    .filter(Boolean);
   return (
     <div className="markdown-block">
-      {cleanedText
-        .split(/\n{2,}/)
-        .map((block) => block.trim())
-        .filter(Boolean)
-        .map((block) => {
+      {blocks.map((block) => {
           const key = block.slice(0, 80);
-          if (block.startsWith("# ")) return <h3 key={key}>{block.replace(/^# /, "")}</h3>;
-          if (block.startsWith("## ")) return <h4 key={key}>{block.replace(/^## /, "")}</h4>;
+          if (block.startsWith("# ")) return <h3 key={key}>{cleanHeading(block)}</h3>;
+          if (block.startsWith("## ")) return <h4 key={key}>{cleanHeading(block)}</h4>;
+          if (block.startsWith("### ")) return <h5 key={key}>{cleanHeading(block)}</h5>;
+          if (block.startsWith("#### ")) return <h5 key={key}>{cleanHeading(block)}</h5>;
           if (/^\d+\.\s/m.test(block)) {
             return (
               <ol key={key}>
                 {block.split("\n").map((line) => (
-                  <li key={line}>{line.replace(/^\d+\.\s*/, "")}</li>
+                  <li key={line}>{renderInlineText(line.replace(/^\d+\.\s*/, ""))}</li>
                 ))}
               </ol>
             );
           }
-          return <p key={key}>{block}</p>;
+          return <p key={key}>{renderInlineText(block)}</p>;
         })}
     </div>
   );
