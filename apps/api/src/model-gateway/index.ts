@@ -50,6 +50,20 @@ export type {
   OllamaRawCompletion,
 } from './adapters/ollama.adapter';
 
+// Per-run model-route override clamp (FB.2) — the rule-#1 allowlist bound on RunConfig.modelRouteOverride:
+// the violation helper (route 422), applyRouteOverride, and the per-run registry overlay (FB.1 dispatch
+// picks the overridden provider). final_judge is allowlist-excluded (rule #6).
+export {
+  modelRouteOverrideViolation,
+  applyRouteOverride,
+  createRegistryOverlay,
+} from './model-route-override';
+export type {
+  ModelRouteOverrideAllowlist,
+  ModelRouteOverrideEntry,
+  ModelRouteOverrideViolation,
+} from './model-route-override';
+
 // Direct-OpenAI embedding adapter (P2.6) — the `embedding`-role `providerCall` (SDK behind the port,
 // rule #9) returning the authoritative vector + modelId + dimension for selection to persist.
 export {

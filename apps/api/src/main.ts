@@ -3,13 +3,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { FastifyInstance } from 'fastify';
-import type { RunConfig } from '@doppl/contracts';
+import type { ModelRouteOverride, RunConfig } from '@doppl/contracts';
 import { loadConfig } from './runtime/config/loadConfig';
 import { createEventStore, runMigrations } from './event-store';
 import {
+  createLiveGateway,
   createModelRegistry,
   createOpenRouterClient,
   createOllamaClient,
+  createRegistryOverlay,
   loadModelRegistry,
   selectGateway,
   type GatewaySelection,
@@ -19,6 +21,7 @@ import {
 } from './model-gateway';
 import { REQUIRED_CREDENTIAL_ENV } from './model-gateway/registry';
 import { DEFAULT_MODEL_REGISTRY } from './config/model-registry.config';
+import { MODEL_ROUTE_OVERRIDE_ALLOWLIST } from './config/model-route-allowlist.config';
 import { CHECK_RUNNER_REGISTRY } from './check-runners/registry';
 import { listRunIds } from './projections/run-list';
 import { crashForward } from './runtime/recovery/crashForward';
@@ -117,26 +120,41 @@ function gatewaySelectionFromEnv(env: Record<string, string | undefined>): Gatew
 }
 
 /**
- * Resolve the boot ModelGateway (PD.9). A direct `overrides.gateway` wins (the run-executing tests inject
- * a recorded multi-role fake). Otherwise: the recorded default builds NO provider client/registry (local-
- * first stays dependency-light — Q4 lazy); `DOPPL_GATEWAY=live` builds the live deps (registry from
- * DEFAULT_MODEL_REGISTRY + the OpenRouter client from env, or the injected test client) and delegates to
- * `selectGateway` → `createLiveGateway`. The API key stays env-only inside the client (rule #4).
+ * Resolve the boot ModelGateway (PD.9) + the FB.2 per-run override factory. A direct `overrides.gateway`
+ * wins (the run-executing tests inject a recorded multi-role fake; no override factory). Otherwise: the
+ * recorded default builds NO provider client/registry (local-first stays dependency-light — Q4 lazy; no
+ * override factory → the recorded/replay path calls no provider, rule #7); `DOPPL_GATEWAY=live` builds the
+ * live deps (registry + OpenRouter + keyless ollama clients) and returns BOTH the boot gateway AND a
+ * `gatewayForOverride` factory that builds a per-run gateway from a registry OVERLAY re-clamped to the
+ * frozen allowlist (FB.1 dispatch then routes the overridden provider). Keys stay env-only (rule #4).
  */
 function resolveGateway(
   env: Record<string, string | undefined>,
   overrides: BootOverrides,
-): ModelGateway {
-  if (overrides.gateway !== undefined) return overrides.gateway;
+): {
+  gateway: ModelGateway;
+  gatewayForOverride?: (override: ModelRouteOverride) => ModelGateway;
+} {
+  if (overrides.gateway !== undefined) return { gateway: overrides.gateway };
   const selection = gatewaySelectionFromEnv(env);
-  if (selection.useStub) return selectGateway(selection); // recorded — no provider client constructed
+  if (selection.useStub) return { gateway: selectGateway(selection) }; // recorded — no provider client
   const registry = createModelRegistry(loadModelRegistry({ defaults: DEFAULT_MODEL_REGISTRY }));
   const client = overrides.openRouterClient ?? createOpenRouterClient(env);
   // FB.1 — the keyless ollama client is always constructed on the live branch (no key, cheap) so an
   // ollama-routed role (per-run modelRouteOverride, FB.2) is servable; provider-dispatch in
   // createLiveGateway selects it by route.provider. OpenRouter remains the default for the demo routes.
   const ollamaClient = overrides.ollamaClient ?? createOllamaClient(env);
-  return selectGateway(selection, { registry, client, ollamaClient });
+  const gateway = selectGateway(selection, { registry, client, ollamaClient });
+  // FB.2 — the per-run override factory: a registry OVERLAY re-clamped to the frozen allowlist (rule #1
+  // kernel-bound), fed into a fresh live gateway → FB.1 dispatch routes the overridden provider. Built
+  // from the SAME registry + clients; replay reconstructs the overlay deterministically (rule #7).
+  const gatewayForOverride = (override: ModelRouteOverride): ModelGateway =>
+    createLiveGateway({
+      registry: createRegistryOverlay(registry, override, MODEL_ROUTE_OVERRIDE_ALLOWLIST),
+      client,
+      ollamaClient,
+    });
+  return { gateway, gatewayForOverride };
 }
 
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).
@@ -180,7 +198,7 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
   try {
     const db = drizzle(pool);
     const eventStore = createEventStore({ db, secretValues: collectSecretValues(env) });
-    const gateway = resolveGateway(env, overrides);
+    const { gateway, gatewayForOverride } = resolveGateway(env, overrides);
     const listRunIdsBound = (): Promise<readonly string[]> => listRunIds(db);
     const newId = (): string => randomUUID();
 
@@ -206,6 +224,8 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
     const infra: StartRunInfra = {
       config,
       modelGateway: gateway,
+      // FB.2 — the per-run override factory (live boot only); absent on the recorded/replay path.
+      ...(gatewayForOverride !== undefined ? { gatewayForOverride } : {}),
       eventStore,
       checkRegistry: CHECK_RUNNER_REGISTRY,
       listRunIds: listRunIdsBound,
@@ -229,6 +249,8 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
       store: eventStore,
       db,
       defaultConfig,
+      // FB.2 — the frozen per-role override allowlist the POST /runs 422 check clamps to (rule #1/#6).
+      modelRouteOverrideAllowlist: MODEL_ROUTE_OVERRIDE_ALLOWLIST,
       newId,
       onRunConfigured: createStartRun(infra),
       requestStop: operatorStop.request,
