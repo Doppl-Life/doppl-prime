@@ -59,6 +59,6 @@ The proof board prints one line per seed:
 ## Registers
 
 Durable findings have one home each (see [`AGENTS.md`](AGENTS.md)): build contracts in
-`specs/**`, fork decisions in `MEMORY.md`, lessons in `LESSONS_AND_BANGERS.md`, portable moves
+`contracts/**`, fork decisions in `MEMORY.md`, lessons in `LESSONS_AND_BANGERS.md`, portable moves
 in `HEURISTICS.md`, failures in `BUGS_AND_MITIGATIONS.md`, watch items in
 `OPERATIONAL_WATCHLIST.md`, terms in `GLOSSARY.md`, invariants in `INVARIANTS.md`.

@@ -3,7 +3,7 @@
 ## The hut is canon
 
 `my-docs/the-hut/` defines the model and is where we operate from. When the
-hut and the running kernel (`src/`, `tools/`, `specs/`) disagree, **the hut wins**;
+hut and the running kernel (`src/`, `tools/`, `contracts/`) disagree, **the hut wins**;
 the kernel follows, deliberately. Change the decision in the hut first; the kernel
 catches up as its own planned step. "It's still in the kernel" is not an argument for keeping
 a concept the hut has cut.
@@ -18,7 +18,7 @@ quietly grow back into what the old kernel assumed.
 - Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
   the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Specs live under `specs/**`; the model lives in `my-docs/the-hut/**`; durable kernel
+- Contracts live under `contracts/**`; the model lives in `my-docs/the-hut/**`; durable kernel
   decisions live in `MEMORY.md`.
 - This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
   derivative paths.
@@ -67,7 +67,7 @@ Log durable findings in one home:
 | Finding | File |
 | --- | --- |
 | The model (stages, node, rating, engine, vocabulary) | `my-docs/the-hut/**` |
-| Build contract or evaluation doctrine | `specs/**` |
+| Build contract or evaluation doctrine | `contracts/**` |
 | Active fork or ownership decision | `MEMORY.md` |
 | Durable lesson or banger | `LESSONS_AND_BANGERS.md` |
 | Portable move or trap | `HEURISTICS.md` |

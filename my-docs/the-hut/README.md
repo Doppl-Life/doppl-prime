@@ -8,7 +8,7 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 
 ## Rule of the hut
 
-- **This folder beats the kernel.** When these files and the live kernel (`src/`, `tools/`, `specs/`)
+- **This folder beats the kernel.** When these files and the live kernel (`src/`, `tools/`, `contracts/`)
   disagree, this folder wins. The kernel is the jungle: legacy, reconciled later, deliberately.
 - **"It's still in the kernel" is not an argument.** A concept being load-bearing there doesn't make
   it true here. A sprout in the kernel may be a weed here.
@@ -25,7 +25,7 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - `stock-template.md` — the stock field.
 - `rating-model.md` — the single source of truth for scoring.
 - `rating-inventory.md` — every scoring system, hut + jungle, and the conflicts to settle.
-- `markscript.md` — the markdown-plus-TypeScript contract idiom used by the draft specs.
+- `markscript.md` — the markdown-plus-TypeScript contract idiom used by the draft contracts.
 - `discovery-skill.md` — kernel function: gather context (round trip).
 - `compiler-skill.md` — kernel function: render a stage's output into a node.
 - `engine.md` — the generate→select crucible behind each spine arrow, promoted from the
@@ -38,3 +38,5 @@ quietly grow back into what it "wants" to be. Decisions here are live until we f
 - Verdicts `dead/obvious/interesting/investigate/keeper` — kernel: live. Here: dead; one −5…+5 human score.
 - Decay — here: active decay is `0`; `temporal` preserves the seam for a later mechanism.
 - Leaf name — here: `doppl` (was `pepsi`).
+- Identity — kernel: UUIDv4 `id` + `root` + `prev` in frontmatter. Here: `SlugId` (`{slug}-{shortId}`), lineage as a body `prev_id` wikilink, no stored `root` (walk `prev_id` to find it).
+- Reseed — kernel: `case_study` is always a root. Here: a doppl may be reseeded into a fresh `case_study` (the forest loop), so a case study may carry a non-null `prev_id`.

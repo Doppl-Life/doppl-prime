@@ -23,7 +23,7 @@ guiding implementation, cut it.
 
 - **Lesson:** Historical docs, team drafts, meeting notes, and PDFs can contain
   ore, but they are not operational authority.
-- **Carry forward:** mine them into typed fixtures, tools, specs, or registers;
+- **Carry forward:** mine them into typed fixtures, tools, contracts, or registers;
   otherwise delete them.
 
 ### Answer keys cannot leak - 2026-06-21

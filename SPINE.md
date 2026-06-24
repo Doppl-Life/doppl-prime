@@ -1,6 +1,6 @@
 # The Spine - one kernel, two directions
 
-> The conceptual heart. The build contracts live in `specs/**`; the build plan
+> The conceptual heart. The build contracts live in `contracts/**`; the build plan
 > is in `SPEC.md`. This doc is the *why* - the thing every build decision should
 > trace back to. Keep it short on purpose.
 

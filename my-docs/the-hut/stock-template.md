@@ -4,7 +4,7 @@ A stock field is the rendered projection of admitted discoveries for one domain.
 
 Each load-bearing fact is a compressed admission of source material, not the source itself: claim as the heading, a synopsis whose length tracks how much the source carried, and a grounding line for why it cleared the bar. Every fact ends with a stable block anchor (`^discovery-id`) so a node can deep-link the exact discovery it used (`[[field-id#^discovery-id]]`) rather than re-stating it. The node cites a lighter reference; the fuller admitted thing lives here. **Provisional:** the synopsis length and the grounding-line format are still being tuned against real fields.
 
-See [`../../specs/stock.md`](../../specs/stock.md) for the MarkScript contract.
+See [`../../contracts/stock.md`](../../contracts/stock.md) for the MarkScript contract.
 
 ```markdown
 ---

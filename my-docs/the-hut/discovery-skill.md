@@ -50,7 +50,7 @@ Discovery must be told where things live and how to write them:
 - `write_method` — how a keeper is appended or merged.
 - `backend` — which discovery backend to use for this call.
 
-The stock source/projection shape is defined in [`../../specs/stock.md`](../../specs/stock.md).
+The stock source/projection shape is defined in [`../../contracts/stock.md`](../../contracts/stock.md).
 
 ## Reconcile later (jungle)
 

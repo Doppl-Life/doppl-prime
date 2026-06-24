@@ -31,7 +31,7 @@ kernel owner must not accidentally undo.
 - **Because:** the model is being shaped deliberately in the hut; the kernel is
   legacy reconciled on purpose, not bedrock.
 - **Revisit if:** the hut is deliberately frozen into the kernel; then the
-  frozen contract moves into `specs/**` and the kernel.
+  frozen contract moves into `contracts/**` and the kernel.
 
 ### Burn-and-rebuild: old surface cut, engine promoted first - 2026-06-22
 
@@ -103,7 +103,7 @@ kernel owner must not accidentally undo.
 ### Distill, do not bulk import - 2026-06-21
 
 - **Chose:** distill raw conversations, comparison docs, and legacy source into the
-  hut, `specs/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
+  hut, `contracts/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
   source is raw material, not operating authority.
 - **Over:** preserving a live museum of transcripts and inherited planning docs.
 - **Because:** old source becomes fake authority unless it is a build contract or an

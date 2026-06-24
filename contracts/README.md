@@ -1,27 +1,31 @@
-# Boundary Contracts
+# Contracts
 
-Human-readable boundary inventory for the kernel prototype.
+The MarkScript contracts for the model — what each durable artifact must contain so a human can read it and a parser can recover it. The **model** is defined in the hut ([`my-docs/the-hut/**`](../my-docs/the-hut)); a contract here is where a hut decision lands once it is deliberately frozen into the kernel. `MEMORY.md` records fork decisions.
 
-Typed source of truth: `src/contracts/index.ts`. Use this inventory to scan
-factory boundaries without reading code.
+> Not to be confused with the kernel's **boundary contracts** — the runtime module-I/O packets — which live beside their code at [`src/contracts/`](../src/contracts/README.md). These are *model artifact* contracts; those are *runtime boundary* contracts.
 
-## Current boundaries
+## Defined in the hut (canon)
 
-| Module | Enters from | Input contract | Output contract | Exits to |
-| --- | --- | --- | --- | --- |
-| `generate` | `FixtureSeedStore` | `SeedFixture` (`kernel.seed-fixture.v2`) | `CandidatePool` (`kernel.candidate-pool.v2`) | `fitness` |
-| `fitness` | `generate` | `CandidatePool` (`kernel.candidate-pool.v2`) | `ScoredCandidatePool` (`kernel.scored-candidate-pool.v2`) | `select` |
-| `select` | `fitness` | `ScoredCandidatePool + SelectionSchedule` (`kernel.selection-input.v2`) | `SelectionComparison` (`kernel.selection-comparison.v2`) | `lens` |
-| `lens` | `select` | `ScoredCandidatePool + SelectionComparison` (`kernel.lens-input.v1`) | `LensResult[]` (`kernel.lens-result.v1`) | `trace` |
-| `trace` | `lens` | `KernelRun + LensResult[]` | `RunTrace` (`kernel.run-trace.v2`) | `ProofBoard` |
+The engine and evaluation contracts currently live in the hut, which is canon:
 
-`SeedFixture` contains the seed, source packets, and operators. `CandidatePool`
-contains generated candidates plus their lineage (parent, generation, operator,
-delta). `FitnessScore` contains novelty, grounding, decay, component details, and
-scoring provenance. Feasibility stays in `LensResult`, outside `FitnessScore`.
+- [`my-docs/the-hut/engine.md`](../my-docs/the-hut/engine.md) — the generate/evaluate/select
+  runtime, the dial, fitness measurements, decay, caps, lineage, and the trace boundary.
+- [`my-docs/the-hut/rating-model.md`](../my-docs/the-hut/rating-model.md) — the −5…+5 rating, the two raters, and the zero-decay temporal seam.
+- [`my-docs/the-hut/object-model.md`](../my-docs/the-hut/object-model.md) — stages, the node, the
+  stock, and the signals.
 
-## Rule
+No contract files are frozen yet. When a hut contract is frozen, add it here.
 
-Every new boundary gets a contract before it gets clever implementation. The
-contract says what crosses the boundary, where it came from, where it goes, and what
-goal check proves it behaved.
+## Draft MarkScript contracts
+
+These are working contracts, not frozen kernel contracts yet:
+
+- [`node.md`](./node.md) — the markdown node file shape.
+- [`run-trace.md`](./run-trace.md) — the machine trace for one engine pass and compiler handoff.
+- [`projection.md`](./projection.md) — the field-by-field map from `RunTrace` to a compiled node.
+- [`rating.md`](./rating.md) — the rating scale, judge evaluation, human score projection, and temporal policy.
+- [`human-ratings-ledger.md`](./human-ratings-ledger.md) — the human rating source and projection contract.
+- [`stock.md`](./stock.md) — the stock field source/projection contract.
+
+If a new doctrine affects how the kernel runs or is judged, freeze it here. If it only records
+why we chose a fork, put it in [`../MEMORY.md`](../MEMORY.md).

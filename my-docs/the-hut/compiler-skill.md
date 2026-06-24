@@ -12,7 +12,7 @@ kind: kernel function · markdown-as-code · a cheap model is enough
 
 # compiler
 
-Takes the compiled candidate and judge evaluation from [`../../specs/run-trace.md`](../../specs/run-trace.md) and writes a node that conforms to `node-template.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM / a mini tier); save the strong models for generate→select and for the judge, not the rendering.
+Takes the compiled candidate and judge evaluation from [`../../contracts/run-trace.md`](../../contracts/run-trace.md) and writes a node that conforms to `node-template.md`. It does not reason — it renders. A small, fast model is enough (Qwen / GLM / a mini tier); save the strong models for generate→select and for the judge, not the rendering.
 
 ## Inputs
 

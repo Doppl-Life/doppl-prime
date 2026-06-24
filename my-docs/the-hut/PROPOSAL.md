@@ -5,6 +5,7 @@ This is the hut proposal: the model we are shaping before the kernel catches up.
 ```mermaid
 flowchart LR
   cs[case_study] --> pr[problem_recovery] --> dp[doppl]
+  dp -. reseed .-> cs
   pr -. calls .-> disc[discovery]
   dp -. calls .-> disc
   disc <--> stock[stock]
@@ -30,6 +31,8 @@ The spine is fixed: `case_study → problem_recovery → doppl`.
 
 After a doppl, the path points out of the system into human action.
 
+A doppl may also be **reseeded** as a fresh `case_study` — the forest loop — starting a new island that links back to the doppl via `prev_id`. This is the one back-edge in the graph; it does not change the three-stage spine. An original seed has no parent (`prev_id: null`); a reseeded case study carries `prev_id: [[doppl]]`.
+
 ## Node
 
 A node is one markdown file with frontmatter and a body.
@@ -40,7 +43,7 @@ Growth-stage nodes carry `## Trace`, `## Discovery`, `## Growth`, and `## Path`.
 
 Trace copies prior stage synopses verbatim. Discovery records what was found. Path names the next stage.
 
-The node contract lives in [`../../specs/node.md`](../../specs/node.md).
+The node contract lives in [`../../contracts/node.md`](../../contracts/node.md).
 
 ## Discovery And Stock
 
@@ -50,7 +53,7 @@ Stock is durable domain memory. It stores admitted discoveries, not raw search o
 
 Stock has two gates: admission decides whether a find is worth remembering, and enrichment decides whether an admitted discovery is new, merged, or dropped as a rehash.
 
-The stock contract lives in [`../../specs/stock.md`](../../specs/stock.md).
+The stock contract lives in [`../../contracts/stock.md`](../../contracts/stock.md).
 
 ## Engine
 
@@ -90,7 +93,7 @@ The human gives one slider. Human ratings live in the human ratings ledger, one 
 
 The node stores only the materialized human projection: `scores.human` and `scores.n`.
 
-The rating contract lives in [`../../specs/rating.md`](../../specs/rating.md). The human ratings contract lives in [`../../specs/human-ratings-ledger.md`](../../specs/human-ratings-ledger.md).
+The rating contract lives in [`../../contracts/rating.md`](../../contracts/rating.md). The human ratings contract lives in [`../../contracts/human-ratings-ledger.md`](../../contracts/human-ratings-ledger.md).
 
 ## Temporal
 

@@ -117,7 +117,7 @@ reaches fitness.
 
 > Reconciliation: this is the jungle's `LineageLedger`. The hut replaces the separate
 > ledger with *the node graph is the memory* — `doppelgangers` (a stored count of deduped
-> near-duplicates) + `convergence` (a derived query). The **delta-on-every-child** rule
+> near-duplicates, born `0` and incremented by the dedup pass) + `convergence` (a derived query). The **delta-on-every-child** rule
 > survives; the separate ledger schema does not.
 
 ## Caps — finite by construction
@@ -162,4 +162,4 @@ but never requires a specific external skill loader to run. The durable kernel-o
 
 ## The trace is the spine
 
-One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../specs/run-trace.md`](../../specs/run-trace.md). The compiler (`compiler-skill.md`) is the hut's projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.
+One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../contracts/run-trace.md`](../../contracts/run-trace.md). The compiler (`compiler-skill.md`) is the hut's projection writer: it turns a pass's survivor + the judge's evaluation into a node, replacing the old `kernel.pepsi-output.v1` packet.
