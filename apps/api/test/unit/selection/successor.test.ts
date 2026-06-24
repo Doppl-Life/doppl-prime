@@ -200,6 +200,36 @@ describe('assembleSuccessor — caps-clamped successor population', () => {
     }
   });
 
+  // 16 — DEFENSE-IN-DEPTH (zero-weight pool never silently goes extinct): a NON-EMPTY pool whose
+  // heuristic weights are all zero (e.g. degraded novelty → novelty 0, or a zero-fitness generation)
+  // must STILL produce ≥1 offspring — never a silent empty successor with no events. Without the guard
+  // the allocator returns all-zero spawns → empty schedule → `assembleSuccessor` returns {[],0} emitting
+  // NOTHING (the live demo-blocker: the run dies after gen 0 with no reproduction/abort event at all).
+  test('successor_zero_weight_pool_still_reproduces', async () => {
+    const z1 = sparent('agn_Z1', [1, 0, 0, 0, 0, 0, 0, 0], 2.0, 0, 0.019);
+    const z2 = sparent('agn_Z2', [0, 0, 0, 0, 0, 0, 0, 1], 1.667, 0, 0.019);
+    const result = await assembleSuccessor(
+      input([z1, z2], 4),
+      deps(createFakeGateway({ mode: 'valid' })),
+    );
+    expect(result.survivors).toBeGreaterThan(0);
+    expect(result.population.length).toBeGreaterThan(0);
+    expect(result.population.length).toBeLessThanOrEqual(4);
+  });
+
+  // 17 — DEFENSE-IN-DEPTH determinism: the zero-weight fallback is still replay-faithful (rule #7) — the
+  // same (input, seed) reconstructs an identical population through the fallback path.
+  test('successor_zero_weight_fallback_deterministic', async () => {
+    const z1 = sparent('agn_Z1', [1, 0, 0, 0, 0, 0, 0, 0], 2.0, 0, 0.019);
+    const z2 = sparent('agn_Z2', [0, 0, 0, 0, 0, 0, 0, 1], 1.667, 0, 0.019);
+    const a = await assembleSuccessor(input([z1, z2], 4), deps(createFakeGateway({ mode: 'valid' })));
+    const b = await assembleSuccessor(input([z1, z2], 4), deps(createFakeGateway({ mode: 'valid' })));
+    expect(a.population.map((m) => m.child)).toEqual(b.population.map((m) => m.child));
+    expect(a.population.map((m) => m.reproductionEvent)).toEqual(
+      b.population.map((m) => m.reproductionEvent),
+    );
+  });
+
   // 15 — KEY SAFETY RULE #7 (multi-parent): a 3-parent pool exercises mostDistantPartner's argmax +
   // id-asc tie-break + the multi-parent anchor schedule — the same (input, seed) reconstructs an
   // identical population (the determinism backbone the whole successor-replay story rests on), Σ ≤ caps.
