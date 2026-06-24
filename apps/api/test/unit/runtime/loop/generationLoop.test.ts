@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type {
   Agenome,
+  GenerationOperator,
   ModelGatewayRequest,
   ModelGatewayResponse,
   ProviderMeta,
@@ -46,6 +47,7 @@ import {
   type ScoreSeam,
   type VerifySeam,
 } from '../../../../src/runtime/loop/generationLoop';
+import { OPERATOR_FRAGMENTS } from '../../../../src/runtime/loop/generationOperators';
 
 /**
  * P3.10b generation-loop SKELETON (ARCHITECTURE.md §5/§3/§4/§6, KEY SAFETY RULES #1/#2/#9).
@@ -1114,6 +1116,38 @@ describe('runGenerationLoop (PD.10 commit 1 — per-run problem isolated as DATA
     const a = await run('problem alpha');
     const b = await run('problem beta');
     expect(b).toEqual(a); // generation events are problem-independent → replay-stable (rule #7)
+  });
+});
+
+// FB.3 — the loop THREADS the per-run generationOperators (config.runConfig.generationOperators) into the
+// population_generator request: a run configured with operators produces a system message carrying the
+// operators' TRUSTED fragments (the real production assembly, end-to-end). This is the reachability proof.
+describe('runGenerationLoop (FB.3 — operators shape the generation framing)', () => {
+  // spec(§5) — operators selected on the run config reach the population_generator system message as their
+  // vetted fragments; the per-run problem stays isolated in the wrapUntrusted user message (rule #5 unchanged).
+  test('loop_threads_operators_into_population_request_system_message', async () => {
+    const PROBLEM = 'cut energy use in dense cities';
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 2 });
+    const operators: GenerationOperator[] = ['polymath', 'first_principles'];
+    const config = {
+      ...base,
+      runConfig: {
+        ...base.runConfig,
+        seed: PROBLEM,
+        generationOperators: operators,
+      },
+    };
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(makeDeps({ config, gateway }));
+
+    const [sys, user] = requests[0]!.messages!;
+    expect(sys!.role).toBe('system');
+    expect(sys!.content).toContain(OPERATOR_FRAGMENTS.polymath);
+    expect(sys!.content).toContain(OPERATOR_FRAGMENTS.first_principles);
+    expect(sys!.content).toContain(GENERATION_ISOLATION_FRAMING);
+    expect(sys!.content).not.toContain(PROBLEM); // problem not in the trusted instruction
+    expect(user!.content).toBe(wrapUntrusted(PROBLEM)); // problem only inside the wrapped user message
+    expect(user!.content).not.toContain(OPERATOR_FRAGMENTS.polymath); // fragments not in the user message
   });
 });
 

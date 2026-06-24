@@ -96,6 +96,12 @@ export function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig
       ...(perRun.modelRouteOverride !== undefined
         ? { modelRouteOverride: perRun.modelRouteOverride }
         : {}),
+      // FB.3 — thread the per-run generationOperators so the loop executes the recorded operators (was
+      // dropped). The closed-enum operators map to TRUSTED framing fragments in the population_generator
+      // system message (composeOperatorFraming) — prompt-only, no cap/energy effect (rule #1/#8).
+      ...(perRun.generationOperators !== undefined
+        ? { generationOperators: perRun.generationOperators }
+        : {}),
     },
   };
 }

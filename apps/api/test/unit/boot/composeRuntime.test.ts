@@ -92,6 +92,18 @@ describe('FB.2 — mergePerRunConfig threads the validated override', () => {
   });
 });
 
+describe('FB.3 — mergePerRunConfig threads the per-run generationOperators', () => {
+  test('test_merge_per_run_threads_operators', () => {
+    // FB.3 — the recorded per-run generationOperators are carried into the per-run config (no longer
+    // dropped) so the generation loop executes what was recorded (recorded == executed).
+    const withOps: RunConfig = { ...perRun(), generationOperators: ['polymath', 'first_principles'] };
+    const merged = mergePerRunConfig(BOOT, withOps);
+    expect(merged.runConfig.generationOperators).toEqual(['polymath', 'first_principles']);
+    // an absent operator set leaves the field absent (additive/optional) — backward-compatible.
+    expect(mergePerRunConfig(BOOT, perRun()).runConfig.generationOperators).toBeUndefined();
+  });
+});
+
 describe('FB.2 — composeRunWorkerDeps selects the per-run override gateway', () => {
   test('test_compose_uses_override_gateway_when_present', () => {
     // when the run carries an override AND a gatewayForOverride factory is injected, compose builds the

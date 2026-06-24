@@ -2,6 +2,7 @@ import type {
   Agenome,
   AgenomeStatus,
   CandidateIdea,
+  GenerationOperator,
   GenerationStatus,
   ModelGatewayRequest,
   ModelGatewayResponse,
@@ -9,6 +10,7 @@ import type {
   RunEventType,
 } from '@doppl/contracts';
 import { CURRENT_SCHEMA_VERSION, wrapUntrusted } from '@doppl/contracts';
+import { composeOperatorFraming } from './generationOperators';
 import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../event-store';
 import type { AppConfig } from '../config/configSchema';
 import { enforceCap } from '../caps/capEnforcer';
@@ -42,15 +44,25 @@ export const GENERATION_ISOLATION_FRAMING =
 /**
  * Build the `population_generator` request with the per-run PROBLEM isolated as untrusted DATA (rule #5,
  * the LESSON-38 chokepoint): the agenome `systemPrompt` + the fixed {@link GENERATION_ISOLATION_FRAMING}
- * are the TRUSTED instruction (system message); the operator/prepared problem rides a `wrapUntrusted` user
- * message (a forged sentinel is neutralized by `wrapUntrusted`) — the problem is NEVER interpolated into
- * the instruction string. Reuses the contracts-level `wrapUntrusted` primitive (runtime→contracts only).
+ * + the FB.3 selected-operator TRUSTED fragments ({@link composeOperatorFraming}) are the TRUSTED
+ * instruction (system message); the prepared problem rides a `wrapUntrusted` user message (a forged
+ * sentinel is neutralized by `wrapUntrusted`) — the problem is NEVER interpolated into the instruction
+ * string. The operators are a CLOSED enum → CLOSED vetted-fragment set (no untrusted free-text → no
+ * injection path, rule #5); absent operators → byte-identical PD.10 framing (backward-compatible). Reuses
+ * the contracts-level `wrapUntrusted` primitive (runtime→contracts only). Exported for FB.3 unit pinning.
  */
-function buildPopulationRequest(systemPrompt: string, problem: string): ModelGatewayRequest {
+export function buildPopulationRequest(
+  systemPrompt: string,
+  problem: string,
+  operators?: readonly GenerationOperator[],
+): ModelGatewayRequest {
   return {
     role: 'population_generator',
     messages: [
-      { role: 'system', content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}` },
+      {
+        role: 'system',
+        content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}${composeOperatorFraming(operators)}`,
+      },
       { role: 'user', content: wrapUntrusted(problem) },
     ],
     // PD.10 commit 2 — pass the CandidateContent schema so the gateway runs validate/repair(≤1)/reject on
@@ -400,7 +412,11 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       const agenome = population[a]!;
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
       const { response, toolCalls, attemptFailures } = await gateway.generate(
-        buildPopulationRequest(agenome.systemPrompt, config.runConfig.seed),
+        buildPopulationRequest(
+          agenome.systemPrompt,
+          config.runConfig.seed,
+          config.runConfig.generationOperators,
+        ),
       );
       for (const toolCall of toolCalls ?? []) {
         await appendEvent(
