@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import type { RunEventEnvelope } from '../data/contracts';
 import { deriveFitnessSeries } from './chartData';
-import { BEST_FITNESS_SERIES, MARKER_GLYPH } from './chartTheme';
+import { BEST_FITNESS_SERIES, MARKER_GLYPH, MEAN_FITNESS_SERIES } from './chartTheme';
 import type { MarkerShape, SeriesStyle } from './chartTheme';
 
 /**
@@ -76,6 +76,10 @@ export function FitnessOverTime({ events, showComponents = false }: FitnessOverT
   const xAt = (i: number) => (n === 1 ? W / 2 : PAD_X + (i * (W - 2 * PAD_X)) / (n - 1));
   const yAt = (v: number) => H - PAD_Y - (v / maxY) * (H - 2 * PAD_Y);
   const bestPoints = series.map((p, i) => `${xAt(i)},${yAt(p.best)}`).join(' ');
+  // The per-generation MEAN fitness, alongside the peak (FV.6 — closes the P7 mean-defined-but-unrendered
+  // reachability finding). mean ≤ best, so maxY (best-bounded) already contains it; a distinct dash +
+  // square marker + label is a non-color channel (rule #4 / §12).
+  const meanPoints = series.map((p, i) => `${xAt(i)},${yAt(p.mean)}`).join(' ');
 
   // Component overlay series (distinct labels = a non-color channel) — keyed off the best candidates.
   const componentKeys = showComponents
@@ -110,6 +114,25 @@ export function FitnessOverTime({ events, showComponents = false }: FitnessOverT
             {MARKER_GLYPH[BEST_FITNESS_SERIES.marker]}
           </text>
         ))}
+        <polyline
+          points={meanPoints}
+          fill="none"
+          stroke={MEAN_FITNESS_SERIES.colorToken}
+          strokeWidth={2}
+          strokeDasharray={MEAN_FITNESS_SERIES.dash}
+        />
+        {series.map((p, i) => (
+          <text
+            key={`mean-${p.generationId}`}
+            x={xAt(i)}
+            y={yAt(p.mean)}
+            fill={MEAN_FITNESS_SERIES.colorToken}
+            fontSize={12}
+            textAnchor="middle"
+          >
+            {MARKER_GLYPH[MEAN_FITNESS_SERIES.marker]}
+          </text>
+        ))}
         {componentStyles.map((style, ci) => {
           const pts = series
             .map((p, i) => `${xAt(i)},${yAt(p.components?.[componentKeys[ci]!] ?? 0)}`)
@@ -128,6 +151,7 @@ export function FitnessOverTime({ events, showComponents = false }: FitnessOverT
       </svg>
       <ul style={legend}>
         <LegendItem style={BEST_FITNESS_SERIES} />
+        <LegendItem style={MEAN_FITNESS_SERIES} />
         {componentStyles.map((style) => (
           <LegendItem key={style.label} style={style} />
         ))}

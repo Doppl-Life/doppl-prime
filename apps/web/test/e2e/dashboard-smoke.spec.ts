@@ -177,24 +177,36 @@ test('dashboard happy path: start → live events fold → final-idea links reso
 
   await page.goto('/');
 
-  // 1. app loads — the shell + ModeBanner + the run-launcher are visible.
+  // 1. app loads — FV.2: / is the S0 Runs Home (the listRuns mock returns {runs:[]} → empty state +
+  //    New Run CTA). New Run → /launch interim launcher (the demo-continuity repoint).
+  await expect(page.getByText(/no runs yet/i)).toBeVisible();
+  await page.getByRole('button', { name: /new run/i }).click();
+  await expect(page).toHaveURL(/\/launch$/);
+
+  // the interim Dashboard launcher at /launch — the shell + ModeBanner + run-launcher are visible.
   await expect(page.getByRole('heading', { name: /run observatory/i })).toBeVisible();
   await expect(page.getByText(/LIVE/)).toBeVisible(); // ModeBanner live indicator (AC2)
   const launcher = page.getByLabel('Run configuration');
   await expect(launcher).toBeVisible();
 
-  // 4 (start). Configure + start the run → the shell observes run_1.
+  // 4 (start). Configure + start the run → FV.1: starting navigates to the run's real URL (/runs/run_1)
+  // where the observatory mounts (was an internal state switch pre-FV.1).
   await launcher.getByLabel(/seed prompt/i).fill('cross-domain transfer demo');
   await launcher.getByRole('button', { name: /start run/i }).click();
+  await expect(page).toHaveURL(/\/runs\/run_1$/); // FV.1 — observed run is URL-derived
 
-  // 2. run loads — the lineage graph renders the served fixture (the selected-winner node).
+  // 2. run loads — FV.4: /runs/run_1 is the S2 3-pane Organism View; the CENTER lineage graph renders
+  //    the served fixture (the selected-winner node).
+  await expect(page.getByLabel('Doppl organism view')).toBeVisible(); // the 3-pane shell
   await expect(page.getByLabel('Lineage graph')).toBeVisible();
   await expect(page.getByText('Winner idea')).toBeVisible();
 
   // 3. live events fold — the SSE marker advances the lineage activity feed (post-event locator, no sleep).
   await expect(page.getByTestId('lineage-activity')).toContainText(/review/i);
 
-  // 4. final-idea proof links resolve — the winner + its proof sections render for the selected winner.
+  // 4. final-idea proof — FV.4: the dedicated S5 is FV.7, so the final-idea proof panel lives at the
+  //    interim /runs/:id/final route (Dashboard). Navigate there for the proof assertions.
+  await page.goto('/runs/run_1/final');
   const finalIdea = page.getByLabel('Final surviving idea');
   await expect(
     finalIdea.getByRole('heading', { name: /immune-inspired cold-start/i }),

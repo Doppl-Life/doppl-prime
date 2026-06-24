@@ -147,10 +147,7 @@ describe('createLiveGateway — P2.5 adapter composed behind the port (spec §6,
     const embeddingClient = embeddingClientReturning([0.1, 0.2, 0.3], {
       spy: (p) => (embedSeen = p),
     });
-    const client = clientReturning(
-      { ok: true },
-      { spy: () => (openRouterCalled = true) },
-    );
+    const client = clientReturning({ ok: true }, { spy: () => (openRouterCalled = true) });
     const gateway = createLiveGateway({ registry: REGISTRY, client, embeddingClient });
 
     const res = await gateway.call({ role: 'embedding', prompt: 'embed this summary' });
@@ -174,7 +171,9 @@ describe('createLiveGateway — P2.5 adapter composed behind the port (spec §6,
     let openRouterModel: string | undefined;
     let embeddingCalled = false;
     const client = clientReturning({ ok: true }, { spy: (p) => (openRouterModel = p.model) });
-    const embeddingClient = embeddingClientReturning([0.9], { spy: () => (embeddingCalled = true) });
+    const embeddingClient = embeddingClientReturning([0.9], {
+      spy: () => (embeddingCalled = true),
+    });
     const gateway = createLiveGateway({ registry: REGISTRY, client, embeddingClient });
 
     const res = await gateway.call({ role: 'critic', prompt: 'review', schema: OK_SCHEMA });

@@ -40,6 +40,7 @@ import { CullingEvent } from '../domain/culling-event';
 import { LineageGraphProjection, LineageNode, LineageEdge } from '../projections/lineage-graph';
 import { FinalJudgeRubric } from '../verifier/final-judge-rubric';
 import { JudgeResult } from '../verifier/judge-result';
+import { LlmCallTelemetry } from '../domain/llm-call-telemetry';
 
 export const validRunCaps: RunCaps = {
   maxPopulation: 10,
@@ -57,6 +58,22 @@ export const validRunConfig: RunConfig = {
   modelProfile: 'mvp-openrouter',
   scoringPolicyVersion: 'scoring-v1',
   rngSeed: 42,
+};
+
+/**
+ * The frontend-v2 FB.0 run-controls variant — the canonical `RunConfig` exercising all three additive
+ * optional controls (mutagen operators, the diverge/converge `generationBias`, a partial per-role
+ * `modelRouteOverride`). Kept distinct from `validRunConfig` (which stays the no-controls baseline) so
+ * the fixture-lockstep gate keeps ONE canonical `RunConfig`; this variant is consumed directly by the
+ * FB.0 schema tests, not registered in `CANONICAL_FIXTURES`.
+ */
+export const validRunConfigWithControls: RunConfig = {
+  ...validRunConfig,
+  generationOperators: ['polymath', 'first_principles'],
+  generationBias: 0.5,
+  modelRouteOverride: {
+    population_generator: { provider: 'ollama', modelId: 'llama3.1' },
+  },
 };
 
 export const validRunEventEnvelope: RunEventEnvelope = {
@@ -219,6 +236,17 @@ export const validEnergyEvent: EnergyEvent = {
   providerMeta: validProviderMeta,
 };
 
+export const validLlmCallTelemetry: LlmCallTelemetry = {
+  id: 'tel_1',
+  runId: 'run_1',
+  generationId: 'gen_1',
+  agenomeId: 'agn_1',
+  role: 'population_generator',
+  rawResponse: '{"title":"a cross-domain idea","summary":"..."}',
+  providerMeta: validProviderMeta,
+  truncated: false,
+};
+
 export const validReproductionEvent: ReproductionEvent = {
   id: 'rep_1',
   runId: 'run_1',
@@ -333,6 +361,14 @@ export const validJudgeResult: JudgeResult = {
   rubricPolicyVersion: 'judge-v1',
   providerMeta: validProviderMeta,
   langfuseTraceId: 'trace_judge_1',
+  // FB.8 (sv8→9) — OPTIONAL per-axis one-line rationale (explanatory output; never feeds acceptance).
+  axisRationales: {
+    grounding: 'Cites two prior-art sources but one is tangential.',
+    novelty: 'Cross-domain transplant not seen in the surveyed space.',
+    feasibility: 'Buildable, though the materials cost is unaddressed.',
+    falsification_survival: 'Survives the obvious counterexample; edge cases untested.',
+    subtype_check_pass: 'Meets the cross_domain_transfer subtype contract.',
+  },
 };
 
 /**
@@ -416,7 +452,8 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
   { name: 'LineageEdge', schema: LineageEdge, value: validLineageEdge },
   { name: 'FinalJudgeRubric', schema: FinalJudgeRubric, value: validFinalJudgeRubric },
   { name: 'JudgeResult', schema: JudgeResult, value: validJudgeResult },
-  // the 7 high-traffic payload-map narrowings — same canonical value, narrowed schema.
+  { name: 'LlmCallTelemetry', schema: LlmCallTelemetry, value: validLlmCallTelemetry },
+  // the 8 high-traffic payload-map narrowings — same canonical value, narrowed schema.
   {
     name: 'payload:energy.spent',
     schema: resolvePayloadSchema('energy.spent'),
@@ -451,5 +488,10 @@ export const CANONICAL_FIXTURES: ReadonlyArray<{
     name: 'payload:judge.reviewed',
     schema: resolvePayloadSchema('judge.reviewed'),
     value: validJudgeResult,
+  },
+  {
+    name: 'payload:llm_call_telemetry',
+    schema: resolvePayloadSchema('llm_call_telemetry'),
+    value: validLlmCallTelemetry,
   },
 ];

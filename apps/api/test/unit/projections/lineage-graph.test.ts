@@ -190,9 +190,7 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     const childNode = graph.nodes.find((n) => n.id === childId);
     expect(childNode?.type).toBe('agenome');
     // ... linked to its OWN generation (gen1) ...
-    const genEdge = graph.edges.find(
-      (e) => e.source === `${runId}-gen1` && e.target === childId,
-    );
+    const genEdge = graph.edges.find((e) => e.source === `${runId}-gen1` && e.target === childId);
     expect(genEdge).toBeDefined();
     // ... and its candidate connects to it (no longer floating).
     const candEdge = graph.edges.find((e) => e.source === childId && e.target === 'cand_child');

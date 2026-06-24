@@ -1,14 +1,16 @@
-// P0.1 (+P0.1-amend, +judge-output amendment, +terminal-event amendment) — RunEventType: closed
-// 41-member registry. spec(§4): ARCHITECTURE.md §4 / RISK-006 (every lifecycle + failure/terminal type
-// representable; unlisted types rejected). P0.1-amend adds 11 operation-start / in-flight markers
-// (25→36); the judge-output amendment adds the terminal `judge.reviewed` (36→37); the terminal-event
-// amendment (sv4→5) adds the 4 reachable terminals — run.cancelled / generation.skipped / agenome.failed
-// / candidate.rejected (37→41) — so every §3/§5 terminal is rule-#2 replayable; closure preserved.
+// P0.1 (+P0.1-amend, +judge-output amendment, +terminal-event amendment, +FB.6 telemetry) —
+// RunEventType: closed 42-member registry. spec(§4): ARCHITECTURE.md §4 / RISK-006 (every lifecycle +
+// failure/terminal type representable; unlisted types rejected). P0.1-amend adds 11 operation-start /
+// in-flight markers (25→36); the judge-output amendment adds the terminal `judge.reviewed` (36→37); the
+// terminal-event amendment (sv4→5) adds the 4 reachable terminals — run.cancelled / generation.skipped /
+// agenome.failed / candidate.rejected (37→41); frontend-v2 FB.6 (sv6→7) adds `llm_call_telemetry`
+// (41→42) — so every §3/§5 terminal is rule-#2 replayable; closure preserved.
 import { describe, it, expect } from 'vitest';
 import { RunEventType } from '@doppl/contracts';
 
-// non-marker members (lifecycle + failure/terminal): 26 → 30 after the terminal-event amendment.
-const REGISTRY_30 = [
+// non-marker members (lifecycle + failure/terminal + deep telemetry): 26 → 30 (terminal-event
+// amendment) → 31 (frontend-v2 FB.6 +llm_call_telemetry deep-telemetry capture).
+const REGISTRY_31 = [
   // lifecycle
   'run.configured',
   'run.started',
@@ -42,6 +44,8 @@ const REGISTRY_30 = [
   'novelty_scoring_degraded',
   'agenome.failed', // terminal-event amendment: agenome active→failed terminal.
   'candidate.rejected', // terminal-event amendment: candidate under_review→rejected terminal.
+  // frontend-v2 FB.6 (sv6→7): deep-telemetry capture of a successful generation LLM call's raw output.
+  'llm_call_telemetry',
 ] as const;
 
 // P0.1-amend: the 11 operation-start / in-flight observability markers.
@@ -59,7 +63,7 @@ const MARKERS_11 = [
   'tool_call.finished',
 ] as const;
 
-const REGISTRY_41 = [...REGISTRY_30, ...MARKERS_11] as const;
+const REGISTRY_42 = [...REGISTRY_31, ...MARKERS_11] as const;
 
 // failure/terminal types (RISK-006): 7 → 9 after the terminal-event amendment (+agenome.failed,
 // +candidate.rejected).
@@ -83,14 +87,14 @@ const NEW_TERMINALS_4 = [
   'candidate.rejected',
 ] as const;
 
-describe('RunEventType — closed 41-member registry (spec §4)', () => {
-  it('run_event_type_has_41_members_incl_new_terminals', () => {
-    // spec(§4): positive-guard-first — every one of the 41 members parses, and the registry is exactly
-    // 41 (30 non-marker + 11 markers). The 4 terminal-event-amendment members are present.
-    for (const t of REGISTRY_41) {
+describe('RunEventType — closed 42-member registry (spec §4)', () => {
+  it('run_event_type_has_42_members_incl_telemetry', () => {
+    // spec(§4): positive-guard-first — every one of the 42 members parses, and the registry is exactly
+    // 42 (31 non-marker + 11 markers). The FB.6 llm_call_telemetry member is present.
+    for (const t of REGISTRY_42) {
       expect(RunEventType.parse(t)).toBe(t);
     }
-    expect(REGISTRY_41).toHaveLength(41);
+    expect(REGISTRY_42).toHaveLength(42);
     for (const m of MARKERS_11) {
       expect(RunEventType.parse(m)).toBe(m);
     }

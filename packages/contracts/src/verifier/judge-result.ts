@@ -45,6 +45,18 @@ export const JudgeResult = z.strictObject({
   rubricPolicyVersion: z.string().min(1),
   providerMeta: ProviderMeta,
   langfuseTraceId: z.string().min(1).optional(),
+  /**
+   * FB.8 (frontend-v2, sv8→9) — the held-out judge's per-axis one-line rationale, emitted ALONGSIDE its
+   * scores and keyed by the SAME closed `FinalJudgeAxis`. The WHOLE field is OPTIONAL (a judge output without
+   * rationale omits it entirely → additive/backward-compatible: an sv≤8 JudgeResult still validates); WHEN
+   * PRESENT it is EXHAUSTIVE like `axisScores` (all 5 axes required, an unknown axis key rejected — the
+   * enum-keyed record is closed; the runner attaches it only when the model supplied all 5). EXPLANATORY
+   * OUTPUT only: it explains WHY each axis scored as it did so the UI can surface the judge's reasoning
+   * (FV.5b), and it NEVER feeds the acceptance metric — the runner computes `acceptance` deterministically
+   * from `axisScores` × the immutable rubric weights (rule #6: the rationale EXPLAINS the floor, it cannot
+   * move it; the score stays the load-bearing field).
+   */
+  axisRationales: z.record(FinalJudgeAxis, z.string()).optional(),
 });
 
 export type JudgeResult = z.infer<typeof JudgeResult>;

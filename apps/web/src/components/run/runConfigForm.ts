@@ -1,5 +1,5 @@
 import { RunConfig } from '../../data/contracts';
-import type { RunCaps } from '../../data/contracts';
+import type { GenerationOperator, RunCaps } from '../../data/contracts';
 
 /**
  * runConfigForm — the pure form→RunConfig mapping + the cap-max (lowering-only) guard for the run-
@@ -15,6 +15,14 @@ export interface RunConfigFormValues {
   modelProfile: string;
   scoringPolicyVersion: string;
   enabledSubtypes: { cross_domain_transfer: boolean; zeitgeist_synthesis: boolean };
+  /**
+   * FV.3 — the FB run-controls (FB.0–FB.4). `operators` = the selected mutagen ideation skills (closed
+   * 7-enum, FB.3); `generationBias` = the diverge(+)/converge(−) dial ∈ [−1,1], 0 neutral (FB.4). Both
+   * bias GENERATION only (rule #6 — the launcher exposes no judge/scoring lever); threaded additively
+   * (omit when unused → a default run is byte-identical to the pre-FB shape).
+   */
+  operators: GenerationOperator[];
+  generationBias: number;
   caps: {
     maxPopulation: number;
     maxGenerations: number;
@@ -48,6 +56,8 @@ export const DEFAULT_FORM: RunConfigFormValues = {
   modelProfile: 'mvp-openrouter',
   scoringPolicyVersion: 'scoring-v1',
   enabledSubtypes: { cross_domain_transfer: true, zeitgeist_synthesis: true },
+  operators: [],
+  generationBias: 0,
   caps: {
     maxPopulation: 18,
     maxGenerations: 5,
@@ -116,6 +126,11 @@ export function buildRunConfig(form: RunConfigFormValues): RunConfig {
     modelProfile: form.modelProfile,
     scoringPolicyVersion: form.scoringPolicyVersion,
     rngSeed: form.rngSeed,
+    // FV.3 — thread the FB run-controls ADDITIVELY: operators only when ≥1 selected (the contract requires
+    // min 1 when present), and the dial only when ENGAGED (non-neutral) — so a default run stays byte-
+    // identical to the pre-FB.0 RunConfig and the recorded value is the one the operator actually set.
+    ...(form.operators.length > 0 ? { generationOperators: form.operators } : {}),
+    ...(form.generationBias !== 0 ? { generationBias: form.generationBias } : {}),
   };
 }
 

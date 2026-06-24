@@ -118,10 +118,10 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_5', () => {
-    // spec(§4) [terminal-event amendment]: the registry-pinned current schema version is 5 (bumped 4→5
-    // for the additive run.cancelled/generation.skipped/agenome.failed/candidate.rejected terminal
-    // events). The exported constant is the single source the reader's ≤-current ceiling tracks.
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+  it('current_schema_version_is_9', () => {
+    // spec(§4) [frontend-v2 FB.8 judge per-axis rationale amendment]: the registry-pinned current schema
+    // version is 9 (bumped 8→9 for the additive OPTIONAL axisRationales on JudgeResult — explanatory judge
+    // output only). The exported constant is the single source the reader's ≤-current ceiling tracks.
+    expect(CURRENT_SCHEMA_VERSION).toBe(9);
   });
 });

@@ -9,6 +9,10 @@ import type { EventStore } from '../event-store';
 import { buildCurrentState } from '../projections';
 import { createIdempotencyStore } from '../middleware/idempotency';
 import { applyDemoCapOverride } from '../runtime/demo';
+import {
+  modelRouteOverrideViolation,
+  type ModelRouteOverrideAllowlist,
+} from '../model-gateway/model-route-override';
 
 /**
  * The REST write path (ARCHITECTURE.md §11/§14/§15). POST /runs + POST /runs/:id/stop append
@@ -33,6 +37,12 @@ export interface RunRoutesDeps {
   store: EventStore;
   /** The default config; its `caps` are the maxima (ceilings) a request may lower but not exceed. */
   defaultConfig: RunConfig;
+  /**
+   * FB.2 — the frozen per-role allowlist `RunConfig.modelRouteOverride` is clamped to (rule #1, like
+   * caps). A non-permitted override is rejected 422 before the `run.configured` append; `final_judge` is
+   * absent (rule #6). An empty/absent allowlist ⇒ no override permitted (fail-closed).
+   */
+  modelRouteOverrideAllowlist: ModelRouteOverrideAllowlist;
   /** Injected unique-id generator (UUID in prod boot; deterministic in tests). */
   newId: () => string;
   /**
@@ -142,6 +152,22 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
     const over = overCapField(config.caps, deps.defaultConfig.caps);
     if (over !== null) {
       return reply.status(422).send({ error: 'cap_override_exceeds_max', field: over });
+    }
+
+    // Model-route-override rejection (FB.2, §11/§6) — a per-run override naming a model NOT in the role's
+    // frozen allowlist (or targeting `final_judge`, rule #6) is refused 422 BEFORE the append (rule #2 —
+    // never persist an invalid override). The loud primary gate; the per-run registry overlay re-clamps
+    // as the kernel-bound fail-safe (rule #1). An absent override skips the check.
+    if (config.modelRouteOverride !== undefined) {
+      const violation = modelRouteOverrideViolation(
+        config.modelRouteOverride,
+        deps.modelRouteOverrideAllowlist,
+      );
+      if (violation !== null) {
+        return reply
+          .status(422)
+          .send({ error: 'model_route_override_not_permitted', ...violation });
+      }
     }
 
     // Concurrency (§15) — refuse a new run while one is non-terminal (not silently queued).

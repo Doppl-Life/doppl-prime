@@ -66,13 +66,32 @@ function rfTypeFor(node: LineageNode): LineageRfNodeType {
   return node.type; // 'generation' | 'agenome' | 'candidate' | 'score'
 }
 
+/**
+ * The detail node types FILTERED OUT of the decluttered organism graph (FV.5a) — their critic/check/
+ * score/fitness detail (incl. judge-acceptance, which the producer emits as a `score` node) moves to the
+ * node-click inspector drawer. These are LEAF nodes (each has one incoming `candidate→X` edge and no
+ * outgoing), so dropping them + their incident edges leaves the agenome→candidate backbone connected;
+ * no incoming→outgoing re-bridge is needed. The PROJECTION stays complete/authoritative (§10) — the
+ * declutter is presentation-only.
+ */
+export const BACKBONE_DROP_TYPES: ReadonlySet<LineageNodeType> = new Set([
+  'critic',
+  'check',
+  'score',
+]);
+
 export function lineageToFlow(
   projection: LineageGraphProjection,
   workingRefs: ReadonlySet<string> = new Set(),
+  dropTypes: ReadonlySet<LineageNodeType> = BACKBONE_DROP_TYPES,
 ): FlowGraph {
-  const nodeIds = new Set(projection.nodes.map((n) => n.id));
+  // FV.5a — keep only the backbone (agenome + candidate + generation); the dropped detail types move to
+  // the inspector. nodeIds is computed from the KEPT nodes, so the edge filter below removes BOTH
+  // dangling edges AND edges incident to a dropped node in one pass.
+  const keptNodes = projection.nodes.filter((n) => !dropTypes.has(n.type));
+  const nodeIds = new Set(keptNodes.map((n) => n.id));
 
-  const nodes: LineageRfNode[] = projection.nodes.map((n) => {
+  const nodes: LineageRfNode[] = keptNodes.map((n) => {
     const statusDomain = TYPE_TO_DOMAIN[n.type];
     const statusSpec = n.status !== undefined ? resolveStatus(statusDomain, n.status) : undefined;
     return {

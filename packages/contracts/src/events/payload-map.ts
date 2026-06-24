@@ -7,6 +7,7 @@ import { CheckResult } from '../checks/check-result';
 import { NoveltyScore } from '../scoring/novelty-score';
 import { FitnessScore } from '../scoring/fitness-score';
 import { JudgeResult } from '../verifier/judge-result';
+import { LlmCallTelemetry } from '../domain/llm-call-telemetry';
 
 /**
  * Per-type payload-shape map + payload-DoS ceiling (ARCHITECTURE.md §4/§8/§9). P0.10.
@@ -42,6 +43,9 @@ export const HIGH_TRAFFIC_PAYLOAD_MAP: Partial<Record<RunEventType, z.ZodType>> 
   'novelty.scored': NoveltyScore,
   'fitness.scored': FitnessScore,
   'judge.reviewed': JudgeResult,
+  // frontend-v2 FB.6 — the deep-telemetry capture narrows to its frozen model (same schema validates the
+  // write + the model). Raw fields are truncated-with-marker before append + scrubbed at the boundary.
+  llm_call_telemetry: LlmCallTelemetry,
 };
 
 /**

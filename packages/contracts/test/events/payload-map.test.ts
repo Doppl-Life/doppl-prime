@@ -127,14 +127,16 @@ const HIGH_TRAFFIC_KEYS = [
   'novelty.scored',
   'fitness.scored',
   'judge.reviewed',
+  // frontend-v2 FB.6: deep-telemetry capture of a successful generation LLM call.
+  'llm_call_telemetry',
 ] as const;
 
 describe('per-type payload map (spec §4)', () => {
-  it('payload_map_covers_exactly_seven_high_traffic_types', () => {
-    // spec(§4): §4 names EXACTLY these seven high-traffic types (6 frozen P0.5–P0.9 + the judge-output
-    // amendment's judge.reviewed); each value is a usable Zod schema. Positive-guard-first (lesson §10).
+  it('payload_map_covers_exactly_eight_high_traffic_types', () => {
+    // spec(§4): §4 names EXACTLY these eight high-traffic types (6 frozen P0.5–P0.9 + the judge-output
+    // amendment's judge.reviewed + FB.6's llm_call_telemetry); each value is a usable Zod schema.
     expect(new Set(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP))).toEqual(new Set(HIGH_TRAFFIC_KEYS));
-    expect(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP)).toHaveLength(7);
+    expect(Object.keys(HIGH_TRAFFIC_PAYLOAD_MAP)).toHaveLength(8);
     for (const key of HIGH_TRAFFIC_KEYS) {
       expect(typeof HIGH_TRAFFIC_PAYLOAD_MAP[key]?.parse).toBe('function');
     }
@@ -278,6 +280,7 @@ describe('per-type payload map (spec §4)', () => {
         'novelty.scored',
         'fitness.scored',
         'judge.reviewed',
+        'llm_call_telemetry',
       ]),
     );
     expect(HIGH_TRAFFIC_PAYLOAD_MAP['energy.spent']).toBe(EnergyEvent);

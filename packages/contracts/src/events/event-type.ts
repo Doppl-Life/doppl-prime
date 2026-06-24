@@ -5,7 +5,7 @@ import { z } from 'zod';
  *
  * Enumerates every lifecycle event, every failure/terminal event, plus the operation-start /
  * in-flight observability markers (§4 live in-flight window) — so no failure path in §3/§5 is
- * unrepresentable (closes RISK-006). Any unlisted type is rejected. 41 members (30 + 11 markers).
+ * unrepresentable (closes RISK-006). Any unlisted type is rejected. 42 members (31 + 11 markers).
  *
  * Note: lifecycle types are dotted (`run.failed`, `run.stopped`, …) per the canonical
  * Appendix A typed registry — this is the authoritative spelling for the terminal events. The 11
@@ -77,6 +77,10 @@ export const RunEventType = z.enum([
   'fusion.started',
   'tool_call.started',
   'tool_call.finished',
+  // frontend-v2 FB.6 (sv6→7): deep-telemetry capture of a successful generation LLM call's raw response
+  // (+ reasoning where surfaced). High-traffic → narrows to LlmCallTelemetry; scrubbed at the persistence
+  // boundary (rule #4), truncated-with-marker under the ceiling, replay-read (rule #7). NOT a marker.
+  'llm_call_telemetry',
 ]);
 
 export type RunEventType = z.infer<typeof RunEventType>;

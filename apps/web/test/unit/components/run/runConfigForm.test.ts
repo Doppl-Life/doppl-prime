@@ -98,3 +98,41 @@ describe('runConfigForm — form→RunConfig mapping + cap-max guard', () => {
     expect(RunConfig.safeParse(config).success).toBe(true);
   });
 });
+
+// FV.3 — the launcher wires the FB run-controls (FB.0–FB.4) into the RunConfig. The form carries the
+// mutagen-operator multi-select + the diverge/converge dial; buildRunConfig threads them ADDITIVELY (omit
+// when unused → byte-identical to a no-FB-controls run). The dial biases GENERATION only (rule #6 — the
+// launcher never exposes a judge/scoring lever); the operators are recorded generation inputs.
+describe('runConfigForm — FB run-controls (FV.3 launcher wiring)', () => {
+  it('test_operators_threaded_when_selected_omitted_when_empty', () => {
+    const withOps = buildRunConfig({
+      ...validForm(),
+      operators: ['breakthrough', 'polymath'],
+    });
+    expect(withOps.generationOperators).toEqual(['breakthrough', 'polymath']);
+    expect(RunConfig.safeParse(withOps).success).toBe(true);
+    // none selected → the field is OMITTED (the contract requires min 1 when present; byte-identical baseline).
+    const noOps = buildRunConfig({ ...validForm(), operators: [] });
+    expect(noOps.generationOperators).toBeUndefined();
+  });
+
+  it('test_generation_bias_threaded_when_engaged_omitted_when_neutral', () => {
+    const diverge = buildRunConfig({ ...validForm(), generationBias: 0.6 });
+    expect(diverge.generationBias).toBe(0.6);
+    expect(RunConfig.safeParse(diverge).success).toBe(true);
+    const converge = buildRunConfig({ ...validForm(), generationBias: -0.8 });
+    expect(converge.generationBias).toBe(-0.8);
+    // a neutral 0 dial → OMITTED (byte-identical to a no-dial run; the engaged value is what's recorded).
+    const neutral = buildRunConfig({ ...validForm(), generationBias: 0 });
+    expect(neutral.generationBias).toBeUndefined();
+  });
+
+  it('test_fb_controls_default_to_a_clean_baseline', () => {
+    // the default FB controls (no operators + a neutral dial, from DEFAULT_FORM) → buildRunConfig omits both
+    // (a default run is byte-identical to the pre-FB.0 RunConfig shape). validForm() carries the required seed.
+    const config = buildRunConfig(validForm());
+    expect(config.generationOperators).toBeUndefined();
+    expect(config.generationBias).toBeUndefined();
+    expect(RunConfig.safeParse(config).success).toBe(true);
+  });
+});

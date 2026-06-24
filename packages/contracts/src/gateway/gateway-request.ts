@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ModelRole } from './model-role';
+import { SamplingParams } from './sampling-params';
 
 /**
  * ChatRole — the CLOSED chat-message role union (ARCHITECTURE.md §6). DISTINCT from {@link ModelRole}
@@ -27,6 +28,9 @@ export const ModelGatewayRequest = z
     messages: z.array(z.strictObject({ role: ChatRole, content: z.string().min(1) })).optional(),
     schema: z.unknown().optional(),
     maxTokens: z.int().positive().optional(),
+    // FB.4 (sv7→8) — optional sampling params (the diverge/converge dial sets `temperature` on the
+    // population_generator request ONLY; the judge/critic chokepoint never sets it — rule #6 SOLO).
+    samplingParams: SamplingParams.optional(),
   })
   .superRefine((value, ctx) => {
     const hasPrompt = value.prompt !== undefined;

@@ -125,7 +125,13 @@ export async function cull(
   const belowThreshold = eligible
     .filter((e) => e.best < threshold)
     .sort((a, b) =>
-      a.best !== b.best ? a.best - b.best : a.agenomeId < b.agenomeId ? -1 : a.agenomeId > b.agenomeId ? 1 : 0,
+      a.best !== b.best
+        ? a.best - b.best
+        : a.agenomeId < b.agenomeId
+          ? -1
+          : a.agenomeId > b.agenomeId
+            ? 1
+            : 0,
     );
 
   // FLOOR CLAMP: never cull so many that fewer than minSurvivors eligible remain. Cull at most

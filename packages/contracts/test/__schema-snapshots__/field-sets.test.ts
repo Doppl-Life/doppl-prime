@@ -68,6 +68,8 @@ const EVENT_TYPE_SNAPSHOT = [
   'fusion.started',
   'tool_call.started',
   'tool_call.finished',
+  // frontend-v2 FB.6 (sv6→7): deep-telemetry capture of a successful generation LLM call's raw output.
+  'llm_call_telemetry',
 ];
 
 const ACTOR_SNAPSHOT = [
@@ -92,8 +94,16 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     // Deliberate schemaVersion bumps pinned by literal so they can't move silently (kernel-020
     // linearized): 1→2 (P0.1-amend RunEventType markers), 2→3 (P0.16 judge.reviewed + JudgeResult),
     // 3→4 (kernel P0.15-amend GenerationStatus +degraded & P0.5-amend CandidateStatus +repairing, folded),
-    // 4→5 (terminal-event amendment: +run.cancelled/generation.skipped/agenome.failed/candidate.rejected).
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    // 4→5 (terminal-event amendment: +run.cancelled/generation.skipped/agenome.failed/candidate.rejected),
+    // 5→6 (frontend-v2 FB.0 run-controls: +RunConfig generationOperators/generationBias/modelRouteOverride
+    //      + the closed GenerationOperator enum; rule-#6 judge/scoring anchor byte-identical).
+    // 6→7 (frontend-v2 FB.6 raw-capture: +RunEventType llm_call_telemetry + the LlmCallTelemetry payload
+    //      model; deep-telemetry of GENERATION output, rule-#6 judge/scoring anchor byte-identical).
+    // 7→8 (frontend-v2 FB.4 diverge/converge dial: +samplingParams{temperature?} on ModelGatewayRequest +
+    //      LlmCallTelemetry; GENERATION sampling only, rule-#6 judge/scoring anchor byte-identical).
+    // 8→9 (frontend-v2 FB.8 judge per-axis rationale: +OPTIONAL axisRationales on JudgeResult — explanatory
+    //      judge output only; acceptance stays runner-computed, rule-#6 judge/scoring anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(9);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {
@@ -102,7 +112,7 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     expect(sorted(RunEventType.options)).toEqual(sorted(EVENT_TYPE_SNAPSHOT));
     expect(sorted(Actor.options)).toEqual(sorted(ACTOR_SNAPSHOT));
     expect(ENVELOPE_FIELD_SNAPSHOT).toHaveLength(14);
-    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(41);
+    expect(EVENT_TYPE_SNAPSHOT).toHaveLength(42);
     expect(ACTOR_SNAPSHOT).toHaveLength(7);
   });
 });

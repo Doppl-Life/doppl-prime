@@ -402,9 +402,13 @@ describe('createScoreSeam — selection score path over the real persisted log',
       candidateId: 'cand_s3',
     });
     const seam2 = createScoreSeam(
-      buildDeps(runId2, embeddingGateway((s) => vectors[s] ?? [1, 1, 1]), {
-        cullPolicy: { relativeStdDevK: 1, minSurvivors: 2 },
-      }),
+      buildDeps(
+        runId2,
+        embeddingGateway((s) => vectors[s] ?? [1, 1, 1]),
+        {
+          cullPolicy: { relativeStdDevK: 1, minSurvivors: 2 },
+        },
+      ),
     );
     await seam2(
       [

@@ -16,7 +16,26 @@
  *  - 4 → 5 (terminal-event amendment): +`run.cancelled` / `generation.skipped` / `agenome.failed` /
  *    `candidate.rejected` `RunEventType` members — the 4 reachable §3/§5 terminals the registry was
  *    missing, so every state-machine terminal is rule-#2 replayable (closes the audited gap).
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1/2/3/4 envelopes still validate (the
+ *  - 5 → 6 (frontend-v2 FB.0, run-controls amendment): +3 OPTIONAL `RunConfig` run-control fields
+ *    (`generationOperators` / `generationBias` / `modelRouteOverride`) + the closed `GenerationOperator`
+ *    enum. GENERATION inputs only (rule #5 DATA, rule-#6-safe) — the held-out judge / scoring anchor
+ *    (`ScoringPolicy` / `FinalJudgeRubric` / `FinalJudgeAxis`) is BYTE-IDENTICAL across this bump.
+ *  - 6 → 7 (frontend-v2 FB.6, raw-capture amendment): +`llm_call_telemetry` `RunEventType` member + the
+ *    `LlmCallTelemetry` high-traffic payload model (deep telemetry of a successful GENERATION LLM call —
+ *    raw response/reasoning, scrubbed at the persistence boundary rule #4, truncated-with-marker under the
+ *    1 MiB ceiling, replay-read rule #7). GENERATION output only — the rule-#6 judge/scoring anchor is
+ *    BYTE-IDENTICAL across this bump.
+ *  - 7 → 8 (frontend-v2 FB.4, diverge/converge dial amendment): +`samplingParams{temperature?}` (the shared
+ *    `SamplingParams`) on `ModelGatewayRequest` (the dial sets `temperature` on the population_generator
+ *    request ONLY — rule #6 SOLO) + on `LlmCallTelemetry` (records the EXECUTED temperature, replay-read
+ *    rule #7). GENERATION sampling only — the rule-#6 judge/scoring anchor is BYTE-IDENTICAL across this bump.
+ *  - 8 → 9 (frontend-v2 FB.8, judge per-axis rationale amendment): +OPTIONAL `axisRationales` (a partial
+ *    `FinalJudgeAxis`→string record) on `JudgeResult` — the held-out judge's per-axis one-line EXPLANATION,
+ *    emitted alongside its scores and surfaced in the UI (FV.5b). EXPLANATORY OUTPUT only: `acceptance` stays
+ *    runner-computed from `axisScores` × the immutable rubric weights, and the rule-#6 anchor (`ScoringPolicy`
+ *    / `FinalJudgeRubric` / `FinalJudgeAxis`, incl. `immutableToAgents`) is BYTE-IDENTICAL across this bump —
+ *    the rationale explains the floor, it cannot move it.
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–8 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 9;

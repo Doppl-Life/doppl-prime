@@ -1,6 +1,7 @@
 import type {
   CheckRunnerRegistry,
   ModelGatewayRequest,
+  ModelRouteOverride,
   RunCaps,
   RunConfig,
 } from '@doppl/contracts';
@@ -48,6 +49,13 @@ export interface ComposeRuntimeInput {
    * the boot config drives the run.
    */
   readonly perRunConfig?: RunConfig;
+  /**
+   * FB.2 — the per-run gateway factory: when the recorded `perRunConfig` carries a (route-validated)
+   * `modelRouteOverride`, the run's gateway is built from this factory (a registry OVERLAY re-clamped to
+   * the allowlist → FB.1's provider-dispatch routes the overridden provider). Set ONLY on the live boot
+   * branch; absent on the recorded/replay path → the boot singleton gateway is used (no provider, rule #7).
+   */
+  readonly gatewayForOverride?: (override: ModelRouteOverride) => ModelGateway;
   /** PD.3 — the operator-stop poll fn (the boot `operatorStopRegistry.checker(runId)`). Set on the worker
    *  deps → the loop's `detectKill` polls it at each generation boundary → drain-then-terminalize run.stopped
    *  (§5). Absent → no operator-stop seam (today's behavior). */
@@ -64,7 +72,7 @@ export interface ComposeRuntimeInput {
  * the TOP-LEVEL `config.caps` (generationLoop.ts:230), so both the top-level and `runConfig.caps` are set
  * to the clamped value (consistency). The boot immutables ride through by reference (the `...boot` spread).
  */
-function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
+export function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
   const caps: RunCaps = {
     maxPopulation: Math.min(perRun.caps.maxPopulation, boot.caps.maxPopulation),
     maxGenerations: Math.min(perRun.caps.maxGenerations, boot.caps.maxGenerations),
@@ -83,6 +91,22 @@ function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig {
       rngSeed: perRun.rngSeed,
       enabledSubtypes: perRun.enabledSubtypes,
       caps,
+      // FB.2 — thread the (route-validated) per-run modelRouteOverride so recorded == executed (was
+      // dropped). The kernel-bound re-clamp + the actual route resolution happen at the gateway overlay.
+      ...(perRun.modelRouteOverride !== undefined
+        ? { modelRouteOverride: perRun.modelRouteOverride }
+        : {}),
+      // FB.3 — thread the per-run generationOperators so the loop executes the recorded operators (was
+      // dropped). The closed-enum operators map to TRUSTED framing fragments in the population_generator
+      // system message (composeOperatorFraming) — prompt-only, no cap/energy effect (rule #1/#8).
+      ...(perRun.generationOperators !== undefined
+        ? { generationOperators: perRun.generationOperators }
+        : {}),
+      // FB.4 — thread the per-run generationBias dial so the loop executes the recorded diverge/converge
+      // value (was dropped). `!== undefined` preserves an explicit neutral 0 (an engaged-but-neutral dial);
+      // the dial maps to a TRUSTED band fragment + a clamped temperature on the population_generator request
+      // only — prompt + sampling, no cap/energy effect (rule #1/#8), never the judge/critic path (rule #6).
+      ...(perRun.generationBias !== undefined ? { generationBias: perRun.generationBias } : {}),
     },
   };
 }
@@ -121,13 +145,23 @@ function toGenerationGateway(modelGateway: ModelGateway): GenerationGateway {
 }
 
 export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps {
-  const { modelGateway, eventStore, checkRegistry, listRunIds, newId, runId } = input;
+  const { eventStore, checkRegistry, listRunIds, newId, runId } = input;
   // W3b-2c — the worker executes the RECORDED per-run config (merged + clamped over boot), or the boot
   // config when no per-run config is supplied.
   const config =
     input.perRunConfig === undefined
       ? input.config
       : mergePerRunConfig(input.config, input.perRunConfig);
+
+  // FB.2 — when the run carries a (route-validated) modelRouteOverride AND the live boot supplied a
+  // `gatewayForOverride` factory, build the run's gateway from it (a registry overlay re-clamped to the
+  // allowlist → FB.1 dispatch routes the overridden provider). Otherwise the boot singleton gateway
+  // (the recorded/replay path builds no factory → no provider re-resolution, rule #7).
+  const override = input.perRunConfig?.modelRouteOverride;
+  const modelGateway =
+    override !== undefined && input.gatewayForOverride !== undefined
+      ? input.gatewayForOverride(override)
+      : input.modelGateway;
 
   const verify = createVerifySeam({
     gateway: modelGateway,

@@ -75,7 +75,7 @@ describe('cull — relative weak-lineage culling + population floor + explainabl
   test('cull_tight_distribution_culls_nothing', async () => {
     const { emit, events } = recorder();
     const { culledIds } = await cull(
-      input([agenome('a', [0.70]), agenome('b', [0.70]), agenome('c', [0.72]), agenome('d', [0.72])]),
+      input([agenome('a', [0.7]), agenome('b', [0.7]), agenome('c', [0.72]), agenome('d', [0.72])]),
       policy,
       { emit, newId: idFactory() },
     );

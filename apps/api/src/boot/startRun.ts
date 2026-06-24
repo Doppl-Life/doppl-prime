@@ -1,5 +1,5 @@
 import { RunConfig } from '@doppl/contracts';
-import type { CheckRunnerRegistry } from '@doppl/contracts';
+import type { CheckRunnerRegistry, ModelRouteOverride } from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { EventStore } from '../event-store';
 import type { ModelGateway } from '../model-gateway';
@@ -31,6 +31,9 @@ async function readRecordedConfig(
 export interface StartRunInfra {
   readonly config: AppConfig;
   readonly modelGateway: ModelGateway;
+  /** FB.2 — the per-run gateway factory (live boot only): a registry overlay re-clamped to the allowlist
+   *  when a run carries a validated `modelRouteOverride`. Absent → the boot singleton gateway (rule #7). */
+  readonly gatewayForOverride?: (override: ModelRouteOverride) => ModelGateway;
   readonly eventStore: EventStore;
   readonly checkRegistry: CheckRunnerRegistry;
   readonly listRunIds: () => Promise<readonly string[]>;
@@ -72,6 +75,9 @@ export function createStartRun(infra: StartRunInfra): (runId: string) => void {
           newId: infra.newId,
           runId,
           ...(perRunConfig !== undefined ? { perRunConfig } : {}),
+          ...(infra.gatewayForOverride !== undefined
+            ? { gatewayForOverride: infra.gatewayForOverride }
+            : {}),
           ...(infra.operatorStopFor !== undefined
             ? { operatorStop: infra.operatorStopFor(runId) }
             : {}),

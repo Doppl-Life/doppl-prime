@@ -39,7 +39,15 @@ const MODEL_ROUTE_FIELD_SNAPSHOT = [
   'fallbackRouteIds',
 ];
 
-const GATEWAY_REQUEST_FIELD_SNAPSHOT = ['role', 'prompt', 'messages', 'schema', 'maxTokens'];
+// frontend-v2 FB.4 (sv7→8): +samplingParams{temperature?} — the generation dial's executed sampling.
+const GATEWAY_REQUEST_FIELD_SNAPSHOT = [
+  'role',
+  'prompt',
+  'messages',
+  'schema',
+  'maxTokens',
+  'samplingParams',
+];
 
 const GATEWAY_RESPONSE_FIELD_SNAPSHOT = [
   'accepted',
@@ -87,7 +95,7 @@ describe('schema snapshot — gateway seam (spec §6 / §2.5)', () => {
     expect(MODEL_ROLE_SNAPSHOT).toHaveLength(7);
     expect(PROVIDER_CAPABILITY_FIELD_SNAPSHOT).toHaveLength(4);
     expect(MODEL_ROUTE_FIELD_SNAPSHOT).toHaveLength(5);
-    expect(GATEWAY_REQUEST_FIELD_SNAPSHOT).toHaveLength(5);
+    expect(GATEWAY_REQUEST_FIELD_SNAPSHOT).toHaveLength(6);
     expect(GATEWAY_RESPONSE_FIELD_SNAPSHOT).toHaveLength(6);
     expect(VALIDATION_RESULT_SNAPSHOT).toHaveLength(3);
     expect(CHAT_ROLE_SNAPSHOT).toHaveLength(3);

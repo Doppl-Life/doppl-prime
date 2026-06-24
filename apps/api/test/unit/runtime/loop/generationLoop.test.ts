@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import type {
   Agenome,
+  GenerationOperator,
   ModelGatewayRequest,
   ModelGatewayResponse,
   ProviderMeta,
@@ -10,6 +11,8 @@ import {
   CRITIC_INPUT_SENTINEL,
   CURRENT_SCHEMA_VERSION,
   HIGH_TRAFFIC_PAYLOAD_MAP,
+  LlmCallTelemetry,
+  MAX_PAYLOAD_BYTES,
   REDACTION_PLACEHOLDER,
   RunEventEnvelope,
   validateEventPayload,
@@ -27,13 +30,18 @@ import type {
   EventStore,
   RunEventRow,
 } from '../../../../src/event-store';
-import { scrubEventPayload } from '../../../../src/event-store';
+import { replayEvents, scrubEventPayload } from '../../../../src/event-store';
+import {
+  CAPTURE_FIELD_MAX_BYTES,
+  TRUNCATION_MARKER,
+} from '../../../../src/event-store/truncate-capture';
 import { createGateway, type ProviderCallFn } from '../../../../src/model-gateway';
 import { executeKillAndDrain } from '../../../../src/runtime/loop/killDrain';
 import { CandidateContent } from '../../../../src/runtime/loop/candidateContent';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import {
   runGenerationLoop,
+  buildPopulationRequest,
   transitionGenerationOrThrow,
   transitionAgenomeOrThrow,
   GENERATION_ISOLATION_FRAMING,
@@ -46,6 +54,9 @@ import {
   type ScoreSeam,
   type VerifySeam,
 } from '../../../../src/runtime/loop/generationLoop';
+import { OPERATOR_FRAGMENTS } from '../../../../src/runtime/loop/generationOperators';
+import { BIAS_FRAGMENTS, biasToTemperature } from '../../../../src/runtime/loop/generationBias';
+import { assembleIsolatedRequest } from '../../../../src/verifier/isolation/candidate-as-data';
 
 /**
  * P3.10b generation-loop SKELETON (ARCHITECTURE.md §5/§3/§4/§6, KEY SAFETY RULES #1/#2/#9).
@@ -136,7 +147,7 @@ function makeFakeEventStore(secretValues: readonly string[] = []) {
 
 function makeFakeGateway(
   opts: {
-    toolCalls?: readonly { toolName: string }[];
+    toolCalls?: readonly { toolName: string; query?: string; result?: string }[];
     rejectFirst?: number;
     providerMeta?: ProviderMeta;
     attemptFailures?: readonly { attempt: number; reason: string }[];
@@ -1114,6 +1125,359 @@ describe('runGenerationLoop (PD.10 commit 1 — per-run problem isolated as DATA
     const a = await run('problem alpha');
     const b = await run('problem beta');
     expect(b).toEqual(a); // generation events are problem-independent → replay-stable (rule #7)
+  });
+});
+
+// FB.3 — the loop THREADS the per-run generationOperators (config.runConfig.generationOperators) into the
+// population_generator request: a run configured with operators produces a system message carrying the
+// operators' TRUSTED fragments (the real production assembly, end-to-end). This is the reachability proof.
+describe('runGenerationLoop (FB.3 — operators shape the generation framing)', () => {
+  // spec(§5) — operators selected on the run config reach the population_generator system message as their
+  // vetted fragments; the per-run problem stays isolated in the wrapUntrusted user message (rule #5 unchanged).
+  test('loop_threads_operators_into_population_request_system_message', async () => {
+    const PROBLEM = 'cut energy use in dense cities';
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 2 });
+    const operators: GenerationOperator[] = ['polymath', 'first_principles'];
+    const config = {
+      ...base,
+      runConfig: {
+        ...base.runConfig,
+        seed: PROBLEM,
+        generationOperators: operators,
+      },
+    };
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(makeDeps({ config, gateway }));
+
+    const [sys, user] = requests[0]!.messages!;
+    expect(sys!.role).toBe('system');
+    expect(sys!.content).toContain(OPERATOR_FRAGMENTS.polymath);
+    expect(sys!.content).toContain(OPERATOR_FRAGMENTS.first_principles);
+    expect(sys!.content).toContain(GENERATION_ISOLATION_FRAMING);
+    expect(sys!.content).not.toContain(PROBLEM); // problem not in the trusted instruction
+    expect(user!.content).toBe(wrapUntrusted(PROBLEM)); // problem only inside the wrapped user message
+    expect(user!.content).not.toContain(OPERATOR_FRAGMENTS.polymath); // fragments not in the user message
+  });
+});
+
+// FB.6 — the loop captures each SUCCESSFUL generation LLM call's raw response as an llm_call_telemetry
+// event (deep telemetry): rule #4 scrub-on-append (reuse), 1 MiB truncate-with-marker, rule #7
+// replay-reads, rule #1/#8 capture-is-not-a-spend. A failed call appends no capture (rule #8).
+function captureGateway(
+  output: unknown,
+  providerMeta: ProviderMeta = validProviderMeta,
+): GenerationGateway {
+  return {
+    generate: async () => ({
+      response: { accepted: true, validationResult: 'accepted', output, providerMeta },
+    }),
+  };
+}
+
+describe('runGenerationLoop (FB.6 — raw reasoning/response capture)', () => {
+  test('test_generation_loop_appends_llm_call_telemetry', async () => {
+    // spec(§5) reachability: a successful generation call appends one llm_call_telemetry per candidate,
+    // role population_generator, actor runtime, correlated by generationId/agenomeId; payload validates
+    // as the frozen LlmCallTelemetry model.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(2); // one per successful candidate (maxPopulation 2)
+    for (const row of tel) {
+      expect(row.actor).toBe('runtime');
+      expect(row.generationId).toBeDefined();
+      expect(row.agenomeId).toBeDefined();
+      const payload = row.payload as Record<string, unknown>;
+      expect(payload.role).toBe('population_generator');
+      expect(typeof payload.rawResponse).toBe('string');
+      expect(payload.truncated).toBe(false);
+      expect(LlmCallTelemetry.safeParse(payload).success).toBe(true);
+    }
+  });
+
+  test('test_failed_call_appends_no_capture', async () => {
+    // rule #8: a FAILED generation call appends NO capture (it already emits provider_call_failed).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ rejectFirst: 10 }),
+        caps: { maxGenerations: 1, maxPopulation: 2 },
+      }),
+    );
+    expect(fake.rows.filter((r) => r.type === 'llm_call_telemetry')).toHaveLength(0);
+    expect(fake.appendedTypes().filter((t) => t === 'provider_call_failed').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  test('test_captured_secret_is_scrubbed_before_append', async () => {
+    // rule #4 (secret-surface): a secret in the raw output is REDACTED in the APPENDED event — the
+    // existing append-path scrub runs on the capture (reuse, no new scrub).
+    const SECRET = 'sk-abcdefghijklmnopqrstuvwxyz0123456789';
+    const fake = makeFakeEventStore();
+    const output = { ...CANDIDATE_CONTENT, summary: `the answer is ${SECRET} use it` };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: captureGateway(output),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1);
+    const raw = (tel[0]!.payload as Record<string, unknown>).rawResponse as string;
+    expect(raw).not.toContain(SECRET); // the secret never reaches the persisted event
+    expect(raw).toContain(REDACTION_PLACEHOLDER);
+  });
+
+  test('test_oversized_capture_truncated_with_marker', async () => {
+    // 1 MiB ceiling: an oversized raw response is truncated-with-marker so the payload stays under the
+    // ceiling and the append SUCCEEDS (not the current reject); truncated flag set + queryable.
+    const fake = makeFakeEventStore();
+    const big = 'x'.repeat(500_000); // > CAPTURE_FIELD_MAX_BYTES (384 KiB), < 1 MiB
+    const output = { ...CANDIDATE_CONTENT, summary: big };
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: captureGateway(output),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1); // append succeeded (truncation kept it under the ceiling)
+    const payload = tel[0]!.payload as Record<string, unknown>;
+    expect(payload.truncated).toBe(true);
+    expect((payload.rawResponse as string).endsWith(TRUNCATION_MARKER)).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(payload), 'utf8')).toBeLessThan(MAX_PAYLOAD_BYTES);
+    expect(CAPTURE_FIELD_MAX_BYTES).toBeGreaterThan(0);
+  });
+
+  test('test_replay_reads_capture_no_provider', async () => {
+    // rule #7: replay reconstructs the llm_call_telemetry from the persisted log with no provider call
+    // (replayEvents folds the rows; it imports no gateway/embedding/web seam — provider-free by construction).
+    const fake = makeFakeEventStore();
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, gateway, caps: { maxGenerations: 1, maxPopulation: 1 } }),
+    );
+    const callsAfterRun = requests.length;
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    expect(replayed.filter((r) => r.type === 'llm_call_telemetry')).toHaveLength(1);
+    expect(requests.length).toBe(callsAfterRun); // replay added NO provider call
+  });
+
+  test('test_capture_does_not_change_energy_or_caps', async () => {
+    // rule #1/#8: the capture is not a productive spend — it adds no energy.spent event and changes no cap
+    // (energy.spent count == one spawn-debit + one llm-debit each; the capture rides the already-debited call).
+    const fake = makeFakeEventStore();
+    const result = await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    const types = fake.appendedTypes();
+    const energySpent = types.filter((t) => t === 'energy.spent').length;
+    const spawned = types.filter((t) => t === 'agenome.spawned').length;
+    const created = types.filter((t) => t === 'candidate.created').length;
+    expect(energySpent).toBe(spawned + created); // capture added NO energy.spent
+    expect(types.filter((t) => t === 'llm_call_telemetry')).toHaveLength(created);
+    expect(result.generationsRun).toBe(1); // caps honored — capture didn't change loop bounds
+  });
+});
+
+// FB.4 — the diverge/converge dial: bias maps to a band fragment (generation system message) + a clamped
+// temperature on the population_generator request ONLY. The rule-#6 SOLO pin: the judge/critic requests
+// carry NO bias temperature/framing. The executed temperature is recorded into llm_call_telemetry (rule #7).
+describe('runGenerationLoop (FB.4 — diverge/converge dial)', () => {
+  test('test_bias_framing_and_temperature_on_generation_request', () => {
+    // §5/§6: a non-neutral bias → the band fragment in the SYSTEM message + samplingParams.temperature on
+    // the request; the problem stays isolated in the wrapUntrusted user message (rule #5 unchanged).
+    const req = buildPopulationRequest('sys prompt', 'the problem', undefined, 0.8);
+    const [sys, user] = req.messages!;
+    expect(sys!.content).toContain(BIAS_FRAGMENTS.strong_diverge);
+    expect(sys!.content).toContain(GENERATION_ISOLATION_FRAMING);
+    expect(req.samplingParams?.temperature).toBeCloseTo(biasToTemperature(0.8), 10);
+    expect(user!.content).toBe(wrapUntrusted('the problem'));
+    expect(user!.content).not.toContain(BIAS_FRAGMENTS.strong_diverge);
+  });
+
+  test('test_judge_and_critic_requests_have_no_bias_temperature', () => {
+    // ★ rule #6 SOLO (load-bearing): the dial reaches GENERATION only. The single chokepoint that builds
+    // EVERY critic/judge/check request (assembleIsolatedRequest) takes no bias and sets no samplingParams —
+    // so the final_judge + critic calls structurally cannot carry a bias-derived temperature or framing,
+    // while the population_generator request DOES. Two-sided proof.
+    const gen = buildPopulationRequest('sys', 'prob', undefined, -0.9);
+    expect(gen.samplingParams?.temperature).toBeCloseTo(biasToTemperature(-0.9), 10);
+    for (const role of ['final_judge', 'critic'] as const) {
+      const req = assembleIsolatedRequest({
+        role,
+        instruction: 'evaluate this',
+        candidate: 'cand',
+      });
+      expect(req.samplingParams).toBeUndefined(); // no bias-derived temperature
+      const sys = req.messages!.find((m) => m.role === 'system')!.content;
+      for (const fragment of Object.values(BIAS_FRAGMENTS)) {
+        if (fragment !== '') expect(sys).not.toContain(fragment); // no bias framing
+      }
+    }
+  });
+
+  test('test_bias_does_not_touch_caps_or_energy', () => {
+    // rule #1/#8: the dial touches the prompt + the sampling param only — the request carries no cap/energy.
+    const req = buildPopulationRequest('sys', 'prob', undefined, 0.8);
+    expect(Object.keys(req).sort()).toEqual(['messages', 'role', 'samplingParams', 'schema']);
+    const blob = JSON.stringify(req).toLowerCase();
+    expect(blob).not.toContain('maxpopulation');
+    expect(blob).not.toContain('energybudget');
+    expect(blob).not.toContain('caps');
+  });
+
+  test('test_telemetry_records_executed_temperature', () => {
+    // the appended llm_call_telemetry records the EXACT executed sampling params (recorded == executed).
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 1 });
+    const config = { ...base, runConfig: { ...base.runConfig, generationBias: 0.8 } };
+    const fake = makeFakeEventStore();
+    return runGenerationLoop(makeDeps({ eventStore: fake.store, config })).then(() => {
+      const tel = fake.rows.filter((r) => r.type === 'llm_call_telemetry');
+      expect(tel).toHaveLength(1);
+      const payload = tel[0]!.payload as Record<string, unknown>;
+      const sampling = payload.samplingParams as { temperature?: number } | undefined;
+      expect(sampling?.temperature).toBeCloseTo(biasToTemperature(0.8), 10);
+    });
+  });
+
+  test('test_replay_reads_recorded_temperature_no_provider', async () => {
+    // rule #7: replay reconstructs the recorded temperature from the persisted capture — no biasToTemperature
+    // re-derive, no provider call (replayEvents folds the rows; imports no gateway seam).
+    const base = loadTestConfig({ maxGenerations: 1, maxPopulation: 1 });
+    const config = { ...base, runConfig: { ...base.runConfig, generationBias: -0.9 } };
+    const fake = makeFakeEventStore();
+    const { gateway, requests } = recordingGateway();
+    await runGenerationLoop(makeDeps({ eventStore: fake.store, gateway, config }));
+    const callsAfterRun = requests.length;
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    const tel = replayed.filter((r) => r.type === 'llm_call_telemetry');
+    expect(tel).toHaveLength(1);
+    const sampling = (tel[0]!.payload as Record<string, unknown>).samplingParams as {
+      temperature?: number;
+    };
+    expect(sampling.temperature).toBeCloseTo(biasToTemperature(-0.9), 10);
+    expect(requests.length).toBe(callsAfterRun); // replay added NO provider call
+  });
+});
+
+// FB.7 — tool-call detail: the loop relays the gateway-surfaced tool call's actual `query` (started) +
+// `query`+`result` (finished) into the generic tool_call payloads, TRUNCATED-WITH-MARKER under the §4 field
+// budget (reusing FB.6's truncateCaptureField) and SCRUBBED by the existing append path (rule #4); replay
+// reads them with no provider (rule #7). Absent detail → byte-identical {toolName} baseline.
+describe('runGenerationLoop (FB.7 — tool-call detail)', () => {
+  test('test_tool_call_started_carries_query', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [{ toolName: 'web_search', query: 'wind-resistant umbrella' }],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const started = fake.rows.find((r) => r.type === 'tool_call.started');
+    expect((started!.payload as { toolName?: string }).toolName).toBe('web_search');
+    expect((started!.payload as { query?: string }).query).toBe('wind-resistant umbrella');
+    expect((started!.payload as { queryTruncated?: boolean }).queryTruncated).toBe(false);
+  });
+
+  test('test_tool_call_finished_carries_query_and_result', async () => {
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'web_search', query: 'umbrella designs', result: 'top 5 patents …' },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).toBe('umbrella designs');
+    expect((finished!.payload as { result?: string }).result).toBe('top 5 patents …');
+    expect((finished!.payload as { resultTruncated?: boolean }).resultTruncated).toBe(false);
+  });
+
+  test('test_tool_call_detail_truncated_with_marker', async () => {
+    // an over-budget result is truncated-with-marker (never reject) — the queryable resultTruncated flag set.
+    const huge = 'x'.repeat(CAPTURE_FIELD_MAX_BYTES + 5000);
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ toolCalls: [{ toolName: 'web_search', result: huge }] }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    const result = (finished!.payload as { result?: string }).result!;
+    expect((finished!.payload as { resultTruncated?: boolean }).resultTruncated).toBe(true);
+    expect(result.endsWith(TRUNCATION_MARKER)).toBe(true);
+    expect(Buffer.byteLength(result, 'utf8')).toBeLessThanOrEqual(CAPTURE_FIELD_MAX_BYTES);
+  });
+
+  test('test_tool_call_secret_redacted', async () => {
+    // rule #4: a planted secret in the (scrubbable string) tool-call detail IS redacted on the append round-trip.
+    const injected = 'planted-toolcall-secret-value';
+    const fake = makeFakeEventStore([injected]);
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'web_search', query: `lookup ${injected}`, result: `found ${injected}` },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const finished = fake.rows.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).not.toContain(injected);
+    expect((finished!.payload as { result?: string }).result).not.toContain(injected);
+    expect((finished!.payload as { query?: string }).query).toContain(REDACTION_PLACEHOLDER);
+  });
+
+  test('test_tool_call_detail_replay_no_provider', async () => {
+    // rule #7: replay reconstructs the tool_call detail from the persisted events alone — replayEvents folds
+    // the rows and imports no gateway seam (no provider call by construction).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [{ toolName: 'web_search', query: 'q', result: 'r' }],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const replayed = replayEvents(fake.rows as unknown as RunEventRow[]);
+    const finished = replayed.find((r) => r.type === 'tool_call.finished');
+    expect((finished!.payload as { query?: string }).query).toBe('q');
+    expect((finished!.payload as { result?: string }).result).toBe('r');
+  });
+
+  test('test_tool_call_no_detail_backward_compatible', async () => {
+    // absent query/result → the payload is just {toolName} (byte-identical to the pre-FB.7 baseline).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({ toolCalls: [{ toolName: 'web_search' }] }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    const started = fake.rows.find((r) => r.type === 'tool_call.started');
+    expect(Object.keys(started!.payload as object).sort()).toEqual(['toolName']);
   });
 });
 

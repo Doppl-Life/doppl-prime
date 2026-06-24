@@ -52,6 +52,12 @@ export interface DashboardProps {
   store?: RunStore;
   /** PD.20 — debounce window (ms) for the live lineage/health re-fetch; injected small in tests. */
   refetchDebounceMs?: number;
+  /** FV.1 — route the "observe this run live" action to the router (navigate to /runs/:id) instead of
+   *  switching Dashboard-internal state. When omitted, the Dashboard falls back to internal state
+   *  (standalone use + the pre-router tests). */
+  onObserveLive?: (runId: string) => void;
+  /** FV.1 — route the "observe this run in replay" action to the router (navigate to /runs/:id/replay). */
+  onObserveReplay?: (runId: string) => void;
 }
 
 const shell: CSSProperties = {
@@ -123,6 +129,8 @@ export function Dashboard({
   createStream = createSseStream,
   store: injectedStore,
   refetchDebounceMs = 600,
+  onObserveLive,
+  onObserveReplay,
 }: DashboardProps) {
   const [observedRunId, setObservedRunId] = useState(runId);
   // PD.17 — `mode` is run-switchable STATE (was a static prop): browsing a past run (the run-list or the
@@ -130,11 +138,22 @@ export function Dashboard({
   // non-folded §2 label (the live/replay fold is identical) — only the ModeBanner reads it; the store
   // recreates on either an observedRunId OR a mode change.
   const [mode, setMode] = useState<RunMode>(modeProp);
+  // FV.1 — when the router supplies nav callbacks, the observed run + mode live in the URL: switching
+  // navigates (a fresh per-(runId,mode) Dashboard mounts). Without them (standalone / pre-router tests)
+  // the switch stays Dashboard-internal state.
   const observeReplay = (id: string): void => {
+    if (onObserveReplay) {
+      onObserveReplay(id);
+      return;
+    }
     setMode('replay');
     setObservedRunId(id);
   };
   const observeLive = (id: string): void => {
+    if (onObserveLive) {
+      onObserveLive(id);
+      return;
+    }
     setMode('live');
     setObservedRunId(id);
   };

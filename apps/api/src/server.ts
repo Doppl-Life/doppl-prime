@@ -2,6 +2,7 @@ import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { ModelRoute, RunConfig } from '@doppl/contracts';
 import type { EventStore } from './event-store';
+import type { ModelRouteOverrideAllowlist } from './model-gateway/model-route-override';
 import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
@@ -49,6 +50,9 @@ export interface BuildServerDeps {
   db: NodePgDatabase;
   /** Defaults + cap maxima (defaults to {@link DEFAULT_RUN_CONFIG}). */
   defaultConfig?: RunConfig;
+  /** FB.2 — the frozen per-role model-route override allowlist (defaults to `{}` = fail-closed, no
+   *  override permitted). `main.ts` injects the boot `MODEL_ROUTE_OVERRIDE_ALLOWLIST`. */
+  modelRouteOverrideAllowlist?: ModelRouteOverrideAllowlist;
   /** Injected unique-id generator. */
   newId: () => string;
   /** Request-body ingestion limit in bytes (defaults to {@link DEFAULT_BODY_LIMIT}). */
@@ -90,6 +94,7 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
   registerRunRoutes(app, {
     store: deps.store,
     defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    modelRouteOverrideAllowlist: deps.modelRouteOverrideAllowlist ?? {},
     newId: deps.newId,
     requestStop: deps.requestStop ?? ((): void => {}),
     ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),

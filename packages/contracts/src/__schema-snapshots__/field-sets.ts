@@ -40,7 +40,18 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'payload',
     'schemaVersion',
   ],
-  RunConfig: ['seed', 'enabledSubtypes', 'caps', 'modelProfile', 'scoringPolicyVersion', 'rngSeed'],
+  RunConfig: [
+    'seed',
+    'enabledSubtypes',
+    'caps',
+    'modelProfile',
+    'scoringPolicyVersion',
+    'rngSeed',
+    // frontend-v2 FB.0 (sv5→6) — 3 additive OPTIONAL run-control fields (generation inputs, rule-#6-safe).
+    'generationOperators',
+    'generationBias',
+    'modelRouteOverride',
+  ],
   RunCaps: [
     'maxPopulation',
     'maxGenerations',
@@ -159,7 +170,8 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
   ],
   ModelRoute: ['role', 'provider', 'modelId', 'capability', 'fallbackRouteIds'],
   ProviderCapability: ['structuredOutputs', 'embeddings', 'toolCalling', 'streaming'],
-  ModelGatewayRequest: ['role', 'prompt', 'messages', 'schema', 'maxTokens'],
+  // frontend-v2 FB.4 (sv7→8): +samplingParams{temperature?} — the generation dial's executed sampling.
+  ModelGatewayRequest: ['role', 'prompt', 'messages', 'schema', 'maxTokens', 'samplingParams'],
   ModelGatewayResponse: [
     'accepted',
     'output',
@@ -183,5 +195,20 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'rubricPolicyVersion',
     'providerMeta',
     'langfuseTraceId',
+    'axisRationales',
+  ],
+  // frontend-v2 FB.6 — deep-telemetry capture of a successful generation LLM call (high-traffic model);
+  // FB.4 (sv7→8) added samplingParams (the executed dial temperature).
+  LlmCallTelemetry: [
+    'id',
+    'runId',
+    'generationId',
+    'agenomeId',
+    'role',
+    'rawResponse',
+    'rawReasoning',
+    'providerMeta',
+    'truncated',
+    'samplingParams',
   ],
 };

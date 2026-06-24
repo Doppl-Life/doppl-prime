@@ -47,6 +47,20 @@ const JudgeModelOutput = z.object({
   feasibility: axisScore,
   falsification_survival: axisScore,
   subtype_check_pass: axisScore,
+  // FB.8 — OPTIONAL per-axis one-line rationale (explanatory output; NEVER feeds the runner-computed
+  // acceptance — rule #6). `.partial()` so a model that omits/partials the rationale still parses (the score
+  // stays load-bearing); the runner attaches the frozen JudgeResult.axisRationales ONLY when all 5 are present
+  // (that record is exhaustive). `z.object` strips any unknown axis the model invents.
+  rationales: z
+    .object({
+      grounding: z.string(),
+      novelty: z.string(),
+      feasibility: z.string(),
+      falsification_survival: z.string(),
+      subtype_check_pass: z.string(),
+    })
+    .partial()
+    .optional(),
 });
 
 export interface RunJudgeParams {
@@ -65,7 +79,9 @@ export interface RunJudgeParams {
 const JUDGE_INSTRUCTION =
   'You are the held-out final judge. Score the candidate idea on each of the five fixed rubric axes ' +
   '(grounding, novelty, feasibility, falsification_survival, subtype_check_pass), each on a 0–5 scale. ' +
-  'Return only the per-axis scores — you do not decide acceptance, select winners, or alter the rubric.';
+  'Also return a `rationales` object with a single concise one-line explanation for each of the five axes, ' +
+  'each justifying that axis score. The rationale only EXPLAINS your score — it does not change it. ' +
+  'Return only the per-axis scores and rationales — you do not decide acceptance, select winners, or alter the rubric.';
 
 /**
  * Deterministically compute the weighted acceptance metric from the per-axis scores × the rubric weights.
@@ -169,6 +185,25 @@ export async function runJudge(params: RunJudgeParams): Promise<JudgeResult | nu
   };
   if (response.langfuseTraceId !== undefined) {
     resultInput.langfuseTraceId = response.langfuseTraceId;
+  }
+  // FB.8 — attach the per-axis rationale ONLY when the model supplied a non-empty one for ALL 5 axes (the
+  // frozen JudgeResult.axisRationales record is exhaustive); otherwise omit the optional field. This is
+  // EXPLANATORY OUTPUT — it never touches `acceptance` (already runner-computed above from axisScores × the
+  // immutable weights, rule #6) nor the persisted scores.
+  const rationales = parsed.data.rationales;
+  if (
+    rationales !== undefined &&
+    FinalJudgeAxis.options.every(
+      (axis) => typeof rationales[axis] === 'string' && rationales[axis]!.trim().length > 0,
+    )
+  ) {
+    resultInput.axisRationales = {
+      grounding: rationales.grounding,
+      novelty: rationales.novelty,
+      feasibility: rationales.feasibility,
+      falsification_survival: rationales.falsification_survival,
+      subtype_check_pass: rationales.subtype_check_pass,
+    };
   }
   const judgeResult = JudgeResult.parse(resultInput);
 

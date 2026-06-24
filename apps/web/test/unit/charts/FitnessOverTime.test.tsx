@@ -36,4 +36,24 @@ describe('FitnessOverTime — fitness-over-generation chart', () => {
     expect(screen.queryByText(/no fitness data/i)).toBeNull(); // now has data
     expect(screen.getByText(/fitness \(best\)/i)).toBeTruthy();
   });
+
+  // spec(FV.6 — closes the P7 "mean defined-but-unrendered" reachability finding): the mean series
+  // renders alongside best via MEAN_FITNESS_SERIES (square marker + "Fitness (mean)" label), a
+  // non-color channel; the existing best series is unchanged (mean ≤ best → maxY unaffected).
+  it('test_fitness_mean_series_rendered', () => {
+    render(
+      <FitnessOverTime
+        events={[
+          fitnessEvent(1, 'gen_0', 0.4),
+          fitnessEvent(2, 'gen_0', 0.6), // gen_0: mean 0.5, best 0.6 → mean ≠ best
+          fitnessEvent(3, 'gen_1', 0.8),
+        ]}
+      />,
+    );
+    expect(screen.getByText(/fitness \(mean\)/i)).toBeTruthy(); // the mean text-label channel
+    expect(screen.getAllByText(MARKER_GLYPH.square).length).toBeGreaterThan(0); // the mean marker channel
+    // best series still rendered (no churn).
+    expect(screen.getByText(/fitness \(best\)/i)).toBeTruthy();
+    expect(screen.getAllByText(MARKER_GLYPH.circle).length).toBeGreaterThan(0);
+  });
 });

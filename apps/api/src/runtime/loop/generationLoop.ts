@@ -2,6 +2,7 @@ import type {
   Agenome,
   AgenomeStatus,
   CandidateIdea,
+  GenerationOperator,
   GenerationStatus,
   ModelGatewayRequest,
   ModelGatewayResponse,
@@ -9,6 +10,8 @@ import type {
   RunEventType,
 } from '@doppl/contracts';
 import { CURRENT_SCHEMA_VERSION, wrapUntrusted } from '@doppl/contracts';
+import { composeOperatorFraming } from './generationOperators';
+import { composeBiasFraming, biasToTemperature } from './generationBias';
 import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../event-store';
 import type { AppConfig } from '../config/configSchema';
 import { enforceCap } from '../caps/capEnforcer';
@@ -26,6 +29,7 @@ import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
 import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 import { CandidateContent } from './candidateContent';
+import { CAPTURE_FIELD_MAX_BYTES, truncateCaptureField } from '../../event-store/truncate-capture';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
@@ -44,21 +48,42 @@ export const GENERATION_ISOLATION_FRAMING =
 /**
  * Build the `population_generator` request with the per-run PROBLEM isolated as untrusted DATA (rule #5,
  * the LESSON-38 chokepoint): the agenome `systemPrompt` + the fixed {@link GENERATION_ISOLATION_FRAMING}
- * are the TRUSTED instruction (system message); the operator/prepared problem rides a `wrapUntrusted` user
- * message (a forged sentinel is neutralized by `wrapUntrusted`) — the problem is NEVER interpolated into
- * the instruction string. Reuses the contracts-level `wrapUntrusted` primitive (runtime→contracts only).
+ * + the FB.3 selected-operator TRUSTED fragments ({@link composeOperatorFraming}) are the TRUSTED
+ * instruction (system message); the prepared problem rides a `wrapUntrusted` user message (a forged
+ * sentinel is neutralized by `wrapUntrusted`) — the problem is NEVER interpolated into the instruction
+ * string. The operators are a CLOSED enum → CLOSED vetted-fragment set (no untrusted free-text → no
+ * injection path, rule #5); absent operators → byte-identical PD.10 framing (backward-compatible). Reuses
+ * the contracts-level `wrapUntrusted` primitive (runtime→contracts only). Exported for FB.3 unit pinning.
  */
-function buildPopulationRequest(systemPrompt: string, problem: string): ModelGatewayRequest {
+export function buildPopulationRequest(
+  systemPrompt: string,
+  problem: string,
+  operators?: readonly GenerationOperator[],
+  bias?: number,
+): ModelGatewayRequest {
+  // FB.4 — the diverge/converge dial's TRUSTED band fragment ('' when absent/neutral → byte-identical to the
+  // baseline). The dial is "engaged" exactly when this is non-empty (non-neutral); a neutral/absent dial adds
+  // neither framing nor a temperature nudge.
+  const biasFraming = composeBiasFraming(bias);
   return {
     role: 'population_generator',
     messages: [
-      { role: 'system', content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}` },
+      {
+        role: 'system',
+        content: `${systemPrompt}\n\n${GENERATION_ISOLATION_FRAMING}${composeOperatorFraming(operators)}${biasFraming}`,
+      },
       { role: 'user', content: wrapUntrusted(problem) },
     ],
     // PD.10 commit 2 — pass the CandidateContent schema so the gateway runs validate/repair(≤1)/reject on
     // the model output: a malformed output is REJECTED (→ the loop's graceful agenome.failed), never
     // accepted-then-crashed at the candidate.created append.
     schema: CandidateContent,
+    // FB.4 (rule #6 SOLO) — the dial's clamped temperature nudge, applied to the population_generator request
+    // ONLY, and only when the dial is ENGAGED (non-neutral) so a neutral/absent dial keeps the request shape
+    // byte-identical to the baseline. The critic/judge requests (assembleIsolatedRequest) set no
+    // samplingParams, so the dial is structurally unable to reach the evaluation path. The EXECUTED value is
+    // recorded into llm_call_telemetry (recorded == executed; replay reads it, never re-derives — rule #7).
+    ...(biasFraming !== '' ? { samplingParams: { temperature: biasToTemperature(bias) } } : {}),
   };
 }
 
@@ -86,6 +111,11 @@ function buildPopulationRequest(systemPrompt: string, problem: string): ModelGat
 /** A provider tool call surfaced by the gateway for the loop to relay (observability — §4/§12). */
 export interface ToolCallObservation {
   readonly toolName: string;
+  /** FB.7 — the actual tool query (e.g. a web_search string); relayed into tool_call.started/finished,
+   * truncated-with-marker under the §4 field budget + scrubbed by the append path (rule #4). Optional. */
+  readonly query?: string;
+  /** FB.7 — the (raw) tool result; relayed into tool_call.finished, truncated + scrubbed as `query`. Optional. */
+  readonly result?: string;
 }
 
 /**
@@ -439,13 +469,35 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       }
       const agenome = population[a]!;
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
-      const { response, toolCalls, attemptFailures } = await gateway.generate(
-        buildPopulationRequest(agenome.systemPrompt, config.runConfig.seed),
+      // FB.4 — thread the per-run generationBias dial into the population_generator request (band fragment +
+      // clamped temperature). Captured in a var so the EXACT executed samplingParams are recorded into the
+      // llm_call_telemetry capture below (recorded == executed; replay reads it, never re-derives — rule #7).
+      const populationRequest = buildPopulationRequest(
+        agenome.systemPrompt,
+        config.runConfig.seed,
+        config.runConfig.generationOperators,
+        config.runConfig.generationBias,
       );
+      const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest);
       for (const toolCall of toolCalls ?? []) {
+        // FB.7 — relay the actual query (started) + query/result (finished) as tool-call detail, each
+        // TRUNCATED-WITH-MARKER under the §4 field budget (reuse FB.6's helper) so an oversized capture never
+        // fails the payload ceiling; the append-path scrub then redacts any embedded secret (rule #4 reuse).
+        // Replay reads the persisted detail with no provider (rule #7). Absent detail → byte-identical baseline.
+        const q =
+          toolCall.query !== undefined
+            ? truncateCaptureField(toolCall.query, CAPTURE_FIELD_MAX_BYTES)
+            : undefined;
+        const r =
+          toolCall.result !== undefined
+            ? truncateCaptureField(toolCall.result, CAPTURE_FIELD_MAX_BYTES)
+            : undefined;
         await appendEvent(
           'tool_call.started',
-          { toolName: toolCall.toolName },
+          {
+            toolName: toolCall.toolName,
+            ...(q ? { query: q.value, queryTruncated: q.truncated } : {}),
+          },
           {
             generationId,
             agenomeId: agenome.id,
@@ -453,7 +505,11 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         );
         await appendEvent(
           'tool_call.finished',
-          { toolName: toolCall.toolName },
+          {
+            toolName: toolCall.toolName,
+            ...(q ? { query: q.value, queryTruncated: q.truncated } : {}),
+            ...(r ? { result: r.value, resultTruncated: r.truncated } : {}),
+          },
           {
             generationId,
             agenomeId: agenome.id,
@@ -504,6 +560,35 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         agenomeId: agenome.id,
         candidateId,
       });
+      // FB.6 — capture the SUCCESSFUL generation call's raw response as deep telemetry (§4/§5/§6). The
+      // opaque output is serialized + TRUNCATED-WITH-MARKER under the field budget BEFORE append, so a
+      // large capture never fails the §4 ceiling; the append-path scrub then redacts any embedded secret
+      // (rule #4 reuse — no new scrub). A FAILED call took the `continue` above → no capture (rule #8 — a
+      // capture is not a productive spend, it rides the already-debited call). Replay reads it (rule #7).
+      const rawCapture = truncateCaptureField(
+        JSON.stringify(response.output ?? null),
+        CAPTURE_FIELD_MAX_BYTES,
+      );
+      await appendEvent(
+        'llm_call_telemetry',
+        {
+          id: `${candidateId}-telemetry`,
+          runId,
+          generationId,
+          agenomeId: agenome.id,
+          role: 'population_generator',
+          rawResponse: rawCapture.value,
+          truncated: rawCapture.truncated,
+          providerMeta: response.providerMeta,
+          // FB.4 — record the EXACT executed sampling params (the dial's clamped temperature) so the run is
+          // auditable and replay reads the recorded outcome, never re-samples (rule #7). Present only when the
+          // dial was engaged (the request carried samplingParams); additive/optional otherwise.
+          ...(populationRequest.samplingParams
+            ? { samplingParams: populationRequest.samplingParams }
+            : {}),
+        },
+        { generationId, agenomeId: agenome.id },
+      );
       // llm energy on the accepted call — actual derives from the REAL providerMeta usage (rule #8).
       await debitEnergy(
         'llm',

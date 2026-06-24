@@ -222,8 +222,14 @@ describe('assembleSuccessor — caps-clamped successor population', () => {
   test('successor_zero_weight_fallback_deterministic', async () => {
     const z1 = sparent('agn_Z1', [1, 0, 0, 0, 0, 0, 0, 0], 2.0, 0, 0.019);
     const z2 = sparent('agn_Z2', [0, 0, 0, 0, 0, 0, 0, 1], 1.667, 0, 0.019);
-    const a = await assembleSuccessor(input([z1, z2], 4), deps(createFakeGateway({ mode: 'valid' })));
-    const b = await assembleSuccessor(input([z1, z2], 4), deps(createFakeGateway({ mode: 'valid' })));
+    const a = await assembleSuccessor(
+      input([z1, z2], 4),
+      deps(createFakeGateway({ mode: 'valid' })),
+    );
+    const b = await assembleSuccessor(
+      input([z1, z2], 4),
+      deps(createFakeGateway({ mode: 'valid' })),
+    );
     expect(a.population.map((m) => m.child)).toEqual(b.population.map((m) => m.child));
     expect(a.population.map((m) => m.reproductionEvent)).toEqual(
       b.population.map((m) => m.reproductionEvent),
