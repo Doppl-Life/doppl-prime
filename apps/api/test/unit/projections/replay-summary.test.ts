@@ -117,6 +117,47 @@ describe('buildReplaySummary — replay-determinism over the persisted log (spec
     expect(buildReplaySummary(events).runId).toBe('run_1');
   });
 
+  // TU.6 rule #7 — a run where the agent did its OWN research replays STATE-EQUIVALENTLY: the
+  // tool_call.started/finished events (carrying the persisted query + result) fold as observability
+  // markers (no-op in current-state, like the other op-markers), the candidate — the PRODUCT of the
+  // research — reconstructs from candidate.created, and replay re-reads the persisted tool result; it
+  // never re-executes a tool (the orchestrator/seams are boot-only, structurally absent from this path).
+  test('test_replay_state_equivalent_with_persisted_tool_calls', () => {
+    const runId = 'run-tools';
+    const winner = { ...validCandidateIdeaCrossDomain, status: 'selected' as const };
+    const events = [
+      makeRow('run.configured', { runId, sequence: 0, payload: { seed: 's', rngSeed: 42 } }),
+      makeRow('generation.started', { runId, generationId: 'gen_1', sequence: 1 }),
+      makeRow('agenome.spawned', { runId, generationId: 'gen_1', agenomeId: 'agn_1', sequence: 2 }),
+      makeRow('tool_call.started', {
+        runId,
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        sequence: 3,
+        payload: { toolName: 'web_search', query: '{"query":"battery chemistry 2026"}' },
+      }),
+      makeRow('tool_call.finished', {
+        runId,
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        sequence: 4,
+        payload: {
+          toolName: 'web_search',
+          query: '{"query":"battery chemistry 2026"}',
+          result: 'persisted grounded text — read back on replay, NEVER re-fetched',
+        },
+      }),
+      makeRow('candidate.created', { runId, sequence: 5, payload: winner }),
+      makeRow('fitness.scored', { runId, sequence: 6, payload: validFitnessScore }),
+      makeRow('run.completed', { runId, sequence: 7 }),
+    ];
+    const replay = buildReplaySummary(events);
+    const captured = buildCurrentState(events);
+    expect(canonicalize(replay.state)).toBe(canonicalize(captured.state));
+    // a second replay of the same persisted log is byte-identical (deterministic — no re-execution).
+    expect(canonicalize(buildReplaySummary(events).state)).toBe(canonicalize(replay.state));
+  });
+
   // rule #7 (HEADLINE) — structural: the replay modules import NO provider/embedding/web symbol and
   // make no RNG draw (Math.random) or web call (fetch). Positive-guarded so RED isn't vacuous.
   test('test_replay_imports_no_provider', () => {
