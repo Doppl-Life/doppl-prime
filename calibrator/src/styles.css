@@ -71,11 +71,18 @@ select:focus-visible {
   display: flex;
   gap: 16px;
   justify-content: space-between;
-  padding: 14px 18px 10px;
+  padding: 10px 18px 9px;
+}
+
+.brand-lockup {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
 }
 
 .review-header h1 {
-  font-size: 30px;
+  font-size: 28px;
   line-height: 1;
   margin: 0;
 }
@@ -85,8 +92,9 @@ select:focus-visible {
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.12em;
-  margin: 0 0 4px;
+  margin: 0;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 h1,
@@ -118,7 +126,7 @@ p {
   gap: 4px;
   grid-template-columns: minmax(0, 1fr);
   min-height: 78px;
-  padding: 4px;
+  padding: 4px 8px;
 }
 
 .target-toggle button {
@@ -129,10 +137,11 @@ p {
   font-size: 12px;
   font-weight: 900;
   min-width: 0;
-  padding: 6px 8px;
+  padding: 6px 12px;
   transition:
     background-color 140ms ease,
     color 140ms ease;
+  white-space: nowrap;
 }
 
 .target-toggle button.active {
@@ -618,9 +627,9 @@ textarea {
   }
 
   .review-controls {
-    align-items: start;
+    align-items: center;
     gap: 8px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     padding: 0 18px 10px;
   }
 
@@ -629,7 +638,8 @@ textarea {
   }
 
   .target-toggle {
-    grid-column: 1 / -1;
+    grid-column: auto;
+    min-width: 224px;
   }
 }
 
@@ -648,7 +658,7 @@ textarea {
   }
 
   .review-controls {
-    grid-template-columns: minmax(180px, 0.82fr) minmax(210px, auto) minmax(360px, 1.18fr);
+    grid-template-columns: minmax(180px, 220px) minmax(210px, auto) minmax(360px, 1fr);
     padding: 0 20px 12px;
   }
 
@@ -677,7 +687,7 @@ textarea {
 
 @media (min-width: 1180px) {
   .review-controls {
-    grid-template-columns: minmax(180px, 220px) minmax(210px, 250px) minmax(460px, 1fr);
+    grid-template-columns: minmax(180px, 220px) minmax(210px, auto) minmax(460px, 1fr);
   }
 }
 
@@ -694,19 +704,20 @@ textarea {
 
 @media (max-width: 640px) {
   .review-header {
-    padding: 10px 12px 7px;
+    padding: 8px 12px 7px;
   }
 
   .review-header h1 {
-    font-size: 24px;
+    font-size: 25px;
   }
 
   .review-header .eyebrow {
-    margin-bottom: 2px;
+    font-size: 9px;
   }
 
   .review-controls {
     gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding: 0 12px 9px;
   }
 
@@ -722,15 +733,18 @@ textarea {
 
   .target-toggle {
     gap: 3px;
+    grid-column: auto;
+    min-width: 180px;
     min-height: 0;
-    padding: 3px;
+    padding: 3px 6px;
   }
 
   .target-toggle button {
-    padding: 4px 7px;
+    padding: 4px 10px;
   }
 
   .artifact-control {
+    grid-column: 1 / -1;
     gap: 3px;
   }
 

@@ -222,6 +222,14 @@ function splitEvaluationMarkdown(text: string): { main: string; evaluation: stri
   }
 
   const lines = normalized.split("\n");
+  const plainEvaluationIndex = lines.findIndex((line) => /^Evaluation$/i.test(line.trim()));
+  if (plainEvaluationIndex >= 0) {
+    return {
+      main: lines.slice(0, plainEvaluationIndex).join("\n").trim(),
+      evaluation: lines.slice(plainEvaluationIndex + 1).join("\n").trim(),
+    };
+  }
+
   const start = lines.findIndex((line) =>
     /^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(line.trim()),
   );
@@ -298,6 +306,14 @@ function markdownBlocks(text: string): string[] {
     .filter(Boolean);
 }
 
+function generatedListItems(text: string): string[] {
+  const normalized = renderInlineText(text).replace(/^\s*[-–]\s+/, "");
+  return normalized
+    .split(/\s+[-–]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function labeledBlock(block: string):
   | { label: string; items: string[]; list: true }
   | { label: string; body: string; list: false }
@@ -319,8 +335,11 @@ function labeledBlock(block: string):
     const match = block.match(pattern);
     if (!match) continue;
     const body = renderInlineText(match[1]);
-    const parts = body.split(/\s+-\s+/).map((part) => part.trim()).filter(Boolean);
-    if (["Implications", "Opportunities", "Sprouts", "Skin in the Game"].includes(label) && parts.length > 1) {
+    const parts = generatedListItems(body);
+    if (
+      ["Implications", "Opportunities", "Sprouts", "Skin in the Game"].includes(label) &&
+      (parts.length > 1 || /^\s*[-–]\s+/.test(body))
+    ) {
       return { label, items: parts, list: true };
     }
     return { label, body, list: false };
@@ -907,7 +926,7 @@ export function App() {
   return (
     <main className="review-app">
       <header className="review-header">
-        <div>
+        <div className="brand-lockup">
           <p className="eyebrow">Doppl Life</p>
           <h1>Calibrator</h1>
         </div>

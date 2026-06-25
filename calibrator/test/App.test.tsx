@@ -391,6 +391,39 @@ describe("App", () => {
     expect(screen.getByText("Novelty +4 78% of language absent from the seed.")).toBeInTheDocument();
   });
 
+  it("collapses plain generated Evaluation labels by default", async () => {
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Frequency-to-Probability Underwriting Cliff",
+      "",
+      "Claim crash frequency drops below actuarial thresholds.",
+      "",
+      "Implications",
+      "- Specialty auto captives must renegotiate treaty triggers or face insolvency - Traditional P&C insurers will misprice autonomy risk",
+      "",
+      "Evaluation",
+      "",
+      "Novelty +3",
+      "",
+      "73% of language absent from the seed; 3 dependency markers.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByText("Specialty Auto Captives Must Renegotiate Treaty Triggers Or Face Insolvency")).toBeInTheDocument();
+    expect(screen.getByText("Traditional P&C Insurers Will Misprice Autonomy Risk")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Novelty +3")).not.toBeInTheDocument();
+  });
+
   it("hydrates hosted ratings from the public aGarden ledger and switches to update mode", async () => {
     window.DOPPL_CALIBRATOR_CONFIG = {
       ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
