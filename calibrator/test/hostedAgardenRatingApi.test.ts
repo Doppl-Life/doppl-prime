@@ -250,16 +250,30 @@ describe("createHostedAgardenRatingHandler", () => {
     expect(client.commits).toHaveLength(0);
   });
 
-  it("rejects non-POST requests", async () => {
+  it("returns the current GitHub ratings ledger for readback", async () => {
+    const client = new FakeGitClient();
+    client.files.set("ratings-ledger.json", {
+      content: JSON.stringify([{ node_id: "node-pr", ratings: [{ rater_id: "a@test.dev", score: 3, rate_date: "now" }] }]),
+      sha: "ledger-2",
+    });
     const handler = createHostedAgardenRatingHandler({
       readIndex: async () => index,
-      createClient: () => new FakeGitClient(),
+      createClient: () => client,
+      allowedOrigins: ["https://doppl-life.github.io"],
     });
 
     const response = await handler(
-      new Request("https://ratings.example.test/api/agarden/ratings", { method: "GET" }),
+      new Request("https://ratings.example.test/api/agarden/ratings", {
+        method: "GET",
+        headers: { origin: "https://doppl-life.github.io" },
+      }),
     );
 
-    expect(response.status).toBe(405);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://doppl-life.github.io");
+    await expect(response.json()).resolves.toEqual([
+      { node_id: "node-pr", ratings: [{ rater_id: "a@test.dev", score: 3, rate_date: "now" }] },
+    ]);
   });
 });

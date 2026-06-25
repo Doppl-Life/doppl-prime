@@ -28,7 +28,7 @@ function corsHeaders(request: Request, allowedOrigins: string[] = []): Record<st
   if (!origin || !allowedOrigins.includes(origin)) return {};
   return {
     "access-control-allow-origin": origin,
-    "access-control-allow-methods": "POST, OPTIONS",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type, idempotency-key, authorization",
     vary: "Origin",
   };
@@ -86,6 +86,23 @@ export function createHostedAgardenRatingHandler(config: HostedAgardenRatingApiC
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers });
+    }
+
+    if (request.method === "GET") {
+      try {
+        const client = await config.createClient();
+        const ledger = await client.readTextFile("ratings-ledger.json");
+        return new Response(ledger.content, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "cache-control": "no-store",
+            ...headers,
+          },
+        });
+      } catch {
+        return jsonResponse({ error: "Rating ledger read failed" }, 500, headers);
+      }
     }
 
     if (request.method !== "POST") {
