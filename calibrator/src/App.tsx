@@ -249,7 +249,7 @@ function canSeeJudgeEvaluation(reviewerEmail: string): boolean {
 
 function matchingRaters(query: string): string[] {
   const normalized = normalizeRaterEmail(query);
-  if (!normalized) return ALLOWED_RATERS.slice(0, 8);
+  if (!normalized) return [];
   return ALLOWED_RATERS.filter((rater) => rater.includes(normalized)).slice(0, 8);
 }
 
@@ -1139,13 +1139,15 @@ export function App() {
               autoComplete="email"
             />
           </label>
-          <div className="login-results" aria-label="Matching reviewers">
-            {loginMatches.map((rater) => (
-              <button key={rater} type="button" onClick={() => updateReviewerEmail(rater)}>
-                {rater}
-              </button>
-            ))}
-          </div>
+          {loginMatches.length > 0 ? (
+            <div className="login-results" aria-label="Matching reviewers">
+              {loginMatches.map((rater) => (
+                <button key={rater} type="button" onClick={() => setLoginEmail(rater)}>
+                  {rater}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             className="submit-button login-button"
             type="button"
@@ -1154,9 +1156,6 @@ export function App() {
           >
             Continue
           </button>
-          {loginEmail && !isAllowedRater(loginEmail) ? (
-            <p className="field-note">Choose one of the allow-listed reviewer emails.</p>
-          ) : null}
         </section>
       </main>
     );
