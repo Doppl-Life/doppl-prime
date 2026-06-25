@@ -45,7 +45,7 @@ $1`).replace(/^(TRACE|DISCOVERY|EVALUATION|PATH NEXT|GROWTH\s*[—-]\s*(?:PROBLE
 
 `).split(`
 `).filter(S=>!/^prev(_id)?:\s*/.test(S.trim())),E=f.findIndex(S=>S.trim());return E>=0&&/^#\s+/.test(f[E])&&f.splice(E,1),f.join(`
-`).trim()}function wd(a){const y=eu(a),f=y.match(/\n##\s+Evaluation\s*\n/i);if((f==null?void 0:f.index)!==void 0){const Z=y.slice(0,f.index).trim(),ue=y.slice(f.index+f[0].length).trim();return{main:Z,evaluation:ue}}const E=y.split(`
+`).trim()}function wd(a){const y=eu(a),f=y.match(/\n#{2,4}\s+Evaluation\s*\n/i);if((f==null?void 0:f.index)!==void 0){const Z=y.slice(0,f.index).trim(),ue=y.slice(f.index+f[0].length).trim();return{main:Z,evaluation:ue}}const E=y.split(`
 `),S=E.findIndex(Z=>/^Evaluation$/i.test(Z.trim()));if(S>=0)return{main:E.slice(0,S).join(`
 `).trim(),evaluation:E.slice(S+1).join(`
 `).trim()};const N=y.match(/(^|\n|\s)Evaluation\s+(?=(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance|Judge-only axis)\b)/i);if((N==null?void 0:N.index)!==void 0){const Z=N[0].search(/Evaluation/i),ue=N.index+Math.max(Z,0);return{main:y.slice(0,ue).trim(),evaluation:y.slice(ue+10).trim()}}const Q=E.findIndex(Z=>/^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(Z.trim()));if(Q<0)return{main:y,evaluation:""};let K=-1;for(let Z=0;Z<Q;Z+=1)/judge-only axis/i.test(E[Z])&&(K=Z);const T=K>=0?K:Q;return{main:E.slice(0,T).join(`

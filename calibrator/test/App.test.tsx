@@ -461,6 +461,41 @@ describe("App", () => {
     expect(screen.queryByText("Novelty +3")).not.toBeInTheDocument();
   });
 
+  it("collapses nested markdown Evaluation headings by default", async () => {
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Liability Inversion Protocol",
+      "",
+      "## Growth — Doppl",
+      "### Claim",
+      "Municipalities will shift from static depreciation accounting to dynamic liability escrows.",
+      "### Implications",
+      "- DOT budgets decouple from fuel-tax yields",
+      "### Evaluation",
+      "#### Novelty +3",
+      "70% of language absent from the seed; 3 dependency markers.",
+      "#### Grounding +3",
+      "3 evidence item(s); 1 causal markers; 0 hedge(s).",
+      "## Path",
+      "next: null",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByText(/Implications - Dot Budgets Decouple From Fuel-Tax Yields/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/70% of language absent from the seed/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("next: null")).not.toBeInTheDocument();
+  });
+
   it("collapses inline generated Evaluation labels by default", async () => {
     const evaluationFixture: CalibratorIndex = structuredClone(fixture);
     evaluationFixture.cases[0].solutions[0].body = [

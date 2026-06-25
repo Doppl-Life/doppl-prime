@@ -214,7 +214,7 @@ function displayMarkdown(text: string): string {
 
 function splitEvaluationMarkdown(text: string): { main: string; evaluation: string } {
   const normalized = displayMarkdown(text);
-  const headingMatch = normalized.match(/\n##\s+Evaluation\s*\n/i);
+  const headingMatch = normalized.match(/\n#{2,4}\s+Evaluation\s*\n/i);
   if (headingMatch?.index !== undefined) {
     const main = normalized.slice(0, headingMatch.index).trim();
     const evaluation = normalized.slice(headingMatch.index + headingMatch[0].length).trim();
