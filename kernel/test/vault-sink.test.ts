@@ -5,7 +5,7 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { runKernel } from '../src/run-kernel.ts';
-import { compileProposalNodes } from '../src/node-compiler.ts';
+import { compileProposalNodes, cleanTitle } from '../src/node-compiler.ts';
 import { writeFlowNodes } from '../src/vault-sink.ts';
 import { slugId } from '../src/slug.ts';
 
@@ -30,7 +30,8 @@ test('default node ids are slugs derived from titles (not UUIDs)', async () => {
   for (const node of nodes) {
     assert.match(node.id, /^[a-z0-9-]+-[0-9a-f]{8}$/, `${node.stage} id should be a slug`);
   }
-  assert.equal(nodes[0]!.id, slugId(run.caseStudy.title));
+  assert.equal(nodes[0]!.id, slugId(cleanTitle(run.caseStudy.title)));
+  assert.ok(!nodes[0]!.id.startsWith('problem-statement-'), 'framing prefix stripped from slug');
 });
 
 test('writeFlowNodes writes canonical flow/<slug>/<slug>.md layout', async () => {

@@ -47,6 +47,18 @@ function synopsis(value: string, maxLength = 240): string {
   return `${normalized.slice(0, maxLength - 1).trimEnd()}.`;
 }
 
+// The case node's name is the headline, not the file's framing prefix. Strip a leading
+// "Problem Statement:" so the name and its derived slug read as the idea, not the document.
+export function cleanTitle(title: string): string {
+  return title.replace(/^\s*problem\s*statement\s*:?\s*/i, '').trim() || title.trim();
+}
+
+// The case body already carries its own leading heading; the node renders the headline itself,
+// so drop the duplicate from the embedded Context.
+function stripLeadingHeading(markdown: string): string {
+  return markdown.replace(/^\s*#[^\n]*\n+/, '').trim();
+}
+
 function knowledgeDiscovery(run: KernelRun): string {
   if (!run.knowledgePacket.items.length) return 'No stock-backed discoveries were injected.';
   return run.knowledgePacket.items
@@ -119,20 +131,21 @@ function scoreInline(judgeRating: number): string {
 }
 
 function caseStudyNode(run: KernelRun, id: string): ProposalNodeArtifact {
+  const name = cleanTitle(run.caseStudy.title);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const markdown = `${frontmatter([
     ['id', id],
     ['stage', 'case_study'],
-    ['name', run.caseStudy.title],
+    ['name', name],
     ['case_id', run.caseStudy.id],
     ['next', 'problem_recovery'],
   ])}
 
-# ${run.caseStudy.title}
+# ${name}
 
 ## Context
 
-${run.caseStudy.markdown.trim()}
+${stripLeadingHeading(run.caseStudy.markdown)}
 
 ## Synopsis
 
@@ -311,7 +324,7 @@ export function compileProposalNodes(
 ): ProposalNodeArtifact[] {
   const { idFactory } = options;
   const kernel = options.kernel || 'dalton';
-  const rootId = idFactory ? idFactory() : slugId(run.caseStudy.title);
+  const rootId = idFactory ? idFactory() : slugId(cleanTitle(run.caseStudy.title));
   const recoveryId = idFactory ? idFactory() : slugId(run.problemRecovery.title);
   const dopplId = idFactory ? idFactory() : slugId(run.fusion?.child.title ?? 'doppl');
   const nodes = [
