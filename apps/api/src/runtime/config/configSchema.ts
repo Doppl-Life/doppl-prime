@@ -26,14 +26,23 @@ export type ProblemSet = z.infer<typeof ProblemSet>;
 export const ProblemSets = z.array(ProblemSet);
 export type ProblemSets = z.infer<typeof ProblemSets>;
 
-/** Default RunCaps — bounded, all 6 positive (validated against the frozen `RunCaps` at boot). */
+/**
+ * Default RunCaps — bounded, all 6 positive (validated against the frozen `RunCaps` at boot).
+ *
+ * B1 (tool-use sizing): a tool-using agenome runs a MULTI-TURN research loop (~2–3 tool calls per
+ * candidate + several × the LLM spend of a no-tool agenome). The pre-tool defaults (maxToolCalls 64,
+ * energyBudget 1000, wallClock 10 min) were sized for the no-tool kernel and a multi-generation research
+ * run exhausted maxToolCalls at 64 (`cap_breach:maxToolCalls`) long before completing. These defaults are
+ * sized so a full multi-generation tool-use run completes out of the box; the kernel still ENFORCES them
+ * (rule #1) — this only sets the default ceiling. Tunable per-cap via the env allowlist (`envSchema.ts`).
+ */
 export const DEFAULT_CAPS: RunCaps = {
   maxPopulation: 12,
   maxGenerations: 6,
-  energyBudget: 1000,
+  energyBudget: 12_000,
   maxSpawnDepth: 4,
-  maxToolCalls: 64,
-  wallClockTimeoutMs: 600_000,
+  maxToolCalls: 600,
+  wallClockTimeoutMs: 1_200_000,
 };
 
 /**

@@ -39,6 +39,10 @@ const ENV_ALLOWLIST: readonly AllowlistEntry[] = [
   { envVar: 'DOPPL_MAX_POPULATION', source: 'caps', key: 'maxPopulation', coerce: toInt },
   { envVar: 'DOPPL_MAX_GENERATIONS', source: 'caps', key: 'maxGenerations', coerce: toInt },
   { envVar: 'DOPPL_ENERGY_BUDGET', source: 'caps', key: 'energyBudget', coerce: toInt },
+  // B1: the tool-use research loop is bounded by maxToolCalls + wallClockTimeoutMs — give both an env knob
+  // (maxToolCalls was the cap that blew with NO override path) so a research-heavy run is operator-tunable.
+  { envVar: 'DOPPL_MAX_TOOL_CALLS', source: 'caps', key: 'maxToolCalls', coerce: toInt },
+  { envVar: 'DOPPL_WALL_CLOCK_MS', source: 'caps', key: 'wallClockTimeoutMs', coerce: toInt },
   { envVar: 'DOPPL_RNG_SEED', source: 'runConfig', key: 'rngSeed', coerce: toInt },
 ];
 

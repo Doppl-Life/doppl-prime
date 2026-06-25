@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { loadConfig } from '../../../../src/runtime/config/loadConfig';
 import type { AppConfig, LoadConfigInput } from '../../../../src/runtime/config/loadConfig';
 import { DEFAULT_COST_MAP } from '../../../../src/runtime/energy/costMap';
-import { DEFAULT_SCORING_POLICY } from '../../../../src/runtime/config/configSchema';
+import { DEFAULT_CAPS, DEFAULT_SCORING_POLICY } from '../../../../src/runtime/config/configSchema';
 import {
   CRITIC_SCORES_KEY,
   ENERGY_EFFICIENCY_KEY,
@@ -173,6 +173,37 @@ describe('loadConfig — precedence defaults < file < env (§15)', () => {
     expect(serialized).not.toContain('should-not-appear');
     expect(serialized).not.toContain('env-injection-marker');
     expect(serialized).not.toContain('also-ignored');
+  });
+});
+
+describe('loadConfig — tool-use cap env knobs (B1: DOPPL_MAX_TOOL_CALLS / DOPPL_WALL_CLOCK_MS)', () => {
+  // B1 root-cause: the live tool-use run FAILED at cap_breach:maxToolCalls (64) and maxToolCalls was the
+  // ONE cap with no env-override path (population/generations/energy already had one) — an operator could
+  // not raise it for a research-heavy run without a code change. maxToolCalls + wallClockTimeoutMs join the
+  // closed env allowlist (still a CLOSED explicit map, never a prefix sweep — rule #4). The kernel remains
+  // the sole authoritative enforcer (rule #1); these only let the operator set the ceiling.
+  test('loadConfig_max_tool_calls_env_override', () => {
+    expect(load().caps.maxToolCalls).toBeGreaterThan(0); // positive guard
+    expect(load({ env: { DOPPL_MAX_TOOL_CALLS: '500' } }).caps.maxToolCalls).toBe(500);
+  });
+  test('loadConfig_wall_clock_env_override', () => {
+    expect(load().caps.wallClockTimeoutMs).toBeGreaterThan(0); // positive guard
+    expect(load({ env: { DOPPL_WALL_CLOCK_MS: '900000' } }).caps.wallClockTimeoutMs).toBe(900_000);
+  });
+});
+
+describe('DEFAULT_CAPS — sized for multi-turn tool-use research (B1)', () => {
+  // B1 root-cause: a tool-using agenome runs a MULTI-TURN research loop (~2–3 tool calls per candidate +
+  // several × the LLM spend of a no-tool agenome). The pre-B1 defaults (maxToolCalls 64, energyBudget
+  // 1000, wallClock 10 min) were sized for the no-tool kernel — a multi-generation tool-use run exhausted
+  // maxToolCalls at 64 (cap_breach:maxToolCalls) long before completing. The out-of-box defaults must
+  // accommodate a full multi-generation research run (the kernel still ENFORCES them, rule #1 — this floor
+  // only keeps the default ceiling sane). A floor (not an exact pin) so tuning up stays free; a regression
+  // back down to the no-tool sizing breaks loudly.
+  test('default_caps_accommodate_a_multi_generation_research_run', () => {
+    expect(DEFAULT_CAPS.maxToolCalls).toBeGreaterThanOrEqual(400);
+    expect(DEFAULT_CAPS.energyBudget).toBeGreaterThanOrEqual(8_000);
+    expect(DEFAULT_CAPS.wallClockTimeoutMs).toBeGreaterThanOrEqual(900_000);
   });
 });
 
