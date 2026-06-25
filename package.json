@@ -3,14 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.5.3",
   "scripts": {
+    "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "proof": "node --experimental-strip-types tools/run.ts",
-    "build": "pnpm typecheck && pnpm proof",
-    "proof:export": "node --experimental-strip-types tools/run.ts --export-proof-board",
-    "clear:run-data": "node --experimental-strip-types tools/clear-run-data.ts",
-    "grow": "node --experimental-strip-types tools/grow.ts"
+    "build": "npm run typecheck && npm test",
+    "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
+    "kernel:serve": "node --experimental-strip-types kernel/src/server.ts",
+    "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts",
+    "kernel:web:build": "vite build --config kernel/web/vite.config.js",
+    "prestart": "npm run kernel:web:build",
+    "start": "npm run kernel:serve"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "@xyflow/react": "^12.11.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.0.16"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
