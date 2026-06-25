@@ -515,9 +515,10 @@ describe("App", () => {
     expect(screen.getByText("Rating writes require the local dev server or hosted ratings API.")).toBeInTheDocument();
   });
 
-  it("submits through the hosted ratings endpoint when static preview is configured", async () => {
+  it("submits through the hosted ratings endpoint without a reviewer access code when configured", async () => {
     window.DOPPL_CALIBRATOR_CONFIG = {
       ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
+      requiresAccessCode: false,
     };
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
@@ -542,7 +543,47 @@ describe("App", () => {
 
     render(<App />);
     await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByLabelText("Access code")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Access code")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://ratings.example.test/api/agarden/ratings",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.not.objectContaining({ authorization: expect.any(String) }),
+      }),
+    );
+  });
+
+  it("can still require a hosted access code when configured for a gated deployment", async () => {
+    window.DOPPL_CALIBRATOR_CONFIG = {
+      ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
+      requiresAccessCode: true,
+    };
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = input.toString();
+      if (url === "/api/index") {
+        return new Response("not found", { status: 404 });
+      }
+      if (url.startsWith("calibration-index.json")) {
+        return new Response(JSON.stringify(fixture), { status: 200 });
+      }
+      if (url === "https://ratings.example.test/api/agarden/ratings" && init?.method === "POST") {
+        return new Response(JSON.stringify({ ratingId: "hosted-rating", relativePath: "ratings-ledger.json" }), {
+          status: 201,
+        });
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
     await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();

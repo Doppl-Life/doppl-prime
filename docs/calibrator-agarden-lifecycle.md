@@ -58,18 +58,16 @@ Current state:
 - A tested server-only GitHub API client exists, including GitHub App installation-token exchange.
 - The GitHub Pages app now has `calibrator-config.js`, a public non-secret runtime config file. If `ratingsEndpoint` is empty, Pages remains read-only. If it points at a hosted ratings API, the browser can post there.
 - A Railway `calibrator-ratings` service is deployed from `doppl-prime/calibrator` with `GET /health` and `POST /api/agarden/ratings`.
-- Hosted writes fail closed unless `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` matches the server-only Railway variable.
-- The browser has a session-scoped `Access code` field for hosted mode. It stores the entered code only in `sessionStorage`; no access code or GitHub credential is committed to the static app.
-- Railway has `CALIBRATOR_WRITE_TOKEN`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and `AGARDEN_BRANCH=calibrator-ratings-smoke` configured. `GITHUB_APP_INSTALLATION_ID` is still blocked on Doppl-Life owner approval of the `doppl-agarden-ratings` GitHub App install.
-- The hosted service now supports a pragmatic Railway-only fallback: if `AGARDEN_GITHUB_TOKEN` is set, it uses that fine-grained token for aGarden writes instead of requiring GitHub App installation credentials.
+- The current fork proof allows reviewer submissions without an access/session code by setting `CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES=true` on Railway and `requiresAccessCode: false` in public config.
+- The browser sends only reviewer email plus rating payload; no GitHub credential or write token is committed to the static app.
+- Railway is configured for `AGARDEN_OWNER=loopstrangest`, `AGARDEN_REPO=agarden`, `AGARDEN_BRANCH=main`, and uses `AGARDEN_GITHUB_TOKEN` as a fine-grained fork-scoped fallback credential.
+- The hosted service still supports the preferred GitHub App path for later canonical `Doppl-Life/agarden` writes once org installation permissions are unblocked.
 
 Remaining work:
 
-- For the immediate path, create a fine-grained GitHub token scoped only to `Doppl-Life/agarden` with `Metadata: read` and `Contents: read/write`, then set it as `AGARDEN_GITHUB_TOKEN` in Railway.
-- For the preferred later path, after owner approval, set `GITHUB_APP_INSTALLATION_ID` on the Railway service and remove `AGARDEN_GITHUB_TOKEN`.
-- Smoke-test the hosted write path against `Doppl-Life/agarden` branch `calibrator-ratings-smoke`.
-- Point `published/calibrator/calibrator-config.js` at the Railway endpoint only after the smoke write proves ledger upsert plus node projection.
-- Decide the longer-term reviewer auth posture. The current access code plus allow-list is a practical session gate, not full per-user authentication.
+- For the preferred later path, after owner approval, set `GITHUB_APP_INSTALLATION_ID` on the Railway service and remove the PAT fallback.
+- Move Railway from `loopstrangest/agarden` to `Doppl-Life/agarden` when canonical org writes are approved.
+- Add a stronger no-typing auth model, such as GitHub OAuth or a signed reviewer session, before allowing broad canonical writes. CORS plus reviewer allow-list is acceptable for the fork proof but is not full per-user authentication.
 
 ### 3. Ratings Ledger Scores Are Projected Back Into Nodes
 

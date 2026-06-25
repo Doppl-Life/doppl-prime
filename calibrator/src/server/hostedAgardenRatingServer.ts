@@ -100,9 +100,11 @@ export function createProductionHostedAgardenRatingHandler() {
 }
 
 function healthPayload() {
+  const authRequired = process.env.CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES !== "true";
   return {
     ok: true,
     service: "doppl-calibrator-ratings",
+    authRequired,
     writeAuthConfigured: Boolean(envValue("CALIBRATOR_WRITE_TOKEN")),
     githubWriteMode: envValue("AGARDEN_GITHUB_TOKEN") ? "token" : "app",
     githubAppConfigured: Boolean(

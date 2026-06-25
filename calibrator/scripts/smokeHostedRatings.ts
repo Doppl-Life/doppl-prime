@@ -85,7 +85,6 @@ async function main() {
   if (env("CALIBRATOR_SMOKE_ALLOW_WRITE") !== "true") {
     skip("set CALIBRATOR_SMOKE_ALLOW_WRITE=true after confirming Railway targets the safe smoke branch");
   }
-  if (!accessCode) skip("set CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE to the session access code");
 
   const index = await readIndex();
   if (index.source_kind !== "agarden") fail("smoke requires an aGarden index");
@@ -97,7 +96,7 @@ async function main() {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${accessCode}`,
+      ...(accessCode ? { authorization: `Bearer ${accessCode}` } : {}),
       "idempotency-key": `hosted-smoke:${payload.node_id}:${payload.reviewer_email}`,
       origin: "https://doppl-life.github.io",
     },

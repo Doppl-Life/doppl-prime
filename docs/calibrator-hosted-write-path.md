@@ -67,11 +67,11 @@ The browser discovers that hosted deployment through the public `calibrator-conf
 ```js
 window.DOPPL_CALIBRATOR_CONFIG = {
   ratingsEndpoint: "https://example-host/api/agarden/ratings",
-  requiresAccessCode: true,
+  requiresAccessCode: false,
 };
 ```
 
-Those values are public browser configuration. They are not authorization secrets and must not grant write access by themselves. When `requiresAccessCode` is true, the browser asks the reviewer for a session access code and sends it as `Authorization: Bearer <code>`. The code itself must be distributed out of band and stored only as the Railway `CALIBRATOR_WRITE_TOKEN` variable.
+Those values are public browser configuration. They are not authorization secrets and must not contain GitHub credentials. The current fork proof sets `requiresAccessCode: false`, so reviewers do not type a session code. If a later deployment sets `requiresAccessCode: true`, the browser asks the reviewer for a session access code and sends it as `Authorization: Bearer <code>`; the code itself must be distributed out of band and stored only as the Railway `CALIBRATOR_WRITE_TOKEN` variable.
 
 Recommended credential model:
 
@@ -83,10 +83,10 @@ Recommended credential model:
 Pragmatic fallback while GitHub App org installation is blocked:
 
 - Use a fine-grained personal access token stored only in Railway as `AGARDEN_GITHUB_TOKEN`.
-- Scope the token only to `Doppl-Life/agarden`.
+- Scope the token only to the target aGarden repository. The current proof target is `loopstrangest/agarden`; the canonical target is `Doppl-Life/agarden`.
 - Grant only `Metadata: read` and `Contents: read/write`.
 - Rotate or remove the token after the GitHub App installation is correctly configured.
-- Browser behavior does not change; the browser still sends ratings only to the Railway API with the reviewer session access code.
+- Browser behavior does not change; the browser still sends ratings only to the Railway API and never sees the GitHub credential.
 
 Credential selection in production:
 
@@ -109,14 +109,13 @@ The smoke-test command is:
 
 ```bash
 CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
-CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE=<session access code> \
 CALIBRATOR_SMOKE_ALLOW_WRITE=true \
 npm --prefix calibrator run smoke:hosted-ratings
 ```
 
-The smoke script is intentionally skipped unless all required environment variables are present. Run it only after confirming Railway targets the safe `AGARDEN_BRANCH=calibrator-ratings-smoke` branch. It posts one rating upsert for the first primary aGarden artifact in the current static index, then prints commit/projection metadata without printing the access code.
+The smoke script is intentionally skipped unless write confirmation is present. Run it only after confirming Railway targets the intended repository and branch. It posts one rating upsert for the first primary aGarden artifact in the current static index, then prints commit/projection metadata without printing secrets. Set `CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE` only for gated deployments.
 
-Required environment variables:
+Required environment variables for gated deployments only:
 
 - `CALIBRATOR_WRITE_TOKEN`
 
@@ -133,13 +132,13 @@ Optional environment variables:
 - `AGARDEN_BRANCH`, default `main`
 - `CALIBRATOR_INDEX_PATH`, default `calibrator/public/calibration-index.json`
 - `CALIBRATOR_ALLOWED_ORIGINS`, comma-separated, default `https://doppl-life.github.io,http://127.0.0.1:5178`
-- `CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES=true`, local/testing escape hatch only; do not set in production
+- `CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES=true`, allows no-code reviewer submissions. This is the current fork-proof mode; use OAuth or a gated mode before broad canonical writes.
 
 ## Validation
 
 The server must reject:
 
-- missing or mismatched `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` in hosted production mode
+- missing or mismatched `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` when hosted auth is required
 - scores outside `-5` to `+5`
 - non-integer scores
 - missing `solution_id` for solution ratings

@@ -33,17 +33,16 @@ Host `published/calibrator/` to show the calibrator online. The `calibration` br
 
 `calibrator-config.js` is intentionally public and must contain only non-secret browser configuration. To enable hosted writes later, set `window.DOPPL_CALIBRATOR_CONFIG.ratingsEndpoint` to the deployed ratings API URL. Do not put GitHub tokens, GitHub App keys, session secrets, or provider keys in this file.
 
-Hosted write mode can also set `requiresAccessCode: true`. In that mode, reviewers enter a session access code in the rating dock and the browser sends it as a Bearer token. The access code must live only in the hosted API environment as `CALIBRATOR_WRITE_TOKEN`; it must not be committed or hardcoded into the static app.
+The current fork proof uses `requiresAccessCode: false`, so reviewers do not enter a session code. GitHub credentials still live only in the hosted API environment; the browser sends only the rating payload and reviewer email. A later gated deployment can set `requiresAccessCode: true` and keep the access code only in Railway as `CALIBRATOR_WRITE_TOKEN`.
 
 The hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
 
-For GitHub writes, Railway can use either the preferred GitHub App variables or the pragmatic `AGARDEN_GITHUB_TOKEN` fallback. The fallback token must be fine-grained, stored only in Railway, scoped only to `Doppl-Life/agarden`, and limited to `Metadata: read` plus `Contents: read/write`.
+For GitHub writes, Railway can use either the preferred GitHub App variables or the pragmatic `AGARDEN_GITHUB_TOKEN` fallback. The current fork proof uses a fine-grained token stored only in Railway, scoped to `loopstrangest/agarden`, and limited to `Metadata: read` plus `Contents: read/write`.
 
-The Railway ratings API can be smoke-tested after Railway is confirmed to target the safe `calibrator-ratings-smoke` branch and has one working GitHub write credential mode configured:
+The Railway ratings API can be smoke-tested after Railway is confirmed to target `loopstrangest/agarden` and has one working GitHub write credential mode configured:
 
 ```bash
 CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
-CALIBRATOR_HOSTED_RATINGS_ACCESS_CODE=<session access code> \
 CALIBRATOR_SMOKE_ALLOW_WRITE=true \
 npm --prefix calibrator run smoke:hosted-ratings
 ```
