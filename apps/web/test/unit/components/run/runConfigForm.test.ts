@@ -46,6 +46,25 @@ describe('runConfigForm — dynamic cap ceiling from fetched maxima (PD.18)', ()
   });
 });
 
+// B1 — each agenome does its OWN multi-turn research (~2–3 tool calls per candidate), so the launcher's
+// DEFAULT request + its static fallback ceiling must allow a research-heavy multi-generation run. The
+// prior 120/200 tool-call sizing capped a full live run short (cap_breach:maxToolCalls). The fetched
+// /config/caps ceiling stays authoritative (the kernel/route is the real enforcer, rule #1); this only
+// keeps the form's own default + static fallback from clamping a legitimate research run too low.
+describe('runConfigForm — tool-use-sized launcher defaults (B1)', () => {
+  it('default_form_and_ceiling_are_sized_for_tool_use_research', () => {
+    expect(DEFAULT_FORM.caps.maxToolCalls).toBeGreaterThanOrEqual(400);
+    expect(DEFAULT_FORM.caps.wallClockMinutes).toBeGreaterThanOrEqual(15);
+    // the static fallback ceiling never sits below the default it must admit (else validateForm 422s its
+    // own default), and the default validates clean.
+    expect(CAP_CEILING.maxToolCalls).toBeGreaterThanOrEqual(DEFAULT_FORM.caps.maxToolCalls);
+    expect(CAP_CEILING.wallClockMinutes).toBeGreaterThanOrEqual(DEFAULT_FORM.caps.wallClockMinutes);
+    expect(
+      validateForm({ ...DEFAULT_FORM, seed: 'research a real cross-domain transfer' }).ok,
+    ).toBe(true);
+  });
+});
+
 describe('runConfigForm — form→RunConfig mapping + cap-max guard', () => {
   // spec(§12): a valid form maps to a RunConfig that passes the shared Zod; an invalid field is caught.
   it('test_form_validates_against_shared_zod', () => {

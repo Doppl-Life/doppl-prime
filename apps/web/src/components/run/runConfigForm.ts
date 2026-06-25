@@ -46,8 +46,10 @@ export const CAP_CEILING: RunConfigFormValues['caps'] = {
   maxGenerations: 8,
   energyBudget: 20_000,
   maxSpawnDepth: 5,
-  maxToolCalls: 200,
-  wallClockMinutes: 15,
+  // B1 — sized for multi-turn agent research (each agenome does ~2–3 tool calls per candidate). The
+  // FETCHED /config/caps maxima stay authoritative; this static fallback only sets the offline ceiling.
+  maxToolCalls: 600,
+  wallClockMinutes: 20,
 };
 
 export const DEFAULT_FORM: RunConfigFormValues = {
@@ -63,8 +65,10 @@ export const DEFAULT_FORM: RunConfigFormValues = {
     maxGenerations: 5,
     energyBudget: 12_000,
     maxSpawnDepth: 3,
-    maxToolCalls: 120,
-    wallClockMinutes: 10,
+    // B1 — a research-heavy multi-generation run needs headroom for the agents' own tool calls; the
+    // prior 120/10-min sizing capped a full live run short (cap_breach:maxToolCalls).
+    maxToolCalls: 600,
+    wallClockMinutes: 15,
   },
 };
 
