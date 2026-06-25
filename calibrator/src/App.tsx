@@ -12,6 +12,7 @@ import {
   type ReviewArtifact,
 } from "./reviewability";
 import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
+import { readGitHubAgardenIndex, type GitHubAgardenIndexConfig } from "./githubAgardenIndex";
 
 type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
@@ -27,6 +28,14 @@ declare global {
       ratingsEndpoint?: string;
       ratingsLedgerUrl?: string;
       requiresAccessCode?: boolean;
+      agardenOwner?: string;
+      agardenRepo?: string;
+      agardenBranch?: string;
+      agardenSource?: "github" | "jsdelivr";
+      agardenApiBaseUrl?: string;
+      agardenRawBaseUrl?: string;
+      agardenCdnBaseUrl?: string;
+      agardenPackageApiBaseUrl?: string;
     };
   }
 }
@@ -557,6 +566,23 @@ function hostedRatingsLedgerUrl(): string {
   return window.DOPPL_CALIBRATOR_CONFIG?.ratingsLedgerUrl?.trim() ?? "";
 }
 
+function hostedAgardenConfig(): GitHubAgardenIndexConfig | null {
+  const config = window.DOPPL_CALIBRATOR_CONFIG;
+  const owner = config?.agardenOwner?.trim();
+  const repo = config?.agardenRepo?.trim();
+  if (!owner || !repo) return null;
+  return {
+    owner,
+    repo,
+    branch: config?.agardenBranch?.trim() || "main",
+    source: config?.agardenSource === "jsdelivr" ? "jsdelivr" : "github",
+    apiBaseUrl: config?.agardenApiBaseUrl?.trim() || undefined,
+    rawBaseUrl: config?.agardenRawBaseUrl?.trim() || undefined,
+    cdnBaseUrl: config?.agardenCdnBaseUrl?.trim() || undefined,
+    packageApiBaseUrl: config?.agardenPackageApiBaseUrl?.trim() || undefined,
+  };
+}
+
 function hostedEndpointRequiresAccessCode(endpoint: string): boolean {
   if (!endpoint || endpoint === LOCAL_RATINGS_ENDPOINT) return false;
   return window.DOPPL_CALIBRATOR_CONFIG?.requiresAccessCode ?? true;
@@ -624,11 +650,21 @@ export function App() {
       // Static previews do not expose the local Vite write API.
     }
 
-    const staticResponse = await fetch(`calibration-index.json?v=${Date.now()}`, { cache: "no-store" });
-    if (!staticResponse.ok) throw new Error("Failed to load vault index");
     const hostedEndpoint = hostedRatingsEndpoint();
     setIsWritable(Boolean(hostedEndpoint));
     setRatingsEndpoint(hostedEndpoint);
+
+    const githubConfig = hostedAgardenConfig();
+    if (githubConfig) {
+      try {
+        return mergeHostedRatingsLedger(await readGitHubAgardenIndex(githubConfig));
+      } catch (err) {
+        console.warn("Falling back to static calibration index after GitHub aGarden read failed.", err);
+      }
+    }
+
+    const staticResponse = await fetch(`calibration-index.json?v=${Date.now()}`, { cache: "no-store" });
+    if (!staticResponse.ok) throw new Error("Failed to load vault index");
     return mergeHostedRatingsLedger((await staticResponse.json()) as CalibratorIndex);
   }
 
