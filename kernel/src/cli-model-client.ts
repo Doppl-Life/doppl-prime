@@ -21,6 +21,35 @@ export type CliModelClientInput = {
 const defaultRunner: CliRunner = async (cmd, args) =>
   execFileAsync(cmd, args, { maxBuffer: 16 * 1024 * 1024 });
 
+// CLIs don't enforce a response format the way an HTTP `response_format` does — they often wrap JSON
+// in prose or a markdown fence. Extract the first balanced JSON value so the structured stages can
+// parse it; fall back to the raw text if none is found (let downstream parse/repair decide).
+export function extractJsonPayload(text: string): string {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const body = (fenced ? fenced[1]! : trimmed).trim();
+  const start = body.search(/[[{]/);
+  if (start === -1) return body;
+  const open = body[start]!;
+  const close = open === '{' ? '}' : ']';
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < body.length; i += 1) {
+    const ch = body[i]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === open) depth += 1;
+    else if (ch === close && --depth === 0) return body.slice(start, i + 1);
+  }
+  return body;
+}
+
 export function createCliModelClient(input: CliModelClientInput): ModelClient {
   if (!input.cmd) throw new Error('cli model client requires a cmd');
   const provider = input.provider || input.cmd;
@@ -28,6 +57,7 @@ export function createCliModelClient(input: CliModelClientInput): ModelClient {
   return {
     async complete(request: ModelCallRequest): Promise<ModelCallRecord> {
       const { stdout } = await run(input.cmd, [...input.headless, request.prompt]);
+      const wantsJson = Boolean(request.responseSchema) || request.responseFormat === 'json_object';
       return {
         id: `call_${request.runId}_${request.purpose}_${Date.now()}`,
         runId: request.runId,
@@ -35,7 +65,7 @@ export function createCliModelClient(input: CliModelClientInput): ModelClient {
         provider,
         model: request.model || input.cmd,
         prompt: request.prompt,
-        outputText: stdout.trim(),
+        outputText: wantsJson ? extractJsonPayload(stdout) : stdout.trim(),
         metadata: { cli: input.cmd },
       };
     },

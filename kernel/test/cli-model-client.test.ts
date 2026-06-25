@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCliModelClient } from '../src/cli-model-client.ts';
+import { createCliModelClient, extractJsonPayload } from '../src/cli-model-client.ts';
 
 test('cli model client runs the command headless with the prompt as the final arg', async () => {
   const calls: Array<{ cmd: string; args: string[] }> = [];
@@ -58,4 +58,36 @@ test('cli model client surfaces runner failures', async () => {
 
 test('cli model client requires a cmd', () => {
   assert.throws(() => createCliModelClient({ cmd: '', headless: [] }), /requires a cmd/);
+});
+
+test('extractJsonPayload pulls JSON out of prose and fences, with string-awareness', () => {
+  assert.equal(extractJsonPayload('{"a":1}'), '{"a":1}');
+  assert.equal(extractJsonPayload('Here is the result:\n```json\n{"a":1}\n```\nHope that helps!'), '{"a":1}');
+  // braces inside strings must not close the object early
+  assert.equal(extractJsonPayload('Sure — {"a":{"b":[1,2]},"c":"}"} done'), '{"a":{"b":[1,2]},"c":"}"}');
+  assert.equal(extractJsonPayload('[{"x":1}]'), '[{"x":1}]');
+  assert.equal(extractJsonPayload('no json here'), 'no json here');
+});
+
+test('cli client extracts JSON only when the request asks for it', async () => {
+  const client = createCliModelClient({
+    cmd: 'grok',
+    headless: ['-p'],
+    run: async () => ({ stdout: 'Sure! Here you go:\n```json\n{"candidates":[]}\n```' }),
+  });
+
+  const jsonReq = await client.complete({
+    runId: 'r',
+    purpose: 'candidate_generation',
+    prompt: 'g',
+    responseFormat: 'json_object',
+  });
+  assert.equal(jsonReq.outputText, '{"candidates":[]}', 'JSON requested → payload extracted');
+
+  const textReq = await client.complete({ runId: 'r', purpose: 'analysis', prompt: 'g' });
+  assert.equal(
+    textReq.outputText,
+    'Sure! Here you go:\n```json\n{"candidates":[]}\n```',
+    'no JSON requested → raw output preserved',
+  );
 });
