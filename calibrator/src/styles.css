@@ -576,6 +576,7 @@ textarea {
 
 .slider-row {
   align-self: center;
+  --slider-thumb-size: 18px;
   display: grid;
   gap: 6px;
 }
@@ -607,6 +608,12 @@ textarea {
   font-weight: 900;
   justify-content: space-between;
   margin-top: -4px;
+  padding: 0 calc(var(--slider-thumb-size) / 2);
+}
+
+.slider-scale span {
+  min-width: 2.5ch;
+  text-align: center;
 }
 
 .reviewer-rating-note {
