@@ -313,6 +313,7 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
     <button class="btn ghost sm" id="btnBoard">▦ Proof board</button>
     <button class="btn ghost sm" id="btnAnalyze">⊕ Analyze</button>
     <button class="btn ghost sm" id="btnChat">✦ Insights</button>
+    <button class="btn ghost sm" id="btnVault" title="Pick your aGarden vault folder to load its case studies and write generated nodes + stock back into it.">⌁ Connect aGarden</button>
     <button class="btn ghost sm" id="btnExport">⤓ Export</button>
   </header>
 
@@ -324,6 +325,11 @@ label.ck input{width:14px;height:14px;accent-color:var(--novelty)}
         <div class="section">
           <h3 title="A seed is a raw postulation — a case, observation, or contradiction you want to test. Plant one and the lab grows problem-recovery and doppl branches off it.">Seed a thought <span class="n">case study · postulation</span></h3>
           <div class="field">
+            <label title="Pick an existing case study from your connected aGarden vault to grow, instead of writing one from scratch. Growth lands in that island; the original file is left untouched.">From aGarden <span class="hint" style="display:inline" id="caseHint">— connect the vault to load</span></label>
+            <div class="row" style="gap:6px">
+              <select class="input" id="caseSelect" title="Existing case studies found in aGarden/flow. Selecting one fills the fields below."><option value="">— invent a new seed —</option></select>
+              <button class="btn ghost sm" id="caseRefresh" style="flex:0 0 auto" title="Re-scan aGarden/flow for case studies.">↻</button>
+            </div>
             <label title="Short label for the seed. Shown on the graph node and in the library.">Name</label>
             <input class="input" id="seedName" placeholder="Battery / yuan resource constraint" title="Short label for the seed. Shown on the graph node and in the library." />
             <label title="Raw context: the observation, claim, or contradiction you want to test. Used verbatim as the substrate for generation.">The situation it grows from</label>
@@ -670,10 +676,13 @@ const NEXT={case_study:'problem_recovery',problem_recovery:'doppl',doppl:null};
 const STAGE={case_study:{label:'case study',color:'var(--seed)',hex:'#64748b'},problem_recovery:{label:'problem recovery',color:'var(--problem)',hex:'#a78bfa'},doppl:{label:'doppl',color:'var(--doppl)',hex:'#34d399'}};
 function synopsisOf(stage,c){return stage==='problem_recovery'?(c.actualProblem||c.title):(c.claim||c.title);}
 function lst(a){return (a&&a.length)?a.map(x=>`- ${esc(x)}`).join('\n'):'- —';}
-function buildBody(stage,c,trace,fit,axes){
+function buildBody(stage,c,trace,fit,axes,stock){
   const head=`# ${esc(c.title||synopsisOf(stage,c))}\n`;
   const traceMd='## Trace\n'+(trace.length?trace.map(t=>`### ${STAGE[t.stage].label.replace(/^./,m=>m.toUpperCase())} · synopsis\n\n${esc(t.synopsis)}`).join('\n\n'):'_(no prior stage)_')+'\n';
-  const disc='## Discovery\n'+((c.evidence&&c.evidence.length)?c.evidence.map((e,i)=>`### Finding ${i+1}\n\n${esc(e)} → field: ${esc((c.substrate||'context').split(/\s+/).slice(0,2).join('-').toLowerCase())}`).join('\n\n'):'_(no external finds this pass)_')+'\n';
+  let disc;
+  if(stock&&stock.findings&&stock.findings.length){
+    disc='## Discovery\n'+stock.findings.map((f,i)=>`### Finding ${i+1}\n\n${esc(f.found)}${f.anchor?` → [[${stock.fieldId}#^${f.anchor}]]`:' _(screened — below the admission bar)_'}`).join('\n\n')+'\n';
+  }else disc='## Discovery\n_(no external finds this pass)_\n';
   let growth;
   if(stage==='problem_recovery'){
     growth=`## Growth — Problem recovery\n### Surface complaint\n${esc(c.surfaceComplaint||'—')}\n### Deleted assumption\n${esc(c.deletedAssumption||'—')}\n### Hidden variable\n${esc(c.hiddenVariable||'—')}\n### Actual problem\n${esc(c.actualProblem||'—')}\n### Candidate response\n${esc(c.candidateResponse||'—')}\n### Skin in the Game\n${lst(c.skinInTheGame)}\n`+((c.sprouts&&c.sprouts.length)?`### Sprouts\n${lst(c.sprouts)}\n`:'');
@@ -849,14 +858,19 @@ async function runStage(parentNode,dial,opts={}){
     log(`  gen ${cands.length}${rejected?' · rej '+rejected:''} · <span class="g">kept ${sel.selected.length}</span>`,'g');
     if(!opts.silent)reg.forEach(r=>log(`  ↳ ${r.status}${r.status==='replaced'?' (other dial: '+esc((r.altTitle||'').slice(0,36))+')':''}`,''));
     const trace=(parentNode.trace||[]).concat([{stage:parentNode.stage,synopsis:parentNode.synopsis||parentNode.name||''}]);
+    const touchedFields=new Set();
     for(const c of sel.selected){
       const{axes,judge}=judgeBridge(c.fitness);const lz=lens(c);
+      const stockRes=await Stock.admit(c,c.fitness,rootNode.name||rootNode.synopsis||rootNode.headline||'');
+      if(stockRes.fieldId)touchedFields.add(stockRes.fieldId);
       const node={id:slugId(c.title),stage:child,headline:c.title,synopsis:synopsisOf(child,c),root:parentNode.root,prev:[parentNode.id],
         kernel:'prime',temporal:c.temporal,scores:{judge,human:null,n:0},doppelgangers:0,
-        trace,body:buildBody(child,c,trace,c.fitness,axes),fitness:c.fitness,axes,lens:lz,operatorId:(c.delta.changes.find(x=>x.startsWith('operator:'))||'operator:mixed').split(':')[1],
-        dial,runId,createdAt:nowISO()};
+        trace,body:buildBody(child,c,trace,c.fitness,axes,stockRes),fitness:c.fitness,axes,lens:lz,operatorId:(c.delta.changes.find(x=>x.startsWith('operator:'))||'operator:mixed').split(':')[1],
+        dial,runId,createdAt:nowISO(),fieldId:stockRes.fieldId};
       await DB.put('nodes',node);made.push(node);
+      await Vault.writeNode(node);
     }
+    if(Vault.connected())for(const fid of touchedFields){const f=await DB.get('stock',fid);if(f)await Vault.writeStockField(f);}
     await DB.put('runs',{id:runId,seed:parentNode.name||parentNode.headline,stage:child,dial,generated:cands.length,rejected,kept:sel.selected.length,swaps:reg.filter(r=>r.status==='replaced').length,at:nowISO()});
     if(!opts.silent){
       log(`<span class="ok">folded ${made.length} ${STAGE[child].label} node(s) ✓</span>`,'ok');
@@ -873,7 +887,7 @@ async function reseedNode(leaf,silent){
   const id=slugId(leaf.headline);
   const node={id,stage:'case_study',name:leaf.headline,context:'Reseeded from the doppl "'+leaf.headline+'". '+(leaf.synopsis||''),synopsis:leaf.synopsis||leaf.headline,next:'problem_recovery',root:id,prev:[leaf.id],createdAt:nowISO(),
     body:`# ${esc(leaf.headline)}\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\n${esc(leaf.synopsis||leaf.headline)}`};
-  await DB.put('nodes',node);
+  await DB.put('nodes',node);await Vault.writeNode(node);
   if(!silent){await Graph.sync();renderLibrary();Graph.fit();selectNode(id);toast('New island planted from leaf','ok');}
   return node;
 }
@@ -1081,19 +1095,22 @@ async function saveHuman(nodeId,score){
   const all=(await DB.all('ratings')).filter(r=>r.node_id===nodeId);
   const n=await DB.get('nodes',nodeId);
   n.scores.n=all.length;n.scores.human=all.length?r1(all.reduce((s,r)=>s+r.score,0)/all.length):null;n.scores.userScore=score;
-  await DB.put('nodes',n);await Graph.sync();renderLibrary();selectNode(nodeId);
-  toast('Rating saved · projection updated','ok');
+  await DB.put('nodes',n);await Vault.writeNode(n);await Vault.appendRating(nodeId,rater,score);
+  await Graph.sync();renderLibrary();selectNode(nodeId);
+  toast(Vault.connected()?'Rating saved · written to aGarden ledger':'Rating saved · projection updated','ok');
 }
 async function reseed(leaf){return reseedNode(leaf,false);}
 async function plantSeed(){
   const name=$('#seedName').value.trim(),ctx=$('#seedContext').value.trim(),syn=$('#seedSynopsis').value.trim()||name;
   if(!name&&!ctx){toast('Give the seed a name or a situation','err');return;}
-  const id=slugId(name||syn);
-  const node={id,stage:'case_study',name:name||syn,context:ctx,synopsis:syn||name,next:'problem_recovery',root:id,prev:[],createdAt:nowISO(),
+  const fromVault=!!SEED_VAULT_ID,id=SEED_VAULT_ID||slugId(name||syn);
+  const node={id,stage:'case_study',name:name||syn,context:ctx,synopsis:syn||name,next:'problem_recovery',root:id,prev:[],createdAt:nowISO(),fromVault,
     body:`# ${esc(name||syn)}\n\n## Context\n\n${esc(ctx||'—')}\n\n## Synopsis\n\n${esc(syn||name)}`};
-  await DB.put('nodes',node);$('#seedName').value='';$('#seedContext').value='';$('#seedSynopsis').value='';
+  await DB.put('nodes',node);if(!fromVault)await Vault.writeNode(node);
+  SEED_VAULT_ID=null;if($('#caseSelect'))$('#caseSelect').value='';
+  $('#seedName').value='';$('#seedContext').value='';$('#seedSynopsis').value='';
   await Graph.sync();Graph.fit();renderLibrary();selectNode(id);
-  toast('Seed planted — open it to recover the problem','ok');
+  toast(fromVault?'Case study loaded from aGarden — grow it':'Seed planted — open it to recover the problem','ok');
 }
 
 /* dial */
@@ -1142,6 +1159,178 @@ async function exportAll(){
   toast('Exported JSON + markdown','ok');
 }
 function dl(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
+/* ============================ aGarden vault (File System Access) ============================ */
+const FS_OK='showDirectoryPicker' in window;
+let SEED_VAULT_ID=null;            // when a seed was picked from the vault, keep its id so growth lands in its island
+const uniq=a=>[...new Set(a)];
+const r2=v=>Math.round(v*100)/100;
+function jaccard(a,b){const A=new Set(a),B=new Set(b);if(!A.size||!B.size)return 0;let i=0;for(const x of A)if(B.has(x))i++;return i/(A.size+B.size-i);}
+function uniqByLabel(arr){const seen=new Set(),out=[];for(const s of arr){if(!s||seen.has(s.label))continue;seen.add(s.label);out.push(s);}return out;}
+function parseFrontmatter(text){
+  const m=/^---\n([\s\S]*?)\n---/.exec(text);if(!m)return null;const fm={};
+  for(const line of m[1].split('\n')){const i=line.indexOf(':');if(i<0)continue;
+    fm[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^["']|["']$/g,'');}
+  return fm;
+}
+function sectionOf(text,heading){
+  const m=new RegExp('^##\\s+'+heading+'\\s*$','m').exec(text);if(!m)return'';
+  const rest=text.slice(m.index+m[0].length),nxt=/^#{1,2}\s+/m.exec(rest);
+  return rest.slice(0,nxt?nxt.index:undefined).trim();
+}
+const Vault={
+  root:null,name:'',cases:[],_pending:null,
+  connected(){return !!this.root;},
+  async _persist(){try{await DB.put('settings',{key:'vault',val:{handle:this.root}});}catch(e){}},
+  async restore(){
+    if(!FS_OK)return;
+    const s=await DB.get('settings','vault');const h=s&&s.val&&s.val.handle;if(!h)return;
+    try{const perm=await h.queryPermission({mode:'readwrite'});
+      if(perm==='granted'){this.root=h;this.name=h.name;await this.loadCases();}
+      else this._pending=h;
+    }catch(e){}
+  },
+  async connect(){
+    if(!FS_OK){toast('This browser has no File System Access API — use Chrome or Edge','err');return;}
+    try{
+      let h=this._pending;
+      if(h){const p=await h.requestPermission({mode:'readwrite'});if(p!=='granted')h=null;this._pending=null;}
+      if(!h)h=await window.showDirectoryPicker({mode:'readwrite',id:'agarden'});
+      this.root=h;this.name=h.name;await this._persist();await this.loadCases();
+      toast('Connected to '+h.name+' · '+this.cases.length+' case studies','ok');
+    }catch(e){if(e.name!=='AbortError')toast('Connect failed: '+e.message,'err');}
+    refreshVaultUI();
+  },
+  async write(path,text){
+    const parts=path.split('/'),file=parts.pop();let d=this.root;
+    for(const p of parts)d=await d.getDirectoryHandle(p,{create:true});
+    const fh=await d.getFileHandle(file,{create:true}),w=await fh.createWritable();
+    await w.write(text);await w.close();
+  },
+  async readText(handle){return await(await handle.getFile()).text();},
+  async *walk(dir,prefix){
+    for await(const[nm,h]of dir.entries()){const path=prefix?prefix+'/'+nm:nm;
+      if(h.kind==='directory')yield* this.walk(h,path);
+      else if(nm.endsWith('.md'))yield{path,handle:h};}
+  },
+  async loadCases(){
+    this.cases=[];if(!this.root)return;
+    let flow;try{flow=await this.root.getDirectoryHandle('flow');}catch(e){return;}
+    for await(const{path,handle}of this.walk(flow,'flow')){
+      try{const text=await this.readText(handle),fm=parseFrontmatter(text);
+        if(fm&&fm.stage==='case_study')this.cases.push({id:fm.id||path,name:fm.name||fm.id||path,
+          context:sectionOf(text,'Context'),synopsis:sectionOf(text,'Synopsis'),path});
+      }catch(e){}
+    }
+    this.cases.sort((a,b)=>a.name.localeCompare(b.name));
+  },
+  async nodeRelPath(node){
+    const chain=[];let cur=node;const seen=new Set();
+    while(cur){chain.unshift(cur.id);const p=(cur.prev||[])[0];if(!p)break;
+      if(seen.has(p))break;seen.add(p);const par=await DB.get('nodes',p);
+      if(!par||par.root!==node.root)break;cur=par;}
+    return 'flow/'+chain.join('/')+'/'+node.id+'.md';
+  },
+  async writeNode(node){
+    if(!this.connected())return;
+    if(node.stage==='case_study'&&node.fromVault)return;   // never overwrite a curated case study
+    try{await this.write(await this.nodeRelPath(node),nodeToMd(node));}
+    catch(e){toast('Vault write failed: '+e.message,'err');}
+  },
+  async writeStockField(field){
+    if(!this.connected())return;
+    try{await this.write('stock/'+field.id+'.md',renderStockField(field));}
+    catch(e){toast('Stock write failed: '+e.message,'err');}
+  },
+  async appendRating(nodeId,rater,score){
+    if(!this.connected())return;
+    try{
+      let arr=[];try{arr=JSON.parse(await this.readText(await this.root.getFileHandle('ratings-ledger.json')));}catch(e){arr=[];}
+      let entry=arr.find(e=>e.node_id===nodeId);
+      if(!entry){entry={node_id:nodeId,ratings:[]};arr.push(entry);}
+      const r=entry.ratings.find(r=>r.rater_id===rater);
+      if(r){r.score=score;r.rate_date=nowISO();}else entry.ratings.push({rater_id:rater,score,rate_date:nowISO()});
+      await this.write('ratings-ledger.json',JSON.stringify(arr,null,2));
+    }catch(e){toast('Ledger write failed: '+e.message,'err');}
+  },
+  async pushAll(){
+    if(!this.connected())return;
+    const nodes=await DB.all('nodes'),fields=await DB.all('stock');let nw=0;
+    for(const n of nodes){if(n.stage==='case_study'&&n.fromVault)continue;await this.writeNode(n);nw++;}
+    for(const f of fields)await this.writeStockField(f);
+    toast('Pushed '+nw+' node(s) + '+fields.length+' stock field(s) to '+this.name,'ok');
+  }
+};
+
+/* ============================ stock (contract-shaped domain memory) ============================ */
+function titleCase(s){s=(s||'').trim();if(!s)return'';return s.split(/\s+/).slice(0,4).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');}
+function groundedLine(nSrc,grounding,novelty){return `_Grounded: ${nSrc} source${nSrc===1?'':'s'} · grounding ${r2(grounding)} · novelty ${r2(novelty)}_`;}
+function renderStockField(field){
+  const fm=['---','id: '+field.id,'name: '+JSON.stringify(field.name),'keywords: ['+(field.keywords||[]).join(', ')+']',
+    'discoveries: '+field.discoveries.length,'finds_screened: '+field.finds_screened,
+    'created: '+field.created,'updated: '+field.updated,'---'].join('\n');
+  const desc=`# ${field.name}\n\nDomain memory for ${field.name.toLowerCase()} — admitted discoveries future stages read before reaching outward again.`;
+  const facts=field.discoveries.length
+    ? field.discoveries.map(d=>`### ${esc(d.claim)}\n\n${esc(d.synopsis)}\n${d.grounded} ^${d.discovery_id}`).join('\n\n')
+    : '_(no admitted discoveries yet)_';
+  return `${fm}\n\n${desc}\n\n## Load-bearing facts\n\n${facts}\n`;
+}
+const Stock={
+  fieldIdFor(name){let slug=(name||'context').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'context';
+    let h=5381;for(const ch of slug)h=((h<<5)+h+ch.charCodeAt(0))>>>0;return slug+'-'+h.toString(16).padStart(8,'0').slice(0,8);},
+  anchorFor(claim,field){
+    let base=(claim||'fact').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').split('-').filter(Boolean).slice(0,4).join('-')||'fact';
+    let a=base,i=2;while(field.discoveries.some(d=>d.discovery_id===a))a=base+'-'+(i++);return a;
+  },
+  async admit(c,fit,seedName){
+    const fieldName=titleCase(c.substrate)||titleCase(seedName)||'Context';
+    const id=this.fieldIdFor(fieldName),now=nowISO();
+    let field=await DB.get('stock',id);
+    if(!field)field={id,name:fieldName,keywords:[],discoveries:[],finds_screened:0,created:now,updated:now};
+    const novelty=fit.novelty,grounding=fit.grounding;
+    const evidence=(c.evidence&&c.evidence.length)?c.evidence.slice():[];
+    const claim=c.title||c.thesis||('The real lever is '+fieldName);
+    const synopsis=c.mechanism||c.thesis||claim;
+    const admitted=novelty>=0.35&&grounding>=0.28;          // admission floor — both novelty and grounding signal present (not a high bar)
+    if(!admitted){
+      field.finds_screened+=Math.max(1,evidence.length);field.updated=now;await DB.put('stock',field);
+      return{fieldId:id,fieldName,admitted:false,findings:evidence.map(e=>({found:e}))};
+    }
+    const kw=uniq([...toks(claim+' '+synopsis)]).filter(w=>w.length>3).slice(0,8);
+    const sources=(evidence.length?evidence:[synopsis]).map(e=>({label:e}));
+    let disc=field.discoveries.find(d=>jaccard(d.keywords,kw)>=0.55),anchor;   // enrichment: merge a near-duplicate, else add
+    if(disc){
+      anchor=disc.discovery_id;
+      disc.sources=uniqByLabel(disc.sources.concat(sources)).slice(0,6);
+      disc.keywords=uniq(disc.keywords.concat(kw)).slice(0,10);
+      disc.signal={novelty:Math.max(disc.signal.novelty,r3(novelty)),grounding:Math.max(disc.signal.grounding,r3(grounding))};
+      disc.grounded=groundedLine(disc.sources.length,disc.signal.grounding,disc.signal.novelty);disc.updated=now;
+    }else{
+      anchor=this.anchorFor(claim,field);
+      disc={discovery_id:anchor,claim,synopsis,grounded:groundedLine(sources.length,grounding,novelty),
+        keywords:kw,sources,signal:{novelty:r3(novelty),grounding:r3(grounding)},created:now,updated:now};
+      field.discoveries.push(disc);
+    }
+    field.keywords=uniq(field.keywords.concat(kw)).slice(0,12);field.updated=now;
+    await DB.put('stock',field);
+    return{fieldId:id,fieldName,admitted:true,anchor,findings:(evidence.length?evidence:[synopsis]).map(e=>({found:e,anchor}))};
+  }
+};
+
+function refreshVaultUI(){
+  const b=$('#btnVault');if(!b)return;
+  if(!FS_OK){b.textContent='⌁ aGarden (Chrome/Edge only)';b.disabled=true;b.dataset.tip='File System Access API is unavailable in this browser. Use Chrome or Edge, or fall back to ⤓ Export.';renderCaseSelect();return;}
+  if(Vault.connected()){b.textContent='⌁ '+Vault.name+' · push all';b.classList.remove('ghost');b.dataset.tip='Connected. Click to push every node + stock field to '+Vault.name+'. New nodes already auto-sync as you grow them.';}
+  else if(Vault._pending){b.textContent='⌁ reconnect aGarden';b.dataset.tip='Click to re-grant access to your aGarden folder.';}
+  else{b.textContent='⌁ Connect aGarden';b.dataset.tip='Pick your aGarden vault folder to load its case studies and write generated nodes + stock back into it.';}
+  renderCaseSelect();
+}
+function renderCaseSelect(){
+  const sel=$('#caseSelect');if(!sel)return;const hint=$('#caseHint');
+  if(!Vault.connected()){sel.innerHTML='<option value="">— invent a new seed —</option>';if(hint)hint.textContent='— connect the vault to load';return;}
+  sel.innerHTML='<option value="">— invent a new seed —</option>'+Vault.cases.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  if(hint)hint.textContent='— '+Vault.cases.length+' in vault';
+}
 
 /* ============================ analyze UI ============================ */
 let LAST_CLUSTER=null;
@@ -1292,6 +1481,15 @@ function wire(){
   $('#btnSeed').onclick=plantSeed;
   $$('#dial button').forEach(b=>b.onclick=()=>setDial(b.dataset.dir));
   $('#btnExport').onclick=exportAll;
+  // aGarden vault
+  $('#btnVault').onclick=()=>Vault.connected()?Vault.pushAll():Vault.connect();
+  $('#caseRefresh').onclick=async()=>{if(!Vault.connected()){toast('Connect aGarden first','');return;}await Vault.loadCases();renderCaseSelect();toast(Vault.cases.length+' case study(ies) in vault','ok');};
+  $('#caseSelect').onchange=()=>{
+    const cs=Vault.cases.find(c=>c.id===$('#caseSelect').value);
+    if(!cs){SEED_VAULT_ID=null;return;}
+    SEED_VAULT_ID=cs.id;$('#seedName').value=cs.name||'';$('#seedContext').value=cs.context||'';$('#seedSynopsis').value=cs.synopsis||'';
+    toast('Loaded "'+(cs.name||cs.id).slice(0,40)+'" — Plant seed to grow it','');
+  };
   $('#zoomIn').onclick=()=>Graph.scale=clamp(Graph.scale*1.2,.18,3.5);
   $('#zoomOut').onclick=()=>Graph.scale=clamp(Graph.scale*0.8,.18,3.5);
   $('#zoomFit').onclick=()=>Graph.fit();
@@ -1361,8 +1559,8 @@ function wireTips(){
   window.addEventListener('scroll',()=>{tip.classList.remove('show');cur=null;},true);
 }
 async function boot(){
-  await DB.open();await Provider.load();await loadChat();
-  Graph.init();renderOps();wire();wireTips();refreshPill();
+  await DB.open();await Provider.load();await loadChat();await Vault.restore();
+  Graph.init();renderOps();wire();wireTips();refreshPill();refreshVaultUI();
   await Graph.sync();Graph.fit();await renderLibrary();await renderBoard();
 }
 boot();

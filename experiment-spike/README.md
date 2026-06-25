@@ -24,8 +24,10 @@ python3 -m http.server 8000
 ```
 
 A real `http://localhost` origin makes local model servers reachable and avoids browser quirks.
-Any static server works (`npx serve`, `php -S`, etc.). Your data lives in the browser profile you
-open it with; use **⤓ Export** to move it (JSON bundle + a markdown file of every node).
+Any static server works (`npx serve`, `php -S`, etc.). Your working data lives in the browser profile you
+open it with; **⌁ Connect aGarden** writes the durable artifacts straight into the [`../agarden`](../../agarden)
+vault (see [Close the loop](#close-the-loop--the-agarden-vault)), and **⤓ Export** is the no-API fallback
+(JSON bundle + a markdown file of every node).
 
 ---
 
@@ -66,6 +68,31 @@ the exact prompt, you run it in your agent, and paste the JSON back.
 Reading the graph: node **colour** = stage (slate seed, violet problem, leaf-green doppl); **halo** =
 the two fitness axes rendered as light (aquamarine novelty, amber grounding); **size** = judge score.
 Each connected component is an **island**. Drag to move, scroll to zoom, **⊡** to fit.
+
+---
+
+## Close the loop — the aGarden vault
+
+The spike reads and writes the live [`../agarden`](../../agarden) vault directly, through the browser's
+**File System Access API** (Chrome/Edge). Click **⌁ Connect aGarden** in the top bar and pick the folder once;
+the page remembers the handle and re-grants on reload.
+
+Once connected, the loop is closed at both ends:
+
+- **Inputs** — the **From aGarden** dropdown in the seed panel lists every `stage: case_study` node found
+  under `flow/`. Pick one to grow it instead of pasting a situation by hand; growth lands in that island and
+  the curated case-study file is left untouched. **↻** re-scans.
+- **Outputs** — every node you grow is written as contract-shaped markdown nested under
+  `flow/<island>/…/<id>/<id>.md` (frontmatter + `prev_id` wikilink + Trace · Discovery · Growth · Path),
+  the moment it folds.
+- **Stock** — each kept candidate's findings are admitted (or screened) into a **stock field** and written to
+  `stock/<field-id>.md` as load-bearing facts with a grounding line and a `^anchor`; the node's Discovery
+  findings deep-link the exact fact (`[[field-id#^anchor]]`). Admission needs both novelty and grounding
+  signal — finds below the floor are counted as `finds_screened`, proving the bar exists.
+- **Ratings** — the human slider appends `{rater, score, rate_date}` into `ratings-ledger.json`.
+
+The toolbar button doubles as **push all** once connected (reconcile every local node + stock field into the
+vault). Browsers without the API (Safari/Firefox) keep the **⤓ Export** download fallback.
 
 ---
 
@@ -135,9 +162,11 @@ stats, so the feature works with no key. Conversations persist across reloads.
 | judge evaluation (5 axes) | the measurement→rating bridge (`round(m×5)`; Cost-efficiency & Relevance judge-only) |
 | human slider + projection | the human-ratings ledger materialised as `scores.human` / `scores.n` |
 | node markdown body | MarkScript: Trace (verbatim) · Discovery · Growth · Path |
+| Discovery findings + stock fields | `stock.md`: admitted discoveries, load-bearing facts, `^anchor` deep-links |
+| **⌁ Connect aGarden** read/write | the vault is the durable artifact — `flow/` nodes, `stock/` fields, `ratings-ledger.json` |
 | islands + reseed + campaign depth | the forest topology: trees with a leaf→root feedback edge, grown deep |
 | Analyze → doppelgängers | the `doppelgangers` convergence signal made visible |
-| IndexedDB | the node graph *is* the lineage memory |
+| IndexedDB | the working node graph + stock, mirrored into the vault |
 
 ---
 
@@ -146,8 +175,9 @@ stats, so the feature works with no key. Conversations persist across reloads.
 This spike emits the current contract model directly — no migration step:
 
 - **Ids are `SlugId`.** Each node's `id` is `{slug}-{shortId}` (kebab of the headline + an 8-char key), minted once and frozen, per [`../contracts/node.md`](../contracts/node.md). Run and candidate ids stay `run-…` / `c-…` machine handles, which the contract allows.
-- **Export is contract-shaped.** The markdown export writes YAML frontmatter + a body `prev_id: [[parent]]` wikilink (`null` at an original seed) per node — valid vault content with no migration.
-- **Into the vault by hand (manual drop).** A browser can't write the filesystem, so the spike's path to the configured vault (`../agarden`) is: Export, then place the files into `flow/` yourself, alongside what the kernel writes. The sink ([`../mechanics/kernel/sink.md`](../mechanics/kernel/sink.md)) is the kernel's writer; the spike just hands you the same shape. **Caveat:** the export is currently one concatenated `doppl-nodes.md` (nodes separated by `---`), not per-node files — a true drop means splitting it, or adding a vault-shaped (zip) export later.
+- **Markdown is contract-shaped.** Each node writes YAML frontmatter + a body `prev_id: [[parent]]` wikilink (`null` at an original seed) — valid vault content with no migration, identical whether it lands via direct write or the **⤓ Export** fallback.
+- **Direct into the vault.** Connect aGarden (File System Access API) and the spike writes per-node files into `flow/<island>/…/<id>/<id>.md` and stock fields into `stock/<id>.md`, the same shapes the kernel's sink ([`../mechanics/kernel/sink.md`](../mechanics/kernel/sink.md)) emits. The download export (one concatenated `doppl-nodes.md` + a JSON bundle) remains the no-API fallback for Safari/Firefox.
+- **Stock is real.** Findings are admitted or screened per [`../contracts/stock.md`](../contracts/stock.md): admitted discoveries become load-bearing facts with a grounding line and a `^anchor`, and the node's Discovery deep-links them (`[[field-id#^anchor]]`).
 - **Reseed is the forest loop.** Campaigns reseed a doppl leaf into a fresh `case_study` carrying `prev_id: [[doppl]]`, exactly as the contract blesses it.
 
 One internal note: the app keeps `root` and a one-element `prev` array on the runtime record for the force-layout (island grouping). Those are graph state, not part of the exported artifact — the contract governs the file, and the file has no `root`.
