@@ -55,7 +55,13 @@ export function extractJSON<T>(text: string): T | null {
   const start = text.search(/[[{]/);
   const end = Math.max(text.lastIndexOf(']'), text.lastIndexOf('}'));
   if (start >= 0 && end > start) { const v = tryParse<T>(text.slice(start, end + 1)); if (v !== null) return v; }
-  return tryParse<T>(text.trim());
+  const whole = tryParse<T>(text.trim());
+  if (whole !== null) return whole;
+  // Salvage a truncated array: from the first '[' to the last complete '}', then close it.
+  const arr = text.indexOf('[');
+  const lastObj = text.lastIndexOf('}');
+  if (arr >= 0 && lastObj > arr) return tryParse<T>(`${text.slice(arr, lastObj + 1)}]`);
+  return null;
 }
 
 // Ask a specific provider for a JSON answer; null on unavailable/unparseable so the caller can fall back.

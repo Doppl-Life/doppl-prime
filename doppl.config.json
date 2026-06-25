@@ -2,8 +2,8 @@
   "vault": "../agarden",
   "maxNodesPerRun": 2,
   "cognition": {
-    "reasoning": "claude",
-    "judge": "claude"
+    "reasoning": "grok",
+    "judge": "grok"
   },
   "discovery": {
     "youtube": ["gemini", "firecrawl"],

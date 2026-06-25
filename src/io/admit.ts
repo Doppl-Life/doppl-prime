@@ -26,15 +26,15 @@ From the retrieved material, keep ONLY high-signal facts that clear the bar: nov
 For each kept fact: { "claim": one line, "synopsis": 1-3 sentences of mechanism + implication, "field": short kebab domain slug, "grounded": why it cleared the bar }.
 Retrieved material:
 """
-${retrieved.slice(0, 12000)}
+${retrieved.slice(0, 6000)}
 """
-Return a JSON array (at most 5). If nothing clears the bar, return [].`;
+Return a JSON array (at most 4), concise. If nothing clears the bar, return [].`;
   const { value, note } = askJSON<AdmittedFinding[]>(loadConfig().cognition.judge, prompt);
   if (!value || !Array.isArray(value)) return { admitted: [], note: `admit: ${note} (no parseable verdict)` };
 
   const admitted = value
     .filter((v) => v && v.claim && v.synopsis)
-    .map((v) => ({ claim: v.claim, synopsis: v.synopsis, field: fieldSlug(v.field), grounded: v.grounded || 'judge-admitted' }));
+    .map((v) => ({ claim: v.claim, synopsis: v.synopsis, field: fieldSlug(v.field), grounded: typeof v.grounded === 'string' && v.grounded ? v.grounded : 'judge-admitted' }));
 
   const byField = new Map<string, AdmittedFinding[]>();
   for (const a of admitted) {
