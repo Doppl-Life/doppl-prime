@@ -5,9 +5,18 @@ import { readRngSeed } from '../runtime';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { SeamContext, VerifySeam } from '../runtime/loop/generationLoop';
 import { runCheck } from '../check-runners/run-check';
+import { mapLimit } from '../runtime/concurrency/pLimit';
 import { runCouncil } from './council/run-council';
 import { selectCriticMandates } from './council/rotation';
 import { runJudge } from './judge/judge-call';
+
+/**
+ * Default candidate-level concurrency for the verifier. The council/judge/checks debit NO energy (rule #8),
+ * so running candidates concurrently is an execution-strategy change only — the emitted events and their
+ * advisory-lock-serialized per-run `sequence` are unchanged (rule #2), and replay re-reads the persisted
+ * log regardless of live order (rule #7). The ceiling keeps provider fan-out polite (rate limits).
+ */
+const DEFAULT_VERIFY_CONCURRENCY = 6;
 
 /**
  * P4.12 — the unified verifier VerifySeam adapter (ARCHITECTURE.md §7/§5/§2.5/§4). `createVerifySeam(deps)`
@@ -44,6 +53,8 @@ export interface VerifySeamDeps {
   readonly rubricSource?: unknown;
   /** Active critic-set size K — defaults inside `selectCriticMandates` to `DEFAULT_ACTIVE_CRITIC_COUNT`. */
   readonly activeCount?: number;
+  /** Max candidates verified concurrently (default `DEFAULT_VERIFY_CONCURRENCY`). Energy-free → safe. */
+  readonly maxConcurrency?: number;
 }
 
 /**
@@ -83,45 +94,53 @@ export function createVerifySeam(deps: VerifySeamDeps): VerifySeam {
     //    route their writes through the injected `ctx.append` (the seam contract); reads delegate harmlessly.
     const store: EventStore = { append: ctx.append, readByRun: deps.eventStore.readByRun };
 
-    // 4. Per candidate (DATA): council → subtype-matched allowlisted checks → held-out judge.
-    for (const candidate of candidates) {
-      const runContext = {
-        runId: ctx.runId,
-        generationId: ctx.generationId,
-        candidateId: candidate.id,
-      };
+    // 4. Per candidate (DATA): council → subtype-matched allowlisted checks → held-out judge. Candidates
+    //    are verified CONCURRENTLY (bounded by maxConcurrency) — each candidate's pipeline is independent
+    //    and emits no energy (rule #8), so the only cross-candidate shared resource is the append path,
+    //    whose advisory-locked sequence already serializes writes (rule #2). Within a candidate the three
+    //    stages stay ordered (council → checks → judge) for readable per-candidate progress.
+    await mapLimit(
+      candidates,
+      deps.maxConcurrency ?? DEFAULT_VERIFY_CONCURRENCY,
+      async (candidate): Promise<void> => {
+        const runContext = {
+          runId: ctx.runId,
+          generationId: ctx.generationId,
+          candidateId: candidate.id,
+        };
 
-      // 4a. Critic council — the rotating active mandate set (P4.6/P4.7).
-      await runCouncil({ gateway: deps.gateway, store, candidate, mandates, runContext });
+        // 4a. Critic council — the rotating active mandate set (P4.6/P4.7).
+        await runCouncil({ gateway: deps.gateway, store, candidate, mandates, runContext });
 
-      // 4b. Allowlisted checks — STRICT subtype match (subtype-less descriptors never auto-apply, so the
-      //     P4.5 placeholders emit no spurious check.completed into the authoritative log). The candidate's
-      //     subtype payload is the DATA the deterministic adapters parse; retrieval is not threaded, so
-      //     grounding adapters record skipped{retrieval_unavailable} (retrieval-FETCH is a future slice).
-      const candidatePayload = JSON.stringify(candidate.subtypePayload);
-      for (const descriptor of Object.values(deps.registry)) {
-        if (descriptor.subtype !== candidate.subtype) continue;
-        await runCheck({
+        // 4b. Allowlisted checks — STRICT subtype match (subtype-less descriptors never auto-apply, so the
+        //     P4.5 placeholders emit no spurious check.completed into the authoritative log). The candidate's
+        //     subtype payload is the DATA the deterministic adapters parse; retrieval is not threaded, so
+        //     grounding adapters record skipped{retrieval_unavailable} (retrieval-FETCH is a future slice).
+        const candidatePayload = JSON.stringify(candidate.subtypePayload);
+        for (const descriptor of Object.values(deps.registry)) {
+          if (descriptor.subtype !== candidate.subtype) continue;
+          await runCheck({
+            store,
+            registry: deps.registry,
+            request: {
+              adapterId: descriptor.id,
+              checkType: descriptor.checkType,
+              resultId: `check:${ctx.runId}:${candidate.id}:${descriptor.id}`,
+              candidate: candidatePayload,
+            },
+            runContext,
+          });
+        }
+
+        // 4c. Held-out final judge (P4.8) — emits judge.reviewed←JudgeResult keyed by candidateId (§2.5 seam).
+        await runJudge({
+          gateway: deps.gateway,
           store,
-          registry: deps.registry,
-          request: {
-            adapterId: descriptor.id,
-            checkType: descriptor.checkType,
-            resultId: `check:${ctx.runId}:${candidate.id}:${descriptor.id}`,
-            candidate: candidatePayload,
-          },
+          candidate,
           runContext,
+          ...(deps.rubricSource !== undefined ? { rubricSource: deps.rubricSource } : {}),
         });
-      }
-
-      // 4c. Held-out final judge (P4.8) — emits judge.reviewed←JudgeResult keyed by candidateId (§2.5 seam).
-      await runJudge({
-        gateway: deps.gateway,
-        store,
-        candidate,
-        runContext,
-        ...(deps.rubricSource !== undefined ? { rubricSource: deps.rubricSource } : {}),
-      });
-    }
+      },
+    );
   };
 }
