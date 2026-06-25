@@ -117,6 +117,53 @@ describe('createToolOrchestratingGateway (TU.5)', () => {
     expect(occurrences).toBe(2);
   });
 
+  it("B1 — executes a turn's tool calls CONCURRENTLY (bounded), preserving request/observation order", async () => {
+    // A barrier that resolves only once ALL THREE seams have ENTERED: the batch completes IFF the three run
+    // concurrently (a sequential impl awaits the barrier on the first call forever → times out). maxActive
+    // proves the overlap directly. Timer-free + deterministic; observation order must stay REQUEST order so
+    // the runtime loop persists a replay-faithful sequence regardless of which tool finishes first (rule #7).
+    let active = 0;
+    let maxActive = 0;
+    let arrived = 0;
+    let release!: () => void;
+    const allArrived = new Promise<void>((r) => (release = r));
+    const seam =
+      (label: string) =>
+      async (query: string): Promise<string> => {
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        arrived += 1;
+        if (arrived >= 3) release();
+        await allArrived;
+        active -= 1;
+        return `${label}:${query}`;
+      };
+    const { gateway } = scriptedGateway([
+      toolCallResponse([
+        { id: 'a', name: 'web_search', arguments: '{"query":"q1"}' },
+        { id: 'b', name: 'x_search', arguments: '{"query":"q2"}' },
+        { id: 'c', name: 'youtube_search', arguments: '{"query":"q3"}' },
+      ]),
+      finalResponse({ idea: 'grounded' }),
+    ]);
+    const orch = createToolOrchestratingGateway({
+      gateway,
+      toolExecutorDeps: {
+        webSearch: seam('web'),
+        xSearch: seam('x'),
+        youtubeSearch: seam('youtube'),
+      },
+    });
+    const result = await orch.generate(populationRequest, { toolBudget: 4 });
+    expect(maxActive).toBe(3); // all three overlapped — concurrent, not one-at-a-time
+    expect(result.toolCalls?.map((c) => c.toolName)).toEqual([
+      'web_search',
+      'x_search',
+      'youtube_search',
+    ]);
+    expect(result.toolCalls?.every((c) => c.ok)).toBe(true);
+  }, 2_000);
+
   it('rule #1 — bounds tool EXECUTIONS to the budget; over-budget calls are not executed/recorded', async () => {
     const { gateway } = scriptedGateway([
       toolCallResponse([

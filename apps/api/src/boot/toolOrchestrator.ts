@@ -8,6 +8,7 @@ import {
 } from '@doppl/contracts';
 import type { ModelGateway } from '../model-gateway';
 import { resolveTool, offeredToolDescriptors, type ToolExecutorDeps } from '../model-gateway';
+import { mapLimit } from '../concurrency/pLimit';
 import type { GenerationGateway, GenerateResult, ToolCallObservation } from '../runtime';
 
 /**
@@ -50,6 +51,9 @@ export const TOOL_USE_FRAMING =
 
 const DEFAULT_MAX_TURNS = 8;
 const DEFAULT_TOOL_BUDGET = 16;
+/** Max tool executions run concurrently within ONE turn (a model often returns web+x+youtube together).
+ *  Bounded for provider-rate-limit politeness; the offered allowlist is 4 tools, so a turn rarely exceeds it. */
+const DEFAULT_TOOL_TURN_CONCURRENCY = 4;
 
 export interface ToolOrchestratorDeps {
   /** The underlying provider gateway (the population_generator model behind the §6 port). */
@@ -62,6 +66,8 @@ export interface ToolOrchestratorDeps {
   readonly defaultToolBudget?: number;
   /** The tools offered to the model. Default the full registry allowlist (`offeredToolDescriptors()`). */
   readonly offeredTools?: readonly ToolDescriptor[];
+  /** Max tool executions run concurrently within a single turn (bounded fan-out). Default 4. */
+  readonly toolTurnConcurrency?: number;
 }
 
 /** The conversation start: the request's messages (population_generator carries system + wrapUntrusted user). */
@@ -107,6 +113,7 @@ function parseArgs(args: string): unknown {
 export function createToolOrchestratingGateway(deps: ToolOrchestratorDeps): GenerationGateway {
   const maxTurns = deps.maxTurns ?? DEFAULT_MAX_TURNS;
   const tools = deps.offeredTools ?? offeredToolDescriptors();
+  const concurrency = deps.toolTurnConcurrency ?? DEFAULT_TOOL_TURN_CONCURRENCY;
 
   return {
     async generate(request, opts): Promise<GenerateResult> {
@@ -134,22 +141,28 @@ export function createToolOrchestratingGateway(deps: ToolOrchestratorDeps): Gene
 
         // Echo the assistant tool-call message (the OpenRouter protocol requires it before the tool results).
         messages.push({ role: 'assistant', content: '', toolCalls: [...requests] });
-        for (const request_ of requests) {
-          if (toolCalls.length >= toolBudget) {
-            // Budget spent mid-batch — tell the model (DATA) to finalize; record/execute nothing more.
-            messages.push(
-              toolResultMessage(
-                request_,
-                'tool budget exhausted — make no further tool calls; finalize your answer.',
-              ),
-            );
-            continue;
-          }
+
+        // RESERVE the budget BEFORE dispatching (rule #1): only the first `remaining` requests may execute
+        // this turn; slicing up front keeps the reservation correct under parallel execution. The rest are
+        // over-budget → a finalize-now DATA message, executed/recorded as nothing.
+        const remaining = Math.max(0, toolBudget - toolCalls.length);
+        const toExecute = requests.slice(0, remaining);
+        const overBudget = requests.slice(remaining);
+
+        // Execute this turn's permitted tool calls CONCURRENTLY (bounded) — a model commonly returns several
+        // calls in one turn (web + x + youtube), each a separate provider round-trip, so running them in
+        // parallel is a large latency win. The executors are fail-safe (catch their own IO errors → never
+        // throw → no rejection to propagate), and `mapLimit` preserves REQUEST order, so the recorded
+        // observations + re-injected tool-result messages stay deterministic regardless of which tool finishes
+        // first (replay reads the persisted order, rule #7). ok-on-success accounting is per-observation (#8).
+        const executed = await mapLimit(toExecute, concurrency, async (request_) => {
           const resolved = resolveTool(request_.name);
           const result = resolved.ok
             ? await resolved.execute(parseArgs(request_.arguments), deps.toolExecutorDeps)
             : { ok: false, content: `tool_unavailable: ${request_.name}` };
-          // Record the observation for the runtime loop to relay/persist (rule #7) + debit-on-success (#8).
+          return { request_, result };
+        });
+        for (const { request_, result } of executed) {
           toolCalls.push({
             toolName: request_.name,
             query: request_.arguments,
@@ -157,6 +170,14 @@ export function createToolOrchestratingGateway(deps: ToolOrchestratorDeps): Gene
             ok: result.ok,
           });
           messages.push(toolResultMessage(request_, result.content));
+        }
+        for (const request_ of overBudget) {
+          messages.push(
+            toolResultMessage(
+              request_,
+              'tool budget exhausted — make no further tool calls; finalize your answer.',
+            ),
+          );
         }
       }
 
