@@ -2,16 +2,6 @@
 name: breakthrough
 description: >
   Use this skill when the user wants a breakthrough idea or the single most valuable addition to something they're building. Trigger when a user shares a plan, project, document, product, strategy, codebase, or creative work and asks — explicitly or implicitly — what to add, improve, or do next. Phrases like "what am I missing?", "what would you add?", "how do I level this up?", "what's the best next move?", "what would make this really sing?", or even "take a look at this" are all triggers. Also trigger proactively when someone shares something substantial and seems to be at an inflection point. Trigger when the user asks for "the next one", "another option", or "show me #2" after a prior suggestion — serve from the pre-ranked backfield without re-doing the analysis.   Do NOT trigger for pure debugging, file conversion, or narrow technical questions with no creative/strategic dimension. Only enter Frontend Design Mode when the user explicitly passes the `--fed` flag.
-lineage:
-  id: rule-of-cool
-  aka: breakthrough
-  parent: null
-  generation: 0
-  mutation: null
-  stratum: "Lα"
-  status: stable
-  bedrock: []
-  note: "Phenotype renamed Rule of Cool → Breakthrough (2026-06-18). Lineage id conserved as the ancestral record; the children still reference parent: rule-of-cool. See GLOSSARY drift log + MEMORY fork."
 ---
 
 # Breakthrough

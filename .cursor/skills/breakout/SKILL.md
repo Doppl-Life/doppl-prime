@@ -2,16 +2,6 @@
 name: breakout
 description: >
   Use this skill when the user wants to ESCAPE the current frame — not improve the idea on its own terms, but punch through the wall and zag into a wildly different direction. Trigger on phrases like "give me something wild", "what's a totally different direction?", "break out of this", "we're stuck in a rut", "what if we're solving the wrong problem?", "blue-sky it", "go crazy", or any moment someone is circling a local maximum and needs the paradigm-escaping move. Trigger when the user asks for "the next one", "another", or "#2" after a prior breakout — serve from the pre-ranked backfield without re-deriving. Also assignable as a Fusant mandate in a multi-agent panel (the divergence-up voice), and callable directly by any Lα. This is the divergent-UP inverse of `breakthrough` (lineage id `rule-of-cool`): where Breakthrough converges on the single best *accretive* addition, breakout DIVERGES — drops the feasibility filter and cranks variance. Do NOT trigger for pure debugging, narrow technical lookups, or when the user explicitly wants the safe, shippable, obvious-in-retrospect move (that's `rule-of-cool`).
-lineage:
-  id: breakout
-  parent: null
-  progenitor: rule-of-cool   # spiritual root + donor of the shared skill skeleton; not a direct idea-parent
-  generation: 1
-  mutagen_class: valence-flip
-  mutation: "valence flip (divergence fork, sibling of blindside): convergent single-best → divergent-UP — drop the feasibility filter, crank variance, hunt the paradigm-escaping zag"
-  stratum: "Lα / L1 (ideation)"
-  status: coined
-  bedrock: []
 ---
 
 # Breakout

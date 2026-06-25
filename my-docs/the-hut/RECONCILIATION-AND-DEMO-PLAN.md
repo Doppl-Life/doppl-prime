@@ -88,11 +88,35 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    `agenome.energy_*`→`energy.spent`, `agenome.materialized`→spawn/reproduce lifecycle, `candidate.fused`→
    `agenome.fused`, emit `run.configured`). **Target spec = melissa's `packages/contracts/src/events/payloads/
    per-type-map.ts`** (maps each of her 18 types → its Zod payload schema; backed by `payloads/{agenome,energy,
-   scoring,lifecycle,verification,failures}.ts`). Implement as a `mapEvent(RunEvent) → envelope[]` layer in
-   front of `toDashboardEnvelope`, test reshaped payloads against those schemas. Then **R5** = lift melissa's
-   ~40-file web app (App, charts, lineage,
-   ~15 panels, reducer/store), feed from this SSE, add deps (Recharts, zod), skin with cody tokens —
-   a dedicated frontend session.
+   scoring,lifecycle,verification,failures}.ts`).
+   ⚠️ **Layer 2 is bigger than a per-event rename — it's an aggregate projection.** melissa's payloads wrap
+   *rich domain objects* (`candidate.created`→`{candidate: CandidateIdea}`, `critic.reviewed`→`{review:
+   CriticReview}`, `agenome.spawned`→`{agenome: Agenome}`, `energy.spent`→`{energy: EnergyEvent}`,
+   `fitness.scored`→`{fitness: FitnessScore}`). dalton's events carry flat *ids*; the rich data lives in the
+   `KernelRun` aggregate. So build `projectRunToDashboardEvents(run: KernelRun): DashboardEnvelope[]` that walks
+   the aggregate and constructs melissa's ~10 domain objects — not a per-event mapper (events alone lack the
+   data; e.g. `generation.completed` needs `candidateCount`, absent from dalton's payload). **Design fork to
+   decide first:** reshaping the SSE payloads to melissa's vocabulary *breaks dalton's `App.jsx`* (reads flat
+   payloads) — retire/replace the floor dashboard, or serve two shapes? ✅ **Layer-2 lifecycle slice DONE:**
+   `dashboardPayload()` in `dashboard-envelope.ts` reshapes `run.started`→`{startedAt}`,
+   `run.completed`→`{completedAt}`, `run.failed`/`run.stopped`→`{completedAt,reason}`,
+   `generation.started`→`{index}` (discriminated-union switch, exhaustiveness-checked; non-breaking — the floor
+   dashboard keys lifecycle on `type`). +2 tests, build green (122/122). **Fork decided: all-in on melissa,
+   retire dalton's `App.jsx`.**
+   **The rich layer is a projection concern, not a canon change** (reframed by first-principles, see
+   [[the trace is the SSOT; views own their taxonomies]] in MEMORY.md). melissa's `CandidateIdea` is a
+   `.strict()` union on `subtype` (creativity archetype) — but that's *her view model*, not Doppl canon
+   (canon is michael's stage-based MarkScript node, an I/O artifact shape; the trace is the boundary record).
+   So: **the trace is the SSOT; node / dashboard / organism-view are sibling projections.** A subtype is a
+   *label a projection derives*, not something the kernel adopts. Keep classification a **cheap heuristic on
+   melissa's side** (or skip it); it only becomes kernel-and-canon work if it ever needs a model call worth
+   recording — and then it's one neutral trace field, not melissa's shape. **The real canon question
+   (reframed onto the trace):** dalton's trace *events* are thin (ids); the rich candidate sits in the run
+   aggregate / `run-index`. Settle in `run-trace.md` whether the trace carries rich candidates or views read
+   the aggregate. That, plus the lifecycle slice (done), is the substance — *not* a per-repo taxonomy merge.
+   ▶ **NEXT:** answer the trace-richness question, then **R5** = lift melissa's ~40-file web app (App, charts,
+   lineage, ~15 panels, reducer/store), feed from this SSE (her dashboard derives subtype itself), add deps
+   (Recharts, zod), skin with cody tokens — a dedicated frontend session.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin

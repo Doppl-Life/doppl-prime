@@ -2,17 +2,6 @@
 name: polymath
 description: >
   Use this skill when a problem is stuck inside its own field and the move is to import a working solution from a different one. Trigger on "how do other fields solve this?", "what's the analogy?", "borrow from another domain", "what would a [biologist / trader / game designer / general] do here?", "this reminds me of something in X", "we keep reinventing the wheel", or any moment an open problem in one domain has a structural twin already solved elsewhere. Also assignable as a Fusant mandate in a multi-agent panel (the cross-domain-transplant voice), and callable directly by any Lα. The persona is the **Renaissance man**; the mechanism is the **Medici Effect** — innovation at the intersection of disciplines. This is not `breakout` (which escapes the frame into untested novelty — you import something already *proven* elsewhere) and not `first-principles` (which strips to bedrock and rebuilds — you transplant a built structure, you do not derive one). Do NOT trigger for pure debugging, narrow technical lookups, or problems with no cross-domain structure to exploit.
-lineage:
-  id: polymath
-  parent: null
-  progenitor: rule-of-cool   # spiritual root + donor of the shared skill skeleton; not a direct idea-parent
-  generation: 1
-  mutagen_class: domain-transfer
-  mutation: "domain-transfer (the 4th mutagen operator — not valence-flip / basis-transform / scarcity-op): import a proven technique or result from an unrelated field B to crack field A — innovation at the intersection (the Medici Effect)"
-  stratum: "Lα / L1 (ideation)"
-  status: coined
-  bedrock: []
-  note: "Skill-backed crystallization of the long-standing `transfer-hunter` crucible archetype (an organ re-evolving → promoted). The Doppl proposal's #1 breakthrough move. Persona: the Renaissance man; mechanism: the Medici Effect."
 ---
 
 # Polymath

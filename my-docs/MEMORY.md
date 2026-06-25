@@ -128,3 +128,31 @@ kernel owner must not accidentally undo.
   authority.
 - **Revisit if:** a cleanup check becomes an object-level contract with a named owner
   and failure mode.
+
+### The trace is the SSOT; views own their taxonomies - 2026-06-25
+
+- **Chose:** the kernel does NOT adopt melissa's candidate taxonomy. The trace is the
+  specimen; melissa's dashboard, michael's node, and cody's organism-view are sibling
+  *projections* of it. A creativity-subtype (`cross_domain_transfer` | `zeitgeist_synthesis`)
+  is melissa's *view model*, so it lives in her projection — derived cheaply at render time
+  from the candidate the trace already carries — not in canon. The only canon question is
+  "what must the trace record": a rich-enough candidate (mechanism, claim, lineage, scores)
+  that any view can project from.
+- **Over:** importing a view's model into the specimen — letting melissa's dashboard shape
+  dictate the kernel's contracts. Also over: a paid, recorded, model-call classification that
+  over-invests in one view's lens.
+- **Because:** "every human surface is a projection of the trace." Classification is only
+  kernel-and-canon work if deciding the subtype needs *compute you don't want to repeat* (an
+  LLM call → call once, record on trace). A cheap heuristic does not — it's a projection
+  concern, so the kernel stays view-agnostic and canon grows by zero. (Lean: keep it cheap or
+  skip it; don't canonize a label.)
+- **Live canon question (reframed onto the trace):** dalton's trace *events* are thin (ids);
+  the rich candidate sits in the run aggregate / `run-index`. So the real `run-trace.md`
+  question is whether the trace carries rich candidates, or whether views read the aggregate.
+  That — not melissa's subtype — is what to settle. Lifecycle-event reshaping
+  (`dashboard-envelope.ts`) already lands the non-rich slice.
+- **Revisit if:** subtype classification turns out to genuinely need a model call (then it
+  becomes a recorded trace field — and only then does canon grow by one field).
+- **Supersedes:** the earlier same-day "kernel adopts melissa's taxonomy" call — reversed by
+  first-principles ([[the hut]]): michael's contracts are I/O artifact shapes, the trace is
+  the boundary record, and a view's taxonomy is not canon.

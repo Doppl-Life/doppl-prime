@@ -22,7 +22,7 @@ The trace owns the engine-only names that do not render directly into the node.
 ```ts
 type Dial = 'diverge' | 'converge';
 type MeasurementAxis = 'novelty' | 'grounding';
-type OperatorId =
+type Mutagen =
   | 'breakthrough'
   | 'addition-by-subtraction'
   | 'breakout'
@@ -83,7 +83,7 @@ type RunInputs = {
 
 ## Candidates
 
-A candidate is a child the engine generated before selection. Every candidate names its reproduction unit, operator, and delta. No-delta candidates are rejected before measurement.
+A candidate is one agenome the engine generated before selection. Every candidate names its reproduction unit, the mutagen that made it, and its delta. Its `mutagen_lineage` is the chain of mutagens from root to here — the record of which moves shaped it, carried forward as the agenome survives. No-delta candidates are rejected before measurement.
 
 ### Type contract
 
@@ -102,7 +102,8 @@ type Candidate = {
   parent_candidate_id?: Uuid;
   generation: number;
   unit: ReproductionUnit;
-  operator_id: OperatorId;
+  mutagen: Mutagen;
+  mutagen_lineage: Mutagen[];
   headline: string;
   synopsis: string;
   claim: string;

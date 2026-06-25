@@ -2,16 +2,6 @@
 name: constraint-injection
 description: >
   Use this skill when the user needs a sharper result by adding deliberate constraints: smaller budgets, shorter timelines, narrower audiences, harsher interfaces, fewer assumptions, stronger evaluation gates, or weirder production rules. Trigger on phrases like "make this less generic", "tighten this", "add constraints", "force a better answer", "what constraint would improve this?", "make it more specific", "raise the bar", or any moment when an idea is too broad, too easy, too mushy, or too unconstrained to become excellent. Also assignable as a Fusant mandate in a multi-agent panel (the productive-scarcity voice), and callable directly by any Lα. This is not `blindside`: it does not mainly warn. It is not `breakout`: it does not mainly escape. It injects the one constraint that makes the system reveal its best shape.
-lineage:
-  id: constraint-injection
-  parent: null
-  progenitor: rule-of-cool   # spiritual root + donor of the shared skill skeleton; not a direct idea-parent
-  generation: 1
-  mutagen_class: scarcity-operator
-  mutation: "scarcity operator: convergent single-best addition → productive constraint — add the pressure that forces specificity, taste, and testability"
-  stratum: "Lα / L1-L2 (ideation, design, execution)"
-  status: coined
-  bedrock: []
 ---
 
 # Constraint Injection

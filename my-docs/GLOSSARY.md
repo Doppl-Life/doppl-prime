@@ -20,6 +20,15 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 - **Def:** the amorphous leaf — the unlock / solution / idea. Our name for it.
 
+### Agenome
+
+- **Def:** the evolving idea-organism — one candidate idea as it strives, varies, spends
+  energy to earn its existence, fuses, and is selected. It carries both its content (claim,
+  mechanism, delta, growth) and the qualities that mark its survival: lineage, energy,
+  fitness, and the **mutagens that shaped it**. One level: the idea *is* the organism — there
+  is no separate evolving "agent." The surviving agenome is rendered into a
+  [node](../contracts/node.md).
+
 ### Seed
 
 - **Def:** an original, hand-planted case study; the inciting agenome a chain grows from, with no parent (`prev_id: null`).
@@ -76,6 +85,36 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 - **Def:** the thing that reproduces in a run: thesis, consequence, problem
   frame, solution candidate, or later agenome. Pluggable; not baked into the kernel.
+
+### Mutagen
+
+- **Def:** the source of an agenome's variation under selection — the creative move that
+  produces a new idea from a parent and the soil around it. The named mutagens are
+  `breakthrough`, `addition-by-subtraction`, `breakout`, `blindside`, `first-principles`,
+  `constraint-injection`, `polymath` (the skills in `.cursor/skills/`). Each carries a
+  valence: `breakout`/`blindside` push divergence, `breakthrough`/`constraint-injection`
+  push convergence. A mutagen is a fixed instrument, not an evolving entity — the agenome
+  evolves; the mutagen is *how* it varies. Every agenome records the list of mutagens that
+  shaped it (its mutagen-lineage), carried into the final node.
+
+### The two pressures (the tides)
+
+- **Def:** evolution is variation against selection. **Internal:** each agenome strives to
+  survive, pulled two ways at once — *compete* (toward the reward → converge) or
+  *differentiate* (toward an empty niche → diverge). **External:** the environment selects
+  (fitness + the energy economy), and the [gardener](#the-gardener) can push back on the
+  population's drift. Convergence and divergence are the *emergent tides* of this tension —
+  observed and named (see [Convergence](#convergence), derived from the node graph), never
+  set as a dial. Anti-collapse is intrinsic: a crowded agenome reaches for divergence
+  mutagens (`breakout`/`blindside`) to escape competition. ([Divergent](#divergent) /
+  [Convergent](#convergent) name the two postures the tide moves between.)
+
+### Soil
+
+- **Def:** what a run feeds on. **Permanent soil:** the agarden — prior nodes and admitted
+  stock, read through the run's inputs (cross-run, accreting). **Transient soil:** the in-run
+  history — the agenomes of earlier generations within the same run (the run's working
+  memory). Richer soil fuels the transplanting mutagens (`polymath`, `breakout`).
 
 ## Fitness
 
@@ -213,6 +252,13 @@ both.
   (`src/`, `tools/`) and the frozen canon it follows (`contracts/`, `mechanics/`).
   What the hut's decisions venture out into. Distinct from the agarden; the garden is
   code, the agarden is produced artifacts.
+
+### The gardener
+
+- **Def:** the overseer of a run — tends the medium (mutagen potency, selection pressure,
+  the energy economy), watches the population through the trace, and pushes back on the tide
+  when it sees monoculture or scatter. The operator tends and reads the petri dish; it does
+  not dial it. Distinct from the kernel (the mechanism) and the agenomes (the organisms).
 
 ### The jungle
 

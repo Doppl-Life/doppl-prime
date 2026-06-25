@@ -2,17 +2,6 @@
 name: addition-by-subtraction
 description: >
   Use this skill when the highest-leverage move is removal, not addition — when the work is bloated, hedged, overbuilt, or carrying dead weight. Trigger on "what should I cut?", "this feels heavy / overbuilt", "what's the one thing to remove?", "simplify this", "less is more", "what's getting in the way?", "what if we deleted X?", "kill your darlings", or any moment a project would get *better* by losing a part rather than gaining one. Also assignable as a Fusant mandate in a multi-agent panel (the via-negativa voice), and callable directly by any Lα. This is the convergent-DOWN sibling of `breakthrough`: same single-best discipline, opposite sign — the best thing to *cut* instead of *add*. This is not `blindside` (which hunts a hidden *risk* — you hunt a removal that *improves*, a move not a warning) and not `constraint-injection` (which *adds* a binding constraint — you *remove* existing mass). Do NOT trigger for pure debugging or when the work genuinely needs a new part.
-lineage:
-  id: addition-by-subtraction
-  parent: null
-  progenitor: rule-of-cool   # spiritual root + donor of the shared skill skeleton; not a direct idea-parent
-  generation: 1
-  mutagen_class: valence-flip
-  mutation: "valence flip on the convergent axis: convergent best-ADD → convergent best-CUT — the single highest-leverage removal, where the gain comes from the subtraction itself (via-negativa)"
-  stratum: "Lα / L1-L2 (ideation, design, editing)"
-  status: coined
-  bedrock: []
-  note: "The truest sibling of breakthrough — the pure up→down valence flip that stays convergent. Completes the convergence × valence 2×2 (the empty corner). Persona: the sculptor."
 ---
 
 # Addition by Subtraction
