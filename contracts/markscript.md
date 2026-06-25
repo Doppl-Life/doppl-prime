@@ -2,7 +2,7 @@
 
 MarkScript is a framework for typing markdown files without killing the markdown.
 
-The premise: the markdown file is the authored artifact. A human reads it directly; a service parses it into a typed shape. The TypeScript does not replace the markdown — it states what must be recoverable from it. A MarkScript contract is the meeting point of three readers: a human reading prose, a parser finding headings and payloads, and a validator rejecting drift.
+The premise: the markdown file is the authored artifact. A human reads it directly; a parser recovers a typed shape from it. The TypeScript does not replace the markdown — it states what the artifact must contain. A MarkScript contract is the single shape a producer renders to and three readers rely on: a human reading prose, a parser finding headings and payloads, and a validator rejecting drift.
 
 ## The standard library
 
@@ -39,6 +39,12 @@ Template-literal headings type a family of headings whose text varies but whose 
 type StepHeading = `#### Step ${number}`;
 type Entry = MarkdownSubsection<`### ${string}`, EntryBody>;
 ```
+
+## Both directions
+
+A contract runs both ways. A producer renders a typed value into the artifact; a parser recovers that value back. These are not two specs — they are one shape read from opposite ends, so a value produced to the contract parses back to an equal value. That round-trip is the property a validator checks.
+
+The heading literals and section order are the shared key: the producer emits them, the parser keys on them. How the producer is built — a template, a deterministic renderer over the typed value, a generator — is a project's choice; MarkScript fixes only the shape both ends must meet.
 
 ## Section forms
 

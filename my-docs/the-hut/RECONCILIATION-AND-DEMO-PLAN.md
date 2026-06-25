@@ -16,21 +16,67 @@ view (inside-the-kernel process views from cody/melissa/dalton; outside-the-run 
 becomes a lens on that one trace. "How it all works together" falls out of getting the trace right.
 Kernel synthesis is Epic A; view synthesis is Epic E; both reconcile against the single trace.
 
-The bake-off is not an alternative to synthesis — it is how synthesis finds its material. The
-stage-by-stage trace diff surfaces, concretely, the best idea per stage and the concept any branch is
-missing. It also sizes the job: near-identical traces mean a day of merging; hard divergence is learned
-early enough to scope. Throughout, michael's current kernel stays a known-good floor so the Monday demo
-runs regardless of how far synthesis gets.
+The bake-off ran as an **architecture synthesis** from each branch's own design docs + code (not a
+live trace diff — the branches are heterogeneous repos with no shared entrypoint). It revealed **two
+paradigms**: michael's markdown idea-organism (vault, MarkScript contracts, run-trace, discovery→stock)
+and the Capstone agent-evolution runtime (population of agenomes → critics → cull → fusion+mutation →
+gen N+1 beats gen N), built three times as cody/melissa/dalton. They already share their spine —
+event-log-as-truth + projections, a pinned/held-out judge, a provider-agnostic gateway, caps+kill
+switch, local-first. **Dalton already fused both**: an evolution kernel that emits michael's markdown
+vault + trace + replayable events, with a full test suite. So dalton is the running base; see the
+**Fusion spec** below. The deep-dive maps are the synthesis material.
 
 ## Decisions taken
 
-- **Reconciliation = trace bake-off**, not hand-merge. One frozen seed runs through every branch's
-  kernel; run-traces diff stage-by-stage; winners chosen per stage with evidence.
-- **Bake-off lands on `michael-reconciliation`** (new branch, created off `michael`). It is held
-  *separate* from `michael` on purpose so all candidates stay comparable. Nothing merges into the
-  standard `michael` branch from this work.
+- **Base = dalton's `kernel/`.** It already fuses both paradigms (evolution loop + markdown vault +
+  JSONL replay), runs end-to-end, has a full test suite, and runs deterministically with **no API key**.
+- **Fusion lands on `michael-reconciliation`** (off `michael`), held separate from `michael`.
+- **Contracts: michael's frozen MarkScript wins; dalton adapts to them.**
+- **Infra: local-first, no Postgres** — keep dalton's in-memory + JSONL event store.
+- **Agora: Obsidian read-only** for the demo (the agarden is already an Obsidian vault). The
+  interactive rating UI is a post-demo nice-to-have.
+- **Inner dashboard = melissa's web app** (live, tested) + **cody's design tokens/StatusBadge** skin;
+  **cody's `organism-view`** on a baked fixture is the no-backend floor.
+- **Outer view = the spike, wired to the real kernel** (so outer + inner narrate the same run).
 - **Tickets live in GitHub Projects** on `Doppl-Life/doppl-prime`.
-- **Form factor is undecided** — it is a real decision ticket (H1), not pre-committed.
+- **Form factor is undecided** — a real decision ticket (H1).
+
+## Fusion spec (deep-dive result)
+
+Base is dalton. Everything below folds onto it.
+
+**Branch verdicts** (from the parallel deep-dive):
+- **dalton** — the running base. Evolution loop is real (not stubbed); in-memory + JSONL event store
+  (no DB); `ModelClient.complete()` is a clean one-method provider boundary (OpenRouter only today);
+  `node-compiler.ts` already emits the 3 stages with near-michael frontmatter; vault-export writes
+  `<caseId>/<runId>/…proposal-nodes/` (must change to michael's layout); fixture mode needs no key.
+- **michael** — canon. MarkScript contracts (node/stock/rating/run-trace), `sink.ts`
+  (`flow/<slug>/<slug>.md` + `stock/<slug>.md`), `slugId()` (DJB2, deterministic), the spike provider
+  matrix (demo / harness-bridge / Ollama / OpenAI-compatible incl. OpenRouter/Groq/LM Studio).
+- **melissa** — the live inner dashboard (React Flow + Recharts, 7 surfaces, SSE→reducer, tested).
+  Backend is Postgres (dropped); web app decoupled and fed from dalton.
+- **cody** — the visual language: colorblind-safe design tokens + StatusBadge, and the `organism-view`
+  standalone showpiece (fixtures only; engine has no runnable main).
+
+**Work items (ranked by effort × risk):**
+1. **Event adapter** dalton `RunEvent` (27 types) → melissa dashboard reducer (~20 types). *Hard;
+   critical path to the best inner view. Floor if it slips: dalton's own dashboard / cody organism-view
+   on a baked fixture.*
+2. **Vault-layout swap** — replace dalton's export paths with michael's `sink.ts` + `slugId()` →
+   `flow/`/`stock/` into `../agarden`. *Easy, high value (agarden compatibility).*
+3. **Provider ports** — port the spike's Ollama / OpenAI-compatible / harness-bridge request shapes
+   into dalton `ModelClient` impls; OpenRouter-fusion is one more impl later. *Medium, mechanical.*
+4. **Spike → kernel wiring** — point the spike's "grow" at dalton's `POST /api/run` so outer + inner
+   show the same run. *Medium; demo coherence.*
+5. **RunTrace projection adapter** — project dalton's `KernelRun` to michael's contract `RunTrace`;
+   full reconcile is post-demo. *Defer the rewrite.*
+
+**Demo-safety floors (in order):** dalton fixture mode = offline golden run (no key) · cody
+`organism-view` on a baked Die Hard fixture (no backend) · dalton's own React Flow dashboard.
+
+**Post-demo (not needed for the 29th):** melissa's verifier/selection (rotating critic council,
+held-out judge, 10 check-runners) folding into dalton's scoring; full RunTrace canon reconciliation;
+the interactive Agora rating UI.
 
 ## What must reach `main`
 

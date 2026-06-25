@@ -228,7 +228,7 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
       </div>
       <canvas id="pulse"></canvas>
     </div>
-    <div class="stamp"><span class="dot"></span><span id="stampText">synced from michael · generated from 34 commits</span></div>
+    <div class="stamp"><span class="dot"></span><span id="stampText">synced from michael · generated from 57 commits</span></div>
   </div>
 </header>
 
@@ -236,8 +236,8 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
   <div class="wrap">
     <div class="sec-hd reveal">
       <div class="kicker">the arc</div>
-      <h2>Seven movements, one fire in the middle</h2>
-      <p>The project's shape arrives early as a contract, accumulates a corpus and a conscience, then is deliberately burned down to the part worth keeping — the garden — and regrown from it.</p>
+      <h2>Eight movements, one fire in the middle</h2>
+      <p>The project's shape arrives early as a contract, accumulates a corpus and a conscience, then is deliberately burned down to the part worth keeping — the hut — and regrown from it, until on the last day the model stops being prose and the kernel actually runs.</p>
     </div>
     <div class="phases" id="phases"></div>
   </div>
@@ -247,7 +247,7 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
   <div class="wrap">
     <div class="sec-hd reveal">
       <div class="kicker">the timeline</div>
-      <h2>42 commits, June 18–24</h2>
+      <h2>57 commits, June 18–24</h2>
       <p>Each commit shows its diff as a bar — growth in green, pruning in amber. Milestones carry an annotation explaining what changed and why it mattered. The burn is the one you can see from across the room.</p>
     </div>
     <div class="tl-controls reveal" id="tlControls">
@@ -386,6 +386,29 @@ const COMMITS=[
 {h:'622c5b1',a:'MichaelHabermas',d:'2026-06-23',t:'23:45',f:2,ins:37,del:10,s:'Enhance stock documentation with refined load-bearing facts and improved clarity',ph:7,ms:0},
 {h:'d0ca679',a:'MichaelHabermas',d:'2026-06-23',t:'23:49',f:4,ins:14,del:5,s:'Enhance lexicon and object model documentation with new concepts and clarity',ph:7,ms:0},
 {h:'8055db3',a:'MichaelHabermas',d:'2026-06-24',t:'07:58',f:20,ins:79,del:71,s:'Update documentation to reflect changes in contracts and clarify model structure',ph:7,ms:0},
+{h:'9f95da3',a:'MichaelHabermas',d:'2026-06-24',t:'08:16',f:2,ins:29,del:4,s:'Implement SlugId for node identification and enhance markdown export format',ph:8,ms:1,tag:'SlugId lands',
+  note:'Identity gets a body. <b>SlugId</b> replaces the opaque UUIDv4 as the node\'s name — a human-legible, content-anchored handle that survives the round trip into the vault and back. The markdown export format is tuned to carry it, so a node on disk reads as itself, not as a hash.'},
+{h:'26b7ac7',a:'MichaelHabermas',d:'2026-06-24',t:'09:27',f:2,ins:22,del:5,s:'Update documentation to reflect the transition from \'the garden\' to \'the hut\'',ph:8,ms:0},
+{h:'58f11cb',a:'MichaelHabermas',d:'2026-06-24',t:'09:35',f:1,ins:71,del:32,s:'Enhance index.html with tooltips and improved accessibility features',ph:8,ms:0},
+{h:'046d45b',a:'MichaelHabermas',d:'2026-06-24',t:'10:08',f:4,ins:21,del:7,s:'Enhance documentation with new cross-document linking and discovery details',ph:8,ms:0},
+{h:'439d43f',a:'MichaelHabermas',d:'2026-06-24',t:'10:55',f:1,ins:18,del:10,s:'Refine discovery documentation with enhanced citation clarity and examples',ph:8,ms:0},
+{h:'89b670b',a:'MichaelHabermas',d:'2026-06-24',t:'11:33',f:30,ins:126,del:584,s:'Refactor AGENTS and README documentation for clarity and structure',ph:8,ms:0},
+{h:'04493c6',a:'MichaelHabermas',d:'2026-06-24',t:'11:46',f:7,ins:33,del:37,s:'Update documentation to clarify kernel and canon distinctions and enhance structure',ph:8,ms:1,tag:'canon wins',
+  note:'The relationship is stated as law: when <b>canon</b> (contracts/mechanics) and the <b>running kernel</b> (src/, tools/) disagree, canon wins — the kernel follows, deliberately. "It\'s still in the kernel" stops being an argument for keeping a concept canon has cut. The reconciliation that defines the rest of the week is given its direction here.'},
+{h:'59894da',a:'MichaelHabermas',d:'2026-06-24',t:'12:18',f:19,ins:516,del:204,s:'Enhance contract documentation and add new tools for project growth',ph:8,ms:1,tag:'grow tooling',
+  note:'The kernel grows hands. New growth tooling lands alongside hardened contracts — the machinery that will take a seed, run the crucible, and write a node out. This is the seam between the written model and a process that actually executes it.'},
+{h:'105cbc2',a:'MichaelHabermas',d:'2026-06-24',t:'12:24',f:8,ins:70,del:2,s:'Add configuration for vault destination and enhance documentation',ph:8,ms:1,tag:'wired to aGarden',
+  note:'The kernel is given an address. <code>doppl.config.json</code> names a <b>vault destination</b> — and that destination is <b>aGarden</b>, the downstream Obsidian vault. The hut shapes the model; aGarden receives the runs. With this line the two homes are connected: a run in <code>doppl-prime</code> lands as nodes in <code>../agarden</code>.'},
+{h:'365253e',a:'MichaelHabermas',d:'2026-06-24',t:'16:14',f:16,ins:270,del:772,s:'Refactor discovery and cognition processes for improved clarity and function',ph:8,ms:1,tag:'cognition in, lineage burned',
+  note:'The kernel\'s I/O layer takes its real shape — <code>admit.ts</code>, <code>cognition.ts</code>, <code>discovery.ts</code> rewritten — while the old scaffolding burns: <b>skill-lineage.ts (447 lines), skills/LINEAGE.md and skills/README.md are deleted</b>. The cleanup machinery does not survive the cleanup it enabled. Net −502 lines, and what remains is the cognition path the engine actually calls.'},
+{h:'30dc0c6',a:'MichaelHabermas',d:'2026-06-24',t:'21:41',f:6,ins:295,del:163,s:'Enhance node generation and evaluation processes for improved functionality',ph:8,ms:1,tag:'the kernel runs',
+  note:'The pipeline stops being prose and starts being code. <b>generate-stage.ts</b>, <b>judge.ts</b>, and <b>vault-read.ts</b> are born and <b>compile-node.ts</b> is rewritten — the kernel now reads the vault, generates a stage, judges it, and compiles a node. <code>generate → fitness → select → lens → judge → compile</code> is no longer a diagram; it is an executing path.'},
+{h:'e9b4f1f',a:'MichaelHabermas',d:'2026-06-24',t:'22:24',f:3,ins:12,del:6,s:'Update cognition configuration and refine JSON extraction logic',ph:8,ms:0},
+{h:'cf8b296',a:'MichaelHabermas',d:'2026-06-24',t:'23:00',f:2,ins:2,del:2,s:'Update documentation for compiler and README files',ph:8,ms:0},
+{h:'18e1952',a:'MichaelHabermas',d:'2026-06-24',t:'23:27',f:13,ins:206,del:1745,s:'Update documentation for clarity and structure',ph:8,ms:1,tag:'prune the prose',
+  note:'A −1,745-line prune across 13 docs. With the kernel now running, the documentation that described intent gets cut down to what stays true against executing code. The map is trimmed to match the territory the moment the territory becomes real.'},
+{h:'1d7f58e',a:'MichaelHabermas',d:'2026-06-24',t:'23:45',f:1,ins:62,del:23,s:'Enhance RECONCILIATION-AND-DEMO-PLAN.md with detailed reconciliation process',ph:8,ms:1,tag:'reconcile & demo',
+  note:'The week closes on a plan, not a victory lap: <b>RECONCILIATION-AND-DEMO-PLAN.md</b> spells out how the running kernel is brought back into line with canon and what the first real demo proves. The standing question is named — where do <code>src/</code> and the hut still disagree — and given an owner.'},
 ];
 
 /* ---------- phases ---------- */
@@ -396,7 +419,8 @@ const PHASES=[
 {i:4,date:'Jun 22',t:'The conscience',c:'var(--doppl)',w:72,p:'A 205-file commit gives the kernel a memory: invariants, bugs, lessons, watchlist. The burn-and-rebuild begins.'},
 {i:5,date:'Jun 22',t:'Ledger out, crucible in',c:'var(--novelty)',w:80,p:'The separate lineage ledger is deleted; the node graph becomes the memory. engine.md writes the generate→select crucible down before more is built on it.'},
 {i:6,date:'Jun 23',t:'The burn',c:'var(--del)',w:92,p:'121 files, −24,712 lines. "The garden is canon" becomes doctrine. Fake authority is deleted faster than new surface is promoted.'},
-{i:7,date:'Jun 23–24',t:'Sharpen, name, and migrate',c:'var(--grounding)',w:100,p:'The vocabulary settles: the garden is renamed the hut, projection.md is born, and the corpus migrates to aGarden. UUIDv4 yields to SlugId. New terms enter the lexicon — sprout, reseed, forest loop, anti-fragile. Contracts move under src/contracts/. The model is small, load-bearing, and legible.'},
+{i:7,date:'Jun 23–24',t:'Sharpen, name, and migrate',c:'var(--grounding)',w:92,p:'The vocabulary settles: the garden is renamed the hut, projection.md is born, and the corpus migrates to aGarden. UUIDv4 yields to SlugId. New terms enter the lexicon — sprout, reseed, forest loop, anti-fragile. Contracts move under src/contracts/. The model is small, load-bearing, and legible.'},
+{i:8,date:'Jun 24',t:'The kernel runs',c:'var(--doppl)',w:100,p:'The model stops being prose. A real I/O layer lands — generate-stage, judge, compile-node, vault-read, cognition — wired to a vault destination that is aGarden. Canon-wins is made law; skill-lineage scaffolding burns; SlugId gives nodes a legible name. Downstream, aGarden fills: a 10k-line seed of flow nodes, a run-ledger and a ratings-ledger, an Obsidian graph colored by pipeline stage. The week ends on a reconciliation-and-demo plan.'},
 ];
 
 /* ---------- decisions (MEMORY.md) ---------- */
@@ -473,7 +497,8 @@ const STATE=[
 ['var(--problem)','RunTrace is truth','every node is a projection of one trace'],
 ['var(--novelty)','doppelgangers + convergence','the node graph is the memory; convergence is derived'],
 ['var(--grounding)','temporal decay','zeitgeist decays at 180 days · transfer never'],
-['var(--seed)','aGarden is the corpus','the Obsidian vault where actual runs live · case-studies burned into it'],
+['var(--seed)','aGarden is live','seeded with 10k lines of flow nodes · run-ledger + ratings-ledger · graph colored by stage'],
+['var(--doppl)','the kernel runs','src/io generate → judge → compile, wired to the aGarden vault; reconcile-and-demo next'],
 ];
 
 /* ====================== render ====================== */
@@ -488,7 +513,7 @@ function renderHero(){
   const stats=[['v',COMMITS.length,'commits'],['v',days,'days'],['v',hands,'contributors'],['add','+'+totIns.toLocaleString(),'lines grown'],['del','−'+totDel.toLocaleString(),'lines pruned']];
   $('#heroStats').innerHTML=stats.map(s=>`<div class="stat ${s[0]==='add'?'add':s[0]==='del'?'del':''}"><div class="v">${s[1]}</div><div class="l">${s[2]}</div></div>`).join('');
   $('#stampText').textContent=`synced from michael · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · ${COMMITS.length} commits`;
-  $('#footText').innerHTML=`Generated from ${COMMITS.length} commits on branch <b class="mono">michael</b> · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · June 18–23, 2026<br>A live document — re-run against the repository to refresh the timeline.`;
+  $('#footText').innerHTML=`Generated from ${COMMITS.length} commits on branch <b class="mono">michael</b> · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · June 18–24, 2026<br>A live document — re-run against the repository to refresh the timeline.`;
   drawPulse();
 }
 function drawPulse(){

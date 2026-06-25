@@ -103,8 +103,22 @@ Active decay is configured to `0`: no score changes with age, and the effective 
 
 A future decay mechanism can bolt onto `temporal` without changing the node shape.
 
+## Compiler and validation
+
+The compiler is the **producer** in MarkScript's two-direction contract ([`../../contracts/markscript.md`](../../contracts/markscript.md)): it renders a typed value — the `RunTrace` — into the node artifact. It renders; it does not think. Its field-by-field map is [`../../contracts/projection.md`](../../contracts/projection.md); its procedure is [`../../mechanics/kernel/compiler.md`](../../mechanics/kernel/compiler.md).
+
+Because a contract runs both ways, production and parsing meet at one shape. The decision being shaped: **render is deterministic, and drift is caught at the boundary, never tolerated.**
+
+Render the format from the typed value, not from prose. Headings, section order, anchors, and frontmatter keys are fixed by the contract, and `projection.md` already gives every field a deterministic mode (`render_verbatim`, `derive`, `mint`, `fixed_by_stage`, `birth_empty`; only `render` reshapes a container, never meaning). A renderer that walks that map emits the prescribed markdown by construction — the format layer needs no model and so has no variance to drift. A model's job is upstream, producing a stage's Growth content; it never authors the final markdown surface.
+
+The validator closes the loop. `compiler.md` step 7 — "validate it parses and every required part is present" — has no spec yet. Give it one: parse the emitted node back into its typed shape and assert it round-trips against the source projection. Same value from both ends, or reject. This is MarkScript's "reject drift without interpreting vibes" made executable — the half that exists nowhere in the repo today.
+
+A MarkScript skill is the natural host: one skill, two entry points. At **production** (compile time) it validates the node the compiler just wrote before it lands. At **ingestion** (reading nodes back to reseed or dedup) it recovers the typed shape from an existing file. It reads the contracts rather than hand-written per-field parsers, so when a contract changes the skill follows.
+
 ## Open
 
 The measurement-to-rating bridge is still real work. We know measurements feed ratings; we have not finished the map.
 
 The human ratings projection runner is intentionally open. The data structure is fixed; the mechanism can be a local command, scheduled job, GitHub Action, or service.
+
+The validator has no spec. The round-trip checker above is a decision in this proposal, not yet frozen. When it lands, give it a contract — the parse direction of each node section — and point `compiler.md`'s validate step and `projection.md`'s open items at it.
