@@ -322,6 +322,114 @@ describe("App", () => {
     }
   });
 
+  it("formats generated implications, opportunities, and sprouts as bullet lists", async () => {
+    const listFixture: CalibratorIndex = structuredClone(fixture);
+    listFixture.cases[0].solutions[0].body = [
+      "# Mobility Financialization",
+      "",
+      "## Growth — Doppl",
+      "",
+      "Claim Usage-based autonomy pricing disrupts consumer lending models.",
+      "",
+      "Implications - auto loan default prediction models lose predictive validity without depreciation/collateral proxies - consumer lending shifts from asset-backed to behavior-based underwriting frameworks",
+      "",
+      "Opportunities - behavioral telemetry underwriting engines replacing FICO/credit bureau dependencies - credit scoring platform migrations targeting fleet operator payment streams",
+      "",
+      "Sprouts - real-time mobility payment stream securitization vehicles replacing auto-loan ABS markets - consumer credit model migration tools",
+      "",
+      "## Evaluation",
+      "",
+      "Novelty +4 78% of language absent from the seed.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(listFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByRole("heading", { name: "Implications:" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Auto Loan Default Prediction Models Lose Predictive Validity Without Depreciation/Collateral Proxies"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Consumer Lending Shifts From Asset-Backed To Behavior-Based Underwriting Frameworks"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Opportunities:" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sprouts:" })).toBeInTheDocument();
+  });
+
+  it("shows judge evaluation behind a collapsed toggle", async () => {
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Mobility Financialization",
+      "",
+      "Claim Usage-based autonomy pricing disrupts consumer lending models.",
+      "",
+      "## Evaluation",
+      "",
+      "Novelty +4 78% of language absent from the seed.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Novelty +4 78% of language absent from the seed.")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
+    expect(screen.getByText("Novelty +4 78% of language absent from the seed.")).toBeInTheDocument();
+  });
+
+  it("hydrates hosted ratings from the public aGarden ledger and switches to update mode", async () => {
+    window.DOPPL_CALIBRATOR_CONFIG = {
+      ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
+      ratingsLedgerUrl: "https://raw.example.test/ratings-ledger.json",
+      requiresAccessCode: false,
+    };
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response("not found", { status: 404 });
+      if (url.startsWith("calibration-index.json")) return new Response(JSON.stringify(fixture), { status: 200 });
+      if (url.startsWith("https://raw.example.test/ratings-ledger.json")) {
+        return new Response(
+          JSON.stringify([
+            {
+              node_id: "dalton-fsd-accident-economy-001__problem_recovery",
+              ratings: [
+                {
+                  rater_id: "dalton.dinderman@challenger.gauntletai.com",
+                  score: -2,
+                  rate_date: "2026-06-25T16:00:00.000Z",
+                },
+              ],
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+
+    expect(screen.getByText("Your current rating for this item is -2.")).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("-2");
+    expect(screen.getByRole("button", { name: "Update problem recovery rating" })).toBeInTheDocument();
+  });
+
   it("deduplicates discovery context paragraphs already shown in the case study", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();

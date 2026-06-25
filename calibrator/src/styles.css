@@ -359,6 +359,66 @@ textarea {
   padding-left: 18px;
 }
 
+.generated-field,
+.generated-list {
+  margin: 0 0 14px;
+}
+
+.generated-field h5,
+.generated-list h5 {
+  color: #172033;
+  font-size: 14px;
+  letter-spacing: 0;
+  margin: 0 0 6px;
+  text-transform: none;
+}
+
+.generated-field p {
+  margin: 0;
+}
+
+.generated-list ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.generated-list li::marker {
+  color: var(--teal);
+}
+
+.evaluation-disclosure {
+  border: 1px solid #d9e3ec;
+  border-radius: 4px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.evaluation-disclosure > button {
+  align-items: center;
+  background: #f5f8fa;
+  border: 0;
+  color: #132234;
+  display: flex;
+  font-size: 13px;
+  font-weight: 900;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.evaluation-disclosure > button[aria-expanded="true"] {
+  background: #eaf4f2;
+  color: #0f5f58;
+}
+
+.evaluation-disclosure > .markdown-block {
+  border-top: 1px solid #d9e3ec;
+  padding: 12px;
+}
+
 .source-disclosure {
   overflow: hidden;
 }
@@ -436,7 +496,7 @@ textarea {
 }
 
 .rating-dock {
-  align-items: end;
+  align-items: center;
   background: #fff;
   border-top: 1px solid var(--line);
   box-shadow: 0 -10px 24px rgba(19, 34, 52, 0.11);
@@ -452,6 +512,7 @@ textarea {
 }
 
 .session-fields {
+  align-self: center;
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -475,6 +536,7 @@ textarea {
 }
 
 .slider-row {
+  align-self: center;
   display: grid;
   gap: 6px;
 }
@@ -517,6 +579,7 @@ textarea {
 }
 
 .submit-button {
+  align-self: center;
   background: var(--teal);
   border: 0;
   border-radius: 4px;
@@ -691,7 +754,7 @@ textarea {
   }
 
   .rating-dock {
-    align-items: end;
+    align-items: center;
     gap: 6px 8px;
     grid-template-columns: minmax(0, 1fr) minmax(120px, 0.78fr);
     padding: 7px 10px 8px;

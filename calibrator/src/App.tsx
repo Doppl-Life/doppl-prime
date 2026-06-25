@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CalibratorIndex,
   CalibratorRating,
@@ -25,9 +25,21 @@ declare global {
   interface Window {
     DOPPL_CALIBRATOR_CONFIG?: {
       ratingsEndpoint?: string;
+      ratingsLedgerUrl?: string;
       requiresAccessCode?: boolean;
     };
   }
+}
+
+interface AgardenLedgerRating {
+  rater_id: string;
+  score: number;
+  rate_date: string;
+}
+
+interface AgardenLedgerEntry {
+  node_id: string;
+  ratings: AgardenLedgerRating[];
 }
 
 function scoreLabel(score: number): string {
@@ -42,6 +54,106 @@ function reviewerRating(artifact: ReviewArtifact | null, reviewerEmail: string):
   const normalizedReviewer = normalizeRaterEmail(reviewerEmail);
   if (!artifact || !normalizedReviewer) return null;
   return artifact.human_ratings.find((rating) => ratingReviewerEmail(rating) === normalizedReviewer) ?? null;
+}
+
+function ratingFromLedger(
+  caseId: string,
+  nodeId: string,
+  target: RatingTarget,
+  rating: AgardenLedgerRating,
+): CalibratorRating {
+  return {
+    rating_id: `rating_${nodeId}_${rating.rater_id.replace(/[^a-z0-9_-]+/gi, "_").replace(/_+$/g, "")}`,
+    rating_target: target,
+    case_id: caseId,
+    problem_recovery_id: target === "problem_recovery" ? nodeId : undefined,
+    solution_id: target === "solution" ? nodeId : undefined,
+    score: rating.score,
+    reviewer_email: rating.rater_id,
+    submitted_at: rating.rate_date,
+    app_version: "calibrator-v0",
+    body: "",
+  };
+}
+
+function scoresFromRatings(
+  previousScores: ReviewArtifact["scores"],
+  ratings: CalibratorRating[],
+): ReviewArtifact["scores"] {
+  if (ratings.length === 0) return previousScores;
+  const human = ratings.reduce((sum, rating) => sum + rating.score, 0) / ratings.length;
+  return { ...(previousScores ?? {}), human, n: ratings.length };
+}
+
+function applyRatingsLedger(index: CalibratorIndex, ledger: AgardenLedgerEntry[]): CalibratorIndex {
+  const byNode = new Map(ledger.map((entry) => [entry.node_id, entry]));
+  return {
+    ...index,
+    cases: index.cases.map((caseItem) => ({
+      ...caseItem,
+      problem_recoveries: caseItem.problem_recoveries.map((artifact) => {
+        const nodeId = artifact.node_id ?? artifact.problem_recovery_id;
+        const entry = byNode.get(nodeId);
+        if (!entry) return artifact;
+        const human_ratings = entry.ratings.map((rating) =>
+          ratingFromLedger(caseItem.case_id, nodeId, "problem_recovery", rating),
+        );
+        return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+      }),
+      solutions: caseItem.solutions.map((artifact) => {
+        const nodeId = artifact.node_id ?? artifact.solution_id;
+        const entry = byNode.get(nodeId);
+        if (!entry) return artifact;
+        const human_ratings = entry.ratings.map((rating) =>
+          ratingFromLedger(caseItem.case_id, nodeId, "solution", rating),
+        );
+        return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+      }),
+    })),
+  };
+}
+
+function upsertRating(ratings: CalibratorRating[], nextRating: CalibratorRating): CalibratorRating[] {
+  const reviewer = ratingReviewerEmail(nextRating);
+  const withoutPrevious = ratings.filter((rating) => ratingReviewerEmail(rating) !== reviewer);
+  return [...withoutPrevious, nextRating];
+}
+
+function applySubmittedRating(input: {
+  index: CalibratorIndex;
+  caseId: string;
+  target: RatingTarget;
+  nodeId: string;
+  score: number;
+  reviewerEmail: string;
+  submittedAt: string;
+}): CalibratorIndex {
+  const nextRating = ratingFromLedger(input.caseId, input.nodeId, input.target, {
+    rater_id: normalizeRaterEmail(input.reviewerEmail),
+    score: input.score,
+    rate_date: input.submittedAt,
+  });
+  return {
+    ...input.index,
+    cases: input.index.cases.map((caseItem) => {
+      if (caseItem.case_id !== input.caseId) return caseItem;
+      return {
+        ...caseItem,
+        problem_recoveries: caseItem.problem_recoveries.map((artifact) => {
+          const nodeId = artifact.node_id ?? artifact.problem_recovery_id;
+          if (input.target !== "problem_recovery" || nodeId !== input.nodeId) return artifact;
+          const human_ratings = upsertRating(artifact.human_ratings, nextRating);
+          return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+        }),
+        solutions: caseItem.solutions.map((artifact) => {
+          const nodeId = artifact.node_id ?? artifact.solution_id;
+          if (input.target !== "solution" || nodeId !== input.nodeId) return artifact;
+          const human_ratings = upsertRating(artifact.human_ratings, nextRating);
+          return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+        }),
+      };
+    }),
+  };
 }
 
 function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
@@ -100,6 +212,32 @@ function displayMarkdown(text: string): string {
   return lines.join("\n").trim();
 }
 
+function splitEvaluationMarkdown(text: string): { main: string; evaluation: string } {
+  const normalized = displayMarkdown(text);
+  const headingMatch = normalized.match(/\n##\s+Evaluation\s*\n/i);
+  if (headingMatch?.index !== undefined) {
+    const main = normalized.slice(0, headingMatch.index).trim();
+    const evaluation = normalized.slice(headingMatch.index + headingMatch[0].length).trim();
+    return { main, evaluation };
+  }
+
+  const lines = normalized.split("\n");
+  const start = lines.findIndex((line) =>
+    /^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(line.trim()),
+  );
+  if (start < 0) return { main: normalized, evaluation: "" };
+
+  let firstJudgeOnly = -1;
+  for (let index = 0; index < start; index += 1) {
+    if (/judge-only axis/i.test(lines[index])) firstJudgeOnly = index;
+  }
+  const splitAt = firstJudgeOnly >= 0 ? firstJudgeOnly : start;
+  return {
+    main: lines.slice(0, splitAt).join("\n").trim(),
+    evaluation: lines.slice(splitAt).join("\n").trim(),
+  };
+}
+
 function cleanHeading(text: string): string {
   const cleaned = text
     .replace(/^#{1,6}\s*/, "")
@@ -134,6 +272,17 @@ function renderInlineText(text: string): string {
     .trim();
 }
 
+function sentenceCaseHeading(value: string): string {
+  return renderInlineText(value)
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[A-Za-z][A-Za-z0-9]*/g, (word) => {
+      if (/^(AI|API|AV|EV|FICO|OEM|RUC|XAI|FTC|ECB|CSAIL|NHTSA|MIT)$/i.test(word)) return word.toUpperCase();
+      return `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}`;
+    });
+}
+
 function comparableText(text: string): string {
   return renderInlineText(text)
     .toLowerCase()
@@ -147,6 +296,36 @@ function markdownBlocks(text: string): string[] {
     .flatMap((block) => block.replace(/\s+(#{2,4}\s+)/g, "\n\n$1").split(/\n{2,}/))
     .map((block) => block.trim())
     .filter(Boolean);
+}
+
+function labeledBlock(block: string):
+  | { label: string; items: string[]; list: true }
+  | { label: string; body: string; list: false }
+  | null {
+  const labels = [
+    "Implications",
+    "Opportunities",
+    "Sprouts",
+    "Skin in the Game",
+    "Claim",
+    "Surface complaint",
+    "Deleted assumption",
+    "Hidden variable",
+    "Actual problem",
+    "Candidate response",
+  ];
+  for (const label of labels) {
+    const pattern = new RegExp(`^${label.replace(/\s+/g, "\\s+")}(?:\\s*[-:]\\s*|\\s+)([\\s\\S]+)$`, "i");
+    const match = block.match(pattern);
+    if (!match) continue;
+    const body = renderInlineText(match[1]);
+    const parts = body.split(/\s+-\s+/).map((part) => part.trim()).filter(Boolean);
+    if (["Implications", "Opportunities", "Sprouts", "Skin in the Game"].includes(label) && parts.length > 1) {
+      return { label, items: parts, list: true };
+    }
+    return { label, body, list: false };
+  }
+  return null;
 }
 
 function supplementalMarkdown(baseText: string, candidateText: string): string {
@@ -164,6 +343,27 @@ function MarkdownBlock({ text }: { text: string }) {
     <div className="markdown-block">
       {blocks.map((block) => {
           const key = block.slice(0, 80);
+          const labeled = labeledBlock(block);
+          if (labeled?.list) {
+            return (
+              <section className="generated-list" key={key}>
+                <h5>{labeled.label}:</h5>
+                <ul>
+                  {labeled.items.map((item) => (
+                    <li key={item}>{sentenceCaseHeading(item)}</li>
+                  ))}
+                </ul>
+              </section>
+            );
+          }
+          if (labeled) {
+            return (
+              <section className="generated-field" key={key}>
+                <h5>{labeled.label}:</h5>
+                <p>{renderInlineText(labeled.body)}</p>
+              </section>
+            );
+          }
           if (block.startsWith("# ")) return <h3 key={key}>{cleanHeading(block)}</h3>;
           if (block.startsWith("## ")) return <h4 key={key}>{cleanHeading(block)}</h4>;
           if (block.startsWith("### ")) return <h5 key={key}>{cleanHeading(block)}</h5>;
@@ -180,6 +380,26 @@ function MarkdownBlock({ text }: { text: string }) {
           return <p key={key}>{renderInlineText(block)}</p>;
         })}
     </div>
+  );
+}
+
+function ArtifactMarkdownBlock({ text }: { text: string }) {
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
+  const { main, evaluation } = splitEvaluationMarkdown(text);
+
+  return (
+    <>
+      <MarkdownBlock text={main} />
+      {evaluation ? (
+        <section className="evaluation-disclosure">
+          <button type="button" aria-expanded={evaluationOpen} onClick={() => setEvaluationOpen((open) => !open)}>
+            <span>Judge evaluation</span>
+            <span aria-hidden="true">{evaluationOpen ? "-" : "+"}</span>
+          </button>
+          {evaluationOpen ? <MarkdownBlock text={evaluation} /> : null}
+        </section>
+      ) : null}
+    </>
   );
 }
 
@@ -298,6 +518,10 @@ function hostedRatingsEndpoint(): string {
   return window.DOPPL_CALIBRATOR_CONFIG?.ratingsEndpoint?.trim() ?? "";
 }
 
+function hostedRatingsLedgerUrl(): string {
+  return window.DOPPL_CALIBRATOR_CONFIG?.ratingsLedgerUrl?.trim() ?? "";
+}
+
 function hostedEndpointRequiresAccessCode(endpoint: string): boolean {
   if (!endpoint || endpoint === LOCAL_RATINGS_ENDPOINT) return false;
   return window.DOPPL_CALIBRATOR_CONFIG?.requiresAccessCode ?? true;
@@ -333,6 +557,23 @@ export function App() {
   const [ratingsEndpoint, setRatingsEndpoint] = useState("");
   const requiresAccessCode = hostedEndpointRequiresAccessCode(ratingsEndpoint);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastArtifactScoreKey = useRef("");
+
+  async function mergeHostedRatingsLedger(data: CalibratorIndex): Promise<CalibratorIndex> {
+    const ledgerUrl = hostedRatingsLedgerUrl();
+    if (!ledgerUrl) return data;
+    try {
+      const response = await fetch(`${ledgerUrl}${ledgerUrl.includes("?") ? "&" : "?"}v=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return data;
+      const ledger = (await response.json()) as AgardenLedgerEntry[];
+      if (!Array.isArray(ledger)) return data;
+      return applyRatingsLedger(data, ledger);
+    } catch {
+      return data;
+    }
+  }
 
   async function loadIndex() {
     try {
@@ -340,7 +581,7 @@ export function App() {
       if (apiResponse.ok) {
         setIsWritable(true);
         setRatingsEndpoint(LOCAL_RATINGS_ENDPOINT);
-        return (await apiResponse.json()) as CalibratorIndex;
+        return mergeHostedRatingsLedger((await apiResponse.json()) as CalibratorIndex);
       }
     } catch {
       // Static previews do not expose the local Vite write API.
@@ -351,7 +592,7 @@ export function App() {
     const hostedEndpoint = hostedRatingsEndpoint();
     setIsWritable(Boolean(hostedEndpoint));
     setRatingsEndpoint(hostedEndpoint);
-    return (await staticResponse.json()) as CalibratorIndex;
+    return mergeHostedRatingsLedger((await staticResponse.json()) as CalibratorIndex);
   }
 
   useEffect(() => {
@@ -483,6 +724,32 @@ export function App() {
     visibleSolutions,
   ]);
 
+  useEffect(() => {
+    const artifactScoreKey = `${ratingTarget}:${activeArtifactValue}`;
+    const artifactChanged = lastArtifactScoreKey.current !== artifactScoreKey;
+    lastArtifactScoreKey.current = artifactScoreKey;
+
+    if (!activeReviewArtifact) {
+      setScore(null);
+      return;
+    }
+
+    if (activeReviewerRating) {
+      setScore(activeReviewerRating.score);
+      return;
+    }
+
+    if (artifactChanged) {
+      setScore(null);
+    }
+  }, [
+    activeReviewerRating?.rating_id,
+    activeReviewerRating?.score,
+    activeReviewArtifact?.node_id,
+    activeArtifactValue,
+    ratingTarget,
+  ]);
+
   async function submitRating() {
     if (!selectedCase || !activeReviewArtifact || score === null) return;
     if (!reviewerIsAllowed) {
@@ -530,10 +797,17 @@ export function App() {
         setError(body.error ?? "Rating submission failed");
         return;
       }
-      const refreshed = await loadIndex();
+      const refreshed = applySubmittedRating({
+        index: await loadIndex(),
+        caseId: selectedCase.case_id,
+        target: ratingTarget,
+        nodeId: activeReviewArtifact.node_id ?? activeArtifactValue,
+        score,
+        reviewerEmail,
+        submittedAt: new Date().toISOString(),
+      });
       setIndex(refreshed);
       setSavedPath(body.relativePath ?? "");
-      setScore(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rating submission failed");
     } finally {
@@ -548,7 +822,6 @@ export function App() {
     } else {
       setSelectedSolutionId(item.id);
     }
-    setScore(null);
     setSavedPath("");
     setSourceDetailsOpen(false);
     setOpenParentRecoverySections(new Set());
@@ -655,7 +928,6 @@ export function App() {
               setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
               setOpenCaseSections(new Set());
               setOpenParentRecoverySections(new Set());
-              setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
             }}
@@ -675,7 +947,6 @@ export function App() {
             disabled={visibleProblemRecoveries.length === 0}
             onClick={() => {
               setRatingTarget("problem_recovery");
-              setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
               setOpenParentRecoverySections(new Set());
@@ -689,7 +960,6 @@ export function App() {
             disabled={visibleSolutions.length === 0}
             onClick={() => {
               setRatingTarget("solution");
-              setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
               setOpenParentRecoverySections(new Set());
@@ -722,7 +992,6 @@ export function App() {
               } else {
                 setSelectedSolutionId(event.target.value);
               }
-              setScore(null);
               setSavedPath("");
               setSourceDetailsOpen(false);
               setOpenParentRecoverySections(new Set());
@@ -769,7 +1038,7 @@ export function App() {
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
-          {activeReviewArtifact ? <MarkdownBlock text={activeReviewArtifact.body} /> : null}
+          {activeReviewArtifact ? <ArtifactMarkdownBlock text={activeReviewArtifact.body} /> : null}
         </article>
 
         {discoveryContextText ? (
@@ -890,7 +1159,11 @@ export function App() {
           }
           onClick={submitRating}
         >
-          {isSubmitting ? "Saving..." : `Submit ${ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"} rating`}
+          {isSubmitting
+            ? "Saving..."
+            : `${activeReviewerRating ? "Update" : "Submit"} ${
+                ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"
+              } rating`}
         </button>
         {!isWritable ? <p className="mode-note">Rating writes require the local dev server or hosted ratings API.</p> : null}
         {error ? (
