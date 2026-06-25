@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
-import { ALLOWED_RATERS } from "../src/raters";
 import type { CalibratorIndex } from "../src/types";
 
 const fixture: CalibratorIndex = {
@@ -108,9 +107,14 @@ const fixture: CalibratorIndex = {
   ],
 };
 
+async function waitForReviewWorkspace(name = "Crash-Volume Revenue Dependency") {
+  return screen.findByRole("heading", { name });
+}
+
 describe("App", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.localStorage.setItem("doppl-calibrator-reviewer-email", "dalton.dinderman@challenger.gauntletai.com");
     delete window.DOPPL_CALIBRATOR_CONFIG;
     vi.stubGlobal(
       "fetch",
@@ -139,7 +143,7 @@ describe("App", () => {
 
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Problem recoveries" })).toHaveClass("active");
     expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
     expect(screen.getByLabelText("Problem recovery")).not.toHaveTextContent("Accident-Economy Transition Ledger");
@@ -147,7 +151,7 @@ describe("App", () => {
     expect(screen.getByLabelText("Doppl")).toHaveTextContent("Accident-Economy Transition Ledger");
     expect(screen.getByLabelText("Doppl")).not.toHaveTextContent("Crash Substrate Exposure Map");
     await userEvent.click(screen.getByRole("button", { name: "Problem recoveries" }));
-    expect(screen.getByLabelText("Case and selected artifact review")).toHaveTextContent("Case Study");
+    expect(screen.getByLabelText("Case and selected artifact review")).not.toHaveTextContent("Case Study");
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Include audit artifacts")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Current review status")).not.toBeInTheDocument();
@@ -156,20 +160,20 @@ describe("App", () => {
     expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Notes")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next unrated" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Calibrator" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
   });
 
-  it("shows the parent problem recovery above the doppl with collapsed sections", async () => {
+  it("focuses the reading surface on only the selected artifact", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByText("Parent Problem Recovery")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
+    expect(screen.queryByText("Parent Problem Recovery")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Crash-Volume Revenue Dependency" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
     expect(screen.queryByText("The recovered problem is visible.")).not.toBeInTheDocument();
   });
@@ -203,7 +207,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     expect(screen.queryByText("aGarden")).not.toBeInTheDocument();
     expect(screen.queryByText("1 case")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
@@ -238,41 +242,43 @@ describe("App", () => {
     });
 
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).toHaveValue("fsd-accident-economy");
     expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
     expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
-  it("renders a searchable rater allow-list and rejects unknown reviewers", async () => {
+  it("gates the calibrator behind a searchable reviewer picker", async () => {
+    window.localStorage.clear();
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    const reviewerInput = screen.getByLabelText("Reviewer email");
-    expect(reviewerInput).toHaveAttribute("list", "reviewer-email-options");
-    expect(
-      document.querySelector('datalist#reviewer-email-options option[value="melissa.hargis@challenger.gauntletai.com"]'),
-    ).toBeInTheDocument();
-    expect(document.querySelectorAll("datalist#reviewer-email-options option")).toHaveLength(ALLOWED_RATERS.length);
+    const reviewerInput = await screen.findByLabelText("Reviewer email");
+    await userEvent.type(reviewerInput, "melissa");
+    expect(await screen.findByRole("button", { name: "melissa.hargis@challenger.gauntletai.com" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "dalton.dinderman@challenger.gauntletai.com" })).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(reviewerInput, "unknown@example.com");
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
-    expect(screen.getByText("Choose a reviewer from the allow-list.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "melissa.hargis@challenger.gauntletai.com" }));
+    expect(await waitForReviewWorkspace()).toBeInTheDocument();
+    expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
   });
 
   it("loads the previously selected rater from local storage", async () => {
     window.localStorage.setItem("doppl-calibrator-reviewer-email", "cody.clayton@challenger.gauntletai.com");
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByLabelText("Reviewer email")).toHaveValue("cody.clayton@challenger.gauntletai.com");
+    await waitForReviewWorkspace();
+    expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Log out" }));
+    expect(screen.getByLabelText("Reviewer email")).toBeInTheDocument();
   });
 
-  it("moves to the next unrated artifact in the review queue", async () => {
+  it("moves to the next unrated artifact after a successful submit", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    await waitForReviewWorkspace();
     expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
+    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    });
     expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
     expect(screen.getByLabelText("Doppl")).toHaveValue("dalton-fsd-accident-economy-001__solution");
   });
@@ -295,20 +301,25 @@ describe("App", () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();
       if (url === "/api/index") return new Response(JSON.stringify(personalizedFixture), { status: 200 });
+      if (url === "/api/ratings") return new Response(JSON.stringify({ ratingId: "rating_test" }), { status: 201 });
       return new Response("not found", { status: 404 });
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
+    await waitForReviewWorkspace();
 
     expect(screen.getByText("Your current rating for this item is +3.")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Next unrated" }));
+    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "3" } });
+    await userEvent.click(screen.getByRole("button", { name: "Update problem recovery rating" }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    });
     expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
     expect(screen.getByText("You have not rated this item yet.")).toBeInTheDocument();
   });
 
   it("clears a hydrated score when switching to a reviewer who has not rated the artifact", async () => {
+    window.localStorage.setItem("doppl-calibrator-reviewer-email", "cody.clayton@challenger.gauntletai.com");
     const personalizedFixture: CalibratorIndex = structuredClone(fixture);
     personalizedFixture.cases[0].problem_recoveries[1].human_ratings = [
       {
@@ -330,16 +341,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    const reviewerInput = screen.getByLabelText("Reviewer email");
-    await userEvent.type(reviewerInput, "dalton.dinderman@challenger.gauntletai.com");
-
-    expect(screen.getByText("Your current rating for this item is +3.")).toBeInTheDocument();
-    expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("3");
-
-    await userEvent.clear(reviewerInput);
-    await userEvent.type(reviewerInput, "cody.clayton@challenger.gauntletai.com");
-
+    await waitForReviewWorkspace();
     expect(screen.getByText("You have not rated this item yet.")).toBeInTheDocument();
     expect(screen.getByText("No score selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
@@ -347,10 +349,11 @@ describe("App", () => {
 
   it("formats compressed aGarden artifact markdown as readable sections", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByRole("heading", { name: "Trace" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Case study · Synopsis" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Growth — Problem recovery" })).toBeInTheDocument();
+    await waitForReviewWorkspace();
+    expect(screen.getByRole("button", { name: "Trace" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("FTC reports on algorithmic bias -> field: xai-frameworks")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Trace" }));
+    expect(screen.queryByRole("heading", { name: "Growth — Problem recovery" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Claim Manual Underwriting Is Too Slow" })).toBeInTheDocument();
     expect(screen.getByText("FTC reports on algorithmic bias -> field: xai-frameworks")).toBeInTheDocument();
     expect(screen.queryByText(/span class/)).not.toBeInTheDocument();
@@ -386,7 +389,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
     expect(screen.getByRole("heading", { name: "Implications:" })).toBeInTheDocument();
@@ -419,13 +422,40 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
     expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Novelty +4 78% of language absent from the seed.")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
     expect(screen.getByText("Novelty +4 78% of language absent from the seed.")).toBeInTheDocument();
+  });
+
+  it("hides judge evaluation entirely for ordinary reviewers", async () => {
+    window.localStorage.setItem("doppl-calibrator-reviewer-email", "adam.foosaner@challenger.gauntletai.com");
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Mobility Financialization",
+      "",
+      "Claim Usage-based autonomy pricing disrupts consumer lending models.",
+      "",
+      "## Evaluation",
+      "",
+      "Novelty +4 78% of language absent from the seed.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await waitForReviewWorkspace();
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.queryByRole("button", { name: "Judge evaluation" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Novelty +4 78% of language absent from the seed.")).not.toBeInTheDocument();
   });
 
   it("collapses plain generated Evaluation labels by default", async () => {
@@ -452,7 +482,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
     expect(screen.getByText("Specialty Auto Captives Must Renegotiate Treaty Triggers Or Face Insolvency")).toBeInTheDocument();
@@ -487,7 +517,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
     expect(screen.getByText(/Implications - Dot Budgets Decouple From Fuel-Tax Yields/)).toBeInTheDocument();
@@ -527,7 +557,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
 
@@ -559,7 +589,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
     expect(screen.getByText("Real-Time Mobility Payment Stream Securitization Vehicles Replacing Auto-Loan Abs Markets")).toBeInTheDocument();
@@ -598,15 +628,13 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
-
+    await waitForReviewWorkspace();
     expect(screen.getByText("Your current rating for this item is -2.")).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("-2");
     expect(screen.getByRole("button", { name: "Update problem recovery rating" })).toBeInTheDocument();
   });
 
-  it("deduplicates discovery context paragraphs already shown in the case study", async () => {
+  it("does not show discovery context paragraphs in the rating workspace", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();
       if (url === "/api/index") {
@@ -628,12 +656,12 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getAllByText("Shared paragraph.")).toHaveLength(1);
-    expect(screen.getByText("Problem-only paragraph.")).toBeInTheDocument();
+    await waitForReviewWorkspace();
+    expect(screen.queryByText("Shared paragraph.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Problem-only paragraph.")).not.toBeInTheDocument();
   });
 
-  it("collapses case study sections by default and expands them on demand", async () => {
+  it("does not show case study context sections in the rating workspace", async () => {
     vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();
       if (url === "/api/index") {
@@ -655,45 +683,46 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
-    expect(screen.getByRole("button", { name: "Context" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "The Situation" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "Decision Point" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: "Synopsis" })).toHaveAttribute("aria-expanded", "false");
+    await waitForReviewWorkspace();
+    expect(screen.queryByRole("button", { name: "Context" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "The Situation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Decision Point" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Synopsis" })).not.toBeInTheDocument();
     expect(screen.queryByText("Context body.")).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "Context" }));
-    expect(screen.getByRole("button", { name: "Context" })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Context body.")).toBeInTheDocument();
   });
 
-  it("submits a rating and shows the saved path", async () => {
+  it("submits a rating through the configured endpoint", async () => {
+    const fetchMock = vi.mocked(fetch);
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(
       screen.getByLabelText("Doppl"),
       "dalton-fsd-accident-economy-001__solution",
     );
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "melissa.hargis@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit doppl rating" }));
     await waitFor(() => {
-      expect(screen.getByText(/rating_test.md/)).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/ratings",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"rating_target":"solution"'),
+        }),
+      );
     });
   });
 
   it("submits a problem recovery rating payload", async () => {
     const fetchMock = vi.mocked(fetch);
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.selectOptions(
       screen.getByLabelText("Problem recovery"),
       "dalton-fsd-accident-economy-001__problem_recovery",
     );
     expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "cody.clayton@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -759,13 +788,17 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "Case A" });
+    await waitForReviewWorkspace("Problem Recovery");
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/ratings",
+        expect.objectContaining({
+          body: expect.stringContaining('"node_id":"node-pr"'),
+        }),
+      );
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/ratings",
@@ -788,7 +821,7 @@ describe("App", () => {
     });
 
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "When the Crashes Don't Come" })).toBeInTheDocument();
+    expect(await waitForReviewWorkspace()).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(
       screen.getByLabelText("Doppl"),
@@ -826,14 +859,18 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     expect(screen.queryByLabelText("Access code")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://ratings.example.test/api/agarden/ratings",
+        expect.objectContaining({
+          method: "POST",
+        }),
+      );
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "https://ratings.example.test/api/agarden/ratings",
@@ -867,15 +904,19 @@ describe("App", () => {
     });
 
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.type(screen.getByLabelText("Reviewer email"), "dalton.dinderman@challenger.gauntletai.com");
     expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
     await userEvent.type(screen.getByLabelText("Access code"), "review-session-secret");
     await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/ratings-ledger\.json/)).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://ratings.example.test/api/agarden/ratings",
+        expect.objectContaining({
+          method: "POST",
+        }),
+      );
     });
     expect(fetchMock).toHaveBeenCalledWith(
       "https://ratings.example.test/api/agarden/ratings",
@@ -888,7 +929,7 @@ describe("App", () => {
 
   it("keeps source details collapsed behind one toggle", async () => {
     render(<App />);
-    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
     await userEvent.selectOptions(screen.getByLabelText("Doppl"), "dalton-fsd-accident-economy-001__solution");
     expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);

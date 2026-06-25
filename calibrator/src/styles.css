@@ -66,11 +66,78 @@ select:focus-visible {
   padding: 24px;
 }
 
+.login-shell {
+  align-items: center;
+  background:
+    linear-gradient(rgba(59, 227, 208, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 227, 208, 0.025) 1px, transparent 1px),
+    var(--wash);
+  background-size: 18px 18px;
+  color: var(--ink);
+  display: grid;
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.login-panel {
+  background: rgba(17, 23, 38, 0.98);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 16px;
+  align-self: start;
+  margin: 0 auto;
+  max-width: 440px;
+  padding: 18px 22px 22px;
+  width: min(100%, 440px);
+}
+
+.login-panel h1 {
+  font-size: 30px;
+  line-height: 1;
+  margin: 4px 0 0;
+}
+
+.login-copy {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+.login-results {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 1px;
+  max-height: min(45vh, 320px);
+  overflow-y: auto;
+}
+
+.login-results button {
+  background: var(--paper-2);
+  border: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 38px;
+  overflow-wrap: anywhere;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.login-results button:hover,
+.login-results button:focus-visible {
+  background: var(--teal-soft);
+  color: var(--teal-bright);
+}
+
 .review-app {
   background: var(--wash);
   box-shadow: 0 0 0 1px var(--line), var(--shadow);
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
   margin: 0 auto;
   max-width: 1280px;
@@ -144,10 +211,10 @@ p {
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   display: grid;
-  gap: 3px;
-  grid-template-columns: minmax(0, 1fr);
-  min-height: 68px;
-  padding: 4px 8px;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  padding: 4px;
 }
 
 .target-toggle button {
@@ -158,7 +225,7 @@ p {
   font-size: 12px;
   font-weight: 900;
   min-width: 0;
-  padding: 6px 12px;
+  padding: 7px 9px;
   transition:
     background-color 140ms ease,
     color 140ms ease;
@@ -199,9 +266,44 @@ textarea {
   border-bottom: 1px solid var(--line);
   display: grid;
   gap: 9px;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
   padding: 8px 18px 10px;
+}
+
+.review-controls > .field {
+  order: 1;
+}
+
+.review-controls > .logout-button {
+  order: 2;
+}
+
+.review-controls > .target-toggle {
+  order: 3;
+}
+
+.review-controls > .artifact-control {
+  order: 4;
+}
+
+.review-controls > .target-toggle,
+.review-controls > .artifact-control {
+  grid-column: 1 / -1;
+}
+
+.logout-button {
+  align-self: end;
+  background: rgba(90, 169, 255, 0.1);
+  border: 1px solid rgba(90, 169, 255, 0.34);
+  border-radius: 999px;
+  color: #cfe3ff;
+  font-size: 11px;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 7px 11px;
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .artifact-control {
@@ -427,13 +529,19 @@ textarea {
   color: var(--teal);
 }
 
+.artifact-disclosure,
 .evaluation-disclosure {
   border: 1px solid var(--line);
   border-radius: 6px;
-  margin-top: 16px;
+  margin: 0 0 12px;
   overflow: hidden;
 }
 
+.evaluation-disclosure {
+  margin-top: 16px;
+}
+
+.artifact-disclosure > button,
 .evaluation-disclosure > button {
   align-items: center;
   background: var(--paper-2);
@@ -448,11 +556,13 @@ textarea {
   width: 100%;
 }
 
+.artifact-disclosure > button[aria-expanded="true"],
 .evaluation-disclosure > button[aria-expanded="true"] {
   background: var(--teal-soft);
   color: var(--teal-bright);
 }
 
+.artifact-disclosure > .markdown-block,
 .evaluation-disclosure > .markdown-block {
   border-top: 1px solid var(--line);
   padding: 12px;
@@ -693,8 +803,7 @@ textarea {
   }
 
   .target-toggle {
-    grid-column: auto;
-    min-width: 224px;
+    grid-column: 1 / -1;
   }
 }
 
@@ -715,12 +824,33 @@ textarea {
   }
 
   .review-controls {
-    grid-template-columns: minmax(180px, 220px) minmax(210px, auto) minmax(360px, 1fr);
+    grid-template-columns: minmax(180px, 230px) minmax(230px, 300px) minmax(360px, 1fr) auto;
     padding: 8px 20px 10px;
   }
 
+  .review-controls > .target-toggle,
+  .review-controls > .artifact-control {
+    grid-column: auto;
+  }
+
+  .review-controls > .field {
+    order: 1;
+  }
+
+  .review-controls > .target-toggle {
+    order: 2;
+  }
+
+  .review-controls > .artifact-control {
+    order: 3;
+  }
+
+  .review-controls > .logout-button {
+    order: 4;
+  }
+
   .trace-surface {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     padding: 12px 20px 14px;
   }
 
@@ -731,8 +861,12 @@ textarea {
   }
 
   .rating-dock {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
     padding: 7px 14px 8px;
+  }
+
+  .rating-dock .session-fields {
+    grid-column: 1 / -1;
   }
 
   .rating-dock .error,
@@ -744,17 +878,13 @@ textarea {
 
 @media (min-width: 1180px) {
   .review-controls {
-    grid-template-columns: minmax(180px, 220px) minmax(210px, auto) minmax(460px, 1fr);
+    grid-template-columns: minmax(180px, 230px) minmax(230px, 300px) minmax(460px, 1fr) auto;
   }
 }
 
 @media (min-width: 1100px) {
   .review-app {
     margin-top: 0;
-  }
-
-  .trace-surface {
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
   }
 
 }
@@ -790,7 +920,9 @@ textarea {
 
   .target-toggle {
     gap: 3px;
-    grid-column: auto;
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(100%, 320px);
     min-width: 180px;
     min-height: 0;
     padding: 3px 6px;
@@ -869,7 +1001,7 @@ textarea {
 
 @media (max-width: 420px) {
   .review-controls {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .target-toggle {

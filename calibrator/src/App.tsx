@@ -22,6 +22,13 @@ type ReviewQueueItem =
   | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
   | { target: "solution"; id: string; artifact: CalibratorSolution };
 
+const JUDGE_EVALUATION_RATERS = new Set([
+  "dalton.dinderman@challenger.gauntletai.com",
+  "cody.clayton@challenger.gauntletai.com",
+  "melissa.hargis@challenger.gauntletai.com",
+  "michael.habermas@challenger.gauntletai.com",
+]);
+
 declare global {
   interface Window {
     DOPPL_CALIBRATOR_CONFIG?: {
@@ -200,6 +207,52 @@ function firstReviewableCase(index: CalibratorIndex) {
   return index.cases.find(hasRateableArtifacts);
 }
 
+function reviewQueueForCase(caseItem: CalibratorIndex["cases"][number] | null): ReviewQueueItem[] {
+  if (!caseItem) return [];
+  const problemRecoveryItems: ReviewQueueItem[] = caseItem.problem_recoveries
+    .filter((artifact) => reviewMode(artifact) === "primary")
+    .map((artifact) => ({
+      target: "problem_recovery",
+      id: artifact.problem_recovery_id,
+      artifact,
+    }));
+  const solutionItems: ReviewQueueItem[] = caseItem.solutions
+    .filter((artifact) => reviewMode(artifact) === "primary")
+    .map((artifact) => ({
+      target: "solution",
+      id: artifact.solution_id,
+      artifact,
+    }));
+  return [...problemRecoveryItems, ...solutionItems];
+}
+
+function findNextUnratedItem(
+  queue: ReviewQueueItem[],
+  currentTarget: RatingTarget,
+  currentId: string,
+  reviewerEmail: string,
+): ReviewQueueItem | null {
+  if (queue.length === 0 || !reviewerEmail) return null;
+  const currentIndex = queue.findIndex((item) => item.target === currentTarget && item.id === currentId);
+  const start = currentIndex >= 0 ? currentIndex + 1 : 0;
+  for (let offset = 0; offset < queue.length; offset += 1) {
+    const candidate = queue[(start + offset) % queue.length];
+    if (candidate.target === currentTarget && candidate.id === currentId) continue;
+    if (!reviewerRating(candidate.artifact, reviewerEmail)) return candidate;
+  }
+  return null;
+}
+
+function canSeeJudgeEvaluation(reviewerEmail: string): boolean {
+  return JUDGE_EVALUATION_RATERS.has(normalizeRaterEmail(reviewerEmail));
+}
+
+function matchingRaters(query: string): string[] {
+  const normalized = normalizeRaterEmail(query);
+  if (!normalized) return ALLOWED_RATERS.slice(0, 8);
+  return ALLOWED_RATERS.filter((rater) => rater.includes(normalized)).slice(0, 8);
+}
+
 function displayMarkdown(text: string): string {
   const normalized = text
     .replace(/<span\s+class=["']arrow["']\s*-?>/gi, " -> ")
@@ -264,6 +317,48 @@ function splitEvaluationMarkdown(text: string): { main: string; evaluation: stri
   return {
     main: lines.slice(0, splitAt).join("\n").trim(),
     evaluation: lines.slice(splitAt).join("\n").trim(),
+  };
+}
+
+function splitArtifactMarkdown(text: string): {
+  trace: string;
+  discovery: string;
+  body: string;
+  evaluation: string;
+} {
+  const { main, evaluation } = splitEvaluationMarkdown(text);
+  const lines = main.split("\n");
+  const buckets = {
+    trace: [] as string[],
+    discovery: [] as string[],
+    body: [] as string[],
+  };
+  let current: keyof typeof buckets = "body";
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const heading = trimmed.match(/^#{1,4}\s+(.+)$/);
+    const headingText = heading?.[1] ?? trimmed;
+    if (/^trace\b/i.test(headingText)) {
+      current = "trace";
+      continue;
+    }
+    if (/^discovery\b/i.test(headingText)) {
+      current = "discovery";
+      continue;
+    }
+    if (/^growth\s*[—-]\s*(problem recovery|doppl)\b/i.test(headingText)) {
+      current = "body";
+      continue;
+    }
+    buckets[current].push(line);
+  }
+
+  return {
+    trace: buckets.trace.join("\n").trim(),
+    discovery: buckets.discovery.join("\n").trim(),
+    body: buckets.body.join("\n").trim(),
+    evaluation,
   };
 }
 
@@ -379,62 +474,126 @@ function supplementalMarkdown(baseText: string, candidateText: string): string {
 
 function MarkdownBlock({ text }: { text: string }) {
   const blocks = markdownBlocks(text);
+  const renderedBlocks = [];
+  const listLabels = new Set(["Implications", "Opportunities", "Sprouts", "Skin in the Game"]);
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index];
+    const heading = block.match(/^#{2,4}\s+(.+)$/);
+    const label = heading ? cleanHeading(heading[1]) : "";
+    const nextBlock = blocks[index + 1] ?? "";
+    if (listLabels.has(label) && nextBlock && generatedListItems(nextBlock).length > 1) {
+      renderedBlocks.push(
+        <section className="generated-list" key={`${block}-${nextBlock}`.slice(0, 120)}>
+          <h5>{label}:</h5>
+          <ul>
+            {generatedListItems(nextBlock).map((item) => (
+              <li key={item}>{sentenceCaseHeading(item)}</li>
+            ))}
+          </ul>
+        </section>,
+      );
+      index += 1;
+      continue;
+    }
+
+    const key = block.slice(0, 80);
+    const labeled = labeledBlock(block);
+    if (labeled?.list) {
+      renderedBlocks.push(
+        <section className="generated-list" key={key}>
+          <h5>{labeled.label}:</h5>
+          <ul>
+            {labeled.items.map((item) => (
+              <li key={item}>{sentenceCaseHeading(item)}</li>
+            ))}
+          </ul>
+        </section>,
+      );
+      continue;
+    }
+    if (labeled) {
+      renderedBlocks.push(
+        <section className="generated-field" key={key}>
+          <h5>{labeled.label}:</h5>
+          <p>{renderInlineText(labeled.body)}</p>
+        </section>,
+      );
+      continue;
+    }
+    if (block.startsWith("# ")) {
+      renderedBlocks.push(<h3 key={key}>{cleanHeading(block)}</h3>);
+      continue;
+    }
+    if (block.startsWith("## ")) {
+      renderedBlocks.push(<h4 key={key}>{cleanHeading(block)}</h4>);
+      continue;
+    }
+    if (block.startsWith("### ") || block.startsWith("#### ")) {
+      renderedBlocks.push(<h5 key={key}>{cleanHeading(block)}</h5>);
+      continue;
+    }
+    if (/^\d+\.\s/m.test(block)) {
+      renderedBlocks.push(
+        <ol key={key}>
+          {block.split("\n").map((line) => (
+            <li key={line}>{renderInlineText(line.replace(/^\d+\.\s*/, ""))}</li>
+          ))}
+        </ol>,
+      );
+      continue;
+    }
+    renderedBlocks.push(<p key={key}>{renderInlineText(block)}</p>);
+  }
+
   return (
     <div className="markdown-block">
-      {blocks.map((block) => {
-          const key = block.slice(0, 80);
-          const labeled = labeledBlock(block);
-          if (labeled?.list) {
-            return (
-              <section className="generated-list" key={key}>
-                <h5>{labeled.label}:</h5>
-                <ul>
-                  {labeled.items.map((item) => (
-                    <li key={item}>{sentenceCaseHeading(item)}</li>
-                  ))}
-                </ul>
-              </section>
-            );
-          }
-          if (labeled) {
-            return (
-              <section className="generated-field" key={key}>
-                <h5>{labeled.label}:</h5>
-                <p>{renderInlineText(labeled.body)}</p>
-              </section>
-            );
-          }
-          if (block.startsWith("# ")) return <h3 key={key}>{cleanHeading(block)}</h3>;
-          if (block.startsWith("## ")) return <h4 key={key}>{cleanHeading(block)}</h4>;
-          if (block.startsWith("### ")) return <h5 key={key}>{cleanHeading(block)}</h5>;
-          if (block.startsWith("#### ")) return <h5 key={key}>{cleanHeading(block)}</h5>;
-          if (/^\d+\.\s/m.test(block)) {
-            return (
-              <ol key={key}>
-                {block.split("\n").map((line) => (
-                  <li key={line}>{renderInlineText(line.replace(/^\d+\.\s*/, ""))}</li>
-                ))}
-              </ol>
-            );
-          }
-          return <p key={key}>{renderInlineText(block)}</p>;
-        })}
+      {renderedBlocks}
     </div>
   );
 }
 
-function ArtifactMarkdownBlock({ artifactKey, text }: { artifactKey: string; text: string }) {
+function ArtifactMarkdownBlock({
+  artifactKey,
+  text,
+  showEvaluation,
+}: {
+  artifactKey: string;
+  text: string;
+  showEvaluation: boolean;
+}) {
   const [evaluationOpen, setEvaluationOpen] = useState(false);
-  const { main, evaluation } = splitEvaluationMarkdown(text);
+  const [traceOpen, setTraceOpen] = useState(false);
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const { trace, discovery, body, evaluation } = splitArtifactMarkdown(text);
 
   useEffect(() => {
     setEvaluationOpen(false);
+    setTraceOpen(false);
+    setDiscoveryOpen(false);
   }, [artifactKey]);
 
   return (
     <>
-      <MarkdownBlock text={main} />
-      {evaluation ? (
+      {trace ? (
+        <section className="artifact-disclosure">
+          <button type="button" aria-expanded={traceOpen} onClick={() => setTraceOpen((open) => !open)}>
+            <span>Trace</span>
+            <span aria-hidden="true">{traceOpen ? "-" : "+"}</span>
+          </button>
+          {traceOpen ? <MarkdownBlock text={trace} /> : null}
+        </section>
+      ) : null}
+      {discovery ? (
+        <section className="artifact-disclosure">
+          <button type="button" aria-expanded={discoveryOpen} onClick={() => setDiscoveryOpen((open) => !open)}>
+            <span>Discovery</span>
+            <span aria-hidden="true">{discoveryOpen ? "-" : "+"}</span>
+          </button>
+          {discoveryOpen ? <MarkdownBlock text={discovery} /> : null}
+        </section>
+      ) : null}
+      <MarkdownBlock text={body} />
+      {showEvaluation && evaluation ? (
         <section className="evaluation-disclosure">
           <button type="button" aria-expanded={evaluationOpen} onClick={() => setEvaluationOpen((open) => !open)}>
             <span>Judge evaluation</span>
@@ -595,8 +754,7 @@ export function App() {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
-  const [openCaseSections, setOpenCaseSections] = useState<Set<string>>(() => new Set());
-  const [openParentRecoverySections, setOpenParentRecoverySections] = useState<Set<string>>(() => new Set());
+  const [loginEmail, setLoginEmail] = useState("");
   const [score, setScore] = useState<number | null>(null);
   const [reviewerEmail, setReviewerEmail] = useState(() => {
     try {
@@ -716,56 +874,26 @@ export function App() {
       null,
     [visibleProblemRecoveries, selectedProblemRecoveryId],
   );
-  const parentProblemRecovery = useMemo(
-    () =>
-      ratingTarget === "solution"
-        ? findParentProblemRecovery(selectedSolution, allProblemRecoveries)
-        : null,
-    [allProblemRecoveries, ratingTarget, selectedSolution],
-  );
   const reviewQueue = useMemo<ReviewQueueItem[]>(() => {
-    const problemRecoveryItems: ReviewQueueItem[] = visibleProblemRecoveries.map((artifact) => ({
-      target: "problem_recovery",
-      id: artifact.problem_recovery_id,
-      artifact,
-    }));
-    const solutionItems: ReviewQueueItem[] = visibleSolutions.map((artifact) => ({
-      target: "solution",
-      id: artifact.solution_id,
-      artifact,
-    }));
-    return [...problemRecoveryItems, ...solutionItems];
-  }, [visibleProblemRecoveries, visibleSolutions]);
+    return reviewQueueForCase(selectedCase);
+  }, [selectedCase]);
   const activeReviewArtifact =
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const activeTitle = artifactTitle(activeReviewArtifact);
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const normalizedReviewerEmail = normalizeRaterEmail(reviewerEmail);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
+  const loginMatches = useMemo(() => matchingRaters(loginEmail), [loginEmail]);
   const activeReviewerRating = reviewerRating(activeReviewArtifact, normalizedReviewerEmail);
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
       ? selectedProblemRecovery?.problem_recovery_id ?? ""
       : selectedSolution?.solution_id ?? "";
-  const activeQueueIndex = reviewQueue.findIndex((item) => item.target === ratingTarget && item.id === (ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : selectedSolution?.solution_id));
-  const nextUnratedItem = useMemo(() => {
-    if (reviewQueue.length === 0 || !reviewerIsAllowed) return null;
-    const start = activeQueueIndex >= 0 ? activeQueueIndex + 1 : 0;
-    for (let offset = 0; offset < reviewQueue.length; offset += 1) {
-      const candidate = reviewQueue[(start + offset) % reviewQueue.length];
-      if (!reviewerRating(candidate.artifact, normalizedReviewerEmail)) return candidate;
-    }
-    return null;
-  }, [activeQueueIndex, normalizedReviewerEmail, reviewerIsAllowed, reviewQueue]);
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
     return (index?.comparison_sets ?? []).find((set) => set.comparison_set_id === comparisonSetId) ?? null;
   }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
-  const discoveryContextText = useMemo(() => {
-    if (!selectedCase) return "";
-    return supplementalMarkdown(selectedCase.body, selectedCase.problem.body);
-  }, [selectedCase]);
 
   useEffect(() => {
     if (!selectedCase) return;
@@ -832,7 +960,7 @@ export function App() {
   ]);
 
   async function submitRating() {
-    if (!selectedCase || !activeReviewArtifact || score === null) return;
+    if (!index || !selectedCase || !activeReviewArtifact || score === null) return;
     if (!reviewerIsAllowed) {
       setError("Choose a reviewer from the allow-list before submitting.");
       return;
@@ -878,8 +1006,14 @@ export function App() {
         setError(body.error ?? "Rating submission failed");
         return;
       }
+      let latestIndex = index;
+      try {
+        latestIndex = await loadIndex();
+      } catch {
+        latestIndex = index;
+      }
       const refreshed = applySubmittedRating({
-        index: await loadIndex(),
+        index: latestIndex,
         caseId: selectedCase.case_id,
         target: ratingTarget,
         nodeId: activeReviewArtifact.node_id ?? activeArtifactValue,
@@ -889,6 +1023,18 @@ export function App() {
       });
       setIndex(refreshed);
       setSavedPath(body.relativePath ?? "");
+      const refreshedCase =
+        refreshed.cases.filter(hasRateableArtifacts).find((caseItem) => caseItem.case_id === selectedCase.case_id) ??
+        null;
+      const nextItem = findNextUnratedItem(
+        reviewQueueForCase(refreshedCase),
+        ratingTarget,
+        activeArtifactValue,
+        normalizedReviewerEmail,
+      );
+      if (nextItem) {
+        selectReviewItem(nextItem);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rating submission failed");
     } finally {
@@ -905,41 +1051,30 @@ export function App() {
     }
     setSavedPath("");
     setSourceDetailsOpen(false);
-    setOpenParentRecoverySections(new Set());
-  }
-
-  function toggleCaseSection(sectionKey: string) {
-    setOpenCaseSections((current) => {
-      const next = new Set(current);
-      if (next.has(sectionKey)) {
-        next.delete(sectionKey);
-      } else {
-        next.add(sectionKey);
-      }
-      return next;
-    });
-  }
-
-  function toggleParentRecoverySection(sectionKey: string) {
-    setOpenParentRecoverySections((current) => {
-      const next = new Set(current);
-      if (next.has(sectionKey)) {
-        next.delete(sectionKey);
-      } else {
-        next.add(sectionKey);
-      }
-      return next;
-    });
   }
 
   function updateReviewerEmail(value: string) {
     setReviewerEmail(value);
+    setLoginEmail("");
     try {
       if (isAllowedRater(value)) {
         window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
       }
     } catch {
       // Local storage is a convenience only; rating validation remains server-side.
+    }
+  }
+
+  function logoutReviewer() {
+    setReviewerEmail("");
+    setLoginEmail("");
+    setScore(null);
+    setSavedPath("");
+    setError("");
+    try {
+      window.localStorage.removeItem(REVIEWER_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures; clearing local state is enough for this render.
     }
   }
 
@@ -985,15 +1120,50 @@ export function App() {
     );
   }
 
+  if (!reviewerIsAllowed) {
+    return (
+      <main className="login-shell">
+        <section className="login-panel" aria-label="Calibrator sign in">
+          <div>
+            <p className="eyebrow">Doppl Life</p>
+            <h1>Calibrator</h1>
+            <p className="login-copy">Choose your reviewer identity to begin rating problem recoveries and doppls.</p>
+          </div>
+          <label className="field login-field">
+            <span>Reviewer email</span>
+            <input
+              type="email"
+              value={loginEmail}
+              onChange={(event) => setLoginEmail(event.target.value)}
+              placeholder="Search or enter your email"
+              autoComplete="email"
+            />
+          </label>
+          <div className="login-results" aria-label="Matching reviewers">
+            {loginMatches.map((rater) => (
+              <button key={rater} type="button" onClick={() => updateReviewerEmail(rater)}>
+                {rater}
+              </button>
+            ))}
+          </div>
+          <button
+            className="submit-button login-button"
+            type="button"
+            disabled={!isAllowedRater(loginEmail)}
+            onClick={() => updateReviewerEmail(loginEmail)}
+          >
+            Continue
+          </button>
+          {loginEmail && !isAllowedRater(loginEmail) ? (
+            <p className="field-note">Choose one of the allow-listed reviewer emails.</p>
+          ) : null}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="review-app">
-      <header className="review-header">
-        <div className="brand-lockup">
-          <p className="eyebrow">Doppl Life</p>
-          <h1>Calibrator</h1>
-        </div>
-      </header>
-
       <section className="review-controls" aria-label="Review setup">
         <label className="field">
           <span>Case study</span>
@@ -1007,8 +1177,6 @@ export function App() {
               setSelectedProblemRecoveryId(nextPrimaryProblemRecovery?.problem_recovery_id ?? null);
               setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
               setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
-              setOpenCaseSections(new Set());
-              setOpenParentRecoverySections(new Set());
               setSavedPath("");
               setSourceDetailsOpen(false);
             }}
@@ -1020,7 +1188,6 @@ export function App() {
             ))}
           </select>
         </label>
-
         <div className="target-toggle" aria-label="Review type">
           <button
             type="button"
@@ -1030,7 +1197,6 @@ export function App() {
               setRatingTarget("problem_recovery");
               setSavedPath("");
               setSourceDetailsOpen(false);
-              setOpenParentRecoverySections(new Set());
             }}
           >
             Problem recoveries
@@ -1043,7 +1209,6 @@ export function App() {
               setRatingTarget("solution");
               setSavedPath("");
               setSourceDetailsOpen(false);
-              setOpenParentRecoverySections(new Set());
             }}
           >
             Doppls
@@ -1053,16 +1218,6 @@ export function App() {
         <div className="artifact-control">
           <div className="artifact-select-header">
             <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</span>
-            <button
-              type="button"
-              className="next-unrated-button"
-              disabled={!nextUnratedItem}
-              onClick={() => {
-                if (nextUnratedItem) selectReviewItem(nextUnratedItem);
-              }}
-            >
-              Next unrated
-            </button>
           </div>
           <select
             aria-label={ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}
@@ -1075,7 +1230,6 @@ export function App() {
               }
               setSavedPath("");
               setSourceDetailsOpen(false);
-              setOpenParentRecoverySections(new Set());
             }}
           >
             {ratingTarget === "problem_recovery"
@@ -1091,50 +1245,29 @@ export function App() {
                 ))}
           </select>
         </div>
+
+        <button className="logout-button" type="button" onClick={logoutReviewer} aria-label="Log out">
+          <span aria-hidden="true">Log out</span>
+        </button>
       </section>
 
       <section className="trace-surface" aria-label="Case and selected artifact review">
-        <article className="trace-step case-step">
-          <p className="trace-label">Case Study</p>
-          <h2>{selectedCase.title}</h2>
-          <CaseStudyBlock
-            text={selectedCase.body}
-            openSections={openCaseSections}
-            onToggleSection={toggleCaseSection}
-          />
-        </article>
-
-        {ratingTarget === "solution" && parentProblemRecovery ? (
-          <article className="trace-step parent-recovery-step">
-            <p className="trace-label">Parent Problem Recovery</p>
-            <h2>{parentProblemRecovery.title}</h2>
-            <CaseStudyBlock
-              text={parentProblemRecovery.body}
-              openSections={openParentRecoverySections}
-              onToggleSection={toggleParentRecoverySection}
-            />
-          </article>
-        ) : null}
-
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
           {activeReviewArtifact ? (
-            <ArtifactMarkdownBlock artifactKey={`${ratingTarget}:${activeArtifactValue}`} text={activeReviewArtifact.body} />
+            <ArtifactMarkdownBlock
+              artifactKey={`${ratingTarget}:${activeArtifactValue}`}
+              text={activeReviewArtifact.body}
+              showEvaluation={canSeeJudgeEvaluation(normalizedReviewerEmail)}
+            />
           ) : null}
         </article>
-
-        {discoveryContextText ? (
-          <article className="trace-step">
-            <p className="trace-label">Discovery Context</p>
-            <MarkdownBlock text={discoveryContextText} />
-          </article>
-        ) : null}
 
         <section className="source-disclosure">
           <button type="button" onClick={() => setSourceDetailsOpen((open) => !open)}>
             <span>{sourceDetailsOpen ? "Hide source details" : "Show source details"}</span>
-            <span>{sourceDetailsOpen ? "−" : "+"}</span>
+            <span>{sourceDetailsOpen ? "-" : "+"}</span>
           </button>
           {sourceDetailsOpen && activeReviewArtifact ? (
             <div>
@@ -1170,25 +1303,8 @@ export function App() {
       </section>
 
       <footer className="rating-dock" aria-label="Rating controls">
-        <div className="session-fields">
-          <label className="field reviewer-field">
-            <span>Reviewer email</span>
-            <input
-              type="email"
-              list="reviewer-email-options"
-              value={reviewerEmail}
-              onChange={(event) => updateReviewerEmail(event.target.value)}
-              placeholder="name@gauntletai.com"
-            />
-            <datalist id="reviewer-email-options">
-              {ALLOWED_RATERS.map((rater) => (
-                <option key={rater} value={rater} />
-              ))}
-            </datalist>
-            {reviewerEmail && !reviewerIsAllowed ? (
-              <span className="field-note">Choose a reviewer from the allow-list.</span>
-            ) : null}
-          </label>
+        {requiresAccessCode ? (
+          <div className="session-fields">
           {requiresAccessCode ? (
             <label className="field access-code-field">
               <span>Access code</span>
@@ -1201,7 +1317,8 @@ export function App() {
               />
             </label>
           ) : null}
-        </div>
+          </div>
+        ) : null}
         <div className="slider-row">
           <label htmlFor="score-slider">
             <span>Score</span>
