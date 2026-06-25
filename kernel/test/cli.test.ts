@@ -65,3 +65,9 @@ test('CLI args require a model when replaying model calls', () => {
 test('CLI args require a model when live model calls are enabled', () => {
   assert.throws(() => parseKernelCliArgs(['--live-model']), /--model is required when --live-model is set/);
 });
+
+test('CLI args tolerate the npm/pnpm "--" separator and parse --cli', () => {
+  const args = parseKernelCliArgs(['--', '--cli', 'claude', '--vault', '../agarden']);
+  assert.equal(args.cli, 'claude');
+  assert.equal(args.vault, '../agarden');
+});

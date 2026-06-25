@@ -73,6 +73,7 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
   };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
+    if (flag === '--') continue; // the npm/pnpm "end of options" separator; not a flag
     if (flag === '--run-id') {
       args.runId = readFlagValue(argv, index, flag);
       index += 1;
