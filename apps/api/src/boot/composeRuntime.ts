@@ -198,9 +198,10 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     bounds: mvpMutationBounds(config),
     seed: config.runConfig.rngSeed,
     newId,
-    // EXPERIMENT — the r/K mutation share for the run's strategy (0 for fusion_only = HEAD). The adaptive
-    // strategy's per-generation fraction control is applied in the loop (E2); this is the static baseline.
+    // EXPERIMENT — the r/K mutation share for the run's strategy (0 for fusion_only = HEAD). Under the
+    // adaptive strategy the seam overrides this per-generation from the population novelty spread (E2).
     mutationFraction: strategyParams(config.mutationStrategy).baseMutationFraction,
+    adaptive: strategyParams(config.mutationStrategy).usesAdaptiveFraction,
   });
   const nextPopulation = createSuccessorThreading({ caps: config.caps });
 

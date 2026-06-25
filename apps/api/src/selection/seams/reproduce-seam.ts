@@ -5,6 +5,7 @@ import type { ModelGateway } from '../../model-gateway';
 import type { ReproduceContext, ReproduceSeam } from '../../runtime';
 import type { MutationBounds } from '../reproduction/mutate';
 import { assembleSuccessor, type SuccessorParent } from '../successor';
+import { adaptiveMutationFraction, noveltySpread } from '../reproduction/convergence';
 
 /**
  * createReproduceSeam (P5.10/P5.11, ARCHITECTURE.md §8) — selection's real impl of the kernel's injected
@@ -36,6 +37,9 @@ export interface ReproduceSeamDeps {
   readonly newId: () => string;
   /** EXPERIMENT — the r/K mutation share (0 = fusion_only control). Default 0 → byte-identical to HEAD. */
   readonly mutationFraction?: number;
+  /** EXPERIMENT — when true (adaptive strategy), the per-generation fraction is driven by this generation's
+   * novelty spread (emergent bidirectional pressure) instead of the static `mutationFraction`. */
+  readonly adaptive?: boolean;
 }
 
 interface BestCandidate {
@@ -145,6 +149,22 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
     // fresh full-cap batch every generation). The kernel additionally backstops over-production post-reproduce.
     // `deps.maxPopulation` is the belt-and-suspenders ceiling (the budget never exceeds it; the loop clamps).
     const remainingPopulation = Math.min(ctx.spawnBudget, deps.maxPopulation);
+
+    // EXPERIMENT — the effective r/K mutation fraction for this generation's offspring. Under the adaptive
+    // strategy it is driven by THIS generation's population novelty SPREAD (the emergent bidirectional
+    // controller: converged → more mutation, diverse → more fusion); otherwise the static base. Pure over
+    // the persisted novelty vectors (rule #7) — replay reconstructs the identical fraction, and the per-slot
+    // decision it feeds is itself recorded in ReproductionEvent.mode (replay never re-decides).
+    let mutationFraction = deps.mutationFraction ?? 0;
+    if (deps.adaptive === true) {
+      const vectors: number[][] = [];
+      for (const row of scoredEvents) {
+        if (row.type !== 'novelty.scored' || row.generationId !== generationId) continue;
+        const parsed = NoveltyScore.safeParse(row.payload);
+        if (parsed.success) vectors.push([...parsed.data.vector]);
+      }
+      mutationFraction = adaptiveMutationFraction(noveltySpread(vectors));
+    }
     // assembleSuccessor runs allocate (caps-clamped, rule #1) → reproduce per slot (fusion/mutation_only/
     // abort), appending the offspring events through `append`. The returned population is discarded — the
     // successor is persisted as events; gen N+1 threading is the W3 boot root. `ctx.outcomes` is unused.
@@ -155,7 +175,7 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
         eligibleParents,
         remainingPopulation,
         seed: deps.seed,
-        ...(deps.mutationFraction !== undefined ? { mutationFraction: deps.mutationFraction } : {}),
+        mutationFraction,
       },
       { gateway: deps.gateway, emit: append, newId: deps.newId, bounds: deps.bounds },
     );
