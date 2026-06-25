@@ -231,23 +231,110 @@ export const RUN_EVENT_TYPES = [
 
 export type RunEventType = (typeof RUN_EVENT_TYPES)[number];
 
-export type RunEvent = {
+type RunEventBase = {
   index: number;
   id?: string;
   runId?: string;
   generationId?: string;
   agenomeId?: string;
   candidateId?: string;
-  type: RunEventType;
   sequence?: number;
   occurredAt?: string;
   actor?: RunEventActor;
   correlationId?: string;
   langfuseTraceId?: string;
   langfuseObservationId?: string;
-  payload: Record<string, unknown>;
   schemaVersion?: number;
 };
+
+type FitnessSelection = NonNullable<FitnessRecord['selection']>;
+
+type ScoredPayload = {
+  candidateId: string;
+  total: number;
+  axes?: FitnessSelection['axes'];
+  weights?: FitnessSelection['weights'];
+  dial?: FitnessSelection['dial'];
+  decay?: FitnessSelection['decay'];
+  lens?: FitnessSelection['lens'];
+};
+
+type EnergyLedgerPayload = {
+  ledgerEntryId: string;
+  agenomeId: string;
+  generation: number;
+  units: number;
+  reason: string;
+  candidateId?: string;
+};
+
+type ModelOutputPayload = {
+  callId: string;
+  purpose: string;
+  provider: string;
+  model: string;
+  status: string;
+};
+
+export type RunEventPayloads = {
+  'run.started': { runId: string; caseId: string };
+  'run.completed': { runId: string; childId: string | null };
+  'run.failed': { runId: string; error: string };
+  'run.stopped': { runId: string; reason?: string };
+  'knowledge.packet_requested': { targetCase: string; memoryMode: MemoryMode };
+  'knowledge.packet_selected': { packetId: string; items: number };
+  'knowledge.item_injected': { citeHandle: string; recipientRole: string };
+  'agenome.materialized': {
+    agenomeId: string;
+    label: string;
+    parentAgenomeIds: string[];
+    mutations: string[];
+    energy: Agenome['energy'];
+    candidateIds: string[];
+  };
+  'agenome.energy_allocated': EnergyLedgerPayload;
+  'agenome.energy_spent': EnergyLedgerPayload;
+  'problem_recovery.created': { recoveryId: string };
+  'control_baseline.created': { candidateId: string; agenomeId: string };
+  'control_baseline.scored': ScoredPayload;
+  'generation.started': { generation: number };
+  'generation.completed': {
+    generation: number;
+    childId: string | null;
+    budgetUsedUnits: number;
+    budgetRemainingUnits: number;
+  };
+  'evolution.budget_exhausted': { generation: number; maxUnits: number; usedUnits: number };
+  'candidate.created': { candidateId: string; agenomeId: string; generation: number };
+  'critic.verdict_recorded': {
+    candidateId: string;
+    criticId: string;
+    score: number;
+    generation: number;
+  };
+  'fitness.scored': ScoredPayload & { generation: number };
+  'pair.compatibility_checked': PairCompatibility & { generation: number };
+  'candidate.fused': {
+    childId: string;
+    inheritanceWeights: InheritanceWeights;
+    generation: number;
+  };
+  'model.operation_started': {
+    runId: string;
+    purpose: string;
+    provider: string;
+    model: string;
+    generation?: number;
+  };
+  'model.output_accepted': ModelOutputPayload;
+  'model.output_repair_requested': ModelOutputPayload;
+  'model.output_repaired': ModelOutputPayload;
+  'model.output_rejected': ModelOutputPayload;
+};
+
+export type RunEvent = {
+  [K in RunEventType]: RunEventBase & { type: K; payload: RunEventPayloads[K] };
+}[RunEventType];
 
 export type VaultExportManifest = {
   rootDir: string;

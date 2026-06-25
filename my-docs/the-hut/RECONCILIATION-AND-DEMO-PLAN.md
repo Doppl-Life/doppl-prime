@@ -1,8 +1,8 @@
 # Proposal — Kernel reconciliation & demo plan
 
 The work to bring four branches into one kernel, stand up the Agora, and reach a demo. Tickets here
-port into **GitHub Projects** on `Doppl-Life/doppl-prime` (the chosen ticket home). This file is the
-shaping space; the project board is where the tickets live and move.
+port into **Linear** (the chosen ticket home). This file is the shaping space; Linear is where the
+tickets live and move.
 
 ## Build status — resume here
 
@@ -20,11 +20,23 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
 
 **Quality suite — one focused pass per window (context fresh each):**
 1. ✅ `improve-codebase-architecture` — actioned the dependency fix; verdict: base solid.
-2. ▶ NEXT: `type-design-analyzer` — design the event-payload **discriminated union** (`RunEvent.payload`
-   is untyped `Record<string,unknown>`; tighten `RunEvent.type` off `| string`). Output = R4's first step.
-3. `deslop` — delete dead root `/src` + `/tools` (orphaned old kernel) + their `tsconfig` includes;
-   dedupe the `.gitignore` env block; consider extracting `vault-export`'s assay logic.
-4. `thermo-nuclear` — final deep review.
+2. ✅ `type-design-analyzer` — `RunEvent.payload` is now a discriminated union: the `RunEventPayloads`
+   map in `contracts.ts` is the SSOT of per-type payload shapes (projecting `FitnessRecord`,
+   `PairCompatibility`, `InheritanceWeights`, `Agenome` by indexed access so it can't drift), `RunEvent`
+   is `{ [K in RunEventType]: base & { type: K; payload: RunEventPayloads[K] } }[RunEventType]`, and
+   `EventRecorder.push<T>(type, payload: RunEventPayloads[T])` is checked per event type. `RunEvent.type`
+   already off `| string`. All producers in `run-kernel`/`server` typecheck clean (fixed a real `status:
+   unknown` leak; dropped dead `agenomeId`/`candidateId` push-options that `normalizeRunEvent` already
+   derives from payload). This is **R4's first step, done**. 118/118 still green.
+3. ✅ `deslop` — repointed `tsconfig.json` `include` → `kernel/src/**`, so `pnpm typecheck` now compiles
+   the *real* kernel (it was compiling the dead root) and is **green** — fixed all 17 pre-existing strict
+   errors it surfaced (node-compiler `run.fusion` guard ×3, run-kernel selected-parent closure narrowing
+   ×2, scoring `frontier` optional-index + `proposalRating.scale` literal ×2, server `unknown` int-parse
+   `typeof` guards ×2 + `readdir` Dirent overload via inference ×4); deduped the `.gitignore` env block
+   (kept `!.env.sample`); **deleted dead root `/src` + `/tools`** (orphaned old michael kernel — nothing
+   in `kernel/` imported them; 118/118 still green). Follow-ups: add `kernel/test/**` to `include` (its
+   partial-payload legacy fixtures need boundary casts first); optional `vault-export` assay extraction.
+4. ▶ NEXT: `thermo-nuclear` — final deep review.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin
@@ -69,7 +81,7 @@ vault + trace + replayable events, with a full test suite. So dalton is the runn
 - **Inner dashboard = melissa's web app** (live, tested) + **cody's design tokens/StatusBadge** skin;
   **cody's `organism-view`** on a baked fixture is the no-backend floor.
 - **Outer view = the spike, wired to the real kernel** (so outer + inner narrate the same run).
-- **Tickets live in GitHub Projects** on `Doppl-Life/doppl-prime`.
+- **Tickets live in Linear.**
 - **Form factor is undecided** — a real decision ticket (H1).
 
 ## Fusion spec (deep-dive result)

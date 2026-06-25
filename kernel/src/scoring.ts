@@ -143,7 +143,7 @@ function dominates(left: FitnessRecord, right: FitnessRecord): boolean {
 
 function withFrontierRanks(records: FitnessRecord[]): FitnessRecord[] {
   const remaining = [...records];
-  const ranked = new Map<string, FitnessRecord['selection']['frontier']>();
+  const ranked = new Map<string, NonNullable<FitnessRecord['selection']>['frontier']>();
   let rank = 1;
 
   while (remaining.length) {
@@ -232,7 +232,7 @@ export function scoreCandidates(
           decay,
           lens,
           proposalRating: {
-            scale: '-5_to_5',
+            scale: '-5_to_5' as const,
             judge: projectedProposalRating(total),
             source: 'projected_from_internal_selection_fitness',
           },

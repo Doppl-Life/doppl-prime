@@ -241,12 +241,13 @@ function dopplNode(
   ids: { self: string; root: string; recovery: string },
   options: Required<Pick<ProposalNodeCompileOptions, 'kernel'>>,
 ): ProposalNodeArtifact | undefined {
-  const child = run.fusion?.child;
-  if (!child) return undefined;
+  const fusion = run.fusion;
+  if (!fusion?.child) return undefined;
+  const child = fusion.child;
   const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const recoverySynopsis = synopsis(run.problemRecovery.recoveredProblem);
-  const parentSummary = run.fusion.parentCandidateIds.join(' + ');
+  const parentSummary = fusion.parentCandidateIds.join(' + ');
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'doppl'],
@@ -286,8 +287,8 @@ ${child.summary}
 - Mechanism: ${child.mechanism}
 - Claimed delta: ${child.claimedDelta}
 - Parent lineage: ${parentSummary}
-- Inherited traits: ${run.fusion.inheritedTraits.join('; ') || 'none recorded'}
-- Mutation notes: ${run.fusion.mutationNotes.join('; ') || 'none recorded'}
+- Inherited traits: ${fusion.inheritedTraits.join('; ') || 'none recorded'}
+- Mutation notes: ${fusion.mutationNotes.join('; ') || 'none recorded'}
 
 ### Opportunities
 

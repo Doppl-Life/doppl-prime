@@ -623,7 +623,7 @@ function readBody(request: IncomingMessage): Promise<string> {
 
 function parsePositiveInteger(value: unknown, fallback: number): number {
   if (value === undefined) return fallback;
-  if (!Number.isInteger(value) || value < 1) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
     throw new Error('generations must be an integer >= 1');
   }
   return value;
@@ -631,7 +631,7 @@ function parsePositiveInteger(value: unknown, fallback: number): number {
 
 function parseBudget(value: unknown, fallback: number): number {
   if (value === undefined) return fallback;
-  if (!Number.isInteger(value) || value < 0) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
     throw new Error('budget must be an integer >= 0');
   }
   return value;
@@ -913,21 +913,13 @@ async function readRunHealthResponse(runId: string, rootDir: string): Promise<Ke
 
 async function listDashboardRuns(rootDir: string): Promise<Array<Record<string, unknown>>> {
   const runs: Array<Record<string, unknown>> = [];
-  let caseEntries: Awaited<ReturnType<typeof readdir>>;
-  try {
-    caseEntries = await readdir(rootDir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
+  const caseEntries = await readdir(rootDir, { withFileTypes: true }).catch(() => null);
+  if (!caseEntries) return [];
   for (const caseEntry of caseEntries) {
     if (!caseEntry.isDirectory()) continue;
     const caseDir = path.join(rootDir, caseEntry.name);
-    let runEntries: Awaited<ReturnType<typeof readdir>>;
-    try {
-      runEntries = await readdir(caseDir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
+    const runEntries = await readdir(caseDir, { withFileTypes: true }).catch(() => null);
+    if (!runEntries) continue;
     for (const runEntry of runEntries) {
       if (!runEntry.isDirectory()) continue;
       try {

@@ -54,7 +54,9 @@ function modelProviderInfo(
   return { provider: modelProviders.modelProvider, model: modelProviders.model };
 }
 
-function modelOutputEventType(record: ModelCallRecord): string {
+function modelOutputEventType(
+  record: ModelCallRecord,
+): 'model.output_accepted' | 'model.output_repair_requested' | 'model.output_repaired' | 'model.output_rejected' {
   if (record.metadata.status === 'repair_requested') return 'model.output_repair_requested';
   if (record.metadata.status === 'repaired') return 'model.output_repaired';
   if (record.metadata.status === 'rejected') return 'model.output_rejected';
@@ -169,7 +171,7 @@ export async function runKernel(input: {
         reason: ledgerEntry.reason,
         candidateId: ledgerEntry.candidateId,
       },
-      { actor: 'agenome', agenomeId: ledgerEntry.agenomeId, candidateId: ledgerEntry.candidateId },
+      { actor: 'agenome' },
     );
   }
 
@@ -210,7 +212,7 @@ export async function runKernel(input: {
         candidateId: controlBaseline.id,
         agenomeId: controlBaseline.agenomeId,
       },
-      { actor: 'selection_controller', candidateId: controlBaseline.id },
+      { actor: 'selection_controller' },
     );
     traceModelOperation('control_baseline_judgment');
     const controlVerdicts = await generationProviders.criticCouncil.judge({
@@ -239,7 +241,7 @@ export async function runKernel(input: {
           decay: controlFitness.selection?.decay,
           lens: controlFitness.selection?.lens,
         },
-        { actor: 'selection_controller', candidateId: controlFitness.candidateId },
+        { actor: 'selection_controller' },
       );
     }
   }
@@ -328,18 +330,17 @@ export async function runKernel(input: {
     selectedParents = selectedCandidates(selectParents(generationFitnessRecords), generationCandidates);
     fusion = undefined;
     if (selectedParents.length === 2) {
-      const compatibility = checkPairCompatibility(selectedParents[0].id, selectedParents[1].id);
+      const [parentA, parentB] = selectedParents;
+      const compatibility = checkPairCompatibility(parentA.id, parentB.id);
       trace.push('pair.compatibility_checked', { ...compatibility, generation });
       fusion = fuseCandidates({
         caseId: caseStudy.id,
-        parentA: selectedParents[0],
-        parentB: selectedParents[1],
-        parentAScore: generationFitnessRecords.find(
-          (record) => record.candidateId === selectedParents[0].id,
-        )!.total,
-        parentBScore: generationFitnessRecords.find(
-          (record) => record.candidateId === selectedParents[1].id,
-        )!.total,
+        parentA,
+        parentB,
+        parentAScore: generationFitnessRecords.find((record) => record.candidateId === parentA.id)!
+          .total,
+        parentBScore: generationFitnessRecords.find((record) => record.candidateId === parentB.id)!
+          .total,
         compatibility,
       });
       trace.push('candidate.fused', {
@@ -393,7 +394,7 @@ export async function runKernel(input: {
         energy: agenome.energy,
         candidateIds: agenome.candidateIds,
       },
-      { actor: 'agenome', agenomeId: agenome.id },
+      { actor: 'agenome' },
     );
   }
   const modelCallRecords = modelCallRecordsFrom(generationProviders);
@@ -403,7 +404,7 @@ export async function runKernel(input: {
       purpose: record.purpose,
       provider: record.provider,
       model: record.model,
-      status: record.metadata.status || 'accepted',
+      status: typeof record.metadata.status === 'string' ? record.metadata.status : 'accepted',
     });
   }
   trace.push('run.completed', {

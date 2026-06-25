@@ -24,6 +24,7 @@ blob-report/
 .env
 .env.*
 !.env.example
+!.env.sample
 *.pem
 *.key
 
@@ -69,12 +70,6 @@ scaffold/
 *.swo
 .idea/
 .vscode/
-
-# Secrets / env
-.env
-.env.*
-!.env.example
-!.env.sample
 
 # Node / TypeScript
 node_modules/

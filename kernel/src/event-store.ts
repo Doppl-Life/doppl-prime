@@ -7,12 +7,17 @@ import {
   RUN_EVENT_TYPES,
   type RunEvent,
   type RunEventActor,
+  type RunEventPayloads,
   type RunEventType,
 } from './contracts.ts';
 
 export type EventRecorder = {
   events: RunEvent[];
-  push(type: RunEventType, payload: Record<string, unknown>, options?: EventRecorderPushOptions): RunEvent;
+  push<T extends RunEventType>(
+    type: T,
+    payload: RunEventPayloads[T],
+    options?: EventRecorderPushOptions,
+  ): RunEvent;
 };
 
 export type EventRecorderListener = (event: RunEvent) => void;
@@ -118,9 +123,16 @@ export function createMemoryEventRecorder(
   let activeRunId = runId ?? events.find((event) => event.runId)?.runId;
   return {
     events,
-    push(type: string, payload: Record<string, unknown>, options: EventRecorderPushOptions = {}) {
+    push<T extends RunEventType>(
+      type: T,
+      payload: RunEventPayloads[T],
+      options: EventRecorderPushOptions = {},
+    ) {
       const sequence = events.length;
-      activeRunId = payloadRunId(payload) ?? activeRunId;
+      const payloadRecord = payload as Record<string, unknown>;
+      activeRunId = payloadRunId(payloadRecord) ?? activeRunId;
+      // (type, payload) is one discriminated-union member by construction; TS can't
+      // track that pairing through the type parameter, so assert the member once here.
       const event = normalizeRunEvent(
         {
           index: sequence,
@@ -133,9 +145,9 @@ export function createMemoryEventRecorder(
           correlationId: options.correlationId,
           langfuseTraceId: options.langfuseTraceId,
           langfuseObservationId: options.langfuseObservationId,
-          payload,
+          payload: payloadRecord,
           schemaVersion: RUN_EVENT_SCHEMA_VERSION,
-        },
+        } as RunEvent,
         activeRunId,
       );
       events.push(event);
@@ -180,12 +192,14 @@ export async function readRunEvents(filePath: string): Promise<RunEvent[]> {
 }
 
 function stringPayloadValue(event: RunEvent, key: string): string | undefined {
-  const value = event.payload[key];
+  const payload: Record<string, unknown> = event.payload;
+  const value = payload[key];
   return typeof value === 'string' ? value : undefined;
 }
 
 function numberPayloadValue(event: RunEvent, key: string): number | undefined {
-  const value = event.payload[key];
+  const payload: Record<string, unknown> = event.payload;
+  const value = payload[key];
   return typeof value === 'number' ? value : undefined;
 }
 
