@@ -61,7 +61,15 @@ const CULLING_FIELD_SNAPSHOT = [
 
 const PROJECTION_FIELD_SNAPSHOT = ['runId', 'nodes', 'edges', 'sequenceThrough'];
 
-const NODE_FIELD_SNAPSHOT = ['id', 'type', 'label', 'status', 'metrics', 'dataRef'];
+const NODE_FIELD_SNAPSHOT = [
+  'id',
+  'type',
+  'label',
+  'status',
+  'metrics',
+  'generationIndex',
+  'dataRef',
+];
 
 const NODE_TYPE_SNAPSHOT = ['generation', 'agenome', 'candidate', 'critic', 'check', 'score'];
 
@@ -102,7 +110,7 @@ describe('schema snapshot — entities + lineage projection (spec §3 / §8 / §
     expect(GENERATION_STATUS_SNAPSHOT).toHaveLength(9); // [P0.15-amend] 8→9 (+degraded)
     expect(CULLING_FIELD_SNAPSHOT).toHaveLength(6);
     expect(PROJECTION_FIELD_SNAPSHOT).toHaveLength(4);
-    expect(NODE_FIELD_SNAPSHOT).toHaveLength(6);
+    expect(NODE_FIELD_SNAPSHOT).toHaveLength(7); // +generationIndex (additive projection field)
     expect(NODE_TYPE_SNAPSHOT).toHaveLength(6);
     expect(EDGE_FIELD_SNAPSHOT).toHaveLength(5);
   });

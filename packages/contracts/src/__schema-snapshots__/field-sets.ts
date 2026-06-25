@@ -184,7 +184,7 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
   Generation: ['id', 'runId', 'index', 'status', 'startedAt', 'completedAt'],
   CullingEvent: ['id', 'runId', 'generationId', 'targetIds', 'reason', 'scoreSnapshot'],
   LineageGraphProjection: ['runId', 'nodes', 'edges', 'sequenceThrough'],
-  LineageNode: ['id', 'type', 'label', 'status', 'metrics', 'dataRef'],
+  LineageNode: ['id', 'type', 'label', 'status', 'metrics', 'generationIndex', 'dataRef'],
   LineageEdge: ['id', 'source', 'target', 'type', 'label'],
   FinalJudgeRubric: ['axes', 'weights', 'policyVersion', 'immutableToAgents'],
   JudgeResult: [

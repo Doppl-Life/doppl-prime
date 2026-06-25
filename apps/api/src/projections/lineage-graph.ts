@@ -23,6 +23,23 @@ import type { CurrentState } from './reducers/state';
  * React Flow breaks on that). Reproduction edges come from the authoritative log and are emitted as-is
  * (a real run spawns its offspring, so their nodes exist).
  */
+/**
+ * Parse the zero-based generation ordinal from the deterministic `${runId}-gen${N}` generation-id scheme
+ * (generationLoop.ts / gen0SeedSet — the authoritative generation identity carried on every generation
+ * event's `generationId`). The renderer buckets nodes into per-generation columns by this ordinal.
+ * Returns undefined when absent/unparseable (the field is optional). Pure (rule #7 — the id is persisted).
+ */
+function generationIndexOf(generationId: string | null | undefined): number | undefined {
+  if (!generationId) return undefined;
+  const match = /-gen(\d+)$/.exec(generationId);
+  return match ? Number(match[1]) : undefined;
+}
+
+/** Spread `{ generationIndex }` only when defined (keeps the optional field omitted otherwise). */
+function genIndexField(index: number | undefined): { generationIndex?: number } {
+  return index !== undefined ? { generationIndex: index } : {};
+}
+
 export function buildLineageGraph(
   projection: WatermarkedProjection<CurrentState>,
 ): LineageGraphProjection {
@@ -39,6 +56,12 @@ export function buildLineageGraph(
   for (const novelty of Object.values(state.noveltyScores)) {
     noveltyByCandidate.set(novelty.candidateId, novelty);
   }
+  // Generation ordinal per candidate (critic/check/score/judge nodes inherit their candidate's column).
+  const genIndexByCandidate = new Map<string, number>();
+  for (const candidate of Object.values(state.candidateIdeas)) {
+    const index = generationIndexOf(candidate.generationId);
+    if (index !== undefined) genIndexByCandidate.set(candidate.id, index);
+  }
 
   for (const generation of Object.values(state.generations)) {
     nodes.push({
@@ -46,6 +69,7 @@ export function buildLineageGraph(
       type: 'generation',
       label: `Generation ${generation.id}`,
       status: generation.status,
+      ...genIndexField(generationIndexOf(generation.id)),
       dataRef: generation.id,
     });
   }
@@ -56,6 +80,7 @@ export function buildLineageGraph(
       type: 'agenome',
       label: `Agenome ${agenome.id}`,
       status: agenome.status,
+      ...genIndexField(generationIndexOf(agenome.generationId)),
       dataRef: agenome.id,
     });
   }
@@ -71,6 +96,7 @@ export function buildLineageGraph(
       type: 'candidate',
       label: candidate.title,
       status: candidate.status,
+      ...genIndexField(generationIndexOf(candidate.generationId)),
       dataRef: candidate.id,
       ...(Object.keys(metrics).length > 0 ? { metrics } : {}),
     });
@@ -81,12 +107,19 @@ export function buildLineageGraph(
       id: review.id,
       type: 'critic',
       label: `Critic: ${review.mandate}`,
+      ...genIndexField(genIndexByCandidate.get(review.candidateId)),
       dataRef: review.id,
     });
   }
 
   for (const check of Object.values(state.checkResults)) {
-    nodes.push({ id: check.id, type: 'check', label: check.checkType, dataRef: check.id });
+    nodes.push({
+      id: check.id,
+      type: 'check',
+      label: check.checkType,
+      ...genIndexField(genIndexByCandidate.get(check.candidateId)),
+      dataRef: check.id,
+    });
   }
 
   for (const fitness of Object.values(state.fitnessScores)) {
@@ -95,6 +128,7 @@ export function buildLineageGraph(
       type: 'score',
       label: `Fitness ${fitness.total}`,
       metrics: { total: fitness.total },
+      ...genIndexField(genIndexByCandidate.get(fitness.candidateId)),
       dataRef: fitness.id,
     });
   }
@@ -108,6 +142,7 @@ export function buildLineageGraph(
       type: 'score',
       label: `Judge acceptance ${judge.acceptance}`,
       metrics: { acceptance: judge.acceptance },
+      ...genIndexField(genIndexByCandidate.get(judge.candidateId)),
       dataRef: judge.id,
     });
   }

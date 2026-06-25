@@ -17,11 +17,14 @@ export const LineageNodeType = z.enum([
 export type LineageNodeType = z.infer<typeof LineageNodeType>;
 
 /**
- * LineageNode — a single node in the lineage graph (ARCHITECTURE.md §10). Strict 6-field object (4
- * required + `status?`/`metrics?` optional). `dataRef` is an opaque pointer to the authoritative
- * event/entity (resolution is the projection-builder's job, §9 — same authoritative-ref-by-id posture
- * as `EvidenceRef`); `metrics?` is an open name→number record; `status?` is an open string (node status
- * varies by node type, so it is NOT a single closed union).
+ * LineageNode — a single node in the lineage graph (ARCHITECTURE.md §10). Strict 7-field object (4
+ * required + `status?`/`metrics?`/`generationIndex?` optional). `dataRef` is an opaque pointer to the
+ * authoritative event/entity (resolution is the projection-builder's job, §9 — same authoritative-ref-
+ * by-id posture as `EvidenceRef`); `metrics?` is an open name→number record; `status?` is an open string
+ * (node status varies by node type, so it is NOT a single closed union). `generationIndex?` is the
+ * zero-based generation ordinal the node belongs to — additive + optional (a derived projection field, so
+ * no schemaVersion implication; old projections without it still parse). The renderer buckets nodes into
+ * per-generation COLUMNS by this ordinal (a tool an auto-layout can't infer from topology alone).
  */
 export const LineageNode = z.strictObject({
   id: z.string().min(1),
@@ -29,6 +32,7 @@ export const LineageNode = z.strictObject({
   label: z.string().min(1),
   status: z.string().min(1).optional(),
   metrics: z.record(z.string(), z.number()).optional(),
+  generationIndex: z.int().nonnegative().optional(),
   dataRef: z.string().min(1),
 });
 

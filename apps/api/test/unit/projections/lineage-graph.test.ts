@@ -337,6 +337,58 @@ describe('buildLineageGraph — pure transform of current-state → frozen Linea
     ).toBe(false);
   });
 
+  // §10 (generation columns) — every node carries the zero-based generationIndex parsed from the
+  // deterministic `${runId}-gen${N}` id scheme so the renderer can bucket nodes into per-generation
+  // columns. generation/agenome/candidate get it from their own generationId; score/critic/check inherit
+  // their candidate's column. The field is additive + optional; output still conforms to the contract.
+  test('test_nodes_carry_generation_index_for_columns', () => {
+    const runId = 'run_cols';
+    const gen0Cand = {
+      ...validCandidateIdeaCrossDomain,
+      id: 'cand_g0',
+      agenomeId: 'agn_g0',
+      generationId: `${runId}-gen0`,
+    };
+    const gen1Cand = {
+      ...validCandidateIdeaCrossDomain,
+      id: 'cand_g1',
+      agenomeId: 'agn_g1',
+      generationId: `${runId}-gen1`,
+    };
+    const fitG1 = { ...validFitnessScore, id: 'fit_g1', candidateId: 'cand_g1' };
+    const graph = buildLineageGraph(
+      buildCurrentState([
+        makeRow('generation.started', { runId, generationId: `${runId}-gen0`, sequence: 0 }),
+        makeRow('agenome.spawned', {
+          runId,
+          generationId: `${runId}-gen0`,
+          agenomeId: 'agn_g0',
+          sequence: 1,
+        }),
+        makeRow('candidate.created', { runId, sequence: 2, payload: gen0Cand }),
+        makeRow('generation.started', { runId, generationId: `${runId}-gen1`, sequence: 3 }),
+        makeRow('agenome.spawned', {
+          runId,
+          generationId: `${runId}-gen1`,
+          agenomeId: 'agn_g1',
+          sequence: 4,
+        }),
+        makeRow('candidate.created', { runId, sequence: 5, payload: gen1Cand }),
+        makeRow('fitness.scored', { runId, sequence: 6, payload: fitG1 }),
+      ]),
+    );
+    const byId = (id: string): (typeof graph.nodes)[number] | undefined =>
+      graph.nodes.find((n) => n.id === id);
+    expect(byId(`${runId}-gen0`)?.generationIndex).toBe(0);
+    expect(byId(`${runId}-gen1`)?.generationIndex).toBe(1);
+    expect(byId('agn_g0')?.generationIndex).toBe(0);
+    expect(byId('agn_g1')?.generationIndex).toBe(1);
+    expect(byId('cand_g0')?.generationIndex).toBe(0);
+    expect(byId('cand_g1')?.generationIndex).toBe(1);
+    expect(byId('fit_g1')?.generationIndex).toBe(1); // score inherits its candidate's column
+    expect(LineageGraphProjection.safeParse(graph).success).toBe(true);
+  });
+
   // rule #7 — structural: the lineage builder imports no ModelGateway/provider/embedding.
   test('test_builder_imports_no_provider', () => {
     const src = readFileSync(
