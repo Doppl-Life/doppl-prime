@@ -148,7 +148,7 @@ function makeFakeEventStore(secretValues: readonly string[] = []) {
 
 function makeFakeGateway(
   opts: {
-    toolCalls?: readonly { toolName: string; query?: string; result?: string }[];
+    toolCalls?: readonly { toolName: string; query?: string; result?: string; ok?: boolean }[];
     rejectFirst?: number;
     providerMeta?: ProviderMeta;
     attemptFailures?: readonly { attempt: number; reason: string }[];
@@ -823,6 +823,29 @@ describe('runGenerationLoop (P3.10d — energy accounting, success-only)', () =>
     expect(tool.length).toBeGreaterThanOrEqual(1);
     expect((spawn[0]!.payload as { actual?: number }).actual).toBe(50);
     expect((tool[0]!.payload as { actual?: number }).actual).toBe(5);
+  });
+
+  test('failed_tool_call_relayed_but_no_energy_debit', async () => {
+    // spec(rule #8): a blocked/unavailable/failed tool call (`ok:false`) is RELAYED for observability
+    // (tool_call.started + finished, and it still counts toward maxToolCalls — rule #1) but is NOT a
+    // productive spend, so it debits NO tool energy. A successful sibling (`ok:true`) DOES debit.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'fetch_url', result: 'blocked: private_host', ok: false },
+            { toolName: 'web_search', result: 'grounded', ok: true },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1 },
+      }),
+    );
+    // both calls relayed (observability) — two finished events.
+    expect(fake.rows.filter((r) => r.type === 'tool_call.finished')).toHaveLength(2);
+    // exactly ONE tool energy debit — only the ok:true call (rule #8).
+    expect(energyEventsOfType(fake, 'tool')).toHaveLength(1);
   });
 });
 

@@ -123,6 +123,10 @@ export interface ToolCallObservation {
   readonly query?: string;
   /** FB.7 — the (raw) tool result; relayed into tool_call.finished, truncated + scrubbed as `query`. Optional. */
   readonly result?: string;
+  /** TU.5 — whether the tool call produced a USABLE result. A blocked/unavailable/failed call is relayed
+   * for observability (+ counts toward maxToolCalls, rule #1) but debits NO energy (rule #8 — energy is
+   * success-only productive spend). Absent → treated as a success (back-compat with the FB.7 relay). */
+  readonly ok?: boolean;
 }
 
 /**
@@ -139,9 +143,18 @@ export interface GenerateResult {
   readonly attemptFailures?: readonly { readonly attempt: number; readonly reason: string }[];
 }
 
+/** Options the loop passes into a `generate` call. */
+export interface GenerateOptions {
+  /** TU.5 — KEY SAFETY RULE #1: the kernel-computed remaining tool-call budget for THIS call (a HINT
+   * clamped to `max(0, maxToolCalls − consumed)`, like `spawnBudget`). A tool-orchestrating gateway MUST
+   * cap its tool executions to this; the kernel additionally backstops it (the inline relay gate +
+   * detectKill fold). A pass-through gateway ignores it. */
+  readonly toolBudget?: number;
+}
+
 /** The runtime-local generation gateway port (composes the frozen ModelGateway; no vendor type, rule #9). */
 export interface GenerationGateway {
-  generate(request: ModelGatewayRequest): Promise<GenerateResult>;
+  generate(request: ModelGatewayRequest, opts?: GenerateOptions): Promise<GenerateResult>;
 }
 
 /** The context a seam receives — the run/generation correlation + the append port (the seam emits its own). */
@@ -555,7 +568,13 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         config.runConfig.generationOperators,
         config.runConfig.generationBias,
       );
-      const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest);
+      // TU.5 rule #1 — pass the kernel-computed remaining tool-call budget as a clamped HINT (a
+      // tool-orchestrating gateway self-limits its tool executions to this; the inline relay gate below +
+      // detectKill remain the authoritative backstops). `toolCallsConsumed` is a concurrent snapshot — the
+      // relay gate de-conflicts the actual count.
+      const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest, {
+        toolBudget: Math.max(0, caps.maxToolCalls - toolCallsConsumed),
+      });
       for (const toolCall of toolCalls ?? []) {
         // rule #1 — RESERVE a maxToolCalls slot BEFORE relaying/debiting this tool call (the un-bypassable
         // kernel enforcer; a tool-orchestrating gateway's own budget is a clamped HINT, this is the
@@ -603,8 +622,13 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
             agenomeId: agenome.id,
           },
         );
-        // tool energy (flat perToolCall cost) on the finished call — a productive spend (rule #8).
-        await debitEnergy('tool', { generationId, agenomeId: agenome.id, reason: 'tool_call' });
+        // tool energy (flat perToolCall cost) on the finished call — but ONLY for a SUCCESSFUL tool result
+        // (rule #8: energy is success-only productive spend). A blocked/unavailable/failed call (`ok:false`)
+        // is relayed for observability + counts toward maxToolCalls (rule #1) but is not a productive spend,
+        // so it debits NO energy. Absent `ok` → success (back-compat with the FB.7 relay).
+        if (toolCall.ok !== false) {
+          await debitEnergy('tool', { generationId, agenomeId: agenome.id, reason: 'tool_call' });
+        }
       }
       if (!response.accepted) {
         // 10d: a failed provider call → one provider_call_failed per surfaced attempt + NO energy debit
