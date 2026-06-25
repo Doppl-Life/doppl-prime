@@ -5,7 +5,12 @@ import type { ModelGateway } from '../../model-gateway';
 import type { ReproduceContext, ReproduceSeam } from '../../runtime';
 import type { MutationBounds } from '../reproduction/mutate';
 import { assembleSuccessor, type SuccessorParent } from '../successor';
-import { adaptiveMutationFraction, noveltySpread } from '../reproduction/convergence';
+import {
+  adaptiveMutationFraction,
+  isFitnessImproving,
+  noveltySpread,
+  DEFAULT_ADAPTIVE_PARAMS,
+} from '../reproduction/convergence';
 
 /**
  * createReproduceSeam (P5.10/P5.11, ARCHITECTURE.md §8) — selection's real impl of the kernel's injected
@@ -157,13 +162,37 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
     // decision it feeds is itself recorded in ReproductionEvent.mode (replay never re-decides).
     let mutationFraction = deps.mutationFraction ?? 0;
     if (deps.adaptive === true) {
-      const vectors: number[][] = [];
+      // gen id → index (from generation.started), so fitness totals can be ordered across generations.
+      const genIndex = new Map<string, number>();
       for (const row of scoredEvents) {
-        if (row.type !== 'novelty.scored' || row.generationId !== generationId) continue;
-        const parsed = NoveltyScore.safeParse(row.payload);
-        if (parsed.success) vectors.push([...parsed.data.vector]);
+        if (row.type !== 'generation.started') continue;
+        const idx = (row.payload as { index?: unknown }).index;
+        if (typeof idx === 'number' && row.generationId !== null)
+          genIndex.set(row.generationId, idx);
       }
-      mutationFraction = adaptiveMutationFraction(noveltySpread(vectors));
+      const currentGenIndex = genIndex.get(generationId) ?? 0;
+      const vectors: number[][] = []; // THIS generation's novelty vectors → spread (diversity)
+      const bestByGenIndex = new Map<number, number>(); // best fitness total per gen index (trend)
+      for (const row of scoredEvents) {
+        if (row.type === 'novelty.scored' && row.generationId === generationId) {
+          const parsed = NoveltyScore.safeParse(row.payload);
+          if (parsed.success) vectors.push([...parsed.data.vector]);
+        } else if (row.type === 'fitness.scored' && row.generationId !== null) {
+          const parsed = FitnessScore.safeParse(row.payload);
+          const idx = genIndex.get(row.generationId);
+          if (parsed.success && idx !== undefined) {
+            const prev = bestByGenIndex.get(idx);
+            if (prev === undefined || parsed.data.total > prev)
+              bestByGenIndex.set(idx, parsed.data.total);
+          }
+        }
+      }
+      const improving = isFitnessImproving(
+        bestByGenIndex,
+        currentGenIndex,
+        DEFAULT_ADAPTIVE_PARAMS.improveEpsilon,
+      );
+      mutationFraction = adaptiveMutationFraction(noveltySpread(vectors), improving);
     }
     // assembleSuccessor runs allocate (caps-clamped, rule #1) → reproduce per slot (fusion/mutation_only/
     // abort), appending the offspring events through `append`. The returned population is discarded — the

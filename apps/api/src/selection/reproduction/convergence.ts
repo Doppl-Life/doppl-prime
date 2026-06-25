@@ -1,35 +1,42 @@
 /**
- * EXPERIMENT (mutagen-dynamics, adaptive controller / E2) — the population CONVERGENCE measure + the
- * bidirectional mutation-fraction controller, both PURE (rule #7: computed from the persisted novelty
- * vectors → replay reconstructs the identical fraction; and the per-slot decision it feeds is itself
- * recorded in `ReproductionEvent.mode`, so replay never re-decides).
+ * EXPERIMENT (mutagen-dynamics, adaptive controller / E2→E3) — the population CONVERGENCE measure + the
+ * FITNESS-AWARE bidirectional mutation-fraction controller. Both PURE (rule #7: computed from the persisted
+ * novelty vectors + fitness totals → replay reconstructs the identical fraction; and the per-slot decision
+ * it feeds is itself recorded in `ReproductionEvent.mode`, so replay never re-decides).
  *
- * `noveltySpread` = the mean pairwise COSINE DISTANCE of a generation's candidate novelty vectors — high =
- * diverse, low = converged. `adaptiveMutationFraction` is the emergent, BIDIRECTIONAL pressure Michael
- * described: when the population CONVERGES (spread below target) it RAISES the mutation fraction to inject
- * divergence; when it DIVERGES (spread above target) it LOWERS the fraction so fusion can consolidate. The
- * controller pushes against whatever it sees — convergence/divergence is the emergent behavior of the soup,
- * not a preset dial. Calibrated against observed fusion_only spreads (~0.29–0.35).
+ * E2 learned the hard way (bake-off round 1): a controller that only steers DIVERSITY toward a target
+ * over-explores — it pins the spread high, never lets a strong lineage consolidate, and surfaces a LOWER
+ * peak than even the static-lens variant. Diversity is a MEANS to fitness, not the goal. So E3 reads the
+ * FITNESS TREND too (Michael's r/K): when a lineage is clearly winning (best fitness improving), CONVERGE
+ * onto it (low mutation = the K all-in bet / exploit); when the soup is stuck (no improvement), DIVERGE
+ * (high mutation = cheap r exploration to find a new lineage). A diversity FLOOR still forces recovery if
+ * the population collapses — so it converges onto strength without ever eating all its variety.
  */
 
 export interface AdaptiveParams {
-  /** The spread the controller steers toward — below it pushes divergence, above it pushes convergence. */
-  readonly targetSpread: number;
-  /** Sensitivity: fraction delta per unit of spread error. */
-  readonly gain: number;
-  /** The neutral baseline fraction (at exactly target spread). */
-  readonly base: number;
-  /** Clamp bounds — the fraction never leaves [min, max] (a sane r/K envelope). */
+  /** Mutation share when a lineage is winning → mostly fusion (converge / exploit / go K). */
+  readonly exploitFraction: number;
+  /** Mutation share when fitness is stuck → more mutation (explore / stay r). */
+  readonly exploreFraction: number;
+  /** Spread below this = the population has collapsed → force a recovery burst of mutation. */
+  readonly diversityFloor: number;
+  /** Mutation share forced when recovering from a collapse (overrides exploit, never fully converges). */
+  readonly recoveryFraction: number;
+  /** Min best-fitness gain (gen over gen) that counts as "improving" (noise margin). */
+  readonly improveEpsilon: number;
+  /** Clamp bounds — the fraction never leaves [min, max]. */
   readonly min: number;
   readonly max: number;
 }
 
-/** Defaults calibrated to the observed novelty-spread band (fusion_only converged from ~0.35 → ~0.29). */
+/** Defaults calibrated to round-1 observations (fusion_only collapsed to ~0.25; healthy spread ~0.30–0.33). */
 export const DEFAULT_ADAPTIVE_PARAMS: AdaptiveParams = {
-  targetSpread: 0.34,
-  gain: 3,
-  base: 1 / 3,
-  min: 0.1,
+  exploitFraction: 0.15,
+  exploreFraction: 0.45,
+  diversityFloor: 0.26,
+  recoveryFraction: 0.55,
+  improveEpsilon: 0.005,
+  min: 0.05,
   max: 0.7,
 };
 
@@ -49,7 +56,7 @@ function cosineDistance(a: readonly number[], b: readonly number[]): number {
 
 /**
  * Mean pairwise cosine distance over the generation's novelty vectors. < 2 vectors → 0 (no spread to
- * measure → the controller treats it as fully converged, maximizing divergence pressure).
+ * measure → treated as fully converged, so the diversity floor forces recovery).
  */
 export function noveltySpread(vectors: readonly (readonly number[])[]): number {
   const usable = vectors.filter((v) => v.length > 0);
@@ -66,14 +73,33 @@ export function noveltySpread(vectors: readonly (readonly number[])[]): number {
 }
 
 /**
- * The bidirectional controller: spread BELOW target (converged) → fraction ABOVE base (more mutation →
- * inject divergence); spread ABOVE target (diverse) → fraction BELOW base (more fusion → consolidate).
- * Clamped to [min, max]. Pure; deterministic over the (persisted) spread.
+ * The fitness-aware bidirectional controller. `improving` = the best fitness rose (gen over gen) by more
+ * than `improveEpsilon` → exploit (converge); else explore (diverge). If the spread has dropped below the
+ * diversity floor, force a recovery burst regardless (never collapse). Pure; deterministic over the
+ * (persisted) spread + trend.
  */
 export function adaptiveMutationFraction(
   spread: number,
+  improving: boolean,
   params: AdaptiveParams = DEFAULT_ADAPTIVE_PARAMS,
 ): number {
-  const raw = params.base + params.gain * (params.targetSpread - spread);
-  return Math.min(params.max, Math.max(params.min, raw));
+  let fraction = improving ? params.exploitFraction : params.exploreFraction;
+  if (spread < params.diversityFloor) fraction = Math.max(fraction, params.recoveryFraction);
+  return Math.min(params.max, Math.max(params.min, fraction));
+}
+
+/**
+ * Is the best fitness improving across generations? Pure over (genIndex, bestTotal) pairs: finds the
+ * current generation's best vs the immediately-prior generation's best. No prior generation (the first
+ * reproduction) → false (explore by default — there is no lineage to exploit yet).
+ */
+export function isFitnessImproving(
+  bestByGenIndex: ReadonlyMap<number, number>,
+  currentGenIndex: number,
+  epsilon: number,
+): boolean {
+  const current = bestByGenIndex.get(currentGenIndex);
+  const prev = bestByGenIndex.get(currentGenIndex - 1);
+  if (current === undefined || prev === undefined) return false;
+  return current > prev + epsilon;
 }
