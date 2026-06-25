@@ -117,11 +117,14 @@ export function mergePerRunConfig(boot: AppConfig, perRun: RunConfig): AppConfig
  * best total falls below `mean − 1·stddev` (`relativeStdDevK: 1`), so clearly-weak lineages are removed but
  * a tight distribution erodes nothing — the prior `minFitness: 0` never fired (a total is ≥ 0, so nothing
  * was ever culled). `minSurvivors: 2` is the POPULATION FLOOR: the cull never drops the eligible population
- * below the 2 parents fusion needs to reproduce (complements the extinction-guard in `successor.ts`). The
- * mutation tool allowlist is DERIVED from the seed set's `toolPermissions` union → mutation never invents a
- * tool outside the seeded space (rule alignment; no privilege invention).
+ * below the 2 parents fusion needs to reproduce (complements the extinction-guard in `successor.ts`).
+ * `cullFraction: 1/3` adds TRUNCATION pressure — each generation the weakest third of eligible lineages die
+ * even in a tight (no-outlier) distribution, so weak lineages reliably die and the population converges
+ * toward a winner (the relative-only rule eroded nothing when fitness clustered). Floor-clamped + weakest-
+ * first → deterministic/replay-safe (rule #7). The mutation tool allowlist is DERIVED from the seed set's
+ * `toolPermissions` union → mutation never invents a tool outside the seeded space (no privilege invention).
  */
-const MVP_CULL_POLICY: CullPolicy = { relativeStdDevK: 1, minSurvivors: 2 };
+const MVP_CULL_POLICY: CullPolicy = { relativeStdDevK: 1, minSurvivors: 2, cullFraction: 1 / 3 };
 
 function mvpMutationBounds(config: AppConfig): MutationBounds {
   const toolPermissionAllowlist = [

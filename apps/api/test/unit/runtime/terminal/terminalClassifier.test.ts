@@ -65,6 +65,21 @@ const genStarted = (): RunEventRow =>
   row({ type: 'generation.started', generationId: 'run_t-gen0', payload: { index: 0 } });
 const candidateCreated = (candidateId: string): RunEventRow =>
   row({ type: 'candidate.created', generationId: 'run_t-gen0', candidateId, payload: {} });
+const candidateCreatedFor = (candidateId: string, agenomeId: string): RunEventRow =>
+  row({
+    type: 'candidate.created',
+    generationId: 'run_t-gen0',
+    candidateId,
+    agenomeId,
+    payload: {},
+  });
+// The REAL cull shape `cull` emits: AGENOME ids in payload.targetIds, NO envelope candidateId.
+const culledAgenomes = (agenomeIds: string[]): RunEventRow =>
+  row({
+    type: 'lineage.culled',
+    generationId: 'run_t-gen0',
+    payload: { targetIds: agenomeIds, reason: 'truncation', scoreSnapshot: {} },
+  });
 const energyExhausted = (): RunEventRow =>
   row({ type: 'energy_exhausted', payload: { dimension: 'energyBudget' } });
 
@@ -268,5 +283,23 @@ describe('classifyRunTerminal (P3.11 — pure run-terminal verdict over the pers
     expect(summary.scoredSurvivorCount).toBe(1); // c2 culled → only c1 survives
     expect(summary.finalIdeaRef).toBe('c1');
     expect(summary.killSummary).toEqual(operatorStopRunning);
+  });
+
+  // CULL-EFFECT FIX — the REAL cull shape (lineage.culled targetIds = AGENOME ids, no envelope candidateId)
+  // must exclude that lineage's candidate from the survivors/winner. Before the fix, the agenomeId-vs-
+  // candidateId mismatch let a culled lineage still win. c2 (0.9) is higher but its agenome ag2 is culled →
+  // only c1 (0.6) survives and wins.
+  test('agenome_keyed_cull_excludes_lineage_from_survivors_and_winner', () => {
+    const log = [
+      genStarted(),
+      candidateCreatedFor('c1', 'ag1'),
+      candidateCreatedFor('c2', 'ag2'),
+      fitnessScored('c1', 0.6),
+      fitnessScored('c2', 0.9),
+      culledAgenomes(['ag2']),
+    ];
+    const summary = buildPartialTerminalSummary(log);
+    expect(summary.scoredSurvivorCount).toBe(1);
+    expect(summary.finalIdeaRef).toBe('c1');
   });
 });

@@ -66,6 +66,15 @@ export interface CullPolicy {
    * eligible agenomes in the generation, nothing is culled. Should be ≥ 2.
    */
   minSurvivors: number;
+  /**
+   * TRUNCATION pressure (steady selection): each generation cull AT LEAST `floor(eligible · cullFraction)` of
+   * the WEAKEST lineages — even when the distribution is tight and no relative outlier clears `mean − k·stddev`
+   * — so weak lineages reliably die every generation and the population converges toward a winner. The cull
+   * removes the weakest `max(belowThreshold, truncationQuota)`, always clamped to the `minSurvivors` floor and
+   * weakest-first (canonical id tiebreak → deterministic, replay-safe rule #7). Optional; omit / 0 ⇒ pure
+   * relative-threshold culling (the prior behaviour, which a tight distribution never triggered).
+   */
+  cullFraction?: number;
 }
 
 export interface CullDeps {
@@ -120,10 +129,10 @@ export async function cull(
   const stddev = Math.sqrt(variance);
   const threshold = mean - policy.relativeStdDevK * stddev;
 
-  // Candidates to cull: eligible agenomes strictly below the relative threshold, ordered WEAKEST FIRST
-  // (ascending best; canonical id tiebreak) so the floor clamp keeps the strongest survivors.
-  const belowThreshold = eligible
-    .filter((e) => e.best < threshold)
+  // WEAKEST-FIRST ordering (ascending best; canonical id tiebreak) — the cull always removes a PREFIX of
+  // this, so the floor clamp keeps the strongest survivors and the decision is deterministic (rule #7).
+  const weakestFirst = eligible
+    .slice()
     .sort((a, b) =>
       a.best !== b.best
         ? a.best - b.best
@@ -134,10 +143,18 @@ export async function cull(
             : 0,
     );
 
-  // FLOOR CLAMP: never cull so many that fewer than minSurvivors eligible remain. Cull at most
-  // (eligible − minSurvivors), taking the weakest first.
+  // RELATIVE: how many are STRICTLY below mean − k·stddev (a prefix of weakestFirst since it's sorted).
+  const belowThresholdCount = weakestFirst.filter((e) => e.best < threshold).length;
+
+  // TRUNCATION: steady pressure — cull at least floor(n · cullFraction) of the weakest each generation,
+  // so a tight (no-outlier) distribution still loses its weakest lineages and the population converges.
+  const truncationQuota = Math.floor(n * (policy.cullFraction ?? 0));
+
+  // FLOOR CLAMP: never cull so many that fewer than minSurvivors eligible remain. Cull the weakest
+  // max(relative, truncation), clamped to (eligible − minSurvivors).
   const maxCullable = Math.max(0, n - policy.minSurvivors);
-  const toCull = belowThreshold.slice(0, maxCullable);
+  const cullCount = Math.min(maxCullable, Math.max(belowThresholdCount, truncationQuota));
+  const toCull = weakestFirst.slice(0, cullCount);
 
   const culledIds: string[] = [];
   const scoreSnapshot: Record<string, number> = {};
@@ -157,9 +174,9 @@ export async function cull(
     generationId: input.generationId,
     targetIds: culledIds,
     reason:
-      `best candidate fitness below the relative cull threshold ${threshold} ` +
-      `(generation mean ${mean} − ${policy.relativeStdDevK}·stddev ${stddev}); ` +
-      `floor ${policy.minSurvivors} eligible survivors preserved`,
+      `weakest ${cullCount} of ${n} eligible lineages culled — below the relative threshold ${threshold} ` +
+      `(generation mean ${mean} − ${policy.relativeStdDevK}·stddev ${stddev}) and/or the truncation quota ` +
+      `(cullFraction ${policy.cullFraction ?? 0}); floor ${policy.minSurvivors} eligible survivors preserved`,
     scoreSnapshot,
   });
 

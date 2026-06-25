@@ -23,11 +23,12 @@ export interface PartialTerminalSummary {
 }
 
 /**
- * Candidates removed from selection (`lineage.culled`). Reads BOTH the envelope `candidateId` (the loop's
- * per-candidate cull) AND the payload `targetIds[]` (a batch cull) so a culled candidate is excluded however
- * the selection seam recorded it. Pure over the log.
+ * Culled ENTITY ids from `lineage.culled`. The REAL cull is AGENOME-keyed — `cull` emits the culled agenome
+ * ids in `payload.targetIds` with NO envelope `candidateId` — so a culled lineage is matched by AGENOME id
+ * (see `scoredSurvivors`). The envelope `candidateId` form (a per-candidate cull) is honoured defensively.
+ * Pure over the log.
  */
-function culledCandidateIds(log: readonly RunEventRow[]): Set<string> {
+function culledEntityIds(log: readonly RunEventRow[]): Set<string> {
   const culled = new Set<string>();
   for (const row of log) {
     if (row.type !== 'lineage.culled') continue;
@@ -40,17 +41,33 @@ function culledCandidateIds(log: readonly RunEventRow[]): Set<string> {
   return culled;
 }
 
+/** candidateId → agenomeId, from `candidate.created` (carries both on the envelope, generationLoop.ts). Pure. */
+function candidateAgenomeIds(log: readonly RunEventRow[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of log) {
+    if (row.type === 'candidate.created' && row.candidateId && row.agenomeId) {
+      map.set(row.candidateId, row.agenomeId);
+    }
+  }
+  return map;
+}
+
 /**
- * The scored survivors across the whole run: every `fitness.scored` candidate that was NOT `lineage.culled`
- * (§3 `selected = scored ∧ ¬culled`, LESSONS §54/§63). `total` is read from the persisted `FitnessScore`
- * payload (rule #7 — never recomputed); a non-numeric total degrades to -∞ so it can never win selection.
+ * The scored survivors across the whole run: every `fitness.scored` candidate whose lineage was NOT
+ * `lineage.culled` (§3 `selected = scored ∧ ¬culled`, LESSONS §54/§63). A candidate is excluded when EITHER
+ * its own id OR its agenome's id is in the culled set — the AGENOME-keyed form is what `cull` actually emits
+ * (the prior agenomeId-vs-candidateId mismatch let culled lineages still win). `total` is read from the
+ * persisted `FitnessScore` payload (rule #7 — never recomputed); a non-numeric total degrades to -∞.
  */
 export function scoredSurvivors(log: readonly RunEventRow[]): ScoredSurvivor[] {
-  const culled = culledCandidateIds(log);
+  const culled = culledEntityIds(log);
+  const candidateAgenome = candidateAgenomeIds(log);
   const survivors: ScoredSurvivor[] = [];
   for (const row of log) {
     if (row.type !== 'fitness.scored' || !row.candidateId) continue;
-    if (culled.has(row.candidateId)) continue;
+    if (culled.has(row.candidateId)) continue; // per-candidate cull (defensive)
+    const agenomeId = candidateAgenome.get(row.candidateId);
+    if (agenomeId !== undefined && culled.has(agenomeId)) continue; // agenome-keyed cull (the real form)
     const rawTotal = (row.payload as { total?: unknown }).total;
     const total = typeof rawTotal === 'number' ? rawTotal : Number.NEGATIVE_INFINITY;
     survivors.push({ candidateId: row.candidateId, total, sequence: row.sequence });

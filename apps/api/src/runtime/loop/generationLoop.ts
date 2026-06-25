@@ -270,10 +270,16 @@ export function transitionAgenomeOrThrow(from: AgenomeStatus, to: AgenomeStatus)
 
 /**
  * Eligible parents for reproduction, derived from the score seam's events (the loop never scores itself,
- * §5/§8): a candidate is eligible iff its `fitness.scored` event is present this generation AND it was not
- * `lineage.culled`; the surviving candidates map back to their agenomes (deduped). Pure projection.
+ * §5/§8): a candidate is eligible iff its `fitness.scored` event is present this generation AND its lineage
+ * was not `lineage.culled`; the surviving candidates map back to their agenomes (deduped). Pure projection.
+ *
+ * CULL KEYING (the fix): the real cull is AGENOME-keyed — `cull` emits `lineage.culled` with the culled
+ * agenome ids in `payload.targetIds` and NO envelope `candidateId`. The prior code skipped every cull row
+ * (its `!row.candidateId` guard) and only read `row.candidateId`, so a culled lineage was IGNORED and kept
+ * breeding. Now a candidate is excluded when EITHER its own id OR its agenome's id is in the culled set —
+ * honouring the agenome-keyed cull (real) and a per-candidate cull (defensive).
  */
-function resolveEligibleParents(
+export function resolveEligibleParents(
   log: readonly RunEventRow[],
   generationId: string,
   candidateAgenome: ReadonlyMap<string, Agenome>,
@@ -281,15 +287,24 @@ function resolveEligibleParents(
   const scored = new Set<string>();
   const culled = new Set<string>();
   for (const row of log) {
-    if (row.generationId !== generationId || !row.candidateId) continue;
-    if (row.type === 'fitness.scored') scored.add(row.candidateId);
-    else if (row.type === 'lineage.culled') culled.add(row.candidateId);
+    if (row.generationId !== generationId) continue;
+    if (row.type === 'fitness.scored') {
+      if (row.candidateId) scored.add(row.candidateId);
+    } else if (row.type === 'lineage.culled') {
+      if (row.candidateId) culled.add(row.candidateId);
+      const targets = (row.payload as { targetIds?: unknown }).targetIds;
+      if (Array.isArray(targets)) {
+        for (const target of targets) if (typeof target === 'string') culled.add(target);
+      }
+    }
   }
   const parents = new Map<string, Agenome>();
   for (const candidateId of scored) {
-    if (culled.has(candidateId)) continue;
+    if (culled.has(candidateId)) continue; // per-candidate cull (defensive)
     const agenome = candidateAgenome.get(candidateId);
-    if (agenome) parents.set(agenome.id, agenome);
+    if (!agenome) continue;
+    if (culled.has(agenome.id)) continue; // agenome-keyed cull (the real form) — the fix
+    parents.set(agenome.id, agenome);
   }
   return [...parents.values()];
 }

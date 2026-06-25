@@ -265,4 +265,39 @@ describe('cull — relative weak-lineage culling + population floor + explainabl
     expect(culledIds).toEqual([]);
     expect(events).toHaveLength(0);
   });
+
+  // 13 — TRUNCATION pressure: a TIGHT distribution with NO relative outlier (which the relative-only rule
+  // culls nothing for — see test 2) still loses its weakest lineages under `cullFraction`. 6 lineages
+  // {0.70..0.75}, cullFraction 1/3 → floor(6·1/3)=2 weakest culled (a=0.70, b=0.71). This is the fix that
+  // makes lineages reliably die every generation so a winner converges.
+  test('cull_truncation_fraction_culls_weakest_in_tight_distribution', async () => {
+    const truncPolicy: CullPolicy = { relativeStdDevK: 1, minSurvivors: 2, cullFraction: 1 / 3 };
+    const { emit } = recorder();
+    const { culledIds } = await cull(
+      input([
+        agenome('a', [0.7]),
+        agenome('b', [0.71]),
+        agenome('c', [0.72]),
+        agenome('d', [0.73]),
+        agenome('e', [0.74]),
+        agenome('f', [0.75]),
+      ]),
+      truncPolicy,
+      { emit, newId: idFactory() },
+    );
+    expect(culledIds).toEqual(['a', 'b']); // the weakest two
+  });
+
+  // 14 — TRUNCATION respects the population floor: cullFraction never drops below minSurvivors. 3 eligible,
+  // cullFraction 0.9 → quota floor(3·0.9)=2, but maxCullable = 3−2 = 1 → only the single weakest is culled.
+  test('cull_truncation_respects_population_floor', async () => {
+    const truncPolicy: CullPolicy = { relativeStdDevK: 1, minSurvivors: 2, cullFraction: 0.9 };
+    const { emit } = recorder();
+    const { culledIds } = await cull(
+      input([agenome('a', [0.1]), agenome('b', [0.5]), agenome('c', [0.9])]),
+      truncPolicy,
+      { emit, newId: idFactory() },
+    );
+    expect(culledIds).toEqual(['a']); // weakest only; floor keeps 2 survivors
+  });
 });
