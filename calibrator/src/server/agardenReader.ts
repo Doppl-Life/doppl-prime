@@ -206,10 +206,11 @@ function toSolution(
 
 async function readRootCase(
   agardenRoot: string,
+  graphRoot: string,
   dirname: string,
   ledger: Map<string, AgardenLedgerEntry>,
 ): Promise<CalibratorCase | null> {
-  const casePath = join(agardenRoot, dirname);
+  const casePath = join(graphRoot, dirname);
   const caseMarkdownPath = join(casePath, `${dirname}.md`);
   if (!(await pathExists(caseMarkdownPath))) return null;
 
@@ -252,7 +253,7 @@ export async function readAgardenIndex(agardenRoot: string): Promise<CalibratorI
     .map((entry) => entry.name)
     .sort();
 
-  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(graphRoot, dirname, ledger)))).filter(
+  const cases = (await Promise.all(dirs.map((dirname) => readRootCase(agardenRoot, graphRoot, dirname, ledger)))).filter(
     (item): item is CalibratorCase => Boolean(item),
   );
 

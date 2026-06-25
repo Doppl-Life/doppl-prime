@@ -40,6 +40,9 @@ describe("readAgardenIndex", () => {
       source_status: "imported",
       scores: { judge: 2, human: null, n: 0 },
     });
+    expect(recovery?.source_path).toBe(
+      "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f.md",
+    );
 
     const doppl = crashCase?.solutions.find(
       (item) => item.node_id === "frequency-to-probability-underwriting-cliff-1bce2c97",
@@ -53,6 +56,9 @@ describe("readAgardenIndex", () => {
       source_type: "kernel",
       source_status: "imported",
     });
+    expect(doppl?.source_path).toBe(
+      "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/frequency-to-probability-underwriting-cliff-1bce2c97/frequency-to-probability-underwriting-cliff-1bce2c97.md",
+    );
   });
 
   it("keeps empty cases visible even before they have generated children", async () => {
@@ -116,6 +122,8 @@ prev: [[case-a]]
     );
 
     const index = await readAgardenIndex(agardenRoot);
+    expect(index.cases[0]?.source_paths).toEqual(["flow/case-a/case-a.md"]);
+    expect(index.cases[0]?.problem_recoveries[0]?.source_path).toBe("flow/case-a/problem-recovery/node-pr.md");
     expect(index.cases[0]?.problem_recoveries[0]?.human_ratings).toEqual([
       expect.objectContaining({
         rating_id: "rating_node-pr_dalton_dinderman_challenger_gauntletai_com",

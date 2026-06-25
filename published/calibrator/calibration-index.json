@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T21:11:15.853Z",
+  "generated_at": "2026-06-25T15:36:05.329Z",
   "source_kind": "agarden",
   "comparison_sets": [],
   "cases": [
@@ -10,7 +10,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "ae-waiting-room-aggression-119ab092/ae-waiting-room-aggression-119ab092.md"
+        "flow/ae-waiting-room-aggression-119ab092/ae-waiting-room-aggression-119ab092.md"
       ],
       "body": "# Emergency Department Waiting-Room Aggression\n\nprev_id: null\n\n## Context\n\nA hospital emergency department is trying to reduce hostility toward staff in the\nwaiting room. The worst incidents need security or clinical escalation, but many\nlower-level conflicts build from the same background conditions: pain, fear,\nlong waits, crowded rooms, and a process that patients and visitors cannot see.\n\nTriage makes the queue morally confusing from the waiting-room chair. Someone who\narrived later may be called first. A patient may disappear through one doorway\nand then wait somewhere else. Tests, reviews, admissions, discharges, and\nhandoffs happen behind the scenes. Staff know the process is moving; patients\noften experience only delay and silence.\n\nThe department cannot become first-come-first-served. It cannot safely promise\nexact treatment times. It also cannot depend on clinicians repeatedly leaving\nclinical work to explain the system one person at a time.\n\nWhat could the department change in the waiting-room experience so ordinary\nconfusion and frustration are less likely to harden into aggression, while\npreserving clinical triage and staff time?\n\n## Synopsis\n\nAn emergency department wants to reduce waiting-room hostility toward staff; most conflict grows from pain, long waits, crowding, and a triage process patients cannot see.",
       "problem": {
@@ -27,7 +27,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "agentic-package-execution-safety-8f67d40a/agentic-package-execution-safety-8f67d40a.md"
+        "flow/agentic-package-execution-safety-8f67d40a/agentic-package-execution-safety-8f67d40a.md"
       ],
       "body": "# When NPX Becomes A Permission Boundary\n\nprev_id: null\n\n## Context\n\nPackage registries grew up around dependency records. A maintainer publishes a\nversion, projects declare ranges, installers fetch tarballs, and downstream\ntools check for known vulnerable versions. That model fits a world where humans\nmostly install packages during deliberate development work.\n\nThe boundary is changing. A developer, agent, or remote sandbox can run an\nunfamiliar package as an executable command with a single prompt. The approval\nsurface is often little more than a package name and version. It does not\nexplain whether the package is new, whether maintainership changed, whether the\ntarball matches its repository, whether install scripts will run, or whether the\ncommand expects filesystem, network, credential, or subprocess access.\n\nThe registry has started to add more trust signals. Package provenance, trusted\npublishing, staged publishing, install-time controls, vulnerability scanning,\nand dependency update bots all reduce parts of the problem. Security vendors can\nalso flag suspicious package behavior faster than a public vulnerability record\nappears. But the execution decision is still fragmented across registry\nmetadata, local installer flags, human review, dependency PRs, and third-party\nalerts.\n\nThe harder case is an untrusted or newly changed version before the ecosystem has\nabsorbed it. A release with low downloads and short lifetime may be reversible in\npractice, but after it gains dependents, build cache entries, lockfile pins, and\nautomation trust, removal becomes more expensive. The same window is when an\nagent is most likely to treat the package as a tool rather than a dependency.\n\nThe question is what the new permission boundary should be. If package execution\nis remote code execution by default, what evidence should be assembled before a\ncommand runs? Which low-exposure releases should stay reversible? Which signals\nare strong enough to block an agent without making every install a manual\nsecurity review?\n\n## Synopsis\n\nPackage registries were built for dependency records, but agents and sandboxes now run unfamiliar packages as executable commands on a single prompt, shifting where the permission boundary sits.",
       "problem": {
@@ -44,7 +44,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "ai-firm-power-constraint-520d64c5/ai-firm-power-constraint-520d64c5.md"
+        "flow/ai-firm-power-constraint-520d64c5/ai-firm-power-constraint-520d64c5.md"
       ],
       "body": "# The AI Campus That Cannot Just Plug In\n\nprev_id: null\n\n## Context\n\nIn 2026, a frontier AI buildout is no longer only a chip-procurement problem. A\nlarge training or inference campus needs accelerators, but it also needs a site\nthat can take enormous electrical load, cool dense racks, get permits, connect to\nthe grid, and operate on a schedule that does not match normal utility planning.\n\nThe numbers have moved fast. The International Energy Agency estimated data\ncentres used about 415 TWh of electricity in 2024, roughly 1.5% of global\nelectricity consumption, and projected that global data-centre electricity use\ncould reach about 945 TWh by 2030. Accelerated servers, driven mainly by AI, are\nprojected to grow much faster than conventional server demand.\n\nThe grid does not move like a GPU supply chain. Berkeley Lab's interconnection\nqueue data showed more than 2,060 GW of generation and storage capacity seeking\nconnection to the U.S. grid at the end of 2025, with many projects withdrawn and\ncompleted projects taking longer to study and energize. A site can have capital,\nland, and ordered hardware while still waiting on transmission upgrades,\nsubstations, local opposition, water constraints, or a utility service agreement.\n\nThe behavior of large buyers has changed. Microsoft signed a 20-year agreement\nwith Constellation to support restarting Three Mile Island Unit 1 as the Crane\nClean Energy Center, adding roughly 835 MW of carbon-free power to the grid.\nGoogle signed with Kairos Power for up to 500 MW of new 24/7 carbon-free nuclear\npower, with the first unit targeted for 2030. Amazon has co-location and nuclear\ndevelopment agreements tied to AWS data centers, including existing nuclear\ncapacity in Pennsylvania and small modular reactor projects in Washington and\nVirginia.\n\nFor an AI lab, hyperscaler, utility, or data-center developer, the public story\nstill tends to fixate on chips and model releases. The siting meeting is more\nphysical. Which sites can actually be energized? Which megawatts are useful at\nthe hour and location where compute needs them? Who pays for the grid upgrades?\nWhat happens if a model roadmap assumes capacity before the power system can\ndeliver it?\n\nThe decision is not simply \"buy more electricity.\" The question is which input\nactually slows deployment, how early it has to be secured, and who gains leverage\nwhen compute demand runs into infrastructure built on a slower clock.\n\n## Synopsis\n\nA frontier AI campus is no longer just a chip-procurement problem: the binding constraints are electrical load, cooling, permits, and grid connection on a schedule utilities are not built for.",
       "problem": {
@@ -61,7 +61,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "ai-overviews-zero-click-publishing-62167f2d/ai-overviews-zero-click-publishing-62167f2d.md"
+        "flow/ai-overviews-zero-click-publishing-62167f2d/ai-overviews-zero-click-publishing-62167f2d.md"
       ],
       "body": "# The Publisher Whose Search Traffic Stopped Arriving\n\nprev_id: null\n\n## Context\n\nA general-interest publisher enters 2026 with a familiar dashboard problem. The\nsite still ranks for many evergreen explainers. Google Search Console still shows\nimpressions. Some stories are still being cited or summarized in search results.\nBut sessions from classic search are weaker, and the decline is concentrated in\nthe pages that used to answer ordinary informational queries.\n\nThe search page itself has changed. Google AI Overviews and AI Mode, ChatGPT\nSearch, Perplexity, and similar products can now satisfy a user before the user\nvisits a publisher's site. Pew Research found in 2025 that Google users clicked a\ntraditional result in 8% of visits when an AI summary appeared, compared with 15%\nwhen it did not. Clicks on links inside the AI summary were rarer. Google says\nits AI features surface links and that no special markup is needed beyond normal\nsearch eligibility, but the measurement is awkward: AI Overviews and AI Mode are\nrolled into ordinary Search Console reporting rather than broken out as a clean\ndistribution channel.\n\nThe impact is not even. Industry data from 2026 showed large organic-click drops\nfor a portfolio of publishers after AI Overviews expanded, while breaking-news\ntraffic and Discover clicks rose. Other large-scale datasets showed a smaller\naggregate decline across the web, with sharper pain for some publisher classes\nthan for others. A newsroom can therefore be in real trouble even while someone\nelse can say search is not dead.\n\nThe publisher's internal argument gets messy quickly. The SEO team sees stable\nrankings and wants technical fixes. The editorial team wants to protect service\njournalism and evergreen explainers because those pages used to pay for less\ncommercial work. The ad team sees fewer pageviews. The subscription team cares\nless about raw visits and more about readers who know the brand well enough to\nreturn directly. The platform team cannot tell whether a citation inside an AI\nanswer is a substitute for a visit, a brand impression, or just invisible\nextraction.\n\nThe publisher has to decide what kind of attention it is still earning, what\nkind it has lost, and what it should build for next. A recipe database, a local\naccountability investigation, a travel guide, a product review, and a breaking\nnews live blog may not be the same business anymore.\n\n## Synopsis\n\nA publisher's classic search traffic is eroding, concentrated in the evergreen explainers, as AI Overviews and answer engines satisfy informational queries on the results page itself.",
       "problem": {
@@ -78,7 +78,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "airport-liquid-congestion-d30dc99f/airport-liquid-congestion-d30dc99f.md"
+        "flow/airport-liquid-congestion-d30dc99f/airport-liquid-congestion-d30dc99f.md"
       ],
       "body": "# Airport Liquid Rule Congestion\n\nprev_id: null\n\n## Context\n\nThe airport security checkpoint has a recurring slowdown. Passengers arrive at\nthe X-ray belt with drink bottles, cosmetics, gels, or other containers that do\nnot comply with the carry-on liquid rule. By the time the problem is found, the\nbag is already in the screening lane.\n\nThe interruption is small in isolation and ugly in aggregate. Staff stop the\nflow, pull the bag aside, explain the rule, wait while the passenger searches,\nargue about edge cases, discard items, or send the passenger away to repack. The\nlane loses rhythm, the queue watches, and the passenger feels punished for a\nmistake discovered too late.\n\nThe airport has already tried the obvious public-information layer: signs,\nwebsite copy, airline reminders, and announcements. They help some passengers\nbut not enough. The failures are concentrated among rushed travelers, families,\ninfrequent flyers, passengers using cabin bags only, and people who saw the rule\nbut did not translate it into an action before reaching the belt.\n\nWhat could the airport change so fewer liquid problems reach the screening lane,\nwithout weakening inspection, adding a worse queue, or turning the rule into a\nlong legal explanation?\n\n## Synopsis\n\nAn airport checkpoint keeps stalling because non-compliant carry-on liquids are discovered late at the X-ray belt, minor per incident but costly in aggregate.",
       "problem": {
@@ -95,7 +95,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "boil-the-ocean-software-unlock-6bfbad75/boil-the-ocean-software-unlock-6bfbad75.md"
+        "flow/boil-the-ocean-software-unlock-6bfbad75/boil-the-ocean-software-unlock-6bfbad75.md"
       ],
       "body": "# When The Old Advice Was To Stay Small\n\nprev_id: null\n\n## Context\n\nFor years, a common software warning was to avoid boiling the ocean. Do not\nrebuild the package registry. Do not rethink source control. Do not build a new\nteam communications system. Do not create a new mobile distribution layer. Do\nnot make your own benchmark ecosystem. Pick a narrow wedge, ship the smallest\nthing, and avoid infrastructure traps.\n\nThat warning was often correct. The hard part of many systems was not the first\nprototype. It was the long tail: package metadata, weird Git states, sync\nconflicts, device policies, user trust, security reviews, migration paths,\ndocumentation, support, and compatibility with old workflows. Big rewrites\nfailed because coordination and maintenance cost overwhelmed the insight.\n\nThe constraint may be moving. AI agents can generate code, inspect large diffs,\nrun checks, produce migration scaffolds, research prior art, maintain repeated\ntasks, and operate disposable environments. They do not remove complexity, but\nthey can lower the cost of attacking systems that were previously too broad for\nsmall teams.\n\nThat does not mean every large idea is newly good. Some oceans are still oceans.\nThe bottleneck may move from code to trust, distribution, governance,\nregulation, data rights, human attention, or who owns a shared state transition.\nThe old advice becomes dangerous only when it hides a changed constraint.\n\nThe question is what should be reconsidered now. Which formerly absurd systems\nproblems are newly approachable because implementation and coordination cost\nfell? Which are still blocked by non-code constraints? How should a builder tell\nthe difference between a once-impossible project whose bottleneck moved and a\nclassic overreach with better tools?\n\n## Synopsis\n\nConventional software advice warned against rebuilding infrastructure (do not boil the ocean); the case probes whether that caution still holds once the hard part of these systems has shifted.",
       "problem": {
@@ -112,7 +112,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "fsd-accident-economy-19bf6c2f/fsd-accident-economy-19bf6c2f.md"
+        "flow/fsd-accident-economy-19bf6c2f/fsd-accident-economy-19bf6c2f.md"
       ],
       "body": "# When the Crashes Don't Come\n\nprev_id: null\n\n## Context\n\nAs of June 22, 2026, this is a Tesla case. Waymo proves driverless ride-hailing can\noperate, but its geofenced fleet model and prohibitive cost structure are not the\ndiscontinuity being tested here.\n\nThe signals are no longer theoretical. Tesla's Robotaxi service is live in\nlimited areas of Austin, Dallas, and Houston. Texas now requires commercial\nautomated-vehicle operators to hold state authorization, turning a permissive\nmarket into a regulated commercial channel. In California, Tesla Robotaxi LLC now\nappears on the DMV testing-with-driver permit list; California has not granted\nTesla driverless deployment, but the barrier has moved into the regulatory\npipeline. Globally, Tesla says Full Self-Driving (Supervised) has already rolled\nout in the United States, Canada, Mexico, Puerto Rico, Australia, New Zealand,\nSouth Korea, the Netherlands, Lithuania, Estonia, Denmark, and Belgium.\nChina is a messier but important signal: Tesla announced FSD Supervised\navailability there in May 2026, while full-market regulatory clearance and\nfleet-wide availability remain less clean.\n\nThe premise of this case is that Tesla has solved full self-driving. The question is what happens if the bottleneck is no longer invention, but permission and adoption, across an existing vehicle platform.\n\nSuppose Tesla's model starts to produce the result everyone wanted: fewer crashes caused by human driving error en masse, without rebuilding the fleet city by city. The safety story is not ambiguous. Fewer people are killed, fewer people are injured, fewer families get the phone call no one wants.\n\nThe public conversation does not get very far. The visible story is that rides\nget much cheaper and taxi, Uber, and Lyft drivers lose work. Investors talk about\nride-hailing economics. Labor reporters talk about drivers. Local officials talk\nabout street use, airport pickups, and whether the service is allowed. For most\npeople, that is the whole frame.\n\nAlmost nobody treats crash reduction as an economic demand shock. A crash is not only a bad event; it is also the beginning of a long chain of paid work, supply lines, and public cost. Someone files a claim. Someone tows the vehicle. Someone repairs, stores, salvages, auctions, litigates, bills, treats, rehabilitates, or administers the consequences. Some organizations are paid per incident. Others maintain capacity because severe crashes arrive often enough to justify it.\n\nNo one is trying to preserve crashes. That is not the question. The question is\nwhat has to adapt when a massive recurring source of harm falls away, especially\nif most of the exposed systems are not yet thinking of themselves as exposed.\n\n### The Situation\n\nThe rollout is uneven and the architecture matters. A software-driven fleet that\ncan be enabled across many existing vehicles changes the timing, geography, and\nscale of the shock. Texas shows the public-service side of the Tesla rollout.\nCalifornia shows the permission boundary: testing with a driver is not driverless\ndeployment. The larger question is what happens if permission turns a working\nautonomy stack into broad deployment before adjacent institutions have named the\nrisk.\n\nLiability may also shift: a remaining crash might involve a fleet operator,\nmanufacturer, software provider, sensor supplier, owner, passenger, or road\nauthority rather than a single human driver.\n\nThe remaining crashes may not look like today's average crashes either. There may be\nfewer of them, but some individual incidents could be more expensive because modern\nvehicles carry sensors, calibration requirements, software records, and specialized\nparts.\n\nThe obvious labor story is only one surface. A lower-crash world may also touch:\n\n- insurers, agents, reinsurers, adjusters, and claims organizations\n- collision repair, parts, towing, storage, salvage, and auction businesses\n- injury lawyers, courts, settlement services, and billing intermediaries\n- emergency medical services, trauma centers, rehabilitation providers, and\ndisability systems\n- public agencies and households that absorb crash costs, lost work, disruption,\nand administrative burden\n\nTraffic stops, fines, forfeiture, driver licensing, and license-as-ID may also\nchange under autonomy, but they are not the center of this case unless the link runs\nthrough crash harm.\n\n### Decision Point\n\nYou are looking past the visible cheap-rides-and-driver-displacement story.\n\nWhat should the dependency map include, and which crash-linked businesses,\npublic agencies, medical systems, legal systems, and household costs need the\nclosest attention if human-caused crash volume falls sharply?\n\n## Synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.",
       "problem": {
@@ -129,7 +129,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "fsd-adoption-asymmetry-e363a962/fsd-adoption-asymmetry-e363a962.md"
+        "flow/fsd-adoption-asymmetry-e363a962/fsd-adoption-asymmetry-e363a962.md"
       ],
       "body": "# The Patchwork Arrival\n\nprev_id: null\n\n## Context\n\nTesla-scale autonomy does not arrive everywhere at once.\n\nAs of June 22, 2026, Tesla Robotaxi service is available only in limited areas of\nAustin, Dallas, and Houston. Texas has an enforceable commercial authorization\nprogram for automated vehicles operating without a human driver. California has\nTesla Robotaxi LLC on its testing-with-driver permit list, but Tesla is not listed\nfor California driverless testing or deployment. Globally, Tesla says FSD\n(Supervised) has rolled out in the United States, Canada, Mexico, Puerto Rico,\nAustralia, New Zealand, South Korea, the Netherlands, Lithuania, Estonia, Denmark,\nand Belgium. That supervised product still requires an attentive driver and is not\nthe same legal thing as a driverless robotaxi.\n\nThe result is a strange adoption pattern. In one place, autonomy is a thing people\ncan summon with an app. In another, it is a permit application. In another, it is a\ndriver-assistance subscription. In another, it is still a headline, a stock argument,\nor something people assume is fake because they have never seen it work.\n\nThis matters because the consequences do not wait for national consensus. If one\nmetro gets reliable autonomous rides and another does not, their labor markets,\nairport access, parking demand, insurance experience, crash rates, court volume,\nand household car decisions may begin to diverge. If one country accepts supervised\nFSD and another blocks it, consumer expectations and local data loops diverge. If\none state lets commercial driverless service operate and another keeps it trapped in\ntesting, the boundary itself becomes economically important.\n\nThe belief gap may be as important as the coverage gap. People living inside the\nservice area can update from experience. Everyone else updates through clips,\ncrashes, jokes, earnings calls, political fights, and secondhand arguments. That\ncreates room for real-world arbitrage: workers, regulators, investors, insurers,\ndealers, cities, airports, and households may act as if the shift is still distant\nafter it is already routine somewhere else.\n\nThe split can also run internationally. Rich, mapped, regulator-ready metros may get\nthe technology first. But the opposite is possible in specific places if a country\nwith lighter legacy constraints decides that road safety, logistics cost, or weak\ntransit makes fast adoption worth it. The arrival pattern is not automatically fair,\nlinear, or predictable.\n\n### Decision Point\n\nYou are comparing places that will experience autonomy at different times and under\ndifferent legal meanings.\n\nWhich gaps matter most: lived experience, regulation, vehicle fleet, weather,\nmapping, infrastructure, labor politics, insurance, or public trust? What changes at\nthe boundary between places where autonomy is ordinary and places where it is still\ntreated as speculation?\n\n## Synopsis\n\nTesla-scale autonomy arrives as a patchwork, live in limited Texas areas and gated differently across states and countries, rather than everywhere at once.",
       "problem": {
@@ -146,7 +146,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "fsd-enforcement-economy-4a236241/fsd-enforcement-economy-4a236241.md"
+        "flow/fsd-enforcement-economy-4a236241/fsd-enforcement-economy-4a236241.md"
       ],
       "body": "# The Missing Driver In The Traffic Stop\n\nprev_id: null\n\n## Context\n\nTraffic enforcement assumes a human driver. Someone speeds, rolls a stop, drifts\nacross a lane, looks down at a phone, drives impaired, forgets paperwork, ignores a\nregistration deadline, misses an inspection, or gives an officer a reason to pull\nthe car over.\n\nTesla-scale autonomy tests that assumption directly. Texas now requires commercial\nautomated-vehicle authorization for passenger or cargo service without a human\ndriver. California has moved in the same direction from the other side: its new AV\nrules create notices of noncompliance when an autonomous vehicle commits a moving\nviolation, and the notice goes to the manufacturer or operator rather than to a human\ndriver who is not there.\n\nThat sounds like a technical enforcement update. It is bigger than that.\n\nTraffic stops are one of the most common police-citizen contacts in the United\nStates. In 2022, about 49 million U.S. residents age 16 or older reported contact\nwith police; among police-initiated contacts, drivers in traffic stops were the\nlargest category. A stop can remain a simple warning or ticket. It can also become a\nsearch, a warrant check, a vehicle tow, a forfeiture event, a license suspension, an\ninsurance surcharge, or a court appearance.\n\nThe revenue story is uneven. Traffic fines are not a large share of state and local\nrevenue in aggregate, but they matter intensely in some places. Some towns, courts,\nvendors, and law practices are built around high-volume traffic enforcement. Fuel\ntaxes are already under pressure from EVs and efficient vehicles, and road-usage\ncharging programs in states such as Oregon and Utah show the replacement logic:\ncharge by mile instead of by gallon or by incident.\n\nAutonomous vehicles do not make state power disappear. They change where it can\nattach. A human driver can be stopped, cited, questioned, searched, licensed,\nsuspended, tested, and priced. A fleet vehicle can be logged, geofenced, remotely\ncontacted, restricted by permit, or charged by mile. California's new AV rules point\nthere: operators must respond to first responders, obey emergency geofences, report\nmore data, and can face operating restrictions.\n\nThe familiar public concern is whether robotaxis will block traffic, pick up at the\nairport, or kill driving jobs. The less familiar question is what happens to a legal\nand fiscal apparatus built around fallible individual drivers when the driver is no\nlonger the operating unit.\n\n### Decision Point\n\nYou are advising a state that expects autonomous service to grow county by county.\n\nWhich enforcement, court, identity, revenue, and civil-liberties dependencies should\nit examine before the human traffic stop starts to shrink?\n\n## Synopsis\n\nTraffic enforcement assumes a human driver to cite; driverless autonomy removes that driver from the traffic stop.",
       "problem": {
@@ -163,7 +163,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "fsd-mobility-and-time-b23b5a5d/fsd-mobility-and-time-b23b5a5d.md"
+        "flow/fsd-mobility-and-time-b23b5a5d/fsd-mobility-and-time-b23b5a5d.md"
       ],
       "body": "# When The Driver Stops Being The Cost\n\nprev_id: null\n\n## Context\n\nTesla's Robotaxi rollout is still limited, and supervised FSD still requires an\nattentive driver. For this case, accept the stronger premise: the technology is good\nenough that legality, operating design, and adoption are now the bottlenecks.\n\nThe public conversation sees the ride-hailing surface. If rides get cheaper, taxi,\nUber, and Lyft drivers lose work. That is the part everyone can understand.\n\nThe less visible change is that driver attention and driver labor have been basic\nprices in the transportation system. A person has to stay awake on a long drive. A\ntruck driver has legal rest limits. A commuter burns attention twice a day. A parent\nor caregiver becomes a driver by default. A local delivery business routes around\nlabor cost, schedule reliability, loading time, parking, and insurance. A short\nflight competes not with highway miles, but with a door-to-door ordeal: airport\naccess, security, boarding, delays, pickup, and the wasted fragments around each\nstep.\n\nThere are already exposed surfaces before autonomy becomes universal. Heavy and\ntractor-trailer truck drivers held about 2.2 million U.S. jobs in 2024. Delivery\ntruck drivers and driver/sales workers held about 1.5 million. Taxi drivers, shuttle\ndrivers, and chauffeurs held about 448,000, and the taxi category includes\nride-hailing drivers. These are not all hit at the same time, and not all driving\ntasks are easy. But the labor base is large enough that a slow transition is still a\nmajor transition.\n\nLong-distance travel has its own pressure points. Cars already dominate many trips\nunder 500 miles; air starts winning only after distance gets long enough to overcome\nthe airport penalty. Short domestic flights have also been weakening for years. A\ncheap, sleepable, door-to-door autonomous ride does not need to beat a plane in the\nair. It only needs to beat the whole trip.\n\nFreight and roadside businesses face a different version of the same question.\nToday's roadside economy is built for human drivers who need fuel, bathrooms, meals,\nshowers, sleep, parking, repairs, compliance stops, and downtime. Driverless freight\nstill needs energy, maintenance, routing, and staging, but it does not need the same\nhuman stopping pattern.\n\nThen there is the daily hour. The average commute is still close to half an hour\neach way for many workers. If the trip can become sleep, work, entertainment, or\nerrand time, the boundary around a labor market changes. Places that were too far\nfor daily life may become tolerable. Some cities may stretch. Others may get more\nconcentrated. The car becomes less like a steering task and more like a moving room.\n\n### Decision Point\n\nYou are looking beyond cheap rides.\n\nIf driver attention and driver labor stop being the binding costs, which travel,\nfreight, labor, and geography systems change first, and which changes only arrive\nafter the rollout becomes reliable enough for people to plan their lives around it?\n\n## Synopsis\n\nGranting that the technology works well enough, the case looks at what changes when the driver stops being the cost of mobility, beyond the visible ride-hailing layer.",
       "problem": {
@@ -180,7 +180,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md"
+        "flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md"
       ],
       "body": "# The Car You Stop Owning\n\nprev_id: null\n\n## Context\n\nAmericans do not just use cars. They finance them, insure them, trade them in,\nrepair them, park them, register them, borrow against them, build garages for them,\nand organize daily life around having one nearby.\n\nTesla-scale autonomy puts pressure on that ownership pattern. Robotaxi service is\nalready live in limited Texas areas. Supervised FSD is spreading through owned Tesla\nvehicles in multiple countries, while still requiring an attentive driver. The\ncombined signal is not just that rides may get cheaper. It is that one company is\ntrying to make autonomy part of a vehicle platform that can be sold, subscribed to,\nupdated, and possibly used as a service asset.\n\nThe U.S. ownership stack is huge. Auto-loan balances were about $1.69 trillion in\nQ1 2026. Franchised light-vehicle dealers sold 16.2 million light-duty vehicles in\n2025, generated more than $1.3 trillion in sales, and wrote more than 276 million\nrepair orders. Dealerships are not only showrooms; they are finance desks, trade-in\nfunnels, local employers, service businesses, warranty channels, political actors,\nand beneficiaries of state franchise laws.\n\nThe private car also has a utilization problem. It is expensive and sits unused for\nmost of the day. That made sense when the alternative was waiting, walking, taking\ntransit that did not match the trip, or paying another human to drive. If a reliable\nautonomous ride is always near, the household car has to justify itself differently.\n\nThere are at least three live possibilities:\n\n- households keep owning cars because autonomy makes the owned car more useful\n- households own fewer cars because cheap service covers ordinary trips\n- ownership mutates because a household vehicle can work as a paid robotaxi when\n  the owner is not using it\n\nThose paths hit different institutions. A pure service model pressures retail unit\nsales, used-car residuals, auto lending, parking, fuel retail, and household\ninsurance. A household robotaxi model may preserve financing but change what is\nbeing financed: not a depreciating convenience asset, but an income-producing\nmachine with different risk, wear, tax, repair, and liability questions.\n\nThe visible story is again too small. People can understand cheaper rides and driver\njob loss. Far fewer are asking what happens to the car as the default household\nasset.\n\n### Decision Point\n\nYou are looking at the ownership economy before the market settles.\n\nWhich parts depend on households buying and maintaining privately used vehicles, and\nwhich parts can survive if mobility shifts toward fleets, subscriptions, or\nincome-producing owned cars?\n\n## Synopsis\n\nAmerican daily life is organized around owning a car (financing, insurance, repair, parking); the case examines how autonomy pressures that whole ownership pattern.",
       "problem": {
@@ -197,7 +197,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "full-self-driving-unlock-d4308ddb/full-self-driving-unlock-d4308ddb.md"
+        "flow/full-self-driving-unlock-d4308ddb/full-self-driving-unlock-d4308ddb.md"
       ],
       "body": "# The Switch Under The Fleet\n\nprev_id: null\n\n## Context\n\nAs of June 22, 2026, treat this as a Tesla case. The premise is not that every\nroad, weather condition, regulator, or consumer has already yielded. The premise is\nthat Tesla-scale full self-driving works well enough that the binding question has\nmoved from invention to permission, rollout, and adoption.\n\nThe current signals are concrete. Tesla's Robotaxi service is operating in limited\nareas of Austin, Dallas, and Houston, Texas, using Model Y vehicles and a dedicated\nRobotaxi app. Texas now requires commercial automated-vehicle operators to hold a\nstate authorization for vehicles operating without a human driver. California has\nTesla Robotaxi LLC on its testing-with-driver permit list, but not on its driverless\ntesting or deployment lists. California's new autonomous-vehicle rules also create a\nstaged path through safety-driver testing, driverless testing, and deployment, with\ntraffic-law accountability aimed at the operator rather than a missing human driver.\n\nTesla also says Full Self-Driving (Supervised) has rolled out beyond North America:\nAustralia, New Zealand, South Korea, the Netherlands, Lithuania, Estonia, Denmark,\nand Belgium are listed alongside the United States, Canada, Mexico, and Puerto Rico.\nThat supervised product still requires an attentive driver. It does not make a\nconsumer Tesla legally autonomous. But it matters because the same company is pushing\ntwo related gates at once: supervised capability spreading through owned cars, and\ncommercial driverless service beginning in limited Texas markets.\n\nThat makes the discontinuity different from a small robotaxi fleet. The hard\nquestion is what happens if autonomy can be distributed through an installed vehicle\nbase, a shared software stack, and over-the-air updates rather than through slow,\ncity-by-city fleet construction.\n\nThe public story is still shallow. Most people see cheaper rides, displaced Uber and\ntaxi drivers, and a fight over whether the cars should be allowed on certain streets.\nThat is not wrong. It is just the smallest visible surface.\n\nDriving is not one industry. It is a load-bearing behavior under insurance, repair,\nfreight, public revenue, identity, land use, airport access, policing, commute\ngeography, household balance sheets, and local labor markets. Some parts depend on\npeople driving badly. Some depend on people owning cars. Some depend on people being\nstuck behind the wheel. Some depend on the state having millions of individual\ndrivers to license, stop, ticket, insure, and tax.\n\nIf the Tesla premise holds, the first wave will look mundane: a few service areas,\npermit fights, pricing experiments, cautious expansion, bad headlines after\nindividual incidents, and arguments about safety statistics. The deeper question is\nwhich systems are quietly built on the assumption that human driving remains normal.\n\n### Decision Point\n\nYou are advising someone who accepts the Tesla premise before most institutions\naround the road economy have updated.\n\nWhich dependent systems deserve separate investigation first, and how would you tell\nwhich ones merely get cheaper, which ones lose the event they were built around,\nand which ones move from individual drivers to fleet-scale operators?\n\n## Synopsis\n\nGranting that Tesla-scale full self-driving works well enough, the binding question shifts from invention to permission, rollout, and adoption.",
       "problem": {
@@ -214,7 +214,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "glp1-snack-demand-destruction-fee90f49/glp1-snack-demand-destruction-fee90f49.md"
+        "flow/glp1-snack-demand-destruction-fee90f49/glp1-snack-demand-destruction-fee90f49.md"
       ],
       "body": "# GLP-1s In The Grocery Basket\n\nprev_id: null\n\n## Context\n\nIn 2026, GLP-1 drugs are no longer only a diabetes-care story or a celebrity\nweight-loss story. A KFF poll from late 2025 found that 12% of U.S. adults were\ncurrently taking a GLP-1 drug such as Ozempic, Wegovy, Mounjaro, or Zepbound,\nand 18% had taken one at some point.\n\nThe grocery aisle is starting to show it. A household panel study published in\n2026 found that households with a GLP-1 user cut grocery spending by about 5%\nwithin six months of adoption. The reductions were larger in higher-income\nhouseholds and heavier in calorie-dense processed categories. Savory snacks,\nsweet baked goods, candy, sugary drinks, and limited-service restaurant visits\nall look more exposed than basic staples. A few categories, such as yogurt and\nsome protein-forward foods, moved the other way.\n\nFor a packaged-food company, this does not arrive as one clean signal. The same\nweekly report can show fewer impulse units, stronger interest in protein,\nsmaller portion packs, private-label pressure, normal inflation noise, and a\nretailer asking for a new \"GLP-1 friendly\" shelf story. The consumer may be the\nperson taking the drug, but the basket belongs to a household. One person eating\nless at night can change what gets bought for everyone else. If the person stops\ntaking the drug, some spending may drift back.\n\nThe public conversation is still mostly about weight loss, side effects, drug\npricing, and whether food companies can launch healthier snacks. Inside a\ncategory team, the harder question is different. A salty-snack line, a candy\naisle, a frozen-meal brand, and a grocer's front-end impulse rack do not have the\nsame exposure, margin structure, or replacement occasions.\n\nThe team has to decide what it is seeing while the market is still moving. Is\nthis a temporary diet wave, a product-mix shift, a household-level demand change,\nor something else? Which lost occasions can be replaced, which only shrink, and\nwhich disappear?\n\n## Synopsis\n\nWith roughly 12% of US adults on a GLP-1 drug, household grocery spending (especially impulse categories) is starting to show measurable decline.",
       "problem": {
@@ -231,7 +231,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "heinz-ketchup-authenticity-5c9ad24e/heinz-ketchup-authenticity-5c9ad24e.md"
+        "flow/heinz-ketchup-authenticity-5c9ad24e/heinz-ketchup-authenticity-5c9ad24e.md"
       ],
       "body": "# Heinz Ketchup Bottle Authenticity\n\nprev_id: null\n\n## Context\n\nHeinz has a table-service problem in some restaurants and street-food venues.\nThe customer sees the familiar Heinz bottle, but the brand no longer controls\nwhat is inside it. A venue can buy Heinz bottles, refill them with cheaper\nketchup, and keep presenting the bottle as if nothing changed.\n\nThe deception is awkward to police. Contracts and distributor pressure may deter\nsome venues, but they do not help the customer at the table. Taste is too slow\nand too subjective. A phone-based check would add friction to a condiment. A\nheavy tamper-proof package would be expensive and wasteful for a bottle that\noften lives in ordinary restaurant service.\n\nHeinz needs a cheap, familiar package-level change that makes substitution\nharder to hide during normal use.\n\nWhat could the bottle do, without asking the customer to scan, read, or perform\nan authentication ritual?\n\n## Synopsis\n\nVenues refill branded Heinz bottles with cheaper ketchup, and the brand cannot control or prove what is actually inside the bottle at the table.",
       "problem": {
@@ -248,7 +248,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "houston-baggage-claim-complaints-57251c2c/houston-baggage-claim-complaints-57251c2c.md"
+        "flow/houston-baggage-claim-complaints-57251c2c/houston-baggage-claim-complaints-57251c2c.md"
       ],
       "body": "# Houston Baggage Claim Complaints\n\nprev_id: null\n## Context\n\nAn airport has a baggage-claim complaint problem. Passengers on a route keep\nsaying the bags take too long.\n\nOperations improves the mechanical process, but the complaints do not go away.\nThe remaining delay is not mostly a broken belt or lazy handling. Passengers are\ngetting from the arrival gate to the carousel very quickly, then standing still\nwhile the ordinary baggage process catches up.\n\nFrom the airport's view, bag delivery is near the practical floor. From the\npassenger's view, the experience is an idle wait in a public room after a long\nflight. The airport needs fewer complaints, but it cannot justify a major\nbaggage-system rebuild for a process that is already close to normal.\n\nWhat could the airport change so the same baggage timing feels less like a\nfailure, without pretending the bags are arriving materially faster?\n\n## Synopsis\n\nBaggage-claim complaints persist after operational fixes because passengers reach the carousel quickly, then stand waiting for the normal process to catch up.",
       "problem": {
@@ -265,7 +265,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "houston-baggage-walk-b25b0dad/houston-baggage-walk-b25b0dad.md"
+        "flow/houston-baggage-walk-b25b0dad/houston-baggage-walk-b25b0dad.md"
       ],
       "body": "# Houston Baggage Claim Complaints\n\nprev_id: null\n\n## Context\n\nAn airport has a baggage-claim complaint problem. Passengers on a route keep\nsaying the bags take too long.\n\nOperations improves the mechanical process, but the complaints do not go away.\nThe remaining delay is not mostly a broken belt or lazy handling. Passengers are\ngetting from the arrival gate to the carousel very quickly, then standing still\nwhile the ordinary baggage process catches up.\n\nFrom the airport's view, bag delivery is near the practical floor. From the\npassenger's view, the experience is an idle wait in a public room after a long\nflight. The airport needs fewer complaints, but it cannot justify a major\nbaggage-system rebuild for a process that is already close to normal.\n\nWhat could the airport change so the same baggage timing feels less like a\nfailure, without pretending the bags are arriving materially faster?\n\n## Synopsis\n\nBaggage-claim complaints persist after operational fixes because passengers reach the carousel quickly, then stand waiting for the normal process to catch up.",
       "problem": {
@@ -282,7 +282,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "jack-drone-privacy-fd080117/jack-drone-privacy-fd080117.md"
+        "flow/jack-drone-privacy-fd080117/jack-drone-privacy-fd080117.md"
       ],
       "body": "# The Rock Star's Drone Problem\n\nprev_id: null\n\n## Context\n\nA famous rock star owned a superyacht and used it the way very rich, very famous\npeople sometimes use superyachts: as a private world offshore, away from hotel\nbalconies, public streets, restaurant tables, and ordinary lines of sight.\n\nThe yacht was not just transport or status. It was where he could host parties,\nbring people aboard, and behave as if land-based consequences were far away. That\nassumption had started to fail from above. Paparazzi were using drones launched\nfrom shore or nearby vessels to circle the yacht and film open decks before the\npeople onboard could do much about it.\n\nThe problem was not an abstract dislike of drones. A drone could capture photographs\nthat created a personal scandal. The owner did not want those photographs, but he\nalso did not want the party to stop every time someone saw a dot in the sky. He had\nbought privacy, not a floating panic room.\n\n### The Situation\n\nThe yacht was operating near busy coastal waters, not in an empty military test\nrange. Other vessels, beaches, port infrastructure, aircraft, and public\ncommunications systems could be nearby. The captain, crew, and security team were\navailable, but they were not the real customer. Their job was to make the owner's\nproblem disappear without turning his night into a visible security operation.\n\nSome anti-drone systems that might be acceptable offshore or in a controlled\nenvironment could be illegal or reckless in port-adjacent waters. The yacht could\noften know a drone was coming before the owner could see it, but detection alone\ndid not decide what the crew should do next.\n\nThe obvious responses all had problems:\n\n- A projectile, net gun, or interceptor could bring the drone down, but nobody\ncould control where it would fall or what it might hit.\n- Radio-frequency jamming might affect more than the target drone. The industry had\nstories of port-side interference causing serious trouble far outside the yacht.\n- Some drones could lose contact, keep recording, and return home with footage\nanyway.\n- A visible confrontation could attract more attention than the original intrusion.\n- Repeated alarms could train the owner and guests to ignore the warning or ruin\nthe night even when no usable photographs were taken.\n\nThe owner wanted the same thing that made the problem hard: keep the party feeling\nprivate, effortless, and uninterrupted while making sure a drone did not leave with\nthe wrong photographs.\n\n### Decision Point\n\nYou have been asked to recommend a response before the next night onboard. What\nwould you tell the owner's team to do when paparazzi drones approach the yacht?\n\nYour proposal should account for detection, timing, crew behavior, legal exposure,\nfalse alarms, and the owner's desire to keep the night going. It can combine\ntechnology, procedure, crew training, or changes to how exposed areas are used.\n\n## Synopsis\n\nA celebrity's offshore yacht relied on being out of ordinary sight; that privacy assumption fails from above as paparazzi deploy drones.",
       "problem": {
@@ -299,7 +299,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "jack-yacht-connectivity-continuity-f5023c2a/jack-yacht-connectivity-continuity-f5023c2a.md"
+        "flow/jack-yacht-connectivity-continuity-f5023c2a/jack-yacht-connectivity-continuity-f5023c2a.md"
       ],
       "body": "# The $2 Million Internet Problem\n\nprev_id: null\n\n## Context\n\nA charter guest paying roughly $2 million a week does not think of the yacht as a\nremote site. They expect their phone, laptop, video calls, feeds, streams, games,\nand work sessions to behave the way they do at home or in a hotel suite.\n\nAt sea, that expectation sits on moving infrastructure. The yacht can be near shore\nwith cellular coverage in the morning, outside useful cellular range that night,\nbehind a mast or superstructure at the wrong moment, in a crowded marina, or on a\nroute where satellite availability, local licensing, hardware state, and weather\nall matter. A guest only sees the visible failure: a frozen call, a stalled upload,\na stream that buffers, a payment session that dies, or a crew member asking them\nto reconnect.\n\nStarlink changed the economics and performance of yacht connectivity. A yacht can\nnow get low-latency satellite internet with smaller terminals and far lower monthly\ncost than the old VSAT-only world. Many yachts still keep VSAT, add cellular near\nshore, and use routers that can fail over or bond multiple links.\n\nThat improves the odds. It does not make continuity automatic. Every added path\nadds hardware, antennas, accounts, coverage assumptions, switching logic,\ncybersecurity exposure, and another thing that can fail. In a true no-bearer\nmoment, buying one more link may not help at all.\n\nThe captain and owner want a yacht where high-value users feel continuous service,\nnot a technical diagram with more subscriptions on it.\n\nWhat would you recommend for the yacht's connectivity architecture, onboard\noperations, and guest-facing promise?\n\n## Synopsis\n\nA high-paying charter guest expects home-grade connectivity, but the yacht's link rides moving infrastructure at sea that drifts in and out of coverage.",
       "problem": {
@@ -316,7 +316,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "jack-yacht-perimeter-intrusion-8b0e23a1/jack-yacht-perimeter-intrusion-8b0e23a1.md"
+        "flow/jack-yacht-perimeter-intrusion-8b0e23a1/jack-yacht-perimeter-intrusion-8b0e23a1.md"
       ],
       "body": "# The Swim-Up Boarding\n\nprev_id: null\n\n## Context\n\nA large private yacht had crew onboard, a night watch, access controls, and CCTV.\nIt still had a basic security failure.\n\nAn intruder entered the water from shore, swam out to the vessel, used a tender as\na step, climbed aboard, and reached the interior before anyone stopped him. The\ntender mattered because it turned the yacht's height above the water from a barrier\ninto a ladder.\n\nThe embarrassment was not that the yacht had no security. It had the visible parts\nof security: cameras, crew, procedures, and people watching the obvious approaches.\nThe missed approach was lower, slower, and quieter. It came through the water at\nnight, where reflections, darkness, marine life, debris, cleaning work, small craft,\nand ordinary crew movement can all create noise.\n\nThe owner and guests do not want the yacht to feel like a prison. The captain does\nnot want a security system that screams all night because a turtle, floating bag,\nor crew member appears in the wrong place. The security team needs a warning early\nenough to act before someone touches the tender, hull, swim platform, or guest\nspaces.\n\nWhat would you recommend for detecting and responding to a swimmer or diver\napproaching the yacht before they board?\n\n## Synopsis\n\nDespite crew, a night watch, and CCTV, an intruder swam out from shore, used the tender as a step, and reached the yacht's interior; the waterline perimeter was unguarded.",
       "problem": {
@@ -333,7 +333,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "loft-insulation-adoption-7b712077/loft-insulation-adoption-7b712077.md"
+        "flow/loft-insulation-adoption-7b712077/loft-insulation-adoption-7b712077.md"
       ],
       "body": "# Loft Insulation Adoption\n\nprev_id: null\n\n## Context\n\nUK households are under-adopting loft insulation even when the economics look\ngood. The offer is easy to defend on paper: less heat loss, lower energy use,\nmore comfort, and a long-lived home improvement.\n\nThe program's problem is not just awareness. Some households express interest.\nSome book audits. Some accept that insulation would be sensible. Then the journey\nbreaks before installation is completed.\n\nThat matters because this is not a clean online purchase. It is a domestic\nservice visit inside a private, awkward part of the house. The household has to\nlet workers in, prepare the space, deal with disruption, and fit the job into\nnormal life. A campaign can look persuasive at the leaflet or booking stage and\nstill fail at the point where the home has to be made ready.\n\nWhat should the program change if completed installations, not stated interest,\nare the real measure?\n\n## Synopsis\n\nUK households under-adopt loft insulation despite favorable economics; interest exists, but the journey breaks down before installation completes.",
       "problem": {
@@ -350,7 +350,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "london-underground-map-distortion-0e50c938/london-underground-map-distortion-0e50c938.md"
+        "flow/london-underground-map-distortion-0e50c938/london-underground-map-distortion-0e50c938.md"
       ],
       "body": "# London Underground Passenger Map\n\nprev_id: null\n\n## Context\n\nBy the early 1930s, London's Underground had become too complex for the old style\nof passenger map. The lines spread far outside the central city, stations were\nunevenly spaced, and the dense central network was exactly where riders needed\nthe most clarity.\n\nA geographically faithful map had an obvious virtue: it showed where things\nreally were. But it also created practical problems. Central stations crowded\ntogether. Outer branches consumed space. The shape of the city competed with the\nshape of the rail system. Riders trying to answer ordinary journey questions\ncould be forced to parse street geography they did not need.\n\nMost passengers were not using the Underground map to walk between stations or\nmeasure exact surface distance. They needed to know which line to take, where to\nchange, and how stops connected.\n\nWhat kind of map would make the railway easier to use, even if it made a\ngeographer uncomfortable?\n\n## Synopsis\n\nBy the 1930s the London Underground was too sprawling for a geographically faithful map; the dense centre, where riders needed clarity most, was unreadable.",
       "problem": {
@@ -367,7 +367,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "mobile-builder-distribution-collapse-6d3b6c21/mobile-builder-distribution-collapse-6d3b6c21.md"
+        "flow/mobile-builder-distribution-collapse-6d3b6c21/mobile-builder-distribution-collapse-6d3b6c21.md"
       ],
       "body": "# When Mobile Builders Cannot Ship\n\nprev_id: null\n\n## Context\n\nMobile used to attract builders who modified the platform itself. Custom ROMs,\nexperimental Android distributions, alternative interface ideas, and new mobile\noperating systems gave ambitious developers a place to work close to the device.\nThe feedback loop was imperfect, but the imagination was wide: change the\nplatform, flash the device, share the build, and see what users did.\n\nThat loop narrowed. App stores, signing chains, device locks, review processes,\npayments, banking-app compatibility, malware defenses, and hardware support\nturned distribution into the binding constraint. A small team can still write an\napp, launcher, marketplace, ROM, or operating system layer. Getting it onto\nordinary user devices, keeping it updated, preserving trust, and supporting\nenough hardware is much harder.\n\nLive alternatives prove both demand and friction. Independent Android app\nrepositories can distribute open apps, but installation and updates still run\nthrough platform prompts and policy pressure. Custom Android systems can be\nexcellent, but they often narrow to specific devices for security and support.\nEuropean regulation has opened alternative iOS distribution paths, but those\npaths still include authorization, notarization, regional limits, settings flows,\nand fees.\n\nThe build side is getting cheaper. A smaller team can now generate code, test\ncompatibility layers, write tooling, and maintain surface area that would have\nbeen too expensive before. But cheaper building exposes the non-code constraint:\ngetting software onto devices and keeping it there.\n\nThe question is where an ambitious mobile builder should intervene. Is the\nopening a new mobile operating system, a better ROM, a sideloading helper, an app\nstore, developer tooling, device support, payment flow, policy fight, or some\ncombination that changes the user path?\n\n## Synopsis\n\nMobile once welcomed builders who modified the platform itself, but app stores, signing chains, and device locks have closed off that distribution loop.",
       "problem": {
@@ -384,7 +384,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "post-primitive-team-comms-62a64093/post-primitive-team-comms-62a64093.md"
+        "flow/post-primitive-team-comms-62a64093/post-primitive-team-comms-62a64093.md"
       ],
       "body": "# The Thread That Has To Wake Back Up\n\nprev_id: null\n\n## Context\n\nWork chat optimizes for sending messages. That makes sense during live\ncoordination, but it breaks down when important work happens over hours or days.\nA decision, blocker, investigation, or agent result may land deep in an old\nthread. The people who need it may never see it. The conversation exists, but it\ndoes not reliably return to the top of the team's attention.\n\nThe old failure mode was human memory. The newer failure mode includes agents.\nAgents can summarize, reply, execute tasks, and produce updates, but a channel\nfeed does not tell them which conversations are still alive, which replies close\na loop, which nested comment changes priority, or who owns a stale unresolved\nthread.\n\nSeveral products point at the gap. Topic-first chat makes threads easier to\nnavigate. Async tools make conversations less frantic. Project tools attach\ncomments to durable work objects. Incumbent chat products are adding summaries,\ncanvases, lists, and agents. These are meaningful patches, but they do not\nalways change the primitive. The message stream often remains the source of\ntruth.\n\nThe question is where attention should attach. Should the important unit be a\nchannel, a thread, a task, a document, a notification, or a separate object that\nborrows from all of them? Which old conversations should return to view, which\nshould stay quiet, and how should an agent know the difference?\n\n## Synopsis\n\nWork chat is built for sending messages, so decisions and agent results land deep in old threads and never reliably resurface to the team's attention.",
       "problem": {
@@ -401,7 +401,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "practitioner-benchmark-flywheel-4d76f045/practitioner-benchmark-flywheel-4d76f045.md"
+        "flow/practitioner-benchmark-flywheel-4d76f045/practitioner-benchmark-flywheel-4d76f045.md"
       ],
       "body": "# The Benchmark Only Practitioners Can Write\n\nprev_id: null\n\n## Context\n\nLarge AI systems improve against the measurements that matter. Public exams,\ncoding tasks, web tasks, and desktop-control tasks all turn messy capability into\nnumbers that labs can compare. Once a measurement becomes visible, it can change\nwhat teams optimize.\n\nThe strongest failures are often not in general benchmark suites. They live in\npractitioner worlds: obscure command-line workflows, domain-specific grammar,\nspecialized visual reasoning, messy repository history, realistic web tasks, or\ndesktop routines that experts perform without thinking. A model can sound fluent\nand still fail the task.\n\nPractitioner benchmarks turn that hidden pain into a runnable environment. They\ncan test specialized vocabulary, spatial reasoning, stateful tool use, command\nsequencing, messy repositories, and operational judgment that broad exams miss.\nSoftware issue benchmarks, web environments, and desktop-control suites show the\nsame direction at larger scale: capability has to be measured where the work\nactually happens.\n\nThere is a trap. A benchmark is not pressure just because it exists. It has to be\ntrusted, cheap enough to run, hard enough to differentiate systems, hard to game,\nand visible to the people who choose models. Once it succeeds, it can decay:\ntasks leak, models train against it, scaffolds overfit it, and the remaining\nerrors stop representing the field.\n\nThe question is how practitioners should turn lived failure into durable\nmeasurement. Which tasks deserve public prestige? Which tasks should stay held\nout? How often should the suite refresh? Who adjudicates ambiguous cases? What\nkeeps the benchmark from becoming another saturated scoreboard?\n\n## Synopsis\n\nAI systems improve against visible benchmarks, but the hardest failures live in obscure practitioner workflows that no public benchmark captures.",
       "problem": {
@@ -418,7 +418,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "review-at-agent-speed-d68163b9/review-at-agent-speed-d68163b9.md"
+        "flow/review-at-agent-speed-d68163b9/review-at-agent-speed-d68163b9.md"
       ],
       "body": "# The Pull Request No One Has Time To Read\n\nprev_id: null\n\n## Context\n\nFor a decade the scarce resource in software was writing the code. Now an\nengineer paired with agents can open dozens of correct-looking changes an hour,\nand a team of such engineers can produce more diff in a morning than the old\nreview process absorbed in a week. The constraint did not disappear. It moved.\nThe bottleneck is no longer authorship; it is integration: review, merge, and\nthe human attention required to trust a change before it ships.\n\nThis is where slop accumulates. When the queue grows faster than anyone can read\nit, the rational move under pressure is to approve on vibes, trust the green\ncheck, and merge. Each rubber-stamped change is individually plausible and\ncollectively corrosive: subtle bugs, dead branches, drifting conventions, and\neroded architecture compounding at machine speed. The danger is not one bad PR.\nIt is a system that ships faster than it can form judgment, where quality decays\nprecisely because everyone is moving quickly and no one is the bottleneck that\nused to catch things.\n\nThe obvious answer is to point more agents at the problem: agents reviewing\nagents, automated approvals, bots that gate the merge queue. But agents\nreviewing agents have correlated blind spots. They share training, share style,\nand can converge on changes that look reviewed without being understood. An\napproval with no one accountable for it is ceremony. If a reviewer cannot be\nwrong in a way that costs them something, the review does not carry trust.\n\nPartial solutions already exist. Merge queues and stacked-diff tools raise\nserialization throughput. CI, type gates, and property and mutation testing turn\nsome judgment into machine checks. AI review bots comment, summarize, and flag\nrisk. Each speeds one stage. None of them answers who is allowed to be wrong, or\nwhich changes still require a human to look.\n\nThe question is where trust should attach when humans can no longer read every\ndiff. Is the reviewable unit still the pull request, or should humans own the\ninvariants, contracts, and risk classes while agents own the line-level pass?\nWhat must a human still hold to keep the system from slopping itself into decay,\nand what can safely be delegated to machines reviewing machines?\n\n## Synopsis\n\nEngineers paired with agents now produce changes far faster than review and merge can absorb them, so the bottleneck moves to integration and quality decays into slop unless trust is relocated off the per-diff human read.",
       "problem": {
@@ -435,7 +435,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "sealed-facility-staged-crisis-3f8a1d72/sealed-facility-staged-crisis-3f8a1d72.md"
+        "flow/sealed-facility-staged-crisis-3f8a1d72/sealed-facility-staged-crisis-3f8a1d72.md"
       ],
       "body": "# Sealed Facility / Staged Crisis\n\nprev_id: null\n\n## Context\n\nA coordinated criminal team seizes a sealed, high-value corporate facility under the cover of a political hostage crisis. The team is armed, organized, and operating on a precise internal timeline. Their stated demands — political, ideological — fit a well-understood threat profile. Official response mobilizes immediately: law enforcement, professional negotiators, and federal authorities escalate through standard protocols.\n\nEverything inside the facility is locked down. One person is not accounted for. A civilian professional who happened to be inside at the moment of the seizure is now physically present, undetected, and unknown to all parties — the response commanders, the negotiators, and the criminal team itself.\n\nThe official response escalates correctly by every standard measure: perimeter secured, negotiators engaged, federal jurisdiction assumed, internal access systematically ceded in exchange for hostage cooperation. None of it neutralizes the threat. The criminal plan advances in step with the official response, as if the two are in coordination.\n\nThe civilian, with no chain of command and no resources beyond what the building contains, begins acting independently.\n\n## Synopsis\n\nA criminal team stages a political hostage crisis inside a sealed corporate facility to conceal a financial theft; the official response escalates through every standard protocol while the civilian insider — unknown to all parties — acts alone.",
       "problem": {
@@ -452,7 +452,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "singapore-mrt-pre-peak-f3bb06be/singapore-mrt-pre-peak-f3bb06be.md"
+        "flow/singapore-mrt-pre-peak-f3bb06be/singapore-mrt-pre-peak-f3bb06be.md"
       ],
       "body": "# Singapore Rail Peak Crowding\n\nprev_id: null\n\n## Context\n\nSingapore's rail system has a morning peak problem. The trains and platforms are\nmost stressed in a narrow commute window, while nearby time bands have more spare\ncapacity. Building new rail capacity is slow and expensive, and the pressure is\nnot evenly distributed across every line, station, or group of riders.\n\nSome commuters have no real flexibility. School, caregiving, shift work,\nconnections, and employer expectations fix their travel time. Others could move\nearlier or later if the tradeoff were visible enough and the rule were simple.\n\nThe rail authority has fare gates, stored-value and account-based payment, travel\nhistory, station-level data, and the ability to communicate time-window rules.\nBut any change has to be legible, automatic, adjustable, and fair enough not to\npunish people whose schedules cannot move.\n\nWhat could shift enough flexible trips out of the most crowded window to make the\nsystem feel better, without building new track?\n\n## Synopsis\n\nSingapore's rail system is stressed in a narrow morning-peak window while adjacent time bands sit underused; some commuters can shift their travel, many cannot.",
       "problem": {
@@ -469,7 +469,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "source-control-beyond-repos-11b92103/source-control-beyond-repos-11b92103.md"
+        "flow/source-control-beyond-repos-11b92103/source-control-beyond-repos-11b92103.md"
       ],
       "body": "# Source Control Beyond The Repository Flag\n\nprev_id: null\n\n## Context\n\nGit hosting usually treats visibility as a repository property. A project is\npublic or private, and teams add branch rules, review rules, and access roles on\ntop. That model works when the important question is who can read or write the\nwhole codebase.\n\nModern software work has smaller secrecy boundaries. An open project may need a\nprivate security fix before disclosure. A maintainer may need a private branch\ninside a public repository. A company may want public source with private\ndeployment overlays. A team may want generated or experimental agent patches to\nbe reviewable without immediately exposing the entire work stream.\n\nThe work shape has also changed. AI agents can produce many speculative edits,\npartial stacks, and snapshots. Human branch ceremony becomes expensive when the\nworking state changes faster than the review queue. Newer tools show the\npressure: stacked-change systems make dependent work easier to review, while\nsnapshot-oriented systems reduce the cost of saving unfinished state.\n\nBut visibility is not just a user-interface flag. If hidden code exists, search,\nreview, tests, caches, logs, artifacts, dependency metadata, and agent context\ncan all leak it. A temporary private fork for a security advisory is useful, but\nit is a special-purpose shelter, not the normal shape of source control.\n\nThe question is which object should carry trust and visibility. Is the repository\nstill the right boundary, or should policies attach to changes, files, snapshots,\nbranches, and disclosure state? What would it take to run review and automation\nover hidden code without making secrecy a cosmetic layer?\n\n## Synopsis\n\nGit hosting treats visibility as a whole-repository property, but modern work needs finer secrecy boundaries, like a private security fix inside a public project.",
       "problem": {
@@ -486,7 +486,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "starship-launch-cost-collapse-10cfb1aa/starship-launch-cost-collapse-10cfb1aa.md"
+        "flow/starship-launch-cost-collapse-10cfb1aa/starship-launch-cost-collapse-10cfb1aa.md"
       ],
       "body": "# If Launch Stops Being The Expensive Part\n\nprev_id: null\n\n## Context\n\nStarship is still a development program, not a routine freight line. That is the\nfirst fact to keep in view. SpaceX says the vehicle is designed to carry more\nthan 100 metric tonnes to orbit in a fully reusable configuration, far above\nFalcon 9's published LEO payload. But the lower-cost regime depends on things\nthat are not proven by a single flight: reuse of both stages, rapid\nrefurbishment, high cadence, payload integration, range operations, reliability,\nand regulatory clearance.\n\nThe current signals are real but incomplete. On May 22, 2026, SpaceX flew\nStarship Flight 12, the first flight of the V3 vehicle, from Starbase in Texas.\nThe upper stage reached space and deployed 20 Starlink simulators plus two\nmodified Starlink satellites, but an in-space engine relight was skipped after an\nengine loss, and the booster return created a Federal Aviation Administration\nmishap investigation. Separately, the FAA's environmental review for Starbase\nanalyzed operations up to 25 annual Starship/Super Heavy launches and landings,\nwhich is permission for a higher-cadence path, not evidence that the cadence\nalready exists.\n\nThe market's usual story is destinations: Mars, the Moon, NASA, Starlink, maybe\npoint-to-point travel. A payload planner sees a different question. If mass to\norbit gets cheap enough and frequent enough, some designs stop trying to be\nultralight, some payloads can be physically larger, some servicing or replacement\ncycles change, and some infrastructure that looked absurd under Falcon pricing\ncan be tested.\n\nThat does not mean every space fantasy becomes a business. Cheap launch can move\nthe bottleneck somewhere else: payload manufacturing, radiation tolerance,\nthermal management, on-orbit power, spectrum, debris rules, ground stations,\npropellant supply, environmental approvals, insurance, customer demand, or the\nability to integrate and fly payloads as fast as the rocket can launch.\n\nThe problem is to reason from the cost curve without pretending the future has\nalready arrived. What changes first if Starship reaches reliable high-cadence\nreuse? What remains scarce even if kilograms to orbit become much cheaper? Which\npayloads, suppliers, and operating constraints matter only after launch cost\nstops dominating every spreadsheet?\n\n## Synopsis\n\nStarship is still developmental, but the case asks what opens up if its reusable design makes launch stop being the expensive part of reaching orbit.",
       "problem": {
@@ -503,7 +503,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "synced-dev-state-086db5ce/synced-dev-state-086db5ce.md"
+        "flow/synced-dev-state-086db5ce/synced-dev-state-086db5ce.md"
       ],
       "body": "# The Development Folder That Is Not A Folder\n\nprev_id: null\n\n## Context\n\nDevelopers now move between laptops, Linux boxes, remote workstations, cloud\nsandboxes, NAS storage, and agent runtimes. The code may be the same project,\nbut the state is rarely the same. One machine has the branch, another has the\nuncommitted edit, another has the right dependency cache, another has the\ncredential reference, and another has the agent session that understands what\njust happened.\n\nPlain file sync sounds like the obvious answer. Consumer sync tools can make a\nfolder appear on multiple machines. But active development folders are not normal\nfolders. They contain repository metadata, generated files, lockfiles, caches,\nmachine-specific paths, editor state, local overlays, build outputs, credential\nreferences, and worktree state. Syncing all bytes can create conflicts or leak\nstate. Syncing too little leaves every new machine half broken.\n\nGit also does not fully solve the problem. It captures committed history, and\nlarge-repo tooling can lazily hydrate objects. Remote development environments\ncan provide a persistent machine in the cloud. Secret managers can inject values\nat run time. Each piece is useful, but the user still has to decide which machine\nowns the dirty work and which parts of the environment follow.\n\nAgents raise the cost of this gap. A clone that takes minutes, a missing local\nsetting, or a stale branch is no longer just a developer annoyance. It becomes\nsetup latency multiplied across many short-lived workers. The faster the agents\nbecome, the more expensive environment friction looks.\n\nThe question is what should be synchronized. Is the product a folder of bytes, a\nGit repository, a remote workspace, a handoff protocol, or something else? What\nshould follow the work, what should stay machine-local, and who decides when two\nmachines disagree?\n\n## Synopsis\n\nDevelopers work across laptops, remote boxes, sandboxes, and agent runtimes where the code matches but the state (branches, edits, caches, sessions) does not.",
       "problem": {
@@ -520,7 +520,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "vanmoof-bike-packaging-444b7ac2/vanmoof-bike-packaging-444b7ac2.md"
+        "flow/vanmoof-bike-packaging-444b7ac2/vanmoof-bike-packaging-444b7ac2.md"
       ],
       "body": "# VanMoof Shipping Damage\n\nprev_id: null\n\n## Context\n\nVanMoof is selling expensive bikes directly to customers. That means a large,\nawkward, high-value product has to survive an ordinary third-party shipping\nchain before the customer ever rides it.\n\nToo many bikes arrive damaged. Each damaged shipment creates replacement cost,\nsupport load, delay, waste, and a bad first ownership moment. The company can add\nmore protective material, use heavier crates, or pay for more careful shipping,\nbut each of those responses hurts cost, weight, waste, and scale.\n\nVanMoof does not control every handler, depot, truck, stack, or loading decision.\nOnce the box enters the freight system, it is one large cardboard box among many.\n\nWhat could VanMoof change so bikes arrive damaged less often, without making each\nshipment materially heavier or operationally special?\n\n## Synopsis\n\nVanMoof ships expensive bikes direct to customers through ordinary carriers, and too many arrive damaged, creating cost and a poor first-ownership moment.",
       "problem": {
@@ -537,7 +537,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "when-the-crashes-dont-come-575845a4/when-the-crashes-dont-come-575845a4.md"
+        "flow/when-the-crashes-dont-come-575845a4/when-the-crashes-dont-come-575845a4.md"
       ],
       "body": "# When the Crashes Don't Come\n\nprev_id: null\n## Context\n\nAs of June 22, 2026, this is a Tesla case. Waymo proves driverless ride-hailing can\noperate, but its geofenced fleet model and prohibitive cost structure are not the\ndiscontinuity being tested here.\n\nThe signals are no longer theoretical. Tesla's Robotaxi service is live in\nlimited areas of Austin, Dallas, and Houston. Texas now requires commercial\nautomated-vehicle operators to hold state authorization, turning a permissive\nmarket into a regulated commercial channel. In California, Tesla Robotaxi LLC now\nappears on the DMV testing-with-driver permit list; California has not granted\nTesla driverless deployment, but the barrier has moved into the regulatory\npipeline. Globally, Tesla says Full Self-Driving (Supervised) has already rolled\nout in the United States, Canada, Mexico, Puerto Rico, Australia, New Zealand,\nSouth Korea, the Netherlands, Lithuania, Estonia, Denmark, and Belgium.\nChina is a messier but important signal: Tesla announced FSD Supervised\navailability there in May 2026, while full-market regulatory clearance and\nfleet-wide availability remain less clean.\n\nThe premise of this case is that Tesla has solved full self-driving. The question is what happens if the bottleneck is no longer invention, but permission and adoption, across an existing vehicle platform.\n\nSuppose Tesla's model starts to produce the result everyone wanted: fewer crashes caused by human driving error en masse, without rebuilding the fleet city by city. The safety story is not ambiguous. Fewer people are killed, fewer people are injured, fewer families get the phone call no one wants.\n\nThe public conversation does not get very far. The visible story is that rides\nget much cheaper and taxi, Uber, and Lyft drivers lose work. Investors talk about\nride-hailing economics. Labor reporters talk about drivers. Local officials talk\nabout street use, airport pickups, and whether the service is allowed. For most\npeople, that is the whole frame.\n\nAlmost nobody treats crash reduction as an economic demand shock. A crash is not only a bad event; it is also the beginning of a long chain of paid work, supply lines, and public cost. Someone files a claim. Someone tows the vehicle. Someone repairs, stores, salvages, auctions, litigates, bills, treats, rehabilitates, or administers the consequences. Some organizations are paid per incident. Others maintain capacity because severe crashes arrive often enough to justify it.\n\nNo one is trying to preserve crashes. That is not the question. The question is\nwhat has to adapt when a massive recurring source of harm falls away, especially\nif most of the exposed systems are not yet thinking of themselves as exposed.\n\n## The Situation\n\nThe rollout is uneven and the architecture matters. A software-driven fleet that\ncan be enabled across many existing vehicles changes the timing, geography, and\nscale of the shock. Texas shows the public-service side of the Tesla rollout.\nCalifornia shows the permission boundary: testing with a driver is not driverless\ndeployment. The larger question is what happens if permission turns a working\nautonomy stack into broad deployment before adjacent institutions have named the\nrisk.\n\nLiability may also shift: a remaining crash might involve a fleet operator,\nmanufacturer, software provider, sensor supplier, owner, passenger, or road\nauthority rather than a single human driver.\n\nThe remaining crashes may not look like today's average crashes either. There may be\nfewer of them, but some individual incidents could be more expensive because modern\nvehicles carry sensors, calibration requirements, software records, and specialized\nparts.\n\nThe obvious labor story is only one surface. A lower-crash world may also touch:\n\n- insurers, agents, reinsurers, adjusters, and claims organizations\n- collision repair, parts, towing, storage, salvage, and auction businesses\n- injury lawyers, courts, settlement services, and billing intermediaries\n- emergency medical services, trauma centers, rehabilitation providers, and\ndisability systems\n- public agencies and households that absorb crash costs, lost work, disruption,\nand administrative burden\n\nTraffic stops, fines, forfeiture, driver licensing, and license-as-ID may also\nchange under autonomy, but they are not the center of this case unless the link runs\nthrough crash harm.\n\n## Decision Point\n\nYou are looking past the visible cheap-rides-and-driver-displacement story.\n\nWhat should the dependency map include, and which crash-linked businesses,\npublic agencies, medical systems, legal systems, and household costs need the\nclosest attention if human-caused crash volume falls sharply?\n\n## Synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.",
       "problem": {
@@ -558,7 +558,7 @@
             "jurisdictional-arbitrage-and-shadow-liability-e9e38bb9",
             "litigation-liquidity-cliff-dde137c1"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -583,7 +583,7 @@
             "24-month-indemnification-window-stress-testing-b39eaf3e"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/cryptographic-defect-classification-e482e8fb/cryptographic-defect-classification-e482e8fb.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/cryptographic-defect-classification-e482e8fb/cryptographic-defect-classification-e482e8fb.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -608,7 +608,7 @@
             "24-month-indemnification-window-stress-testing-b39eaf3e"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/telematics-indexed-liability-transfer-2d969894/telematics-indexed-liability-transfer-2d969894.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/telematics-indexed-liability-transfer-2d969894/telematics-indexed-liability-transfer-2d969894.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -633,7 +633,7 @@
             "24-month-indemnification-window-stress-testing-b39eaf3e"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/temporal-liability-expiration-clause-80c862e1/temporal-liability-expiration-clause-80c862e1.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/temporal-liability-expiration-clause-80c862e1/temporal-liability-expiration-clause-80c862e1.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": true,
@@ -658,7 +658,7 @@
             "24-month-indemnification-window-stress-testing-b39eaf3e"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/uptime-embedded-liability-transfer-e23fddc6/uptime-embedded-liability-transfer-e23fddc6.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/uptime-embedded-liability-transfer-e23fddc6/uptime-embedded-liability-transfer-e23fddc6.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -687,7 +687,7 @@
             "sector-wide-early-failure-index-triggers-9e9e416a",
             "telemetry-triggered-indemnification-protocols-04dc72a5"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/warranty-cds-standardization-3b86cbfe.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/warranty-cds-standardization-3b86cbfe.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -718,7 +718,7 @@
             "municipal-revenue-cliffs-and-road-usage-charge-2743dc8b",
             "sensor-data-monopolies-and-oem-controlled-bfb32a67"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/actuarial-frequency-collapse-and-capital-bcdbfdb8.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/actuarial-frequency-collapse-and-capital-bcdbfdb8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -743,7 +743,7 @@
             "ai-forensic-reconstruction-bypassing-claims-32be0e30"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-32be0e30/dynamic-escrow-via-fault-thresholds-89689582/dynamic-escrow-via-fault-thresholds-89689582.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-32be0e30/dynamic-escrow-via-fault-thresholds-89689582/dynamic-escrow-via-fault-thresholds-89689582.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -768,7 +768,7 @@
             "mobility-financialization-decoupling-from-d96264db"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/collateral-stripped-algorithmic-lines-827027ce/collateral-stripped-algorithmic-lines-827027ce.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/collateral-stripped-algorithmic-lines-827027ce/collateral-stripped-algorithmic-lines-827027ce.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -793,7 +793,7 @@
             "mobility-financialization-decoupling-from-d96264db"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/dynamic-duration-liability-matching-8740dc25/dynamic-duration-liability-matching-8740dc25.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/dynamic-duration-liability-matching-8740dc25/dynamic-duration-liability-matching-8740dc25.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -818,7 +818,7 @@
             "mobility-financialization-decoupling-from-d96264db"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/explainable-ai-solvency-oversight-8bdf4e09/explainable-ai-solvency-oversight-8bdf4e09.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/explainable-ai-solvency-oversight-8bdf4e09/explainable-ai-solvency-oversight-8bdf4e09.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": true,
@@ -843,7 +843,7 @@
             "mobility-financialization-decoupling-from-d96264db"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/sovereign-mobility-data-trusts-31294f63/sovereign-mobility-data-trusts-31294f63.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/sovereign-mobility-data-trusts-31294f63/sovereign-mobility-data-trusts-31294f63.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": true,
@@ -868,7 +868,7 @@
             "mobility-financialization-decoupling-from-d96264db"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/streaming-actuarial-rebalancing-14436f20/streaming-actuarial-rebalancing-14436f20.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/streaming-actuarial-rebalancing-14436f20/streaming-actuarial-rebalancing-14436f20.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -897,7 +897,7 @@
             "infrastructure-compute-swap-tolling-e12f5945",
             "parametric-roadway-risk-underwriting-f69e7279"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/fiscal-recalibration-via-wear-based-ruc-cff16230.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/fiscal-recalibration-via-wear-based-ruc-cff16230.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -926,7 +926,7 @@
             "road-rights-derivatives-6ca9eb63",
             "wear-linked-premium-reallocation-9b5f732a"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/insurance-telematics-verification-layer-2c58dfef.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/insurance-telematics-verification-layer-2c58dfef.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -955,7 +955,7 @@
             "right-of-way-capacity-auctions-5330e9cf",
             "telemetry-api-utility-billing-ec9af2b8"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/liquidity-bridge-via-mobility-backed-bonds-d3b01a15.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/liquidity-bridge-via-mobility-backed-bonds-d3b01a15.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": true,
@@ -982,7 +982,7 @@
           "child_ids": [
             "liability-arbitrage-transition-5088bd6b"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/predictive-enforcement-abolition-and-compliance-5659161e.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/predictive-enforcement-abolition-and-compliance-5659161e.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -1011,7 +1011,7 @@
             "hydraulic-pavement-taxonomy-247488b8",
             "liability-inversion-protocol-f98a60a8"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/real-time-infrastructure-depreciation-accounting-204f09e3.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/real-time-infrastructure-depreciation-accounting-204f09e3.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -1036,7 +1036,7 @@
             "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/cryptographic-data-splitting-at-ingestion-46cc6495/cryptographic-data-splitting-at-ingestion-46cc6495.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/cryptographic-data-splitting-at-ingestion-46cc6495/cryptographic-data-splitting-at-ingestion-46cc6495.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -1061,7 +1061,7 @@
             "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/mandatory-public-hashing-of-incident-telemetry-da3ebf3e/mandatory-public-hashing-of-incident-telemetry-da3ebf3e.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/mandatory-public-hashing-of-incident-telemetry-da3ebf3e/mandatory-public-hashing-of-incident-telemetry-da3ebf3e.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": true,
@@ -1086,7 +1086,7 @@
             "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/neutral-evidentiary-escrow-with-conditional-key-108c5210/neutral-evidentiary-escrow-with-conditional-key-108c5210.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/neutral-evidentiary-escrow-with-conditional-key-108c5210/neutral-evidentiary-escrow-with-conditional-key-108c5210.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "problem_recovery",
           "temporal": false,
@@ -1113,7 +1113,7 @@
             "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/frequency-to-probability-underwriting-cliff-1bce2c97/frequency-to-probability-underwriting-cliff-1bce2c97.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/frequency-to-probability-underwriting-cliff-1bce2c97/frequency-to-probability-underwriting-cliff-1bce2c97.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1138,7 +1138,7 @@
             "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1163,7 +1163,7 @@
             "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/litigation-liquidity-cliff-dde137c1/litigation-liquidity-cliff-dde137c1.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/litigation-liquidity-cliff-dde137c1/litigation-liquidity-cliff-dde137c1.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1188,7 +1188,7 @@
             "warranty-cds-standardization-3b86cbfe"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/preventative-liability-forward-markets-cc914745/preventative-liability-forward-markets-cc914745.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/preventative-liability-forward-markets-cc914745/preventative-liability-forward-markets-cc914745.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1213,7 +1213,7 @@
             "warranty-cds-standardization-3b86cbfe"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/sector-wide-early-failure-index-triggers-9e9e416a/sector-wide-early-failure-index-triggers-9e9e416a.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/sector-wide-early-failure-index-triggers-9e9e416a/sector-wide-early-failure-index-triggers-9e9e416a.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1238,7 +1238,7 @@
             "warranty-cds-standardization-3b86cbfe"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/telemetry-triggered-indemnification-protocols-04dc72a5/telemetry-triggered-indemnification-protocols-04dc72a5.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/telemetry-triggered-indemnification-protocols-04dc72a5/telemetry-triggered-indemnification-protocols-04dc72a5.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1265,7 +1265,7 @@
           "child_ids": [
             "24-month-indemnification-window-stress-testing-b39eaf3e"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-d8344b6e.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-d8344b6e.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1292,7 +1292,7 @@
           "child_ids": [
             "ai-forensic-reconstruction-bypassing-claims-32be0e30"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-c06e2498.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-c06e2498.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1319,7 +1319,7 @@
           "child_ids": [
             "mobility-financialization-decoupling-from-d96264db"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-bbf322c4.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-bbf322c4.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1346,7 +1346,7 @@
           "child_ids": [
             "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1371,7 +1371,7 @@
             "fiscal-recalibration-via-wear-based-ruc-cff16230"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/algorithmic-wear-staking-for-municipal-solvency-f494cbee/algorithmic-wear-staking-for-municipal-solvency-f494cbee.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/algorithmic-wear-staking-for-municipal-solvency-f494cbee/algorithmic-wear-staking-for-municipal-solvency-f494cbee.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1430,7 +1430,7 @@
             "fiscal-recalibration-via-wear-based-ruc-cff16230"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/infrastructure-compute-swap-tolling-e12f5945/infrastructure-compute-swap-tolling-e12f5945.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/infrastructure-compute-swap-tolling-e12f5945/infrastructure-compute-swap-tolling-e12f5945.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1455,7 +1455,7 @@
             "fiscal-recalibration-via-wear-based-ruc-cff16230"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/parametric-roadway-risk-underwriting-f69e7279/parametric-roadway-risk-underwriting-f69e7279.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/parametric-roadway-risk-underwriting-f69e7279/parametric-roadway-risk-underwriting-f69e7279.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1480,7 +1480,7 @@
             "insurance-telematics-verification-layer-2c58dfef"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/open-telemetry-compacts-6bc0961c/open-telemetry-compacts-6bc0961c.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/open-telemetry-compacts-6bc0961c/open-telemetry-compacts-6bc0961c.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1505,7 +1505,7 @@
             "insurance-telematics-verification-layer-2c58dfef"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/road-rights-derivatives-6ca9eb63/road-rights-derivatives-6ca9eb63.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/road-rights-derivatives-6ca9eb63/road-rights-derivatives-6ca9eb63.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1530,7 +1530,7 @@
             "insurance-telematics-verification-layer-2c58dfef"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/wear-linked-premium-reallocation-9b5f732a/wear-linked-premium-reallocation-9b5f732a.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/wear-linked-premium-reallocation-9b5f732a/wear-linked-premium-reallocation-9b5f732a.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1555,7 +1555,7 @@
             "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/predictive-maintenance-data-brokerage-325841f3/predictive-maintenance-data-brokerage-325841f3.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/predictive-maintenance-data-brokerage-325841f3/predictive-maintenance-data-brokerage-325841f3.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1580,7 +1580,7 @@
             "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/right-of-way-capacity-auctions-5330e9cf/right-of-way-capacity-auctions-5330e9cf.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/right-of-way-capacity-auctions-5330e9cf/right-of-way-capacity-auctions-5330e9cf.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1605,7 +1605,7 @@
             "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/telemetry-api-utility-billing-ec9af2b8/telemetry-api-utility-billing-ec9af2b8.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/telemetry-api-utility-billing-ec9af2b8/telemetry-api-utility-billing-ec9af2b8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1630,7 +1630,7 @@
             "predictive-enforcement-abolition-and-compliance-5659161e"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/liability-arbitrage-transition-5088bd6b/liability-arbitrage-transition-5088bd6b.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/liability-arbitrage-transition-5088bd6b/liability-arbitrage-transition-5088bd6b.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1655,7 +1655,7 @@
             "real-time-infrastructure-depreciation-accounting-204f09e3"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/escrow-first-infrastructure-financing-05c1a999/escrow-first-infrastructure-financing-05c1a999.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/escrow-first-infrastructure-financing-05c1a999/escrow-first-infrastructure-financing-05c1a999.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1680,7 +1680,7 @@
             "real-time-infrastructure-depreciation-accounting-204f09e3"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/hydraulic-pavement-taxonomy-247488b8/hydraulic-pavement-taxonomy-247488b8.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/hydraulic-pavement-taxonomy-247488b8/hydraulic-pavement-taxonomy-247488b8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1705,7 +1705,7 @@
             "real-time-infrastructure-depreciation-accounting-204f09e3"
           ],
           "child_ids": [],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/liability-inversion-protocol-f98a60a8/liability-inversion-protocol-f98a60a8.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/liability-inversion-protocol-f98a60a8/liability-inversion-protocol-f98a60a8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": false,
@@ -1732,7 +1732,7 @@
           "child_ids": [
             "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
           ],
-          "source_path": "when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-bfb32a67.md",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-bfb32a67.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
           "temporal": true,
@@ -1757,7 +1757,7 @@
       "source_kind": "agarden",
       "visibility": "internal",
       "source_paths": [
-        "white-castle-rent-leverage-98d7666c/white-castle-rent-leverage-98d7666c.md"
+        "flow/white-castle-rent-leverage-98d7666c/white-castle-rent-leverage-98d7666c.md"
       ],
       "body": "# White Castle Real Estate Leverage\n\nprev_id: null\n\n## Context\n\nWhite Castle is expanding a chain of small, standardized hamburger restaurants\nin the 1920s and 1930s. The company wants each restaurant to feel clean,\nrecognizable, and repeatable, not like a one-off roadside lunch counter.\n\nReal estate creates a hostage problem. A good location matters, but buying every\nparcel ties up capital and slows expansion. Leasing keeps expansion lighter, but\nthe restaurant investment becomes vulnerable to the landlord. Once White Castle\nhas built a recognizable store on a leased parcel, a rent hike or non-renewal can\nstrand capital that is physically attached to someone else's land.\n\nHarder lease negotiation may help one site. It does not remove the structural\ndependence. The company needs the brand consistency of a real building and the\ncapital discipline of a lease-heavy rollout.\n\nHow could White Castle make expansion less vulnerable to any single landlord's\nparcel, using materials and operations available at the time?\n\n## Synopsis\n\nWhite Castle's 1920s-30s expansion of standardized restaurants faces a real-estate hostage problem: buying ties up capital, while leasing exposes the investment to landlords.",
       "problem": {
