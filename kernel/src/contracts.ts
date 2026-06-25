@@ -326,7 +326,13 @@ export type RunEventPayloads = {
     budgetRemainingUnits: number;
   };
   'evolution.budget_exhausted': { generation: number; maxUnits: number; usedUnits: number };
-  'candidate.created': { candidateId: string; agenomeId: string; generation: number };
+  'candidate.created': {
+    candidateId: string;
+    agenomeId: string;
+    generation: number;
+    mutagen?: Mutagen;
+    mutagenLineage?: Mutagen[];
+  };
   'critic.verdict_recorded': {
     candidateId: string;
     criticId: string;

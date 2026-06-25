@@ -283,6 +283,8 @@ export async function runKernel(input: {
         candidateId: candidate.id,
         agenomeId: candidate.agenomeId,
         generation,
+        mutagen: candidate.mutagen,
+        mutagenLineage: candidate.mutagenLineage,
       });
     }
 

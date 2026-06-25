@@ -57,10 +57,14 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
   assert.ok(usedMutagens.has('blindside'));
   assert.ok(usedMutagens.has('breakout'));
 
-  // A fused child carries a lineage (merged from its parents) but no single mutagen.
+  // The final survivor (a fused child) has no single mutagen, but its lineage accumulates
+  // the moves that shaped it across generations — the witness into the process.
   assert.ok(run.fusion);
   assert.equal(run.fusion?.child.mutagen, undefined);
-  assert.ok(Array.isArray(run.fusion?.child.mutagenLineage));
+  assert.ok(
+    (run.fusion?.child.mutagenLineage?.length ?? 0) > 0,
+    'survivor lineage should accumulate mutagens through generations',
+  );
 });
 
 test('runs through injected generation providers', async () => {
