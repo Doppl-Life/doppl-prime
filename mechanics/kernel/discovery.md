@@ -57,8 +57,17 @@ Discovery must be told where things live and how to write them:
 
 The stock source/projection shape is defined in [`../../contracts/stock.md`](../../contracts/stock.md).
 
+## Source-quality signals
+
+A harvested source is rated on the signed `−5…+5` scale (the same scale as [`../../contracts/rating.md`](../../contracts/rating.md)) and tracked by outcome, not by promise. A source's standing follows fixed rules:
+
+- **Hit / trap.** A result scoring `≥ +3` is a hit; `≤ −3` is a trap. A source needs a minimum volume (`3`) before it is judged at all.
+- **Status.** Below minimum volume → `unproven`. More traps than hits → `polluting`. Hit-rate `≥ 0.4` → `productive`. Reachable but no hits and no traps → `looks_good_but_isnt`. Unreachable with an error and zero volume → `unreachable`. Otherwise `marginal`.
+- **Why-now decay.** A source/candidate's score decays by half-life on its temporal subtype: `zeitgeist_synthesis` 14 days, `cross_domain_transfer` 3650 days, `neither` 60 days. Effective score = `lensScore × 0.5^(ageDays / halfLife)`.
+- **Expiry.** A `zeitgeist_synthesis` candidate that is not promoted, is older than 21 days, and whose effective score falls below `1` expires.
+
+A source recipe is the typed shape `{ source, tier, method, status }`, where `tier` ladders from cheapest to costliest access: `free → curl_cffi → firecrawl → browser → dispatch`. The kernel reaches a backend through the configured discovery tool per scenario (`doppl.config.json`), not through a fixed recipe list.
+
 ## Boundaries
 
-Source recipes (the backends) and source-quality signals live in `tools/source-radar.ts`. Scoring
-and decay/expiry are not discovery's job: scoring belongs to the filter that sets the bar;
-decay/expiry belongs to the stock-maintenance function.
+Scoring and decay/expiry are applied *by the kernel*, not by discovery itself: scoring belongs to the filter that sets the bar; decay/expiry belongs to the stock-maintenance function. Discovery's only job is to harvest and normalize.

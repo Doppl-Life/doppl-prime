@@ -70,7 +70,7 @@ Keep these few and clean — they ARE the kernel:
 
 ## Source-radar contract
 
-The source-radar contract lives in `tools/source-radar.ts`. Reuse the contract
+The source-quality contract lives in [`../mechanics/kernel/discovery.md`](../mechanics/kernel/discovery.md). Reuse the contract
 and typed knowledge it exposes:
 
 - **Problem Recovery + temporal classify** — the convergent move + the

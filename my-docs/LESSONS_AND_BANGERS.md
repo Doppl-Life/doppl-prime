@@ -87,6 +87,39 @@ guiding implementation, cut it.
 - **Carry forward:** gate promotion on `bedrock` evidence; honest "no verdict
   ledger evidence yet" beats a confident fabricated benchmark.
 
+### Least action is mechanism economy - 2026-06-24
+
+- **Lesson:** The cheapest candidate is the one that asks Doppl or the user to own
+  the fewest mechanisms for the useful outcome — counting dependencies, speculative
+  machinery, hidden human labor, and deferrals that lack a ceiling + upgrade
+  trigger. Smallness is never rewarded on its own, and cutting load-bearing safety,
+  evidence, or replay is an automatic reject. Breadth ("anti-pattern inversion")
+  earns credit only when the old constraint, the removed substrate, a current
+  signal, and a falsifier are all explicit.
+- **Carry forward:** score useful outcome minus owned-mechanism cost; prefer
+  platform/native/existing mechanisms before new owned code; never let a rubric
+  reward-hack smallness.
+
+### Consensus quality is a signal, not a verdict - 2026-06-24
+
+- **Lesson:** Labeler agreement carries information in both directions. Divergence
+  marks a contested idea worth re-entry, not noise to average away; and consensus
+  that arrives with empty tension is *herding* — fake agreement, not resolution. A
+  high-scoring "pass" that rides on herding or unresolved-but-ignored tension is
+  invalid; convergence only counts when real tension was actually resolved.
+- **Carry forward:** judge the *shape* of agreement before trusting its level;
+  reject a confident verdict that skipped the disagreement.
+
+### Knowledge carries a trust tier - 2026-06-24
+
+- **Lesson:** Every knowledge record has a trust tier (raw → draft → candidate →
+  validated → canonical → deprecated) and a visibility role. Injection is gated by
+  both: secrets never inject, evaluator-only knowledge never reaches a candidate,
+  deprecated never injects, and nothing collapses straight to canonical without
+  passing through the intermediate tiers. Extends [Answer keys cannot leak].
+- **Carry forward:** promotion is a verdict-gated state transition, not a flag flip;
+  the read-boundary is enforced per record, per role.
+
 ### Calibrate boldness to the blast radius - 2026-06-23
 
 - **Lesson:** Agent risk-aversion is calibrated to a human cost structure — slow

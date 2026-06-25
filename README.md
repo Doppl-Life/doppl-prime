@@ -57,10 +57,10 @@ pnpm proof:export   # replay artifacts under out/proof-board/** (ephemeral, giti
 pnpm clear:run-data    # clear local out/** run data
 ```
 
-`pnpm grow` runs a seed through discovery → engine → compile and writes contract-shaped markdown to
-the vault named in `doppl.config.json` (`vault`, default `../agarden`). The sink
-([`mechanics/kernel/sink.md`](mechanics/kernel/sink.md)) is the only writer. Pass a path as the 2nd
-arg to override, e.g. `pnpm grow fixtures/fsd-seed.json out/vault`.
+`pnpm grow <node-slug>` runs a node through discovery → engine → compile and writes contract-shaped
+markdown to the vault named in `doppl.config.json` (`vault`, default `../agarden`). The sink
+([`mechanics/kernel/sink.md`](mechanics/kernel/sink.md)) is the only writer. Pass a vault path as the
+2nd arg to override, e.g. `pnpm grow my-node ../other-vault`.
 
 The proof board prints one line per seed:
 `seed → generated → rejected → Explore keeps → Proof keeps → swap → failed checks`.
