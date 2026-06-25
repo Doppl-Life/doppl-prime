@@ -15,6 +15,7 @@ import type { ToolExecutorDeps } from '../../../src/model-gateway';
 import {
   createToolOrchestratingGateway,
   TOOL_RESULT_DATA_FRAMING,
+  TOOL_USE_FRAMING,
 } from '../../../src/boot/toolOrchestrator';
 
 function toolCallResponse(requests: ToolCallRequest[]): ModelGatewayResponse {
@@ -141,6 +142,25 @@ describe('createToolOrchestratingGateway (TU.5)', () => {
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls![0]).toMatchObject({ toolName: 'x_search', ok: false });
     expect(result.toolCalls![0]!.result).toContain('tool_unavailable');
+  });
+
+  it('appends the research nudge to the SYSTEM message when tools are offered (rule #5/#6-safe)', async () => {
+    const { gateway, calls } = scriptedGateway([finalResponse({ idea: 'x' })]);
+    const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
+    await orch.generate(populationRequest, { toolBudget: 4 });
+    const sys = calls[0]!.messages!.find((m) => m.role === 'system')!;
+    expect(sys.content).toContain(TOOL_USE_FRAMING);
+    // the nudge is TRUSTED system text only — never in the untrusted user problem (rule #5).
+    const user = calls[0]!.messages!.find((m) => m.role === 'user')!;
+    expect(user.content).not.toContain(TOOL_USE_FRAMING);
+  });
+
+  it('does NOT add the nudge when there is no tool budget (byte-identical baseline)', async () => {
+    const { gateway, calls } = scriptedGateway([finalResponse({ idea: 'x' })]);
+    const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
+    await orch.generate(populationRequest, { toolBudget: 0 });
+    const sys = calls[0]!.messages!.find((m) => m.role === 'system')!;
+    expect(sys.content).not.toContain(TOOL_USE_FRAMING);
   });
 
   it('rule #1 — bounds model round-trips by maxTurns even if the model keeps calling tools', async () => {
