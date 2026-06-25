@@ -61,10 +61,12 @@ Current state:
 - Hosted writes fail closed unless `Authorization: Bearer <CALIBRATOR_WRITE_TOKEN>` matches the server-only Railway variable.
 - The browser has a session-scoped `Access code` field for hosted mode. It stores the entered code only in `sessionStorage`; no access code or GitHub credential is committed to the static app.
 - Railway has `CALIBRATOR_WRITE_TOKEN`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, and `AGARDEN_BRANCH=calibrator-ratings-smoke` configured. `GITHUB_APP_INSTALLATION_ID` is still blocked on Doppl-Life owner approval of the `doppl-agarden-ratings` GitHub App install.
+- The hosted service now supports a pragmatic Railway-only fallback: if `AGARDEN_GITHUB_TOKEN` is set, it uses that fine-grained token for aGarden writes instead of requiring GitHub App installation credentials.
 
 Remaining work:
 
-- After owner approval, set `GITHUB_APP_INSTALLATION_ID` on the Railway service.
+- For the immediate path, create a fine-grained GitHub token scoped only to `Doppl-Life/agarden` with `Metadata: read` and `Contents: read/write`, then set it as `AGARDEN_GITHUB_TOKEN` in Railway.
+- For the preferred later path, after owner approval, set `GITHUB_APP_INSTALLATION_ID` on the Railway service and remove `AGARDEN_GITHUB_TOKEN`.
 - Smoke-test the hosted write path against `Doppl-Life/agarden` branch `calibrator-ratings-smoke`.
 - Point `published/calibrator/calibrator-config.js` at the Railway endpoint only after the smoke write proves ledger upsert plus node projection.
 - Decide the longer-term reviewer auth posture. The current access code plus allow-list is a practical session gate, not full per-user authentication.
@@ -124,7 +126,7 @@ Remaining work:
    npm --prefix calibrator run smoke:hosted-ratings
    ```
 
-   Run this only after Railway is confirmed to target `AGARDEN_BRANCH=calibrator-ratings-smoke`. The script prints only response metadata, never the access code.
+   Run this only after Railway is confirmed to target `AGARDEN_BRANCH=calibrator-ratings-smoke` and either `AGARDEN_GITHUB_TOKEN` or working GitHub App credentials are set. The script prints only response metadata, never the access code.
 
 5. **Enable production writes from Pages.**
    Set `calibrator-config.js` to the hosted API URL only after the route and GitHub App write flow are verified.
@@ -138,5 +140,5 @@ Remaining work:
 ## Current Short Version
 
 - Latest nodes shown automatically: local yes, production partially; needs a discoverable/triggered GitHub Action refresh from `agarden/main`.
-- Ratings written automatically to ledger: local yes; hosted API deployed and gated; real GitHub writes are waiting on the GitHub App installation ID and smoke test.
+- Ratings written automatically to ledger: local yes; hosted API deployed and gated; real GitHub writes can now use a fine-grained Railway PAT fallback while the GitHub App installation remains blocked.
 - Ledger scores shown in nodes: local yes; server writer core yes; production projection should work after the hosted smoke write, but static refresh after write still remains.

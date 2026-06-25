@@ -80,6 +80,20 @@ Recommended credential model:
 - Give the app contents read/write permission for `agarden`; avoid broad org permissions.
 - Never ship those values in `published/`, Vite client env, or GitHub Pages assets.
 
+Pragmatic fallback while GitHub App org installation is blocked:
+
+- Use a fine-grained personal access token stored only in Railway as `AGARDEN_GITHUB_TOKEN`.
+- Scope the token only to `Doppl-Life/agarden`.
+- Grant only `Metadata: read` and `Contents: read/write`.
+- Rotate or remove the token after the GitHub App installation is correctly configured.
+- Browser behavior does not change; the browser still sends ratings only to the Railway API with the reviewer session access code.
+
+Credential selection in production:
+
+1. If `AGARDEN_GITHUB_TOKEN` is present, Railway uses that token for aGarden GitHub writes.
+2. Otherwise, Railway uses the GitHub App variables.
+3. GitHub credentials are never read from or sent to browser code.
+
 The deployable server entrypoint is:
 
 ```bash
@@ -104,10 +118,12 @@ The smoke script is intentionally skipped unless all required environment variab
 
 Required environment variables:
 
-- `GITHUB_APP_ID`
-- `GITHUB_APP_INSTALLATION_ID`
-- `GITHUB_APP_PRIVATE_KEY`
 - `CALIBRATOR_WRITE_TOKEN`
+
+Required GitHub write credentials, choose one mode:
+
+- PAT fallback mode: `AGARDEN_GITHUB_TOKEN`
+- GitHub App mode: `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`
 
 Optional environment variables:
 

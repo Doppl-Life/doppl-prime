@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { join } from "node:path";
 import type { CalibratorIndex } from "../types";
-import { createGitHubAgardenClientFromApp } from "./githubAgardenClient";
+import { createGitHubAgardenClient, createGitHubAgardenClientFromApp } from "./githubAgardenClient";
 import { createHostedAgardenRatingHandler } from "./hostedAgardenRatingApi";
 import { repoRoot } from "./vaultPaths";
 
@@ -75,10 +75,22 @@ export function createProductionHostedAgardenRatingHandler() {
       return JSON.parse(await readFile(indexPath, "utf8")) as CalibratorIndex;
     },
     createClient() {
+      const owner = optionalEnv("AGARDEN_OWNER", "Doppl-Life");
+      const repo = optionalEnv("AGARDEN_REPO", "agarden");
+      const branch = optionalEnv("AGARDEN_BRANCH", "main");
+      const token = envValue("AGARDEN_GITHUB_TOKEN");
+      if (token) {
+        return createGitHubAgardenClient({
+          owner,
+          repo,
+          branch,
+          token,
+        });
+      }
       return createGitHubAgardenClientFromApp({
-        owner: optionalEnv("AGARDEN_OWNER", "Doppl-Life"),
-        repo: optionalEnv("AGARDEN_REPO", "agarden"),
-        branch: optionalEnv("AGARDEN_BRANCH", "main"),
+        owner,
+        repo,
+        branch,
         appId: requiredEnv("GITHUB_APP_ID"),
         installationId: requiredEnv("GITHUB_APP_INSTALLATION_ID"),
         privateKey: requiredEnv("GITHUB_APP_PRIVATE_KEY"),

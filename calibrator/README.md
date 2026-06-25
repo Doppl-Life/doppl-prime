@@ -37,7 +37,9 @@ Hosted write mode can also set `requiresAccessCode: true`. In that mode, reviewe
 
 The hosted write path is specified in `../docs/calibrator-hosted-write-path.md`. It keeps aGarden markdown plus `ratings-ledger.json` as the durable source of truth while allowing a server deployment to validate, write, and index rating submissions without exposing GitHub credentials to browser code.
 
-The Railway ratings API can be smoke-tested after the GitHub App installation is approved and Railway is confirmed to target the safe `calibrator-ratings-smoke` branch:
+For GitHub writes, Railway can use either the preferred GitHub App variables or the pragmatic `AGARDEN_GITHUB_TOKEN` fallback. The fallback token must be fine-grained, stored only in Railway, scoped only to `Doppl-Life/agarden`, and limited to `Metadata: read` plus `Contents: read/write`.
+
+The Railway ratings API can be smoke-tested after Railway is confirmed to target the safe `calibrator-ratings-smoke` branch and has one working GitHub write credential mode configured:
 
 ```bash
 CALIBRATOR_HOSTED_RATINGS_URL=https://calibrator-ratings-production.up.railway.app/api/agarden/ratings \
