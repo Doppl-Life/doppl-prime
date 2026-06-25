@@ -5,9 +5,14 @@ import { writeFlowNodes } from './vault-sink.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { createModelGenerationProviders } from './generation-providers.ts';
 import {
-  createOpenRouterModelClient,
+  createPresetModelClient,
+  createFusionModelClient,
   createReplayModelClient,
   readModelCallRecords,
+  LOCAL_PROVIDERS,
+  OPENAI_COMPATIBLE_PRESETS,
+  type ModelClient,
+  type OpenAICompatibleProvider,
 } from './model-gateway.ts';
 
 export type KernelCliArgs = {
@@ -25,6 +30,8 @@ export type KernelCliArgs = {
   replayModelCallsPath?: string;
   model?: string;
   liveModel?: boolean;
+  provider: OpenAICompatibleProvider;
+  fusionModels?: string[];
 };
 
 export const defaultKernelArgs: KernelCliArgs = {
@@ -39,6 +46,7 @@ export const defaultKernelArgs: KernelCliArgs = {
   vault: '../agarden',
   proofBoardDir: 'kernel/out/proof-board',
   publishDir: 'published/kernel',
+  provider: 'openrouter',
 };
 
 function readFlagValue(argv: string[], index: number, flag: string): string {
@@ -100,6 +108,21 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
       index += 1;
     } else if (flag === '--live-model') {
       args.liveModel = true;
+    } else if (flag === '--provider') {
+      const value = readFlagValue(argv, index, flag);
+      if (!(value in OPENAI_COMPATIBLE_PRESETS)) {
+        throw new Error(
+          `unknown --provider: ${value} (expected one of ${Object.keys(OPENAI_COMPATIBLE_PRESETS).join(', ')})`,
+        );
+      }
+      args.provider = value as OpenAICompatibleProvider;
+      index += 1;
+    } else if (flag === '--fusion') {
+      args.fusionModels = readFlagValue(argv, index, flag)
+        .split(',')
+        .map((model) => model.trim())
+        .filter(Boolean);
+      index += 1;
     } else {
       throw new Error(`unknown CLI flag: ${flag}`);
     }
@@ -125,14 +148,25 @@ async function generationProvidersFromCliArgs(args: KernelCliArgs) {
   });
 }
 
+function liveApiKey(provider: OpenAICompatibleProvider): string | undefined {
+  if (LOCAL_PROVIDERS.has(provider)) return undefined;
+  const byProvider: Record<string, string | undefined> = {
+    openrouter: process.env.OPENROUTER_API_KEY,
+    groq: process.env.GROQ_API_KEY,
+    openai: process.env.OPENAI_API_KEY,
+  };
+  return byProvider[provider];
+}
+
 function liveGenerationProvidersFromCliArgs(args: KernelCliArgs) {
   if (!args.liveModel) return undefined;
-  return createModelGenerationProviders({
-    client: createOpenRouterModelClient({
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-    }),
-    model: args.model!,
+  let client: ModelClient = createPresetModelClient(args.provider, {
+    apiKey: liveApiKey(args.provider),
   });
+  if (args.fusionModels?.length) {
+    client = createFusionModelClient({ client, models: args.fusionModels, synthesisModel: args.model });
+  }
+  return createModelGenerationProviders({ client, model: args.model! });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import {
   createOpenRouterModelClient,
+  createOpenAICompatibleModelClient,
+  createRoutingModelClient,
+  createFusionModelClient,
   createReplayModelClient,
   createRecordingModelClient,
   parseJsonObjectResponse,
@@ -231,4 +234,71 @@ test('openrouter model client sends JSON schema structured output requests', asy
 
 test('openrouter model client rejects missing server-side API keys', () => {
   assert.throws(() => createOpenRouterModelClient({ apiKey: '' }), /OPENROUTER_API_KEY is required/);
+});
+
+test('openai-compatible client omits auth for local providers and labels the provider', async () => {
+  let captured: { headers: Record<string, string> } | undefined;
+  const client = createOpenAICompatibleModelClient({
+    baseUrl: 'http://localhost:11434/v1/chat/completions',
+    provider: 'ollama',
+    fetch: async (_url, init) => {
+      captured = { headers: init.headers as Record<string, string> };
+      return { ok: true, status: 200, async json() { return { choices: [{ message: { content: '{"ok":true}' } }] }; } };
+    },
+  });
+
+  const record = await client.complete({ runId: 'r', purpose: 'problem_recovery', prompt: 'p', model: 'llama3.1' });
+
+  assert.equal(captured?.headers.Authorization, undefined, 'local provider sends no Authorization header');
+  assert.equal(record.provider, 'ollama');
+  assert.equal(record.outputText, '{"ok":true}');
+});
+
+test('routing client overrides model by purpose and pins the judge', async () => {
+  const seen: Array<{ purpose: string; model: string }> = [];
+  const stub: ModelClient = {
+    async complete(request) {
+      seen.push({ purpose: request.purpose, model: request.model });
+      return { id: 'c', runId: request.runId, purpose: request.purpose, provider: 'stub', model: request.model, prompt: request.prompt, outputText: '{}', metadata: {} };
+    },
+  };
+  const routed = createRoutingModelClient(stub, { candidate_generation: 'strong-model', critic_judgment: 'pinned-judge' });
+
+  await routed.complete({ runId: 'r', purpose: 'candidate_generation', prompt: 'g', model: 'default' });
+  await routed.complete({ runId: 'r', purpose: 'critic_judgment', prompt: 'j', model: 'default' });
+  await routed.complete({ runId: 'r', purpose: 'problem_recovery', prompt: 'pr', model: 'default' });
+
+  assert.deepEqual(seen, [
+    { purpose: 'candidate_generation', model: 'strong-model' },
+    { purpose: 'critic_judgment', model: 'pinned-judge' },
+    { purpose: 'problem_recovery', model: 'default' },
+  ]);
+});
+
+test('fusion client fans out to each model then synthesizes one fused response', async () => {
+  const calls: Array<{ purpose: string; model: string }> = [];
+  const stub: ModelClient = {
+    async complete(request) {
+      calls.push({ purpose: request.purpose, model: request.model });
+      return { id: `c_${calls.length}`, runId: request.runId, purpose: request.purpose, provider: 'openrouter', model: request.model, prompt: request.prompt, outputText: `draft-${request.model}`, metadata: {} };
+    },
+  };
+  const fusion = createFusionModelClient({ client: stub, models: ['model-a', 'model-b'] });
+
+  const record = await fusion.complete({ runId: 'r', purpose: 'candidate_generation', prompt: 'task', model: 'ignored' });
+
+  assert.deepEqual(calls.map((c) => c.model), ['model-a', 'model-b', 'model-a'], 'two drafts then one synthesis');
+  assert.deepEqual(calls.map((c) => c.purpose), [
+    'candidate_generation:fusion_draft',
+    'candidate_generation:fusion_draft',
+    'candidate_generation:fusion_synthesis',
+  ]);
+  assert.equal(record.purpose, 'candidate_generation', 'fused record reports the original purpose');
+  assert.equal(record.provider, 'fusion:openrouter');
+  assert.deepEqual(record.metadata.fusionModels, ['model-a', 'model-b']);
+  assert.equal(record.prompt, 'task', 'fused record keeps the original prompt');
+});
+
+test('fusion requires at least two models', () => {
+  assert.throws(() => createFusionModelClient({ client: {} as ModelClient, models: ['solo'] }), /at least two models/);
 });
