@@ -99,6 +99,21 @@ export function createProductionHostedAgardenRatingHandler() {
   });
 }
 
+function healthPayload() {
+  return {
+    ok: true,
+    service: "doppl-calibrator-ratings",
+    writeAuthConfigured: Boolean(envValue("CALIBRATOR_WRITE_TOKEN")),
+    githubWriteMode: envValue("AGARDEN_GITHUB_TOKEN") ? "token" : "app",
+    githubAppConfigured: Boolean(
+      envValue("GITHUB_APP_ID") &&
+        envValue("GITHUB_APP_INSTALLATION_ID") &&
+        envValue("GITHUB_APP_PRIVATE_KEY"),
+    ),
+    agardenBranch: optionalEnv("AGARDEN_BRANCH", "main"),
+  };
+}
+
 export function startHostedAgardenRatingServer(port = Number(process.env.PORT || 8787)) {
   const handler = createProductionHostedAgardenRatingHandler();
   const server = createServer(async (req, res) => {
@@ -106,7 +121,7 @@ export function startHostedAgardenRatingServer(port = Number(process.env.PORT ||
       const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "127.0.0.1"}`);
       if (req.method === "GET" && url.pathname === "/health") {
         res.setHeader("content-type", "application/json");
-        res.end(JSON.stringify({ ok: true, service: "doppl-calibrator-ratings" }));
+        res.end(JSON.stringify(healthPayload()));
         return;
       }
       if (url.pathname === "/api/agarden/ratings") {
