@@ -2,11 +2,8 @@
 // It runs the command headless with the prompt as the final argument and treats stdout as the model
 // output. This is the automated "harness bridge": your subscription, no API key, no manual paste —
 // the output flows through the same node-compiler/sink pipeline into the vault as any other provider.
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import type { ModelCallRecord, ModelCallRequest, ModelClient } from './model-gateway.ts';
-
-const execFileAsync = promisify(execFile);
 
 // The shell-out, isolated behind a seam so tests can inject a fake runner with no child process.
 export type CliRunner = (cmd: string, args: string[]) => Promise<{ stdout: string }>;
@@ -18,8 +15,27 @@ export type CliModelClientInput = {
   run?: CliRunner; // injectable for tests
 };
 
-const defaultRunner: CliRunner = async (cmd, args) =>
-  execFileAsync(cmd, args, { maxBuffer: 16 * 1024 * 1024 });
+// stdin is closed ('ignore') so a CLI in headless mode doesn't stall waiting for piped input it will
+// never get; the prompt is passed as an argument. stderr is surfaced in the error for a legible
+// failure (e.g. a provider's auth message) instead of a bare non-zero exit.
+const defaultRunner: CliRunner = (cmd, args) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('error', reject);
+    child.on('close', (code) =>
+      code === 0
+        ? resolve({ stdout })
+        : reject(new Error(`${cmd} exited ${code}: ${stderr.trim().slice(0, 300)}`)),
+    );
+  });
 
 // CLIs don't enforce a response format the way an HTTP `response_format` does — they often wrap JSON
 // in prose or a markdown fence. Extract the first balanced JSON value so the structured stages can
