@@ -13,9 +13,14 @@ import {
 } from '../../../../src/model-gateway/tools/registry';
 
 describe('tool registry — the allowlist gate (rule #3, mirrors check-runners)', () => {
-  it('registers web_search + fetch_url as valid non-executing ToolDescriptors', () => {
-    // the Slice-3 offered set (x_search/youtube_search land in a later slice).
-    expect(Object.keys(TOOL_REGISTRY).sort()).toEqual(['fetch_url', 'web_search']);
+  it('registers all four research tools as valid non-executing ToolDescriptors', () => {
+    // TU.7 — the full offered set (web_search + fetch_url + x_search + youtube_search).
+    expect(Object.keys(TOOL_REGISTRY).sort()).toEqual([
+      'fetch_url',
+      'web_search',
+      'x_search',
+      'youtube_search',
+    ]);
     for (const descriptor of offeredToolDescriptors()) {
       // each offered descriptor round-trips the frozen contract shape (no code field representable).
       expect(ToolDescriptor.parse(descriptor)).toEqual(descriptor);
@@ -30,11 +35,9 @@ describe('tool registry — the allowlist gate (rule #3, mirrors check-runners)'
   });
 
   it('resolveTool is a fail-safe own-property gate', () => {
-    expect(resolveTool('web_search').ok).toBe(true);
-    expect(resolveTool('fetch_url').ok).toBe(true);
-    // a closed-allowlist tool not yet implemented (Slice 7) → unavailable, never executes.
-    const xs = resolveTool('x_search');
-    expect(xs.ok).toBe(false);
+    for (const name of ['web_search', 'fetch_url', 'x_search', 'youtube_search']) {
+      expect(resolveTool(name).ok, name).toBe(true);
+    }
     // an unknown tool → unavailable.
     expect(resolveTool('exec_shell').ok).toBe(false);
     // a prototype-pollution probe must NOT resolve to an Object.prototype member (own-property lookup).
@@ -117,5 +120,32 @@ describe('web_search executor — grounded search via an injected seam (Option A
   it('fails safe on bad arguments or a missing seam (never throws)', async () => {
     expect((await run({ q: 'x' }, { webSearch: async () => 'x' })).ok).toBe(false); // wrong arg key
     expect((await run({ query: 'x' }, {})).ok).toBe(false); // no webSearch seam
+  });
+});
+
+describe('x_search + youtube_search executors (TU.7, grounded via injected seams)', () => {
+  it('x_search routes the query through the injected xSearch seam', async () => {
+    const r = await TOOL_IMPLS.x_search!(
+      { query: 'reactions to the new battery startup' },
+      { xSearch: async (q) => `X discussion about: ${q}` },
+    );
+    expect(r.ok).toBe(true);
+    expect(r.content).toContain('reactions to the new battery startup');
+  });
+
+  it('youtube_search routes the query through the injected youtubeSearch seam', async () => {
+    const r = await TOOL_IMPLS.youtube_search!(
+      { query: 'how solid-state batteries work' },
+      { youtubeSearch: async (q) => `YouTube videos about: ${q}` },
+    );
+    expect(r.ok).toBe(true);
+    expect(r.content).toContain('how solid-state batteries work');
+  });
+
+  it('each fails safe to ok:false when its seam is unwired (rule #3 — never executes)', async () => {
+    expect((await TOOL_IMPLS.x_search!({ query: 'x' }, {})).ok).toBe(false);
+    expect((await TOOL_IMPLS.youtube_search!({ query: 'x' }, {})).ok).toBe(false);
+    const xr = await TOOL_IMPLS.x_search!({ query: 'x' }, {});
+    expect(xr.content).toContain('tool_unavailable');
   });
 });

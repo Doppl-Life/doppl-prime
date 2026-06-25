@@ -13,8 +13,9 @@ import { assertSafeFetchUrl, unbracketHost } from './ssrf';
  * path. The EXECUTION dependencies (real HTTP, real grounded search) are INJECTED ({@link ToolExecutorDeps})
  * — the real impls are wired at boot (the tool-orchestrating gateway); rule #9: no vendor type here.
  *
- * Slice-3 offered set: `web_search` + `fetch_url`. `x_search` + `youtube_search` (the platform adapters)
- * land in a later slice; until then `resolveTool('x_search')` fails safe (unavailable), never executes.
+ * Offered set: `web_search` + `fetch_url` + `x_search` + `youtube_search` (TU.7). A tool whose INJECTED
+ * seam is unwired (e.g. on a boot without the OpenRouter key) fails safe via its executor (`ok:false`,
+ * `tool_unavailable`) — never throws, never executes.
  */
 
 /** The result of executing a tool. `content` is DATA (the orchestrator wraps it via `wrapUntrusted`). */
@@ -48,6 +49,12 @@ export interface ToolExecutorDeps {
   readonly resolveHostIsPublic?: (hostname: string) => Promise<boolean>;
   /** Run a grounded web search (real impl = an OpenRouter web-plugin completion). Returns the grounded text. */
   readonly webSearch?: (query: string) => Promise<string>;
+  /** TU.7 — search X (Twitter) (real impl = an OpenRouter `x-ai/grok-*` web-plugin completion — the web
+   *  plugin enables X search for xAI models). Returns the grounded text. */
+  readonly xSearch?: (query: string) => Promise<string>;
+  /** TU.7 — search YouTube / video content (real impl = an OpenRouter `google/gemini-*` web-grounded
+   *  completion). Returns the grounded text. */
+  readonly youtubeSearch?: (query: string) => Promise<string>;
 }
 
 export type ToolExecutor = (args: unknown, deps: ToolExecutorDeps) => Promise<ToolExecutionResult>;
@@ -122,28 +129,48 @@ const fetchUrlExecutor: ToolExecutor = async (args, deps) => {
 };
 
 /**
- * web_search — a grounded web search (Option A: gateway-orchestrated via the injected `webSearch` seam, NO
- * new keys; the real impl is an OpenRouter web-plugin completion wired at boot). Fail-safe like fetch_url.
+ * A grounded-search executor over an injected seam (Option A: gateway-orchestrated, NO new keys — the real
+ * impls are OpenRouter completions wired at boot). web_search / x_search / youtube_search are identical
+ * except for which seam they call. Fail-safe like fetch_url: bad args / missing seam / error → ok:false DATA.
  */
-const webSearchExecutor: ToolExecutor = async (args, deps) => {
-  const query = stringField(args, 'query');
-  if (query === null) return fail('invalid_arguments: expected { query: string }');
-  if (!deps.webSearch) return fail('tool_unavailable: no search seam');
-  try {
-    return { ok: true, content: truncate(await deps.webSearch(query)) };
-  } catch {
-    return fail('search_failed');
-  }
-};
+function makeGroundedExecutor(
+  seam: 'webSearch' | 'xSearch' | 'youtubeSearch',
+  label: string,
+): ToolExecutor {
+  return async (args, deps) => {
+    const query = stringField(args, 'query');
+    if (query === null) return fail('invalid_arguments: expected { query: string }');
+    const search = deps[seam];
+    if (search === undefined) return fail(`tool_unavailable: no ${label} seam`);
+    try {
+      return { ok: true, content: truncate(await search(query)) };
+    } catch {
+      return fail(`${label}_failed`);
+    }
+  };
+}
 
-const WEB_SEARCH_PARAMS = {
-  type: 'object',
-  properties: {
-    query: { type: 'string', description: 'The web search query (current, factual research).' },
-  },
-  required: ['query'],
-  additionalProperties: false,
-};
+const webSearchExecutor = makeGroundedExecutor('webSearch', 'web_search');
+const xSearchExecutor = makeGroundedExecutor('xSearch', 'x_search');
+const youtubeSearchExecutor = makeGroundedExecutor('youtubeSearch', 'youtube_search');
+
+/** web_search / x_search / youtube_search all take a single `query` string. */
+function queryParams(description: string): Record<string, unknown> {
+  return {
+    type: 'object',
+    properties: { query: { type: 'string', description } },
+    required: ['query'],
+    additionalProperties: false,
+  };
+}
+
+const WEB_SEARCH_PARAMS = queryParams('The web search query (current, factual research).');
+const X_SEARCH_PARAMS = queryParams(
+  'The topic to search X (Twitter) for current discussion + sentiment.',
+);
+const YOUTUBE_SEARCH_PARAMS = queryParams(
+  'The topic to search YouTube / video content for explanations + demonstrations.',
+);
 
 const FETCH_URL_PARAMS = {
   type: 'object',
@@ -170,12 +197,30 @@ export const TOOL_REGISTRY: Readonly<Partial<Record<ToolName, ToolSpec>>> = deep
     },
     parameters: FETCH_URL_PARAMS,
   },
+  x_search: {
+    descriptor: {
+      name: 'x_search',
+      description:
+        'Search X (Twitter) for current discussion, reactions, and sentiment about a topic.',
+    },
+    parameters: X_SEARCH_PARAMS,
+  },
+  youtube_search: {
+    descriptor: {
+      name: 'youtube_search',
+      description:
+        'Search YouTube / video content for explanations and demonstrations about a topic.',
+    },
+    parameters: YOUTUBE_SEARCH_PARAMS,
+  },
 });
 
 /** The frozen PARALLEL executor-impl map (rule #3 — the descriptor carries no code, the impl lives here). */
 export const TOOL_IMPLS: Readonly<Partial<Record<ToolName, ToolExecutor>>> = Object.freeze({
   web_search: webSearchExecutor,
   fetch_url: fetchUrlExecutor,
+  x_search: xSearchExecutor,
+  youtube_search: youtubeSearchExecutor,
 });
 
 /** The descriptors to OFFER the model on a population_generator request (`ModelGatewayRequest.tools`). */

@@ -4,6 +4,7 @@
 // following + timeout-bounded), webSearch (OpenRouter web-plugin call shape; key env-only, rule #4).
 import { describe, it, expect } from 'vitest';
 import {
+  createGroundedSearch,
   createResolveHostIsPublic,
   createSafeHttpGet,
   createWebSearch,
@@ -122,5 +123,43 @@ describe('createWebSearch (TU.5, Option A — OpenRouter web plugin; key env-onl
       apiKey: 'k',
     });
     expect(await webSearch('q')).toBe('');
+  });
+});
+
+describe('createGroundedSearch (TU.7 — x_search / youtube_search over the web plugin)', () => {
+  it('x_search posts the grok model with the web plugin (web plugin enables X search for xAI)', async () => {
+    let body: { model?: string; plugins?: unknown; messages?: { content?: string }[] } | undefined;
+    const xSearch = createGroundedSearch({
+      fetchFn: (async (_url: string, opts?: RequestInit) => {
+        body = JSON.parse(opts!.body as string);
+        return {
+          json: async () => ({ choices: [{ message: { content: 'X chatter' } }] }),
+        } as Response;
+      }) as unknown as typeof fetch,
+      apiKey: 'k',
+      model: 'x-ai/grok-4.1-fast',
+    });
+    expect(await xSearch('battery startup')).toBe('X chatter');
+    expect(body?.model).toBe('x-ai/grok-4.1-fast');
+    expect(body?.plugins).toEqual([{ id: 'web' }]);
+    expect(body?.messages?.[0]?.content).toBe('battery startup'); // no prefix on x_search
+  });
+
+  it('youtube_search applies the query prefix to nudge the gemini model toward video content', async () => {
+    let content: string | undefined;
+    const youtube = createGroundedSearch({
+      fetchFn: (async (_url: string, opts?: RequestInit) => {
+        content = (JSON.parse(opts!.body as string) as { messages: { content: string }[] })
+          .messages[0]?.content;
+        return {
+          json: async () => ({ choices: [{ message: { content: 'video summary' } }] }),
+        } as Response;
+      }) as unknown as typeof fetch,
+      apiKey: 'k',
+      model: 'google/gemini-2.5-flash',
+      queryPrefix: 'Find and summarize YouTube videos about: ',
+    });
+    expect(await youtube('how batteries work')).toBe('video summary');
+    expect(content).toBe('Find and summarize YouTube videos about: how batteries work');
   });
 });

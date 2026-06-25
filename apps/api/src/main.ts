@@ -183,6 +183,8 @@ function resolveGateway(
     ...(env.DOPPL_WEB_SEARCH_MODEL !== undefined
       ? { webSearchModel: env.DOPPL_WEB_SEARCH_MODEL }
       : {}),
+    ...(env.DOPPL_X_SEARCH_MODEL !== undefined ? { xSearchModel: env.DOPPL_X_SEARCH_MODEL } : {}),
+    ...(env.DOPPL_YOUTUBE_MODEL !== undefined ? { youtubeModel: env.DOPPL_YOUTUBE_MODEL } : {}),
   });
   return { gateway, gatewayForOverride, toolExecutorSeams };
 }

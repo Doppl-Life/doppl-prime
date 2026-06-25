@@ -23,6 +23,13 @@ import { isPrivateHost, type ToolExecutorDeps } from '../model-gateway';
 const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
 const DEFAULT_WEB_SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_WEB_SEARCH_MODEL = 'openai/gpt-4o-mini';
+/** TU.7 — the web plugin enables BOTH web + X search for xAI models (OpenRouter docs). */
+const DEFAULT_X_SEARCH_MODEL = 'x-ai/grok-4.1-fast';
+/** TU.7 — Gemini with web grounding surfaces YouTube / video content. */
+const DEFAULT_YOUTUBE_MODEL = 'google/gemini-2.5-flash';
+/** Nudges the YouTube model to surface + summarize video content for the query. */
+const YOUTUBE_QUERY_PREFIX =
+  'Find and summarize relevant YouTube videos (with their key insights) about: ';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 /** Bound the raw body we read into memory (the tool registry truncates further before re-injection). */
 const MAX_FETCH_BODY_BYTES = 256 * 1024;
@@ -97,15 +104,21 @@ async function readBounded(response: Response, maxBytes: number): Promise<string
   return text.slice(0, maxBytes);
 }
 
-/** webSearch — a grounded OpenRouter completion with the `web` plugin (Option A; key env-only, rule #4). */
-export function createWebSearch(deps: {
+/**
+ * A grounded OpenRouter completion with the `web` plugin (Option A — NO new keys; key env-only, rule #4,
+ * in the Authorization header only). web_search / x_search / youtube_search all use this, differing only by
+ * model (and an optional query prefix / extra body params, e.g. xAI's `x_search_filter`). The `web` plugin
+ * additionally enables X search for xAI models + web grounding for Gemini. Per-call timeout (finiteness).
+ */
+export function createGroundedSearch(deps: {
   fetchFn: typeof fetch;
   apiKey: string;
-  model?: string;
+  model: string;
   baseUrl?: string;
   timeoutMs?: number;
+  queryPrefix?: string;
+  extraBody?: Record<string, unknown>;
 }): (query: string) => Promise<string> {
-  const model = deps.model ?? DEFAULT_WEB_SEARCH_MODEL;
   const baseUrl = deps.baseUrl ?? OPENROUTER_BASE_URL;
   const timeoutMs = deps.timeoutMs ?? DEFAULT_WEB_SEARCH_TIMEOUT_MS;
   return async (query) => {
@@ -116,9 +129,10 @@ export function createWebSearch(deps: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: query }],
+        model: deps.model,
+        messages: [{ role: 'user', content: `${deps.queryPrefix ?? ''}${query}` }],
         plugins: [{ id: 'web' }],
+        ...(deps.extraBody ?? {}),
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -127,15 +141,28 @@ export function createWebSearch(deps: {
   };
 }
 
+/** webSearch — a grounded web completion (the default `web_search` seam). */
+export function createWebSearch(deps: {
+  fetchFn: typeof fetch;
+  apiKey: string;
+  model?: string;
+  baseUrl?: string;
+  timeoutMs?: number;
+}): (query: string) => Promise<string> {
+  return createGroundedSearch({ ...deps, model: deps.model ?? DEFAULT_WEB_SEARCH_MODEL });
+}
+
 export interface ToolSeamConfig {
   /** Outbound fetch primitive (default the global `fetch`). Injected for tests. */
   readonly fetchFn?: typeof fetch;
   /** All-records DNS lookup (default `dns.lookup` with `{all:true}`). Injected for tests. */
   readonly lookupAll?: DnsLookupAll;
-  /** The OpenRouter key for `webSearch` (env-only, rule #4). Absent → no `webSearch` seam (a web_search
-   *  tool call then fails safe to `tool_unavailable`). */
+  /** The OpenRouter key for the grounded-search seams (env-only, rule #4). Absent → no web_search/x_search/
+   *  youtube_search seams (those tool calls then fail safe to `tool_unavailable`). */
   readonly openRouterApiKey?: string;
   readonly webSearchModel?: string;
+  readonly xSearchModel?: string;
+  readonly youtubeModel?: string;
 }
 
 /** Assemble the live {@link ToolExecutorDeps} from injected primitives (the boot root supplies env-derived ones). */
@@ -146,13 +173,25 @@ export function createToolExecutorSeams(config: ToolSeamConfig = {}): ToolExecut
   const httpGet = createSafeHttpGet(fetchFn);
   const resolveHostIsPublic = createResolveHostIsPublic(lookupAll);
   if (config.openRouterApiKey !== undefined && config.openRouterApiKey !== '') {
+    const apiKey = config.openRouterApiKey;
     return {
       httpGet,
       resolveHostIsPublic,
       webSearch: createWebSearch({
         fetchFn,
-        apiKey: config.openRouterApiKey,
+        apiKey,
         ...(config.webSearchModel !== undefined ? { model: config.webSearchModel } : {}),
+      }),
+      xSearch: createGroundedSearch({
+        fetchFn,
+        apiKey,
+        model: config.xSearchModel ?? DEFAULT_X_SEARCH_MODEL,
+      }),
+      youtubeSearch: createGroundedSearch({
+        fetchFn,
+        apiKey,
+        model: config.youtubeModel ?? DEFAULT_YOUTUBE_MODEL,
+        queryPrefix: YOUTUBE_QUERY_PREFIX,
       }),
     };
   }

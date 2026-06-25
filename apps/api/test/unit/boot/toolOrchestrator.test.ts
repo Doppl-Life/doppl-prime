@@ -130,9 +130,10 @@ describe('createToolOrchestratingGateway (TU.5)', () => {
     expect(result.toolCalls![0]!.toolName).toBe('web_search');
   });
 
-  it('rule #3 — an unavailable tool is skipped (never executed) and flagged ok:false (rule #8)', async () => {
+  it('rule #3 — a tool whose seam is unwired is skipped (never executed) and flagged ok:false (rule #8)', async () => {
     const { gateway } = scriptedGateway([
-      toolCallResponse([{ id: 'c1', name: 'x_search', arguments: '{"query":"x"}' }]), // not yet implemented
+      // x_search is allowlisted but okSeams wires no xSearch seam → the executor fails safe (ok:false).
+      toolCallResponse([{ id: 'c1', name: 'x_search', arguments: '{"query":"x"}' }]),
       finalResponse({ idea: 'w' }),
     ]);
     const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
