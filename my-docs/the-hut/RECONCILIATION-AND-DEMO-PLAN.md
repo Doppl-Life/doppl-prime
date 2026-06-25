@@ -4,6 +4,37 @@ The work to bring four branches into one kernel, stand up the Agora, and reach a
 port into **GitHub Projects** on `Doppl-Life/doppl-prime` (the chosen ticket home). This file is the
 shaping space; the project board is where the tickets live and move.
 
+## Build status — resume here
+
+All work is on the `michael-reconciliation` worktree (`../doppl-prime-reconciliation`). Source of
+truth: git history + this doc + the harness task list. Context is disposable. Package manager: pnpm.
+Kernel green: `node --experimental-strip-types --test kernel/test/*.test.ts` → 118/118.
+
+**Done & committed:** R0 (dalton base) · R1 (canonical `flow/<slug>/<slug>.md` vault + `slugId`,
+SSOT) · R2 (clean case node vs `node.md`) · R3 (provider layer — one OpenAI-compatible client +
+presets OpenRouter/Groq/OpenAI/LM Studio/Ollama + per-role routing + fusion) · R3.1 (CLI bridge
+`--cli`, reads `doppl.config.json` tools; tolerant JSON extraction; stdin/stderr fix) · slug
+stage-seeding fix · `--` separator fix · `.env.sample` · arch fix (`ModelCallRecord`→contracts,
+broke the one upward dep). **Verified keyless end-to-end:** Ollama and grok CLI both write canonical
+agarden nodes (no key, no paste). claude CLI works on the user's machine (not in-sandbox).
+
+**Quality suite — one focused pass per window (context fresh each):**
+1. ✅ `improve-codebase-architecture` — actioned the dependency fix; verdict: base solid.
+2. ▶ NEXT: `type-design-analyzer` — design the event-payload **discriminated union** (`RunEvent.payload`
+   is untyped `Record<string,unknown>`; tighten `RunEvent.type` off `| string`). Output = R4's first step.
+3. `deslop` — delete dead root `/src` + `/tools` (orphaned old kernel) + their `tsconfig` includes;
+   dedupe the `.gitignore` env block; consider extracting `vault-export`'s assay logic.
+4. `thermo-nuclear` — final deep review.
+
+**Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
+full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin
+envelope-reshape adapter validated vs melissa's strict Zod envelope → drop the 10 unmapped dalton
+event types. Detail on the R4 task + the mapping in the Fusion spec. Then R5 (melissa dashboard +
+cody skin), R6 (spike→kernel), R7 (demo floors).
+
+**To resume in a fresh window:** read this section + `git log --oneline` + the task list, then continue
+at the ▶ pass.
+
 ## What reconciliation is
 
 Reconciliation is **synthesis, not selection**. The goal is one kernel that carries the best idea from
