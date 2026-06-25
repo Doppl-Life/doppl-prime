@@ -74,7 +74,7 @@ guiding implementation, cut it.
   reconverges it. The generative perturbation is only half; without an
   operator-local kill filter it is variance injection, not a strategy. (Drunk
   Claude is the counter-example: the widener with a fake gate and invented
-  rigor.) See [`skills/LINEAGE.md`](skills/LINEAGE.md) Kill Filters.
+  rigor.)
 - **Carry forward:** coining an operator means writing its kill filter in the same
   move; a roster row without one is incomplete.
 

@@ -1,10 +1,42 @@
-// The compiler as writer: turns a seed and an engine survivor into contract-shaped node markdown.
-// Implements mechanics/kernel/compiler.md — it renders, it does not think. The judge axes are the
-// deterministic bridge over fitness (rating.md); Cost-efficiency and Relevance default to 0.
-import type { ScoredCandidate, Seed } from '../contracts/index.ts';
-import type { CompiledNode } from './sink.ts';
+// The compiler-writer: renders contract-shaped node markdown from generated content + the judge's
+// evaluation. Implements mechanics/kernel/compiler.md — it renders, it does not think. Owns the
+// generated-content shapes and the SlugId so the rest of src/io can import them without a cycle.
 
-// Deterministic SlugId so re-running a seed is idempotent (same id, overwritten file).
+export type DiscoveryEntry = { found: string; field: string };
+
+export type TraceSynopsis = { stage: string; synopsis: string };
+
+export type Evaluation = {
+  novelty: number;
+  grounding: number;
+  falsifiability: number;
+  costEfficiency: number;
+  relevance: number;
+  judge: number;
+  reasons: Record<string, string>;
+};
+
+export type ProblemFrame = {
+  title: string;
+  surfaceComplaint: string;
+  deletedAssumption: string;
+  hiddenVariable: string;
+  actualProblem: string;
+  candidateResponse: string;
+  skinInTheGame: string[];
+  temporal: boolean;
+};
+
+export type Doppl = {
+  title: string;
+  claim: string;
+  implications: string[];
+  opportunities: string[];
+  temporal: boolean;
+};
+
+export type CompiledNode = { id: string; stage: string; markdown: string };
+
 function shortHash(value: string): string {
   let h = 5381;
   for (let i = 0; i < value.length; i += 1) h = ((h << 5) + h + value.charCodeAt(i)) >>> 0;
@@ -16,151 +48,73 @@ export function slugId(name: string): string {
   return `${slug}-${shortHash(name)}`;
 }
 
-function clamp5(value: number): number {
-  return Math.max(-5, Math.min(5, value));
-}
-
-function round5(measurement: number): number {
-  return clamp5(Math.round(measurement * 5));
-}
-
-export type JudgeAxes = {
-  novelty: number;
-  grounding: number;
-  falsifiability: number;
-  costEfficiency: number;
-  relevance: number;
-  judge: number;
-};
-
-// The deterministic bridge (rating.md): Novelty/Grounding/Falsifiability from measurements,
-// judge-only axes default to 0, judge = round(mean).
-export function judgeBridge(fitness: ScoredCandidate['fitness']): JudgeAxes {
-  const novelty = round5(fitness.novelty);
-  const grounding = round5(fitness.grounding);
-  const falsifiability = round5(fitness.components.falsifiability);
-  const costEfficiency = 0;
-  const relevance = 0;
-  const judge = clamp5(Math.round((novelty + grounding + falsifiability + costEfficiency + relevance) / 5));
-  return { novelty, grounding, falsifiability, costEfficiency, relevance, judge };
-}
-
 function label(score: number): string {
   return score >= 0 ? `+${score}` : `${score}`;
 }
 
-export type DiscoveryEntry = { found: string; field: string };
+function lst(items: string[]): string {
+  return items && items.length ? items.map((x) => `- ${x}`).join('\n') : '- —';
+}
+
+const STAGE_LABEL: Record<string, string> = { case_study: 'Case study', problem_recovery: 'Problem recovery', doppl: 'Doppl' };
+
+function renderTrace(trace: TraceSynopsis[]): string {
+  if (!trace.length) return '## Trace\n\n_(no prior stage)_';
+  return `## Trace\n\n${trace.map((t) => `### ${STAGE_LABEL[t.stage] ?? t.stage} · synopsis\n\n${t.synopsis}`).join('\n\n')}`;
+}
 
 function renderDiscovery(entries: DiscoveryEntry[]): string {
-  if (!entries.length) return '## Discovery\n\n_(no external finds this pass)_';
-  const items = entries.map((entry, i) => `### Finding ${i + 1}\n\n${entry.found} → field: [[${entry.field}]]`);
-  return `## Discovery\n\n${items.join('\n\n')}`;
+  if (!entries.length) return '## Discovery\n\n_(no admitted finds this pass)_';
+  return `## Discovery\n\n${entries.map((e, i) => `### Finding ${i + 1}\n\n${e.found} → field: [[${e.field}]]`).join('\n\n')}`;
 }
 
-function renderEvaluation(axes: JudgeAxes): string {
-  return [
-    '### Evaluation',
-    `#### Novelty ${label(axes.novelty)}`,
-    'Bridged from the novelty measurement (fraction of language absent from the seed).',
-    `#### Grounding ${label(axes.grounding)}`,
-    'Bridged from the grounding measurement (evidence, mechanism, falsifiability signal).',
-    `#### Falsifiability ${label(axes.falsifiability)}`,
-    'Bridged from the falsifiability measurement (checkable markers, claims, evidence).',
-    `#### Cost-efficiency ${label(axes.costEfficiency)}`,
-    'Judge-only axis — defaults to 0 under the deterministic bridge.',
-    `#### Relevance ${label(axes.relevance)}`,
-    'Judge-only axis — defaults to 0 under the deterministic bridge.',
-  ].join('\n\n');
+const AXES: [keyof Evaluation, string][] = [
+  ['novelty', 'Novelty'], ['grounding', 'Grounding'], ['falsifiability', 'Falsifiability'],
+  ['costEfficiency', 'Cost-efficiency'], ['relevance', 'Relevance'],
+];
+
+function renderEvaluation(ev: Evaluation): string {
+  const parts = AXES.map(([k, name]) => `#### ${name} ${label(ev[k] as number)}\n\n${ev.reasons?.[name] ?? '—'}`);
+  return `### Evaluation\n\n${parts.join('\n\n')}`;
 }
 
-export function compileCaseStudy(seed: Seed): CompiledNode {
-  const id = slugId(seed.title);
+export function compileProblemRecovery(frame: ProblemFrame, ev: Evaluation, prevId: string, trace: TraceSynopsis[], discovery: DiscoveryEntry[]): CompiledNode {
+  const id = slugId(frame.title);
   const markdown = [
-    '---',
-    `id: ${id}`,
-    'stage: case_study',
-    `name: ${JSON.stringify(seed.title)}`,
-    'next: problem_recovery',
-    '---',
-    '',
-    `# ${seed.title}`,
-    '',
-    'prev_id: null',
-    '',
-    '## Context',
-    '',
-    seed.prompt,
-    '',
-    '## Synopsis',
-    '',
-    seed.thesis,
-  ].join('\n');
-  return { id, stage: 'case_study', markdown };
-}
-
-export function compileProblemRecovery(
-  survivor: ScoredCandidate,
-  seed: Seed,
-  seedNodeId: string,
-  discovery: DiscoveryEntry[],
-): CompiledNode {
-  const id = slugId(survivor.title);
-  const axes = judgeBridge(survivor.fitness);
-  const skin = (survivor.claims.length ? survivor.claims : [survivor.thesis]).map((c) => `- ${c}`).join('\n');
-  const markdown = [
-    '---',
-    `id: ${id}`,
-    'stage: problem_recovery',
-    'kernel: prime',
-    `temporal: ${survivor.temporal ? 'true' : 'false'}`,
-    'next: doppl',
-    `scores: { judge: ${axes.judge}, human: null, n: 0 }`,
-    'doppelgangers: 0',
-    '---',
-    '',
-    `# ${survivor.title}`,
-    '',
-    `prev_id: [[${seedNodeId}]]`,
-    '',
-    '## Trace',
-    '',
-    '### Case study · synopsis',
-    '',
-    seed.thesis,
-    '',
-    renderDiscovery(discovery),
-    '',
-    '## Growth — Problem recovery',
-    '',
-    '### Surface complaint',
-    '',
-    `The seed reads "${seed.title}" at face value.`,
-    '',
-    '### Deleted assumption',
-    '',
-    survivor.substrate || '—',
-    '',
-    '### Hidden variable',
-    '',
-    survivor.mechanism || '—',
-    '',
-    '### Actual problem',
-    '',
-    survivor.thesis || survivor.title,
-    '',
-    '### Candidate response',
-    '',
-    survivor.claims[0] || survivor.thesis || '—',
-    '',
-    '### Skin in the Game',
-    '',
-    skin,
-    '',
-    renderEvaluation(axes),
-    '',
-    '## Path',
-    '',
-    'next: doppl',
+    '---', `id: ${id}`, 'stage: problem_recovery', 'kernel: prime',
+    `temporal: ${frame.temporal ? 'true' : 'false'}`, 'next: doppl',
+    `scores: { judge: ${ev.judge}, human: null, n: 0 }`, 'doppelgangers: 0', '---', '',
+    `# ${frame.title}`, '', `prev_id: [[${prevId}]]`, '',
+    renderTrace(trace), '',
+    renderDiscovery(discovery), '',
+    '## Growth — Problem recovery', '',
+    '### Surface complaint', '', frame.surfaceComplaint || '—', '',
+    '### Deleted assumption', '', frame.deletedAssumption || '—', '',
+    '### Hidden variable', '', frame.hiddenVariable || '—', '',
+    '### Actual problem', '', frame.actualProblem || '—', '',
+    '### Candidate response', '', frame.candidateResponse || '—', '',
+    '### Skin in the Game', '', lst(frame.skinInTheGame || []), '',
+    renderEvaluation(ev), '',
+    '## Path', '', 'next: doppl',
   ].join('\n');
   return { id, stage: 'problem_recovery', markdown };
+}
+
+export function compileDoppl(doppl: Doppl, ev: Evaluation, prevId: string, trace: TraceSynopsis[], discovery: DiscoveryEntry[]): CompiledNode {
+  const id = slugId(doppl.title);
+  const markdown = [
+    '---', `id: ${id}`, 'stage: doppl', 'kernel: prime',
+    `temporal: ${doppl.temporal ? 'true' : 'false'}`, 'next: null',
+    `scores: { judge: ${ev.judge}, human: null, n: 0 }`, 'doppelgangers: 0', '---', '',
+    `# ${doppl.title}`, '', `prev_id: [[${prevId}]]`, '',
+    renderTrace(trace), '',
+    renderDiscovery(discovery), '',
+    '## Growth — Doppl', '',
+    '### Claim', '', doppl.claim || '—', '',
+    '### Implications', '', lst(doppl.implications || []), '',
+    '### Opportunities', '', lst(doppl.opportunities || []), '',
+    renderEvaluation(ev), '',
+    '## Path', '', 'null',
+  ].join('\n');
+  return { id, stage: 'doppl', markdown };
 }
