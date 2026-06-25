@@ -55,11 +55,16 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    *reduced* spaghetti (verdict/runMode ladders → helpers). Fixed the sharpest finding: `vault-export`
    candidate-score fns returned `Record<string,unknown>`, forcing `score as number` casts → typed
    `CandidateAssayScore`, **all `as number`/`as unknown` casts gone from the file**. Standing
-   recommendations (need scope decision, pre-existing — not reconciliation regressions): (a) the 3 assay
-   fns (`heldOutAssayJudge`/`sealedReferenceBenchmark`/`assayControl`) share a verdict/statement/delta
-   skeleton → a typed `AssayResult` + builder could collapse the rest; (b) split `server.ts` into
-   routing / handlers / dashboard (~250L each). Both behavior-preserving but real moves — greenlight first.
-   ▶ **NEXT: R4** (event adapter → dashboard), now standing on the typed `RunEvent` union.
+   recommendations: ✅ **(a) DONE** — the comparison spine of `heldOutAssayJudge` + `sealedReferenceBenchmark`
+   is now one `comparativeAssay(baseline, survivor, threshold, statements)` builder (SSOT; each judge
+   supplies only its prose). `assayControl` stays separate by design (nullable `fitnessTotal`,
+   `inconclusive`, threshold 3 — forcing it in would pollute the builder). Build green.
+   **(b) QUEUED — `server.ts` split, design validated** (file falls on clean block boundaries):
+   `server-http.ts` (1–290: types, `KernelHttpError`, parse/auth/env helpers, dashboard pages) →
+   `server-store.ts` (292–517: run reads + event/stream/health responses) → `server-runs.ts` (519–703:
+   `runFromRequestBody`, async runs, dashboard-case runner) → `server.ts` (705–807: router + `createServer`).
+   Imports leftward only, no cycles. Mechanical move + precise import wiring; do as a focused unit.
+   ▶ **NEXT: server split (b), then R4** (event adapter → dashboard) on the typed `RunEvent` union.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin

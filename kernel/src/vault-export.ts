@@ -260,25 +260,15 @@ function heldOutAssayJudge(
   const baselineJudgment = rubricCandidateScore(run, baseline, 'clean_baseline');
   const survivorJudgment = rubricCandidateScore(run, survivor, 'doppl_survivor');
   const referenceBenchmark = sealedReferenceBenchmark(run, baseline, survivor);
-  const baselineScore = baselineJudgment.score;
-  const survivorScore = survivorJudgment.score;
-  const delta = Number((survivorScore - baselineScore).toFixed(2));
-  const verdict = verdictFor(delta, 1);
 
   return {
     judgeType: 'deterministic_artifact_rubric',
     scoreSource: 'artifact_rubric_not_training_fitness',
-    verdict,
-    statement: {
-      doppl_wins: `Held-out artifact rubric favors the Doppl survivor by ${Math.abs(delta)} points.`,
-      baseline_wins: `Held-out artifact rubric favors the clean baseline by ${Math.abs(delta)} points.`,
+    ...comparativeAssay(baselineJudgment, survivorJudgment, 1, (abs) => ({
+      doppl_wins: `Held-out artifact rubric favors the Doppl survivor by ${abs} points.`,
+      baseline_wins: `Held-out artifact rubric favors the clean baseline by ${abs} points.`,
       tie: 'Held-out artifact rubric treats the clean baseline and Doppl survivor as effectively tied.',
-    }[verdict],
-    baseline: baselineJudgment,
-    survivor: survivorJudgment,
-    delta: {
-      score: delta,
-    },
+    })),
     referenceBenchmark,
     limits: [
       'This is a deterministic held-out artifact rubric, not an in-run fitness score.',
@@ -287,10 +277,39 @@ function heldOutAssayJudge(
   };
 }
 
-function verdictFor(delta: number, threshold: number): 'doppl_wins' | 'baseline_wins' | 'tie' {
+type Verdict = 'doppl_wins' | 'baseline_wins' | 'tie';
+
+function verdictFor(delta: number, threshold: number): Verdict {
   if (delta >= threshold) return 'doppl_wins';
   if (delta <= -threshold) return 'baseline_wins';
   return 'tie';
+}
+
+type ComparativeAssayCore = {
+  verdict: Verdict;
+  statement: string;
+  baseline: CandidateAssayScore;
+  survivor: CandidateAssayScore;
+  delta: { score: number };
+};
+
+// The shared spine of a two-candidate assay: delta → verdict → statement. Each judge
+// supplies only its own prose (the score sources and surrounding fields stay with the judge).
+function comparativeAssay(
+  baseline: CandidateAssayScore,
+  survivor: CandidateAssayScore,
+  threshold: number,
+  statements: (absoluteDelta: number) => Record<Verdict, string>,
+): ComparativeAssayCore {
+  const delta = Number((survivor.score - baseline.score).toFixed(2));
+  const verdict = verdictFor(delta, threshold);
+  return {
+    verdict,
+    statement: statements(Math.abs(delta))[verdict],
+    baseline,
+    survivor,
+    delta: { score: delta },
+  };
 }
 
 function referenceCasePath(run: KernelRun): string {
@@ -426,27 +445,17 @@ function sealedReferenceBenchmark(
   const privateTerms = privateReferenceTerms(readFileSync(referencePath, 'utf8'));
   const baselineJudgment = referenceCandidateScore(baseline, privateTerms);
   const survivorJudgment = referenceCandidateScore(survivor, privateTerms);
-  const baselineScore = baselineJudgment.score;
-  const survivorScore = survivorJudgment.score;
-  const delta = Number((survivorScore - baselineScore).toFixed(2));
-  const verdict = verdictFor(delta, 1);
 
   return {
     judgeType: 'sealed_reference_keyword_benchmark',
     referenceStatus: 'withheld_reference_available',
     visibility: 'sealed_evaluator_only',
     contentIncluded: false,
-    verdict,
-    statement: {
-      doppl_wins: `Sealed reference benchmark favors the Doppl survivor by ${Math.abs(delta)} points.`,
-      baseline_wins: `Sealed reference benchmark favors the clean baseline by ${Math.abs(delta)} points.`,
+    ...comparativeAssay(baselineJudgment, survivorJudgment, 1, (abs) => ({
+      doppl_wins: `Sealed reference benchmark favors the Doppl survivor by ${abs} points.`,
+      baseline_wins: `Sealed reference benchmark favors the clean baseline by ${abs} points.`,
       tie: 'Sealed reference benchmark treats the clean baseline and Doppl survivor as effectively tied.',
-    }[verdict],
-    baseline: baselineJudgment,
-    survivor: survivorJudgment,
-    delta: {
-      score: delta,
-    },
+    })),
     factors: [
       'Evaluator reference was read only on the server.',
       'The response includes numeric coverage and generic factors, not evaluator answer text.',
