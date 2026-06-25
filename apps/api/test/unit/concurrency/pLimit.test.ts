@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { mapLimit, pLimit } from '../../../../src/runtime/concurrency/pLimit';
+import { mapLimit, pLimit } from '../../../src/concurrency/pLimit';
 
 /**
  * pLimit — a bounded-concurrency pool: never more than `n` tasks in flight, every task runs, results in

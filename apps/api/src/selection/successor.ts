@@ -6,6 +6,14 @@ import type { FusionParent } from './reproduction/parent-distance';
 import { reproduce } from './reproduction/reproduce';
 import type { SelectionEmitter } from './reproduction/degenerate';
 import { allocate } from './allocation';
+import { mapLimit } from '../concurrency/pLimit';
+
+/** Max offspring slots reproduced CONCURRENTLY. Reproduction emits NO energy.spent (rule #8) and each
+ * slot's RNG is position-deterministic (`slotSeed = seed + slot` → a fresh per-slot PRNG, never a shared
+ * sequential stream), so concurrency is execution-strategy only: emitted events + their advisory-lock-
+ * serialized `sequence` are unchanged (rule #2), and replay reconstructs from each child's persisted
+ * ReproductionEvent regardless of live order (rule #7). */
+const DEFAULT_REPRODUCE_CONCURRENCY = 6;
 
 /**
  * assembleSuccessor (P5.11, ARCHITECTURE.md §8/§5) — assembles the gen N+1 successor population.
@@ -147,16 +155,26 @@ export async function assembleSuccessor(
     if (fallbackAnchor !== undefined) schedule.push(fallbackAnchor);
   }
 
+  // Reproduce the scheduled slots CONCURRENTLY (bounded). `mapLimit` preserves INPUT (slot) order, and the
+  // per-slot seed is `input.seed + slot` (the loop index from mapLimit), so the offspring set is identical
+  // regardless of which fusion_synthesis call returns first — byte-faithful + replay-safe (rule #7).
+  const slotResults = await mapLimit(
+    schedule,
+    DEFAULT_REPRODUCE_CONCURRENCY,
+    async (anchor, slot) => {
+      const partners: SuccessorParent[] =
+        pool.length >= 2 ? [anchor, mostDistantPartner(anchor, pool)] : [anchor];
+      const slotSeed = (input.seed + slot) >>> 0;
+      const genPart = input.generationId === undefined ? {} : { generationId: input.generationId };
+      return reproduce(
+        { runId: input.runId, eligibleParents: partners, seed: slotSeed, ...genPart },
+        deps,
+      );
+    },
+  );
+
   const population: SuccessorChild[] = [];
-  for (const [slot, anchor] of schedule.entries()) {
-    const partners: SuccessorParent[] =
-      pool.length >= 2 ? [anchor, mostDistantPartner(anchor, pool)] : [anchor];
-    const slotSeed = (input.seed + slot) >>> 0;
-    const genPart = input.generationId === undefined ? {} : { generationId: input.generationId };
-    const result = await reproduce(
-      { runId: input.runId, eligibleParents: partners, seed: slotSeed, ...genPart },
-      deps,
-    );
+  for (const result of slotResults) {
     if (!result.zeroSurvivors) {
       population.push({ child: result.child, reproductionEvent: result.reproductionEvent });
     }

@@ -5,7 +5,7 @@ import { readRngSeed } from '../runtime';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { SeamContext, VerifySeam } from '../runtime/loop/generationLoop';
 import { runCheck } from '../check-runners/run-check';
-import { mapLimit } from '../runtime/concurrency/pLimit';
+import { mapLimit } from '../concurrency/pLimit';
 import { runCouncil } from './council/run-council';
 import { selectCriticMandates } from './council/rotation';
 import { runJudge } from './judge/judge-call';

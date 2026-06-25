@@ -30,7 +30,7 @@ import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 import { CandidateContent } from './candidateContent';
 import { CAPTURE_FIELD_MAX_BYTES, truncateCaptureField } from '../../event-store/truncate-capture';
-import { mapLimit } from '../concurrency/pLimit';
+import { mapLimit } from '../../concurrency/pLimit';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
