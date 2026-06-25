@@ -414,9 +414,13 @@ function MarkdownBlock({ text }: { text: string }) {
   );
 }
 
-function ArtifactMarkdownBlock({ text }: { text: string }) {
+function ArtifactMarkdownBlock({ artifactKey, text }: { artifactKey: string; text: string }) {
   const [evaluationOpen, setEvaluationOpen] = useState(false);
   const { main, evaluation } = splitEvaluationMarkdown(text);
+
+  useEffect(() => {
+    setEvaluationOpen(false);
+  }, [artifactKey]);
 
   return (
     <>
@@ -1079,7 +1083,9 @@ export function App() {
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
-          {activeReviewArtifact ? <ArtifactMarkdownBlock text={activeReviewArtifact.body} /> : null}
+          {activeReviewArtifact ? (
+            <ArtifactMarkdownBlock artifactKey={`${ratingTarget}:${activeArtifactValue}`} text={activeReviewArtifact.body} />
+          ) : null}
         </article>
 
         {discoveryContextText ? (

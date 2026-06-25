@@ -496,6 +496,50 @@ describe("App", () => {
     expect(screen.queryByText("next: null")).not.toBeInTheDocument();
   });
 
+  it("resets judge evaluation to collapsed when switching artifacts", async () => {
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Liability Inversion Protocol",
+      "",
+      "## Growth — Doppl",
+      "### Claim",
+      "First artifact body.",
+      "### Evaluation",
+      "#### Novelty +3",
+      "First hidden evaluation.",
+    ].join("\n");
+    evaluationFixture.cases[0].solutions[1].source_status = "imported";
+    evaluationFixture.cases[0].solutions[1].body = [
+      "# Telemetry API Utility Billing",
+      "",
+      "## Growth — Doppl",
+      "### Claim",
+      "Second artifact body.",
+      "### Evaluation",
+      "#### Novelty +4",
+      "Second hidden evaluation.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+    await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
+
+    expect(screen.getByText(/First Hidden Evaluation/)).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "cody-accident-economy-map");
+
+    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/First Hidden Evaluation/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Second Hidden Evaluation/)).not.toBeInTheDocument();
+  });
+
   it("collapses inline generated Evaluation labels by default", async () => {
     const evaluationFixture: CalibratorIndex = structuredClone(fixture);
     evaluationFixture.cases[0].solutions[0].body = [
