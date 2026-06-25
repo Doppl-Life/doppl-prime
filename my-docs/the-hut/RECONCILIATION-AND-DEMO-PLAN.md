@@ -59,12 +59,20 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    is now one `comparativeAssay(baseline, survivor, threshold, statements)` builder (SSOT; each judge
    supplies only its prose). `assayControl` stays separate by design (nullable `fitnessTotal`,
    `inconclusive`, threshold 3 — forcing it in would pollute the builder). Build green.
-   **(b) QUEUED — `server.ts` split, design validated** (file falls on clean block boundaries):
-   `server-http.ts` (1–290: types, `KernelHttpError`, parse/auth/env helpers, dashboard pages) →
-   `server-store.ts` (292–517: run reads + event/stream/health responses) → `server-runs.ts` (519–703:
-   `runFromRequestBody`, async runs, dashboard-case runner) → `server.ts` (705–807: router + `createServer`).
-   Imports leftward only, no cycles. Mechanical move + precise import wiring; do as a focused unit.
-   ▶ **NEXT: server split (b), then R4** (event adapter → dashboard) on the typed `RunEvent` union.
+   ✅ **(b) DONE — `server.ts` split** (807L → 4 modules, leftward imports, no cycles, green first pass):
+   `server-http.ts` (274: types, `KernelHttpError`, parse/auth/env helpers, dashboard pages) →
+   `server-store.ts` (231: run reads + event/stream/health responses) → `server-runs.ts` (220:
+   `runFromRequestBody`, async runs, dashboard-case runner) → `server.ts` (128: router + `createServer`).
+   `pnpm build` green; only `handleKernelHttpRequest` (still in `server.ts`) is imported externally (the test).
+   ✅ **R4 DONE — event adapter.** Key finding: melissa's client `RunEventEnvelope` (per her SSE
+   `event-bridge.ts`) is `{ id, sequence, type, actor, occurredAt, runId, payload, schemaVersion }` + optional
+   `candidateId`/`agenomeId`/`generationId`/`correlationId` — **nearly identical to dalton's `RunEvent`**,
+   which `normalizeRunEvent` already fills. So the adapter is genuinely *thin*: `dashboard-envelope.ts` →
+   `toDashboardEnvelope(event): DashboardEnvelope`, a pure/total projection guaranteeing the required fields
+   and including correlation ids only when present. Wired into both SSE responses (`server-store.ts`); made
+   `eventsAfter` generic to preserve `RunEvent`. The envelope keeps `payload` + adds top-level ids, so dalton's
+   current `App.jsx` keeps working. 2 new tests, `pnpm build` green (120/120). The 26→~20 "drop unmapped" is
+   the *reducer's* behavior (R5), not the adapter — types pass through.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin
