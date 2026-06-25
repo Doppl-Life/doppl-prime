@@ -324,9 +324,13 @@ export function compileProposalNodes(
 ): ProposalNodeArtifact[] {
   const { idFactory } = options;
   const kernel = options.kernel || 'dalton';
-  const rootId = idFactory ? idFactory() : slugId(cleanTitle(run.caseStudy.title));
-  const recoveryId = idFactory ? idFactory() : slugId(run.problemRecovery.title);
-  const dopplId = idFactory ? idFactory() : slugId(run.fusion?.child.title ?? 'doppl');
+  // Seed each slug's hash with its stage so the three stages of one run can never collide on a
+  // shared title (a weak model can echo the case title into the recovery title).
+  const stageSlug = (stage: ProposalNodeStage, title: string): string =>
+    slugId(title, `${stage}\n${title}`);
+  const rootId = idFactory ? idFactory() : stageSlug('case_study', cleanTitle(run.caseStudy.title));
+  const recoveryId = idFactory ? idFactory() : stageSlug('problem_recovery', run.problemRecovery.title);
+  const dopplId = idFactory ? idFactory() : stageSlug('doppl', run.fusion?.child.title ?? 'doppl');
   const nodes = [
     caseStudyNode(run, rootId),
     problemRecoveryNode(run, { self: recoveryId, root: rootId }, { kernel }),

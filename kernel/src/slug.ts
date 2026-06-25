@@ -8,12 +8,15 @@ export function shortHash(value: string): string {
   return h.toString(16).padStart(8, '0').slice(0, 8);
 }
 
-export function slugId(name: string): string {
+// `seed` controls the hash suffix; it defaults to `name`. Pass a distinct seed to disambiguate two
+// nodes that share a name — e.g. a run's case_study and problem_recovery when a weak model echoes the
+// title — so each still resolves to its own stable vault path instead of overwriting the other.
+export function slugId(name: string, seed: string = name): string {
   const slug =
     (name || 'untitled')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 60) || 'untitled';
-  return `${slug}-${shortHash(name)}`;
+  return `${slug}-${shortHash(seed)}`;
 }

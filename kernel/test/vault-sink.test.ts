@@ -19,19 +19,24 @@ async function fixtureRun() {
   });
 }
 
-test('slugId is deterministic and link-safe', () => {
+test('slugId is deterministic, link-safe, and seed-disambiguable', () => {
   assert.equal(slugId('Hello, World!'), slugId('Hello, World!'));
   assert.match(slugId('Sealed Facility / Staged Crisis'), /^[a-z0-9-]+-[0-9a-f]{8}$/);
+  // a distinct seed disambiguates same-named nodes; default seed is the name itself.
+  assert.notEqual(slugId('Same Title', 'a'), slugId('Same Title', 'b'));
+  assert.equal(slugId('Same Title'), slugId('Same Title', 'Same Title'));
 });
 
-test('default node ids are slugs derived from titles (not UUIDs)', async () => {
+test('default node ids are unique slugs derived from titles (not UUIDs)', async () => {
   const run = await fixtureRun();
   const nodes = compileProposalNodes(run);
   for (const node of nodes) {
     assert.match(node.id, /^[a-z0-9-]+-[0-9a-f]{8}$/, `${node.stage} id should be a slug`);
   }
-  assert.equal(nodes[0]!.id, slugId(cleanTitle(run.caseStudy.title)));
   assert.ok(!nodes[0]!.id.startsWith('problem-statement-'), 'framing prefix stripped from slug');
+  assert.equal(new Set(nodes.map((node) => node.id)).size, nodes.length, 'node ids are unique across stages');
+  const caseSlugText = nodes[0]!.id.replace(/-[0-9a-f]{8}$/, '');
+  assert.equal(caseSlugText, slugId(cleanTitle(run.caseStudy.title)).replace(/-[0-9a-f]{8}$/, ''));
 });
 
 test('writeFlowNodes writes canonical flow/<slug>/<slug>.md layout', async () => {
