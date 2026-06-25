@@ -576,6 +576,7 @@ textarea {
 
 .slider-row {
   align-self: center;
+  --slider-thumb-radius: 9px;
   display: grid;
   gap: 6px;
 }
@@ -622,7 +623,7 @@ textarea {
 }
 
 .slider-scale span:nth-child(1) {
-  left: 0;
+  left: var(--slider-thumb-radius);
 }
 
 .slider-scale span:nth-child(2) {
@@ -630,7 +631,7 @@ textarea {
 }
 
 .slider-scale span:nth-child(3) {
-  left: 100%;
+  left: calc(100% - var(--slider-thumb-radius));
 }
 
 .reviewer-rating-note {
