@@ -238,7 +238,7 @@ export type RunEvent = {
   generationId?: string;
   agenomeId?: string;
   candidateId?: string;
-  type: RunEventType | string;
+  type: RunEventType;
   sequence?: number;
   occurredAt?: string;
   actor?: RunEventActor;

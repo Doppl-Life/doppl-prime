@@ -7,11 +7,12 @@ import {
   RUN_EVENT_TYPES,
   type RunEvent,
   type RunEventActor,
+  type RunEventType,
 } from './contracts.ts';
 
 export type EventRecorder = {
   events: RunEvent[];
-  push(type: string, payload: Record<string, unknown>, options?: EventRecorderPushOptions): RunEvent;
+  push(type: RunEventType, payload: Record<string, unknown>, options?: EventRecorderPushOptions): RunEvent;
 };
 
 export type EventRecorderListener = (event: RunEvent) => void;
