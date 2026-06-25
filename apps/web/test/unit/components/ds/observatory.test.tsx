@@ -7,6 +7,8 @@ import {
   CandidateCard,
   HealthIndicator,
   RunEnergyGauge,
+  isAtBottom,
+  STICK_BOTTOM_SLOP_PX,
 } from '../../../../src/components/ds';
 
 afterEach(() => cleanup());
@@ -63,8 +65,8 @@ describe('ds/cards + observatory — composed panel vocabulary', () => {
     expect(screen.getByText('eligible')).toBeTruthy(); // StatusBadge composed in
   });
 
-  // spec(§12): ActivityTicker renders the event feed newest-first by sequence; empty → an honest
-  // "waiting" placeholder (never a blank panel).
+  // spec(§12): ActivityTicker renders the event feed ASCENDING by sequence (newest at the bottom);
+  // empty → an honest "waiting" placeholder (never a blank panel).
   it('test_activity_ticker_feed_and_empty', () => {
     render(
       <ActivityTicker
@@ -78,6 +80,82 @@ describe('ds/cards + observatory — composed panel vocabulary', () => {
     cleanup();
     render(<ActivityTicker events={[]} />);
     expect(screen.getByText(/waiting for events/i)).toBeTruthy();
+  });
+
+  // Ascending order: oldest renders FIRST, newest LAST (so the live feed flows top→bottom and the
+  // newest event lands at the bottom where auto-scroll keeps it visible). DOM order is asserted by the
+  // rendered #sequence stamps' document position — NOT by re-sorting on occurredAt (rule #2).
+  it('test_activity_ticker_renders_ascending_newest_at_bottom', () => {
+    const { container } = render(
+      <ActivityTicker
+        events={[
+          { sequence: 1, type: 'run.started', phrase: 'first' },
+          { sequence: 2, type: 'agenome.spawned', phrase: 'middle' },
+          { sequence: 3, type: 'fitness.scored', phrase: 'last' },
+        ]}
+      />,
+    );
+    const stamps = Array.from(container.querySelectorAll('span')).filter((s) =>
+      /^#\d+$/.test(s.textContent ?? ''),
+    );
+    expect(stamps.map((s) => s.textContent)).toEqual(['#1', '#2', '#3']);
+  });
+
+  // De-truncation: the FULL list deriveTickerEvents returns is rendered (the old hard cap of 12 is
+  // gone). 30 events → 30 rows.
+  it('test_activity_ticker_renders_full_untruncated_list', () => {
+    const events = Array.from({ length: 30 }, (_, i) => ({
+      sequence: i + 1,
+      type: 'energy.spent',
+      phrase: `evt ${i + 1}`,
+    }));
+    const { container } = render(<ActivityTicker events={events} />);
+    const stamps = Array.from(container.querySelectorAll('span')).filter((s) =>
+      /^#\d+$/.test(s.textContent ?? ''),
+    );
+    expect(stamps).toHaveLength(30);
+    expect(stamps[0]?.textContent).toBe('#1');
+    expect(stamps[29]?.textContent).toBe('#30');
+  });
+
+  // Soft DOM cap: an explicit small maxRows keeps the LAST N (newest) events, still ascending.
+  it('test_activity_ticker_soft_cap_keeps_newest_ascending', () => {
+    const events = Array.from({ length: 10 }, (_, i) => ({
+      sequence: i + 1,
+      type: 'energy.spent',
+      phrase: `evt ${i + 1}`,
+    }));
+    const { container } = render(<ActivityTicker events={events} maxRows={3} />);
+    const stamps = Array.from(container.querySelectorAll('span')).filter((s) =>
+      /^#\d+$/.test(s.textContent ?? ''),
+    );
+    expect(stamps.map((s) => s.textContent)).toEqual(['#8', '#9', '#10']);
+  });
+
+  // stickToBottom predicate (pure): at/near the bottom → keep auto-following (true); scrolled up beyond
+  // the slop → pause auto-follow (false). jsdom has no layout engine, so the rule is tested as a pure
+  // helper over injected scroll metrics.
+  it('test_stick_to_bottom_predicate', () => {
+    // Exactly at the bottom.
+    expect(isAtBottom({ scrollHeight: 1000, scrollTop: 800, clientHeight: 200 })).toBe(true);
+    // Within slop of the bottom.
+    expect(
+      isAtBottom({
+        scrollHeight: 1000,
+        scrollTop: 800 - (STICK_BOTTOM_SLOP_PX - 1),
+        clientHeight: 200,
+      }),
+    ).toBe(true);
+    // Scrolled up beyond the slop → paused.
+    expect(
+      isAtBottom({
+        scrollHeight: 1000,
+        scrollTop: 800 - (STICK_BOTTOM_SLOP_PX + 50),
+        clientHeight: 200,
+      }),
+    ).toBe(false);
+    // Top of a tall feed → paused.
+    expect(isAtBottom({ scrollHeight: 1000, scrollTop: 0, clientHeight: 200 })).toBe(false);
   });
 
   // spec(§12): HealthIndicator surfaces the runtime status + the continue-vs-switch read.

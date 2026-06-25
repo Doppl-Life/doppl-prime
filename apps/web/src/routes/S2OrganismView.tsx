@@ -50,17 +50,40 @@ function bannerMode(mode: RunMode, runStatus: string | undefined): ModeBannerMod
   return 'live';
 }
 
+// Cockpit containment: the run view is clamped to the viewport so streaming content NEVER grows the
+// page. The AppShell header is sticky — its height = --space-3 (top pad) + --space-3 (bottom pad) +
+// --text-h3-lh (wordmark line); the hairline border is sub-pixel-negligible. The main fills the rest of
+// the viewport, and each pane scrolls INDEPENDENTLY (min-height:0 unlocks the grid track so children
+// overflow internally rather than the page). Token-only calc — no raw lengths (DS rule 3/5 adherence).
+const APP_HEADER_H = 'calc(var(--space-3) + var(--space-3) + var(--text-h3-lh))';
 const shell: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(auto, 20rem) minmax(0, 1fr) minmax(auto, 26rem)',
+  gridTemplateRows: 'auto auto 1fr',
   gap: 'var(--space-4)',
   padding: 'var(--space-5)',
-  alignItems: 'start',
+  alignItems: 'stretch',
+  height: `calc(100vh - ${APP_HEADER_H})`,
+  minHeight: 0,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
   fontFamily: 'var(--font-ui)',
   color: 'var(--fg-default)',
 };
-const leftRail: CSSProperties = { display: 'grid', gap: 'var(--space-4)', alignContent: 'start' };
-const center: CSSProperties = { display: 'grid', gap: 'var(--space-4)' };
+const leftRail: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-4)',
+  minHeight: 0,
+  overflowY: 'auto',
+};
+const center: CSSProperties = {
+  display: 'grid',
+  gap: 'var(--space-4)',
+  alignContent: 'start',
+  minHeight: 0,
+  overflowY: 'auto',
+};
 const railHeading: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-label)',
@@ -78,10 +101,15 @@ const chartStrip: CSSProperties = {
   gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))',
   gap: 'var(--space-4)',
 };
-// The ActivityTicker fills its container (height:100%); bound it so the live feed scrolls in the rail.
-// FV.9 design-review owns final placement/legibility — FV.6 lands it wired + rendering.
-const tickerWrap: CSSProperties = { height: '20rem' };
+// The ActivityTicker fills its container (height:100%); flex:1 + min-height:0 lets it grow to fill the
+// left rail and scroll its live feed INTERNALLY (no fixed 20rem box, no page growth). FV.9 design-review
+// owns final placement/legibility — FV.6 lands it wired + rendering.
+const tickerWrap: CSSProperties = { flex: 1, minHeight: '12rem', display: 'flex' };
 const scrubberRow: CSSProperties = { gridColumn: '1 / -1', display: 'flex' };
+// Pane placement: the banner (+ optional scrubber) live in the auto rows; the three panes share the
+// 1fr row so they fill the remaining viewport and each scrolls independently.
+const paneRow: CSSProperties = { gridRow: 3 };
+const inspectorPane: CSSProperties = { gridRow: 3, minHeight: 0, overflowY: 'auto' };
 
 export function S2OrganismView({
   runId,
@@ -136,7 +164,7 @@ export function S2OrganismView({
         </div>
       )}
 
-      <section aria-label="Organism left rail" style={leftRail}>
+      <section aria-label="Organism left rail" style={{ ...leftRail, ...paneRow }}>
         <h3 style={railHeading}>Run controls</h3>
         <StopControl runId={runId} store={obs.store} runClient={runClient} />
         <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
@@ -148,7 +176,7 @@ export function S2OrganismView({
         </div>
       </section>
 
-      <section style={center}>
+      <section style={{ ...center, ...paneRow }}>
         <LineageGraph
           projection={obs.lineage ?? emptyLineage(runId)}
           events={panelEvents}
@@ -160,18 +188,20 @@ export function S2OrganismView({
         </div>
       </section>
 
-      <InspectorDrawer
-        selectedId={obs.selectedNode?.dataRef ?? null}
-        onClose={() => obs.setSelectedNode(null)}
-      >
-        <NodeInspectorContent
-          selectedNode={obs.selectedNode}
-          runId={runId}
-          runClient={runClient}
-          events={panelEvents}
-          lineage={obs.lineage}
-        />
-      </InspectorDrawer>
+      <div style={inspectorPane}>
+        <InspectorDrawer
+          selectedId={obs.selectedNode?.dataRef ?? null}
+          onClose={() => obs.setSelectedNode(null)}
+        >
+          <NodeInspectorContent
+            selectedNode={obs.selectedNode}
+            runId={runId}
+            runClient={runClient}
+            events={panelEvents}
+            lineage={obs.lineage}
+          />
+        </InspectorDrawer>
+      </div>
     </main>
   );
 }

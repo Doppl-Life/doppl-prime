@@ -82,7 +82,16 @@ const trust: CSSProperties = {
   fontSize: 'var(--text-caption)',
   color: 'var(--success)',
 };
-const grid: CSSProperties = { display: 'grid', gap: 'var(--space-5)' };
+// Responsive panel grid — the ~10 panels flow into auto-fit columns (min 28rem, max 1fr) instead of an
+// endless single-column stack, so the operator shell stays scannable. The panels themselves are
+// unchanged (same panelCard styling); only their arrangement is gridded. `align-items: start` keeps
+// each card sized to its own content rather than stretching to the tallest row neighbor.
+const grid: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(28rem, 100%), 1fr))',
+  alignItems: 'start',
+  gap: 'var(--space-5)',
+};
 const panelCard: CSSProperties = {
   display: 'grid',
   gap: 'var(--space-2)',

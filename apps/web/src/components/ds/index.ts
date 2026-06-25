@@ -24,7 +24,7 @@ export type { CandidateCardProps, CandidateSummary } from './CandidateCard';
 export { AgenomeCard } from './AgenomeCard';
 export type { AgenomeCardProps, AgenomeSummary } from './AgenomeCard';
 
-export { ActivityTicker } from './ActivityTicker';
+export { ActivityTicker, isAtBottom, STICK_BOTTOM_SLOP_PX } from './ActivityTicker';
 export type { ActivityTickerProps, TickerEvent } from './ActivityTicker';
 export { HealthIndicator } from './HealthIndicator';
 export type { HealthIndicatorProps, HealthStatus, HealthSummary } from './HealthIndicator';
