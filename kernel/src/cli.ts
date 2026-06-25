@@ -1,5 +1,7 @@
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
+import { compileProposalNodes } from './node-compiler.ts';
+import { writeFlowNodes } from './vault-sink.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { createModelGenerationProviders } from './generation-providers.ts';
 import {
@@ -17,6 +19,7 @@ export type KernelCliArgs = {
   generations: number;
   evolutionBudget: { maxUnits: number };
   outDir: string;
+  vault: string;
   proofBoardDir: string;
   publishDir: string;
   replayModelCallsPath?: string;
@@ -33,6 +36,7 @@ export const defaultKernelArgs: KernelCliArgs = {
   generations: 1,
   evolutionBudget: { maxUnits: 1 },
   outDir: 'kernel/out/vault',
+  vault: '../agarden',
   proofBoardDir: 'kernel/out/proof-board',
   publishDir: 'published/kernel',
 };
@@ -78,6 +82,9 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
       index += 1;
     } else if (flag === '--out-dir') {
       args.outDir = readFlagValue(argv, index, flag);
+      index += 1;
+    } else if (flag === '--vault') {
+      args.vault = readFlagValue(argv, index, flag);
       index += 1;
     } else if (flag === '--proof-board-dir') {
       args.proofBoardDir = readFlagValue(argv, index, flag);
@@ -134,6 +141,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     liveGenerationProvidersFromCliArgs(cliArgs) || (await generationProvidersFromCliArgs(cliArgs));
   const run = await runKernel({ ...cliArgs, generationProviders });
   const manifest = await exportRunToVault(run, cliArgs.outDir);
+  const vaultFiles = writeFlowNodes(cliArgs.vault, compileProposalNodes(run));
   const proofBoard = await writeProofBoard(run, cliArgs.proofBoardDir);
   console.log(
     JSON.stringify(
@@ -146,6 +154,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         budget: run.budget,
         child: run.fusion?.child.id || null,
         proofBoard,
+        vault: cliArgs.vault,
+        vaultFiles,
         files: manifest.files,
       },
       null,

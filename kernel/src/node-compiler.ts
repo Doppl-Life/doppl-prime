@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import type { KernelRun } from './contracts.ts';
+import { slugId } from './slug.ts';
 
 export type ProposalNodeStage = 'case_study' | 'problem_recovery' | 'doppl';
 
@@ -309,11 +309,11 @@ export function compileProposalNodes(
   run: KernelRun,
   options: ProposalNodeCompileOptions = {},
 ): ProposalNodeArtifact[] {
-  const idFactory = options.idFactory || randomUUID;
+  const { idFactory } = options;
   const kernel = options.kernel || 'dalton';
-  const rootId = idFactory();
-  const recoveryId = idFactory();
-  const dopplId = idFactory();
+  const rootId = idFactory ? idFactory() : slugId(run.caseStudy.title);
+  const recoveryId = idFactory ? idFactory() : slugId(run.problemRecovery.title);
+  const dopplId = idFactory ? idFactory() : slugId(run.fusion?.child.title ?? 'doppl');
   const nodes = [
     caseStudyNode(run, rootId),
     problemRecoveryNode(run, { self: recoveryId, root: rootId }, { kernel }),
