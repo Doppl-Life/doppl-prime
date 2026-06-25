@@ -91,6 +91,7 @@ type TestCaps = {
   maxPopulation?: number;
   energyBudget?: number;
   wallClockTimeoutMs?: number;
+  maxToolCalls?: number;
 };
 function loadTestConfig(caps: TestCaps) {
   return loadConfig({ env: VALID_ENV, fileSources: { caps } });
@@ -851,6 +852,55 @@ describe('runGenerationLoop (P3.10e — kill/abort + drain + latching halt)', ()
     );
     expect(fake.appendedTypes()).toContain('energy_exhausted'); // energyBudget breach terminal
     expect(fake.appendedTypes()).not.toContain('generation.started'); // no productive work scheduled
+  });
+
+  test('maxToolCalls_inline_cap_breach_halts_over_budget_batch', async () => {
+    // spec(rule #1): maxToolCalls is a KERNEL-enforced cap (never prompt-enforced). The loop reserves a
+    // tool-call slot BEFORE relaying/debiting each surfaced tool call; the (cap+1)th is DENIED → cap_breach
+    // kill (running→failed = run.failed). EXACTLY `cap` tool calls reach the log + debit energy — no
+    // over-budget tool is recorded; the GenerationGateway's own budget hint is backstopped here (#1).
+    const fake = makeFakeEventStore();
+    const result = await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [
+            { toolName: 'web_search' },
+            { toolName: 'fetch_url' },
+            { toolName: 'x_search' },
+          ],
+        }),
+        caps: { maxGenerations: 1, maxPopulation: 1, maxToolCalls: 2 },
+      }),
+    );
+    // exactly the cap — the 3rd (over-budget) tool call is denied, never relayed/finished.
+    expect(fake.rows.filter((r) => r.type === 'tool_call.started')).toHaveLength(2);
+    expect(fake.rows.filter((r) => r.type === 'tool_call.finished')).toHaveLength(2);
+    // success-only tool energy debits are likewise capped at 2 (rule #8) — no debit for the denied call.
+    expect(energyEventsOfType(fake, 'tool')).toHaveLength(2);
+    // the breach drains the run (cap_breach:maxToolCalls → run.failed).
+    expect(fake.appendedTypes()).toContain('run.failed');
+    expect(result.killSummary?.reason).toBe('cap_breach:maxToolCalls');
+  });
+
+  test('maxToolCalls_detectKill_halts_next_generation_when_exhausted', async () => {
+    // spec(rule #1): maxToolCalls is a consumed-resource cap (like energyBudget) — once the run has
+    // consumed its tool-call budget, the boundary detectKill (folding count(tool_call.finished)) halts the
+    // NEXT generation (cap_breach), even though the inline gate never tripped. gen-0 uses EXACTLY the cap
+    // (2 tools); gen-1 never starts.
+    const fake = makeFakeEventStore();
+    const result = await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: makeFakeGateway({
+          toolCalls: [{ toolName: 'web_search' }, { toolName: 'fetch_url' }],
+        }),
+        caps: { maxGenerations: 3, maxPopulation: 1, maxToolCalls: 2 },
+      }),
+    );
+    expect(fake.rows.filter((r) => r.type === 'tool_call.finished')).toHaveLength(2); // gen-0 within cap
+    expect(fake.rows.filter((r) => r.type === 'generation.started')).toHaveLength(1); // only gen-0 started
+    expect(result.killSummary?.reason).toBe('cap_breach:maxToolCalls');
   });
 
   test('wall_clock_breach_triggers_kill', async () => {

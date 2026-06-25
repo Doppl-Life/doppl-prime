@@ -390,14 +390,33 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     });
   };
 
+  // rule #1 — the run-wide maxToolCalls ledger. A tool call (a provider-surfaced research call the loop
+  // relays) is a CONSUMED resource like energy: the kernel — never a prompt — bounds it. Reserved inline
+  // (a synchronous reserve-slot BEFORE each tool relay/debit, below) so a tool-orchestrating gateway that
+  // over-produces is backstopped, AND folded into `detectKill` so an exhausted budget halts at the
+  // boundary (like energyBudget). `let` shared across concurrent agenome tasks; the reserve is atomic
+  // (no await between the read and the `+= 1`, same as `eventSeq`/`energySeq`).
+  let toolCallsConsumed = 0;
+
   // Full cap-set + operator-stop detection (rule #1, §5) — checked before scheduling new productive work.
   // operator-stop first, then the energyBudget fold over energy.spent ACTUAL (the deferred 10d→10e item),
+  // then the maxToolCalls fold over count(tool_call.finished) (a consumed-resource cap like energyBudget),
   // then the wall-clock deadline (injected now(), exclusive). The count caps bound the loop separately (10b).
   const detectKill = async (): Promise<KillTrigger | null> => {
     if (deps.operatorStop?.() === true) return { kind: 'operator_stop' };
     const log = await eventStore.readByRun(runId);
     if (cumulativeSpend(log, { kind: 'run', id: runId }) >= caps.energyBudget) {
       return { kind: 'cap_breach', dimension: 'energyBudget' };
+    }
+    // rule #1 — maxToolCalls fold: one `tool_call.finished` = one executed tool call (the authoritative
+    // count over the log). `>= cap` halts once the budget is exhausted (inclusive ceiling parity with the
+    // inline `enforceCap` gate); the inline gate is the real-time enforcer, this is the boundary backstop.
+    const toolCallsFinished = log.reduce(
+      (count, row) => (row.type === 'tool_call.finished' ? count + 1 : count),
+      0,
+    );
+    if (toolCallsFinished >= caps.maxToolCalls) {
+      return { kind: 'cap_breach', dimension: 'maxToolCalls' };
     }
     if (!enforceWallClock(now() - startedAt, caps).allowed) {
       return { kind: 'cap_breach', dimension: 'wallClockTimeoutMs' };
@@ -538,6 +557,17 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       );
       const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest);
       for (const toolCall of toolCalls ?? []) {
+        // rule #1 — RESERVE a maxToolCalls slot BEFORE relaying/debiting this tool call (the un-bypassable
+        // kernel enforcer; a tool-orchestrating gateway's own budget is a clamped HINT, this is the
+        // backstop). The capture+check+increment is SYNCHRONOUS — no await between reading
+        // `toolCallsConsumed` and its `+= 1` — so it is atomic under Node's single-threaded loop even
+        // across concurrent agenome tasks (same reasoning as `eventSeq`). The (cap+1)th call is DENIED:
+        // it is NOT relayed/finished/debited, and a cap_breach latches → the post-batch drain halts the run.
+        if (!enforceCap('maxToolCalls', toolCallsConsumed, 1, caps).allowed) {
+          killTriggerInBatch ??= { kind: 'cap_breach', dimension: 'maxToolCalls' };
+          break;
+        }
+        toolCallsConsumed += 1;
         // FB.7 — relay the actual query (started) + query/result (finished) as tool-call detail, each
         // TRUNCATED-WITH-MARKER under the §4 field budget (reuse FB.6's helper) so an oversized capture never
         // fails the payload ceiling; the append-path scrub then redacts any embedded secret (rule #4 reuse).
