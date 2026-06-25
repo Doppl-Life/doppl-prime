@@ -306,6 +306,38 @@ function makeDeps(
     ...(over.now !== undefined ? { now: over.now } : {}),
     ...(over.operatorStop !== undefined ? { operatorStop: over.operatorStop } : {}),
     ...(over.nextPopulation !== undefined ? { nextPopulation: over.nextPopulation } : {}),
+    ...(over.maxAgenomeConcurrency !== undefined
+      ? { maxAgenomeConcurrency: over.maxAgenomeConcurrency }
+      : {}),
+  };
+}
+
+/**
+ * A gateway that records the PEAK number of `generate` calls in flight simultaneously — proves agenomes
+ * generate CONCURRENTLY (peak > 1) vs serially (peak === 1). Each call holds an in-flight slot across a
+ * microtask turn so concurrent dispatch is observable; always returns a valid candidate.
+ */
+function concurrencyProbeGateway(): { gateway: GenerationGateway; peak: () => number } {
+  let inFlight = 0;
+  let peak = 0;
+  return {
+    peak: () => peak,
+    gateway: {
+      generate: async () => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5)); // hold the slot across a turn
+        inFlight -= 1;
+        return {
+          response: {
+            accepted: true,
+            validationResult: 'accepted',
+            output: CANDIDATE_CONTENT,
+            providerMeta: validProviderMeta,
+          },
+        };
+      },
+    },
   };
 }
 
@@ -325,6 +357,45 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
       'generation.reproducing',
       'generation.completed',
     ]);
+  });
+
+  test('agenomes_generate_concurrently_bounded_by_ceiling', async () => {
+    // The "agents all work at once" lever: with a 4-agenome population + concurrency ≥ 2, more than one
+    // generate is in flight at once (peak > 1). The candidate set is still complete + deterministic in
+    // population order (candidate ids c0..c3). Energy-debiting stage, so the ceiling is the rule-#1 lever.
+    const probe = concurrencyProbeGateway();
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        gateway: probe.gateway,
+        caps: { maxGenerations: 1, maxPopulation: 4 },
+        maxAgenomeConcurrency: 4,
+      }),
+    );
+    expect(probe.peak()).toBeGreaterThan(1); // genuinely concurrent (serial would peak at 1)
+    const created = fake.rows.filter((r) => r.type === 'candidate.created');
+    expect(created).toHaveLength(4);
+    // deterministic candidate ids in population order regardless of which generate resolved first.
+    expect(created.map((r) => r.candidateId).sort()).toEqual([
+      'run_loop-gen0-c0',
+      'run_loop-gen0-c1',
+      'run_loop-gen0-c2',
+      'run_loop-gen0-c3',
+    ]);
+  });
+
+  test('maxAgenomeConcurrency_1_keeps_generation_serial', async () => {
+    // The ceiling lever clamps to serial: with concurrency 1 only one generate is ever in flight (peak 1).
+    const probe = concurrencyProbeGateway();
+    await runGenerationLoop(
+      makeDeps({
+        gateway: probe.gateway,
+        caps: { maxGenerations: 1, maxPopulation: 4 },
+        maxAgenomeConcurrency: 1,
+      }),
+    );
+    expect(probe.peak()).toBe(1);
   });
 
   test('candidates_produced_bounded_by_maxPopulation', async () => {
@@ -1640,19 +1711,23 @@ describe('runGenerationLoop (PD.10 commit 2 — generation output validation, §
  * candidate / reproduction), draining the current generation + terminalizing run.stopped.
  */
 describe('runGenerationLoop — rule #1 in-loop cap + kill enforcement (run 6b714273 regressions)', () => {
-  // BUG 2 — a stop latched mid-generation (after generation.started, during candidate production) halts the
-  // loop WITHIN the generation: NO further candidate.created after the stop, and run.stopped is emitted —
-  // even though only ONE generation is configured (the pre-fix loop never re-checked inside a generation,
-  // so a single-generation runaway never saw the stop until a boundary that never came).
+  // BUG 2 — a stop latched mid-generation (after generation.started, during candidate production) is
+  // observed WITHIN that one bounded generation step and halts the run: run.stopped is emitted and NO
+  // reproduction runs — even though only ONE generation is configured (the pre-fix loop never re-checked
+  // inside a generation, so a single-generation runaway never saw the stop until a boundary that never
+  // came). NOTE (concurrency): agenomes now generate CONCURRENTLY, so the bounded step is the population
+  // BATCH (not the per-agenome step) — the in-flight batch finishes its appends, then the post-batch kill
+  // poll observes the stop and halts before any verify/score/reproduce (slice-atomic: in-flight work
+  // completes, no NEW phase proceeds). The rule-#1 guarantee is unchanged: a set stop is observed within
+  // one bounded step and the run cannot run away (here: no reproduction, run.stopped terminal).
   test('kill_set_mid_generation_halts_within_one_operation', async () => {
     const fake = makeFakeEventStore();
-    let createdSoFar = 0;
     let stopLatched = false;
     // operatorStop flips true the instant the FIRST candidate is persisted — i.e. mid-gen-0, AFTER
-    // generation.started, BEFORE the loop would otherwise produce the second agenome's candidate.
+    // generation.started. Under concurrency the batch may already be in flight; the post-batch poll catches it.
     const operatorStop = (): boolean => {
       if (stopLatched) return true;
-      createdSoFar = fake.rows.filter((r) => r.type === 'candidate.created').length;
+      const createdSoFar = fake.rows.filter((r) => r.type === 'candidate.created').length;
       if (createdSoFar >= 1) {
         stopLatched = true;
         return true;
@@ -1669,11 +1744,12 @@ describe('runGenerationLoop — rule #1 in-loop cap + kill enforcement (run 6b71
       }),
     );
     const created = fake.rows.filter((r) => r.type === 'candidate.created');
-    // HALTED within the generation: the loop stopped after the first candidate (≤ a small bounded number,
-    // NOT all 4) — the stop was observed between operations, not deferred to a generation boundary.
-    expect(created.length).toBeLessThan(4);
+    // The in-flight batch produced candidates (work happened) but is BOUNDED by the population (≤ 4) — it
+    // never spilled into a second generation or reproduction.
     expect(created.length).toBeGreaterThanOrEqual(1);
-    // the stop was honored → run.stopped terminal, and reproduction never ran (no offspring after the halt).
+    expect(created.length).toBeLessThanOrEqual(4);
+    // THE rule-#1 GUARANTEE: the stop was observed within the one bounded generation step → run.stopped
+    // terminal, and reproduction NEVER ran (the run was halted before the reproduce phase).
     expect(fake.appendedTypes()).toContain('run.stopped');
     expect(fake.appendedTypes()).not.toContain('agenome.reproduced');
     expect(fake.appendedTypes()).not.toContain('agenome.fused');

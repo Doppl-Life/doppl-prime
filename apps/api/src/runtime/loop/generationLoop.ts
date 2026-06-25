@@ -30,10 +30,17 @@ import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 import { CandidateContent } from './candidateContent';
 import { CAPTURE_FIELD_MAX_BYTES, truncateCaptureField } from '../../event-store/truncate-capture';
+import { mapLimit } from '../concurrency/pLimit';
 
 /** Nominal pre-call llm token forecast for the energy ESTIMATE (a real forecast is a future refinement;
  * the reconciled `actual` derives from the REAL providerMeta usage, never this estimate — rule #8). */
 const LLM_EXPECTED_TOKENS = 1000;
+
+/** Default max agenomes GENERATING concurrently within one generation (the user-facing "agents all work
+ * at once" lever). Population generation is the only energy-debiting stage, so the per-batch ceiling is
+ * additionally clamped to the remaining-energy headroom (rule #1 — the kernel kill stays the authoritative
+ * cap enforcer; the ceiling is a clamped hint like `spawnBudget`). Tune via `GenerationLoopDeps`. */
+const DEFAULT_AGENOME_CONCURRENCY = 6;
 
 /**
  * PD.10 (rule #5 / §14) — the FIXED, trusted framing appended to the agenome's systemPrompt for generation.
@@ -214,6 +221,9 @@ export interface GenerationLoopDeps {
   readonly nextPopulation?: (
     args: NextPopulationArgs,
   ) => readonly Agenome[] | Promise<readonly Agenome[]>;
+  /** Max agenomes generating CONCURRENTLY within a generation (default `DEFAULT_AGENOME_CONCURRENCY`). The
+   *  effective ceiling is further clamped to the remaining-energy headroom each generation (rule #1). */
+  readonly maxAgenomeConcurrency?: number;
 }
 
 export interface GenerationLoopResult {
@@ -395,6 +405,22 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     return null;
   };
 
+  // The per-generation agenome-generation concurrency ceiling (rule #1). The configured cap is clamped to
+  // the population size AND the remaining-ENERGY headroom: `floor(remaining / estPerLlmCall)` — so a batch
+  // never STARTS more llm calls than the budget can pay for (the kernel kill stays the authoritative
+  // enforcer; this ceiling is a clamped hint, like `spawnBudget`). `max(1, …)` guarantees forward progress.
+  const agenomeConcurrencyCeiling = async (populationSize: number): Promise<number> => {
+    const configured = deps.maxAgenomeConcurrency ?? DEFAULT_AGENOME_CONCURRENCY;
+    const log = await eventStore.readByRun(runId);
+    const remaining = caps.energyBudget - cumulativeSpend(log, { kind: 'run', id: runId });
+    const estPerCall = estimateEnergy(
+      { eventType: 'llm', expectedTokens: LLM_EXPECTED_TOKENS },
+      config.costMap,
+    );
+    const energyHeadroom = estPerCall > 0 ? Math.floor(remaining / estPerCall) : populationSize;
+    return Math.max(1, Math.min(configured, populationSize, energyHeadroom));
+  };
+
   // BUG 2 (run 6b714273) — IN-LOOP kill poll between operations (rule #1: a set kill HALTS scheduling within
   // one bounded step). The boundary check (top of each generation) is too coarse: a stop latched DURING a
   // generation's work — between agenome spawns / candidate generations / before reproduction — was not seen
@@ -466,23 +492,40 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     status = transitionGenerationOrThrow(status, 'running');
     await appendEvent('generation.started', { generationId, index: g }, { generationId });
 
-    // Produce candidates per agenome. Each agenome activates (seeded→active, guard-validated) to generate;
-    // a gateway REJECT drives it active→failed + appends `agenome.failed` (the kernel-026 sv5 event's FIRST
-    // emitter, the authoritative per-agenome failure record); an ACCEPT yields a candidate.created. Tool
-    // calls are relayed verbatim (no energy debit — markers, §4/§12). [provider_call_failed + energy = 10d.]
-    const candidates: CandidateIdea[] = [];
-    const candidateAgenome = new Map<string, Agenome>();
-    const failedAgenomeIds: string[] = [];
-    let aborted = false; // set by an IN-LOOP kill (BUG 2) — drains the current generation + halts scheduling.
-    for (let a = 0; a < population.length; a += 1) {
-      // BUG 2 — poll the kill BEFORE generating each agenome's candidate so a stop latched mid-generation
-      // halts the loop within one bounded step (no further candidates after the stop). The current
-      // generation is `running` here → drained to generation_failed; the run terminalizes per the trigger.
-      if (await maybeKillInLoop({ id: generationId, status: 'running' })) {
-        aborted = true;
-        break;
+    // Produce candidates per agenome — CONCURRENTLY (the user-facing "agents all work at once"). Each
+    // agenome activates (seeded→active, guard-validated) to generate; a gateway REJECT drives it
+    // active→failed + appends `agenome.failed` (the kernel-026 sv5 event's FIRST emitter, the authoritative
+    // per-agenome failure record); an ACCEPT yields a candidate.created. Tool calls are relayed verbatim (no
+    // energy debit — markers, §4/§12). [provider_call_failed + energy = 10d.]
+    //
+    // CONCURRENCY SAFETY: population generation is the ONLY energy-debiting stage, so the fan-out is bounded
+    // (rule #1) — the per-batch ceiling is clamped to the remaining-ENERGY headroom (a batch never STARTS
+    // more llm calls than the budget can pay for), and each task re-checks `detectKill` before its expensive
+    // generate so later waves observe earlier waves' debits (overshoot bounded to ~ceiling; the kernel kill
+    // at the generation boundary stays the AUTHORITATIVE enforcer). Event-ID minting (`eventSeq`/`energySeq`)
+    // is collision-free under this async concurrency: the id-build + increment is SYNCHRONOUS (no await
+    // between read and `+= 1`), so Node's single-threaded loop runs each atomically. Append ORDER interleaves
+    // but every event still gets a unique advisory-lock-serialized `sequence` (rule #2). The candidate id is
+    // the deterministic `${generationId}-c${a}` (population index, NOT completion order), and `mapLimit`
+    // returns results in INPUT order, so the candidate set fed downstream is order-stable regardless of which
+    // agenome's provider call returns first (keeps the score seam's comparison-set accumulation deterministic).
+    type AgenomeOutcome =
+      | { readonly kind: 'candidate'; readonly candidate: CandidateIdea; readonly agenome: Agenome }
+      | { readonly kind: 'failed'; readonly agenomeId: string }
+      | { readonly kind: 'skipped' }; // killed before this agenome generated (budget/stop)
+
+    let killTriggerInBatch: KillTrigger | null = null;
+
+    const processAgenome = async (agenome: Agenome, a: number): Promise<AgenomeOutcome> => {
+      // Re-check the kill before the expensive generate. A latched stop / exhausted budget short-circuits
+      // this (and every queued) agenome; later waves see earlier waves' energy.spent debits (rule #1).
+      if (killTriggerInBatch !== null) return { kind: 'skipped' };
+      const trigger = await detectKill();
+      if (trigger !== null) {
+        killTriggerInBatch ??= trigger;
+        return { kind: 'skipped' };
       }
-      const agenome = population[a]!;
+
       transitionAgenomeOrThrow('seeded', 'active'); // the agenome activates to generate (guard-validated)
       // FB.4 — thread the per-run generationBias dial into the population_generator request (band fragment +
       // clamped temperature). Captured in a var so the EXACT executed samplingParams are recorded into the
@@ -549,13 +592,12 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         }
         // 10c: the agenome fails (active→failed terminal).
         transitionAgenomeOrThrow('active', 'failed');
-        failedAgenomeIds.push(agenome.id);
         await appendEvent(
           'agenome.failed',
           { agenomeId: agenome.id, reason: response.rejection?.reason ?? 'rejected' },
           { generationId, agenomeId: agenome.id },
         );
-        continue;
+        return { kind: 'failed', agenomeId: agenome.id };
       }
       const candidateId = `${generationId}-c${a}`;
       // Kernel assigns id/runId/generationId/agenomeId/status; the model owns the content. The append path
@@ -568,8 +610,6 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         agenomeId: agenome.id,
         status: 'created',
       };
-      candidates.push(candidatePayload as unknown as CandidateIdea);
-      candidateAgenome.set(candidateId, agenome);
       await appendEvent('candidate.created', candidatePayload, {
         generationId,
         agenomeId: agenome.id,
@@ -578,8 +618,8 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       // FB.6 — capture the SUCCESSFUL generation call's raw response as deep telemetry (§4/§5/§6). The
       // opaque output is serialized + TRUNCATED-WITH-MARKER under the field budget BEFORE append, so a
       // large capture never fails the §4 ceiling; the append-path scrub then redacts any embedded secret
-      // (rule #4 reuse — no new scrub). A FAILED call took the `continue` above → no capture (rule #8 — a
-      // capture is not a productive spend, it rides the already-debited call). Replay reads it (rule #7).
+      // (rule #4 reuse — no new scrub). A FAILED call returned above → no capture (rule #8 — a capture is
+      // not a productive spend, it rides the already-debited call). Replay reads it (rule #7).
       const rawCapture = truncateCaptureField(
         JSON.stringify(response.output ?? null),
         CAPTURE_FIELD_MAX_BYTES,
@@ -610,11 +650,53 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         { generationId, agenomeId: agenome.id, reason: 'llm_generation' },
         response.providerMeta,
       );
+      return {
+        kind: 'candidate',
+        candidate: candidatePayload as unknown as CandidateIdea,
+        agenome,
+      };
+    };
+
+    // The per-batch concurrency ceiling, clamped to the remaining-energy headroom (rule #1). The boundary
+    // detectKill above already broke on an already-exhausted budget, so remaining > 0 here; `max(1, …)`
+    // guarantees forward progress (a near-empty budget runs one agenome, then the next boundary terminalizes).
+    const ceiling = await agenomeConcurrencyCeiling(population.length);
+    const agenomeOutcomes = await mapLimit(population, ceiling, processAgenome);
+
+    // Reassemble in INPUT order (mapLimit preserves it) → deterministic candidate set + failure list.
+    const candidates: CandidateIdea[] = [];
+    const candidateAgenome = new Map<string, Agenome>();
+    const failedAgenomeIds: string[] = [];
+    for (const outcome of agenomeOutcomes) {
+      if (outcome.kind === 'candidate') {
+        candidates.push(outcome.candidate);
+        candidateAgenome.set(outcome.candidate.id, outcome.agenome);
+      } else if (outcome.kind === 'failed') {
+        failedAgenomeIds.push(outcome.agenomeId);
+      }
     }
 
-    // BUG 2 — an IN-LOOP kill during candidate production already drained THIS generation
-    // (`generation_failed` via executeKillAndDrain) + terminalized the run; halt scheduling immediately
-    // (LATCHING — no verify/score/reproduce, no further generations). The run terminal is in the log.
+    // KILL after the population batch (rule #1, BUG 2 — within one bounded generation step). Two sources:
+    //   (a) a task detected the stop/breach BEFORE its generate (already-latched at dispatch) → it skipped
+    //       + recorded the trigger here;
+    //   (b) the stop/breach latched DURING the concurrent batch (no task saw it pre-generate) → the
+    //       post-batch `maybeKillInLoop` poll observes it now.
+    // Either way the kill is honored WITHIN this generation (not deferred to a boundary that may never come
+    // — a single-generation runaway would otherwise ignore the stop) and BEFORE any verify/score/reproduce.
+    // Slice-atomic: the in-flight batch finished its appends; no NEW phase proceeds. executeKillAndDrain
+    // terminalizes the running generation + the run (run.stopped / cap-breach terminal).
+    let aborted = false;
+    if (killTriggerInBatch !== null) {
+      killSummary = await executeKillAndDrain(
+        killTriggerInBatch,
+        'running',
+        [{ id: generationId, status: 'running' }],
+        appendEvent,
+      );
+      aborted = true;
+    } else if (await maybeKillInLoop({ id: generationId, status: 'running' })) {
+      aborted = true;
+    }
     if (aborted) break;
 
     // Below the survival threshold (incl. all-fail / 0 created) → running→failed + generation_failed; no
