@@ -134,6 +134,7 @@ export function createMemoryEventRecorder(
       // (type, payload) is one discriminated-union member by construction; TS can't
       // track that pairing through the type parameter, so assert the member once here.
       const event = normalizeRunEvent(
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- generic (type,payload) is a single union member TS cannot infer through T
         {
           index: sequence,
           id: `evt_${sanitizeIdentifier(activeRunId || 'pending')}_${sequence}`,

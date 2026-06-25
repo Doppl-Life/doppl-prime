@@ -163,452 +163,6 @@ async function dashboardAssetResponse(urlPath: string): Promise<KernelHttpRespon
   }
 }
 
-function productionPage(options: KernelHttpOptions = {}): string {
-  const caseStudiesJson = JSON.stringify(DASHBOARD_CASE_STUDIES);
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Doppl Evolution Graph</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #090b0f;
-      --panel: #10151d;
-      --panel-2: #141b25;
-      --ink: #edf4ff;
-      --muted: #8f9bad;
-      --line: #253142;
-      --blue: #63a4ff;
-      --teal: #4fd1b7;
-      --gold: #f2c66d;
-      --rose: #f27b9b;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); }
-    main { display: grid; grid-template-columns: 360px minmax(0, 1fr); min-height: 100vh; }
-    aside { border-right: 1px solid var(--line); background: #0c1016; padding: 24px 20px; }
-    .workspace { padding: 28px; min-width: 0; }
-    h1 { font-size: 32px; line-height: 1.05; margin: 0 0 10px; letter-spacing: 0; }
-    h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0; color: var(--muted); margin: 0 0 12px; }
-    p { color: var(--muted); line-height: 1.55; margin: 0 0 18px; }
-    label { display: block; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
-    input, select, button {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      color: var(--ink);
-      padding: 10px 11px;
-      font: inherit;
-    }
-    button { cursor: pointer; font-weight: 700; margin-top: 10px; }
-    button.primary { background: var(--blue); border-color: var(--blue); color: #06101f; }
-    button.secondary { background: var(--panel-2); }
-    button:focus, input:focus, select:focus { outline: 2px solid var(--teal); outline-offset: 2px; }
-    .status { min-height: 22px; color: var(--muted); font-size: 13px; margin-top: 12px; }
-    .case-list { display: grid; gap: 8px; margin: 12px 0 16px; }
-    .case-button { text-align: left; background: var(--panel); font-weight: 600; margin: 0; }
-    .case-button span { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-top: 3px; }
-    .case-button.active { border-color: var(--teal); background: #10201f; }
-    .run-history { display: grid; gap: 8px; margin-top: 12px; }
-    .run-button { text-align: left; margin: 0; background: #0f1722; }
-    .run-button span { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
-    .topline { display: flex; justify-content: space-between; gap: 20px; align-items: start; margin-bottom: 18px; }
-    .topline p { max-width: 720px; }
-    .metrics { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
-    .metric { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 12px; }
-    .metric strong { display: block; font-size: 24px; }
-    .metric span { color: var(--muted); font-size: 12px; }
-    .graph-shell {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background-color: #07111d;
-      background-image: radial-gradient(#17304b 1px, transparent 1px);
-      background-size: 12px 12px;
-      overflow: hidden;
-      position: relative;
-    }
-    .graph-header { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
-    .graph-header strong { display: block; }
-    .graph-header span { color: var(--muted); font-size: 13px; }
-    svg { width: 100%; height: min(70vh, 760px); display: block; }
-    .edge { stroke: #536174; stroke-width: 2; marker-end: url(#arrow); }
-    .edge.survivor { stroke: var(--teal); stroke-width: 3; }
-    .edge.rejected { stroke-dasharray: 4 7; opacity: .5; }
-    .node rect { stroke-width: 1.4; rx: 9; }
-    .node text { fill: var(--ink); font-size: 12px; }
-    .node .sub { fill: var(--muted); font-size: 11px; }
-    .node .tag { fill: var(--teal); font-size: 9px; text-transform: uppercase; }
-    .node.recovery rect { fill: #152033; stroke: var(--blue); }
-    .node.candidate rect { fill: #13201f; stroke: var(--teal); }
-    .node.parent rect { fill: #262011; stroke: var(--gold); }
-    .node.child rect { fill: #281724; stroke: var(--rose); }
-    .node.survivor rect { stroke: #33f0b2; stroke-width: 2.4; }
-    .node.rejected rect { stroke: #ef5d84; fill: #23111b; }
-    .node.seeded rect { stroke: #3eb7ff; }
-    .node { cursor: pointer; transition: opacity .18s ease; }
-    .node:hover { opacity: .82; }
-    .node.entering { animation: node-in .34s ease both; }
-    @keyframes node-in { from { opacity: 0; } to { opacity: 1; } }
-    .generation-lane { fill: rgba(18, 35, 55, .34); stroke: rgba(99, 164, 255, .14); }
-    .generation-label { fill: var(--muted); font-size: 11px; text-transform: uppercase; }
-    .flow-minimap {
-      position: absolute;
-      right: 16px;
-      bottom: 16px;
-      width: 180px;
-      height: 118px;
-      border: 1px solid #1b2a3f;
-      background: rgba(5, 11, 18, .9);
-      box-shadow: 0 0 0 1px rgba(79, 209, 183, .12);
-    }
-    .details { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; margin-top: 18px; }
-    .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
-    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 16px; min-width: 0; }
-    .panel ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.7; }
-    .survivor-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 10px; }
-    .survivor-item { border: 1px solid #24435b; border-left: 3px solid var(--teal); border-radius: 6px; padding: 10px; background: #0d151f; }
-    .survivor-item strong { display: block; }
-    .survivor-item span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
-    .event-stream { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 220px; overflow: auto; }
-    .event-stream li { border-left: 2px solid var(--teal); padding: 6px 8px; background: #0d131c; color: var(--muted); font-size: 12px; }
-    .event-stream li.active { color: var(--ink); border-color: var(--gold); }
-    code { color: var(--blue); overflow-wrap: anywhere; }
-    pre { white-space: pre-wrap; color: var(--muted); margin: 0; max-height: 260px; overflow: auto; }
-    @media (max-width: 880px) {
-      main { grid-template-columns: 1fr; }
-      aside { border-right: 0; border-bottom: 1px solid var(--line); }
-      .topline, .details { display: block; }
-      .live-grid { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-      svg { height: 540px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <aside>
-      <h1>Doppl Evolution Graph</h1>
-      <p>Run the kernel, inspect selection pressure, and watch candidates fuse into the next child.</p>
-      <label for="api-key-input">Kernel API key</label>
-      <input id="api-key-input" autocomplete="off" spellcheck="false" placeholder="Optional for protected readback">
-      <h2>Real case studies</h2>
-      <div id="case-list" class="case-list" aria-label="Real case studies"></div>
-      <label for="run-id-input">Run ID</label>
-      <input id="run-id-input" value="dashboard_fixture_run">
-      <label for="model-input">Live model</label>
-      <input id="model-input" value="openai/gpt-4.1-mini">
-      <button id="live-button" class="primary">Run selected case</button>
-      <button id="fixture-button" class="secondary">Run FSD fixture</button>
-      <button id="fetch-button" class="secondary">Fetch run graph</button>
-      <p id="status" class="status">Choose a case and run Doppl. Secrets stay server-side.</p>
-      <h2>Run history</h2>
-      <div id="run-history-list" class="run-history" aria-label="Recent Doppl runs"></div>
-    </aside>
-    <section class="workspace" aria-label="Kernel run graph workspace">
-      <div class="topline">
-        <div>
-          <h2>Lineage workspace</h2>
-          <p id="run-summary">A representative Doppl run: recovery creates candidates, critics score them, selected parents fuse into a child.</p>
-        </div>
-      </div>
-      <div class="metrics">
-        <div class="metric"><strong id="metric-candidates">3</strong><span>candidates</span></div>
-        <div class="metric"><strong id="metric-generations">1</strong><span>generations</span></div>
-        <div class="metric"><strong id="metric-budget">1</strong><span>budget used</span></div>
-        <div class="metric"><strong id="metric-child">1</strong><span>fused child</span></div>
-      </div>
-      <div class="graph-shell">
-        <div class="graph-header">
-          <div><strong id="graph-title">fsd-ownership-unwind / sample</strong><span>Recovery -> candidates -> selected parents -> fused child</span></div>
-          <span id="graph-mode">sample</span>
-        </div>
-        <svg id="lineage-graph" viewBox="0 0 980 520" role="img" aria-label="Doppl evolving run graph">
-          <defs>
-            <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-              <path d="M0,0 L8,4 L0,8 Z" fill="#536174"></path>
-            </marker>
-          </defs>
-          <line class="edge" x1="230" y1="260" x2="360" y2="150"></line>
-          <line class="edge" x1="230" y1="260" x2="360" y2="260"></line>
-          <line class="edge" x1="230" y1="260" x2="360" y2="370"></line>
-          <line class="edge" x1="570" y1="150" x2="720" y2="250"></line>
-          <line class="edge" x1="570" y1="260" x2="720" y2="250"></line>
-          <g class="node recovery" data-node-kind="recovery" transform="translate(60 220)">
-            <rect width="180" height="82"></rect><text x="14" y="28">Problem recovery</text><text class="sub" x="14" y="52">ownership premise</text>
-          </g>
-          <g class="node candidate parent survivor" data-node-kind="candidate" data-node-status="survivor" transform="translate(360 110)">
-            <rect width="210" height="82"></rect><text x="14" y="28">Liability clock</text><text class="sub" x="14" y="52">fitness 86.0 selected</text>
-          </g>
-          <g class="node candidate parent survivor" data-node-kind="candidate" data-node-status="survivor" transform="translate(360 220)">
-            <rect width="210" height="82"></rect><text x="14" y="28">Residual value stress</text><text class="sub" x="14" y="52">fitness 40.0 selected</text>
-          </g>
-          <g class="node candidate rejected" data-node-kind="candidate" data-node-status="rejected" transform="translate(360 330)">
-            <rect width="210" height="82"></rect><text x="14" y="28">Credit exposure</text><text class="sub" x="14" y="52">fitness 20.0 culled</text>
-          </g>
-          <g class="node child survivor" data-node-kind="child" data-node-status="survivor" transform="translate(720 210)">
-            <rect width="210" height="92"></rect><text x="14" y="30">Fused child</text><text class="sub" x="14" y="56">liability + residual</text>
-          </g>
-        </svg>
-        <svg id="flow-minimap" class="flow-minimap" viewBox="0 0 180 118" aria-label="Evolution graph minimap"></svg>
-      </div>
-      <div class="details">
-        <article class="panel">
-          <h2>Selected run</h2>
-          <ul id="selected-run-list">
-            <li><code>cand_liability_clock</code> and <code>cand_recovery_market</code> selected as parents.</li>
-            <li>Child inherits upstream legal-clock signal and balance-sheet stress framing.</li>
-          </ul>
-        </article>
-        <article class="panel">
-          <h2>Artifact preview</h2>
-          <pre id="artifact-preview">Run an authenticated fixture/live model request, then click Fetch run graph to inspect exported artifacts.</pre>
-        </article>
-      </div>
-      <article class="panel">
-        <h2>Final surviving solutions</h2>
-        <div id="survivor-list" class="survivor-list"></div>
-      </article>
-      <div class="live-grid">
-        <article class="panel">
-          <h2>Event stream</h2>
-          <ul id="event-stream" class="event-stream"></ul>
-        </article>
-        <article class="panel">
-          <h2>Node inspector</h2>
-          <pre id="node-inspector">Select a graph node to inspect its role in the run.</pre>
-        </article>
-      </div>
-    </section>
-  </main>
-  <script>
-    const dashboardCases = ${caseStudiesJson};
-    const sampleRun = {
-      runId: 'sample',
-      caseId: 'fsd-ownership-unwind',
-      problemRecovery: { id: 'recovery_fsd', path: 'problem-recovery.md' },
-      candidates: [
-        { id: 'cand_liability_clock', agenomeId: 'ag_blindside', fitnessTotal: 86, selectedParent: true },
-        { id: 'cand_recovery_market', agenomeId: 'ag_first_principles', fitnessTotal: 40, selectedParent: true },
-        { id: 'cand_lender_residual', agenomeId: 'ag_constraint_injection', fitnessTotal: 20, selectedParent: false }
-      ],
-      child: { id: 'child_cand_liability_clock_cand_recovery_market', parentCandidateIds: ['cand_liability_clock', 'cand_recovery_market'] },
-      evolution: [{ generation: 0, candidateIds: ['cand_liability_clock', 'cand_recovery_market', 'cand_lender_residual'], selectedParentIds: ['cand_liability_clock', 'cand_recovery_market'], childId: 'child_cand_liability_clock_cand_recovery_market' }],
-      budget: { usedUnits: 1 }
-    };
-    const state = { runId: sampleRun.runId, selectedCase: dashboardCases[0] };
-    const status = document.getElementById('status');
-    const apiKeyInput = document.getElementById('api-key-input');
-    const runIdInput = document.getElementById('run-id-input');
-    const modelInput = document.getElementById('model-input');
-    const artifactPreview = document.getElementById('artifact-preview');
-    const eventStream = document.getElementById('event-stream');
-    const nodeInspector = document.getElementById('node-inspector');
-    const survivorList = document.getElementById('survivor-list');
-    function slugTime() {
-      return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-    }
-    function renderCaseList() {
-      document.getElementById('case-list').innerHTML = dashboardCases.map((caseStudy) => {
-        const active = caseStudy.id === state.selectedCase.id ? ' active' : '';
-        return '<button class="case-button' + active + '" data-case-id="' + caseStudy.id + '">' + caseStudy.title + '<span>' + caseStudy.id + ' / ' + caseStudy.mode + '</span></button>';
-      }).join('');
-      document.querySelectorAll('.case-button').forEach((button) => {
-        button.addEventListener('click', () => {
-          const next = dashboardCases.find((caseStudy) => caseStudy.id === button.dataset.caseId);
-          if (!next) return;
-          state.selectedCase = next;
-          runIdInput.value = next.id + '_' + slugTime();
-          status.textContent = 'Selected ' + next.title + '.';
-          renderCaseList();
-        });
-      });
-    }
-    function authHeaders() {
-      const key = apiKeyInput.value.trim();
-      return key ? { Authorization: 'Bearer ' + key } : {};
-    }
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-    }
-    function node(label, detail, kind, x, y, status) {
-      const nodeStatus = status || 'seeded';
-      const classes = ['node', kind, nodeStatus].join(' ');
-      return '<g class="' + classes + '" data-node-kind="' + kind + '" data-node-status="' + nodeStatus + '" data-node-id="' + escapeHtml(label) + '" transform="translate(' + x + ' ' + y + ')"><rect width="220" height="78"></rect><text class="tag" x="14" y="17">' + escapeHtml(kind + ' / ' + nodeStatus) + '</text><text x="14" y="38">' + escapeHtml(label) + '</text><text class="sub" x="14" y="60">' + escapeHtml(detail) + '</text></g>';
-    }
-    function edge(x1, y1, x2, y2, status) {
-      return '<line class="edge ' + escapeHtml(status || '') + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"></line>';
-    }
-    function candidateById(run, id) {
-      return (run.candidates || []).find((candidate) => candidate.id === id);
-    }
-    function unique(values) {
-      return Array.from(new Set(values.filter(Boolean)));
-    }
-    function layoutEvolutionTree(run) {
-      const evolution = run.evolution && run.evolution.length > 0 ? run.evolution : [{
-        generation: 0,
-        candidateIds: (run.candidates || []).map((candidate) => candidate.id),
-        selectedParentIds: run.child?.parentCandidateIds || [],
-        childId: run.child?.id
-      }];
-      const width = Math.max(1260, 260 + evolution.length * 330);
-      const allRows = Math.max(4, ...evolution.map((generation) => unique([...(generation.candidateIds || []), generation.childId]).length + 1));
-      const height = Math.max(620, 130 + allRows * 104);
-      const nodes = [{ id: run.problemRecovery?.id || 'problem_recovery', kind: 'recovery', status: 'seeded', x: 54, y: height / 2 - 38, detail: 'problem recovery' }];
-      const edges = [];
-      const lanes = [];
-      let priorId = nodes[0].id;
-      let priorX = 274;
-      let priorY = height / 2;
-      evolution.forEach((generation, generationIndex) => {
-        const x = 350 + generationIndex * 330;
-        lanes.push({ generation: generation.generation ?? generationIndex, x: x - 28, width: 276 });
-        const selected = new Set(generation.selectedParentIds || run.child?.parentCandidateIds || []);
-        const candidateIds = unique(generation.candidateIds || []);
-        const top = Math.max(70, (height - candidateIds.length * 96) / 2);
-        candidateIds.forEach((candidateId, index) => {
-          const candidate = candidateById(run, candidateId) || { id: candidateId, fitnessTotal: 'unscored' };
-          const y = top + index * 96;
-          const status = selected.has(candidateId) ? 'survivor' : 'rejected';
-          nodes.push({ id: candidateId, kind: 'candidate', status, x, y, detail: 'fitness ' + (candidate.fitnessTotal ?? 'unscored') });
-          edges.push({ fromX: priorX, fromY: priorY, toX: x, toY: y + 39, status });
-        });
-        if (generation.childId || (generationIndex === evolution.length - 1 && run.child)) {
-          const childId = generation.childId || run.child.id;
-          const childY = Math.max(70, top + candidateIds.length * 96 + 18);
-          nodes.push({ id: childId, kind: 'child', status: 'survivor', x: x + 250, y: childY, detail: 'fused survivor' });
-          candidateIds.filter((candidateId) => selected.has(candidateId)).forEach((candidateId) => {
-            const parentNode = nodes.find((item) => item.id === candidateId && item.x === x);
-            if (parentNode) edges.push({ fromX: parentNode.x + 220, fromY: parentNode.y + 39, toX: x + 250, toY: childY + 39, status: 'survivor' });
-          });
-          priorId = childId;
-          priorX = x + 470;
-          priorY = childY + 39;
-        }
-      });
-      return { width, height, lanes, nodes, edges };
-    }
-    function renderMiniMap(layout) {
-      const sx = 180 / layout.width;
-      const sy = 118 / layout.height;
-      document.getElementById('flow-minimap').innerHTML = layout.nodes.map((item) => '<rect x="' + Math.round(item.x * sx) + '" y="' + Math.round(item.y * sy) + '" width="5" height="5" fill="' + (item.status === 'survivor' ? '#4fd1b7' : item.status === 'rejected' ? '#f27b9b' : '#63a4ff') + '"></rect>').join('');
-    }
-    function renderSurvivors(run) {
-      const survivorIds = new Set(run.child?.parentCandidateIds || []);
-      const survivors = (run.candidates || []).filter((candidate) => survivorIds.has(candidate.id));
-      if (run.child) survivors.push({ id: run.child.id, title: 'Fused child', fitnessTotal: 'final' });
-      survivorList.innerHTML = survivors.map((item) => '<div class="survivor-item"><strong>' + escapeHtml(item.title || item.id) + '</strong><span>' + escapeHtml(item.id) + ' / fitness ' + escapeHtml(item.fitnessTotal ?? 'survivor') + '</span></div>').join('') || '<p class="status">No survivors selected yet.</p>';
-    }
-    function renderGraph(run) {
-      state.runId = run.runId;
-      document.getElementById('graph-title').textContent = run.caseId + ' / ' + run.runId;
-      document.getElementById('graph-mode').textContent = run.child ? 'fused' : 'unfused';
-      document.getElementById('metric-candidates').textContent = String(run.candidates.length);
-      document.getElementById('metric-generations').textContent = String(run.evolution.length);
-      document.getElementById('metric-budget').textContent = String(run.budget?.usedUnits ?? 0);
-      document.getElementById('metric-child').textContent = run.child ? '1' : '0';
-      document.getElementById('run-summary').textContent = 'Run ' + run.runId + ' evolved ' + run.candidates.length + ' candidates across ' + run.evolution.length + ' generation(s).';
-      const layout = layoutEvolutionTree(run);
-      document.getElementById('lineage-graph').setAttribute('viewBox', '0 0 ' + layout.width + ' ' + layout.height);
-      let svg = '<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 Z" fill="#536174"></path></marker></defs>';
-      layout.lanes.forEach((lane) => {
-        svg += '<rect class="generation-lane" x="' + lane.x + '" y="42" width="' + lane.width + '" height="' + (layout.height - 84) + '"></rect><text class="generation-label" x="' + (lane.x + 14) + '" y="64">Generation ' + lane.generation + '</text>';
-      });
-      layout.edges.forEach((item) => { svg += edge(item.fromX, item.fromY, item.toX, item.toY, item.status); });
-      layout.nodes.forEach((item) => { svg += node(item.id, item.detail, item.kind, item.x, item.y, item.status); });
-      document.getElementById('lineage-graph').innerHTML = svg;
-      document.getElementById('selected-run-list').innerHTML = (run.child?.parentCandidateIds || []).map((id) => '<li><code>' + id + '</code> contributes to the fused child.</li>').join('') || '<li>No child selected yet.</li>';
-      document.querySelectorAll('#lineage-graph .node').forEach((nodeElement, index) => {
-        nodeElement.classList.add('entering');
-        nodeElement.style.animationDelay = String(index * 55) + 'ms';
-        nodeElement.addEventListener('click', () => inspectNode(nodeElement.dataset.nodeId, nodeElement.dataset.nodeKind, run));
-      });
-      renderMiniMap(layout);
-      renderSurvivors(run);
-      renderEvents(run.dashboardEvents || []);
-    }
-    function inspectNode(nodeId, nodeKind, run) {
-      const candidate = (run.candidates || []).find((item) => item.id === nodeId);
-      const child = run.child && run.child.id === nodeId ? run.child : null;
-      nodeInspector.textContent = JSON.stringify({ nodeId, nodeKind, candidate, child }, null, 2);
-    }
-    function renderEvents(events) {
-      const visible = events.slice(-24);
-      eventStream.innerHTML = visible.map((event, index) => '<li class="' + (index === visible.length - 1 ? 'active' : '') + '">' + escapeHtml(event.type || event.eventType || 'event') + '</li>').join('') || '<li>No events loaded yet.</li>';
-    }
-    function animateProgress() {
-      const ticks = ['request accepted', 'recovering problem', 'generating candidates', 'scoring parents', 'fusing child'];
-      renderEvents(ticks.map((type) => ({ type })));
-    }
-    async function refreshRunHistory() {
-      const response = await fetch('/kernel/dashboard/runs');
-      const body = await response.json();
-      const runs = body.runs || [];
-      document.getElementById('run-history-list').innerHTML = runs.map((run) => '<button class="run-button" data-run-id="' + escapeHtml(run.runId) + '"><strong>' + escapeHtml(run.caseId) + '</strong><span>' + escapeHtml(run.runId) + ' / ' + escapeHtml(run.child || 'unfused') + '</span></button>').join('') || '<p class="status">No saved runs yet.</p>';
-      document.querySelectorAll('.run-button').forEach((button) => {
-        button.addEventListener('click', () => {
-          runIdInput.value = button.dataset.runId || '';
-          fetchRunGraph().catch((error) => { status.textContent = error.message; });
-        });
-      });
-    }
-    async function runKernel(liveModel) {
-      const selectedCase = liveModel ? state.selectedCase : dashboardCases[0];
-      const runId = runIdInput.value.trim() || ('dashboard_' + Date.now());
-      status.textContent = liveModel ? 'Running ' + selectedCase.title + ' through Doppl...' : 'Running FSD fixture...';
-      animateProgress();
-      const response = await fetch('/kernel/dashboard/runs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runId,
-          casePath: selectedCase.path,
-          generations: liveModel ? 1 : 4,
-          budget: liveModel ? 1 : 4,
-          liveModel,
-          model: liveModel ? modelInput.value.trim() || undefined : undefined
-        })
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'run failed');
-      runIdInput.value = body.runId;
-      renderGraph(body);
-      if (body.dashboardArtifact) artifactPreview.textContent = body.dashboardArtifact;
-      status.textContent = 'Graph loaded for ' + body.runId + '.';
-      await refreshRunHistory();
-    }
-    async function fetchRunGraph() {
-      const runId = runIdInput.value.trim();
-      status.textContent = 'Fetching run graph...';
-      const response = await fetch('/kernel/runs/' + encodeURIComponent(runId), { headers: authHeaders() });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'fetch failed');
-      renderGraph(body);
-      status.textContent = 'Graph loaded for ' + runId + '.';
-      const artifact = body.problemRecovery?.path;
-      if (artifact) {
-        const artifactResponse = await fetch('/kernel/runs/' + encodeURIComponent(runId) + '/artifacts/' + encodeURIComponent(artifact), { headers: authHeaders() });
-        const artifactBody = await artifactResponse.json();
-        if (artifactResponse.ok) artifactPreview.textContent = artifactBody.content;
-      }
-      renderEvents(body.dashboardEvents || []);
-    }
-    document.getElementById('live-button').addEventListener('click', () => runKernel(true).catch((error) => { status.textContent = error.message; }));
-    document.getElementById('fixture-button').addEventListener('click', () => runKernel(false).catch((error) => { status.textContent = error.message; }));
-    document.getElementById('fetch-button').addEventListener('click', () => fetchRunGraph().catch((error) => { status.textContent = error.message; }));
-    runIdInput.value = state.selectedCase.id + '_' + slugTime();
-    renderCaseList();
-    renderGraph(sampleRun);
-    refreshRunHistory().catch(() => {});
-  </script>
-</body>
-</html>`;
-}
-
 function readBody(request: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -662,6 +216,12 @@ function parsedUrl(url: string): URL {
 
 function outDirFromUrl(url: URL): string {
   return url.searchParams.get('outDir') || defaultKernelArgs.outDir;
+}
+
+function routeParam(match: RegExpMatchArray, index: number): string {
+  const value = match[index];
+  if (value === undefined) throw new KernelHttpError(404, 'route parameter missing');
+  return value;
 }
 
 function parseFitnessLens(value: unknown): FitnessLensId {
@@ -803,7 +363,7 @@ async function readRunArtifact(
 
 async function readDashboardEvents(runId: string, rootDir: string): Promise<Array<Record<string, unknown>>> {
   try {
-    return (await readRunEventLog(runId, rootDir)) as unknown as Array<Record<string, unknown>>;
+    return await readRunEventLog(runId, rootDir);
   } catch {
     return [];
   }
@@ -1046,7 +606,10 @@ function startAsyncRun(
       appendRunEventSync(eventLogPath, event);
     },
   }).catch((error) => {
-    appendFailureEvent(eventLogPath, JSON.parse(body).runId || defaultKernelArgs.runId, error);
+    const parsedBody = JSON.parse(body) as { runId?: unknown };
+    const failedRunId =
+      typeof parsedBody.runId === 'string' ? parsedBody.runId : defaultKernelArgs.runId;
+    appendFailureEvent(eventLogPath, failedRunId, error);
   });
 }
 
@@ -1157,7 +720,7 @@ export async function handleKernelHttpRequest(
       /^\/kernel\/dashboard\/runs\/([^/]+)\/(events|stream|health)$/,
     );
     if (request.method === 'GET' && dashboardEventRoute) {
-      const runId = decodeURIComponent(dashboardEventRoute[1]!);
+      const runId = decodeURIComponent(routeParam(dashboardEventRoute, 1));
       const rootDir = outDirFromUrl(url);
       if (dashboardEventRoute[2] === 'events') {
         return await readRunEventsResponse(request, url, runId, rootDir);
@@ -1169,13 +732,13 @@ export async function handleKernelHttpRequest(
     }
     const dashboardRunRoute = url.pathname.match(/^\/kernel\/dashboard\/runs\/([^/]+)$/);
     if (request.method === 'GET' && dashboardRunRoute) {
-      const runId = decodeURIComponent(dashboardRunRoute[1]!);
+      const runId = decodeURIComponent(routeParam(dashboardRunRoute, 1));
       return { status: 200, body: await readRunIndex(runId, outDirFromUrl(url)) };
     }
     const eventRoute = url.pathname.match(/^\/kernel\/runs\/([^/]+)\/(events|stream|health)$/);
     if (request.method === 'GET' && eventRoute) {
       if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
-      const runId = decodeURIComponent(eventRoute[1]!);
+      const runId = decodeURIComponent(routeParam(eventRoute, 1));
       const rootDir = outDirFromUrl(url);
       if (eventRoute[2] === 'events') return await readRunEventsResponse(request, url, runId, rootDir);
       if (eventRoute[2] === 'stream') return await readRunStreamResponse(request, url, runId, rootDir);
@@ -1185,7 +748,7 @@ export async function handleKernelHttpRequest(
       if (!authorized(request, options)) return { status: 401, body: { error: 'unauthorized' } };
       const match = url.pathname.match(/^\/kernel\/runs\/([^/]+)(?:\/artifacts\/(.+))?$/);
       if (!match) return { status: 404, body: { error: 'not_found' } };
-      const runId = decodeURIComponent(match[1]!);
+      const runId = decodeURIComponent(routeParam(match, 1));
       const rootDir = outDirFromUrl(url);
       if (match[2]) {
         return { status: 200, body: await readRunArtifact(runId, rootDir, match[2]) };

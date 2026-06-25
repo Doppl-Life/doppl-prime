@@ -5,6 +5,15 @@ prompt, critic mandate, or scoring check.
 
 ## Moves
 
+- **Escape hatches loud, rare, justified.** The type checker must not be silently
+  circumvented. `any`, non-null `!`, object-literal casts, and `@ts-` comments are
+  lint errors (typescript-eslint type-checked, `pnpm build` gates `typecheck → lint
+  → test`). A genuine trust boundary (parsing untrusted JSONL, a generic→union
+  construction seam) earns a one-line `eslint-disable … -- <reason>` — never a
+  silent assertion. Pair `no-non-null-assertion` with `noUncheckedIndexedAccess`:
+  banning `!` without it just turns an honest assertion into a silent lie (the index
+  still types as `T`). Removing a `!` usually surfaces a real guard worth writing — a
+  `tertiary!` once hid a crash where only 2 of 3 array elements were guaranteed.
 - **Recover the frame first.** Translate the symptom report into the actual
   problem before generating solutions.
 - **Run both directions.** If a seed matters, inspect what divergence finds and

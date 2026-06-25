@@ -161,7 +161,6 @@ function problemRecoveryNode(
 ): ProposalNodeArtifact {
   const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
-  const recoverySynopsis = synopsis(run.problemRecovery.recoveredProblem);
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'problem_recovery'],

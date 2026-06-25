@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "build": "pnpm run typecheck && pnpm test",
+    "lint": "eslint 'kernel/src/**/*.ts'",
+    "build": "pnpm run typecheck && pnpm run lint && pnpm test",
     "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
     "kernel:serve": "node --experimental-strip-types kernel/src/server.ts",
     "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts",
@@ -25,7 +26,10 @@
     "vite": "^8.0.16"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.0",
-    "typescript": "^6.0.3"
+    "eslint": "^10.5.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0"
   }
 }

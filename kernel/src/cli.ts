@@ -154,7 +154,7 @@ async function generationProvidersFromCliArgs(args: KernelCliArgs) {
   const records = await readModelCallRecords(args.replayModelCallsPath);
   return createModelGenerationProviders({
     client: createReplayModelClient(records),
-    model: args.model!,
+    model: args.model ?? 'replay',
   });
 }
 

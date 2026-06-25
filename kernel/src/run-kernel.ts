@@ -331,16 +331,19 @@ export async function runKernel(input: {
     fusion = undefined;
     if (selectedParents.length === 2) {
       const [parentA, parentB] = selectedParents;
+      const parentAFitness = generationFitnessRecords.find((record) => record.candidateId === parentA.id);
+      const parentBFitness = generationFitnessRecords.find((record) => record.candidateId === parentB.id);
+      if (!parentAFitness || !parentBFitness) {
+        throw new Error('selected parents must have fitness records');
+      }
       const compatibility = checkPairCompatibility(parentA.id, parentB.id);
       trace.push('pair.compatibility_checked', { ...compatibility, generation });
       fusion = fuseCandidates({
         caseId: caseStudy.id,
         parentA,
         parentB,
-        parentAScore: generationFitnessRecords.find((record) => record.candidateId === parentA.id)!
-          .total,
-        parentBScore: generationFitnessRecords.find((record) => record.candidateId === parentB.id)!
-          .total,
+        parentAScore: parentAFitness.total,
+        parentBScore: parentBFitness.total,
         compatibility,
       });
       trace.push('candidate.fused', {

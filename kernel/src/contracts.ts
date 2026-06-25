@@ -1,6 +1,10 @@
 // Model-call provenance lives with the domain types; the I/O layer (model-gateway) imports these
 // from here, keeping contracts at the bottom of the dependency graph (no upward import).
-export type ModelPurpose = 'problem_recovery' | 'candidate_generation' | 'critic_judgment' | string;
+// An open tag for what a model call is for. Base purposes are 'problem_recovery',
+// 'candidate_generation', 'critic_judgment', 'control_baseline_generation', and
+// 'control_baseline_judgment', composed with suffixes (e.g. `.repair`, `:fusion_draft`,
+// `:fusion_synthesis`) for derived calls — so the type is intentionally open.
+export type ModelPurpose = string;
 
 export type ModelCallRecord = {
   id: string;

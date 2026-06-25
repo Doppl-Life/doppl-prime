@@ -85,7 +85,7 @@ function outputTextFromChatCompletion(value: unknown): string {
 function stripJsonFence(outputText: string): string {
   const trimmed = outputText.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenced ? fenced[1]!.trim() : trimmed;
+  return fenced?.[1]?.trim() ?? trimmed;
 }
 
 export function parseJsonObjectResponse(outputText: string): Record<string, unknown> {
@@ -259,7 +259,8 @@ export type FusionModelClientInput = {
 export function createFusionModelClient(input: FusionModelClientInput): ModelClient {
   const { client, models } = input;
   if (models.length < 2) throw new Error('fusion requires at least two models');
-  const synthesisModel = input.synthesisModel || models[0]!;
+  const synthesisModel = input.synthesisModel ?? models[0];
+  if (!synthesisModel) throw new Error('fusion requires a synthesis model');
   return {
     async complete(request) {
       const drafts = await Promise.all(

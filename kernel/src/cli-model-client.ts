@@ -43,16 +43,18 @@ const defaultRunner: CliRunner = (cmd, args) =>
 export function extractJsonPayload(text: string): string {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  const body = (fenced ? fenced[1]! : trimmed).trim();
+  const body = (fenced?.[1] ?? trimmed).trim();
   const start = body.search(/[[{]/);
   if (start === -1) return body;
-  const open = body[start]!;
+  const open = body[start];
+  if (open === undefined) return body;
   const close = open === '{' ? '}' : ']';
   let depth = 0;
   let inString = false;
   let escaped = false;
   for (let i = start; i < body.length; i += 1) {
-    const ch = body[i]!;
+    const ch = body[i];
+    if (ch === undefined) break;
     if (inString) {
       if (escaped) escaped = false;
       else if (ch === '\\') escaped = true;

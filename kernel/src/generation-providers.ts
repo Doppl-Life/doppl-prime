@@ -153,39 +153,50 @@ export async function createFixtureGenerationProviders(
     }
 
     const [primary, secondary, tertiary] = fixtureCandidates;
+    if (!primary || !secondary || !tertiary) {
+      // Fewer than three candidates to mutate; fall back to a straight contextual pass.
+      return fixtureCandidates.map((candidate) =>
+        assertCandidateSolution({
+          ...candidateWithAgenomeContext(candidate, input),
+          caseId: input.caseStudy.id,
+          generation: input.generation,
+        }),
+      );
+    }
     const knowledge = input.knowledgePacket.items;
     const childTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
     const generation = input.generation;
+    const definedHandle = (handle: string | undefined): handle is string => handle !== undefined;
     const variants = [
       {
-        source: primary!,
-        id: `${primary!.id}_stability_probe_g${generation}`,
-        title: `${primary!.title} Stability Probe`,
-        summary: `Mutates the previous survivor into a stricter ${primary!.title} test for generation ${generation}.`,
+        source: primary,
+        id: `${primary.id}_stability_probe_g${generation}`,
+        title: `${primary.title} Stability Probe`,
+        summary: `Mutates the previous survivor into a stricter ${primary.title} test for generation ${generation}.`,
         mechanism: `${input.previousChild.mechanism} It must now satisfy this mandate: ${mandateFor(0)}.`,
         claimedDelta: `Keeps ${childTitle} only if the strongest inherited mechanism survives new pressure.`,
-        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...(primary!.citedKnowledge || [])])],
-        agenomeId: `${primary!.agenomeId}_mutation_g${generation}`,
+        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...(primary.citedKnowledge || [])])],
+        agenomeId: `${primary.agenomeId}_mutation_g${generation}`,
       },
       {
-        source: secondary!,
-        id: `${secondary!.id}_failure_probe_g${generation}`,
-        title: `${secondary!.title} Failure Probe`,
+        source: secondary,
+        id: `${secondary.id}_failure_probe_g${generation}`,
+        title: `${secondary.title} Failure Probe`,
         summary: `Turns the prior critic mandate into a falsifier against ${input.previousChild.title}.`,
-        mechanism: `${secondary!.mechanism} It attacks the survivor through: ${mandateFor(3)}.`,
-        claimedDelta: `Adds a failure mode instead of re-running ${secondary!.title}.`,
-        citedKnowledge: [...new Set([...(secondary!.citedKnowledge || []), knowledge[0]?.citeHandle].filter(Boolean))],
-        agenomeId: `${secondary!.agenomeId}_critic_probe_g${generation}`,
+        mechanism: `${secondary.mechanism} It attacks the survivor through: ${mandateFor(3)}.`,
+        claimedDelta: `Adds a failure mode instead of re-running ${secondary.title}.`,
+        citedKnowledge: [...new Set([...(secondary.citedKnowledge || []), knowledge[0]?.citeHandle].filter(definedHandle))],
+        agenomeId: `${secondary.agenomeId}_critic_probe_g${generation}`,
       },
       {
-        source: tertiary!,
-        id: `${tertiary!.id}_signal_probe_g${generation}`,
-        title: `${tertiary!.title} Signal Probe`,
+        source: tertiary,
+        id: `${tertiary.id}_signal_probe_g${generation}`,
+        title: `${tertiary.title} Signal Probe`,
         summary: `Explores a new observable signal adjacent to ${input.previousChild.title}.`,
-        mechanism: `${tertiary!.mechanism} It is redirected toward evidence from ${knowledge[generation % knowledge.length]?.citeHandle || 'the packet'}.`,
+        mechanism: `${tertiary.mechanism} It is redirected toward evidence from ${knowledge[generation % knowledge.length]?.citeHandle || 'the packet'}.`,
         claimedDelta: `Broadens the search without letting the population collapse to the same parent pair.`,
-        citedKnowledge: [...new Set([...(tertiary!.citedKnowledge || []), knowledge[generation % knowledge.length]?.citeHandle].filter(Boolean))],
-        agenomeId: `${tertiary!.agenomeId}_signal_probe_g${generation}`,
+        citedKnowledge: [...new Set([...(tertiary.citedKnowledge || []), knowledge[generation % knowledge.length]?.citeHandle].filter(definedHandle))],
+        agenomeId: `${tertiary.agenomeId}_signal_probe_g${generation}`,
       },
     ];
 
@@ -229,13 +240,16 @@ export async function createFixtureGenerationProviders(
           throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
         }
         const [candidate] = fixtureCandidatesFor(input);
+        if (!candidate) {
+          throw new Error('clean baseline requires at least one fixture candidate');
+        }
         const contextualCandidate = candidateWithAgenomeContext(
           {
-            ...candidate!,
-            id: `clean_${candidate!.id}`,
-            title: `Clean ${candidate!.title}`,
-            summary: `Single-pass clean-agent control: ${candidate!.summary}`,
-            claimedDelta: `Control answer before Doppl fusion: ${candidate!.claimedDelta}`,
+            ...candidate,
+            id: `clean_${candidate.id}`,
+            title: `Clean ${candidate.title}`,
+            summary: `Single-pass clean-agent control: ${candidate.summary}`,
+            claimedDelta: `Control answer before Doppl fusion: ${candidate.claimedDelta}`,
           },
           input,
         );
@@ -499,12 +513,13 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
       repairResponse.metadata = { ...repairResponse.metadata, status: 'repaired' };
       return repaired;
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       repairResponse.metadata = {
         ...repairResponse.metadata,
         status: 'rejected',
-        error: error instanceof Error ? error.message : String(error),
+        error: message,
       };
-      throw new Error(`model output rejected after repair: ${repairResponse.metadata.error}`);
+      throw new Error(`model output rejected after repair: ${message}`, { cause: error });
     }
   }
 

@@ -260,7 +260,9 @@ export function selectParents(records: FitnessRecord[]): [string, string] | [] {
       (record) => !frontierRecords.some((frontier) => frontier.candidateId === record.candidateId),
     ),
   ];
-  return [ordered[0]!.candidateId, ordered[1]!.candidateId];
+  const [first, second] = ordered;
+  if (!first || !second) return [];
+  return [first.candidateId, second.candidateId];
 }
 
 export function checkPairCompatibility(parentA: string, parentB: string): PairCompatibility {

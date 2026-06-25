@@ -573,7 +573,7 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     evidence: [
       `Baseline: ${baselineSnapshot.title} (${baselineSnapshot.scoreSource}).`,
       `Survivor: ${survivorSnapshot.title} (${survivorSnapshot.scoreSource}).`,
-      control ? `Control artifact: ${control.path}.` : 'No control artifact could be selected.',
+      control ? `Control artifact: ${String(control.path)}.` : 'No control artifact could be selected.',
       run.fusion
         ? `Fusion parents: ${run.fusion.parentCandidateIds.join(' + ')} at compatibility ${run.fusion.compatibility.score}.`
         : 'No fusion child was produced for this run.',

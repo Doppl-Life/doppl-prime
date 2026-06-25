@@ -303,7 +303,8 @@ function css(): string {
 }
 
 export function renderProofBoard(run: KernelRun): string {
-  const child = run.fusion?.child;
+  const fusion = run.fusion;
+  const child = fusion?.child;
   const modelHealth = renderModelHealth(run);
   const evolution = renderEvolution(run);
   const modelHealthNav = modelHealth ? '      <a href="#model-health">Model health</a>\n' : '';
@@ -372,15 +373,15 @@ ${modelHealthNav}      <a href="#trace">Trace</a>
       <section id="fusion">
         <h2>Fusion Child</h2>
         ${
-          child
+          child && fusion
             ? `${renderCandidate(run, child)}
               <dl>
                 <dt>Compatibility</dt>
-                <dd>${escapeHtml(run.fusion!.compatibility.rationale)}</dd>
+                <dd>${escapeHtml(fusion.compatibility.rationale)}</dd>
                 <dt>Inheritance weights</dt>
-                <dd>${run.fusion!.inheritanceWeights.parentA} / ${run.fusion!.inheritanceWeights.parentB}</dd>
+                <dd>${fusion.inheritanceWeights.parentA} / ${fusion.inheritanceWeights.parentB}</dd>
                 <dt>Mutation notes</dt>
-                <dd>${run.fusion!.mutationNotes.map(escapeHtml).join(' ')}</dd>
+                <dd>${fusion.mutationNotes.map(escapeHtml).join(' ')}</dd>
               </dl>`
             : '<p>No child was produced.</p>'
         }

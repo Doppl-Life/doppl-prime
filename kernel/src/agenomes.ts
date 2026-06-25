@@ -144,7 +144,7 @@ function templateFor(
     const label = `Fusion: ${parentTemplates.map((template) => template.label).join(' / ')}`;
     const template: AgenomeTemplate = {
       label,
-      prompt: `Fuse the strongest mechanism from ${parentTemplates[0]!.label} with the constraint pressure from ${parentTemplates[1]?.label || parentTemplates[0]!.label}.`,
+      prompt: `Fuse the strongest mechanism from ${parentTemplates[0]?.label ?? 'the lead parent'} with the constraint pressure from ${parentTemplates[1]?.label || parentTemplates[0]?.label || 'the lead parent'}.`,
       persona: parentTemplates.map((parentTemplate) => parentTemplate.persona).join(' + '),
       valueWeights: {
         novelty: weightedAverage(
@@ -207,7 +207,9 @@ function mutationNotes(id: string, parentage?: Parentage): string[] {
   }
   const mutation = id.match(/_(mutation|critic_probe|signal_probe)_g(\d+)$/);
   if (!mutation) return notes;
-  const kind = mutation[1]!.replace('_', ' ');
+  const kindToken = mutation[1];
+  if (!kindToken) return notes;
+  const kind = kindToken.replace('_', ' ');
   notes.push(`${kind} derived for generation ${mutation[2]}`);
   return notes;
 }
