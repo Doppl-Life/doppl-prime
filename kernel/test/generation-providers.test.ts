@@ -2,14 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadCaseStudy } from '../src/case-loader.ts';
 import { createJsonKnowledgeGateway } from '../src/knowledge-gateway.ts';
+import type { CriticVerdict } from '../src/contracts.ts';
 import {
   createFixtureGenerationProviders,
   createDefaultModelGenerationPrompts,
   createModelGenerationProviders,
+  regimeMutagens,
   type CandidateGenerator,
   type CriticCouncil,
   type ProblemRecoveryProvider,
 } from '../src/generation-providers.ts';
+
+test('the tide adapts: a converged population reaches for divergence, a scattered one consolidates', () => {
+  const verdict = (score: number): CriticVerdict => ({
+    candidateId: 'c',
+    criticId: 'k',
+    score,
+    pressure: '',
+    revisionMandate: '',
+  });
+  // Bunched scores = a converged population -> reach for divergence mutagens to escape the crowd.
+  assert.ok(regimeMutagens([verdict(9), verdict(10)]).includes('polymath'));
+  // Widely spread scores = a scattered population -> consolidate with convergence mutagens.
+  assert.ok(regimeMutagens([verdict(2), verdict(10)]).includes('breakthrough'));
+  // Mid-spread = the balanced default (no divergence-only or convergence-only move).
+  const balanced = regimeMutagens([verdict(6), verdict(10)]);
+  assert.ok(balanced.includes('blindside') && !balanced.includes('polymath'));
+});
 import { createReplayModelClient, type ModelCallRecord } from '../src/model-gateway.ts';
 import { initialAgenomePool } from '../src/agenomes.ts';
 

@@ -52,10 +52,19 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
       `lineage of ${candidate.id} should include its mutagen ${candidate.mutagen}`,
     );
   }
-  const usedMutagens = new Set(mutated.map((candidate) => candidate.mutagen));
-  assert.ok(usedMutagens.has('constraint-injection'));
-  assert.ok(usedMutagens.has('blindside'));
-  assert.ok(usedMutagens.has('breakout'));
+  // Under adaptive selection the exact mutagens depend on the regime; assert they are all known.
+  const KNOWN_MUTAGENS = new Set([
+    'breakthrough',
+    'addition-by-subtraction',
+    'breakout',
+    'blindside',
+    'first-principles',
+    'constraint-injection',
+    'polymath',
+  ]);
+  for (const used of mutated.map((candidate) => candidate.mutagen)) {
+    assert.ok(KNOWN_MUTAGENS.has(used), `${used} should be a known mutagen`);
+  }
 
   // The final survivor (a fused child) has no single mutagen, but its lineage accumulates
   // the moves that shaped it across generations — the witness into the process.

@@ -13,6 +13,92 @@ import {
 import { loadKernelFixture } from './fixtures.ts';
 import { parseJsonObjectResponse, type ModelCallRecord, type ModelClient } from './model-gateway.ts';
 
+const DIVERGE_MUTAGENS: readonly [Mutagen, Mutagen, Mutagen] = ['breakout', 'blindside', 'polymath'];
+const CONVERGE_MUTAGENS: readonly [Mutagen, Mutagen, Mutagen] = [
+  'constraint-injection',
+  'breakthrough',
+  'first-principles',
+];
+const BALANCED_MUTAGENS: readonly [Mutagen, Mutagen, Mutagen] = [
+  'constraint-injection',
+  'blindside',
+  'breakout',
+];
+
+// The self-regulating tide: a converged population (critic scores bunched together) reaches
+// for divergence mutagens to escape the crowd; a scattered one consolidates. Observed from
+// the population's state, never dialed. Scale-independent so it survives any score range.
+export function regimeMutagens(verdicts: CriticVerdict[]): readonly [Mutagen, Mutagen, Mutagen] {
+  const scores = verdicts.map((verdict) => verdict.score);
+  const max = scores.length ? Math.max(...scores) : 0;
+  if (scores.length < 2 || max <= 0) return BALANCED_MUTAGENS;
+  const relativeSpread = (max - Math.min(...scores)) / max;
+  if (relativeSpread <= 0.2) return DIVERGE_MUTAGENS;
+  if (relativeSpread >= 0.6) return CONVERGE_MUTAGENS;
+  return BALANCED_MUTAGENS;
+}
+
+// Each mutagen's variation applied to a parent candidate, given the prior survivor and a
+// knowledge handle. The seven moves correspond to the .cursor/skills mutagens.
+function mutagenMove(
+  mutagen: Mutagen,
+  source: Pick<CandidateSolution, 'title' | 'mechanism'>,
+  previousTitle: string,
+  handle: string,
+): { tag: string; summary: string; mechanism: string; claimedDelta: string } {
+  switch (mutagen) {
+    case 'constraint-injection':
+      return {
+        tag: 'constraint',
+        summary: `Mutates ${previousTitle} into a stricter ${source.title} test.`,
+        mechanism: `${source.mechanism} It must now satisfy a tighter mandate.`,
+        claimedDelta: `Keeps the survivor only if its strongest mechanism survives new pressure.`,
+      };
+    case 'blindside':
+      return {
+        tag: 'blindside',
+        summary: `Turns the prior critic mandate into a falsifier against ${previousTitle}.`,
+        mechanism: `${source.mechanism} It attacks the survivor through its weakest assumption.`,
+        claimedDelta: `Adds a failure mode instead of re-running the parent.`,
+      };
+    case 'breakout':
+      return {
+        tag: 'breakout',
+        summary: `Escapes the frame around ${previousTitle} toward a different signal.`,
+        mechanism: `${source.mechanism} It is redirected toward evidence from ${handle}.`,
+        claimedDelta: `Broadens the search without collapsing to the same parent pair.`,
+      };
+    case 'breakthrough':
+      return {
+        tag: 'breakthrough',
+        summary: `Adds the single highest-leverage extension to ${previousTitle}.`,
+        mechanism: `${source.mechanism} It is extended by the strongest available addition.`,
+        claimedDelta: `Compounds the survivor instead of merely defending it.`,
+      };
+    case 'first-principles':
+      return {
+        tag: 'bedrock',
+        summary: `Rebuilds ${previousTitle} from its irreducible invariants.`,
+        mechanism: `${source.mechanism} It is reduced to bedrock and rebuilt from what must be true.`,
+        claimedDelta: `Discards inherited framing the survivor never earned.`,
+      };
+    case 'polymath':
+      return {
+        tag: 'polymath',
+        summary: `Transplants a mechanism from an adjacent domain into ${previousTitle}.`,
+        mechanism: `${source.mechanism} It imports a pattern sourced from ${handle}.`,
+        claimedDelta: `Crosses a domain boundary the parent pair never reached.`,
+      };
+    case 'addition-by-subtraction':
+      return {
+        tag: 'subtraction',
+        summary: `Strips ${previousTitle} to its load-bearing core.`,
+        mechanism: `${source.mechanism} Everything non-essential to the core is removed.`,
+        claimedDelta: `Wins by removal, not accretion.`,
+      };
+  }
+}
+
 export type ProblemRecoveryInput = {
   runId: string;
   caseStudy: CaseStudy;
@@ -165,51 +251,33 @@ export async function createFixtureGenerationProviders(
       );
     }
     const knowledge = input.knowledgePacket.items;
-    const childTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
+    const previousTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
     const generation = input.generation;
-    const definedHandle = (handle: string | undefined): handle is string => handle !== undefined;
     const baseLineage = input.previousChild.mutagenLineage ?? [];
-    const stabilityMutagen: Mutagen = 'constraint-injection';
-    const failureMutagen: Mutagen = 'blindside';
-    const signalMutagen: Mutagen = 'breakout';
-    const variants = [
-      {
-        source: primary,
-        mutagen: stabilityMutagen,
-        mutagenLineage: [...baseLineage, stabilityMutagen],
-        id: `${primary.id}_stability_probe_g${generation}`,
-        title: `${primary.title} Stability Probe`,
-        summary: `Mutates the previous survivor into a stricter ${primary.title} test for generation ${generation}.`,
-        mechanism: `${input.previousChild.mechanism} It must now satisfy this mandate: ${mandateFor(0)}.`,
-        claimedDelta: `Keeps ${childTitle} only if the strongest inherited mechanism survives new pressure.`,
-        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...primary.citedKnowledge])],
-        agenomeId: `${primary.agenomeId}_mutation_g${generation}`,
-      },
-      {
-        source: secondary,
-        mutagen: failureMutagen,
-        mutagenLineage: [...baseLineage, failureMutagen],
-        id: `${secondary.id}_failure_probe_g${generation}`,
-        title: `${secondary.title} Failure Probe`,
-        summary: `Turns the prior critic mandate into a falsifier against ${input.previousChild.title}.`,
-        mechanism: `${secondary.mechanism} It attacks the survivor through: ${mandateFor(3)}.`,
-        claimedDelta: `Adds a failure mode instead of re-running ${secondary.title}.`,
-        citedKnowledge: [...new Set([...secondary.citedKnowledge, knowledge[0]?.citeHandle].filter(definedHandle))],
-        agenomeId: `${secondary.agenomeId}_critic_probe_g${generation}`,
-      },
-      {
-        source: tertiary,
-        mutagen: signalMutagen,
-        mutagenLineage: [...baseLineage, signalMutagen],
-        id: `${tertiary.id}_signal_probe_g${generation}`,
-        title: `${tertiary.title} Signal Probe`,
-        summary: `Explores a new observable signal adjacent to ${input.previousChild.title}.`,
-        mechanism: `${tertiary.mechanism} It is redirected toward evidence from ${knowledge[generation % knowledge.length]?.citeHandle || 'the packet'}.`,
-        claimedDelta: `Broadens the search without letting the population collapse to the same parent pair.`,
-        citedKnowledge: [...new Set([...tertiary.citedKnowledge, knowledge[generation % knowledge.length]?.citeHandle].filter(definedHandle))],
-        agenomeId: `${tertiary.agenomeId}_signal_probe_g${generation}`,
-      },
+    const handleAt = (offset: number): string =>
+      knowledge[offset % Math.max(1, knowledge.length)]?.citeHandle ?? 'the packet';
+    // The population's state picks the mutagens this generation reaches for (the tide).
+    const [mutagenA, mutagenB, mutagenC] = regimeMutagens(input.previousCriticVerdicts ?? []);
+    const assignments: Array<[Omit<CandidateSolution, 'caseId' | 'generation'>, Mutagen]> = [
+      [primary, mutagenA],
+      [secondary, mutagenB],
+      [tertiary, mutagenC],
     ];
+    const variants = assignments.map(([source, mutagen], index) => {
+      const move = mutagenMove(mutagen, source, previousTitle, handleAt(index));
+      return {
+        source,
+        mutagen,
+        mutagenLineage: [...baseLineage, mutagen],
+        id: `${source.id}_${move.tag}_g${generation}`,
+        title: `${source.title} ${move.tag} probe`,
+        summary: move.summary,
+        mechanism: move.mechanism,
+        claimedDelta: move.claimedDelta,
+        citedKnowledge: [...new Set([...source.citedKnowledge, handleAt(index)])],
+        agenomeId: `${source.agenomeId}_${move.tag}_g${generation}`,
+      };
+    });
 
     return variants.map(({ source: _source, ...candidate }) =>
       assertCandidateSolution({

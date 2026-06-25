@@ -592,7 +592,7 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.equal(response.status, 200);
   assert.equal(response.body.runId, 'dashboard_glp1_fixture');
   assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
-  assert.match(response.body.child.id, /cand_reward_budget_ledger_stability_probe_g3/);
+  assert.match(response.body.child.id, /cand_reward_budget_ledger_[a-z]+_g3/);
   assert.notEqual(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
   assert.match(response.body.child.summary, /reward budget/i);
   assert.match(response.body.candidates[0].summary, /reward/i);
@@ -1055,7 +1055,7 @@ test('kernel dashboard route lists recent exported runs without an API key', asy
   assert.ok(Array.isArray(response.body.runs));
   assert.equal(response.body.runs[0].runId, 'dashboard_history_fixture');
   assert.equal(response.body.runs[0].caseId, 'fsd-ownership-unwind');
-  assert.match(response.body.runs[0].child, /cand_liability_clock_stability_probe_g3/);
+  assert.match(response.body.runs[0].child, /cand_liability_clock_[a-z]+_g3/);
 });
 
 test('kernel dashboard route runs all approved real case fixtures with unique results', async () => {
@@ -1102,7 +1102,7 @@ test('kernel dashboard route runs all approved real case fixtures with unique re
 
     assert.equal(response.status, 200);
     assert.equal(response.body.caseId, caseStudy.caseId);
-    assert.match(response.body.child.id, /_stability_probe_g1_/);
+    assert.match(response.body.child.id, /_[a-z]+_g1/);
     assert.equal(response.body.candidates.length, 6);
     assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 6);
     assert.equal(response.body.evolution.length, 2);
