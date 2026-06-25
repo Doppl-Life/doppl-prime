@@ -118,10 +118,12 @@ describe('RunEventEnvelope — strict 14-field event row (spec §4)', () => {
     expect(() => RunEventEnvelope.parse({ ...validFull, schemaVersion: 1.2 })).toThrow();
   });
 
-  it('current_schema_version_is_9', () => {
-    // spec(§4) [frontend-v2 FB.8 judge per-axis rationale amendment]: the registry-pinned current schema
-    // version is 9 (bumped 8→9 for the additive OPTIONAL axisRationales on JudgeResult — explanatory judge
-    // output only). The exported constant is the single source the reader's ≤-current ceiling tracks.
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
+  it('current_schema_version_is_10', () => {
+    // spec(§4) [tool-use TU.1 amendment]: the registry-pinned current schema version is 10 (bumped 9→10
+    // for the additive tool-use surface — ToolName/ToolDescriptor/ToolCallRequest, the tool-use message
+    // union, +OPTIONAL ModelGatewayRequest.tools? + ModelGatewayResponse.toolCallRequests?; tools attach
+    // ONLY to the population_generator route). The exported constant is the single source the reader's
+    // ≤-current ceiling tracks.
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
   });
 });

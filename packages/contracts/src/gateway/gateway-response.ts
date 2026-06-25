@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ProviderMeta } from './provider-meta';
+import { ToolCallRequest } from './tool';
 
 /**
  * ValidationResult — the CLOSED structured-output validation outcome (ARCHITECTURE.md §6). A model
@@ -31,6 +32,11 @@ export const ModelGatewayResponse = z
     providerMeta: ProviderMeta,
     langfuseTraceId: z.string().min(1).optional(),
     rejection: z.strictObject({ reason: z.string().min(1) }).optional(),
+    // tool-use TU.1 (sv9→10) — when the provider returns `finish_reason==='tool_calls'`, the response
+    // surfaces the model's requested calls (the orchestrator executes them, then re-asks). This is NOT a
+    // final answer: `accepted:true`/`'accepted'` with NO `output` but `toolCallRequests` set is valid
+    // (the refine: accepted ⇔ validationResult !== 'rejected'). Absent → a normal (non-tool) response.
+    toolCallRequests: z.array(ToolCallRequest).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.accepted !== (value.validationResult !== 'rejected')) {

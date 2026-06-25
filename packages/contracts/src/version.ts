@@ -35,7 +35,17 @@
  *    runner-computed from `axisScores` × the immutable rubric weights, and the rule-#6 anchor (`ScoringPolicy`
  *    / `FinalJudgeRubric` / `FinalJudgeAxis`, incl. `immutableToAgents`) is BYTE-IDENTICAL across this bump —
  *    the rationale explains the floor, it cannot move it.
- * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–8 envelopes still validate (the
+ *  - 9 → 10 (tool-use TU.1, agent research-tool amendment): the gateway gains a tool-use surface so agents
+ *    do their own research (web + X + YouTube) — +`ToolName` (the frozen 4-member allowlist: web_search /
+ *    fetch_url / x_search / youtube_search, rule #3), +`ToolDescriptor` / +`ToolCallRequest`, +OPTIONAL
+ *    `ModelGatewayRequest.tools?` + +OPTIONAL `ModelGatewayResponse.toolCallRequests?`. (The multi-turn
+ *    tool-conversation message variants — an assistant-tool-call echo + a tool-result message, added
+ *    WITHOUT widening the closed 3-member `ChatRole` — land later in the epic with the tool-orchestrator,
+ *    an additive `messages`-element widening that needs no further bump.) Tools attach ONLY to the
+ *    `population_generator` route, so the held-out judge / critic path never sees a tool — the rule-#6
+ *    anchor (`ScoringPolicy` / `FinalJudgeRubric` / `FinalJudgeAxis`, incl. `immutableToAgents`) is
+ *    BYTE-IDENTICAL across this bump.
+ * Every bump is ADDITIVE + forward-compatible — old `schemaVersion` 1–9 envelopes still validate (the
  * contract accepts any positive int; the `≤ current` ceiling is the reader's job).
  */
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;

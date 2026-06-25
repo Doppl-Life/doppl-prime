@@ -171,7 +171,17 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
   ModelRoute: ['role', 'provider', 'modelId', 'capability', 'fallbackRouteIds'],
   ProviderCapability: ['structuredOutputs', 'embeddings', 'toolCalling', 'streaming'],
   // frontend-v2 FB.4 (sv7→8): +samplingParams{temperature?} — the generation dial's executed sampling.
-  ModelGatewayRequest: ['role', 'prompt', 'messages', 'schema', 'maxTokens', 'samplingParams'],
+  // tool-use TU.1 (sv9→10): +tools? — the OPTIONAL research-tool allowlist (population_generator only).
+  ModelGatewayRequest: [
+    'role',
+    'prompt',
+    'messages',
+    'schema',
+    'maxTokens',
+    'samplingParams',
+    'tools',
+  ],
+  // tool-use TU.1 (sv9→10): +toolCallRequests? — the model's requested calls (finish_reason==='tool_calls').
   ModelGatewayResponse: [
     'accepted',
     'output',
@@ -179,6 +189,7 @@ export const FIELD_SET_SNAPSHOTS: Record<string, readonly string[]> = {
     'providerMeta',
     'langfuseTraceId',
     'rejection',
+    'toolCallRequests',
   ],
   Run: ['id', 'seed', 'enabledSubtypes', 'caps', 'status', 'startedAt', 'completedAt'],
   Generation: ['id', 'runId', 'index', 'status', 'startedAt', 'completedAt'],

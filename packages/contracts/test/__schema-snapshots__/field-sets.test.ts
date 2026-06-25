@@ -103,7 +103,10 @@ describe('schema snapshots — frozen field/member sets (spec §4 / §2.5)', () 
     //      LlmCallTelemetry; GENERATION sampling only, rule-#6 judge/scoring anchor byte-identical).
     // 8→9 (frontend-v2 FB.8 judge per-axis rationale: +OPTIONAL axisRationales on JudgeResult — explanatory
     //      judge output only; acceptance stays runner-computed, rule-#6 judge/scoring anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
+    // 9→10 (tool-use TU.1: +ToolName/ToolDescriptor/ToolCallRequest, the tool-use message union, +OPTIONAL
+    //      ModelGatewayRequest.tools? + ModelGatewayResponse.toolCallRequests?; tools attach ONLY to the
+    //      population_generator route — rule-#6 judge/scoring anchor byte-identical across the bump).
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
   });
 
   it('schema_snapshot_field_and_member_sets', () => {

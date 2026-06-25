@@ -81,13 +81,13 @@ describe('contract-test surface — canonical fixtures (spec §16)', () => {
   });
 
   it('canonical_fixtures_still_valid_at_current_version', () => {
-    // spec(§16) [frontend-v2 FB.4 dial amendment]: the canonical envelope fixture is re-recorded at the
-    // CURRENT schema version (9 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal pin); the
-    // full CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14 surface
-    // survives the sv8→9 amendment (additive: +OPTIONAL axisRationales on JudgeResult — explanatory judge
-    // output only; rule-#6 judge anchor byte-identical).
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
-    expect(validRunEventEnvelope.schemaVersion).toBe(9);
+    // spec(§16) [tool-use TU.1 amendment]: the canonical envelope fixture is re-recorded at the CURRENT
+    // schema version (10 — it tracks CURRENT_SCHEMA_VERSION via the constant, no literal pin); the full
+    // CANONICAL_FIXTURES sweep (every_canonical_fixture_is_valid) stays green — the P0.14 surface survives
+    // the sv9→10 amendment (additive: +tool-use surface on the gateway request/response; tools attach ONLY
+    // to the population_generator route, rule-#6 judge anchor byte-identical).
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
+    expect(validRunEventEnvelope.schemaVersion).toBe(10);
   });
 
   it('types_are_single_source', () => {

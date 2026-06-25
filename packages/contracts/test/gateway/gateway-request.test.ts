@@ -65,4 +65,31 @@ describe('ModelGatewayRequest — the only request seam (spec §6/§14)', () => 
     ).toThrow();
     expect(() => ModelGatewayRequest.parse({ ...validPromptRequest, secret: 'x' })).toThrow();
   });
+
+  it('gateway_request_tool_use_surface_sv10', () => {
+    // sv9→10 — the population_generator request MAY offer the frozen tool allowlist (rule #6: only this
+    // route; a critic/judge request never sets it, stays byte-identical). `tools?` is additive/optional.
+    const toolsRequest = {
+      role: 'population_generator',
+      prompt: 'Generate a grounded cross-domain transfer idea.',
+      tools: [
+        { name: 'web_search', description: 'Search the public web.' },
+        { name: 'fetch_url', description: 'Fetch a public URL.' },
+      ],
+    };
+    expect(ModelGatewayRequest.parse(toolsRequest)).toEqual(toolsRequest);
+    // an unlisted tool in the offered set is rejected (the closed allowlist, rule #3).
+    expect(
+      ModelGatewayRequest.safeParse({
+        ...validPromptRequest,
+        tools: [{ name: 'exec_shell', description: 'x' }],
+      }).success,
+    ).toBe(false);
+    // the closed 3-member ChatRole is UNCHANGED across the bump — a bare {role:'tool'} still rejects (the
+    // multi-turn tool-conversation message variants land in the tool-orchestrator slice, not here).
+    expect(
+      ModelGatewayRequest.safeParse({ role: 'critic', messages: [{ role: 'tool', content: 'x' }] })
+        .success,
+    ).toBe(false);
+  });
 });

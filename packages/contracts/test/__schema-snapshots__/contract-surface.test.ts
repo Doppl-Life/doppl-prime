@@ -59,6 +59,7 @@ import {
   LineageNodeType,
   FinalJudgeAxis,
   GenerationOperator,
+  ToolName,
 } from '@doppl/contracts';
 
 const sorted = (a: readonly string[]): string[] => [...a].sort();
@@ -124,6 +125,8 @@ const UNION_SWEEP = [
     valid: 'first_principles',
     invalid: 'first-principles',
   },
+  // tool-use TU.1: the closed research-tool allowlist joins the exhaustive out-of-set gate (rule #3).
+  { name: 'ToolName', schema: ToolName, valid: 'web_search', invalid: 'exec_shell' },
 ];
 
 describe('contract-test surface — field-set snapshot + union sweep + barrel (spec §16 / §2.5 / §4)', () => {
@@ -163,7 +166,7 @@ describe('contract-test surface — field-set snapshot + union sweep + barrel (s
   it('every_closed_union_rejects_out_of_set', () => {
     // spec(§4) lesson §1: positive-guard-first — a valid member parses AND an out-of-set value rejects,
     // for every closed union (cross-track agreement on the enumerated value set).
-    expect(UNION_SWEEP).toHaveLength(18);
+    expect(UNION_SWEEP).toHaveLength(19);
     for (const { name, schema, valid, invalid } of UNION_SWEEP) {
       expect(schema.parse(valid), `${name} member`).toBe(valid);
       expect(schema.safeParse(invalid).success, `${name} rejects ${invalid}`).toBe(false);

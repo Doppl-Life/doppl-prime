@@ -40,6 +40,7 @@ const MODEL_ROUTE_FIELD_SNAPSHOT = [
 ];
 
 // frontend-v2 FB.4 (sv7→8): +samplingParams{temperature?} — the generation dial's executed sampling.
+// tool-use TU.1 (sv9→10): +tools? — the OPTIONAL research-tool allowlist (population_generator only).
 const GATEWAY_REQUEST_FIELD_SNAPSHOT = [
   'role',
   'prompt',
@@ -47,8 +48,10 @@ const GATEWAY_REQUEST_FIELD_SNAPSHOT = [
   'schema',
   'maxTokens',
   'samplingParams',
+  'tools',
 ];
 
+// tool-use TU.1 (sv9→10): +toolCallRequests? — the model's requested calls (finish_reason==='tool_calls').
 const GATEWAY_RESPONSE_FIELD_SNAPSHOT = [
   'accepted',
   'output',
@@ -56,6 +59,7 @@ const GATEWAY_RESPONSE_FIELD_SNAPSHOT = [
   'providerMeta',
   'langfuseTraceId',
   'rejection',
+  'toolCallRequests',
 ];
 
 const VALIDATION_RESULT_SNAPSHOT = ['accepted', 'repaired', 'rejected'];
@@ -95,8 +99,8 @@ describe('schema snapshot — gateway seam (spec §6 / §2.5)', () => {
     expect(MODEL_ROLE_SNAPSHOT).toHaveLength(7);
     expect(PROVIDER_CAPABILITY_FIELD_SNAPSHOT).toHaveLength(4);
     expect(MODEL_ROUTE_FIELD_SNAPSHOT).toHaveLength(5);
-    expect(GATEWAY_REQUEST_FIELD_SNAPSHOT).toHaveLength(6);
-    expect(GATEWAY_RESPONSE_FIELD_SNAPSHOT).toHaveLength(6);
+    expect(GATEWAY_REQUEST_FIELD_SNAPSHOT).toHaveLength(7);
+    expect(GATEWAY_RESPONSE_FIELD_SNAPSHOT).toHaveLength(7);
     expect(VALIDATION_RESULT_SNAPSHOT).toHaveLength(3);
     expect(CHAT_ROLE_SNAPSHOT).toHaveLength(3);
   });

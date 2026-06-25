@@ -93,4 +93,28 @@ describe('ModelGatewayResponse — the only response seam (spec §6/§14)', () =
       ModelGatewayResponse.parse({ ...rejectedResponse, rejection: { reason: '' } }),
     ).toThrow();
   });
+
+  it('gateway_response_tool_call_surface_sv10', () => {
+    // sv9→10 — when the provider returns finish_reason==='tool_calls', the response surfaces the model's
+    // requested calls (the orchestrator executes them, then re-asks). It is NOT a final answer: accepted/
+    // 'accepted' with NO output but `toolCallRequests` set is valid (the refine: accepted ⇔ !rejected).
+    const toolCallResponse = {
+      accepted: true,
+      validationResult: 'accepted',
+      providerMeta: validProviderMeta,
+      toolCallRequests: [
+        { id: 'call_1', name: 'web_search', arguments: '{"q":"battery chemistry 2026"}' },
+      ],
+    };
+    expect(ModelGatewayResponse.parse(toolCallResponse)).toEqual(toolCallResponse);
+    // it is additive/optional — the existing accepted/rejected responses (no toolCallRequests) still parse.
+    expect(ModelGatewayResponse.parse(acceptedResponse)).toEqual(acceptedResponse);
+    // an unlisted tool in a surfaced call is rejected (the closed ToolName allowlist, rule #3).
+    expect(
+      ModelGatewayResponse.safeParse({
+        ...toolCallResponse,
+        toolCallRequests: [{ id: 'c1', name: 'exec_shell', arguments: '{}' }],
+      }).success,
+    ).toBe(false);
+  });
 });
