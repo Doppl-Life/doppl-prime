@@ -248,20 +248,20 @@ describe("App", () => {
     expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
-  it("gates the calibrator behind a searchable reviewer picker", async () => {
+  it("gates the calibrator behind an exact reviewer email check", async () => {
     window.localStorage.clear();
     render(<App />);
     const reviewerInput = await screen.findByLabelText("Reviewer email");
     expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
     expect(screen.queryByText("Choose one of the allow-listed reviewer emails.")).not.toBeInTheDocument();
     await userEvent.type(reviewerInput, "melissa");
-    expect(await screen.findByRole("button", { name: "melissa.hargis@challenger.gauntletai.com" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "dalton.dinderman@challenger.gauntletai.com" })).not.toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "melissa.hargis@challenger.gauntletai.com" }));
-    expect(reviewerInput).toHaveValue("melissa.hargis@challenger.gauntletai.com");
+    expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByLabelText("Reviewer email")).toBeInTheDocument();
-    expect(screen.queryByText("Choose one of the allow-listed reviewer emails.")).not.toBeInTheDocument();
+    expect(screen.getByText("That email is not on the reviewer allow-list. Enter your full approved email address.")).toBeInTheDocument();
+    await userEvent.clear(reviewerInput);
+    await userEvent.type(reviewerInput, "melissa.hargis@challenger.gauntletai.com");
+    expect(screen.queryByText("That email is not on the reviewer allow-list. Enter your full approved email address.")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();

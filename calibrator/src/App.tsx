@@ -247,12 +247,6 @@ function canSeeJudgeEvaluation(reviewerEmail: string): boolean {
   return JUDGE_EVALUATION_RATERS.has(normalizeRaterEmail(reviewerEmail));
 }
 
-function matchingRaters(query: string): string[] {
-  const normalized = normalizeRaterEmail(query);
-  if (!normalized) return [];
-  return ALLOWED_RATERS.filter((rater) => rater.includes(normalized)).slice(0, 8);
-}
-
 function displayMarkdown(text: string): string {
   const normalized = text
     .replace(/<span\s+class=["']arrow["']\s*-?>/gi, " -> ")
@@ -755,6 +749,7 @@ export function App() {
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [score, setScore] = useState<number | null>(null);
   const [reviewerEmail, setReviewerEmail] = useState(() => {
     try {
@@ -883,7 +878,6 @@ export function App() {
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const normalizedReviewerEmail = normalizeRaterEmail(reviewerEmail);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
-  const loginMatches = useMemo(() => matchingRaters(loginEmail), [loginEmail]);
   const activeReviewerRating = reviewerRating(activeReviewArtifact, normalizedReviewerEmail);
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
@@ -1056,6 +1050,7 @@ export function App() {
   function updateReviewerEmail(value: string) {
     setReviewerEmail(value);
     setLoginEmail("");
+    setLoginError("");
     try {
       if (isAllowedRater(value)) {
         window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
@@ -1068,6 +1063,7 @@ export function App() {
   function logoutReviewer() {
     setReviewerEmail("");
     setLoginEmail("");
+    setLoginError("");
     setScore(null);
     setSavedPath("");
     setError("");
@@ -1076,6 +1072,15 @@ export function App() {
     } catch {
       // Ignore storage failures; clearing local state is enough for this render.
     }
+  }
+
+  function submitLogin() {
+    const normalized = normalizeRaterEmail(loginEmail);
+    if (!isAllowedRater(normalized)) {
+      setLoginError("That email is not on the reviewer allow-list. Enter your full approved email address.");
+      return;
+    }
+    updateReviewerEmail(normalized);
   }
 
   function updateAccessCode(value: string) {
@@ -1134,28 +1139,34 @@ export function App() {
             <input
               type="email"
               value={loginEmail}
-              onChange={(event) => setLoginEmail(event.target.value)}
-              placeholder="Search or enter your email"
+              onChange={(event) => {
+                setLoginEmail(event.target.value);
+                setLoginError("");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  submitLogin();
+                }
+              }}
+              placeholder="name@challenger.gauntletai.com"
               autoComplete="email"
+              aria-invalid={loginError ? "true" : "false"}
+              aria-describedby={loginError ? "login-error" : undefined}
             />
           </label>
-          {loginMatches.length > 0 ? (
-            <div className="login-results" aria-label="Matching reviewers">
-              {loginMatches.map((rater) => (
-                <button key={rater} type="button" onClick={() => setLoginEmail(rater)}>
-                  {rater}
-                </button>
-              ))}
-            </div>
-          ) : null}
           <button
             className="submit-button login-button"
             type="button"
-            disabled={!isAllowedRater(loginEmail)}
-            onClick={() => updateReviewerEmail(loginEmail)}
+            onClick={submitLogin}
           >
             Continue
           </button>
+          {loginError ? (
+            <p className="field-note login-error" id="login-error" role="alert">
+              {loginError}
+            </p>
+          ) : null}
         </section>
       </main>
     );
