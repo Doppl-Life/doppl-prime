@@ -74,6 +74,7 @@ scaffold/
 .env
 .env.*
 !.env.example
+!.env.sample
 
 # Node / TypeScript
 node_modules/
