@@ -4,7 +4,6 @@ import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { ModelGatewayResponse, ProviderMeta } from '@doppl/contracts';
 import type {
-  ChatRole,
   ModelGatewayRequest,
   ModelRole,
   ModelRoute,
@@ -21,6 +20,7 @@ import type { OpenRouterClient } from '../../../../src/model-gateway/adapters/op
 import { ProviderTimeoutError } from '../../../../src/model-gateway/adapters/retry';
 import type { RetryDeps } from '../../../../src/model-gateway/adapters/retry';
 import { TOOL_REGISTRY } from '../../../../src/model-gateway/tools/registry';
+import type { ProviderChatMessage } from '../../../../src/model-gateway/adapters/message-mapping';
 
 /**
  * P2.5 OpenRouter generation adapter (ARCHITECTURE.md §6 / §14, KEY SAFETY RULES #9 + #8 + #4).
@@ -96,7 +96,7 @@ type Behavior =
 
 interface RecordedCall {
   model: string;
-  messages: { role: ChatRole; content: string }[];
+  messages: ProviderChatMessage[];
   maxTokens?: number | undefined;
   responseFormat?: { type: 'json_object' } | undefined;
   tools?: unknown;

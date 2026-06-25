@@ -85,11 +85,50 @@ describe('ModelGatewayRequest — the only request seam (spec §6/§14)', () => 
         tools: [{ name: 'exec_shell', description: 'x' }],
       }).success,
     ).toBe(false);
-    // the closed 3-member ChatRole is UNCHANGED across the bump — a bare {role:'tool'} still rejects (the
-    // multi-turn tool-conversation message variants land in the tool-orchestrator slice, not here).
+    // TU.5 — the multi-turn tool conversation rides in `messages` WITHOUT widening the closed 3-member
+    // ChatRole (rule #5 isolation rests on system|user|assistant). Two extra variants parse:
+    //  (a) an assistant-tool-call echo (the model's requested calls, re-sent so the provider has context);
+    //  (b) a tool-result message (an executed tool's result — DATA; the orchestrator wrapUntrusted's it).
+    const toolConversation = {
+      role: 'population_generator',
+      messages: [
+        { role: 'system', content: 'You are a grounded idea-generating agent.' },
+        { role: 'user', content: 'Generate an idea about battery chemistry.' },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'call_1', name: 'web_search', arguments: '{"query":"battery"}' }],
+        },
+        { role: 'tool', toolCallId: 'call_1', toolName: 'web_search', content: 'result text' },
+      ],
+    };
+    expect(ModelGatewayRequest.parse(toolConversation)).toEqual(toolConversation);
+
+    // an assistant-tool-call message needs ≥1 toolCall; a tool-result needs a non-empty toolCallId + a
+    // closed toolName; a bare {role:'tool', content} (no toolCallId/toolName) STILL rejects (ChatRole is
+    // NOT widened — the pre-tool-use guarantee holds).
+    expect(
+      ModelGatewayRequest.safeParse({
+        role: 'population_generator',
+        messages: [{ role: 'assistant', content: '', toolCalls: [] }],
+      }).success,
+    ).toBe(false);
     expect(
       ModelGatewayRequest.safeParse({ role: 'critic', messages: [{ role: 'tool', content: 'x' }] })
         .success,
     ).toBe(false);
+    expect(
+      ModelGatewayRequest.safeParse({
+        role: 'population_generator',
+        messages: [{ role: 'tool', toolCallId: 'c1', toolName: 'sql', content: 'x' }],
+      }).success,
+    ).toBe(false);
+    // a tool-result content MAY be empty (a tool can legitimately return '').
+    expect(
+      ModelGatewayRequest.parse({
+        role: 'population_generator',
+        messages: [{ role: 'tool', toolCallId: 'c1', toolName: 'web_search', content: '' }],
+      }),
+    ).toBeDefined();
   });
 });

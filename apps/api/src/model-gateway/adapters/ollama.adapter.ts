@@ -1,15 +1,10 @@
 import { z } from 'zod';
 import type { ZodType } from 'zod';
-import type {
-  ChatRole,
-  ModelGatewayRequest,
-  ModelRole,
-  ModelRoute,
-  ProviderMeta,
-} from '@doppl/contracts';
+import type { ModelGatewayRequest, ModelRole, ModelRoute, ProviderMeta } from '@doppl/contracts';
 import type { ProviderCallFn, ProviderResult } from '../structured-output';
 import { ProviderCallError } from '../gateway';
 import type { ModelRegistry } from '../registry';
+import { toProviderMessages, type ProviderChatMessage } from './message-mapping';
 import { withRetry } from './retry';
 import type { RetryDeps, RetryPolicy } from './retry';
 
@@ -36,7 +31,7 @@ const PROVIDER_CALL_FAILED_ID = 'provider_call_failed';
 /** A single provider request shaped in CONTRACT terms (no transport type) for the injected client seam. */
 export interface OllamaCompletionParams {
   model: string;
-  messages: { role: ChatRole; content: string }[];
+  messages: ProviderChatMessage[];
   maxTokens?: number;
   /** Relaxed structured mode marker (ollama `format:'json'`); the schema is conveyed in-message. */
   responseFormat?: { type: 'json_object' };
@@ -104,9 +99,9 @@ function buildParams(
   request: ModelGatewayRequest,
   structured: boolean,
 ): OllamaCompletionParams {
-  const baseMessages = request.messages
-    ? request.messages.map((message) => ({ role: message.role, content: message.content }))
-    : [{ role: 'user' as ChatRole, content: request.prompt ?? '' }];
+  const baseMessages: ProviderChatMessage[] = request.messages
+    ? toProviderMessages(request.messages)
+    : [{ role: 'user', content: request.prompt ?? '' }];
   const params: OllamaCompletionParams = { model: modelId, messages: baseMessages };
   if (request.maxTokens !== undefined) {
     params.maxTokens = request.maxTokens;
@@ -118,7 +113,7 @@ function buildParams(
     // regardless of candidate). The gateway's Zod validate/repair(≤1)/reject is AUTHORITATIVE (rule #5).
     params.responseFormat = { type: 'json_object' };
     params.messages = [
-      { role: 'system' as ChatRole, content: structuredSchemaInstruction(request.schema) },
+      { role: 'system', content: structuredSchemaInstruction(request.schema) },
       ...baseMessages,
     ];
   }

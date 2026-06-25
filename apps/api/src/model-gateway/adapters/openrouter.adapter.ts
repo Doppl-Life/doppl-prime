@@ -3,7 +3,6 @@ import type { ZodType } from 'zod';
 import OpenAI from 'openai';
 import {
   ToolName,
-  type ChatRole,
   type ModelGatewayRequest,
   type ModelRole,
   type ModelRoute,
@@ -14,6 +13,7 @@ import type { ProviderCallFn, ProviderResult } from '../structured-output';
 import { ProviderCallError } from '../gateway';
 import type { ModelRegistry } from '../registry';
 import { TOOL_REGISTRY } from '../tools/registry';
+import { toProviderMessages, type ProviderChatMessage } from './message-mapping';
 import { withRetry } from './retry';
 import type { RetryDeps, RetryPolicy } from './retry';
 
@@ -47,7 +47,7 @@ export interface OpenRouterFunctionTool {
 /** A single provider request shaped in CONTRACT terms (no vendor type) for the injected client seam. */
 export interface OpenRouterCompletionParams {
   model: string;
-  messages: { role: ChatRole; content: string }[];
+  messages: ProviderChatMessage[];
   maxTokens?: number;
   /** FB.4 — the generation call's sampling temperature (the diverge/converge dial's clamped nudge). */
   temperature?: number;
@@ -108,9 +108,9 @@ function buildParams(
   request: ModelGatewayRequest,
   structured: boolean,
 ): OpenRouterCompletionParams {
-  const baseMessages = request.messages
-    ? request.messages.map((message) => ({ role: message.role, content: message.content }))
-    : [{ role: 'user' as ChatRole, content: request.prompt ?? '' }];
+  const baseMessages: ProviderChatMessage[] = request.messages
+    ? toProviderMessages(request.messages)
+    : [{ role: 'user', content: request.prompt ?? '' }];
   const params: OpenRouterCompletionParams = { model: modelId, messages: baseMessages };
   if (request.maxTokens !== undefined) {
     params.maxTokens = request.maxTokens;
@@ -130,7 +130,7 @@ function buildParams(
     // AUTHORITATIVE check (rule #5); provider strict-mode was only an optimization.
     params.responseFormat = { type: 'json_object' };
     params.messages = [
-      { role: 'system' as ChatRole, content: structuredSchemaInstruction(request.schema) },
+      { role: 'system', content: structuredSchemaInstruction(request.schema) },
       ...baseMessages,
     ];
   }

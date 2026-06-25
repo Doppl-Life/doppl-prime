@@ -4,12 +4,12 @@ import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 import { ProviderMeta } from '@doppl/contracts';
 import type {
-  ChatRole,
   ModelGatewayRequest,
   ModelRole,
   ModelRoute,
   ProviderCapability,
 } from '@doppl/contracts';
+import type { ProviderChatMessage } from '../../../../src/model-gateway/adapters/message-mapping';
 import type { ModelRegistry } from '../../../../src/model-gateway/registry';
 import { ProviderCallError } from '../../../../src/model-gateway/gateway';
 import {
@@ -88,7 +88,7 @@ type Behavior =
 
 interface RecordedCall {
   model: string;
-  messages: { role: ChatRole; content: string }[];
+  messages: ProviderChatMessage[];
   maxTokens?: number | undefined;
   responseFormat?: { type: 'json_object' } | undefined;
   timeoutMs: number;
