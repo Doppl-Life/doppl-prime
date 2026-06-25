@@ -111,3 +111,17 @@ export type { LiveGatewayDeps } from './live-gateway';
 export { createModelRegistry, loadModelRegistry, assertProviderCredentials } from './registry';
 export type { ModelRegistry, RegistryConfigSources } from './registry';
 export { RegistryConfig, RouteConfig } from './config.schema';
+
+// Tool registry (tool-use TU.3) — the agent-research tool allowlist (rule #3, mirrors check-runners) +
+// the parallel executor-impl map (web_search/fetch_url) + the fail-safe `resolveTool` gate, plus the pure
+// fetch_url SSRF guard. The tool-orchestrating gateway (boot) injects the real IO seams + wires the gate.
+export { TOOL_REGISTRY, TOOL_IMPLS, resolveTool, offeredToolDescriptors } from './tools/registry';
+export type {
+  ToolSpec,
+  ToolExecutor,
+  ToolExecutorDeps,
+  ToolExecutionResult,
+  ResolvedTool,
+} from './tools/registry';
+export { assertSafeFetchUrl, isPrivateHost, unbracketHost } from './tools/ssrf';
+export type { SsrfResult, SsrfReason } from './tools/ssrf';
