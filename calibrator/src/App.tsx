@@ -840,6 +840,23 @@ export function App() {
       });
   }, []);
 
+  useEffect(() => {
+    function updateViewportHeight() {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--calibrator-vh", `${height}px`);
+    }
+
+    updateViewportHeight();
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+    window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+    window.addEventListener("resize", updateViewportHeight);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+      window.visualViewport?.removeEventListener("scroll", updateViewportHeight);
+      window.removeEventListener("resize", updateViewportHeight);
+    };
+  }, []);
+
   const selectedCase = useMemo(
     () => index?.cases.filter(hasRateableArtifacts).find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
     [index, selectedCaseId],
@@ -875,6 +892,15 @@ export function App() {
   const activeReviewArtifact =
     ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
   const activeTitle = artifactTitle(activeReviewArtifact);
+  const ratingObjectLabel = ratingTarget === "problem_recovery" ? "problem recovery" : "doppl";
+  const ratingQuestion =
+    ratingTarget === "problem_recovery"
+      ? "Does this identify the right problem in the case?"
+      : "Does this propose a useful finding or solution?";
+  const ratingModeDescription =
+    ratingTarget === "problem_recovery"
+      ? "Problem recoveries are judged on whether they frame the important hidden problem clearly and usefully."
+      : "Doppls are judged on whether they offer a useful finding, implication, or solution path.";
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const normalizedReviewerEmail = normalizeRaterEmail(reviewerEmail);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
@@ -1262,6 +1288,21 @@ export function App() {
       </section>
 
       <section className="trace-surface" aria-label="Case and selected artifact review">
+        <section className="review-guide" aria-label="Rating instructions">
+          <div className="guide-rubric">
+            <p className="trace-label">What to rate</p>
+            <p>
+              Rate how useful this {ratingObjectLabel} is for understanding or solving the case. {ratingQuestion}
+            </p>
+          </div>
+          <ol className="guide-steps" aria-label="Rating steps">
+            <li>Choose a case</li>
+            <li>Read the {ratingObjectLabel}</li>
+            <li>Score usefulness from -5 to +5</li>
+          </ol>
+          <p className="mode-explainer">{ratingModeDescription}</p>
+        </section>
+
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
           <h2>{activeTitle}</h2>
@@ -1344,9 +1385,15 @@ export function App() {
             onChange={(event) => setScore(Number(event.target.value))}
           />
           <div className="slider-scale" aria-hidden="true">
-            <span>-5</span>
-            <span>0</span>
-            <span>+5</span>
+            <span>
+              <span className="scale-label-full">-5 misleading</span>
+              <span className="scale-label-short">-5 bad</span>
+            </span>
+            <span>0 neutral</span>
+            <span>
+              <span className="scale-label-full">+5 highly useful</span>
+              <span className="scale-label-short">+5 useful</span>
+            </span>
           </div>
           {reviewerIsAllowed && activeReviewArtifact ? (
             <p className="reviewer-rating-note">
