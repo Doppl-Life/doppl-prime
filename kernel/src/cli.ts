@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { runKernel } from './run-kernel.ts';
 import { exportRunToVault } from './vault-export.ts';
 import { compileProposalNodes } from './node-compiler.ts';
 import { writeFlowNodes } from './vault-sink.ts';
 import { writeProofBoard } from './proof-board.ts';
 import { createModelGenerationProviders } from './generation-providers.ts';
+import { createCliModelClient } from './cli-model-client.ts';
 import {
   createPresetModelClient,
   createFusionModelClient,
@@ -32,6 +34,7 @@ export type KernelCliArgs = {
   liveModel?: boolean;
   provider: OpenAICompatibleProvider;
   fusionModels?: string[];
+  cli?: string;
 };
 
 export const defaultKernelArgs: KernelCliArgs = {
@@ -123,6 +126,9 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
         .map((model) => model.trim())
         .filter(Boolean);
       index += 1;
+    } else if (flag === '--cli') {
+      args.cli = readFlagValue(argv, index, flag);
+      index += 1;
     } else {
       throw new Error(`unknown CLI flag: ${flag}`);
     }
@@ -135,6 +141,9 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
   }
   if (args.liveModel && args.replayModelCallsPath) {
     throw new Error('--live-model cannot be combined with --replay-model-calls');
+  }
+  if (args.cli && (args.liveModel || args.replayModelCallsPath)) {
+    throw new Error('--cli cannot be combined with --live-model or --replay-model-calls');
   }
   return args;
 }
@@ -158,15 +167,31 @@ function liveApiKey(provider: OpenAICompatibleProvider): string | undefined {
   return byProvider[provider];
 }
 
+function cliToolFromConfig(
+  name: string,
+  configPath = 'doppl.config.json',
+): { cmd: string; headless: string[] } {
+  const config = JSON.parse(readFileSync(configPath, 'utf8')) as {
+    tools?: Record<string, { cmd?: string; headless?: string[] }>;
+  };
+  const tool = config.tools?.[name];
+  if (!tool?.cmd) throw new Error(`no CLI tool '${name}' in ${configPath} tools`);
+  return { cmd: tool.cmd, headless: tool.headless ?? [] };
+}
+
 function liveGenerationProvidersFromCliArgs(args: KernelCliArgs) {
-  if (!args.liveModel) return undefined;
-  let client: ModelClient = createPresetModelClient(args.provider, {
-    apiKey: liveApiKey(args.provider),
-  });
-  if (args.fusionModels?.length) {
-    client = createFusionModelClient({ client, models: args.fusionModels, synthesisModel: args.model });
+  let client: ModelClient | undefined;
+  if (args.cli) {
+    const tool = cliToolFromConfig(args.cli);
+    client = createCliModelClient({ ...tool, provider: args.cli });
+  } else if (args.liveModel) {
+    client = createPresetModelClient(args.provider, { apiKey: liveApiKey(args.provider) });
+    if (args.fusionModels?.length) {
+      client = createFusionModelClient({ client, models: args.fusionModels, synthesisModel: args.model });
+    }
   }
-  return createModelGenerationProviders({ client, model: args.model! });
+  if (!client) return undefined;
+  return createModelGenerationProviders({ client, model: args.model ?? args.cli ?? 'cli' });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
