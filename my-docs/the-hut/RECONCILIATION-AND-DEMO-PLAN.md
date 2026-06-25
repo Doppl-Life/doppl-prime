@@ -71,8 +71,25 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    `toDashboardEnvelope(event): DashboardEnvelope`, a pure/total projection guaranteeing the required fields
    and including correlation ids only when present. Wired into both SSE responses (`server-store.ts`); made
    `eventsAfter` generic to preserve `RunEvent`. The envelope keeps `payload` + adds top-level ids, so dalton's
-   current `App.jsx` keeps working. 2 new tests, `pnpm build` green (120/120). The 26→~20 "drop unmapped" is
-   the *reducer's* behavior (R5), not the adapter — types pass through.
+   current `App.jsx` keeps working. 2 new tests, `pnpm build` green (120/120).
+
+   **R4 is two layers — only layer 1 is done.** Diffing dalton's 26 `RUN_EVENT_TYPES` against melissa's
+   `.strict()` `RunEventEnvelope` (`type: z.enum([18 names])`, `actor` enum identical to dalton, `runId`/`id`
+   `.min(1)`, `schemaVersion` positive, `occurredAt` datetime — all of which `toDashboardEnvelope` satisfies):
+   • **8 shared, flow cleanly:** `run.started/completed/failed/stopped`, `candidate.created`, `fitness.scored`,
+   `generation.started/completed`.
+   • **18 dalton-only → dropped** by the strict enum (energy/`materialized`/`control_baseline.*`/
+   `critic.verdict_recorded`/`knowledge.*`/`model.*`/`pair.*`/`problem_recovery.created`). Silent-drop is fine.
+   • **10 melissa-only her rich panels need but dalton never emits:** `agenome.spawned/mutated/reproduced/fused`,
+   `critic.reviewed`, `energy.spent`, `lineage.culled`, `novelty.scored`, `run.configured`, `check.completed`.
+   ✅ **Layer 1 (envelope reshape) done.** ▶ **Layer 2 (vocabulary mapping) is the remaining R4 substance**
+   (build-status' "emit run.configured, mapped CriticReview, agenome lifecycle, shaped energy"): rename/reshape
+   dalton events into melissa's names + payload contracts (`critic.verdict_recorded`→`critic.reviewed`,
+   `agenome.energy_*`→`energy.spent`, `agenome.materialized`→spawn/reproduce lifecycle, `candidate.fused`→
+   `agenome.fused`, emit `run.configured`). Needs melissa's per-type payload contracts
+   (`packages/contracts/src/domain/*`). Then **R5** = lift melissa's ~40-file web app (App, charts, lineage,
+   ~15 panels, reducer/store), feed from this SSE, add deps (Recharts, zod), skin with cody tokens —
+   a dedicated frontend session.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin
