@@ -6,13 +6,13 @@
   "scripts": {
     "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && npm test",
+    "build": "pnpm run typecheck && pnpm test",
     "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
     "kernel:serve": "node --experimental-strip-types kernel/src/server.ts",
     "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts",
     "kernel:web:build": "vite build --config kernel/web/vite.config.js",
-    "prestart": "npm run kernel:web:build",
-    "start": "npm run kernel:serve"
+    "prestart": "pnpm run kernel:web:build",
+    "start": "pnpm run kernel:serve"
   },
   "engines": {
     "node": ">=22"

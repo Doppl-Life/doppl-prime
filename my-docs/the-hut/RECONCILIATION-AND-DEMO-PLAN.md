@@ -283,7 +283,7 @@ Each is a clean, independently verifiable increment on `michael-reconciliation`.
 the human drives; the rest are agent file-work the human commits.
 
 - **R0 — Foundation: dalton kernel as base** `[git]`. Bring dalton's `kernel/` onto
-  `michael-reconciliation`. *Done:* `npm test` (dalton's suite) green; fixture run works, no key.
+  `michael-reconciliation`. *Done:* `pnpm test` (dalton's suite) green; fixture run works, no key.
 - **R1 — Vault layout → canon.** Replace dalton's export paths with michael's `Sink`
   (`flow/<slug>/<slug>.md` + `stock/<slug>.md`) + `slugId()`. SSOT: one module owns vault writes.
   *Done:* a fixture Die Hard run writes canonical nodes into `../agarden`; tests updated + green.

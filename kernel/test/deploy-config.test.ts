@@ -7,7 +7,7 @@ test('package exposes a production start command for the kernel server', async (
     scripts: Record<string, string>;
   };
 
-  assert.equal(pkg.scripts.start, 'npm run kernel:serve');
+  assert.equal(pkg.scripts.start, 'pnpm run kernel:serve');
 });
 
 test('railway config starts and health-checks the kernel server', async () => {
@@ -17,7 +17,7 @@ test('railway config starts and health-checks the kernel server', async () => {
   };
 
   assert.equal(config.build.builder, 'RAILPACK');
-  assert.equal(config.deploy.startCommand, 'npm start');
+  assert.equal(config.deploy.startCommand, 'pnpm start');
   assert.equal(config.deploy.healthcheckPath, '/health');
   assert.equal(config.deploy.healthcheckTimeout, 30);
 });
