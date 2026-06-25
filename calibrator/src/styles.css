@@ -576,7 +576,6 @@ textarea {
 
 .slider-row {
   align-self: center;
-  --slider-thumb-size: 18px;
   display: grid;
   gap: 6px;
 }
@@ -598,22 +597,40 @@ textarea {
 
 .slider-row input[type="range"] {
   accent-color: var(--teal);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  height: 18px;
+  margin: 0;
   padding: 0;
 }
 
 .slider-scale {
   color: var(--muted);
-  display: flex;
   font-size: 11px;
   font-weight: 900;
-  justify-content: space-between;
+  height: 12px;
   margin-top: -4px;
-  padding: 0 calc(var(--slider-thumb-size) / 2);
+  position: relative;
 }
 
 .slider-scale span {
-  min-width: 2.5ch;
+  position: absolute;
   text-align: center;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+.slider-scale span:nth-child(1) {
+  left: 0;
+}
+
+.slider-scale span:nth-child(2) {
+  left: 50%;
+}
+
+.slider-scale span:nth-child(3) {
+  left: 100%;
 }
 
 .reviewer-rating-note {
