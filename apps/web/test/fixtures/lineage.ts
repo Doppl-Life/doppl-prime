@@ -10,8 +10,15 @@ import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts'
 export const multiNodeLineage: LineageGraphProjection = {
   runId: 'run_1',
   nodes: [
-    { id: 'g0', type: 'generation', label: 'Generation 0', dataRef: 'gen_0' },
-    { id: 'a0', type: 'agenome', label: 'Agenome 0', status: 'active', dataRef: 'agn_0' },
+    { id: 'g0', type: 'generation', label: 'Generation 0', dataRef: 'gen_0', generationIndex: 0 },
+    {
+      id: 'a0',
+      type: 'agenome',
+      label: 'Agenome 0',
+      status: 'active',
+      dataRef: 'agn_0',
+      generationIndex: 0,
+    },
     {
       id: 'c0',
       type: 'candidate',
@@ -19,13 +26,14 @@ export const multiNodeLineage: LineageGraphProjection = {
       status: 'scored',
       metrics: { fitness: 0.8, novelty: 0.7 },
       dataRef: 'cand_0',
+      generationIndex: 0,
     },
     { id: 'cr0', type: 'critic', label: 'Critic review', status: 'passed', dataRef: 'crev_0' },
     { id: 's0', type: 'score', label: 'Fitness 0.80', metrics: { total: 0.8 }, dataRef: 'fit_0' },
   ],
   edges: [
     { id: 'e0', source: 'g0', target: 'a0', type: 'spawned' },
-    { id: 'e1', source: 'a0', target: 'c0', type: 'produced' },
+    { id: 'e1', source: 'a0', target: 'c0', type: 'generated' },
     { id: 'e2', source: 'c0', target: 'cr0', type: 'reviewed_by' },
     { id: 'e3', source: 'c0', target: 's0', type: 'scored' },
   ],

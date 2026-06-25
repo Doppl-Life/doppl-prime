@@ -1,11 +1,63 @@
 import { describe, expect, it } from 'vitest';
+import type { LineageGraphProjection } from '@doppl/contracts';
 import { lineageToFlow } from '../../../src/lineage/lineageToFlow';
 import { layoutGraph } from '../../../src/lineage/layout';
 import { multiNodeLineage } from '../../fixtures/lineage';
 
-describe('layout — deterministic Dagre LR positions', () => {
-  // spec(§12): the same projection lays out the same way each render (no coordinates in the
-  // projection → deterministic Dagre LR; no RNG/wall-clock).
+/** A two-generation projection: gen0 {header,agenome,candidate}, gen1 {header,agenome,candidate}. */
+function twoGenProjection(): LineageGraphProjection {
+  return {
+    runId: 'run_1',
+    nodes: [
+      { id: 'g0', type: 'generation', label: 'Gen 0', dataRef: 'gen_0', generationIndex: 0 },
+      {
+        id: 'a0',
+        type: 'agenome',
+        label: 'A0',
+        status: 'active',
+        dataRef: 'agn_0',
+        generationIndex: 0,
+      },
+      {
+        id: 'c0',
+        type: 'candidate',
+        label: 'C0',
+        status: 'scored',
+        dataRef: 'cand_0',
+        generationIndex: 0,
+      },
+      { id: 'g1', type: 'generation', label: 'Gen 1', dataRef: 'gen_1', generationIndex: 1 },
+      {
+        id: 'a1',
+        type: 'agenome',
+        label: 'A1',
+        status: 'active',
+        dataRef: 'agn_1',
+        generationIndex: 1,
+      },
+      {
+        id: 'c1',
+        type: 'candidate',
+        label: 'C1',
+        status: 'scored',
+        dataRef: 'cand_1',
+        generationIndex: 1,
+      },
+    ],
+    edges: [
+      { id: 'e-sp0', source: 'g0', target: 'a0', type: 'spawned' },
+      { id: 'e-gen0', source: 'a0', target: 'c0', type: 'generated' },
+      { id: 'e-sp1', source: 'g1', target: 'a1', type: 'spawned' },
+      { id: 'e-gen1', source: 'a1', target: 'c1', type: 'generated' },
+      { id: 'e-rep', source: 'a0', target: 'a1', type: 'mutation_only' },
+    ],
+    sequenceThrough: 30,
+  };
+}
+
+describe('layout — deterministic per-generation COLUMN positions', () => {
+  // spec(§12): the same projection lays out the same way each render (no coordinates in the projection
+  // → deterministic manual grid keyed on generationIndex; no RNG/wall-clock).
   it('test_layout_is_deterministic', () => {
     const flow = lineageToFlow(multiNodeLineage);
     const a = layoutGraph(flow.nodes, flow.edges).map((n) => ({ id: n.id, position: n.position }));
@@ -23,13 +75,44 @@ describe('layout — deterministic Dagre LR positions', () => {
     }
   });
 
-  // spec(§12 LR tiers): generational tiers flow left→right — a downstream node sits at a greater x
-  // than its upstream parent (g0 → a0 → c0).
-  it('test_layout_flows_left_to_right', () => {
-    const flow = lineageToFlow(multiNodeLineage);
+  // spec(§12 columns): nodes bucket into COLUMNS by generationIndex — a higher generation sits at a
+  // greater x; nodes that share a generationIndex share a column x (and stack vertically).
+  it('test_layout_buckets_into_columns_by_generation', () => {
+    const flow = lineageToFlow(twoGenProjection());
     const positioned = layoutGraph(flow.nodes, flow.edges);
     const x = Object.fromEntries(positioned.map((n) => [n.id, n.position.x]));
-    expect(x.a0!).toBeGreaterThan(x.g0!); // spawned child is to the right of the generation backbone
-    expect(x.c0!).toBeGreaterThan(x.a0!); // produced candidate is to the right of its agenome
+    // column x increases with generationIndex.
+    expect(x.g1!).toBeGreaterThan(x.g0!);
+    // same-generation nodes share a column x.
+    expect(x.a0!).toBe(x.g0!);
+    expect(x.c0!).toBe(x.g0!);
+    expect(x.a1!).toBe(x.g1!);
+    expect(x.c1!).toBe(x.g1!);
+  });
+
+  // spec(§12 within-column order): the generation header sits at the top of its column (row 0), with
+  // its agenome stacked directly above the candidate it produced (smaller y = higher).
+  it('test_layout_stacks_header_agenome_candidate', () => {
+    const flow = lineageToFlow(twoGenProjection());
+    const positioned = layoutGraph(flow.nodes, flow.edges);
+    const y = Object.fromEntries(positioned.map((n) => [n.id, n.position.y]));
+    expect(y.g0!).toBeLessThan(y.a0!); // header above its agenome
+    expect(y.a0!).toBeLessThan(y.c0!); // agenome directly above its produced candidate
+  });
+
+  // spec(§12): a node with no generationIndex falls into a trailing fallback column (one past the max).
+  it('test_layout_undefined_index_goes_to_trailing_column', () => {
+    const proj = twoGenProjection();
+    const withOrphan: LineageGraphProjection = {
+      ...proj,
+      nodes: [
+        ...proj.nodes,
+        { id: 'orphan', type: 'candidate', label: 'Orphan', status: 'created', dataRef: 'cand_x' },
+      ],
+    };
+    const flow = lineageToFlow(withOrphan);
+    const positioned = layoutGraph(flow.nodes, flow.edges);
+    const x = Object.fromEntries(positioned.map((n) => [n.id, n.position.x]));
+    expect(x.orphan!).toBeGreaterThan(x.g1!); // trailing fallback column, past the max real index
   });
 });

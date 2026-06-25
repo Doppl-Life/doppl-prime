@@ -98,6 +98,77 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
     );
     expect(screen.getByText(/total/i)).toBeTruthy();
   });
+
+  // spec(§12 color-code): the node BODY is color-coded by operation via a prominent LEFT border bar —
+  // a seeded agenome (seeded hue), a mutated agenome (mutated hue), a fused agenome (reproduced hue),
+  // and the selected winner (selected hue + winner glow). Color is redundant w/ the StatusBadge glyph.
+  it('test_node_body_color_coded_by_operation', () => {
+    const cardLeftBorder = (data: LineageNodeData): string => {
+      const { container } = render(<LineageNodeCard data={data} />);
+      const div = container.querySelector('div') as HTMLElement;
+      const bl = div.style.borderLeft;
+      cleanup();
+      return bl;
+    };
+
+    // a seeded agenome (bornBy seed) → the seeded hue on the left bar.
+    expect(
+      cardLeftBorder({
+        label: 'Seed',
+        nodeType: 'agenome',
+        status: 'active',
+        dataRef: 'agn_s',
+        working: false,
+        bornBy: 'seed',
+      }),
+    ).toContain('var(--status-seeded)');
+
+    // a mutated agenome → the mutated (amber) hue.
+    expect(
+      cardLeftBorder({
+        label: 'Mut',
+        nodeType: 'agenome',
+        status: 'active',
+        dataRef: 'agn_m',
+        working: false,
+        bornBy: 'mutation',
+      }),
+    ).toContain('var(--status-mutated)');
+
+    // a fused agenome → the reproduced (violet) hue.
+    expect(
+      cardLeftBorder({
+        label: 'Fus',
+        nodeType: 'agenome',
+        status: 'active',
+        dataRef: 'agn_f',
+        working: false,
+        bornBy: 'fusion',
+      }),
+    ).toContain('var(--status-reproduced)');
+
+    // the selected winner → the selected (gold) hue.
+    expect(
+      cardLeftBorder({
+        label: 'W',
+        nodeType: 'candidate',
+        status: 'selected',
+        dataRef: 'cand_w',
+        working: false,
+      }),
+    ).toContain('var(--status-selected)');
+
+    // a culled candidate → the culled (gray) hue.
+    expect(
+      cardLeftBorder({
+        label: 'X',
+        nodeType: 'candidate',
+        status: 'culled',
+        dataRef: 'cand_x',
+        working: false,
+      }),
+    ).toContain('var(--status-culled)');
+  });
 });
 
 describe('LineageGraph — React Flow lineage panel', () => {

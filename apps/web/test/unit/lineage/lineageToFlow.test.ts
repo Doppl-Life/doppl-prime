@@ -115,6 +115,74 @@ describe('lineageToFlow — pure LineageGraphProjection → React Flow mapping',
     expect(n.c0!.data.working).toBe(false);
   });
 
+  // spec(§8/§3 + §12): an AGENOME's `bornBy` is derived from its INCOMING reproduction edge — the
+  // fusion family → 'fusion', `mutation_only` → 'mutation', no incoming repro edge → 'seed'. Non-agenome
+  // nodes leave it undefined. (The repro edge's SOURCE may be any node; only target+type classify it.)
+  it('test_bornBy_derived_from_incoming_reproduction_edge', () => {
+    const proj = fullProjection({
+      nodes: [
+        { id: 'g0', type: 'generation', label: 'Gen 0', dataRef: 'gen_0' },
+        { id: 'a_seed', type: 'agenome', label: 'Seed', status: 'active', dataRef: 'agn_s' },
+        { id: 'a_mut', type: 'agenome', label: 'Mut', status: 'active', dataRef: 'agn_m' },
+        { id: 'a_fus', type: 'agenome', label: 'Fus', status: 'active', dataRef: 'agn_f' },
+        { id: 'c0', type: 'candidate', label: 'C0', status: 'scored', dataRef: 'cand_0' },
+      ],
+      edges: [
+        { id: 'sp', source: 'g0', target: 'a_seed', type: 'spawned' }, // not a repro edge → seed
+        { id: 'm', source: 'a_seed', target: 'a_mut', type: 'mutation_only' },
+        { id: 'f', source: 'a_seed', target: 'a_fus', type: 'crossover' }, // fusion family
+        { id: 'gen', source: 'a_seed', target: 'c0', type: 'generated' },
+      ],
+    });
+    const n = byId(lineageToFlow(proj).nodes);
+    expect(n.a_seed!.data.bornBy).toBe('seed'); // only a `spawned` edge incoming → seed
+    expect(n.a_mut!.data.bornBy).toBe('mutation'); // incoming mutation_only
+    expect(n.a_fus!.data.bornBy).toBe('fusion'); // incoming crossover (fusion family)
+    expect(n.c0!.data.bornBy).toBeUndefined(); // non-agenome → undefined
+    expect(n.g0!.data.bornBy).toBeUndefined();
+  });
+
+  // spec(§12): generationIndex passes through onto node data (the column the layout buckets into).
+  it('test_generationIndex_threads_through', () => {
+    const proj = fullProjection({
+      nodes: [
+        {
+          id: 'a0',
+          type: 'agenome',
+          label: 'A0',
+          status: 'active',
+          dataRef: 'agn_0',
+          generationIndex: 2,
+        },
+      ],
+      edges: [],
+    });
+    expect(byId(lineageToFlow(proj).nodes).a0!.data.generationIndex).toBe(2);
+  });
+
+  // spec(§12): each surviving edge carries its per-type visual — a fusion edge is violet+animated; a
+  // plumbing `spawned` edge is faint and not animated.
+  it('test_edges_carry_per_type_style', () => {
+    const proj = fullProjection({
+      nodes: [
+        { id: 'a0', type: 'agenome', label: 'A0', status: 'active', dataRef: 'agn_0' },
+        { id: 'a1', type: 'agenome', label: 'A1', status: 'active', dataRef: 'agn_1' },
+        { id: 'g0', type: 'generation', label: 'Gen 0', dataRef: 'gen_0' },
+      ],
+      edges: [
+        { id: 'fuse', source: 'a0', target: 'a1', type: 'fusion' },
+        { id: 'sp', source: 'g0', target: 'a0', type: 'spawned' },
+      ],
+    });
+    const { edges } = lineageToFlow(proj);
+    const e = Object.fromEntries(edges.map((ed) => [ed.id, ed]));
+    expect(e.fuse!.style?.stroke).toBe('var(--status-reproduced)');
+    expect(e.fuse!.animated).toBe(true);
+    expect(e.fuse!.markerEnd).toBeTruthy();
+    expect(e.sp!.style?.stroke).toBe('var(--border-subtle)');
+    expect(e.sp!.animated).toBeUndefined();
+  });
+
   // spec(§10 watermark): a stale (lower sequenceThrough) projection never replaces a newer one.
   it('test_pickFreshestProjection_watermark', () => {
     const older = fullProjection({ sequenceThrough: 12 });

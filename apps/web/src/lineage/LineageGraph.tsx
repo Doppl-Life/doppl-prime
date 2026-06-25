@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
+import { Background, Controls, Panel, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { LineageGraphProjection, LineageNodeType, RunEventEnvelope } from '../data/contracts';
 import { lineageToFlow, pickFreshestProjection } from './lineageToFlow';
@@ -8,6 +8,7 @@ import type { LineageNodeData } from './lineageToFlow';
 import { layoutGraph } from './layout';
 import { deriveInFlight } from './inFlight';
 import { lineageNodeTypes } from './nodeTypes';
+import { LineageLegend } from './LineageLegend';
 
 /**
  * LineageGraph — the §12 dashboard centerpiece. Renders the storage-agnostic `LineageGraphProjection`
@@ -94,6 +95,10 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
           >
             <Background />
             <Controls showInteractive={false} />
+            {/* Fixed-during-pan/zoom key so a non-expert can read the color-code + edge styles. */}
+            <Panel position="top-right">
+              <LineageLegend />
+            </Panel>
           </ReactFlow>
         </ReactFlowProvider>
       </div>
