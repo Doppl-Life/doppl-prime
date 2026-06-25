@@ -576,7 +576,9 @@ export function App() {
   const [ratingsEndpoint, setRatingsEndpoint] = useState("");
   const requiresAccessCode = hostedEndpointRequiresAccessCode(ratingsEndpoint);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const lastArtifactScoreKey = useRef("");
+  const lastScoreArtifactKey = useRef("");
+  const lastScoreReviewer = useRef("");
+  const lastScoreWasHydrated = useRef(false);
 
   async function mergeHostedRatingsLedger(data: CalibratorIndex): Promise<CalibratorIndex> {
     const ledgerUrl = hostedRatingsLedgerUrl();
@@ -745,20 +747,27 @@ export function App() {
 
   useEffect(() => {
     const artifactScoreKey = `${ratingTarget}:${activeArtifactValue}`;
-    const artifactChanged = lastArtifactScoreKey.current !== artifactScoreKey;
-    lastArtifactScoreKey.current = artifactScoreKey;
+    const artifactChanged = lastScoreArtifactKey.current !== artifactScoreKey;
+    const reviewerChanged = lastScoreReviewer.current !== normalizedReviewerEmail;
+    const previousScoreWasHydrated = lastScoreWasHydrated.current;
+
+    lastScoreArtifactKey.current = artifactScoreKey;
+    lastScoreReviewer.current = normalizedReviewerEmail;
 
     if (!activeReviewArtifact) {
       setScore(null);
+      lastScoreWasHydrated.current = false;
       return;
     }
 
     if (activeReviewerRating) {
       setScore(activeReviewerRating.score);
+      lastScoreWasHydrated.current = true;
       return;
     }
 
-    if (artifactChanged) {
+    lastScoreWasHydrated.current = false;
+    if (artifactChanged || (reviewerChanged && previousScoreWasHydrated)) {
       setScore(null);
     }
   }, [
@@ -766,6 +775,7 @@ export function App() {
     activeReviewerRating?.score,
     activeReviewArtifact?.node_id,
     activeArtifactValue,
+    normalizedReviewerEmail,
     ratingTarget,
   ]);
 
