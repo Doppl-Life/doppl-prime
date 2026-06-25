@@ -20,6 +20,7 @@ copy of something that already froze.
 ## The files
 
 - `PROPOSAL.md` — the current frame and open proposals. **Start here.**
+- `RECONCILIATION-AND-DEMO-PLAN.md` — the bake-off, Agora, and demo tickets.
 - `README.md` — this file.
 - `flow.svg` — the flow diagram.
 

@@ -5,8 +5,7 @@ description: >
   "markdown is a programming language" compiler — it emits the program (the node). It renders; it
   does not think.
 trigger: >
-  After a stage's Growth is produced and the judge has evaluated it, to write the result as the next
-  node.
+  After a stage's Growth is produced and the judge has evaluated it, to write the result as the next node.
 kind: kernel function · markdown-as-code · a cheap model is enough
 ---
 
