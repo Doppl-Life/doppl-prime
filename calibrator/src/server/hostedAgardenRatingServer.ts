@@ -107,6 +107,7 @@ function healthPayload() {
     authRequired,
     writeAuthConfigured: Boolean(envValue("CALIBRATOR_WRITE_TOKEN")),
     githubWriteMode: envValue("AGARDEN_GITHUB_TOKEN") ? "token" : "app",
+    ratingsMethods: ["GET", "POST", "OPTIONS"],
     githubAppConfigured: Boolean(
       envValue("GITHUB_APP_ID") &&
         envValue("GITHUB_APP_INSTALLATION_ID") &&
