@@ -56,6 +56,11 @@ const feed: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   color: 'var(--fg-muted)',
+  // Confine the in-flight activity feed to a fixed-height, internally-scrollable box so a long live run
+  // never grows the pane (the page-level cockpit clamp lives in S2OrganismView; this bounds the feed
+  // itself — directly the "logs should sit in a confined scrollable box" ask).
+  maxHeight: '10rem',
+  overflowY: 'auto',
 };
 
 export function LineageGraph({ projection, events, onNodeClick }: LineageGraphProps) {
