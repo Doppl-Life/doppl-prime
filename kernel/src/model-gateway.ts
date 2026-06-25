@@ -142,7 +142,6 @@ export function createRecordingModelClient(client: ModelClient): RecordingModelC
 // A provider is just a base URL (+ optional key); local providers need no key.
 export function createOpenAICompatibleModelClient(input: OpenAICompatibleInput): ModelClient {
   const fetchImpl = input.fetch || globalThis.fetch;
-  if (!fetchImpl) throw new Error('fetch is required to create a model client');
   const apiKey = input.apiKey?.trim() || '';
   const provider = input.provider || 'openai-compatible';
   const baseUrl = input.baseUrl;

@@ -304,7 +304,6 @@ function css(): string {
 
 export function renderProofBoard(run: KernelRun): string {
   const fusion = run.fusion;
-  const child = fusion?.child;
   const modelHealth = renderModelHealth(run);
   const evolution = renderEvolution(run);
   const modelHealthNav = modelHealth ? '      <a href="#model-health">Model health</a>\n' : '';
@@ -373,8 +372,8 @@ ${modelHealthNav}      <a href="#trace">Trace</a>
       <section id="fusion">
         <h2>Fusion Child</h2>
         ${
-          child && fusion
-            ? `${renderCandidate(run, child)}
+          fusion?.child
+            ? `${renderCandidate(run, fusion.child)}
               <dl>
                 <dt>Compatibility</dt>
                 <dd>${escapeHtml(fusion.compatibility.rationale)}</dd>

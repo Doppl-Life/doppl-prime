@@ -607,8 +607,8 @@ export function assertFusionResult(value: unknown): FusionResult {
 }
 
 export function assertKernelRun(value: unknown): KernelRun {
+  if (typeof value !== 'object' || value === null) throw new Error('KernelRun must be an object');
   const run = value as Partial<KernelRun>;
-  if (!run || typeof run !== 'object') throw new Error('KernelRun must be an object');
   if (!run.id) throw new Error('KernelRun.id is required');
   if (!run.problemRecovery) throw new Error('KernelRun.problemRecovery is required');
   if (!run.caseStudy) throw new Error('KernelRun.caseStudy is required');

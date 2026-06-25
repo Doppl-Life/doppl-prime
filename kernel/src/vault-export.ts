@@ -152,7 +152,7 @@ function candidatePath(run: KernelRun, candidate: CandidateSolution): string {
 }
 
 function proposalRating(record: FitnessRecord | undefined): number | null {
-  return typeof record?.selection?.proposalRating?.judge === 'number'
+  return typeof record?.selection?.proposalRating.judge === 'number'
     ? record.selection.proposalRating.judge
     : null;
 }
@@ -194,7 +194,7 @@ function rubricCandidateScore(
   candidate: CandidateSolution,
   type: AssaySnapshot['type'],
 ): Record<string, unknown> {
-  const citedKnowledge = new Set(candidate.citedKnowledge || []);
+  const citedKnowledge = new Set(candidate.citedKnowledge);
   const citationCoverage = Number(((clamp(citedKnowledge.size, 0, 3) / 3) * 2.5).toFixed(2));
   const mechanismDepth = Number(((clamp(Math.floor(wordCount(candidate.mechanism) / 12), 0, 3) / 3) * 2.5).toFixed(2));
   const specificitySignals = Number(
@@ -255,23 +255,17 @@ function heldOutAssayJudge(
   const baselineScore = baselineJudgment.score as number;
   const survivorScore = survivorJudgment.score as number;
   const delta = Number((survivorScore - baselineScore).toFixed(2));
-  const verdict =
-    delta >= 1
-      ? 'doppl_wins'
-      : delta <= -1
-        ? 'baseline_wins'
-        : 'tie';
+  const verdict = verdictFor(delta, 1);
 
   return {
     judgeType: 'deterministic_artifact_rubric',
     scoreSource: 'artifact_rubric_not_training_fitness',
     verdict,
-    statement:
-      verdict === 'doppl_wins'
-        ? `Held-out artifact rubric favors the Doppl survivor by ${Math.abs(delta)} points.`
-        : verdict === 'baseline_wins'
-          ? `Held-out artifact rubric favors the clean baseline by ${Math.abs(delta)} points.`
-          : 'Held-out artifact rubric treats the clean baseline and Doppl survivor as effectively tied.',
+    statement: {
+      doppl_wins: `Held-out artifact rubric favors the Doppl survivor by ${Math.abs(delta)} points.`,
+      baseline_wins: `Held-out artifact rubric favors the clean baseline by ${Math.abs(delta)} points.`,
+      tie: 'Held-out artifact rubric treats the clean baseline and Doppl survivor as effectively tied.',
+    }[verdict],
     baseline: baselineJudgment,
     survivor: survivorJudgment,
     delta: {
@@ -283,6 +277,12 @@ function heldOutAssayJudge(
       'Replace this with a model or human held-out judge before claiming external validity.',
     ],
   };
+}
+
+function verdictFor(delta: number, threshold: number): 'doppl_wins' | 'baseline_wins' | 'tie' {
+  if (delta >= threshold) return 'doppl_wins';
+  if (delta <= -threshold) return 'baseline_wins';
+  return 'tie';
 }
 
 function referenceCasePath(run: KernelRun): string {
@@ -421,12 +421,7 @@ function sealedReferenceBenchmark(
   const baselineScore = baselineJudgment.score as number;
   const survivorScore = survivorJudgment.score as number;
   const delta = Number((survivorScore - baselineScore).toFixed(2));
-  const verdict =
-    delta >= 1
-      ? 'doppl_wins'
-      : delta <= -1
-        ? 'baseline_wins'
-        : 'tie';
+  const verdict = verdictFor(delta, 1);
 
   return {
     judgeType: 'sealed_reference_keyword_benchmark',
@@ -434,12 +429,11 @@ function sealedReferenceBenchmark(
     visibility: 'sealed_evaluator_only',
     contentIncluded: false,
     verdict,
-    statement:
-      verdict === 'doppl_wins'
-        ? `Sealed reference benchmark favors the Doppl survivor by ${Math.abs(delta)} points.`
-        : verdict === 'baseline_wins'
-          ? `Sealed reference benchmark favors the clean baseline by ${Math.abs(delta)} points.`
-          : 'Sealed reference benchmark treats the clean baseline and Doppl survivor as effectively tied.',
+    statement: {
+      doppl_wins: `Sealed reference benchmark favors the Doppl survivor by ${Math.abs(delta)} points.`,
+      baseline_wins: `Sealed reference benchmark favors the clean baseline by ${Math.abs(delta)} points.`,
+      tie: 'Sealed reference benchmark treats the clean baseline and Doppl survivor as effectively tied.',
+    }[verdict],
     baseline: baselineJudgment,
     survivor: survivorJudgment,
     delta: {
@@ -529,23 +523,14 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
     typeof baselineScore === 'number' && typeof survivorScore === 'number'
       ? Number((survivorScore - baselineScore).toFixed(2))
       : null;
-  const verdict =
-    delta === null
-      ? 'inconclusive'
-      : delta >= 3
-        ? 'doppl_wins'
-        : delta <= -3
-          ? 'baseline_wins'
-          : 'tie';
+  const verdict = delta === null ? 'inconclusive' : verdictFor(delta, 3);
   const absoluteDelta = Math.abs(delta ?? 0);
-  const statement =
-    verdict === 'doppl_wins'
-      ? `Doppl survivor beats the clean generation-0 baseline by ${absoluteDelta} fitness points on current in-run scoring.`
-      : verdict === 'baseline_wins'
-        ? `Clean generation-0 baseline still beats the Doppl survivor by ${absoluteDelta} fitness points; this run needs more pressure before claiming improvement.`
-        : verdict === 'tie'
-          ? `Doppl survivor and clean baseline are within ${absoluteDelta} fitness points; treat this as sharpened framing, not a proven win.`
-          : 'Assay is inconclusive because the baseline or survivor lacks enough scored evidence.';
+  const statement = {
+    doppl_wins: `Doppl survivor beats the clean generation-0 baseline by ${absoluteDelta} fitness points on current in-run scoring.`,
+    baseline_wins: `Clean generation-0 baseline still beats the Doppl survivor by ${absoluteDelta} fitness points; this run needs more pressure before claiming improvement.`,
+    tie: `Doppl survivor and clean baseline are within ${absoluteDelta} fitness points; treat this as sharpened framing, not a proven win.`,
+    inconclusive: 'Assay is inconclusive because the baseline or survivor lacks enough scored evidence.',
+  }[verdict];
 
   return {
     assayType: 'in_run_clean_baseline',

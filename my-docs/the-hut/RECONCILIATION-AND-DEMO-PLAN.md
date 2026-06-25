@@ -36,15 +36,19 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    (kept `!.env.sample`); **deleted dead root `/src` + `/tools`** (orphaned old michael kernel — nothing
    in `kernel/` imported them; 118/118 still green). Follow-ups: add `kernel/test/**` to `include` (its
    partial-payload legacy fixtures need boundary casts first); optional `vault-export` assay extraction.
-3.5. ✅ **Type-safety guardrails (ESLint).** Flat config (`eslint.config.js`, typescript-eslint
-   type-checked) bans silent checker circumvention: `no-explicit-any`, `no-non-null-assertion`,
-   `no-unnecessary-type-assertion`, `consistent-type-assertions` (no object-literal `as`),
-   `ban-ts-comment`, the `no-unsafe-*` family. tsconfig adds `noUncheckedIndexedAccess`. Cleared all 47
-   hits honestly — removed ~26 `!` (guards/`?.`/`??`, incl. a **latent crash** in `generation-providers`
-   where `tertiary!` assumed 3 candidates but only 2 were guaranteed), closed unsafe `JSON.parse`/double
-   casts, made `ModelPurpose` honestly `string` (it's composed: `.repair`, `:fusion_draft`). One justified
-   `eslint-disable` survives: the generic→union seam in `event-store.push`. **`pnpm build` now gates
-   `typecheck → lint → test`.** Policy: escape hatches must be loud, rare, and justified — see
+3.5. ✅ **Type-safety guardrails (ESLint).** Flat config (`eslint.config.js`) on **`strictTypeChecked`**
+   base, banning silent checker circumvention: `no-explicit-any`, `no-non-null-assertion`,
+   `no-unnecessary-type-assertion`, `consistent-type-assertions` (no object-literal `as`), `ban-ts-comment`,
+   the `no-unsafe-*` family, plus `switch-exhaustiveness-check` (every union switch handles all members —
+   protects R4's `event.type` dispatch), `no-nested-ternary`, `no-unneeded-ternary`, `eqeqeq`,
+   `consistent-type-imports`, and strict's `no-unnecessary-condition` + `prefer-nullish-coalescing`.
+   `restrict-template-expressions` relaxed to allow number/boolean (idiomatic). tsconfig adds
+   `noUncheckedIndexedAccess`. Cleared all hits honestly (~26 `!` → guards/`?.`/`??`, incl. a **latent
+   crash** in `generation-providers` where `tertiary!` assumed 3 candidates but only 2 were guaranteed;
+   nested-ternary verdict ladders → `verdictFor` helper + lookup; validators now check `unknown`/`Partial`
+   before casting). `ModelPurpose` is honestly `string` (composed: `.repair`, `:fusion_draft`). One
+   justified `eslint-disable` survives: the generic→union seam in `event-store.push`. **`pnpm build` now
+   gates `typecheck → lint → test`.** Policy: escape hatches must be loud, rare, and justified — see
    `HEURISTICS.md`.
 4. ▶ NEXT: `thermo-nuclear` — final deep review. (Fresh window per "one pass per window"; the lint gate
    now protects it.)

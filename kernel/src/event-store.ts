@@ -259,8 +259,8 @@ export function replayRunProjection(events: RunEvent[]): RunProjection {
     if (modelBucket) {
       const purpose = stringPayloadValue(event, 'purpose') || 'unknown';
       projection.modelOutputs[modelBucket] += 1;
-      projection.modelOutputs.byPurpose[purpose] ||= emptyModelOutputCounts();
-      projection.modelOutputs.byPurpose[purpose][modelBucket] += 1;
+      const purposeCounts = (projection.modelOutputs.byPurpose[purpose] ??= emptyModelOutputCounts());
+      purposeCounts[modelBucket] += 1;
     }
     if (event.type === 'run.completed') {
       projection.runId = stringPayloadValue(event, 'runId') || projection.runId;

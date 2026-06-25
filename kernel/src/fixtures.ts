@@ -16,7 +16,7 @@ export type KernelFixture = {
 };
 
 export async function loadKernelFixture(filePath: string): Promise<KernelFixture> {
-  const fixture = JSON.parse(await readFile(filePath, 'utf8')) as KernelFixture;
+  const fixture = JSON.parse(await readFile(filePath, 'utf8')) as Partial<KernelFixture>;
   if (!fixture.caseId) throw new Error('fixture.caseId is required');
   if (!fixture.problemRecovery) throw new Error('fixture.problemRecovery is required');
   if (!Array.isArray(fixture.candidates) || fixture.candidates.length < 2) {
@@ -38,5 +38,5 @@ export async function loadKernelFixture(filePath: string): Promise<KernelFixture
     });
   });
   fixture.critics.forEach(assertCriticVerdict);
-  return fixture;
+  return fixture as KernelFixture;
 }

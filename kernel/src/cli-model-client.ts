@@ -23,18 +23,17 @@ const defaultRunner: CliRunner = (cmd, args) =>
     const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
     });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk;
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
     });
     child.on('error', reject);
-    child.on('close', (code) =>
-      code === 0
-        ? resolve({ stdout })
-        : reject(new Error(`${cmd} exited ${code}: ${stderr.trim().slice(0, 300)}`)),
-    );
+    child.on('close', (code) => {
+      if (code === 0) resolve({ stdout });
+      else reject(new Error(`${cmd} exited ${code}: ${stderr.trim().slice(0, 300)}`));
+    });
   });
 
 // CLIs don't enforce a response format the way an HTTP `response_format` does — they often wrap JSON

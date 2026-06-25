@@ -167,10 +167,12 @@ function readBody(request: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = '';
     request.setEncoding('utf8');
-    request.on('data', (chunk) => {
+    request.on('data', (chunk: string) => {
       body += chunk;
     });
-    request.on('end', () => resolve(body));
+    request.on('end', () => {
+      resolve(body);
+    });
     request.on('error', reject);
   });
 }
@@ -222,6 +224,15 @@ function routeParam(match: RegExpMatchArray, index: number): string {
   const value = match[index];
   if (value === undefined) throw new KernelHttpError(404, 'route parameter missing');
   return value;
+}
+
+function runModeFor(
+  replayRunId: string | undefined,
+  liveModel: boolean | undefined,
+): 'replay' | 'live' | 'fixture' {
+  if (replayRunId) return 'replay';
+  if (liveModel) return 'live';
+  return 'fixture';
 }
 
 function parseFitnessLens(value: unknown): FitnessLensId {
@@ -448,7 +459,7 @@ async function readRunHealthResponse(runId: string, rootDir: string): Promise<Ke
   const projection = replayRunProjection(events);
   const generationEvents = events.filter((event) => event.type === 'generation.started');
   const lastGeneration = generationEvents
-    .map((event) => Number(event.payload.generation))
+    .map((event) => event.payload.generation)
     .filter(Number.isFinite)
     .at(-1);
   const terminalEvent = events.find(
@@ -458,7 +469,7 @@ async function readRunHealthResponse(runId: string, rootDir: string): Promise<Ke
     status: 200,
     body: {
       runId,
-      status: terminalEvent ? String(terminalEvent.type).replace('run.', '') : 'running',
+      status: terminalEvent ? terminalEvent.type.replace('run.', '') : 'running',
       currentGeneration: lastGeneration ?? null,
       candidatesInFlight: 0,
       lastEventAt: projection.lastEventAt ?? null,
@@ -605,7 +616,7 @@ function startAsyncRun(
     onEvent(event) {
       appendRunEventSync(eventLogPath, event);
     },
-  }).catch((error) => {
+  }).catch((error: unknown) => {
     const parsedBody = JSON.parse(body) as { runId?: unknown };
     const failedRunId =
       typeof parsedBody.runId === 'string' ? parsedBody.runId : defaultKernelArgs.runId;
@@ -657,7 +668,7 @@ async function runDashboardCaseFromRequestBody(
       runId,
       caseId: dashboardCase.id,
       caseTitle: dashboardCase.title,
-      runMode: replayRunId ? 'replay' : liveModel ? 'live' : 'fixture',
+      runMode: runModeFor(replayRunId, liveModel),
       status: 'running',
       async: true,
       generations: 0,
@@ -676,7 +687,7 @@ async function runDashboardCaseFromRequestBody(
     : undefined;
   return {
     ...runIndex,
-    runMode: replayRunId ? 'replay' : liveModel ? 'live' : 'fixture',
+    runMode: runModeFor(replayRunId, liveModel),
     generations: Array.isArray(runIndex.evolution) ? runIndex.evolution.length : 0,
     candidateCount: Array.isArray(runIndex.candidates) ? runIndex.candidates.length : 0,
     modelCalls: runIndex.trace &&

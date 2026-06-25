@@ -175,7 +175,7 @@ export async function createFixtureGenerationProviders(
         summary: `Mutates the previous survivor into a stricter ${primary.title} test for generation ${generation}.`,
         mechanism: `${input.previousChild.mechanism} It must now satisfy this mandate: ${mandateFor(0)}.`,
         claimedDelta: `Keeps ${childTitle} only if the strongest inherited mechanism survives new pressure.`,
-        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...(primary.citedKnowledge || [])])],
+        citedKnowledge: [...new Set([...input.previousChild.citedKnowledge, ...primary.citedKnowledge])],
         agenomeId: `${primary.agenomeId}_mutation_g${generation}`,
       },
       {
@@ -185,7 +185,7 @@ export async function createFixtureGenerationProviders(
         summary: `Turns the prior critic mandate into a falsifier against ${input.previousChild.title}.`,
         mechanism: `${secondary.mechanism} It attacks the survivor through: ${mandateFor(3)}.`,
         claimedDelta: `Adds a failure mode instead of re-running ${secondary.title}.`,
-        citedKnowledge: [...new Set([...(secondary.citedKnowledge || []), knowledge[0]?.citeHandle].filter(definedHandle))],
+        citedKnowledge: [...new Set([...secondary.citedKnowledge, knowledge[0]?.citeHandle].filter(definedHandle))],
         agenomeId: `${secondary.agenomeId}_critic_probe_g${generation}`,
       },
       {
@@ -195,7 +195,7 @@ export async function createFixtureGenerationProviders(
         summary: `Explores a new observable signal adjacent to ${input.previousChild.title}.`,
         mechanism: `${tertiary.mechanism} It is redirected toward evidence from ${knowledge[generation % knowledge.length]?.citeHandle || 'the packet'}.`,
         claimedDelta: `Broadens the search without letting the population collapse to the same parent pair.`,
-        citedKnowledge: [...new Set([...(tertiary.citedKnowledge || []), knowledge[generation % knowledge.length]?.citeHandle].filter(definedHandle))],
+        citedKnowledge: [...new Set([...tertiary.citedKnowledge, knowledge[generation % knowledge.length]?.citeHandle].filter(definedHandle))],
         agenomeId: `${tertiary.agenomeId}_signal_probe_g${generation}`,
       },
     ];

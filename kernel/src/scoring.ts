@@ -35,8 +35,9 @@ export function scheduleForGeneration(generation: number): FitnessSchedule {
   const normalizedGeneration = Math.max(0, generation);
   const noveltyWeight = clamp(0.65 - normalizedGeneration * 0.07, 0.35, 0.65);
   const groundingWeight = round(1 - noveltyWeight, 3);
-  const dial =
-    noveltyWeight > groundingWeight ? 'diverge' : noveltyWeight < groundingWeight ? 'converge' : 'balanced';
+  let dial: 'diverge' | 'balanced' | 'converge' = 'balanced';
+  if (noveltyWeight > groundingWeight) dial = 'diverge';
+  else if (noveltyWeight < groundingWeight) dial = 'converge';
   return {
     generation: normalizedGeneration,
     noveltyWeight: round(noveltyWeight, 3),

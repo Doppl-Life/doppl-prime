@@ -11,7 +11,7 @@ export default tseslint.config(
   },
   {
     files: ['kernel/src/**/*.ts'],
-    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -27,6 +27,22 @@ export default tseslint.config(
         { assertionStyle: 'as', objectLiteralTypeAssertions: 'never' },
       ],
       '@typescript-eslint/ban-ts-comment': ['error', { minimumDescriptionLength: 10 }],
+      // Exhaustiveness: a switch over a union (e.g. RunEvent.type) must handle every
+      // member or carry an explicit default. Adding a union member becomes a compile error.
+      '@typescript-eslint/switch-exhaustiveness-check': [
+        'error',
+        { considerDefaultExhaustiveForUnions: true },
+      ],
+      '@typescript-eslint/consistent-type-imports': 'error',
+      eqeqeq: ['error', 'smart'],
+      'no-nested-ternary': 'error',
+      'no-unneeded-ternary': 'error',
+      // Numbers and booleans stringify cleanly; keep the rule for the real bug it catches
+      // — interpolating `unknown`/objects (→ "[object Object]").
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true, allowBoolean: true },
+      ],
       // Not a type-safety escape hatch: async stubs that satisfy a Promise-returning
       // interface (Sink, ModelClient, gateways) legitimately have no await.
       '@typescript-eslint/require-await': 'off',
