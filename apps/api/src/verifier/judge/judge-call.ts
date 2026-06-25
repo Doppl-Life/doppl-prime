@@ -76,12 +76,29 @@ export interface RunJudgeParams {
   rubricSource?: unknown;
 }
 
+// EXPERIMENT (judge gradient) — the prior instruction said only "score 0–5", which let the judge model
+// cluster every axis at 3–4 (central-tendency bias: grounding was LITERALLY always 4) → acceptance ~0.75
+// for every candidate → NO selection gradient. This version supplies explicit per-level anchors, a strict
+// full-range mandate, and per-axis criteria + weakness-hunting so the judge DIFFERENTIATES. Rule #6 intact:
+// it is still the immutable held-out anchor (loaded from the frozen const, runner-computed acceptance,
+// agent-unwritable); the change is a developer recalibration, recorded via the bumped rubric policyVersion.
+// Rule #5 intact: candidate-INDEPENDENT trusted system text (the candidate rides a wrapUntrusted user msg).
 const JUDGE_INSTRUCTION =
-  'You are the held-out final judge. Score the candidate idea on each of the five fixed rubric axes ' +
-  '(grounding, novelty, feasibility, falsification_survival, subtype_check_pass), each on a 0–5 scale. ' +
-  'Also return a `rationales` object with a single concise one-line explanation for each of the five axes, ' +
-  'each justifying that axis score. The rationale only EXPLAINS your score — it does not change it. ' +
-  'Return only the per-axis scores and rationales — you do not decide acceptance, select winners, or alter the rubric.';
+  'You are the held-out final judge — the strict quality bar the organism cannot move. Score the candidate ' +
+  'idea on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
+  'subtype_check_pass), each as an INTEGER 0–5. Calibrate EVERY axis to this scale: 0 = absent/failed, ' +
+  '1 = poor, 2 = below average, 3 = solid but unremarkable, 4 = strong, 5 = exceptional (genuinely rare). ' +
+  'Be a SKEPTICAL critic, not a cheerleader: most ideas are average, so anchor a typical idea at 2–3, reserve ' +
+  '4 for clearly strong work, and 5 only for the truly exceptional. Actively hunt each axis for its weakest ' +
+  'point and let it pull the score DOWN. USE THE FULL 0–5 RANGE and DIFFERENTIATE — do NOT cluster every axis ' +
+  'at 3–4; an idea that is weak or unsupported on an axis MUST score 0–2 there. Judge each axis on its own ' +
+  'meaning: grounding = backed by specific, verifiable evidence (not vague assertion); novelty = a genuinely ' +
+  'non-obvious transfer (not a well-known mapping); feasibility = buildable/testable with current means (not ' +
+  'hand-wavy); falsification_survival = makes a falsifiable prediction that would plausibly survive a real ' +
+  'test (not unfalsifiable or trivially true); subtype_check_pass = actually fits its declared idea subtype. ' +
+  'Also return a `rationales` object with one concise line per axis naming the specific weakness that capped ' +
+  'that score. The rationale only EXPLAINS your score — it does not change it. Return only the per-axis ' +
+  'scores and rationales — you do not decide acceptance, select winners, or alter the rubric.';
 
 /**
  * Deterministically compute the weighted acceptance metric from the per-axis scores × the rubric weights.

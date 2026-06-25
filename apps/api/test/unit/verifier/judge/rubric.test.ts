@@ -121,7 +121,7 @@ describe('loadJudgeRubric — immutable-anchor load + completeness enforcement (
         subtype_check_pass: 1,
         energy_efficiency: 0.1,
       },
-      policyVersion: 'final-judge-mvp-1',
+      policyVersion: 'final-judge-mvp-2',
       immutableToAgents: true,
     });
   });

@@ -89,7 +89,11 @@ const mvpJudgeRubric: FinalJudgeRubric = {
     subtype_check_pass: 1,
     energy_efficiency: 0.1,
   },
-  policyVersion: 'final-judge-mvp-1',
+  // EXPERIMENT (judge gradient) — bumped from mvp-1 when the JUDGE_INSTRUCTION was recalibrated to
+  // discriminate (combat central-tendency saturation). Immutability-via-versioning (rule #6, lesson 12):
+  // the version change records that the judge's scoring behavior moved, so every JudgeResult is bound to
+  // its exact judge version. Axes/weights/immutability are UNCHANGED — only the calibration prompt.
+  policyVersion: 'final-judge-mvp-2',
   immutableToAgents: true,
 };
 
