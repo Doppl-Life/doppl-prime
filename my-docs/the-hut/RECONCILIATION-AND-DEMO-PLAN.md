@@ -86,8 +86,11 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    (build-status' "emit run.configured, mapped CriticReview, agenome lifecycle, shaped energy"): rename/reshape
    dalton events into melissa's names + payload contracts (`critic.verdict_recorded`→`critic.reviewed`,
    `agenome.energy_*`→`energy.spent`, `agenome.materialized`→spawn/reproduce lifecycle, `candidate.fused`→
-   `agenome.fused`, emit `run.configured`). Needs melissa's per-type payload contracts
-   (`packages/contracts/src/domain/*`). Then **R5** = lift melissa's ~40-file web app (App, charts, lineage,
+   `agenome.fused`, emit `run.configured`). **Target spec = melissa's `packages/contracts/src/events/payloads/
+   per-type-map.ts`** (maps each of her 18 types → its Zod payload schema; backed by `payloads/{agenome,energy,
+   scoring,lifecycle,verification,failures}.ts`). Implement as a `mapEvent(RunEvent) → envelope[]` layer in
+   front of `toDashboardEnvelope`, test reshaped payloads against those schemas. Then **R5** = lift melissa's
+   ~40-file web app (App, charts, lineage,
    ~15 panels, reducer/store), feed from this SSE, add deps (Recharts, zod), skin with cody tokens —
    a dedicated frontend session.
 
