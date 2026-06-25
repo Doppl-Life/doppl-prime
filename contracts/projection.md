@@ -59,10 +59,11 @@ type ProjectionLedger = ProjectionEntry[];
 
 | node field | source | mode | owner |
 | --- | --- | --- | --- |
-| `id` | minted from `RunTrace.selection.compiled_candidate.headline` (kebab + 8-char id), frozen | `mint` | mechanics/kernel/compiler.md |
+| `id` | minted from the compiled candidate's `headline` (kebab + 8-char id), frozen | `mint` | mechanics/kernel/compiler.md |
 | `stage` | `RunTrace.identity.stage` | `render` | run-trace.md |
 | `kernel` | `RunTrace.identity.kernel` | `render` | run-trace.md |
 | `temporal` | `RunTrace.judge.result.temporal` | `render` | rating.md |
+| `mutagen_lineage` | the compiled candidate's `mutagen_lineage` (mutagen names) | `render` | run-trace.md |
 | `next` | `NextOf<stage>` | `fixed_by_stage` | node.md |
 | `scores.judge` | `RunTrace.judge.result.judge` | `render` | rating.md |
 | `scores.human` | `null` at birth | `birth_empty` | human-ratings-ledger.md |
@@ -75,23 +76,23 @@ Lineage is not a frontmatter field: `root` is gone (recover it by walking `prev_
 
 | node section | source | mode | owner |
 | --- | --- | --- | --- |
-| `# Headline` | `RunTrace.selection.compiled_candidate.headline` | `render` | run-trace.md |
+| `# Headline` | the compiled candidate's `headline` | `render` | run-trace.md |
 | `prev_id` line | `RunTrace.inputs.parent_nodes[last]` (immediate parent; `null` if empty) | `derive` | node.md |
 | `## Trace` | `RunTrace.inputs.trace_synopses` | `render_verbatim` | run-trace.md |
 | `## Discovery` | `RunTrace.inputs.discovery` | `render` | run-trace.md |
-| `## Growth` | `RunTrace.selection.compiled_candidate` (`growth`, `claim`, …) | `render` | run-trace.md |
+| `## Growth` | the compiled candidate (`growth`, `claim`, …) | `render` | run-trace.md |
 | `### Evaluation` | `RunTrace.judge.result.evaluation` | `render` | rating.md |
 | `## Path` | `NextOf<stage>` (mirrors frontmatter `next`) | `fixed_by_stage` | node.md |
 
-`prev_id` is the first body line after the headline: the immediate parent only — the last entry of the spine-ordered `parent_nodes` — rendered as an Obsidian wikilink (`[[slug-id]]`), or `null` at the seed. Because the trace now keys node refs as `SlugId` (see `run-trace.md`), the compiler copies the parent id straight through — there is no id translation. `## Trace` is the only `render_verbatim` body section: prior-stage synopses copied exactly from `trace_synopses`, in spine order, never reworded. `## Discovery` renders what discovery returned (found, not concluded) and cites the stock field; the stock field itself is owned by `stock.md`, but the node only ever renders the discovery payload already captured in the trace inputs. `## Growth` and the headline render the **compiled candidate** — the single survivor handed forward by selection, not the candidate pool.
+`prev_id` is the first body line after the headline: the immediate parent only — the last entry of the spine-ordered `parent_nodes` — rendered as an Obsidian wikilink (`[[slug-id]]`), or `null` at the seed. Because the trace now keys node refs as `SlugId` (see `run-trace.md`), the compiler copies the parent id straight through — there is no id translation. `## Trace` is the only `render_verbatim` body section: prior-stage synopses copied exactly from `trace_synopses`, in spine order, never reworded. `## Discovery` renders what discovery returned (found, not concluded) and cites the stock field; the stock field itself is owned by `stock.md`, but the node only ever renders the discovery payload already captured in the trace inputs. `## Growth` and the headline render the **compiled candidate** — the single survivor of the final generation's `selection`, handed forward to lens/judge/compile, not the candidate pool.
 
 ## Machine-only — does not render into the node
 
 These trace parts are the generation record, not the artifact. They stay in the `RunTrace` and must not appear in the node:
 
-- `RunTrace.generate` — the full candidate pool and rejected no-delta children.
-- `RunTrace.fitness` — novelty/grounding measurements per candidate.
-- `RunTrace.selection.decisions` and `RunTrace.selection.regret_siblings` — Pareto fronts, directional scores, cross-dial contrast.
+- each generation's `generate` (across `RunTrace.generations`) — the full candidate pool and rejected no-delta children.
+- each generation's `fitness` — novelty/grounding measurements per candidate.
+- each generation's `selection.decisions` and `selection.regret_siblings` — Pareto fronts, directional scores, opposite-tide contrast.
 - `RunTrace.lens` — observer-relative feasibility. Lives in the trace; a future viewer may surface it, the node does not.
 - every candidate other than `compiled_candidate`.
 

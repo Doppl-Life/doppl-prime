@@ -147,9 +147,11 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 ### Temporal
 
-- **Def:** the boolean time-decay axis of an idea. `true` = zeitgeist (decays,
-  can reinvigorate); `false` = transfer (timeless). The one survivor of the old
-  `subtype`.
+- **Def:** the time-decay axis of an idea — *not* its kind. `true` = it burns down over time
+  (zeitgeist-like; can reinvigorate); `false` = it holds until solved (transfer-like,
+  timeless). A mechanical decay property. The idea's **kind** (zeitgeist, cross-domain, and
+  possibly others) is a *separate, open* observational vocabulary that correlates with
+  `temporal` but is not defined by it — don't fake-close the kinds to two.
 
 ### Lens
 

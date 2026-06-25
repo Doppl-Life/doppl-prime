@@ -120,7 +120,7 @@ type Stages = CaseStudyStage | ProblemRecoveryStage | DopplStage;
 
 Frontmatter is the file's identity and routing layer. It is a discriminated union on `stage`. `next` is pinned by stage, so the type enforces the spine.
 
-The seed has no scores, no `temporal`, and no `doppelgangers`: it is a start, not a claim. Growth-stage nodes carry the judge score, the materialized human score projection, and dedup signal. Lineage is not a frontmatter field — it lives in the body as `prev_id` (see [Lineage](#lineage)), because Obsidian does not resolve `[[...]]` wikilinks inside YAML.
+The seed has no scores, no `temporal`, and no `doppelgangers`: it is a start, not a claim. Growth-stage nodes carry the judge score, the materialized human score projection, the survivor's mutagen-lineage (which moves shaped it), and dedup signal. Lineage is not a frontmatter field — it lives in the body as `prev_id` (see [Lineage](#lineage)), because Obsidian does not resolve `[[...]]` wikilinks inside YAML.
 
 ### Markdown shape
 
@@ -144,6 +144,7 @@ id: actuarial-collapse-in-specialty-auto-reinsurance-59cd965f
 stage: problem_recovery
 kernel: melissa
 temporal: false
+mutagen_lineage: [breakout, polymath]
 next: doppl
 scores: { judge: 3, human: null, n: 0 }
 doppelgangers: 0
@@ -175,6 +176,7 @@ type CaseStudyFrontmatter = BaseFrontmatter<'case_study'> & {
 type BaseGrowthFrontmatter<S extends GrowthStage> = BaseFrontmatter<S> & {
   kernel?: KernelName;
   temporal: boolean;
+  mutagen_lineage: string[];
   scores: Scores;
   doppelgangers: number;
 };

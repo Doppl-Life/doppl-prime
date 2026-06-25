@@ -20,7 +20,7 @@ The trace owns the engine-only names that do not render directly into the node.
 ### Type contract
 
 ```ts
-type Dial = 'diverge' | 'converge';
+type Tide = 'diverge' | 'converge';
 type MeasurementAxis = 'novelty' | 'grounding';
 type Mutagen =
   | 'breakthrough'
@@ -149,7 +149,7 @@ type FitnessStep = {
 
 ## Selection
 
-Selection records the dial, schedule, retained candidates, compiled candidate, and the regret sibling check from the opposite dial.
+Selection records the schedule (the pressure it applied), the tide that emerged, the retained candidates, the compiled candidate, and the regret sibling — the candidate the opposite tide would have kept. The tide is observed, not set: the schedule applies pressure, and convergence or divergence falls out of it.
 
 The compiled candidate is the survivor handed to lens and then judge. The node compiler does not see the full candidate pool unless it needs audit context.
 
@@ -157,7 +157,6 @@ The compiled candidate is the survivor handed to lens and then judge. The node c
 
 ```ts
 type SelectionSchedule = {
-  dial: Dial;
   keep: 3;
   priority_axis: MeasurementAxis;
   floor_axis: MeasurementAxis;
@@ -181,16 +180,17 @@ type RegretSibling =
       status: 'replaced';
       candidate_id: Uuid;
       replacement_candidate_id: Uuid;
-      other_dial: Dial;
+      other_tide: Tide;
     }
   | {
       status: 'dropped';
       candidate_id: Uuid;
-      other_dial: Dial;
+      other_tide: Tide;
     };
 
 type SelectionStep = {
   schedule: SelectionSchedule;
+  tide: Tide;
   decisions: SelectionDecision[];
   retained_candidate_ids: NonEmptyArray<Uuid>;
   compiled_candidate_id: Uuid;
@@ -264,17 +264,22 @@ type CompileStep = {
 
 ## Full trace
 
-The full trace is ordered by engine responsibility. It is the source of generation truth for the compiled node.
+The full trace is one node-attempt's multi-generation working memory: a sequence of generations — each `generate → fitness → selection` — feeding the next, then `lens`, `judge`, and `compile` on the final survivor. It is the source of generation truth for the compiled node.
 
 ### Type contract
 
 ```ts
-type RunTrace<S extends GrowthStage> = {
-  identity: RunIdentity<S>;
-  inputs: RunInputs;
+type GenerationStep = {
+  generation: number;
   generate: GenerateStep;
   fitness: FitnessStep;
   selection: SelectionStep;
+};
+
+type RunTrace<S extends GrowthStage> = {
+  identity: RunIdentity<S>;
+  inputs: RunInputs;
+  generations: NonEmptyArray<GenerationStep>;
   lens: LensResult;
   judge: TraceJudgeStep<S>;
   compile: CompileStep;
