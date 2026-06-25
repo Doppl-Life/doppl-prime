@@ -50,8 +50,16 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    justified `eslint-disable` survives: the generic→union seam in `event-store.push`. **`pnpm build` now
    gates `typecheck → lint → test`.** Policy: escape hatches must be loud, rare, and justified — see
    `HEURISTICS.md`.
-4. ▶ NEXT: `thermo-nuclear` — final deep review. (Fresh window per "one pass per window"; the lint gate
-   now protects it.)
+4. ✅ `thermo-nuclear` — deep structural audit. **Verdict: no blockers.** No file >1000L (passes #2/#3
+   shrank the kernel; `server.ts` 807, `vault-export.ts` 855 are the two to watch). The recent passes
+   *reduced* spaghetti (verdict/runMode ladders → helpers). Fixed the sharpest finding: `vault-export`
+   candidate-score fns returned `Record<string,unknown>`, forcing `score as number` casts → typed
+   `CandidateAssayScore`, **all `as number`/`as unknown` casts gone from the file**. Standing
+   recommendations (need scope decision, pre-existing — not reconciliation regressions): (a) the 3 assay
+   fns (`heldOutAssayJudge`/`sealedReferenceBenchmark`/`assayControl`) share a verdict/statement/delta
+   skeleton → a typed `AssayResult` + builder could collapse the rest; (b) split `server.ts` into
+   routing / handlers / dashboard (~250L each). Both behavior-preserving but real moves — greenlight first.
+   ▶ **NEXT: R4** (event adapter → dashboard), now standing on the typed `RunEvent` union.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin

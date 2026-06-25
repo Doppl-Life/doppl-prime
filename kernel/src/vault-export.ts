@@ -189,11 +189,19 @@ function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+type CandidateAssayScore = {
+  candidateId: string;
+  title: string;
+  score: number;
+  rubric: Record<string, unknown>;
+  factors: string[];
+};
+
 function rubricCandidateScore(
   run: KernelRun,
   candidate: CandidateSolution,
   type: AssaySnapshot['type'],
-): Record<string, unknown> {
+): CandidateAssayScore {
   const citedKnowledge = new Set(candidate.citedKnowledge);
   const citationCoverage = Number(((clamp(citedKnowledge.size, 0, 3) / 3) * 2.5).toFixed(2));
   const mechanismDepth = Number(((clamp(Math.floor(wordCount(candidate.mechanism) / 12), 0, 3) / 3) * 2.5).toFixed(2));
@@ -252,8 +260,8 @@ function heldOutAssayJudge(
   const baselineJudgment = rubricCandidateScore(run, baseline, 'clean_baseline');
   const survivorJudgment = rubricCandidateScore(run, survivor, 'doppl_survivor');
   const referenceBenchmark = sealedReferenceBenchmark(run, baseline, survivor);
-  const baselineScore = baselineJudgment.score as number;
-  const survivorScore = survivorJudgment.score as number;
+  const baselineScore = baselineJudgment.score;
+  const survivorScore = survivorJudgment.score;
   const delta = Number((survivorScore - baselineScore).toFixed(2));
   const verdict = verdictFor(delta, 1);
 
@@ -368,7 +376,7 @@ function privateReferenceTerms(referenceText: string): string[] {
     .map(([term]) => term);
 }
 
-function referenceCandidateScore(candidate: CandidateSolution, privateTerms: string[]): Record<string, unknown> {
+function referenceCandidateScore(candidate: CandidateSolution, privateTerms: string[]): CandidateAssayScore {
   const candidateText = publicCandidateText(candidate).toLowerCase();
   const matchedCount = privateTerms.filter((term) => candidateText.includes(term)).length;
   const targetCount = Math.max(1, Math.min(12, privateTerms.length));
@@ -418,8 +426,8 @@ function sealedReferenceBenchmark(
   const privateTerms = privateReferenceTerms(readFileSync(referencePath, 'utf8'));
   const baselineJudgment = referenceCandidateScore(baseline, privateTerms);
   const survivorJudgment = referenceCandidateScore(survivor, privateTerms);
-  const baselineScore = baselineJudgment.score as number;
-  const survivorScore = survivorJudgment.score as number;
+  const baselineScore = baselineJudgment.score;
+  const survivorScore = survivorJudgment.score;
   const delta = Number((survivorScore - baselineScore).toFixed(2));
   const verdict = verdictFor(delta, 1);
 
