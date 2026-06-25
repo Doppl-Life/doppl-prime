@@ -230,6 +230,18 @@ function splitEvaluationMarkdown(text: string): { main: string; evaluation: stri
     };
   }
 
+  const inlineEvaluationMatch = normalized.match(
+    /(^|\n|\s)Evaluation\s+(?=(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance|Judge-only axis)\b)/i,
+  );
+  if (inlineEvaluationMatch?.index !== undefined) {
+    const offset = inlineEvaluationMatch[0].search(/Evaluation/i);
+    const splitAt = inlineEvaluationMatch.index + Math.max(offset, 0);
+    return {
+      main: normalized.slice(0, splitAt).trim(),
+      evaluation: normalized.slice(splitAt + "Evaluation".length).trim(),
+    };
+  }
+
   const start = lines.findIndex((line) =>
     /^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(line.trim()),
   );

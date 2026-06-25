@@ -461,6 +461,33 @@ describe("App", () => {
     expect(screen.queryByText("Novelty +3")).not.toBeInTheDocument();
   });
 
+  it("collapses inline generated Evaluation labels by default", async () => {
+    const evaluationFixture: CalibratorIndex = structuredClone(fixture);
+    evaluationFixture.cases[0].solutions[0].body = [
+      "# Frequency-to-Probability Underwriting Cliff",
+      "",
+      "Claim crash frequency drops below actuarial thresholds.",
+      "",
+      "Sprouts - real-time mobility payment stream securitization vehicles replacing auto-loan ABS markets - consumer credit model migration tools",
+      "",
+      "Evaluation Novelty +4 82% Of Language Absent From The Seed; 0 Dependency Markers. Grounding +3 3 Evidence Item(s); 1 Causal Markers; 0 Hedge(s). Falsifiability +3 Bridged From The Falsifiability Measurement (checkable Markers, Claims, Evidence). Cost-Efficiency +0 Judge-Only Axis — Defaults To 0 Under The Deterministic Bridge. Relevance +0 Judge-Only Axis — Defaults To 0 Under The Deterministic Bridge.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "When the Crashes Don't Come" });
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+
+    expect(screen.getByText("Real-Time Mobility Payment Stream Securitization Vehicles Replacing Auto-Loan Abs Markets")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/82% Of Language Absent From The Seed/i)).not.toBeInTheDocument();
+  });
+
   it("hydrates hosted ratings from the public aGarden ledger and switches to update mode", async () => {
     window.DOPPL_CALIBRATOR_CONFIG = {
       ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
