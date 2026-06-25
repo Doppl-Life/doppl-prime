@@ -52,7 +52,6 @@ describe.skipIf(!hasLiveKeys())('LIVE eval — tools-vs-no-tools A/B (TU.8, opt-
 
     const onCalls = withTools.toolCalls ?? [];
     const offCalls = withoutTools.toolCalls ?? [];
-    // eslint-disable-next-line no-console
     console.log(
       'EVAL tools-vs-no-tools →',
       JSON.stringify(

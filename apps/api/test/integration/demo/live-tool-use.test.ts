@@ -50,7 +50,6 @@ describe.skipIf(!hasLiveKeys())(
 
       // The agent did its own research: ≥1 tool call, ≥1 with a usable result.
       const calls = result.toolCalls ?? [];
-      // eslint-disable-next-line no-console
       console.log(
         'LIVE tool-use →',
         JSON.stringify(
