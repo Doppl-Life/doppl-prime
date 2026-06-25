@@ -11,7 +11,7 @@ import {
 } from '@doppl/contracts';
 import type { RunConfig } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../src/event-store';
-import { createGateway, type ProviderCallFn } from '../../../src/model-gateway';
+import { createGateway, type ModelGateway, type ProviderCallFn } from '../../../src/model-gateway';
 import { loadConfig } from '../../../src/runtime/config/loadConfig';
 import { runWorker } from '../../../src/runtime';
 import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
@@ -139,6 +139,56 @@ describe('composeRunWorkerDeps — boot composition root function-level e2e (rea
     expect(typeof deps.seams.reproduce).toBe('function');
     expect(deps.nextPopulation).toBeDefined();
     expect(typeof deps.gateway.generate).toBe('function');
+  });
+
+  // TU.5 — with the live tool seams provided, the population_generator gateway is the tool-orchestrating
+  // gateway (agents do their own research). The reachability proof for the composeRuntime wiring branch:
+  // a tool-call response is executed via the injected webSearch seam + surfaced as an observation; absent
+  // seams (every other test) the pass-through gateway is wired (no tool relay).
+  test('test_tool_executor_seams_wire_the_tool_orchestrating_gateway', async () => {
+    let call = 0;
+    const toolThenFinal: ModelGateway = {
+      capabilityFor: () => ({ structuredOutputs: true, embeddings: true }),
+      call: () => {
+        call += 1;
+        return Promise.resolve(
+          call === 1
+            ? {
+                accepted: true,
+                validationResult: 'accepted',
+                providerMeta: validProviderMeta,
+                toolCallRequests: [{ id: 'c1', name: 'web_search', arguments: '{"query":"x"}' }],
+              }
+            : {
+                accepted: true,
+                validationResult: 'accepted',
+                providerMeta: validProviderMeta,
+                output: { idea: 'grounded' },
+              },
+        );
+      },
+    };
+    const deps = composeRunWorkerDeps({
+      config: buildConfig(),
+      modelGateway: toolThenFinal,
+      eventStore: store,
+      checkRegistry: CHECK_RUNNER_REGISTRY,
+      listRunIds: () => Promise.resolve(['tool-wire']),
+      newId: () => 'tool-wire-sid',
+      runId: 'tool-wire',
+      toolExecutorSeams: {
+        webSearch: (query) => Promise.resolve(`grounded results: ${query}`),
+        httpGet: () => Promise.resolve({ status: 200, text: '' }),
+        resolveHostIsPublic: () => Promise.resolve(true),
+      },
+    });
+    const result = await deps.gateway.generate(
+      { role: 'population_generator', prompt: 'go' },
+      { toolBudget: 4 },
+    );
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls![0]).toMatchObject({ toolName: 'web_search', ok: true });
+    expect(result.response.output).toEqual({ idea: 'grounded' });
   });
 
   // spec(§7/§8) rule #6 single-source — the SAME DEFAULT_JUDGE_RUBRIC wired to verify (judge) + score

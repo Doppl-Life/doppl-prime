@@ -20,6 +20,7 @@ import {
   type OpenAIEmbeddingClient,
   type OpenRouterClient,
   type OllamaClient,
+  type ToolExecutorDeps,
 } from './model-gateway';
 import { REQUIRED_CREDENTIAL_ENV } from './model-gateway/registry';
 import { DEFAULT_MODEL_REGISTRY } from './config/model-registry.config';
@@ -28,6 +29,7 @@ import { CHECK_RUNNER_REGISTRY } from './check-runners/registry';
 import { listRunIds } from './projections/run-list';
 import { crashForward } from './runtime/recovery/crashForward';
 import { createStartRun, type StartRunInfra } from './boot/startRun';
+import { createToolExecutorSeams } from './boot/toolSeams';
 import { createOperatorStopRegistry } from './boot/operatorStop';
 import { seedDemo } from './event-store/scripts/seed-demo';
 import { buildServer } from './server';
@@ -148,6 +150,7 @@ function resolveGateway(
 ): {
   gateway: ModelGateway;
   gatewayForOverride?: (override: ModelRouteOverride) => ModelGateway;
+  toolExecutorSeams?: ToolExecutorDeps;
 } {
   if (overrides.gateway !== undefined) return { gateway: overrides.gateway };
   const selection = gatewaySelectionFromEnv(env);
@@ -171,7 +174,17 @@ function resolveGateway(
       embeddingClient,
       ollamaClient,
     });
-  return { gateway, gatewayForOverride };
+  // TU.5 — the live tool-execution seams (agents do their own research). The OpenRouter key is env-only
+  // (rule #4 — closed over the webSearch seam); fetch + dns are the real primitives. Present ONLY on the
+  // live branch → composeRuntime wires the tool-orchestrating gateway (the recorded/replay path gets none,
+  // so replay reads persisted tool results, never re-executes — rule #7).
+  const toolExecutorSeams = createToolExecutorSeams({
+    ...(env.OPENROUTER_API_KEY !== undefined ? { openRouterApiKey: env.OPENROUTER_API_KEY } : {}),
+    ...(env.DOPPL_WEB_SEARCH_MODEL !== undefined
+      ? { webSearchModel: env.DOPPL_WEB_SEARCH_MODEL }
+      : {}),
+  });
+  return { gateway, gatewayForOverride, toolExecutorSeams };
 }
 
 /** The present secret values (provider keys + DB URL) that must never appear in a persisted payload (rule #4).
@@ -215,7 +228,7 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
   try {
     const db = drizzle(pool);
     const eventStore = createEventStore({ db, secretValues: collectSecretValues(env) });
-    const { gateway, gatewayForOverride } = resolveGateway(env, overrides);
+    const { gateway, gatewayForOverride, toolExecutorSeams } = resolveGateway(env, overrides);
     const listRunIdsBound = (): Promise<readonly string[]> => listRunIds(db);
     const newId = (): string => randomUUID();
 
@@ -243,6 +256,8 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
       modelGateway: gateway,
       // FB.2 — the per-run override factory (live boot only); absent on the recorded/replay path.
       ...(gatewayForOverride !== undefined ? { gatewayForOverride } : {}),
+      // TU.5 — the live tool seams (live boot only); absent on the recorded/replay path (rule #7).
+      ...(toolExecutorSeams !== undefined ? { toolExecutorSeams } : {}),
       eventStore,
       checkRegistry: CHECK_RUNNER_REGISTRY,
       listRunIds: listRunIdsBound,

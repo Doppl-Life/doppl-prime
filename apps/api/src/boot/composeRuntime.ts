@@ -7,8 +7,9 @@ import type {
 } from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { EventStore } from '../event-store';
-import type { ModelGateway } from '../model-gateway';
+import type { ModelGateway, ToolExecutorDeps } from '../model-gateway';
 import { type GenerationGateway, type RunWorkerDeps } from '../runtime';
+import { createToolOrchestratingGateway } from './toolOrchestrator';
 import { createVerifySeam } from '../verifier/verify-seam';
 import { DEFAULT_JUDGE_RUBRIC } from '../verifier/judge/rubric';
 import {
@@ -60,6 +61,13 @@ export interface ComposeRuntimeInput {
    *  deps → the loop's `detectKill` polls it at each generation boundary → drain-then-terminalize run.stopped
    *  (§5). Absent → no operator-stop seam (today's behavior). */
   readonly operatorStop?: () => boolean;
+  /**
+   * TU.5 — the live tool-execution IO seams (httpGet / resolveHostIsPublic / webSearch). PRESENT only on the
+   * live boot branch → the population_generator gateway becomes the tool-orchestrating gateway, so agents do
+   * their own research. ABSENT on the recorded/replay path → the pass-through gateway (replay reads the
+   * persisted tool results, never re-executes — rule #7).
+   */
+  readonly toolExecutorSeams?: ToolExecutorDeps;
 }
 
 /**
@@ -134,10 +142,10 @@ function mvpMutationBounds(config: AppConfig): MutationBounds {
 }
 
 /**
- * Adapt the frozen `ModelGateway` port to the loop's `GenerationGateway` (the `population_generator`
- * `generate`). Tool-call / attempt-failure surfacing is the production provider-adapter's job (the frozen
- * `ModelGatewayResponse` can't carry them) — deferred with the kernel's tool-energy item (Phase-D); the
- * loop already supports the channel.
+ * Adapt the frozen `ModelGateway` port to the loop's `GenerationGateway` — the PASS-THROUGH (no tool-use):
+ * one `population_generator` call, no tool relay. Used on the recorded/replay path (where the recorded
+ * gateway returns final candidates and replay reads any persisted tool results — rule #7, no re-execution).
+ * The live path uses {@link createToolOrchestratingGateway} instead (TU.5).
  */
 function toGenerationGateway(modelGateway: ModelGateway): GenerationGateway {
   return {
@@ -192,11 +200,23 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
   });
   const nextPopulation = createSuccessorThreading({ caps: config.caps });
 
+  // TU.5 — the population_generator gateway: the tool-orchestrating gateway when the live tool seams are
+  // wired (agents do their own research), else the pass-through (recorded/replay — replay reads persisted
+  // tool results, never re-executes; rule #7). Rule #6: this gateway is the population_generator path ONLY;
+  // the verify seam calls `modelGateway` directly for critic/judge, which never sees a tool.
+  const generationGateway: GenerationGateway =
+    input.toolExecutorSeams !== undefined
+      ? createToolOrchestratingGateway({
+          gateway: modelGateway,
+          toolExecutorDeps: input.toolExecutorSeams,
+        })
+      : toGenerationGateway(modelGateway);
+
   return {
     runId,
     config,
     eventStore,
-    gateway: toGenerationGateway(modelGateway),
+    gateway: generationGateway,
     seams: { verify, score, reproduce },
     nextPopulation,
     listRunIds,

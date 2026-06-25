@@ -2,7 +2,7 @@ import { RunConfig } from '@doppl/contracts';
 import type { CheckRunnerRegistry, ModelRouteOverride } from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
 import type { EventStore } from '../event-store';
-import type { ModelGateway } from '../model-gateway';
+import type { ModelGateway, ToolExecutorDeps } from '../model-gateway';
 import { runWorker } from '../runtime';
 import { composeRunWorkerDeps } from './composeRuntime';
 
@@ -34,6 +34,9 @@ export interface StartRunInfra {
   /** FB.2 — the per-run gateway factory (live boot only): a registry overlay re-clamped to the allowlist
    *  when a run carries a validated `modelRouteOverride`. Absent → the boot singleton gateway (rule #7). */
   readonly gatewayForOverride?: (override: ModelRouteOverride) => ModelGateway;
+  /** TU.5 — the live tool-execution seams (live boot only): the population_generator gateway becomes the
+   *  tool-orchestrating gateway so agents do their own research. Absent → pass-through (recorded/replay). */
+  readonly toolExecutorSeams?: ToolExecutorDeps;
   readonly eventStore: EventStore;
   readonly checkRegistry: CheckRunnerRegistry;
   readonly listRunIds: () => Promise<readonly string[]>;
@@ -77,6 +80,9 @@ export function createStartRun(infra: StartRunInfra): (runId: string) => void {
           ...(perRunConfig !== undefined ? { perRunConfig } : {}),
           ...(infra.gatewayForOverride !== undefined
             ? { gatewayForOverride: infra.gatewayForOverride }
+            : {}),
+          ...(infra.toolExecutorSeams !== undefined
+            ? { toolExecutorSeams: infra.toolExecutorSeams }
             : {}),
           ...(infra.operatorStopFor !== undefined
             ? { operatorStop: infra.operatorStopFor(runId) }

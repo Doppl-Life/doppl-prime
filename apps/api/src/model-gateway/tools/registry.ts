@@ -29,13 +29,15 @@ export interface ToolExecutionResult {
  *
  * `httpGet` + `resolveHostIsPublic` are wired as a PAIR — `fetch_url` fails closed if either is missing
  * (the resolver is the ONLY SSRF defense for a non-IP hostname that resolves to a private IP; the literal
- * `assertSafeFetchUrl` guard passes every domain by design). The BOOT-WIRED real impls MUST additionally:
- *  - `httpGet`: DISABLE redirect-following OR re-guard (assertSafeFetchUrl + resolve) every hop — a public
- *    URL can 30x-redirect to a private host; CONNECT to the validated IP (or re-guard at the socket) to
- *    close the resolve→connect TOCTOU window; enforce a per-call TIMEOUT (finiteness).
- *  - `resolveHostIsPublic`: resolve + verify EVERY resolved address (all A AND AAAA records), and
- *    canonicalize an IP-literal input through the same private-range check; fail closed on a lookup error.
- *  - `webSearch`: enforce a per-call timeout.
+ * `assertSafeFetchUrl` guard passes every domain by design). The BOOT-WIRED real impls (`boot/toolSeams.ts`):
+ *  - `httpGet`: DISABLES redirect-following (a public URL can't 30x-redirect to a private host); enforces a
+ *    per-call TIMEOUT + a streamed body-size cap (finiteness, no memory-DoS). DOCUMENTED MVP RESIDUAL
+ *    (escalated for conscious acceptance): it does NOT yet pin the connection to the validated IP, so a
+ *    resolve→connect TOCTOU (rebinding DNS answering public to the resolver + private to the socket)
+ *    remains — the proper close (a connect-time-validating DNS lookup / dispatcher) is a hardening follow-up.
+ *  - `resolveHostIsPublic`: resolves + verifies EVERY resolved address (all A AND AAAA records), and
+ *    canonicalizes an IP-literal input through the same private-range check; fails closed on a lookup error.
+ *  - `webSearch`: enforces a per-call timeout.
  * These over-approximated obligations are the wiring slice's job (they cannot be enforced from the pure
  * executor here).
  */
