@@ -1,4 +1,17 @@
-import type { ModelCallRecord } from './model-gateway.ts';
+// Model-call provenance lives with the domain types; the I/O layer (model-gateway) imports these
+// from here, keeping contracts at the bottom of the dependency graph (no upward import).
+export type ModelPurpose = 'problem_recovery' | 'candidate_generation' | 'critic_judgment' | string;
+
+export type ModelCallRecord = {
+  id: string;
+  runId: string;
+  purpose: ModelPurpose;
+  provider: string;
+  model: string;
+  prompt: string;
+  outputText: string;
+  metadata: Record<string, unknown>;
+};
 
 export type MemoryMode = 'off' | 'auto' | 'pinned';
 

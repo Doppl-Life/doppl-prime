@@ -1,7 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { ModelCallRecord, ModelPurpose } from './contracts.ts';
 
-export type ModelPurpose = 'problem_recovery' | 'candidate_generation' | 'critic_judgment' | string;
+// Re-export so callers keep importing these provenance types from the gateway boundary.
+export type { ModelCallRecord, ModelPurpose };
 
 export type ModelCallRequest = {
   runId: string;
@@ -14,17 +16,6 @@ export type ModelCallRequest = {
     schema: Record<string, unknown>;
   };
   metadata?: Record<string, unknown>;
-};
-
-export type ModelCallRecord = {
-  id: string;
-  runId: string;
-  purpose: ModelPurpose;
-  provider: string;
-  model: string;
-  prompt: string;
-  outputText: string;
-  metadata: Record<string, unknown>;
 };
 
 export type ModelClient = {
