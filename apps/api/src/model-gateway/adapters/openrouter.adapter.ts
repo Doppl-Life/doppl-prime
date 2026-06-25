@@ -1,16 +1,19 @@
 import { z } from 'zod';
 import type { ZodType } from 'zod';
 import OpenAI from 'openai';
-import type {
-  ChatRole,
-  ModelGatewayRequest,
-  ModelRole,
-  ModelRoute,
-  ProviderMeta,
+import {
+  ToolName,
+  type ChatRole,
+  type ModelGatewayRequest,
+  type ModelRole,
+  type ModelRoute,
+  type ProviderMeta,
+  type ToolCallRequest,
 } from '@doppl/contracts';
 import type { ProviderCallFn, ProviderResult } from '../structured-output';
 import { ProviderCallError } from '../gateway';
 import type { ModelRegistry } from '../registry';
+import { TOOL_REGISTRY } from '../tools/registry';
 import { withRetry } from './retry';
 import type { RetryDeps, RetryPolicy } from './retry';
 
@@ -35,6 +38,12 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const PROVIDER_CALL_FAILED_ID = 'provider_call_failed';
 
+/** A provider-shaped function tool (TU.4) — OUR vendor-free shape; the SDK accepts it structurally. */
+export interface OpenRouterFunctionTool {
+  type: 'function';
+  function: { name: string; description: string; parameters: Record<string, unknown> };
+}
+
 /** A single provider request shaped in CONTRACT terms (no vendor type) for the injected client seam. */
 export interface OpenRouterCompletionParams {
   model: string;
@@ -44,6 +53,8 @@ export interface OpenRouterCompletionParams {
   temperature?: number;
   /** PD.13 — relaxed structured mode marker (provider `json_object`); the schema is conveyed in-message. */
   responseFormat?: { type: 'json_object' };
+  /** TU.4 — the offered function tools (population_generator only). Absent → no tool-use (byte-identical). */
+  tools?: OpenRouterFunctionTool[];
 }
 
 /** The normalized raw completion the client returns — `output` is unvalidated (P2.4 validates). */
@@ -53,6 +64,8 @@ export interface OpenRouterRawCompletion {
   output: unknown;
   tokensIn: number;
   tokensOut: number;
+  /** TU.4 — the model's requested tool calls (allowlist-filtered) when `finish_reason==='tool_calls'`. */
+  toolCallRequests?: readonly ToolCallRequest[];
 }
 
 /**
@@ -121,7 +134,45 @@ function buildParams(
       ...baseMessages,
     ];
   }
+  // TU.4 — offer the request's tools as provider function tools, the parameter JSON-schema sourced from the
+  // tool registry (the contract `ToolDescriptor` carries only name+description). A descriptor not in the
+  // registry is dropped (only allowlisted tools are ever offered — rule #3). Tools + json_object can coexist:
+  // the model either calls a tool (finish_reason 'tool_calls') or returns the final structured candidate.
+  if (request.tools && request.tools.length > 0) {
+    const tools = request.tools.flatMap((descriptor): OpenRouterFunctionTool[] => {
+      const spec = TOOL_REGISTRY[descriptor.name];
+      return spec === undefined
+        ? []
+        : [
+            {
+              type: 'function',
+              function: {
+                name: descriptor.name,
+                description: descriptor.description,
+                parameters: spec.parameters,
+              },
+            },
+          ];
+    });
+    if (tools.length > 0) params.tools = tools;
+  }
   return params;
+}
+
+/** Parse one provider tool_call into a contract `ToolCallRequest`, FILTERING non-allowlisted names (rule #3). */
+function parseToolCall(raw: unknown): ToolCallRequest | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const tc = raw as { id?: unknown; function?: { name?: unknown; arguments?: unknown } };
+  const id = tc.id;
+  const name = tc.function?.name;
+  const args = tc.function?.arguments;
+  if (typeof id !== 'string' || id === '') return null;
+  if (!ToolName.safeParse(name).success) return null; // a hallucinated/unlisted tool is dropped (allowlist)
+  return {
+    id,
+    name: name as ToolCallRequest['name'],
+    arguments: typeof args === 'string' ? args : '',
+  };
 }
 
 /**
@@ -191,7 +242,10 @@ export function createOpenRouterProviderCall(deps: OpenRouterAdapterDeps): Provi
         tokensIn: raw.tokensIn,
         tokensOut: raw.tokensOut,
       };
-      return { output: raw.output, providerMeta };
+      // TU.4 — surface tool-call requests alongside the output (only-defined prop, exactOptionalPropertyTypes).
+      const result: ProviderResult = { output: raw.output, providerMeta };
+      if (raw.toolCallRequests !== undefined) result.toolCallRequests = raw.toolCallRequests;
+      return result;
     }
 
     // Terminal failure: carry a route-derived providerMeta with ZERO tokens (no productive spend →
@@ -211,7 +265,11 @@ export function createOpenRouterProviderCall(deps: OpenRouterAdapterDeps): Provi
 export interface SdkChatCompletionLike {
   id: string;
   model: string;
-  choices: { message: { content: string | null } }[];
+  choices: {
+    // TU.4 — `tool_calls` + `finish_reason` are present when the model requests tools (else absent/'stop').
+    message: { content: string | null; tool_calls?: unknown };
+    finish_reason?: string;
+  }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number } | null;
 }
 
@@ -232,14 +290,26 @@ export function mapSdkResponse(
   response: SdkChatCompletionLike,
   structured: boolean,
 ): OpenRouterRawCompletion {
-  const content = response.choices[0]?.message?.content ?? '';
-  return {
+  const choice = response.choices[0];
+  const content = choice?.message?.content ?? '';
+  const completion: OpenRouterRawCompletion = {
     id: response.id,
     model: response.model,
     output: structured ? safeJsonParse(content) : content,
     tokensIn: response.usage?.prompt_tokens ?? 0,
     tokensOut: response.usage?.completion_tokens ?? 0,
   };
+  // TU.4 — surface the model's requested tool calls when it asked for tools (`finish_reason==='tool_calls'`).
+  // Each is allowlist-filtered to a closed `ToolName` (a hallucinated tool is dropped — rule #3). Set only
+  // when ≥1 allowlisted call survives; a normal (finish_reason 'stop') turn leaves `toolCallRequests` absent.
+  const toolCalls = choice?.message?.tool_calls;
+  if (choice?.finish_reason === 'tool_calls' && Array.isArray(toolCalls)) {
+    const requests = toolCalls
+      .map(parseToolCall)
+      .filter((request): request is ToolCallRequest => request !== null);
+    if (requests.length > 0) completion.toolCallRequests = requests;
+  }
+  return completion;
 }
 
 /**
@@ -266,6 +336,8 @@ export function createOpenRouterClient(env: Record<string, string | undefined>):
           ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
           // PD.13 — relaxed structured mode: provider `json_object` (the schema rides in-message, not here).
           ...(params.responseFormat ? { response_format: { type: 'json_object' as const } } : {}),
+          // TU.4 — the offered function tools (population_generator only); the OpenAI-compatible SDK accepts them.
+          ...(params.tools ? { tools: params.tools } : {}),
         },
         { timeout: opts.timeoutMs },
       );

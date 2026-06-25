@@ -65,4 +65,47 @@ describe('createGateway — shell composing port + discipline', () => {
     });
     expect(gateway.capabilityFor('embedding')).toBe(validProviderCapability);
   });
+
+  test('test_tool_call_response_short_circuits_discipline', async () => {
+    // sv10 (TU.4) — when the provider returns tool-call requests, createGateway surfaces them WITHOUT
+    // running the structured-output discipline (there is no final answer to validate yet). The
+    // orchestrator executes the tools then re-asks. A schema IS set — it must NOT trigger a repair.
+    const providerCall = makeProviderCall({
+      output: undefined, // a tool-call turn has no final answer (the provider's message content is null)
+      providerMeta: validProviderMeta,
+      toolCallRequests: [{ id: 'call_1', name: 'web_search', arguments: '{"query":"x"}' }],
+    });
+    const gateway = createGateway({
+      providerCall,
+      capabilityFor: () => validProviderCapability,
+      resolveSchema: () => schema,
+    });
+    const res = await gateway.call({ role: 'population_generator', prompt: 'q' });
+    expect(res.accepted).toBe(true);
+    expect(res.validationResult).toBe('accepted');
+    expect(res.toolCallRequests).toEqual([
+      { id: 'call_1', name: 'web_search', arguments: '{"query":"x"}' },
+    ]);
+    expect(res.output).toBeUndefined();
+    expect(ModelGatewayResponse.safeParse(res).success).toBe(true);
+    expect(providerCall).toHaveBeenCalledTimes(1); // no discipline, no repair
+  });
+
+  test('test_no_tool_calls_runs_discipline_unchanged', async () => {
+    // rule #6 — a response with NO toolCallRequests (every critic/judge call) flows the discipline exactly
+    // as pre-sv10 (byte-identical): a valid output is accepted on a single provider call.
+    const providerCall = makeProviderCall({
+      output: { answer: 'ok' },
+      providerMeta: validProviderMeta,
+    });
+    const gateway = createGateway({
+      providerCall,
+      capabilityFor: () => validProviderCapability,
+      resolveSchema: () => schema,
+    });
+    const res = await gateway.call({ role: 'critic', prompt: 'q' });
+    expect(res.validationResult).toBe('accepted');
+    expect(res.toolCallRequests).toBeUndefined();
+    expect(providerCall).toHaveBeenCalledTimes(1);
+  });
 });

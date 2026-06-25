@@ -20,6 +20,7 @@ import {
 import type { OpenRouterClient } from '../../../../src/model-gateway/adapters/openrouter.adapter';
 import { ProviderTimeoutError } from '../../../../src/model-gateway/adapters/retry';
 import type { RetryDeps } from '../../../../src/model-gateway/adapters/retry';
+import { TOOL_REGISTRY } from '../../../../src/model-gateway/tools/registry';
 
 /**
  * P2.5 OpenRouter generation adapter (ARCHITECTURE.md §6 / §14, KEY SAFETY RULES #9 + #8 + #4).
@@ -98,6 +99,7 @@ interface RecordedCall {
   messages: { role: ChatRole; content: string }[];
   maxTokens?: number | undefined;
   responseFormat?: { type: 'json_object' } | undefined;
+  tools?: unknown;
   timeoutMs: number;
 }
 
@@ -111,6 +113,7 @@ function makeClient(behaviors: Behavior[]): { client: OpenRouterClient; calls: R
         messages: params.messages,
         maxTokens: params.maxTokens,
         responseFormat: params.responseFormat,
+        tools: params.tools,
         timeoutMs: opts.timeoutMs,
       });
       const behavior = behaviors[Math.min(index, behaviors.length - 1)];
@@ -488,5 +491,104 @@ describe('openrouter adapter — vendor response mapping (spec §6)', () => {
       true,
     );
     expect(malformed.output).toBe('not json'); // discipline (P2.4) rejects it; adapter does not throw
+  });
+});
+
+describe('openrouter adapter — tool-calling (TU.4, spec §6)', () => {
+  // spec(§6) — a population_generator request offering tools expands each ToolDescriptor to a provider
+  // function-tool {type:'function', function:{name, description, parameters}}, the params sourced from the
+  // tool registry. (rule #6: only the population_generator route carries tools.)
+  test('test_tools_offered_as_function_specs', async () => {
+    const { client, calls } = makeClient([{ kind: 'success', output: { idea: 'x' } }]);
+    const providerCall = createOpenRouterProviderCall({
+      registry: makeRegistry(),
+      client,
+      retry: NO_WAIT,
+    });
+    await providerCall({
+      role: TEST_ROLE,
+      prompt: 'generate',
+      tools: [
+        { name: 'web_search', description: 'Search the web.' },
+        { name: 'fetch_url', description: 'Fetch a URL.' },
+      ],
+    });
+    expect(calls[0]!.tools).toEqual([
+      {
+        type: 'function',
+        function: {
+          name: 'web_search',
+          description: 'Search the web.',
+          parameters: TOOL_REGISTRY.web_search!.parameters,
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'fetch_url',
+          description: 'Fetch a URL.',
+          parameters: TOOL_REGISTRY.fetch_url!.parameters,
+        },
+      },
+    ]);
+  });
+
+  // spec(§6) — a request with NO tools sends no `tools` param (every critic/judge call; byte-identical).
+  test('test_no_tools_offered_when_absent', async () => {
+    const { client, calls } = makeClient([{ kind: 'success', output: { idea: 'x' } }]);
+    const providerCall = createOpenRouterProviderCall({
+      registry: makeRegistry(),
+      client,
+      retry: NO_WAIT,
+    });
+    await providerCall({ role: TEST_ROLE, prompt: 'evaluate' });
+    expect(calls[0]!.tools).toBeUndefined();
+  });
+
+  // spec(§6) — when the provider returns finish_reason==='tool_calls', mapSdkResponse surfaces the model's
+  // requested calls; a tool name OUTSIDE the frozen allowlist (a hallucinated tool) is FILTERED (rule #3).
+  test('test_tool_calls_parsed_and_allowlist_filtered', () => {
+    const raw = mapSdkResponse(
+      {
+        id: 'g1',
+        model: 'primary-model',
+        choices: [
+          {
+            finish_reason: 'tool_calls',
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: 'c1',
+                  type: 'function',
+                  function: { name: 'web_search', arguments: '{"query":"x"}' },
+                },
+                { id: 'c2', type: 'function', function: { name: 'exec_shell', arguments: '{}' } },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 5, completion_tokens: 0 },
+      },
+      false,
+    );
+    expect(raw.toolCallRequests).toEqual([
+      { id: 'c1', name: 'web_search', arguments: '{"query":"x"}' },
+    ]);
+  });
+
+  // spec(§6) — a normal (finish_reason:'stop') response carries NO toolCallRequests; output as before.
+  test('test_no_tool_calls_leaves_requests_undefined', () => {
+    const raw = mapSdkResponse(
+      {
+        id: 'g2',
+        model: 'primary-model',
+        choices: [{ finish_reason: 'stop', message: { content: '{"idea":"y"}' } }],
+        usage: { prompt_tokens: 3, completion_tokens: 4 },
+      },
+      true,
+    );
+    expect(raw.toolCallRequests).toBeUndefined();
+    expect(raw.output).toEqual({ idea: 'y' });
   });
 });

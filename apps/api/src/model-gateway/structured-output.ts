@@ -1,6 +1,11 @@
 import type { ZodError, ZodType } from 'zod';
 import { wrapUntrusted } from '@doppl/contracts';
-import type { ModelGatewayRequest, ModelGatewayResponse, ProviderMeta } from '@doppl/contracts';
+import type {
+  ModelGatewayRequest,
+  ModelGatewayResponse,
+  ProviderMeta,
+  ToolCallRequest,
+} from '@doppl/contracts';
 
 /**
  * Structured-output discipline (ARCHITECTURE.md §6, KEY SAFETY RULES #5 + #8).
@@ -20,6 +25,12 @@ import type { ModelGatewayRequest, ModelGatewayResponse, ProviderMeta } from '@d
 export interface ProviderResult {
   output: unknown;
   providerMeta: ProviderMeta;
+  /**
+   * TU.4 — the model's requested tool calls when the provider returned `finish_reason==='tool_calls'`
+   * (allowlist-filtered to closed `ToolName`s). Present ONLY on a tool-call turn (population_generator
+   * route only); the gateway shell surfaces these without running the structured-output discipline.
+   */
+  toolCallRequests?: readonly ToolCallRequest[];
 }
 
 /** The injected provider-call function (gateway supplies it; P2.5 wires the real OpenRouter adapter). */

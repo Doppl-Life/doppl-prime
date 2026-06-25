@@ -69,6 +69,19 @@ export function createGateway(deps: GatewayDeps): ModelGateway {
       try {
         const schema = resolveSchema(request);
         const initial = await deps.providerCall(request);
+        // TU.4 — a tool-call turn: the provider asked to call tools (`finish_reason==='tool_calls'`), so
+        // there is NO final answer to validate yet. Surface the requests WITHOUT running the discipline; the
+        // tool-orchestrating gateway executes the tools, re-injects results, and re-asks. (rule #6: only the
+        // population_generator route ever sends tools → only it can reach this branch; critic/judge are
+        // byte-identical.) `accepted ⇔ result≠rejected` holds (accepted/'accepted', no rejection).
+        if (initial.toolCallRequests && initial.toolCallRequests.length > 0) {
+          return {
+            accepted: true,
+            validationResult: 'accepted',
+            providerMeta: initial.providerMeta,
+            toolCallRequests: [...initial.toolCallRequests],
+          };
+        }
         // No structured-output schema → nothing to validate; accept the raw provider output as-is.
         if (!schema) {
           return {
