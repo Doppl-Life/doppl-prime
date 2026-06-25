@@ -169,6 +169,32 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
       }),
     ).toContain('var(--status-culled)');
   });
+
+  // B5 declutter (§12): a long candidate title previously stretched its node wide enough to overlap the
+  // neighbouring column (an unbounded label span). The title is now bounded + single-line-ellipsised, with
+  // the full text on a `title` tooltip — the node keeps a fixed footprint so the column grid stays legible.
+  it('test_long_node_label_truncates_with_title_tooltip', () => {
+    const longLabel =
+      'A very long cross-domain transfer candidate title that would otherwise overflow its node box';
+    const { container } = render(
+      <LineageNodeCard
+        data={{
+          label: longLabel,
+          nodeType: 'candidate',
+          status: 'scored',
+          dataRef: 'cand_long',
+          working: false,
+        }}
+      />,
+    );
+    const labelSpan = container.querySelector(`[title="${longLabel}"]`) as HTMLElement;
+    expect(labelSpan, 'the label carries the full text as a title tooltip').toBeTruthy();
+    expect(labelSpan.textContent).toBe(longLabel); // full text stays in the DOM (CSS-clipped only)
+    // single-line ellipsis truncation (the node footprint stays bounded).
+    expect(labelSpan.style.textOverflow).toBe('ellipsis');
+    expect(labelSpan.style.whiteSpace).toBe('nowrap');
+    expect(labelSpan.style.overflow).toBe('hidden');
+  });
 });
 
 describe('LineageGraph — React Flow lineage panel', () => {

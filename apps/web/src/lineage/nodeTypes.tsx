@@ -26,6 +26,9 @@ const card: CSSProperties = {
   fontFamily: 'var(--font-ui)',
   color: 'var(--fg-default)',
   minWidth: 'var(--space-8)',
+  // B5 declutter: bound the node footprint so a long candidate title can't stretch the card across the
+  // column gap (the layout strides a wider distance between columns — bare numeric geometry, token-exempt).
+  maxWidth: 260,
 };
 const labelRow: CSSProperties = {
   display: 'flex',
@@ -34,6 +37,15 @@ const labelRow: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontWeight: 600,
   color: 'var(--fg-default)',
+  // a flex item must be allowed to shrink for its child's ellipsis to engage.
+  minWidth: 0,
+};
+/** The node title: single-line, ellipsised; the full text rides a `title` tooltip (B5 declutter). */
+const labelText: CSSProperties = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  minWidth: 0,
 };
 const metricsRow: CSSProperties = {
   display: 'flex',
@@ -103,7 +115,9 @@ export function LineageNodeCard({ data }: { data: LineageNodeData }) {
   return (
     <div style={bodyStyle(data)}>
       <div style={labelRow}>
-        <span>{data.label}</span>
+        <span style={labelText} title={data.label}>
+          {data.label}
+        </span>
       </div>
       {data.status !== undefined && (
         // pass `domain` only when defined (exactOptionalPropertyTypes); StatusBadge defaults otherwise.

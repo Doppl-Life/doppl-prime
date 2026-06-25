@@ -149,6 +149,10 @@ export function lineageToFlow(
   // Drop dangling edges (a missing source/target endpoint) — React Flow throws on one (LESSONS §30).
   // Each surviving edge gets its per-type visual (stroke/dash/marker/animation) from `edgeStyleFor` so
   // reproduction edges (fusion violet · mutation dashed-amber) stand out from the plumbing backbone.
+  // B5 declutter: NO per-edge text label (every edge previously printed its type — "fusion"/"generated"/
+  // "spawned" — scattering text boxes across the graph; the legend + the per-type stroke/dash/marker
+  // already convey type), and `smoothstep` orthogonal routing (far less tangled than overlapping béziers
+  // in the per-generation column layout). The carried `data.edgeType` still drives any downstream styling.
   const edges: LineageRfEdge[] = projection.edges
     .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
     .map((e) => {
@@ -157,7 +161,7 @@ export function lineageToFlow(
         id: e.id,
         source: e.source,
         target: e.target,
-        label: e.label ?? e.type,
+        type: 'smoothstep',
         data: { edgeType: e.type },
         style: visual.style,
         ...(visual.markerEnd !== undefined ? { markerEnd: visual.markerEnd } : {}),

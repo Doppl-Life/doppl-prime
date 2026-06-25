@@ -183,6 +183,29 @@ describe('lineageToFlow — pure LineageGraphProjection → React Flow mapping',
     expect(e.sp!.animated).toBeUndefined();
   });
 
+  // B5 declutter (§12): the redesign drops the per-edge TEXT label (every edge previously printed its type
+  // — "fusion"/"generated"/"spawned" — plastering text boxes across the graph; the legend + per-type
+  // stroke/dash/marker already convey type) and routes edges as `smoothstep` (orthogonal, far less tangled
+  // than overlapping béziers in the column layout). Style/animation/marker stay (reproduction edges remain
+  // visually loud).
+  it('test_edges_are_label_free_smoothstep_after_declutter', () => {
+    const proj = fullProjection({
+      nodes: [
+        { id: 'a0', type: 'agenome', label: 'A0', status: 'active', dataRef: 'agn_0' },
+        { id: 'a1', type: 'agenome', label: 'A1', status: 'active', dataRef: 'agn_1' },
+        { id: 'g0', type: 'generation', label: 'Gen 0', dataRef: 'gen_0' },
+      ],
+      edges: [
+        { id: 'fuse', source: 'a0', target: 'a1', type: 'fusion', label: 'fusion' },
+        { id: 'sp', source: 'g0', target: 'a0', type: 'spawned' },
+      ],
+    });
+    for (const ed of lineageToFlow(proj).edges) {
+      expect(ed.label, `edge ${ed.id} must carry no text label`).toBeUndefined();
+      expect(ed.type, `edge ${ed.id} must route as smoothstep`).toBe('smoothstep');
+    }
+  });
+
   // spec(§10 watermark): a stale (lower sequenceThrough) projection never replaces a newer one.
   it('test_pickFreshestProjection_watermark', () => {
     const older = fullProjection({ sequenceThrough: 12 });
