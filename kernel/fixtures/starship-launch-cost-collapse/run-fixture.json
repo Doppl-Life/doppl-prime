@@ -1,0 +1,104 @@
+{
+  "caseId": "starship-launch-cost-collapse",
+  "problemRecovery": {
+    "title": "Recover The Downstream Money Flow",
+    "recoveredProblem": "The case is not mainly Mars versus the Moon. The load-bearing problem is that a launch-cost collapse re-prices every downstream constraint, so the value migrates to payload classes, infrastructure, inputs, and services that were previously uneconomic.",
+    "hiddenConstraint": "The first beneficiaries are often not the rocket company; they are the bottleneck inputs and enablers behind the new cost curve.",
+    "falsifier": "If Starship cadence and cost fail to approach reusable super-heavy economics, the downstream re-rating thesis weakens.",
+    "citedKnowledge": []
+  },
+  "candidates": [
+    {
+      "id": "cand_payload_class_unlock",
+      "agenomeId": "ag_breakthrough",
+      "title": "Payload Class Unlock",
+      "summary": "Rank payload categories that become economic only after launch cost falls by an order of magnitude.",
+      "mechanism": "Compare old Falcon-era payload economics with cheap-cadence economics for orbital compute, manufacturing, sensors, and servicing.",
+      "claimedDelta": "Turns the thesis from destination debate into a map of newly viable markets.",
+      "citedKnowledge": ["K1", "K3"]
+    },
+    {
+      "id": "cand_space_picks_shovels",
+      "agenomeId": "ag_polymath",
+      "title": "Space Picks And Shovels",
+      "summary": "Follow the money into propellant, ground systems, space-rated components, thermal materials, robotics, and test infrastructure.",
+      "mechanism": "Trace every high-cadence launch into repeat consumables, bottleneck components, and operational services.",
+      "claimedDelta": "Finds second-order beneficiaries before they are priced like obvious space plays.",
+      "citedKnowledge": ["K1", "K2", "K3"]
+    },
+    {
+      "id": "cand_orbital_compute_loop",
+      "agenomeId": "ag_blindside",
+      "title": "Orbital Compute Loop",
+      "summary": "Treat cheap launch as a possible unlock for orbital data centers and firm-power arbitrage.",
+      "mechanism": "Link launch-cost collapse to deployable mass, solar power, cooling constraints, and downlink economics.",
+      "claimedDelta": "Connects the launch thesis to AI infrastructure rather than only satellites.",
+      "citedKnowledge": ["K1", "K3"]
+    }
+  ],
+  "critics": [
+    {
+      "candidateId": "cand_payload_class_unlock",
+      "criticId": "grounding",
+      "score": 84,
+      "pressure": "Grounded because the problem statement is explicitly about cost thresholds for payload classes.",
+      "revisionMandate": "Name the first payload class whose unit economics cross the line."
+    },
+    {
+      "candidateId": "cand_payload_class_unlock",
+      "criticId": "novelty",
+      "score": 82,
+      "pressure": "More useful than destination debate because it creates a market map.",
+      "revisionMandate": "Avoid listing science-fiction payloads without near-term economics."
+    },
+    {
+      "candidateId": "cand_payload_class_unlock",
+      "criticId": "mechanism",
+      "score": 80,
+      "pressure": "Mechanism is clear but broad.",
+      "revisionMandate": "Attach each payload class to the launch-cost threshold that unlocks it."
+    },
+    {
+      "candidateId": "cand_space_picks_shovels",
+      "criticId": "grounding",
+      "score": 90,
+      "pressure": "Strong because it uses the stated EV-input analogy and follows repeat bottlenecks.",
+      "revisionMandate": "Separate recurring consumables from one-time infrastructure."
+    },
+    {
+      "candidateId": "cand_space_picks_shovels",
+      "criticId": "novelty",
+      "score": 88,
+      "pressure": "Best blindside: value can accrue to suppliers rather than the rocket narrative.",
+      "revisionMandate": "Name the least obvious bottleneck supplier class."
+    },
+    {
+      "candidateId": "cand_space_picks_shovels",
+      "criticId": "mechanism",
+      "score": 86,
+      "pressure": "Mechanism follows the money from launch cadence into procurement and operations.",
+      "revisionMandate": "Make the cadence dependence explicit."
+    },
+    {
+      "candidateId": "cand_orbital_compute_loop",
+      "criticId": "grounding",
+      "score": 68,
+      "pressure": "Interesting cross-thesis link, but more speculative than picks-and-shovels.",
+      "revisionMandate": "Define the power, cooling, and downlink bottlenecks."
+    },
+    {
+      "candidateId": "cand_orbital_compute_loop",
+      "criticId": "novelty",
+      "score": 78,
+      "pressure": "Novel and memorable, but risks outrunning near-term evidence.",
+      "revisionMandate": "Frame it as an option unlocked by mass-to-orbit, not the main thesis."
+    },
+    {
+      "candidateId": "cand_orbital_compute_loop",
+      "criticId": "mechanism",
+      "score": 64,
+      "pressure": "Mechanism needs more engineering constraints.",
+      "revisionMandate": "Fuse with the payload-class threshold map."
+    }
+  ]
+}
