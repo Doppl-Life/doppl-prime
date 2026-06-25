@@ -555,8 +555,16 @@ describe('createReproduceSeam — selection reproduction over the real persisted
     const mutRows = await store.readByRun(mutRun);
     const mutParents = [{ agenome: mp, noveltyVector: [1, 0, 0] }];
     const liveMutEvt = ReproductionEvent.parse(liveMut[0]);
+    // mutation_only with spawnBudget>1 mints offspring CONCURRENTLY (the reproduce seam's bounded pool),
+    // so the persisted append order is NOT the dispatch order — match the persisted twin to THIS live
+    // event by its `childAgenomeId` (order-independent), never `find(first agenome.reproduced)` (which
+    // returns whichever offspring won the append race → an intermittent off-by-one mismatch).
     const persistedMutEvt = ReproductionEvent.parse(
-      mutRows.find((r) => r.type === 'agenome.reproduced')!.payload,
+      mutRows.find(
+        (r) =>
+          r.type === 'agenome.reproduced' &&
+          (r.payload as { childAgenomeId?: string }).childAgenomeId === liveMutEvt.childAgenomeId,
+      )!.payload,
     );
     expect(persistedMutEvt).toEqual(liveMutEvt);
     const liveMutChild = applyReproduction(mutParents, liveMutEvt);
