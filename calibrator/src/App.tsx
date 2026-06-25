@@ -1387,12 +1387,24 @@ export function App() {
           <div className="slider-scale" aria-hidden="true">
             <span>
               <span className="scale-label-full">-5 misleading</span>
-              <span className="scale-label-short">-5 bad</span>
+              <span className="scale-label-short">
+                <span>-5</span>
+                <span>bad</span>
+              </span>
             </span>
-            <span>0 neutral</span>
+            <span>
+              <span className="scale-label-full">0 neutral</span>
+              <span className="scale-label-short">
+                <span>0</span>
+                <span>neutral</span>
+              </span>
+            </span>
             <span>
               <span className="scale-label-full">+5 highly useful</span>
-              <span className="scale-label-short">+5 useful</span>
+              <span className="scale-label-short">
+                <span>+5</span>
+                <span>useful</span>
+              </span>
             </span>
           </div>
           {reviewerIsAllowed && activeReviewArtifact ? (

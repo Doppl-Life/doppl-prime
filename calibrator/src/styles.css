@@ -25,6 +25,10 @@
   --calibrator-vh: 100dvh;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   background:
     linear-gradient(180deg, rgba(17, 23, 38, 0.96), rgba(7, 10, 18, 1)),
@@ -77,22 +81,27 @@ select:focus-visible {
   background-size: 18px 18px;
   color: var(--ink);
   display: grid;
-  min-height: 100vh;
-  padding: 18px;
+  min-height: var(--calibrator-vh);
+  min-width: 0;
+  overflow: hidden;
+  padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom));
+  place-items: center;
 }
 
 .login-panel {
+  align-self: center;
   background: rgba(17, 23, 38, 0.98);
   border: 1px solid var(--line);
   border-left: 3px solid var(--teal);
   border-radius: 8px;
   box-shadow: var(--shadow);
   display: grid;
-  gap: 16px;
-  align-self: start;
+  gap: 14px;
   margin: 0 auto;
   max-width: 440px;
-  padding: 18px 22px 22px;
+  max-height: calc(var(--calibrator-vh) - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  padding: 18px 22px 20px;
   width: min(100%, 440px);
 }
 
@@ -106,6 +115,14 @@ select:focus-visible {
   color: var(--muted);
   font-size: 14px;
   margin: 8px 0 0;
+}
+
+.login-button {
+  justify-self: center;
+  max-width: 260px;
+  padding-left: 28px;
+  padding-right: 28px;
+  width: auto;
 }
 
 .review-app {
@@ -772,25 +789,25 @@ textarea {
   position: relative;
 }
 
-.slider-scale span {
+.slider-scale > span {
   position: absolute;
   top: 0;
   white-space: nowrap;
 }
 
-.slider-scale span:nth-child(1) {
+.slider-scale > span:nth-child(1) {
   left: var(--slider-thumb-radius);
   text-align: left;
   transform: translateX(0);
 }
 
-.slider-scale span:nth-child(2) {
+.slider-scale > span:nth-child(2) {
   left: 50%;
   text-align: center;
   transform: translateX(-50%);
 }
 
-.slider-scale span:nth-child(3) {
+.slider-scale > span:nth-child(3) {
   left: calc(100% - var(--slider-thumb-radius));
   text-align: right;
   transform: translateX(-100%);
@@ -1062,7 +1079,7 @@ textarea {
   }
 
   .slider-row {
-    gap: 3px;
+    gap: 4px;
   }
 
   .slider-row label {
@@ -1075,7 +1092,7 @@ textarea {
 
   .slider-scale {
     font-size: 9px;
-    height: 14px;
+    height: 22px;
     margin-top: -6px;
   }
 
@@ -1084,7 +1101,10 @@ textarea {
   }
 
   .scale-label-short {
-    display: inline;
+    display: grid;
+    gap: 1px;
+    justify-items: center;
+    line-height: 1;
   }
 
   .reviewer-rating-note {
