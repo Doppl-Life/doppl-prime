@@ -111,4 +111,7 @@ export interface AppConfig {
   readonly costMap: CostMapConfig;
   readonly problemSets: ProblemSets;
   readonly seedSet: SeedAgenomeSet;
+  /** EXPERIMENT (mutagen-dynamics bake-off) — the mutation/mutagen strategy under test
+   * (`DOPPL_MUTATION_STRATEGY`). Default `fusion_only` keeps the kernel byte-identical to HEAD. */
+  readonly mutationStrategy: import('../loop/mutagenStrategy').MutationStrategy;
 }

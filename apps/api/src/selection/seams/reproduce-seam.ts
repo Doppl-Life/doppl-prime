@@ -34,6 +34,8 @@ export interface ReproduceSeamDeps {
   readonly seed: number;
   /** Injected id factory — keeps the seam free of `Math.random`/uuid (byte-deterministic, §24). */
   readonly newId: () => string;
+  /** EXPERIMENT — the r/K mutation share (0 = fusion_only control). Default 0 → byte-identical to HEAD. */
+  readonly mutationFraction?: number;
 }
 
 interface BestCandidate {
@@ -153,6 +155,7 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
         eligibleParents,
         remainingPopulation,
         seed: deps.seed,
+        ...(deps.mutationFraction !== undefined ? { mutationFraction: deps.mutationFraction } : {}),
       },
       { gateway: deps.gateway, emit: append, newId: deps.newId, bounds: deps.bounds },
     );

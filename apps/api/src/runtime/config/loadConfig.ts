@@ -15,6 +15,7 @@ import type { AppConfig } from './configSchema';
 import { projectEnvOverrides } from './envSchema';
 import { DEFAULT_SEED_SET, SeedAgenomeSet } from '../seed/seedAgenomes.config';
 import { CostMapConfigSchema, DEFAULT_COST_MAP } from '../energy/costMap';
+import { parseMutationStrategy } from '../loop/mutagenStrategy';
 
 export type { AppConfig } from './configSchema';
 
@@ -121,6 +122,18 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     fileSources.seedSet ?? DEFAULT_SEED_SET,
   );
 
+  // EXPERIMENT — the mutagen-dynamics strategy under test (env-gated; garbage/absent → fusion_only = HEAD).
+  const mutationStrategy = parseMutationStrategy(env.DOPPL_MUTATION_STRATEGY);
+
   // 4. One composed, deep-frozen immutable handle — downstream kernel code cannot mutate boot config.
-  return deepFreeze({ runConfig, registry, scoringPolicy, caps, costMap, problemSets, seedSet });
+  return deepFreeze({
+    runConfig,
+    registry,
+    scoringPolicy,
+    caps,
+    costMap,
+    problemSets,
+    seedSet,
+    mutationStrategy,
+  });
 }

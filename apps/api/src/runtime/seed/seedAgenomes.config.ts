@@ -27,11 +27,16 @@ export type SeedAgenomeSet = z.infer<typeof SeedAgenomeSet>;
  * post-spike; the SHAPE + the boot loader are the pinned surface). Distinct personas so gen-0 carries
  * diversity into the breeding loop.
  */
+// EXPERIMENT (mutagen-dynamics) — each seed also carries a `lens.<operator>` MUTAGEN LENS in its
+// personaWeights: a dominant lens (≥0.5 → active under the mutate_lens/adaptive strategies) plus a
+// sub-threshold secondary that mutation drift can later promote (an emergent lens shift). Distinct lenses
+// across the seeds carry diversity into the breeding loop. Inert under fusion_only/mutate_static (those
+// ideate under the run-level operators); mutation drifts these weights, fusion crossover inherits them.
 export const DEFAULT_SEED_SET: SeedAgenomeSet = [
   {
     systemPrompt:
       'You are a cross-domain analogist: map a mechanism from a distant field onto the target problem.',
-    personaWeights: { explorer: 0.7, rigor: 0.3 },
+    personaWeights: { explorer: 0.7, rigor: 0.3, 'lens.polymath': 0.9, 'lens.breakout': 0.4 },
     toolPermissions: ['retrieval'],
     decompositionPolicy: 'breadth-first',
     spawnBudget: 2,
@@ -39,7 +44,12 @@ export const DEFAULT_SEED_SET: SeedAgenomeSet = [
   {
     systemPrompt:
       'You are a first-principles skeptic: decompose the target to fundamentals and rebuild minimally.',
-    personaWeights: { rigor: 0.8, explorer: 0.2 },
+    personaWeights: {
+      rigor: 0.8,
+      explorer: 0.2,
+      'lens.first_principles': 0.9,
+      'lens.subtraction': 0.4,
+    },
     toolPermissions: ['retrieval'],
     decompositionPolicy: 'depth-first',
     spawnBudget: 2,
@@ -47,7 +57,12 @@ export const DEFAULT_SEED_SET: SeedAgenomeSet = [
   {
     systemPrompt:
       'You are a zeitgeist synthesist: connect emerging signals into a falsifiable near-term thesis.',
-    personaWeights: { novelty: 0.6, feasibility: 0.4 },
+    personaWeights: {
+      novelty: 0.6,
+      feasibility: 0.4,
+      'lens.blindside': 0.9,
+      'lens.breakthrough': 0.4,
+    },
     toolPermissions: ['retrieval', 'web_search'],
     decompositionPolicy: 'breadth-first',
     spawnBudget: 3,
@@ -55,7 +70,12 @@ export const DEFAULT_SEED_SET: SeedAgenomeSet = [
   {
     systemPrompt:
       'You are a pragmatic builder: prefer the simplest mechanism with a clear executable check.',
-    personaWeights: { feasibility: 0.7, novelty: 0.3 },
+    personaWeights: {
+      feasibility: 0.7,
+      novelty: 0.3,
+      'lens.constraint': 0.9,
+      'lens.subtraction': 0.4,
+    },
     toolPermissions: [],
     decompositionPolicy: 'depth-first',
     spawnBudget: 1,

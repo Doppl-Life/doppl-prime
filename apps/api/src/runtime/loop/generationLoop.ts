@@ -11,6 +11,7 @@ import type {
 } from '@doppl/contracts';
 import { CURRENT_SCHEMA_VERSION, wrapUntrusted } from '@doppl/contracts';
 import { composeOperatorFraming } from './generationOperators';
+import { agenomeLens, strategyParams } from './mutagenStrategy';
 import { composeBiasFraming, biasToTemperature } from './generationBias';
 import type { AppendInput, AppendResult, EventStore, RunEventRow } from '../../event-store';
 import type { AppConfig } from '../config/configSchema';
@@ -562,10 +563,18 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       // FB.4 — thread the per-run generationBias dial into the population_generator request (band fragment +
       // clamped temperature). Captured in a var so the EXACT executed samplingParams are recorded into the
       // llm_call_telemetry capture below (recorded == executed; replay reads it, never re-derives — rule #7).
+      // EXPERIMENT — under a per-agenome-lens strategy (mutate_lens / adaptive) the agenome ideates through
+      // its OWN heritable mutagen lens (its personaWeights `lens.<operator>` entries, which mutation drifts
+      // and fusion blends); a lens-less agenome falls back to the run-level operators (byte-identical to
+      // HEAD). Pure → replay reconstructs the identical framing from the persisted genome (rule #7).
+      const lensOps = strategyParams(config.mutationStrategy).usesPerAgenomeLens
+        ? agenomeLens(agenome.personaWeights)
+        : [];
+      const operators = lensOps.length > 0 ? lensOps : config.runConfig.generationOperators;
       const populationRequest = buildPopulationRequest(
         agenome.systemPrompt,
         config.runConfig.seed,
-        config.runConfig.generationOperators,
+        operators,
         config.runConfig.generationBias,
       );
       // TU.5 rule #1 — pass the kernel-computed remaining tool-call budget as a clamped HINT (a

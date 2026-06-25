@@ -6,6 +6,7 @@ import type { FusionParent } from './reproduction/parent-distance';
 import { reproduce } from './reproduction/reproduce';
 import type { SelectionEmitter } from './reproduction/degenerate';
 import { allocate } from './allocation';
+import { isMutationSlot } from './reproduction/mutationSlot';
 import { mapLimit } from '../concurrency/pLimit';
 
 /** Max offspring slots reproduced CONCURRENTLY. Reproduction emits NO energy.spent (rule #8) and each
@@ -50,6 +51,12 @@ export interface SuccessorInput {
   remainingPopulation: number;
   /** The persisted per-run RNG seed; each slot derives a distinct seed (replay reads persisted outcomes). */
   seed: number;
+  /**
+   * EXPERIMENT — the share of offspring slots produced by single-parent MUTATION (r) vs two-parent FUSION
+   * (K), per the run's mutation strategy. 0 → fusion_only (the control, == HEAD). The kernel still bounds
+   * the offspring count (rule #1); this only sets the r/K mix. Default 0 keeps callers byte-identical.
+   */
+  mutationFraction?: number;
 }
 
 export interface SuccessorDeps {
@@ -162,9 +169,14 @@ export async function assembleSuccessor(
     schedule,
     DEFAULT_REPRODUCE_CONCURRENCY,
     async (anchor, slot) => {
-      const partners: SuccessorParent[] =
-        pool.length >= 2 ? [anchor, mostDistantPartner(anchor, pool)] : [anchor];
       const slotSeed = (input.seed + slot) >>> 0;
+      // EXPERIMENT — the per-slot r/K decision: a mutation slot reproduces from the SINGLE anchor (→
+      // reproduce() runs mutation_only, drifting the lens), a fusion slot pairs the anchor with its most-
+      // distant partner. Deterministic over the slot seed (replay reads the recorded mode). With
+      // mutationFraction 0 (fusion_only) this is byte-identical to the prior always-fusion behavior.
+      const mutateSlot = isMutationSlot(input.mutationFraction ?? 0, slotSeed, pool.length);
+      const partners: SuccessorParent[] =
+        !mutateSlot && pool.length >= 2 ? [anchor, mostDistantPartner(anchor, pool)] : [anchor];
       const genPart = input.generationId === undefined ? {} : { generationId: input.generationId };
       return reproduce(
         { runId: input.runId, eligibleParents: partners, seed: slotSeed, ...genPart },

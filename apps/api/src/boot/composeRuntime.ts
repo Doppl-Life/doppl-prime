@@ -6,6 +6,7 @@ import type {
   RunConfig,
 } from '@doppl/contracts';
 import type { AppConfig } from '../runtime/config/configSchema';
+import { strategyParams } from '../runtime/loop/mutagenStrategy';
 import type { EventStore } from '../event-store';
 import type { ModelGateway, ToolExecutorDeps } from '../model-gateway';
 import { type GenerationGateway, type RunWorkerDeps } from '../runtime';
@@ -197,6 +198,9 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     bounds: mvpMutationBounds(config),
     seed: config.runConfig.rngSeed,
     newId,
+    // EXPERIMENT — the r/K mutation share for the run's strategy (0 for fusion_only = HEAD). The adaptive
+    // strategy's per-generation fraction control is applied in the loop (E2); this is the static baseline.
+    mutationFraction: strategyParams(config.mutationStrategy).baseMutationFraction,
   });
   const nextPopulation = createSuccessorThreading({ caps: config.caps });
 
