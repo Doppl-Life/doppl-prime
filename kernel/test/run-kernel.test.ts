@@ -32,6 +32,37 @@ test('runs deterministic kernel loop end to end', async () => {
   );
 });
 
+test('tags mutated candidates with their mutagen and accumulates the lineage', async () => {
+  const run = await runKernel({
+    runId: 'run_mutagen',
+    casePath: 'case-studies/fsd-ownership-unwind/problem-statement.md',
+    fixturePath: 'kernel/fixtures/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'kernel/fixtures/fsd-ownership-unwind/knowledge-packet.json',
+    memoryMode: 'auto',
+    generations: 2,
+  });
+
+  // Generation-0 candidates are seeds (no mutagen). Generation >= 1 mutations are each
+  // tagged with the mutagen that made them, and that mutagen is in their lineage.
+  const mutated = run.candidates.filter((candidate) => candidate.mutagen !== undefined);
+  assert.ok(mutated.length >= 3, 'expected mutated candidates from a second generation');
+  for (const candidate of mutated) {
+    assert.ok(
+      candidate.mutagenLineage?.includes(candidate.mutagen),
+      `lineage of ${candidate.id} should include its mutagen ${candidate.mutagen}`,
+    );
+  }
+  const usedMutagens = new Set(mutated.map((candidate) => candidate.mutagen));
+  assert.ok(usedMutagens.has('constraint-injection'));
+  assert.ok(usedMutagens.has('blindside'));
+  assert.ok(usedMutagens.has('breakout'));
+
+  // A fused child carries a lineage (merged from its parents) but no single mutagen.
+  assert.ok(run.fusion);
+  assert.equal(run.fusion?.child.mutagen, undefined);
+  assert.ok(Array.isArray(run.fusion?.child.mutagenLineage));
+});
+
 test('runs through injected generation providers', async () => {
   const run = await runKernel({
     runId: 'run_injected',

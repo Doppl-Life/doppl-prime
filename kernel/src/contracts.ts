@@ -54,6 +54,18 @@ export type ProblemRecovery = {
   citedKnowledge: string[];
 };
 
+export const MUTAGENS = [
+  'breakthrough',
+  'addition-by-subtraction',
+  'breakout',
+  'blindside',
+  'first-principles',
+  'constraint-injection',
+  'polymath',
+] as const;
+
+export type Mutagen = (typeof MUTAGENS)[number];
+
 export type CandidateSolution = {
   id: string;
   caseId: string;
@@ -64,6 +76,11 @@ export type CandidateSolution = {
   mechanism: string;
   claimedDelta: string;
   citedKnowledge: string[];
+  // The move that made this candidate (absent for a seed or a pure fusion) and the
+  // full record of moves that shaped it (a mutation appends; a fusion merges both
+  // parents' lineages). Canon: contracts/run-trace.md `Candidate`.
+  mutagen?: Mutagen;
+  mutagenLineage?: Mutagen[];
 };
 
 export type Agenome = {

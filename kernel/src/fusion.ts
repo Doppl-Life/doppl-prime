@@ -39,6 +39,10 @@ export function fuseCandidates(input: {
     mechanism: `${input.parentA.mechanism} It is tempered by ${input.parentB.mechanism}`,
     claimedDelta: `${input.parentA.claimedDelta} + ${input.parentB.claimedDelta}`,
     citedKnowledge: [...new Set([...input.parentA.citedKnowledge, ...input.parentB.citedKnowledge])],
+    // Fusion is recombination: merge both parents' lineages. No single mutagen of its own.
+    mutagenLineage: [
+      ...new Set([...(input.parentA.mutagenLineage ?? []), ...(input.parentB.mutagenLineage ?? [])]),
+    ],
   };
   return {
     child,

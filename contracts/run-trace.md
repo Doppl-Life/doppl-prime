@@ -83,7 +83,7 @@ type RunInputs = {
 
 ## Candidates
 
-A candidate is one agenome the engine generated before selection. Every candidate names its reproduction unit, the mutagen that made it, and its delta. Its `mutagen_lineage` is the chain of mutagens from root to here — the record of which moves shaped it, carried forward as the agenome survives. No-delta candidates are rejected before measurement.
+A candidate is one agenome the engine generated before selection. Its `mutagen_lineage` accumulates the moves that shaped it: a **mutation** appends the `mutagen` it applies; a **fusion** recombines two parents and merges both their lineages. A mutagen may also land on top of a fusion — so `mutagen` (this step's move) is optional, while `mutagen_lineage` is the full record from root to here. Every candidate names its reproduction unit and its delta; no-delta candidates are rejected before measurement.
 
 ### Type contract
 
@@ -102,7 +102,7 @@ type Candidate = {
   parent_candidate_id?: Uuid;
   generation: number;
   unit: ReproductionUnit;
-  mutagen: Mutagen;
+  mutagen?: Mutagen;
   mutagen_lineage: Mutagen[];
   headline: string;
   synopsis: string;

@@ -7,6 +7,7 @@ import {
   type CaseStudy,
   type CriticVerdict,
   type KnowledgePacket,
+  type Mutagen,
   type ProblemRecovery,
 } from './contracts.ts';
 import { loadKernelFixture } from './fixtures.ts';
@@ -167,9 +168,15 @@ export async function createFixtureGenerationProviders(
     const childTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
     const generation = input.generation;
     const definedHandle = (handle: string | undefined): handle is string => handle !== undefined;
+    const baseLineage = input.previousChild.mutagenLineage ?? [];
+    const stabilityMutagen: Mutagen = 'constraint-injection';
+    const failureMutagen: Mutagen = 'blindside';
+    const signalMutagen: Mutagen = 'breakout';
     const variants = [
       {
         source: primary,
+        mutagen: stabilityMutagen,
+        mutagenLineage: [...baseLineage, stabilityMutagen],
         id: `${primary.id}_stability_probe_g${generation}`,
         title: `${primary.title} Stability Probe`,
         summary: `Mutates the previous survivor into a stricter ${primary.title} test for generation ${generation}.`,
@@ -180,6 +187,8 @@ export async function createFixtureGenerationProviders(
       },
       {
         source: secondary,
+        mutagen: failureMutagen,
+        mutagenLineage: [...baseLineage, failureMutagen],
         id: `${secondary.id}_failure_probe_g${generation}`,
         title: `${secondary.title} Failure Probe`,
         summary: `Turns the prior critic mandate into a falsifier against ${input.previousChild.title}.`,
@@ -190,6 +199,8 @@ export async function createFixtureGenerationProviders(
       },
       {
         source: tertiary,
+        mutagen: signalMutagen,
+        mutagenLineage: [...baseLineage, signalMutagen],
         id: `${tertiary.id}_signal_probe_g${generation}`,
         title: `${tertiary.title} Signal Probe`,
         summary: `Explores a new observable signal adjacent to ${input.previousChild.title}.`,
