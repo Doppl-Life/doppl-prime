@@ -7,19 +7,19 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { handleKernelHttpRequest } from '../../../src/kernel/server/server.ts';
 import { loadCaseStudy } from '../../../src/kernel/discovery/case-loader.ts';
 import { createDefaultModelGenerationPrompts } from '../../../src/kernel/engine/generation-providers.ts';
-import { createJsonKnowledgeGateway } from '../../../src/kernel/discovery/knowledge-gateway.ts';
+import { createAgardenStockKnowledgeGateway } from '../../../src/kernel/discovery/knowledge-gateway.ts';
 import { initialAgenomePool } from '../../../src/kernel/engine/agenomes.ts';
 import { type ModelCallRecord, writeModelCallRecords } from '../../../src/kernel/model/model-gateway.ts';
 
-process.env.DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS = 'true';
-
-const FSD_FIXTURE_PATH = 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json';
-const FSD_KNOWLEDGE_PACKET_PATH = 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json';
-const GLP1_KNOWLEDGE_PACKET_PATH = 'test/fixtures/kernel/glp1-snack-demand-destruction/knowledge-packet.json';
+// A committed test vault (a real flow node + real stock, copied from agarden — inputs, not
+// fabricated generation). The server's model output is the mock-fetch transport stub below;
+// these tests verify HTTP plumbing: routing, auth, secret redaction, SSE, and replay.
+const TEST_VAULT = 'test/captured/fsd/vault';
+const TEST_CASE_PATH = `${TEST_VAULT}/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md`;
 
 async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
-  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
-  const gateway = await createJsonKnowledgeGateway(FSD_KNOWLEDGE_PACKET_PATH);
+  const caseStudy = await loadCaseStudy(TEST_CASE_PATH);
+  const gateway = await createAgardenStockKnowledgeGateway(TEST_VAULT);
   const knowledgePacket = await gateway.selectPacket({
     runId,
     targetCase: caseStudy.id,
