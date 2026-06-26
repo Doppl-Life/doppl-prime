@@ -11,6 +11,8 @@ import { RunHealth } from './health';
 import { KnowledgeGraph } from './knowledge';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
 import { FallbackLadderResponse, type RungDescriptor } from './fallbackLadderClient';
+import { OuterBloomProjection } from './outerBloom';
+import type { OuterBloomProjection as OuterBloomProjectionType } from './outerBloom';
 import { parseOrThrow, TransportError } from './errors';
 
 export { PayloadValidationError, TransportError } from './errors';
@@ -91,6 +93,8 @@ export interface RunClient {
    * cap-default 422). Serves the frozen `RunCaps` read-only — no new contract surface.
    */
   getCapMaxima(): Promise<RunCaps>;
+  /** GET /bloom — read-only outer-view projection over all known runs. */
+  getOuterBloom(): Promise<OuterBloomProjectionType>;
 }
 
 const RunEventEnvelopeArray = z.array(RunEventEnvelope);
@@ -203,5 +207,6 @@ export function createRunClient(options: RunClientOptions): RunClient {
     getFallbackLadder: async () =>
       (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
     getCapMaxima: async () => (await getJson('/config/caps', CapMaximaResponse)).caps,
+    getOuterBloom: () => getJson('/bloom', OuterBloomProjection),
   };
 }

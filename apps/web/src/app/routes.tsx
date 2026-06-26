@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-do
 import { AppShell } from '../components/app/AppShell';
 import { S1LauncherScreen } from '../routes/S1LauncherScreen';
 import { RunsHomeScreen } from '../routes/RunsHomeScreen';
+import { OuterBloomScreen } from '../routes/OuterBloomScreen';
 import { S2OrganismView } from '../routes/S2OrganismView';
 import { S5FinalIdeaScreen } from '../routes/S5FinalIdeaScreen';
 import { KnowledgeView } from '../routes/KnowledgeView';
@@ -27,6 +28,11 @@ function LaunchRoute() {
   return (
     <S1LauncherScreen runClient={runClient} onStarted={(run) => navigate(`/runs/${run.runId}`)} />
   );
+}
+
+function OuterBloomRoute() {
+  const runClient = useRunClient();
+  return <OuterBloomScreen runClient={runClient} />;
 }
 
 /** S2 Organism View (FV.4). key by (mode,id) so it remounts when the URL changes. */
@@ -65,6 +71,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<RunsHomeScreen />} />
+        <Route path="bloom" element={<OuterBloomRoute />} />
         <Route path="launch" element={<LaunchRoute />} />
         <Route path="runs/:id" element={<OrganismRoute mode="live" />} />
         <Route path="runs/:id/replay" element={<OrganismRoute mode="replay" />} />
