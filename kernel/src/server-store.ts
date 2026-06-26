@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { toDashboardEnvelope } from './dashboard-envelope.ts';
+import { toDashboardEnvelope, type DashboardEnvelope } from './dashboard-envelope.ts';
+import { projectRunIndexToDashboardEvents } from './dashboard-projection.ts';
 import { readRunEvents, replayRunProjection } from './event-store.ts';
 import { headerValue, type KernelHttpRequest, type KernelHttpResponse } from './server-http.ts';
 
@@ -87,9 +88,20 @@ export async function readRunArtifact(
   };
 }
 
-export async function readDashboardEvents(runId: string, rootDir: string): Promise<Array<Record<string, unknown>>> {
+export async function readDashboardEvents(runId: string, rootDir: string): Promise<DashboardEnvelope[]> {
   try {
-    return await readRunEventLog(runId, rootDir);
+    const runDir = await findRunDir(rootDir, runId);
+    if (!runDir) return [];
+    const events = await readRunEvents(path.join(runDir, 'events.jsonl'));
+    try {
+      const index = JSON.parse(await readFile(path.join(runDir, 'run-index.json'), 'utf8')) as Record<
+        string,
+        unknown
+      >;
+      return projectRunIndexToDashboardEvents(index, events);
+    } catch {
+      return events.map(toDashboardEnvelope);
+    }
   } catch {
     return [];
   }
@@ -132,6 +144,9 @@ export async function readRunEventsResponse(
   runId: string,
   rootDir: string,
 ): Promise<KernelHttpResponse> {
+  if (request.url.includes('/kernel/dashboard/')) {
+    return dashboardEventsResponse(request, url, runId, rootDir);
+  }
   const events = await readRunEventLog(runId, rootDir);
   const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
   return {
@@ -139,6 +154,24 @@ export async function readRunEventsResponse(
     body: {
       runId,
       events: filteredEvents.map(toDashboardEnvelope),
+      sequenceThrough: events.length ? Math.max(...events.map(eventSequence)) : -1,
+    },
+  };
+}
+
+async function dashboardEventsResponse(
+  request: KernelHttpRequest,
+  url: URL,
+  runId: string,
+  rootDir: string,
+): Promise<KernelHttpResponse> {
+  const events = await readDashboardEvents(runId, rootDir);
+  const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
+  return {
+    status: 200,
+    body: {
+      runId,
+      events: filteredEvents,
       sequenceThrough: events.length ? Math.max(...events.map(eventSequence)) : -1,
     },
   };
@@ -154,6 +187,9 @@ export async function readRunStreamResponse(
   runId: string,
   rootDir: string,
 ): Promise<KernelHttpResponse> {
+  if (request.url.includes('/kernel/dashboard/')) {
+    return dashboardStreamResponse(request, url, runId, rootDir);
+  }
   const events = await readRunEventLog(runId, rootDir);
   const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
   const bodyText = filteredEvents
@@ -161,6 +197,24 @@ export async function readRunStreamResponse(
       const envelope = toDashboardEnvelope(event);
       return `id: ${envelope.sequence}\ndata: ${sseLine(JSON.stringify(envelope))}\n\n`;
     })
+    .join('');
+  return {
+    status: 200,
+    contentType: 'text/event-stream; charset=utf-8',
+    bodyText: bodyText || ': no events after requested sequence\n\n',
+  };
+}
+
+async function dashboardStreamResponse(
+  request: KernelHttpRequest,
+  url: URL,
+  runId: string,
+  rootDir: string,
+): Promise<KernelHttpResponse> {
+  const events = await readDashboardEvents(runId, rootDir);
+  const filteredEvents = eventsAfter(events, lastEventIdFromRequest(request, url));
+  const bodyText = filteredEvents
+    .map((envelope) => `id: ${envelope.sequence}\ndata: ${sseLine(JSON.stringify(envelope))}\n\n`)
     .join('');
   return {
     status: 200,
