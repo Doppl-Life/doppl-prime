@@ -305,21 +305,24 @@ test('kernel dashboard route runs without spending the hosted key until consent 
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
 
-test('kernel dashboard route requires a live demo token when configured', async () => {
+test('kernel dashboard route runs without a demo token — the dashboard is never gated out of function', async () => {
+  // Even with a demo token configured, a dashboard run still happens (it falls to the free local
+  // path when consent to spend is absent). Gates protect spend, not function.
   const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-token-'));
   const openRouter = mockOpenRouter();
-  const denied = await handleKernelHttpRequest(
+  const response = await handleKernelHttpRequest(
     {
       method: 'POST',
       url: '/kernel/dashboard/runs',
-      body: JSON.stringify({ runId: 'dashboard_token_denied', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', outDir: path.join(root, 'v'), proofBoardDir: path.join(root, 'p') }),
+      body: JSON.stringify({ runId: 'dashboard_token_run', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', outDir: path.join(root, 'v'), proofBoardDir: path.join(root, 'p') }),
     },
-    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true', DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true', DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
   );
-  assert.equal(denied.status, 403);
-  assert.match(String(denied.body.error), /live demo token/i);
-  assert.equal(openRouter.calls.length, 0);
-  assert.doesNotMatch(JSON.stringify(denied.body), /server-side-model-key|live-demo-token/);
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runMode, 'live');
+  // Without the enable flag there is no consent, so the hosted key is never sent.
+  assert.ok(openRouter.calls.every((call) => call.headers.Authorization !== 'Bearer server-side-model-key'));
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key|live-demo-token/);
 });
 
 test('kernel dashboard route replays a model-backed run from recorded calls', async () => {

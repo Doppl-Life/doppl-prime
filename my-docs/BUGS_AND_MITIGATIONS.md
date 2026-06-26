@@ -42,6 +42,18 @@ still only being watched.
   **never sends the hosted key** (server test asserts this). The fallback order and exhaustion are unit-tested.
 - **Carry forward:** resilience is a cascade, not a default. Gates withhold *spend*, not *function* —
   without consent, fall to the free floor; never 403 the user out of their own local tool. A key is not consent.
+- **Also bit us (2026-06-26):** the `DOPPL_REQUIRE_LIVE_DEMO_TOKEN` gate kept 403'ing the local dashboard
+  even after the enable-gate fix — it was pure friction for a local tool, so it's removed from the
+  dashboard entirely (the dashboard is never gated out of function; `/kernel/runs` keeps `KERNEL_API_KEY`).
+  Two things *masked* the fixes for two rounds: the browser served a **cached** JS bundle (same hash
+  across rebuilds — needs a hard reload), and `pnpm kernel:serve` runs source so a **stale server process**
+  served old gate logic. Diagnosis that finally worked: `curl localhost:3000` directly to read the real
+  403 body, instead of trusting the screenshot. When a fix "doesn't take," verify the *running* server and
+  the *served* bundle, not just the source.
+- **Floor must be capable, not just small:** `gemma4:e4b` (4B dense) completes a run but produces no
+  doppl — it hallucinates critic candidateIds, so parent selection finds nothing to fuse. The engine now
+  drops verdicts that name a non-existent candidate (robustness), and the keyless default/floor is
+  `qwen3.6:35b-a3b` (MoE-fast and capable enough to fuse). gemma is an opt-in speed knob, not the default.
 
 ### Report theater - 2026-06-21
 

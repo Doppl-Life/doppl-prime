@@ -23,7 +23,6 @@ import {
   envFlagEnabled,
   envValue,
   KernelHttpError,
-  liveDemoAuthorized,
   parseBudget,
   parseFitnessLens,
   parseFitnessSchedule,
@@ -41,12 +40,15 @@ import {
 } from './server-store.ts';
 
 const HOSTED_MODEL = 'openai/gpt-4.1-mini';
-const FAST_LOCAL_MODEL = 'gemma4:e4b'; // a fast first attempt for the keyless local path.
-const RELIABLE_LOCAL_MODEL = 'qwen3.6:35b-a3b'; // the floor: capable enough to validate, MoE-fast.
+// The keyless local default and floor: MoE-fast (3B active) AND capable enough to hold the
+// structured contract and fuse a survivor. A smaller dense model (e.g. gemma4:e4b) is faster but
+// too weak — it omits required fields and hallucinates ids, so a run completes without a doppl;
+// pin it via DOPPL_LIVE_MODEL only to accept that quality risk (the floor still catches its crashes).
+const DEFAULT_LOCAL_MODEL = 'qwen3.6:35b-a3b';
 
 // A representative model label for a live run (the cascade pins each layer's own model).
 export function defaultLiveModel(options: KernelHttpOptions): string {
-  return envValue(options, 'DOPPL_LIVE_MODEL') || FAST_LOCAL_MODEL;
+  return envValue(options, 'DOPPL_LIVE_MODEL') || DEFAULT_LOCAL_MODEL;
 }
 
 // The cascading live providers. Each layer is a full set of model-backed providers; a generation or
@@ -69,8 +71,8 @@ function liveProviderCascade(parsed: KernelRunRequest, options: KernelHttpOption
       records,
     }));
   }
-  const localModels = [envValue(options, 'DOPPL_LIVE_MODEL') || FAST_LOCAL_MODEL];
-  if (!localModels.includes(RELIABLE_LOCAL_MODEL)) localModels.push(RELIABLE_LOCAL_MODEL);
+  const localModels = [envValue(options, 'DOPPL_LIVE_MODEL') || DEFAULT_LOCAL_MODEL];
+  if (!localModels.includes(DEFAULT_LOCAL_MODEL)) localModels.push(DEFAULT_LOCAL_MODEL);
   for (const model of localModels) {
     layers.push(createModelGenerationProviders({
       client: createPresetModelClient('ollama', { fetch }),
@@ -183,7 +185,7 @@ export function startAsyncRun(
 }
 
 export async function runDashboardCaseFromRequestBody(
-  request: KernelHttpRequest,
+  _request: KernelHttpRequest,
   body: string | undefined,
   options: KernelHttpOptions,
 ): Promise<Record<string, unknown>> {
@@ -201,18 +203,13 @@ export async function runDashboardCaseFromRequestBody(
       'dashboard runs require liveModel or replayRunId',
     );
   }
-  // Spending on the public dashboard needs explicit consent (a key AND the enable flag). Without
-  // consent we do not 403 — we hide the hosted key so the live run falls through the cascade to the
-  // free local floor. The run still happens; it just never spends without consent.
+  // The dashboard always runs — never gated out of function. Spending on the hosted (paid) provider
+  // needs explicit consent (a key AND the enable flag); without consent we hide the key so the live
+  // run falls through the cascade to the free local floor. A live run never 403s.
   const hostedConsent =
     liveModel &&
     Boolean(envValue(options, 'OPENROUTER_API_KEY').trim()) &&
     envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM');
-  // A required demo token gates only the consented hosted (paid) path. A free local run is never
-  // gated — that is the always-works default; gates protect spend, not function.
-  if (hostedConsent && !liveDemoAuthorized(request, options)) {
-    throw new KernelHttpError(403, 'live demo token is required');
-  }
   const runOptions: KernelHttpOptions =
     liveModel && !hostedConsent
       ? { ...options, env: { ...options.env, OPENROUTER_API_KEY: '' } }

@@ -296,7 +296,7 @@ export async function runKernel(input: {
       ? [carryoverChild, ...freshCandidates]
       : freshCandidates;
     traceModelOperation('critic_judgment', generation);
-    const generationVerdicts = await generationProviders.criticCouncil.judge({
+    const rawVerdicts = await generationProviders.criticCouncil.judge({
       runId: input.runId,
       stage: input.stage,
       parentNode: input.parentNode,
@@ -304,6 +304,11 @@ export async function runKernel(input: {
       candidates: generationCandidates,
       knowledgePacket,
     });
+    // Keep only verdicts that name a real candidate. A weak model can hallucinate a candidateId
+    // (e.g. echo a knowledge handle); an unmatched verdict would otherwise score a phantom and
+    // starve parent selection, leaving the run with no survivor to fuse.
+    const candidateIdsThisGen = new Set(generationCandidates.map((candidate) => candidate.id));
+    const generationVerdicts = rawVerdicts.filter((verdict) => candidateIdsThisGen.has(verdict.candidateId));
     previousCriticVerdicts = generationVerdicts;
     criticVerdicts.push(...generationVerdicts);
     for (const verdict of generationVerdicts) {
