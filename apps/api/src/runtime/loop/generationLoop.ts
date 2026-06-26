@@ -30,6 +30,7 @@ import type { KillPlanSummary, KillTrigger } from '../caps/killSwitch';
 import { executeKillAndDrain } from './killDrain';
 import { classifyRunTerminal, runTerminalPath } from '../terminal/terminalClassifier';
 import { CandidateContent } from './candidateContent';
+import { reigningChampion } from './championLedger';
 import { CAPTURE_FIELD_MAX_BYTES, truncateCaptureField } from '../../event-store/truncate-capture';
 import { mapLimit } from '../../concurrency/pLimit';
 
@@ -802,10 +803,22 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     const scoredEvents = await eventStore.readByRun(runId);
     const eligibleParents = resolveEligibleParents(scoredEvents, generationId, candidateAgenome);
 
+    // Wave 1, Step 1 — the reigning CHAMPION (cross-generation peak scored ∧ ¬culled candidate so far),
+    // emitted on `generation.completed` as the non-decreasing BEST-SO-FAR floor. It is the championLedger
+    // (PURE over the persisted log — rule #7, replay-stable) and the measurement scaffold for the climb
+    // (bestFreshThisGen / advancementCount). Additive observational field only — it never gates the loop.
+    const champion = reigningChampion(scoredEvents);
+    const bestSoFar =
+      champion !== null ? { candidateId: champion.candidateId, total: champion.total } : null;
+
     // Zero survivors (all culled) → scoring→completed with NO reproduction (survivors:0).
     if (eligibleParents.length === 0) {
       transitionGenerationOrThrow(status, 'completed');
-      await appendEvent('generation.completed', { generationId, survivors: 0 }, { generationId });
+      await appendEvent(
+        'generation.completed',
+        { generationId, survivors: 0, bestSoFar },
+        { generationId },
+      );
       generationsRun += 1;
       continue;
     }
@@ -872,7 +885,7 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     transitionGenerationOrThrow(status, 'completed');
     await appendEvent(
       'generation.completed',
-      { generationId, survivors: eligibleParents.length },
+      { generationId, survivors: eligibleParents.length, bestSoFar },
       { generationId },
     );
 
