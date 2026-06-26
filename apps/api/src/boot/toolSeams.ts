@@ -41,6 +41,11 @@ const DEFAULT_WEB_SEARCH_MODEL = 'openai/gpt-4o-mini';
  *  plugin returns real X post citations). `grok-4.1-fast` was DEPRECATED → a silent 404 = x_search "returned
  *  nothing"; keep this pinned to a current xAI model (the silent-empty is now also thrown loudly below). */
 const DEFAULT_X_SEARCH_MODEL = 'x-ai/grok-4.3';
+/** Frame the agent's topic for X — grok+web only pulls actual X posts when the query targets X discussion
+ *  (live-verified: a bare topic → a generic web explainer; an X-framed query → real x.com post citations). */
+const X_SEARCH_QUERY_PREFIX =
+  'On X (Twitter), find the current posts, discussion, reactions, and sentiment about the following topic, ' +
+  'and cite the specific posts you find. Topic: ';
 /** TU.7 — Gemini natively INGESTS a YouTube `video_url` (live-verified: it transcribes the real audio,
  *  e.g. returns exact sung lyrics — not a hallucinated summary). Also used for grounded URL discovery. */
 const DEFAULT_YOUTUBE_MODEL = 'google/gemini-2.5-flash';
@@ -460,6 +465,7 @@ export function createToolExecutorSeams(config: ToolSeamConfig = {}): ToolExecut
         fetchFn,
         apiKey,
         model: config.xSearchModel ?? DEFAULT_X_SEARCH_MODEL,
+        queryPrefix: X_SEARCH_QUERY_PREFIX,
       }),
       youtubeSearch: createYoutubeResearch({
         fetchFn,

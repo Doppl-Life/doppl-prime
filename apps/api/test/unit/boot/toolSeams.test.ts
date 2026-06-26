@@ -305,7 +305,7 @@ describe('createGroundedSearch (TU.7 — x_search / youtube_search over the web 
 
 describe('createToolExecutorSeams — default grounded-search models (no deprecated ids)', () => {
   it("defaults x_search to a CURRENT xAI model (grok-4.1-fast was deprecated → 404 → silent '')", async () => {
-    let body: { model?: string; plugins?: unknown } | undefined;
+    let body: { model?: string; plugins?: unknown; messages?: { content?: string }[] } | undefined;
     const seams = createToolExecutorSeams({
       openRouterApiKey: 'k',
       fetchFn: (async (_url: string, opts?: RequestInit) => {
@@ -313,8 +313,12 @@ describe('createToolExecutorSeams — default grounded-search models (no depreca
         return { json: async () => ({ choices: [{ message: { content: 'ok' } }] }) } as Response;
       }) as unknown as typeof fetch,
     });
-    await seams.xSearch!('q');
+    await seams.xSearch!('solid-state batteries');
     expect(body?.model).toBe('x-ai/grok-4.3'); // the live default, not the deprecated grok-4.1-fast
     expect(body?.plugins).toEqual([{ id: 'web' }]); // web plugin enables X citations for xAI
+    // FRAME the topic for X so grok+web pulls actual X posts (a bare topic → a generic web explainer,
+    // live-verified): the sent content must carry an X(Twitter) framing AND the agent's topic.
+    expect(body?.messages?.[0]?.content).toMatch(/\bX\b.*Twitter|Twitter.*\bX\b|on X\b/i);
+    expect(body?.messages?.[0]?.content).toContain('solid-state batteries');
   });
 });
