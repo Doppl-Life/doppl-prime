@@ -1,7 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
-import { buildCurrentState, buildLineageGraph, buildReplaySummary } from '../projections';
+import {
+  buildCurrentState,
+  buildLineageGraph,
+  buildReplaySummary,
+  buildResearchNotes,
+} from '../projections';
 import { listRunIds } from '../projections/run-list';
 import { serializeEnvelope } from './_support/serializeEnvelope';
 
@@ -68,6 +73,15 @@ export function registerRunReadRoutes(app: FastifyInstance, deps: RunReadRoutesD
     const events = await deps.store.readByRun(runId);
     if (events.length === 0) return reply.status(404).send({ error: 'run_not_found', runId });
     return reply.send(buildLineageGraph(buildCurrentState(events)));
+  });
+
+  // GET /runs/:id/knowledge — the ResearchNote knowledge graph (KB slice 1): the agents' research
+  // folded from tool_call.finished into notes + lineage edges (the stigmergy substrate). Rebuild-on-read.
+  app.get('/runs/:id/knowledge', async (request, reply) => {
+    const runId = (request.params as { id: string }).id;
+    const events = await deps.store.readByRun(runId);
+    if (events.length === 0) return reply.status(404).send({ error: 'run_not_found', runId });
+    return reply.send(buildResearchNotes(events));
   });
 
   // GET /runs/:id/replay — the replay summary (P6.4).

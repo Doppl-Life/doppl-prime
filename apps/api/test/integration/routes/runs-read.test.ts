@@ -188,6 +188,63 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
     }
   });
 
+  // KB slice 1 (§9/§11) — /knowledge returns the ResearchNote graph folded from tool_call.finished:
+  // notes (tool/query/snippet/urls) + agenome→note "researched" edges, rebuilt on read.
+  test('test_get_knowledge_research_notes', async () => {
+    const runId = 'read-knowledge';
+    await store.append(ev(runId, 0, 'run.configured', { payload: { seed: 'scn-kb', rngSeed: 1 } }));
+    await store.append(ev(runId, 1, 'generation.started', { generationId: 'gen_1' }));
+    await store.append(
+      ev(runId, 2, 'agenome.spawned', { generationId: 'gen_1', agenomeId: 'agn_1' }),
+    );
+    await store.append(
+      ev(runId, 3, 'tool_call.finished', {
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        payload: {
+          toolName: 'web_search',
+          query: '{"query": "patient flow"}',
+          result: 'Findings. Sources:\n- https://example.com/a',
+        },
+      }),
+    );
+    await store.append(
+      ev(runId, 4, 'tool_call.finished', {
+        generationId: 'gen_1',
+        agenomeId: 'agn_1',
+        payload: { toolName: 'x_search', result: 'chatter' },
+      }),
+    );
+    await store.append(ev(runId, 5, 'run.completed'));
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: `/runs/${runId}/knowledge` });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as {
+        runId: string;
+        sequenceThrough: number;
+        state: {
+          notes: Record<string, { toolName: string; query?: string; sourceUrls: string[] }>;
+          edges: Record<string, { type: string; source: string }>;
+        };
+      };
+      expect(body.runId).toBe(runId);
+      expect(body.sequenceThrough).toBe(5);
+      const notes = Object.values(body.state.notes);
+      expect(notes).toHaveLength(2);
+      const web = notes.find((n) => n.toolName === 'web_search');
+      expect(web?.query).toBe('patient flow'); // raw JSON args normalized
+      expect(web?.sourceUrls).toContain('https://example.com/a');
+      // both notes carry an agenome→note "researched" edge
+      const researched = Object.values(body.state.edges).filter((e) => e.type === 'researched');
+      expect(researched).toHaveLength(2);
+      expect(researched.every((e) => e.source === 'agn_1')).toBe(true);
+    } finally {
+      await app.close();
+    }
+  });
+
   // §11 — /candidates/:cid returns the candidate projection including its evidenceRefs (within-tier).
   test('test_get_candidate_with_evidence_refs', async () => {
     await seedRun('read-cand');
@@ -233,6 +290,9 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
       expect(
         (await app.inject({ method: 'GET', url: '/runs/read-404/candidates/no-such-cand' }))
           .statusCode,
+      ).toBe(404);
+      expect(
+        (await app.inject({ method: 'GET', url: '/runs/does-not-exist/knowledge' })).statusCode,
       ).toBe(404);
     } finally {
       await app.close();
