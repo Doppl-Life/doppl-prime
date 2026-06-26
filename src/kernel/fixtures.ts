@@ -6,7 +6,7 @@ import {
   type CandidateSolution,
   type CriticVerdict,
   type ProblemRecovery,
-} from './contracts.ts';
+} from './boundary.ts';
 
 export type KernelFixture = {
   caseId: string;

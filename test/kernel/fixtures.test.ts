@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { loadCaseStudy } from '../../src/kernel/case-loader.ts';
+import { loadCaseStudy } from '../../src/kernel/discovery/case-loader.ts';
 import { loadKernelFixture } from '../../src/kernel/fixtures.ts';
 
 test('loads a markdown case study with a stable id and title', async () => {

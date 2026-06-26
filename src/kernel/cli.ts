@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { runKernel } from './run-kernel.ts';
-import { exportRunToVault } from './vault-export.ts';
-import { compileProposalNodes } from './node-compiler.ts';
-import { writeFlowNodes } from './vault-sink.ts';
-import { writeProofBoard } from './proof-board.ts';
-import { createModelGenerationProviders } from './generation-providers.ts';
-import { createCliModelClient } from './cli-model-client.ts';
+import { runKernel } from './engine/run-kernel.ts';
+import { exportRunToVault } from './sink/vault-export.ts';
+import { compileProposalNodes } from './compile/node-compiler.ts';
+import { writeFlowNodes } from './sink/vault-sink.ts';
+import { writeProofBoard } from './projection/proof-board.ts';
+import { createModelGenerationProviders } from './engine/generation-providers.ts';
+import { createCliModelClient } from './model/cli-model-client.ts';
 import {
   createPresetModelClient,
   createFusionModelClient,
@@ -15,7 +15,7 @@ import {
   OPENAI_COMPATIBLE_PRESETS,
   type ModelClient,
   type OpenAICompatibleProvider,
-} from './model-gateway.ts';
+} from './model/model-gateway.ts';
 
 export type KernelCliArgs = {
   runId: string;
