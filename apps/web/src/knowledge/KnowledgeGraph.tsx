@@ -66,12 +66,18 @@ export function KnowledgeGraph({ graph, onNodeClick }: KnowledgeGraphProps) {
   const nodes = useMemo(() => layoutKnowledge(flow.nodes, flow.edges), [flow]);
 
   const noteCount = Object.keys(shown.state.notes).length;
-  const agentCount = new Set(
+  // The agenomes that actually appear in the graph = those that produced a research note. Count BOTH the
+  // agent total and the culled total over this same population so the summary can never read "1 agents · 2
+  // culled" (a culled lineage that did no research has an `agenomes` entry but no hub — exclude it here).
+  const researchingAgenomeIds = new Set(
     Object.values(shown.state.notes)
       .map((n) => n.agenomeId)
       .filter((id): id is string => id !== null),
-  ).size;
-  const culledCount = Object.values(shown.state.agenomes ?? {}).filter((a) => a.culled).length;
+  );
+  const agentCount = researchingAgenomeIds.size;
+  const culledCount = Object.values(shown.state.agenomes ?? {}).filter(
+    (a) => a.culled && researchingAgenomeIds.has(a.id),
+  ).length;
 
   return (
     <section aria-label="Knowledge evolution graph" style={section}>

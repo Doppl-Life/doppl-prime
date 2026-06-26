@@ -28,7 +28,7 @@ const swatch = (color: string): CSSProperties => ({
 const TOOLS: { color: string; glyph: string; label: string }[] = [
   { color: 'var(--status-scored)', glyph: '🌐', label: 'web_search' },
   { color: 'var(--status-reproduced)', glyph: '𝕏', label: 'x_search' },
-  { color: 'var(--status-culled)', glyph: '▶', label: 'youtube_search' },
+  { color: 'var(--status-active)', glyph: '▶', label: 'youtube_search' },
   { color: 'var(--status-mutated)', glyph: '🔗', label: 'fetch_url' },
 ];
 

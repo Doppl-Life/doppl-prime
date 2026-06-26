@@ -15,7 +15,9 @@ import type { KnowledgeNodeData } from './knowledgeToFlow';
 const TOOL_ENCODING: Record<string, { color: string; glyph: string; label: string }> = {
   web_search: { color: 'var(--status-scored)', glyph: '🌐', label: 'web' },
   x_search: { color: 'var(--status-reproduced)', glyph: '𝕏', label: 'X' },
-  youtube_search: { color: 'var(--status-culled)', glyph: '▶', label: 'YouTube' },
+  // cyan, NOT --status-culled — red is reserved exclusively for the graveyard (dead-end) treatment so a
+  // live YouTube note is never visually mistaken for culled research.
+  youtube_search: { color: 'var(--status-active)', glyph: '▶', label: 'YouTube' },
   fetch_url: { color: 'var(--status-mutated)', glyph: '🔗', label: 'fetch' },
 };
 function toolEncoding(toolName: string | undefined): {
@@ -171,7 +173,14 @@ export function AgenomeHubCard({ data }: { data: KnowledgeNodeData }) {
           </>
         )}
         {culled && (
-          <span style={culledTag}>
+          <span
+            style={culledTag}
+            title={
+              data.score !== undefined
+                ? `culled by selection at fitness ${data.score.toFixed(2)}`
+                : 'culled by selection'
+            }
+          >
             {' · ✕ culled'}
             {data.score !== undefined ? ` ${data.score.toFixed(2)}` : ''}
           </span>

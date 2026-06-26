@@ -284,6 +284,29 @@ describe('researchNotesReducer — the graveyard (culled agenomes / dead-end res
     ]);
     expect(state.agenomes['ag1']).toEqual({ id: 'ag1', culled: true, score: 0.3 });
   });
+
+  it('an empty cull (targetIds: []) is a no-op', () => {
+    const base = [
+      toolFinished({
+        agenomeId: 'ag1',
+        sequence: 1,
+        payload: { toolName: 'web_search', result: 'r' },
+      }),
+    ];
+    expect(fold([...base, culled([], {}, 2)])).toEqual(fold(base)); // no agenome marked culled
+  });
+
+  it('marks culled with NO score when scoreSnapshot omits the agenome (score field absent)', () => {
+    const state = fold([
+      toolFinished({
+        agenomeId: 'ag1',
+        sequence: 1,
+        payload: { toolName: 'web_search', result: 'r' },
+      }),
+      culled(['ag1'], {}, 2), // scoreSnapshot missing ag1
+    ]);
+    expect(state.agenomes['ag1']).toEqual({ id: 'ag1', culled: true }); // no `score` key
+  });
 });
 
 describe('buildResearchNotes — via the §51 builder (watermark + ordered fold)', () => {

@@ -102,6 +102,26 @@ describe('KnowledgeGraph — React Flow knowledge panel', () => {
     expect(screen.getByText(/No research yet/i)).toBeTruthy();
   });
 
+  it('counts only RESEARCHING culled agenomes (a culled agenome with no notes never out-counts agents)', () => {
+    // agn_0 researched (has the note); agn_ghost was culled but did zero research → must NOT bump the count.
+    const graph: KnowledgeGraphData = {
+      runId: 'run_1',
+      sequenceThrough: 10,
+      state: {
+        notes: oneNote,
+        edges: {},
+        agenomes: {
+          agn_0: { id: 'agn_0', culled: false },
+          agn_ghost: { id: 'agn_ghost', culled: true, score: 0.3 },
+        },
+      },
+    };
+    render(<KnowledgeGraph graph={graph} />);
+    const text = screen.getByTestId('knowledge-summary').textContent ?? '';
+    expect(text).toMatch(/1 agents/);
+    expect(text).not.toMatch(/culled/); // the no-note culled ghost is excluded → 0 culled, omitted
+  });
+
   it('keeps the freshest projection by sequenceThrough (a stale watermark never replaces a newer view)', async () => {
     const { rerender } = render(<KnowledgeGraph graph={graphWith(oneNote, {}, 10)} />);
     const summary = () => screen.getByTestId('knowledge-summary').textContent ?? '';
