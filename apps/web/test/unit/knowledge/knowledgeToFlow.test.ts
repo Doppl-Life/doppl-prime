@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { KnowledgeGraph } from '../../../src/data/knowledge';
-import { generationIndexOf, knowledgeToFlow } from '../../../src/knowledge/knowledgeToFlow';
+import {
+  generationIndexOf,
+  knowledgeEdgeStyle,
+  knowledgeToFlow,
+} from '../../../src/knowledge/knowledgeToFlow';
 
 /**
  * knowledgeToFlow — the PURE ResearchNote-projection → React Flow mapping. Generations become columns,
@@ -151,6 +155,46 @@ describe('knowledgeToFlow — generations→columns, agenomes→hubs, notes→le
     const flow = knowledgeToFlow(graph([]));
     expect(flow.nodes).toEqual([]);
     expect(flow.edges).toEqual([]);
+  });
+
+  it('carries an in-run "retrieved" edge (stigmergy read) between an existing hub and note, animated', () => {
+    const flow = knowledgeToFlow(
+      graph(
+        [
+          note({ id: 'research-note:run_1:1', generationId: 'run_1-gen0', agenomeId: 'agn_0' }),
+          note({ id: 'research-note:run_1:2', generationId: 'run_1-gen1', agenomeId: 'agn_1' }),
+        ],
+        [
+          {
+            id: 'researched:agn_0->research-note:run_1:1',
+            source: 'agn_0',
+            target: 'research-note:run_1:1',
+            type: 'researched',
+          },
+          {
+            id: 'researched:agn_1->research-note:run_1:2',
+            source: 'agn_1',
+            target: 'research-note:run_1:2',
+            type: 'researched',
+          },
+          // the gen-1 agent (agn_1) RETRIEVED the gen-0 agent's note — the stigmergy crossover
+          {
+            id: 'retrieved:agn_1->research-note:run_1:1',
+            source: 'agn_1',
+            target: 'research-note:run_1:1',
+            type: 'retrieved',
+          },
+        ],
+      ),
+    );
+    const retrieved = flow.edges.find((e) => e.data?.edgeType === 'retrieved');
+    expect(retrieved).toMatchObject({ source: 'agn_1', target: 'research-note:run_1:1' });
+    expect(retrieved?.animated).toBe(true); // the knowledge "flows" along the trail it followed
+  });
+
+  it('styles the retrieved (read) edge distinctly from the researched (write) edge', () => {
+    expect(knowledgeEdgeStyle('retrieved')).not.toEqual(knowledgeEdgeStyle('researched'));
+    expect(knowledgeEdgeStyle('retrieved').strokeDasharray).toBeDefined(); // dashed = the followed trail
   });
 
   it('carries the graveyard culled status + score onto the hub AND its notes', () => {

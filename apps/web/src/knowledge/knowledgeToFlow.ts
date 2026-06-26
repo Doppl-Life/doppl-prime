@@ -52,13 +52,20 @@ function shortId(id: string): string {
   return id.length > 8 ? `…${id.slice(-6)}` : id;
 }
 
-/** Per-edge-type visual (stroke + dash) — spawned backbone faint-dotted, researched solid, cited gold. */
+/**
+ * Per-edge-type visual (stroke + dash) — spawned backbone faint-dotted, researched solid, cited gold, and
+ * the in-run-RETRIEVED edge a cyan dashed trail (the stigmergy READ — an agent following a prior agent's
+ * research; visually distinct from the solid `researched` WRITE edge, also flagged `animated` in the flow).
+ */
 export function knowledgeEdgeStyle(edgeType: string): CSSProperties {
   if (edgeType === 'spawned') {
     return { stroke: 'var(--border-subtle)', strokeDasharray: '2 4' };
   }
   if (edgeType === 'cited') {
     return { stroke: 'var(--status-selected)' };
+  }
+  if (edgeType === 'retrieved') {
+    return { stroke: 'var(--status-active)', strokeDasharray: '6 3' };
   }
   return { stroke: 'var(--border-strong)' }; // researched
 }
@@ -147,7 +154,9 @@ export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
       });
     }
   }
-  // the projection's researched/cited edges (drop dangling endpoints — RF breaks on them).
+  // the projection's researched / cited / retrieved edges (drop dangling endpoints — RF breaks on them). A
+  // `retrieved` edge (the in-run stigmergy READ — an agent following a prior agent's research) is `animated`
+  // so the knowledge "flows" along the trail it followed.
   for (const edge of projectionEdges) {
     if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) continue;
     edges.push({
@@ -157,6 +166,7 @@ export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
       type: 'smoothstep',
       data: { edgeType: edge.type },
       style: knowledgeEdgeStyle(edge.type),
+      ...(edge.type === 'retrieved' ? { animated: true } : {}),
     });
   }
 

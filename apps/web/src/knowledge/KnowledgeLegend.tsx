@@ -42,6 +42,12 @@ export function KnowledgeLegend() {
           <span>{tool.label}</span>
         </div>
       ))}
+      {/* the in-run stigmergy READ: an agent retrieving (following) a prior agent's research */}
+      <div style={row}>
+        <span style={swatch('var(--status-active)')} aria-hidden="true" />
+        <span aria-hidden="true">⤳</span>
+        <span>retrieved (reads prior research)</span>
+      </div>
       {/* the graveyard: research from a culled (dead-end) lineage */}
       <div style={row}>
         <span style={swatch('var(--status-culled)')} aria-hidden="true" />
