@@ -7,6 +7,7 @@ import {
   createGroundedSearch,
   createResolveHostIsPublic,
   createSafeHttpGet,
+  createToolExecutorSeams,
   createWebSearch,
 } from '../../../src/boot/toolSeams';
 
@@ -137,12 +138,60 @@ describe('createGroundedSearch (TU.7 — x_search / youtube_search over the web 
         } as Response;
       }) as unknown as typeof fetch,
       apiKey: 'k',
-      model: 'x-ai/grok-4.1-fast',
+      model: 'x-ai/grok-4.3',
     });
     expect(await xSearch('battery startup')).toBe('X chatter');
-    expect(body?.model).toBe('x-ai/grok-4.1-fast');
+    expect(body?.model).toBe('x-ai/grok-4.3');
     expect(body?.plugins).toEqual([{ id: 'web' }]);
     expect(body?.messages?.[0]?.content).toBe('battery startup'); // no prefix on x_search
+  });
+
+  it('THROWS on an OpenRouter API error (a deprecated model must fail LOUDLY, never silent empty)', async () => {
+    // The bug this pins: x-ai/grok-4.1-fast was deprecated → the API returned {error:{code:404}} and the
+    // old `content ?? ''` swallowed it to '' → x_search silently "returned nothing". An error must throw so
+    // the executor surfaces `x_search_failed` (ok:false → no energy debit, rule #8) instead of a silent void.
+    const search = createGroundedSearch({
+      fetchFn: (async () =>
+        ({
+          json: async () => ({ error: { message: 'Grok 4.1 Fast is deprecated', code: 404 } }),
+        }) as Response) as unknown as typeof fetch,
+      apiKey: 'k',
+      model: 'x-ai/grok-deprecated',
+    });
+    await expect(search('q')).rejects.toThrow();
+  });
+
+  it('appends the web-plugin url_citation source URLs so the agent gets concrete grounding links', async () => {
+    const search = createGroundedSearch({
+      fetchFn: (async () =>
+        ({
+          json: async () => ({
+            choices: [
+              {
+                message: {
+                  content: 'Solid-state batteries are heating up.',
+                  annotations: [
+                    {
+                      type: 'url_citation',
+                      url_citation: { url: 'https://x.com/foo/status/123', title: '1' },
+                    },
+                    {
+                      type: 'url_citation',
+                      url_citation: { url: 'https://example.com/article', title: '2' },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+        }) as Response) as unknown as typeof fetch,
+      apiKey: 'k',
+      model: 'x-ai/grok-4.3',
+    });
+    const out = await search('batteries');
+    expect(out).toContain('Solid-state batteries are heating up.');
+    expect(out).toContain('https://x.com/foo/status/123');
+    expect(out).toContain('https://example.com/article');
   });
 
   it('youtube_search applies the query prefix to nudge the gemini model toward video content', async () => {
@@ -161,5 +210,21 @@ describe('createGroundedSearch (TU.7 — x_search / youtube_search over the web 
     });
     expect(await youtube('how batteries work')).toBe('video summary');
     expect(content).toBe('Find and summarize YouTube videos about: how batteries work');
+  });
+});
+
+describe('createToolExecutorSeams — default grounded-search models (no deprecated ids)', () => {
+  it("defaults x_search to a CURRENT xAI model (grok-4.1-fast was deprecated → 404 → silent '')", async () => {
+    let body: { model?: string; plugins?: unknown } | undefined;
+    const seams = createToolExecutorSeams({
+      openRouterApiKey: 'k',
+      fetchFn: (async (_url: string, opts?: RequestInit) => {
+        body = JSON.parse(opts!.body as string);
+        return { json: async () => ({ choices: [{ message: { content: 'ok' } }] }) } as Response;
+      }) as unknown as typeof fetch,
+    });
+    await seams.xSearch!('q');
+    expect(body?.model).toBe('x-ai/grok-4.3'); // the live default, not the deprecated grok-4.1-fast
+    expect(body?.plugins).toEqual([{ id: 'web' }]); // web plugin enables X citations for xAI
   });
 });

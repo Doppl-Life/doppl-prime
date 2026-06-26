@@ -23,8 +23,10 @@ import { isPrivateHost, type ToolExecutorDeps } from '../model-gateway';
 const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
 const DEFAULT_WEB_SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_WEB_SEARCH_MODEL = 'openai/gpt-4o-mini';
-/** TU.7 — the web plugin enables BOTH web + X search for xAI models (OpenRouter docs). */
-const DEFAULT_X_SEARCH_MODEL = 'x-ai/grok-4.1-fast';
+/** TU.7 — the web plugin enables BOTH web + X search for xAI models (live-verified: grok-4.3 + the `web`
+ *  plugin returns real X post citations). `grok-4.1-fast` was DEPRECATED → a silent 404 = x_search "returned
+ *  nothing"; keep this pinned to a current xAI model (the silent-empty is now also thrown loudly below). */
+const DEFAULT_X_SEARCH_MODEL = 'x-ai/grok-4.3';
 /** TU.7 — Gemini with web grounding surfaces YouTube / video content. */
 const DEFAULT_YOUTUBE_MODEL = 'google/gemini-2.5-flash';
 /** Nudges the YouTube model to surface + summarize video content for the query. */
@@ -136,9 +138,48 @@ export function createGroundedSearch(deps: {
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });
-    const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-    return data.choices?.[0]?.message?.content ?? '';
+    const data = (await response.json()) as GroundedCompletion;
+    // FAIL LOUDLY on an API error (e.g. a DEPRECATED model → 404). The old `content ?? ''` swallowed this
+    // to an empty string, so x_search silently "returned nothing" for months. Throwing → the executor
+    // surfaces `<tool>_failed` (ok:false → no energy debit, rule #8) instead of a silent void. The thrown
+    // message is the provider's own (no key — rule #4) and is discarded by the executor's catch.
+    if (data.error !== undefined) {
+      throw new Error(
+        `grounded_search_error${data.error.code !== undefined ? ` ${data.error.code}` : ''}: ${
+          data.error.message ?? 'unknown'
+        }`,
+      );
+    }
+    const message = data.choices?.[0]?.message;
+    return appendCitationSources(message?.content ?? '', message?.annotations);
   };
+}
+
+/** The (partial) OpenRouter chat-completion shape this seam reads — content + web-plugin `url_citation`s. */
+interface GroundedCompletion {
+  readonly error?: { readonly message?: string; readonly code?: number | string };
+  readonly choices?: {
+    readonly message?: { readonly content?: string; readonly annotations?: unknown };
+  }[];
+}
+
+/** Pull the URLs out of the web plugin's `url_citation` annotations (shape `{type, url_citation:{url}}`). */
+export function extractCitationUrls(annotations: unknown): string[] {
+  if (!Array.isArray(annotations)) return [];
+  const urls: string[] = [];
+  for (const annotation of annotations) {
+    const url = (annotation as { url_citation?: { url?: unknown } })?.url_citation?.url;
+    if (typeof url === 'string' && url.length > 0 && !urls.includes(url)) urls.push(url);
+  }
+  return urls;
+}
+
+/** Append a deduped `Sources:` list of the grounding citation URLs so the agent gets concrete links to cite. */
+function appendCitationSources(content: string, annotations: unknown): string {
+  const urls = extractCitationUrls(annotations);
+  if (urls.length === 0) return content;
+  const sources = `Sources:\n${urls.map((url) => `- ${url}`).join('\n')}`;
+  return content.length > 0 ? `${content}\n\n${sources}` : sources;
 }
 
 /** webSearch — a grounded web completion (the default `web_search` seam). */
