@@ -7,6 +7,7 @@ import { applyFusion, fuse } from './fuse';
 import type { FusionParent } from './parent-distance';
 import { abortInsufficientParents, reproduceMutationOnly } from './degenerate';
 import type { ReproductionContext, SelectionEmitter } from './degenerate';
+import type { AxisWeakness } from './directed';
 
 /**
  * reproduce / applyReproduction (P5.10, ARCHITECTURE.md §8/§3) — the reproduction dispatcher + the
@@ -29,6 +30,9 @@ export interface ReproduceInput {
   generationId?: string;
   eligibleParents: readonly FusionParent[];
   seed: number;
+  /** Wave 1, Step 3 — the anchor lineage's weakest judged axis, steering directed fusion (live-only — see
+   *  `FuseInput.directedRepair`). Only consumed on the ≥2-parent fusion path. */
+  directedRepair?: AxisWeakness;
 }
 
 export interface ReproduceDeps {
@@ -66,8 +70,10 @@ export async function reproduce(
 
   if (distinct.length >= 2) {
     // ≥2 distinct → two-level fusion (P5.9 fuse handles fusion.started/agenome.fused + its own replay).
+    const directedPart =
+      input.directedRepair === undefined ? {} : { directedRepair: input.directedRepair };
     const { child, reproductionEvent } = await fuse(
-      { runId: input.runId, parents: distinct, seed: input.seed, ...genPart },
+      { runId: input.runId, parents: distinct, seed: input.seed, ...genPart, ...directedPart },
       { gateway: deps.gateway, emit: deps.emit, newId: deps.newId },
     );
     return { zeroSurvivors: false, child, reproductionEvent };

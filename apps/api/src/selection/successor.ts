@@ -7,6 +7,7 @@ import { reproduce } from './reproduction/reproduce';
 import type { SelectionEmitter } from './reproduction/degenerate';
 import { allocate } from './allocation';
 import { isMutationSlot } from './reproduction/mutationSlot';
+import type { AxisWeakness } from './reproduction/directed';
 import { mapLimit } from '../concurrency/pLimit';
 
 /** Max offspring slots reproduced CONCURRENTLY. Reproduction emits NO energy.spent (rule #8) and each
@@ -40,6 +41,9 @@ export interface SuccessorParent extends FusionParent {
   novelty: number;
   /** The P5.4 energy-efficiency component value (heuristic weight input). */
   energyEfficiency: number;
+  /** Wave 1, Step 3 — the parent's weakest judged axis (the directed-repair target for fusion). Absent when
+   *  the parent's best candidate has no `judge.reviewed` (degrades to generic directed synthesis). */
+  weakestAxis?: AxisWeakness;
 }
 
 export interface SuccessorInput {
@@ -178,8 +182,19 @@ export async function assembleSuccessor(
       const partners: SuccessorParent[] =
         !mutateSlot && pool.length >= 2 ? [anchor, mostDistantPartner(anchor, pool)] : [anchor];
       const genPart = input.generationId === undefined ? {} : { generationId: input.generationId };
+      // Wave 1, Step 3 — steer the slot's directed fusion toward the ANCHOR lineage's weakest judged axis
+      // (the slot is anchored on this parent, so its weakness is what reproduction should repair). Absent →
+      // generic directed synthesis (still anti-blend). Only consumed on the fusion path (≥2 parents).
+      const directedPart =
+        anchor.weakestAxis === undefined ? {} : { directedRepair: anchor.weakestAxis };
       return reproduce(
-        { runId: input.runId, eligibleParents: partners, seed: slotSeed, ...genPart },
+        {
+          runId: input.runId,
+          eligibleParents: partners,
+          seed: slotSeed,
+          ...genPart,
+          ...directedPart,
+        },
         deps,
       );
     },

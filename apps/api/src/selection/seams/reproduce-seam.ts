@@ -1,5 +1,6 @@
-import { CandidateIdea, FitnessScore, NoveltyScore } from '@doppl/contracts';
+import { CandidateIdea, FitnessScore, JudgeResult, NoveltyScore } from '@doppl/contracts';
 import type { Agenome } from '@doppl/contracts';
+import { weakestJudgedAxis } from '../reproduction/directed';
 import type { RunEventRow } from '../../event-store';
 import type { ModelGateway } from '../../model-gateway';
 import type { ReproduceContext, ReproduceSeam } from '../../runtime';
@@ -84,6 +85,8 @@ export function projectSuccessorParents(
   const fitnessByCandidate = new Map<string, BestCandidate>();
   // candidateId → embedding vector (from novelty.scored — happy-path only; absent on degrade).
   const vectorByCandidate = new Map<string, readonly number[]>();
+  // candidateId → held-out judge per-axis scores (from judge.reviewed) — the directed-repair signal (Step 3).
+  const axisScoresByCandidate = new Map<string, Record<string, number>>();
 
   for (const row of scoredEvents) {
     if (row.type === 'candidate.created') {
@@ -109,6 +112,11 @@ export function projectSuccessorParents(
       // Capture ONLY the embedding vector (the value rides the fitness component above) — the vector has
       // no lexical fallback, so a degraded candidate has none → parentDistance treats it as max-distant.
       if (parsed.success) vectorByCandidate.set(row.candidateId, parsed.data.vector);
+    } else if (row.type === 'judge.reviewed' && row.candidateId !== null) {
+      // Step 3 — capture the judge's per-axis scores so directed fusion can repair the parent's weakest axis
+      // (read the judge's OUTPUT verbatim — rule #7; the judge anchor is untouched — rule #6).
+      const parsed = JudgeResult.safeParse(row.payload);
+      if (parsed.success) axisScoresByCandidate.set(row.candidateId, parsed.data.axisScores);
     }
   }
 
@@ -132,9 +140,14 @@ export function projectSuccessorParents(
     // Omit noveltyVector when novelty degraded (exactOptionalPropertyTypes — never assign `undefined`);
     // `parentDistance` treats a missing vector as max-distant.
     const vectorPart = vector === undefined ? {} : { noveltyVector: vector };
+    // Step 3 — the best candidate's weakest judged axis (the directed-repair target). Absent when the best
+    // candidate had no judge.reviewed (degrades to generic directed synthesis); omit (exactOptionalPropertyTypes).
+    const weakest = weakestJudgedAxis(axisScoresByCandidate.get(best.candidateId) ?? {});
+    const weakestPart = weakest === null ? {} : { weakestAxis: weakest };
     result.push({
       agenome: parent,
       ...vectorPart,
+      ...weakestPart,
       fitness: best.total,
       // novelty VALUE from the fitness component (survives a degraded-novelty generation — see the doc).
       novelty: best.novelty,
