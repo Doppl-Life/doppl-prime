@@ -246,6 +246,29 @@ export function createRoutingModelClient(
   };
 }
 
+// A live provider layer: a client plus the model it serves and a label for diagnostics.
+export type ModelClientLayer = { client: ModelClient; model: string; label: string };
+
+// Cascading fallback: try each layer in order, falling through to the next when a layer throws
+// (provider unreachable, model missing, auth rejected). Each layer pins its own model, so a chain
+// can mix a hosted model and a local one. Throws only when every layer fails, naming each failure.
+export function createFallbackModelClient(layers: readonly ModelClientLayer[]): ModelClient {
+  if (layers.length === 0) throw new Error('createFallbackModelClient requires at least one layer');
+  return {
+    async complete(request) {
+      const failures: string[] = [];
+      for (const layer of layers) {
+        try {
+          return await layer.client.complete({ ...request, model: layer.model });
+        } catch (error) {
+          failures.push(`${layer.label}(${layer.model}): ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      throw new Error(`all live model providers failed — ${failures.join(' | ')}`);
+    },
+  };
+}
+
 export type FusionModelClientInput = {
   client: ModelClient;
   models: string[];

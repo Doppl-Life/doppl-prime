@@ -17,7 +17,7 @@ import {
   type OpenAICompatibleProvider,
 } from './model/model-gateway.ts';
 import { createFirecrawlRetrieval } from './discovery/web-retrieval.ts';
-import { admitDiscoveredStock } from './sink/stock-admission.ts';
+import { admitDiscoveredStock, createModelStockAdmissionJudge } from './sink/stock-admission.ts';
 
 export type KernelCliArgs = {
   runId: string;
@@ -176,33 +176,44 @@ function cliToolFromConfig(
   return { cmd: tool.cmd, headless: tool.headless ?? [] };
 }
 
-function liveGenerationProvidersFromCliArgs(args: KernelCliArgs) {
-  let client: ModelClient | undefined;
+function liveModelClientFromCliArgs(args: KernelCliArgs): ModelClient | undefined {
   if (args.cli) {
     const tool = cliToolFromConfig(args.cli);
-    client = createCliModelClient({ ...tool, provider: args.cli });
-  } else if (args.liveModel) {
-    client = createPresetModelClient(args.provider, { apiKey: liveApiKey(args.provider) });
+    return createCliModelClient({ ...tool, provider: args.cli });
+  }
+  if (args.liveModel) {
+    let client = createPresetModelClient(args.provider, { apiKey: liveApiKey(args.provider) });
     if (args.fusionModels?.length) {
       client = createFusionModelClient({ client, models: args.fusionModels, synthesisModel: args.model });
     }
+    return client;
   }
-  if (!client) return undefined;
-  return createModelGenerationProviders({ client, model: args.model ?? args.cli ?? 'cli' });
+  return undefined;
+}
+
+function liveModelLabel(args: KernelCliArgs): string {
+  return args.model ?? args.cli ?? 'cli';
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cliArgs = parseKernelCliArgs(process.argv.slice(2));
-  const generationProviders =
-    liveGenerationProvidersFromCliArgs(cliArgs) || (await generationProvidersFromCliArgs(cliArgs));
+  const liveClient = liveModelClientFromCliArgs(cliArgs);
+  const generationProviders = liveClient
+    ? createModelGenerationProviders({ client: liveClient, model: liveModelLabel(cliArgs) })
+    : await generationProvidersFromCliArgs(cliArgs);
   const webRetrieval = cliArgs.discover
     ? createFirecrawlRetrieval(cliToolFromConfig(cliArgs.discover).cmd)
+    : undefined;
+  // The judge admits discovered web material to stock (discovery.md step 3); reuse the run's
+  // live model as the admission judge. Without a live client (replay), surfaced finds pass through.
+  const admissionJudge = liveClient
+    ? createModelStockAdmissionJudge(liveClient, liveModelLabel(cliArgs))
     : undefined;
   const { problemRecovery, doppl } = await runChain({ ...cliArgs, generationProviders, webRetrieval });
   await exportRunToVault(problemRecovery, cliArgs.outDir);
   const manifest = await exportRunToVault(doppl, cliArgs.outDir);
   const vaultFiles = writeFlowNodes(cliArgs.vault, compileChainNodes(problemRecovery, doppl));
-  const stockFiles = await admitDiscoveredStock(cliArgs.vault, [problemRecovery, doppl]);
+  const stockFiles = await admitDiscoveredStock(cliArgs.vault, [problemRecovery, doppl], admissionJudge);
   const proofBoard = await writeProofBoard(doppl, cliArgs.proofBoardDir);
   console.log(
     JSON.stringify(

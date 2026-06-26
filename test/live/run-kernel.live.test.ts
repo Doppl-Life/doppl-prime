@@ -29,7 +29,7 @@ function ollamaUp(): boolean {
 }
 
 test(
-  'a live local-model run evolves across generations with mutagen lineage',
+  'a live local-model run evolves across generations into a fused survivor',
   { skip: ollamaUp() ? false : 'Ollama not reachable at localhost:11434 (start it or pull a model)', timeout: 600000 },
   async () => {
     const client = createPresetModelClient('ollama', {});

@@ -147,7 +147,7 @@ test('kernel HTTP server runs live model requests with a server-side key', async
         proofBoardDir: path.join(root, 'proof-board'),
       }),
     },
-    { env: { OPENROUTER_API_KEY: 'test-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'test-key' }, fetch: openRouter.fetch },
   );
   assert.equal(response.status, 200);
   assert.equal(response.body.candidates, 2);
@@ -168,7 +168,7 @@ test('kernel HTTP server replays a recorded run without a fresh model call', asy
       url: '/kernel/runs',
       body: JSON.stringify({ runId: 'run_replay_source', casePath: TEST_CASE_PATH, vault: TEST_VAULT, generations: 1, budget: 1, liveModel: true, model: 'fixture-model', outDir, proofBoardDir: path.join(root, 'proof-board-source') }),
     },
-    { env: { OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
+    { env: { DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
   );
   assert.equal(source.status, 200);
   const sourceCalls = openRouter.calls.length;
@@ -213,7 +213,7 @@ test('kernel HTTP server requires an API key when configured', async () => {
         proofBoardDir: path.join(root, 'proof-board'),
       }),
     },
-    { env: { KERNEL_API_KEY: 'kernel-test-key', OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
+    { env: { KERNEL_API_KEY: 'kernel-test-key', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
   );
   assert.equal(unauthorized.status, 401);
   assert.deepEqual(unauthorized.body, { error: 'unauthorized' });
@@ -231,7 +231,7 @@ test('kernel HTTP server reads exported run indexes and artifacts', async () => 
       url: '/kernel/runs',
       body: JSON.stringify({ runId: 'run_http_readback', casePath: TEST_CASE_PATH, vault: TEST_VAULT, generations: 1, budget: 1, liveModel: true, model: 'fixture-model', outDir, proofBoardDir: path.join(root, 'proof-board') }),
     },
-    { env: { OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
+    { env: { DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
   );
   const indexResponse = await handleKernelHttpRequest({ method: 'GET', url: `/kernel/runs/run_http_readback?outDir=${encodeURIComponent(outDir)}` });
   const artifactResponse = await handleKernelHttpRequest({ method: 'GET', url: `/kernel/runs/run_http_readback/artifacts/problem-recovery.md?outDir=${encodeURIComponent(outDir)}` });
@@ -252,7 +252,7 @@ test('kernel HTTP server exposes canonical run events, SSE stream, and run healt
       url: '/kernel/runs',
       body: JSON.stringify({ runId: 'run_http_events', casePath: TEST_CASE_PATH, vault: TEST_VAULT, generations: 1, budget: 1, liveModel: true, model: 'fixture-model', outDir, proofBoardDir: path.join(root, 'proof-board') }),
     },
-    { env: { OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
+    { env: { DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'k' }, fetch: openRouter.fetch },
   );
   const eventsResponse = await handleKernelHttpRequest({ method: 'GET', url: `/kernel/runs/run_http_events/events?outDir=${encodeURIComponent(outDir)}&after=1` });
   const streamResponse = await handleKernelHttpRequest({ method: 'GET', url: `/kernel/runs/run_http_events/stream?outDir=${encodeURIComponent(outDir)}` });
@@ -276,7 +276,7 @@ test('kernel dashboard route runs an approved case live without exposing secrets
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({ runId: 'dashboard_live', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', outDir: path.join(root, 'vault'), proofBoardDir: path.join(root, 'proof-board') }),
     },
-    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
   );
   assert.equal(response.status, 200);
   assert.equal(response.body.runMode, 'live');
@@ -285,7 +285,9 @@ test('kernel dashboard route runs an approved case live without exposing secrets
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
 
-test('kernel dashboard route refuses live generation unless explicitly enabled', async () => {
+test('kernel dashboard route runs without spending the hosted key until consent is given', async () => {
+  // A key is present but DOPPL_ENABLE_LIVE_LLM is not set: no consent to spend. The run must still
+  // succeed (cascade falls to the free local floor) and must never send the hosted key.
   const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-disabled-'));
   const openRouter = mockOpenRouter();
   const response = await handleKernelHttpRequest(
@@ -296,9 +298,10 @@ test('kernel dashboard route refuses live generation unless explicitly enabled',
     },
     { env: { OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
   );
-  assert.equal(response.status, 403);
-  assert.match(String(response.body.error), /live dashboard generation is disabled/i);
-  assert.equal(openRouter.calls.length, 0);
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runMode, 'live');
+  // No call carried the hosted key — spending was withheld without consent.
+  assert.ok(openRouter.calls.every((call) => call.headers.Authorization !== 'Bearer server-side-model-key'));
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
 
@@ -311,7 +314,7 @@ test('kernel dashboard route requires a live demo token when configured', async 
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({ runId: 'dashboard_token_denied', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', outDir: path.join(root, 'v'), proofBoardDir: path.join(root, 'p') }),
     },
-    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true', DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true', DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
   );
   assert.equal(denied.status, 403);
   assert.match(String(denied.body.error), /live demo token/i);
@@ -329,7 +332,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({ runId: 'dashboard_replay_source', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', generations: 1, outDir, proofBoardDir: path.join(root, 'proof-board-source') }),
     },
-    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-side-model-key' }, fetch: openRouter.fetch },
   );
   assert.equal(source.status, 200);
   assert.equal(source.body.runMode, 'live');
@@ -341,7 +344,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
       body: JSON.stringify({ runId: 'dashboard_replay_target', casePath: AGARDEN_FSD_CASE, replayRunId: 'dashboard_replay_source', generations: 1, outDir, proofBoardDir: path.join(root, 'proof-board-replay') }),
     },
     {
-      env: { OPENROUTER_API_KEY: 'server-side-model-key' },
+      env: { DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-side-model-key' },
       async fetch() {
         throw new Error('replay should not make a fresh model call');
       },
@@ -354,7 +357,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
 });
 
 test('kernel dashboard route rejects unknown fitness lenses and schedules', async () => {
-  const env = { DOPPL_ENABLE_LIVE_LLM: 'true', OPENROUTER_API_KEY: 'k' };
+  const env = { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'k' };
   const badLens = await handleKernelHttpRequest(
     { method: 'POST', url: '/kernel/dashboard/runs', body: JSON.stringify({ runId: 'bad_lens', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'm', fitnessLens: 'magic' }) },
     { env },
@@ -379,7 +382,7 @@ test('kernel dashboard route lists recent exported runs and keyless event stream
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({ runId: 'dashboard_history', casePath: AGARDEN_FSD_CASE, liveModel: true, model: 'fixture-model', outDir, proofBoardDir: path.join(root, 'proof-board') }),
     },
-    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', OPENROUTER_API_KEY: 'server-only-key' }, fetch: openRouter.fetch },
+    { env: { DOPPL_ENABLE_LIVE_LLM: 'true', DOPPL_LIVE_PROVIDER: 'openrouter', OPENROUTER_API_KEY: 'server-only-key' }, fetch: openRouter.fetch },
   );
   const history = await handleKernelHttpRequest({ method: 'GET', url: `/kernel/dashboard/runs?outDir=${encodeURIComponent(outDir)}` });
   const stream = await handleKernelHttpRequest(

@@ -20,6 +20,29 @@ still only being watched.
 
 ## Entries
 
+### Live demo gated off by accident - 2026-06-26
+
+- **Mistake:** after burning fixture mode, the dashboard's only run paths were live or replay, but the
+  live provider auto-selected OpenRouter whenever an `OPENROUTER_API_KEY` was present in `.env` — which
+  then required `DOPPL_ENABLE_LIVE_LLM` to be set, so START silently failed. (First as a 400 — the web
+  `startDemoLive` sent no `liveModel`; then a 403 — the enable-gate — once `liveModel` was wired.)
+- **Symptom:** clicking START on the dashboard returns `HTTP 400` then `HTTP 403 at /kernel/dashboard/runs`;
+  "no run loaded"; nothing evolves. Twice, because the 400 fix exposed the 403 underneath.
+- **Mitigation:** a **cascading live model client** (`createFallbackModelClient`). A live run tries the
+  preferred provider and falls through on failure to a free local floor (`gemma4:e4b`), so it always has
+  a working path — it never hard-fails to a 403. *Consent to spend* (a key **and** `DOPPL_ENABLE_LIVE_LLM`)
+  controls only whether the hosted layer is in the cascade: the public dashboard hides the hosted key when
+  consent is absent, so the run quietly falls to local instead of erroring or charging. `/kernel/runs` is
+  authenticated, so it uses hosted whenever keyed. A required demo token is still a hard gate. The web
+  `startDemoLive` sends `liveModel: true`.
+- **Tripwire:** a dashboard run path that 403s instead of degrading; spending a key the operator never
+  consented to; a provider choice that hard-fails when the preferred backend is down.
+- **Pass condition:** `POST /kernel/dashboard/runs {liveModel:true}` with an empty env returns
+  `200 runMode: live` on the local floor (verified). With a key but no enable flag it still returns 200 and
+  **never sends the hosted key** (server test asserts this). The fallback order and exhaustion are unit-tested.
+- **Carry forward:** resilience is a cascade, not a default. Gates withhold *spend*, not *function* —
+  without consent, fall to the free floor; never 403 the user out of their own local tool. A key is not consent.
+
 ### Report theater - 2026-06-21
 
 - **Mistake:** treating artifact volume as visibility.

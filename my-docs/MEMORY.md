@@ -60,6 +60,32 @@ kernel owner must not accidentally undo.
 - **Revisit if:** any fixture/stub generation reappears in a product or engine path. Burn it back to
   live or recorded-real. See [[the trace is the SSOT; views own their taxonomies]].
 
+### Discovery admits to stock through the judge, not a pass-through - 2026-06-26
+
+- **Chose:** discovered web material becomes durable stock only through a judge admission gate
+  (`discovery.md` step 3). `createModelStockAdmissionJudge` asks the live model which findings clear
+  a high bar — high-signal, grounded, non-duplicate against existing stock — and only those anchors
+  are written. The CLI reuses the run's live model as the admission judge; a run with no live client
+  (replay) passes surfaced finds through unchanged.
+- **Over:** admitting everything discovery surfaces (the prior `admittedWebItems` pass-through), which
+  let low-signal or duplicate web material silently become canon stock.
+- **Because:** the bar is the point — stock is the kernel's durable memory; an ungated firehose
+  poisons it. Discovery *finds*; the judge *admits*. This was the most contested discovery concept.
+- **Revisit if:** the admission judge should be `cognition.judge` specifically (pinned, separate from
+  the generation model) rather than the run's model — a per-role routing follow-up.
+
+### Per-candidate mutagen tags are model-declared, engine-validated - 2026-06-26
+
+- **Chose:** a generation>0 candidate's `mutagen` tag is declared by the model (from the tide set
+  `regimeMutagens` names in the prompt), then validated by the engine against the known set;
+  `withMutagenLineage` keeps a recognized tag and accumulates the survivor's lineage, and drops a
+  missing or unknown tag. Generation-0 candidates are seeds (no mutagen).
+- **Over:** the deleted fixture's deterministic mutagen fiction, and the accidental tagging that
+  followed it (the model sometimes echoed a `mutagen` field that `assertCandidateSolution` preserved).
+- **Because:** the lineage view must be truthful provenance, not luck. The engine instructs the tide
+  and validates the declaration; it never fabricates a move the candidate didn't claim.
+- **Revisit if:** model self-reporting proves unreliable enough that the move must be inferred or cut.
+
 ### The outer judgement surface is external - 2026-06-26
 
 - **Chose:** the outer view — the judgement surface / Agora that reads, displays, and rates the garden

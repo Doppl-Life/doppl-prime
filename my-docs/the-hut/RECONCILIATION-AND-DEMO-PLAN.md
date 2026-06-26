@@ -23,8 +23,21 @@ hand-authored replay records, and the planned offline golden run (J1). Every run
 call or a replay of recorded real calls. The fast `pnpm test` suite stands on a captured real grok run
 (`test/captured/**`); `pnpm test:live` runs a real grok chain; `pnpm capture` re-records. The
 "self-regulating tide" moved from the fake into the live generation prompt. Build green: typecheck,
-lint, **98/98**, web build. Decision in [`../MEMORY.md`](../MEMORY.md) (*No fakes — live or
-recorded-real*). **Next open work:** the Epic-A discovery frontier; the inner-view spine is complete.
+lint, **100/100**, web build. Decision in [`../MEMORY.md`](../MEMORY.md) (*No fakes — live or
+recorded-real*).
+
+**Discovery frontier + mutagen landed (2026-06-26):** discovery's judge-admission gate is live —
+`createModelStockAdmissionJudge` (sink/stock-admission) gates web finds into stock through the judge
+(high bar: signal, grounded, non-duplicate), not the old pass-through; wired in the CLI, reusing the
+run's live model. Per-candidate mutagen tags are now model-declared from the tide set + engine-validated
+(`withMutagenLineage`), never fabricated. Live runs use a **cascading model client**
+(`createFallbackModelClient`): preferred provider → free local floor (`gemma4:e4b`), so a run never
+hard-fails; *consent to spend* (key + `DOPPL_ENABLE_LIVE_LLM`) gates only the hosted layer (the public
+dashboard hides the key without consent rather than 403'ing) — fixing the post-burn 400/403. Fast local
+models for testing (`DOPPL_LIVE_MODEL`); good-model-fast-mode on a CLI is config
+(`grok -m <model> --reasoning-effort low`). Decisions in MEMORY + BUGS_AND_MITIGATIONS.
+
+**Next open work:** R7 demo floors; per-role judge routing (admission judge → pinned `cognition.judge`).
 
 **Done & committed:** R0 (dalton base) · R1 (canonical `flow/<slug>/<slug>.md` vault + `slugId`,
 SSOT) · R2 (clean case node vs `node.md`) · R3 (provider layer — one OpenAI-compatible client +

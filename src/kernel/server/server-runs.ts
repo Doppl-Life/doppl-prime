@@ -2,14 +2,13 @@ import path from 'node:path';
 import { defaultKernelArgs } from '../cli.ts';
 import { createModelGenerationProviders, type GenerationProviders } from '../engine/generation-providers.ts';
 import {
+  createFallbackModelClient,
   createOpenRouterModelClient,
   createPresetModelClient,
   createReplayModelClient,
-  LOCAL_PROVIDERS,
-  OPENAI_COMPATIBLE_PRESETS,
   readModelCallRecords,
   type ModelClient,
-  type OpenAICompatibleProvider,
+  type ModelClientLayer,
 } from '../model/model-gateway.ts';
 import { runKernel } from '../engine/run-kernel.ts';
 import { exportRunToVault } from '../sink/vault-export.ts';
@@ -38,40 +37,38 @@ import {
   replayModelCallsPathForRun,
 } from './server-store.ts';
 
-// The live provider, local-first. Explicit `DOPPL_LIVE_PROVIDER` wins; otherwise OpenRouter when a
-// key is present (fast hosted), else a keyless local Ollama model (free — the default for running
-// the system without a key). Local providers carry no secret and cost nothing.
-export function liveProviderName(options: KernelHttpOptions): OpenAICompatibleProvider {
-  const configured = envValue(options, 'DOPPL_LIVE_PROVIDER');
-  if (configured && configured in OPENAI_COMPATIBLE_PRESETS) {
-    return configured as OpenAICompatibleProvider;
-  }
-  return envValue(options, 'OPENROUTER_API_KEY').trim() ? 'openrouter' : 'ollama';
-}
+const HOSTED_MODEL = 'openai/gpt-4.1-mini';
+const FAST_LOCAL_MODEL = 'gemma4:e4b'; // the cascade floor: small, fast, keyless, always available.
 
-export function isLocalLiveProvider(options: KernelHttpOptions): boolean {
-  return LOCAL_PROVIDERS.has(liveProviderName(options));
-}
-
-// The default model for the active live provider when the request doesn't pin one.
+// A representative model label for a live run (the cascade pins each layer's own model).
 export function defaultLiveModel(options: KernelHttpOptions): string {
-  const configured = envValue(options, 'DOPPL_LIVE_MODEL');
-  if (configured) return configured;
-  return liveProviderName(options) === 'openrouter' ? 'openai/gpt-4.1-mini' : 'qwen3.6:35b-a3b';
+  return envValue(options, 'DOPPL_LIVE_MODEL') || FAST_LOCAL_MODEL;
 }
 
-function liveModelClient(parsed: KernelRunRequest, options: KernelHttpOptions): ModelClient {
-  const provider = liveProviderName(options);
-  if (provider === 'openrouter') {
-    return createOpenRouterModelClient({ apiKey: envValue(options, 'OPENROUTER_API_KEY'), fetch: options.fetch });
+// The cascading live model client. Try the preferred provider, fall through on failure (provider
+// unreachable, model missing, auth rejected), ending at a fast small local model as the floor — so
+// a live run always has a working path without holding up the user. Order:
+//   1. hosted OpenRouter, when a key is present (for `/kernel/runs` the API caller is authenticated;
+//      the public dashboard hides the key unless the operator consents to spend — see the handler);
+//   2. a pinned local model (`DOPPL_LIVE_MODEL`), the operator's stronger local choice;
+//   3. the floor — a fast small local model, keyless and free.
+function liveModelCascade(parsed: KernelRunRequest, options: KernelHttpOptions): ModelClient {
+  const fetch = options.fetch;
+  const layers: ModelClientLayer[] = [];
+  const hostedKey = envValue(options, 'OPENROUTER_API_KEY').trim();
+  if (hostedKey) {
+    layers.push({
+      client: createOpenRouterModelClient({ apiKey: hostedKey, fetch }),
+      model: parsed.model || HOSTED_MODEL,
+      label: 'openrouter',
+    });
   }
-  if (LOCAL_PROVIDERS.has(provider)) {
-    return createPresetModelClient(provider, { fetch: options.fetch });
+  const pinnedLocal = envValue(options, 'DOPPL_LIVE_MODEL');
+  if (pinnedLocal) {
+    layers.push({ client: createPresetModelClient('ollama', { fetch }), model: pinnedLocal, label: 'ollama' });
   }
-  return createPresetModelClient(provider, {
-    apiKey: envValue(options, `${provider.toUpperCase()}_API_KEY`),
-    fetch: options.fetch,
-  });
+  layers.push({ client: createPresetModelClient('ollama', { fetch }), model: FAST_LOCAL_MODEL, label: 'ollama-fast' });
+  return createFallbackModelClient(layers);
 }
 
 export async function generationProvidersFromRequest(
@@ -82,10 +79,9 @@ export async function generationProvidersFromRequest(
     throw new Error('liveModel cannot be combined with replay model calls');
   }
   if (parsed.liveModel) {
-    if (!parsed.model) throw new Error('model is required when liveModel is set');
     return createModelGenerationProviders({
-      client: liveModelClient(parsed, options),
-      model: parsed.model,
+      client: liveModelCascade(parsed, options),
+      model: parsed.model || defaultLiveModel(options),
     });
   }
   if (!parsed.replayModelCallsPath) return undefined;
@@ -192,24 +188,29 @@ export async function runDashboardCaseFromRequestBody(
   const replayRunId = typeof parsed.replayRunId === 'string' && parsed.replayRunId.trim()
     ? parsed.replayRunId.trim()
     : undefined;
-  // A keyless local model (Ollama/LM Studio) is free and carries no secret, so it runs without the
-  // hosted-provider enable-gate or demo token. Hosted live generation still requires both.
-  const localLive = isLocalLiveProvider(options);
-  if (liveModel && !localLive && !envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM')) {
-    throw new KernelHttpError(403, 'live dashboard generation is disabled');
-  }
-  if (liveModel && !localLive && !liveDemoAuthorized(request, options)) {
-    throw new KernelHttpError(403, 'live demo token is required');
-  }
   if (!liveModel && !replayRunId) {
     throw new KernelHttpError(
       400,
       'dashboard runs require liveModel or replayRunId',
     );
   }
-  // Hosted live generation is capped to one generation (cost); a keyless local model is free, so it
-  // honors the requested count like replay does.
-  const cappedLive = liveModel && !localLive;
+  // A required demo token is a hard gate on any live run (public-deploy protection).
+  if (liveModel && !liveDemoAuthorized(request, options)) {
+    throw new KernelHttpError(403, 'live demo token is required');
+  }
+  // Spending on the public dashboard needs explicit consent (a key AND the enable flag). Without
+  // consent we do not 403 — we hide the hosted key so the live run falls through the cascade to the
+  // free local floor. The run still happens; it just never spends without consent.
+  const hostedConsent =
+    liveModel &&
+    Boolean(envValue(options, 'OPENROUTER_API_KEY').trim()) &&
+    envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM');
+  const runOptions: KernelHttpOptions =
+    liveModel && !hostedConsent
+      ? { ...options, env: { ...options.env, OPENROUTER_API_KEY: '' } }
+      : options;
+  // The consented hosted (paid) path is capped to one generation; local and replay honor the count.
+  const cappedLive = hostedConsent;
   const requestedGenerations = parsePositiveInteger(parsed.generations, cappedLive ? 1 : 4);
   const generations = cappedLive ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
   const runId = parsed.runId || `${dashboardCase.id}_${Date.now()}`;
@@ -229,7 +230,7 @@ export async function runDashboardCaseFromRequestBody(
     });
   if (parsed.async) {
     const eventLogPath = path.join(outDir, dashboardCase.id, runId, 'events.jsonl');
-    startAsyncRun(runRequestBody, options, eventLogPath);
+    startAsyncRun(runRequestBody, runOptions, eventLogPath);
     return {
       runId,
       caseId: dashboardCase.id,
@@ -244,7 +245,7 @@ export async function runDashboardCaseFromRequestBody(
       dashboardEvents: await readDashboardEvents(runId, outDir),
     };
   }
-  const summary = await runFromRequestBody(runRequestBody, options);
+  const summary = await runFromRequestBody(runRequestBody, runOptions);
   const completedRunId = String(summary.runId);
   const runIndex = await readRunIndex(completedRunId, outDir);
   const problemRecovery = runIndex.problemRecovery as { path?: string } | undefined;

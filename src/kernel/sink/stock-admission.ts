@@ -2,14 +2,55 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { KernelRun, KnowledgePacketItem } from '../boundary.ts';
 import { slugId } from '../compile/slug.ts';
+import { parseJsonObjectResponse, type ModelClient } from '../model/model-gateway.ts';
 
 // A load-bearing fact in a rendered stock field (contracts/stock.md).
 type AdmittedFact = { anchor: string; claim: string; synopsis: string; grounded: string };
 
-// Discovery output worth remembering: the web material this run reached outward for. (The
-// novelty × grounding admission gate is deferred — this admits what discovery surfaced.)
-function admittedWebItems(run: KernelRun): KnowledgePacketItem[] {
+// The web material a run reached outward for, before the admission gate. The judge (discovery.md
+// step 3) decides which of these clear the bar and become durable stock.
+function discoveredWebItems(run: KernelRun): KnowledgePacketItem[] {
   return run.knowledgePacket.items.filter((item) => item.trustTier === 'web-firecrawl');
+}
+
+// The admission gate (discovery.md step 3): the judge reads what discovery surfaced and decides
+// what clears the bar — high-signal, grounded, non-duplicate against existing stock. A gate, set
+// high. Returns the anchors to admit; everything else is dropped.
+export type StockAdmissionJudge = {
+  admit(input: {
+    caseTitle: string;
+    candidates: AdmittedFact[];
+    existing: AdmittedFact[];
+  }): Promise<ReadonlySet<string>>;
+};
+
+export function createModelStockAdmissionJudge(client: ModelClient, model: string): StockAdmissionJudge {
+  return {
+    async admit({ caseTitle, candidates, existing }) {
+      if (candidates.length === 0) return new Set();
+      const prompt = [
+        'You gate findings entering a durable knowledge store. The bar is HIGH.',
+        'Admit ONLY findings that are high-signal, concretely grounded, and NOT duplicates or',
+        'restatements of the existing stock below. When in doubt, reject.',
+        `Case: ${caseTitle}`,
+        'Existing stock facts (do not re-admit duplicates):',
+        existing.map((fact) => `- ${fact.claim}`).join('\n') || '(none)',
+        'Candidate findings:',
+        candidates.map((fact) => `[${fact.anchor}] ${fact.claim} — ${fact.synopsis}`).join('\n'),
+        'Return JSON only: {"admit": ["anchor", ...]} listing the anchors that clear the bar.',
+      ].join('\n');
+      const response = await client.complete({
+        runId: 'stock_admission',
+        purpose: 'stock_admission',
+        prompt,
+        model,
+        responseFormat: 'json_object',
+      });
+      const parsed = parseJsonObjectResponse(response.outputText);
+      const admit = Array.isArray(parsed.admit) ? parsed.admit : [];
+      return new Set(admit.filter((anchor): anchor is string => typeof anchor === 'string'));
+    },
+  };
 }
 
 function factFromItem(item: KnowledgePacketItem): AdmittedFact {
@@ -85,12 +126,18 @@ ${body}
 }
 
 // Admit the runs' discovered web material into agarden stock, one durable field per case.
-// Existing facts are kept and deduped by anchor, so stock grows across runs.
-export async function admitDiscoveredStock(vaultDir: string, runs: KernelRun[]): Promise<string[]> {
+// Existing facts are kept and deduped by anchor, so stock grows across runs. When a judge is
+// supplied, only the findings it admits (discovery.md step 3) become durable stock; without one
+// (e.g. a run that did no web discovery, or a test), the surfaced findings pass through unchanged.
+export async function admitDiscoveredStock(
+  vaultDir: string,
+  runs: KernelRun[],
+  judge?: StockAdmissionJudge,
+): Promise<string[]> {
   const stockDir = path.join(vaultDir, 'stock');
   const byCase = new Map<string, { name: string; items: KnowledgePacketItem[] }>();
   for (const run of runs) {
-    const items = admittedWebItems(run);
+    const items = discoveredWebItems(run);
     if (!items.length) continue;
     const entry = byCase.get(run.caseStudy.id) ?? { name: run.caseStudy.title, items: [] };
     entry.items.push(...items);
@@ -113,8 +160,12 @@ export async function admitDiscoveredStock(vaultDir: string, runs: KernelRun[]):
     } catch {
       // first admission for this field
     }
-    for (const item of items) {
-      const fact = factFromItem(item);
+    const candidates = items.map(factFromItem);
+    const admitted = judge
+      ? await judge.admit({ caseTitle: name, candidates, existing: [...facts.values()] })
+      : undefined;
+    for (const fact of candidates) {
+      if (admitted && !admitted.has(fact.anchor)) continue;
       facts.set(fact.anchor, fact);
     }
     await writeFile(filePath, renderStockField(fieldId, name, [...facts.values()], created, now), 'utf8');

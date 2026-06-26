@@ -8,6 +8,7 @@ import {
   createOpenAICompatibleModelClient,
   createRoutingModelClient,
   createFusionModelClient,
+  createFallbackModelClient,
   createReplayModelClient,
   createRecordingModelClient,
   parseJsonObjectResponse,
@@ -16,6 +17,41 @@ import {
   type ModelCallRecord,
   type ModelClient,
 } from '../../../src/kernel/model/model-gateway.ts';
+
+function clientFrom(behavior: (model: string) => Promise<ModelCallRecord>): ModelClient {
+  return { async complete(request) { return behavior(request.model); } };
+}
+
+test('fallback cascade falls through failing layers to the first that succeeds', async () => {
+  const reached: string[] = [];
+  const layer = (label: string, ok: boolean): { client: ModelClient; model: string; label: string } => ({
+    label,
+    model: label,
+    client: clientFrom(async (model) => {
+      reached.push(model);
+      if (!ok) throw new Error(`${label} down`);
+      return { id: label, runId: 'r', purpose: 'candidate_generation', provider: label, model, prompt: 'p', outputText: '{}', metadata: {} };
+    }),
+  });
+  const client = createFallbackModelClient([layer('hosted', false), layer('local-good', false), layer('local-fast', true)]);
+  const record = await client.complete({ runId: 'r', purpose: 'candidate_generation', prompt: 'p', model: 'ignored' });
+
+  assert.equal(record.provider, 'local-fast');
+  assert.deepEqual(reached, ['hosted', 'local-good', 'local-fast'], 'tried each layer in order until one worked');
+});
+
+test('fallback cascade throws naming every failure when all layers fail', async () => {
+  const down = (label: string) => ({
+    label,
+    model: label,
+    client: clientFrom(async () => { throw new Error(`${label} unreachable`); }),
+  });
+  const client = createFallbackModelClient([down('hosted'), down('local-fast')]);
+  await assert.rejects(
+    () => client.complete({ runId: 'r', purpose: 'candidate_generation', prompt: 'p', model: 'm' }),
+    /all live model providers failed.*hosted.*local-fast/s,
+  );
+});
 
 test('replay model client returns recorded responses without fresh calls', async () => {
   const replay = createReplayModelClient([

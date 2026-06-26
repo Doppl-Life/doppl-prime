@@ -202,6 +202,9 @@ function stringArraySchema(): Record<string, unknown> {
   return { type: 'array', items: stringSchema() };
 }
 
+const ALL_MUTAGENS = Object.keys(MUTAGEN_BRIEF) as Mutagen[];
+const MUTAGEN_SET: ReadonlySet<string> = new Set(ALL_MUTAGENS);
+
 const candidateSchema = {
   type: 'object',
   properties: {
@@ -212,10 +215,32 @@ const candidateSchema = {
     mechanism: stringSchema(),
     claimedDelta: stringSchema(),
     citedKnowledge: stringArraySchema(),
+    // Optional: the mutagen the model applied to mutate the survivor (generation > 0). Tagged by
+    // the model from the tide set named in the prompt; the engine validates and accumulates lineage.
+    mutagen: { type: 'string', enum: ALL_MUTAGENS },
   },
   required: ['id', 'agenomeId', 'title', 'summary', 'mechanism', 'claimedDelta', 'citedKnowledge'],
   additionalProperties: false,
 };
+
+// Keep only a model-declared mutagen the engine recognizes, and accumulate the survivor's lineage.
+// Generation 0 candidates are seeds (no mutagen). A missing or unknown tag is dropped, never faked.
+function withMutagenLineage(
+  candidate: CandidateSolution,
+  input: CandidateGenerationInput,
+): CandidateSolution {
+  if (input.generation === 0) return candidate;
+  const declared = candidate.mutagen;
+  if (declared === undefined || !MUTAGEN_SET.has(declared)) {
+    const { mutagen: _dropped, ...rest } = candidate;
+    return rest;
+  }
+  return {
+    ...candidate,
+    mutagen: declared,
+    mutagenLineage: [...(input.previousChild?.mutagenLineage ?? []), declared],
+  };
+}
 
 const candidateGenerationResponseSchema = {
   name: 'candidate_generation',
@@ -337,7 +362,9 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
               input.previousCriticVerdicts ?? [],
             )
               .map((mutagen) => `${mutagen} — ${MUTAGEN_BRIEF[mutagen]}`)
-              .join('; ')}.`
+              .join(
+                '; ',
+              )}. Set each candidate's "mutagen" field to the one move it applied (exactly one of those names).`
           : 'Initial population: spread across distinct framings; do not converge yet.',
         'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
         'Choose agenomeId from the supplied Agenome pool and make the candidate reflect that Agenome persona, policy, and value weights.',
@@ -460,11 +487,14 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
           },
           (parsed) =>
             arrayField(parsed, 'candidates').map((candidate) =>
-              assertCandidateSolution({
-                ...(candidate as Record<string, unknown>),
-                caseId: providerInput.caseStudy.id,
-                generation: providerInput.generation,
-              }),
+              withMutagenLineage(
+                assertCandidateSolution({
+                  ...(candidate as Record<string, unknown>),
+                  caseId: providerInput.caseStudy.id,
+                  generation: providerInput.generation,
+                }),
+                providerInput,
+              ),
             ),
         );
       },
