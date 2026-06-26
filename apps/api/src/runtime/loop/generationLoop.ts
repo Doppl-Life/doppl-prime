@@ -335,6 +335,30 @@ export function resolveEligibleParents(
 }
 
 /**
+ * withChampionParent (Wave 1 Step 1 — the RATCHET, hall-of-fame carry) — the PURE decision that augments a
+ * generation's reproduction eligible-parent set with the reigning champion (KEY SAFETY RULE #1/#7).
+ *
+ * Genome-elitism carries the champion AGENOME but re-GENERATES its candidate each generation, so its score
+ * re-rolls; when that re-roll is culled, the champion drops out of `eligibleParents` and reproduction
+ * mean-reverts off the weaker survivors — the live "reaches 0.744 then loses it" bounce. When
+ * `hallOfFameCarry > 0`, the champion's REAL persisted Agenome is ALWAYS re-presented as a reproduction
+ * parent, so directed reproduction breeds against its LOCKED peak candidate (`projectSuccessorParents` reads
+ * that verbatim from the log — rule #7, no re-score). The champion is a PARENT only, so it does NOT raise the
+ * offspring count (the kernel-computed `spawnBudget` is independent of the parent count — rule #1). Deduped
+ * by id so an already-eligible champion is never doubled. `hallOfFameCarry === 0` or no champion yet →
+ * returns the input UNCHANGED (HEAD-identical). Pure → replay-stable.
+ */
+export function withChampionParent(
+  eligibleParents: readonly Agenome[],
+  championAgenome: Agenome | null,
+  hallOfFameCarry: number,
+): readonly Agenome[] {
+  if (hallOfFameCarry <= 0 || championAgenome === null) return eligibleParents;
+  if (eligibleParents.some((parent) => parent.id === championAgenome.id)) return eligibleParents;
+  return [...eligibleParents, championAgenome];
+}
+
+/**
  * Drive a run's generations (happy path). Returns the number of generations run (run-terminal
  * classification is P3.11, out of scope). BOUNDED by construction: an N-generation cap runs exactly N.
  */
@@ -505,6 +529,14 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
   // One LIVE outcome source per run (from RunConfig.rngSeed) — the reproduce seam records its draws into
   // the agenome.fused/mutated payloads, so replay reconstructs them without re-sampling (rule #7 / P3.6).
   const outcomes = createLiveOutcomeSource(createSeededRng(readRngSeed(config.runConfig)));
+
+  // Wave 1 Step 1 (the RATCHET — hall-of-fame carry, rule #1/#7) — the reigning champion's REAL persisted
+  // Agenome, stashed from the population in the generation it was crowned (its agenome is always a member of
+  // its home generation's population). It persists across generations even after the champion drifts out of
+  // the active population, so `config.hallOfFameCarry > 0` can ALWAYS re-present it as a reproduction parent
+  // (breeding against its LOCKED peak candidate — projectSuccessorParents reads that verbatim from the log).
+  // Stays null until the first champion exists; absent / `hallOfFameCarry === 0` → never used (HEAD-identical).
+  let championAgenome: Agenome | null = null;
 
   let generationsRun = 0;
   for (let g = 0; enforceCap('maxGenerations', g, 1, caps).allowed; g += 1) {
@@ -811,6 +843,16 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     const bestSoFar =
       champion !== null ? { candidateId: champion.candidateId, total: champion.total } : null;
 
+    // Wave 1 Step 1 (the ratchet) — stash the champion's REAL Agenome whenever it is a member of THIS
+    // generation's population (always true in the generation it is crowned, since its candidate was produced
+    // here). The stash persists so the champion can be re-presented as a reproduction parent in later
+    // generations even after it drifts out of the active population. Pure over the deterministic population +
+    // log → replay re-derives the identical stash (rule #7); a missing match leaves the prior stash intact.
+    if (champion !== null) {
+      const inPopulation = population.find((agenome) => agenome.id === champion.agenomeId);
+      if (inPopulation !== undefined) championAgenome = inPopulation;
+    }
+
     // Zero survivors (all culled) → scoring→completed with NO reproduction (survivors:0).
     if (eligibleParents.length === 0) {
       transitionGenerationOrThrow(status, 'completed');
@@ -847,6 +889,16 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       Math.min(caps.maxPopulation, energyHeadroom),
     ).effectiveSpawns;
 
+    // Wave 1 Step 1 (the RATCHET — hall-of-fame carry) — when enabled, ALWAYS breed against the reigning
+    // champion, even if its re-rolled candidate was culled THIS generation (the live "reaches 0.744 then
+    // loses it" bounce: the peak lineage is dropped from the eligible set and reproduction mean-reverts off
+    // the weaker survivors). Pure decision (`withChampionParent`); `hallOfFameCarry === 0` → byte-identical.
+    const reproduceParents = withChampionParent(
+      eligibleParents,
+      championAgenome,
+      config.hallOfFameCarry,
+    );
+
     // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
     // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
     status = transitionGenerationOrThrow(status, 'reproducing');
@@ -857,10 +909,10 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       runId,
       generationId,
       append: eventStore.append,
-      parents: eligibleParents,
+      parents: reproduceParents,
       outcomes,
       scoredEvents,
-      mode: eligibleParents.length === 1 ? 'mutation_only' : 'fusion',
+      mode: reproduceParents.length === 1 ? 'mutation_only' : 'fusion',
       spawnBudget,
     });
 

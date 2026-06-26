@@ -2,7 +2,10 @@ import { describe, expect, test } from 'vitest';
 import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
 import type { Agenome, RunEventType } from '@doppl/contracts';
 import type { RunEventRow } from '../../../../src/event-store';
-import { resolveEligibleParents } from '../../../../src/runtime/loop/generationLoop';
+import {
+  resolveEligibleParents,
+  withChampionParent,
+} from '../../../../src/runtime/loop/generationLoop';
 
 /**
  * resolveEligibleParents (the cull-effect fix) — a candidate is an eligible reproduction parent iff its
@@ -109,5 +112,52 @@ describe('resolveEligibleParents — honours the agenome-keyed lineage.culled', 
       ]),
     );
     expect(parents.map((p) => p.id)).toEqual(['ag1']);
+  });
+});
+
+/**
+ * withChampionParent (Wave 1 Step 1 — the ratchet / hall-of-fame carry, rule #1/#7) — the pure decision that
+ * ALWAYS re-presents the reigning champion as a reproduction parent when `hallOfFameCarry > 0`, even after
+ * its re-rolled candidate was culled out of `eligibleParents` (the bounce). A PARENT only (the offspring
+ * count is the kernel's independent `spawnBudget`, never raised here — rule #1); deduped by id; off by
+ * default → byte-identical to HEAD.
+ */
+describe('withChampionParent — the hall-of-fame ratchet (pure)', () => {
+  const eligible = [ag('a1'), ag('a2')];
+  const champ = ag('champ');
+
+  // off by default (carry 0) → input UNCHANGED (HEAD-identical), even with a champion stashed.
+  test('test_carry_zero_is_head_identical', () => {
+    expect(withChampionParent(eligible, champ, 0)).toBe(eligible);
+  });
+
+  // a negative carry is also off.
+  test('test_negative_carry_off', () => {
+    expect(withChampionParent(eligible, champ, -1)).toBe(eligible);
+  });
+
+  // no champion yet → input UNCHANGED.
+  test('test_no_champion_unchanged', () => {
+    expect(withChampionParent(eligible, null, 1)).toBe(eligible);
+  });
+
+  // carry > 0 + champion NOT in the eligible set (its re-roll was culled) → champion APPENDED as a parent.
+  test('test_culled_champion_re_presented_as_parent', () => {
+    const result = withChampionParent(eligible, champ, 1);
+    expect(result.map((p) => p.id)).toEqual(['a1', 'a2', 'champ']);
+  });
+
+  // carry > 0 + champion ALREADY eligible (its candidate survived) → NO duplicate (returns input unchanged).
+  test('test_already_eligible_champion_not_doubled', () => {
+    const withChamp = [ag('a1'), ag('champ')];
+    const result = withChampionParent(withChamp, champ, 1);
+    expect(result).toBe(withChamp);
+    expect(result.map((p) => p.id)).toEqual(['a1', 'champ']);
+  });
+
+  // the champion rides through BYTE-IDENTICAL (no re-home / mutation) — its Agenome object is the same ref.
+  test('test_champion_agenome_unchanged', () => {
+    const result = withChampionParent(eligible, champ, 1);
+    expect(result[result.length - 1]).toBe(champ);
   });
 });

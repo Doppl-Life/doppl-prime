@@ -130,6 +130,11 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
   // [0, maxPopulation]; the kernel still clamps the returned population (rule #1). 0 = offspring-only control.
   const eliteCount = parseEliteCount(env.DOPPL_ELITE_COUNT, caps.maxPopulation);
 
+  // HALL-OF-FAME CARRY (the ratchet) — the cross-generation champion the loop always breeds against, even if
+  // its re-rolled candidate was culled this generation (env-gated DOPPL_HALL_OF_FAME_CARRY; absent/garbage →
+  // 0 = HEAD-identical). Bounded to [0, maxPopulation]; a PARENT only, never raises the offspring count (#1).
+  const hallOfFameCarry = parseHallOfFameCarry(env.DOPPL_HALL_OF_FAME_CARRY, caps.maxPopulation);
+
   // 4. One composed, deep-frozen immutable handle — downstream kernel code cannot mutate boot config.
   return deepFreeze({
     runConfig,
@@ -141,6 +146,7 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     seedSet,
     mutationStrategy,
     eliteCount,
+    hallOfFameCarry,
   });
 }
 
@@ -150,5 +156,14 @@ function parseEliteCount(raw: string | undefined, maxPopulation: number): number
   if (raw === undefined || raw.trim() === '') return 1;
   const n = Number(raw);
   if (!Number.isInteger(n) || n < 0) return 1;
+  return Math.min(n, maxPopulation);
+}
+
+/** Parse `DOPPL_HALL_OF_FAME_CARRY` → a non-negative integer clamped to `maxPopulation`; absent/garbage/
+ *  negative → 0 (the ratchet is OFF = HEAD-identical). An explicit `> 0` enables the champion carry. */
+function parseHallOfFameCarry(raw: string | undefined, maxPopulation: number): number {
+  if (raw === undefined || raw.trim() === '') return 0;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) return 0;
   return Math.min(n, maxPopulation);
 }

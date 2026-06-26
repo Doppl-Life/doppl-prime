@@ -119,4 +119,14 @@ export interface AppConfig {
    * genome is lost to regressive reproduction (the 0.70→0.57 best-fitness drop). 0 = offspring-only control.
    * The kernel still clamps the returned population to `maxPopulation` (rule #1). */
   readonly eliteCount: number;
+  /** HALL-OF-FAME CARRY (the RATCHET — Wave 1 Step 1 fuller carry; `DOPPL_HALL_OF_FAME_CARRY`; default 0 =
+   * HEAD-identical). Elitism carries the champion AGENOME, but it re-GENERATES a fresh candidate each
+   * generation, so its score re-rolls and the peak is lost when that re-roll is culled — the live "reaches
+   * 0.744 then loses it" bounce. When > 0, the loop ALWAYS adds the reigning champion (the cross-generation
+   * peak scored ∧ ¬culled candidate's agenome) to the reproduction eligible-parent set, even if its re-roll
+   * was culled this generation, so directed reproduction breeds against its LOCKED peak candidate (read
+   * verbatim from the log — rule #7, no re-score). A PARENT only (no gateway.generate / re-roll) that never
+   * raises the offspring count (rule #1). The ledger currently surfaces the single reigning champion, so any
+   * value > 0 carries that one champion (a top-N hall-of-fame is a future ledger extension). */
+  readonly hallOfFameCarry: number;
 }
