@@ -248,9 +248,13 @@ export function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
   const normalized = path.posix.normalize(value);
-  const isAgardenNode = normalized.startsWith('../agarden/flow/') && normalized.endsWith('.md');
-  if (path.isAbsolute(value) || normalized.includes('/../') || !isAgardenNode) {
-    throw new Error('casePath must point at an agarden flow node');
+  // A case is a flow node markdown file under a vault's flow/ directory. The configured product
+  // vault is `../agarden`; a committed test vault is any relative `…/flow/<slug>/<slug>.md`. Reject
+  // absolute paths and interior `..` traversal (a single leading `../` into a sibling vault is fine).
+  const isFlowNode = normalized.includes('flow/') && normalized.endsWith('.md');
+  const escapesUpward = normalized.replace(/^(\.\.\/)+/, '').includes('../');
+  if (path.isAbsolute(value) || escapesUpward || !isFlowNode) {
+    throw new Error('casePath must point at a flow node under a vault');
   }
   return normalized;
 }
