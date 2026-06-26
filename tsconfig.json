@@ -10,5 +10,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["kernel/src/**/*.ts"]
+  "include": ["src/kernel/**/*.ts"]
 }

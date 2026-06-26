@@ -1,0 +1,1401 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { handleKernelHttpRequest } from '../../src/kernel/server.ts';
+import { loadCaseStudy } from '../../src/kernel/case-loader.ts';
+import { createDefaultModelGenerationPrompts } from '../../src/kernel/generation-providers.ts';
+import { createJsonKnowledgeGateway } from '../../src/kernel/knowledge-gateway.ts';
+import { initialAgenomePool } from '../../src/kernel/agenomes.ts';
+import { type ModelCallRecord, writeModelCallRecords } from '../../src/kernel/model-gateway.ts';
+
+async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
+  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const gateway = await createJsonKnowledgeGateway(
+    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({
+    runId,
+    targetCase: caseStudy.id,
+    maxItems: 4,
+  });
+  const prompts = createDefaultModelGenerationPrompts();
+  const problemRecovery = {
+    title: 'HTTP Replay Recovery',
+    recoveredProblem:
+      'Autonomous driving changes the reason households own idle cars, shifting value toward fleet inventory.',
+    hiddenConstraint: 'The fork is whether autonomous miles become pure service capacity.',
+    falsifier: 'Private autonomous car purchases keep rising while fleet miles remain marginal.',
+  };
+  const candidates = [
+    {
+      id: 'http_replay_a',
+      agenomeId: 'ag_blindside',
+      title: 'Insurance Transfer Clock',
+      summary: 'Use liability transfer as the earliest signal of ownership unwind.',
+      mechanism: 'Track when insurers and OEMs price the vehicle, not the driver, as the risk subject.',
+      claimedDelta: 'Moves the thesis earlier than visible sales declines.',
+      citedKnowledge: ['K1', 'K2'],
+    },
+    {
+      id: 'http_replay_b',
+      agenomeId: 'ag_first_principles',
+      title: 'Residual Stress Ledger',
+      summary: 'Follow residual-value exposure through leases, floorplan loans, and auto ABS.',
+      mechanism: 'Map who holds depreciation risk as autonomous utilization rises.',
+      claimedDelta: 'Turns adoption into a balance-sheet watchlist.',
+      citedKnowledge: ['K1'],
+    },
+  ];
+  const completedProblemRecovery = {
+    id: `recovery_${caseStudy.id}`,
+    caseId: caseStudy.id,
+    ...problemRecovery,
+    citedKnowledge: knowledgePacket.items.map((item) => item.citeHandle),
+  };
+  const completedCandidates = candidates.map((candidate) => ({
+    ...candidate,
+    caseId: caseStudy.id,
+    generation: 0,
+  }));
+  const cleanBaseline = {
+    id: 'clean_http_replay',
+    agenomeId: 'ag_clean_control',
+    title: 'Clean HTTP Replay',
+    summary: 'Single-pass replay control before Doppl selection.',
+    mechanism: 'Solve directly from the recovered problem.',
+    claimedDelta: 'Provides the baseline lane for replay.',
+    citedKnowledge: ['K1'],
+  };
+  const completedCleanBaseline = {
+    ...cleanBaseline,
+    caseId: caseStudy.id,
+    generation: 0,
+  };
+  const records: ModelCallRecord[] = [
+    {
+      id: 'call_http_replay_problem',
+      runId,
+      purpose: 'problem_recovery',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.problemRecovery({ runId, caseStudy, knowledgePacket }),
+      outputText: JSON.stringify(problemRecovery),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_clean_baseline',
+      runId,
+      purpose: 'control_baseline_generation',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.cleanBaseline({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        knowledgePacket,
+        generation: 0,
+        agenomePool: initialAgenomePool(),
+      }),
+      outputText: JSON.stringify({ candidate: cleanBaseline }),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_control_critics',
+      runId,
+      purpose: 'critic_judgment',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.criticJudgment({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        candidates: [completedCleanBaseline],
+        knowledgePacket,
+      }),
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'clean_http_replay',
+            criticId: 'grounding',
+            score: 62,
+            pressure: 'The clean answer is plausible but not selection-tested.',
+            revisionMandate: 'Beat the baseline with sharper mechanism.',
+          },
+        ],
+      }),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_candidates',
+      runId,
+      purpose: 'candidate_generation',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.candidateGeneration({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        knowledgePacket,
+        generation: 0,
+        agenomePool: initialAgenomePool(),
+      }),
+      outputText: JSON.stringify({ candidates }),
+      metadata: {},
+    },
+    {
+      id: 'call_http_replay_critics',
+      runId,
+      purpose: 'critic_judgment',
+      provider: 'test-replay',
+      model,
+      prompt: prompts.criticJudgment({
+        runId,
+        caseStudy,
+        problemRecovery: completedProblemRecovery,
+        candidates: completedCandidates,
+        knowledgePacket,
+      }),
+      outputText: JSON.stringify({
+        verdicts: [
+          {
+            candidateId: 'http_replay_a',
+            criticId: 'grounding',
+            score: 88,
+            pressure: 'Liability transfer is externally observable.',
+            revisionMandate: 'Name the filings that prove risk transfer.',
+          },
+          {
+            candidateId: 'http_replay_b',
+            criticId: 'grounding',
+            score: 72,
+            pressure: 'Residual exposure is measurable but closer to the obvious thesis.',
+            revisionMandate: 'Pick the first counterparty likely to break.',
+          },
+        ],
+      }),
+      metadata: {},
+    },
+  ];
+  await writeModelCallRecords(filePath, records);
+}
+
+function createOpenRouterFetch(outputs: string[]) {
+  const calls: Array<{ headers: Record<string, string>; body: Record<string, unknown> }> = [];
+  return {
+    calls,
+    async fetch(_url: string, init: { headers: Record<string, string>; body: string }) {
+      calls.push({ headers: init.headers, body: JSON.parse(init.body) as Record<string, unknown> });
+      const outputText = outputs.shift();
+      if (!outputText) throw new Error('unexpected extra model call');
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'test-request-id' },
+        async json() {
+          return { choices: [{ message: { content: outputText } }] };
+        },
+      };
+    },
+  };
+}
+
+async function waitFor<T>(read: () => Promise<T>, ready: (value: T) => boolean): Promise<T> {
+  let lastValue: T;
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    lastValue = await read();
+    if (ready(lastValue)) return lastValue;
+    await sleep(10);
+  }
+  return lastValue!;
+}
+
+test('kernel HTTP server reports health', async () => {
+  const response = await handleKernelHttpRequest({ method: 'GET', url: '/health' });
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { ok: true, service: 'doppl-kernel' });
+});
+
+test('kernel HTTP server serves a visible production page', async () => {
+  const response = await handleKernelHttpRequest(
+    { method: 'GET', url: '/' },
+    { env: { KERNEL_API_KEY: 'dashboard-test-key' } },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.contentType, 'text/html; charset=utf-8');
+  assert.match(response.bodyText, /Doppl React Flow dashboard/);
+  assert.match(response.bodyText, /id="root"/);
+  assert.doesNotMatch(response.bodyText, /dashboard-test-key/);
+  assert.doesNotMatch(response.bodyText, /DOPPL_DASHBOARD_API_KEY/);
+  assert.doesNotMatch(response.bodyText, /id="lineage-graph"/);
+});
+
+test('kernel dashboard source is built on React Flow', async () => {
+  const app = await readFile('web/src/App.tsx', 'utf8');
+  const shell = await readFile('web/src/layout/DashboardShell.tsx', 'utf8');
+  const lineage = await readFile('web/src/lineage/LineageGraph.tsx', 'utf8');
+  const client = await readFile('web/src/data/runClient.ts', 'utf8');
+
+  assert.match(app, /DashboardShell/);
+  assert.match(shell, /RunsListPanel/);
+  assert.match(shell, /AgentActivityTable/);
+  assert.match(shell, /FinalIdeaPanel/);
+  assert.match(lineage, /@xyflow\/react/);
+  assert.match(lineage, /<ReactFlow/);
+  assert.match(lineage, /<MiniMap/);
+  assert.match(client, /\/kernel\/dashboard\/runs/);
+  assert.match(client, /fixtures\/glp1-seed\.json/);
+  assert.match(client, /fixtures\/ai-power-seed\.json/);
+  assert.doesNotMatch(app + shell + lineage + client, /DOPPL_DASHBOARD_API_KEY/);
+  assert.doesNotMatch(app + shell + lineage + client, /sk-or-v1/);
+});
+
+test('kernel dashboard styles carry the lifted theme and lineage graph polish', async () => {
+  const styles = `${await readFile('web/src/ui/theme.css', 'utf8')}\n${await readFile(
+    'web/src/lineage/lineageAnimations.css',
+    'utf8',
+  )}`;
+
+  assert.match(styles, /--doppl-accent: #2fe6ad/);
+  assert.match(styles, /--doppl-status-ok/);
+  assert.match(styles, /data-rail="left"/);
+  assert.match(styles, /\.doppl-flow/);
+});
+
+test('kernel HTTP server rejects missing dashboard assets', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'GET',
+    url: '/dashboard/assets/missing.js',
+  });
+
+  assert.equal(response.status, 404);
+});
+
+test('kernel HTTP server runs a fixture kernel request', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-kernel-'));
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_fixture',
+      generations: 1,
+      budget: 1,
+      outDir: path.join(root, 'vault'),
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runId, 'run_http_fixture');
+  assert.equal(response.body.caseId, 'fsd-ownership-unwind');
+  assert.equal(response.body.generations, 1);
+  assert.equal(response.body.budget.usedUnits, 1);
+  assert.match(response.body.proofBoard, /proof-board\/index\.html$/);
+  assert.ok(response.body.files.some((file: string) => file.endsWith('run-index.json')));
+});
+
+test('kernel HTTP server runs from replayed model calls', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-replay-'));
+  const modelCallsPath = path.join(root, 'model-calls.jsonl');
+  await writeReplayCalls(modelCallsPath, 'run_http_replay', 'fixture-model');
+
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_replay',
+      generations: 1,
+      budget: 1,
+      model: 'fixture-model',
+      replayModelCallsPath: modelCallsPath,
+      outDir: path.join(root, 'vault'),
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runId, 'run_http_replay');
+  assert.equal(response.body.child, 'child_http_replay_a_http_replay_b');
+  assert.equal(response.body.candidates, 2);
+  assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
+});
+
+test('kernel HTTP server runs live model requests with a server-side key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-live-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'HTTP Live Recovery',
+      recoveredProblem:
+        'Autonomous service miles change car ownership from a household asset to fleet capacity.',
+      hiddenConstraint: 'The first break appears where risk and utilization accounting move together.',
+      falsifier: 'Households keep buying private autonomous vehicles at current replacement rates.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_http_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean HTTP Live',
+        summary: 'Direct answer before Doppl selection.',
+        mechanism: 'Solve once from the recovery and packet.',
+        claimedDelta: 'Baseline for the evolved survivor.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_http_live',
+          criticId: 'grounding',
+          score: 66,
+          pressure: 'Clear baseline but less diagnostic.',
+          revisionMandate: 'Find the earlier observable break.',
+        },
+      ],
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'http_live_a',
+          agenomeId: 'ag_blindside',
+          title: 'Risk Subject Flip',
+          summary: 'Watch when the insured subject becomes the autonomous vehicle operator.',
+          mechanism: 'Compare insurer filings and OEM liability assumptions by state.',
+          claimedDelta: 'Finds ownership unwind before car sales move.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'http_live_b',
+          agenomeId: 'ag_first_principles',
+          title: 'Utilization Carry Trade',
+          summary: 'Compare idle private depreciation with fleet utilization economics.',
+          mechanism: 'Track who finances high-utilization inventory and who holds residual risk.',
+          claimedDelta: 'Turns the thesis into a financing spread.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'http_live_a',
+          criticId: 'grounding',
+          score: 91,
+          pressure: 'Risk subject changes are observable and early.',
+          revisionMandate: 'Specify the filings that define the flip.',
+        },
+        {
+          candidateId: 'http_live_b',
+          criticId: 'grounding',
+          score: 83,
+          pressure: 'Utilization economics are strong but less directly observable.',
+          revisionMandate: 'Name the financing spread and source.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_http_live',
+        generations: 1,
+        budget: 1,
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: { OPENROUTER_API_KEY: 'test-key' },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.child, 'child_http_live_a_http_live_b');
+  assert.equal(fakeOpenRouter.calls.length, 5);
+  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
+  assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
+});
+
+test('kernel HTTP server runs a requested case study path with live model requests', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-case-live-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'GLP-1 Recovery',
+      recoveredProblem:
+        'GLP-1 drugs lower the reward budget behind impulse categories, not just snack preferences.',
+      hiddenConstraint: 'The demand unit is household reward-seeking, not the treated person meal.',
+      falsifier: 'Impulse purchases stay flat in treated households after controlling for income.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_glp_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean GLP-1 Live',
+        summary: 'Direct GLP-1 demand thesis before Doppl search.',
+        mechanism: 'Compare treated and untreated household impulse spend.',
+        claimedDelta: 'Baseline for evolved GLP-1 candidates.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_glp_live',
+          criticId: 'grounding',
+          score: 69,
+          pressure: 'Grounded but broad.',
+          revisionMandate: 'Separate impulse channels and treatment cohorts.',
+        },
+      ],
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'glp_reward_budget',
+          agenomeId: 'ag_blindside',
+          title: 'Reward Budget Ledger',
+          summary: 'Track the household-level reward budget across food, alcohol, and nicotine.',
+          mechanism: 'Compare treated-household basket shrinkage across impulse categories.',
+          claimedDelta: 'Finds demand destruction beyond reformulated snacks.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'glp_channel_exposure',
+          agenomeId: 'ag_first_principles',
+          title: 'Channel Exposure Map',
+          summary: 'Rank retailers by exposure to grazing trips and impulse checkout baskets.',
+          mechanism: 'Measure revenue share from unplanned basket add-ons.',
+          claimedDelta: 'Turns the thesis into an operator watchlist.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'glp_reward_budget',
+          criticId: 'grounding',
+          score: 93,
+          pressure: 'The mechanism explains multiple impulse categories.',
+          revisionMandate: 'Name the household panel split.',
+        },
+        {
+          candidateId: 'glp_channel_exposure',
+          criticId: 'grounding',
+          score: 81,
+          pressure: 'The channel readout is useful but downstream.',
+          revisionMandate: 'Add a retailer cohort definition.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_glp1_live',
+        casePath: 'fixtures/glp1-seed.json',
+        generations: 1,
+        budget: 1,
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: { OPENROUTER_API_KEY: 'test-key' },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_glp1_live?outDir=${encodeURIComponent(path.join(root, 'vault'))}`,
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(response.body.child, 'child_glp_reward_budget_glp_channel_exposure');
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.caseTitle, 'GLP-1 appetite shock');
+});
+
+test('kernel dashboard route runs approved cases without exposing the kernel API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-case-'));
+  const fakeOpenRouter = createOpenRouterFetch([]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_glp1_fixture',
+        casePath: 'fixtures/glp1-seed.json',
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        KERNEL_API_KEY: 'must-not-be-in-browser',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runId, 'dashboard_glp1_fixture');
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.match(response.body.child.id, /cand_reward_budget_ledger_[a-z]+_g3/);
+  assert.notEqual(response.body.child.id, 'child_cand_reward_budget_ledger_cand_food_noise_tripwire');
+  assert.match(response.body.child.summary, /reward budget/i);
+  assert.match(response.body.candidates[0].summary, /reward/i);
+  assert.match(response.body.candidates[0].mechanism, /panel/i);
+  assert.equal(response.body.candidates.length, 12);
+  assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 12);
+  assert.equal(response.body.criticVerdicts.length, 48);
+  assert.equal(response.body.fitnessRecords.length, 16);
+  assert.equal(response.body.fitnessRecords[0].selection.frontier.pareto, true);
+  assert.equal(response.body.fitnessRecords[0].selection.frontier.rank, 1);
+  assert.equal(typeof response.body.fitnessRecords[0].selection.proposalRating.judge, 'number');
+  assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'none');
+  assert.equal(response.body.controlBaseline.artifact_type, 'control_baseline');
+  assert.equal(response.body.controlBaseline.path, 'control-baseline.md');
+  assert.equal(response.body.controlBaseline.candidate.generation, 0);
+  assert.equal(response.body.assayControl.assayType, 'in_run_clean_baseline');
+  assert.equal(response.body.assayControl.controlArtifact.path, 'control-baseline.md');
+  assert.equal(response.body.assayControl.baseline.type, 'clean_baseline');
+  assert.equal(response.body.assayControl.survivor.type, 'doppl_survivor');
+  assert.equal(response.body.assayControl.heldOutJudge.judgeType, 'deterministic_artifact_rubric');
+  assert.equal(response.body.assayControl.heldOutJudge.scoreSource, 'artifact_rubric_not_training_fitness');
+  assert.equal(typeof response.body.assayControl.heldOutJudge.delta.score, 'number');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.judgeType, 'sealed_reference_keyword_benchmark');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.referenceStatus, 'no_reference_available');
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.contentIncluded, false);
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.delta.score, null);
+  assert.equal(response.body.assayControl.heldOutJudge.referenceBenchmark.verdict, 'inconclusive');
+  assert.doesNotMatch(JSON.stringify(response.body.assayControl.heldOutJudge.referenceBenchmark), /reward-system dimmer|drug noise/i);
+  assert.equal(response.body.assayControl.referenceCase.status, 'no_reference_available');
+  assert.equal(response.body.assayControl.referenceCase.visibility, 'none');
+  assert.equal(response.body.assayControl.referenceCase.path, null);
+  assert.equal(response.body.assayControl.referenceCase.exposedToGeneration, false);
+  assert.match(response.body.assayControl.statement, /baseline|Assay/i);
+  assert.match(response.body.assayControl.limits[0], /in-run critic fitness/i);
+  assert.equal(response.body.knowledgePacket.items.length, 3);
+  assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
+  assert.ok(Array.isArray(response.body.dashboardEvents));
+  assert.ok(response.body.dashboardEvents.length > 0);
+  assert.equal(fakeOpenRouter.calls.length, 0);
+});
+
+test('kernel dashboard route refuses live generation unless explicitly enabled', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-disabled-'));
+  const fakeOpenRouter = createOpenRouterFetch([]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_disabled',
+        casePath: 'fixtures/glp1-seed.json',
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 403);
+  assert.match(String(response.body.error), /live dashboard generation is disabled/i);
+  assert.equal(fakeOpenRouter.calls.length, 0);
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route can run enabled live generation without exposing secrets', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-enabled-'));
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'Dashboard Live Recovery',
+      recoveredProblem:
+        'GLP-1 adoption collapses the reward budget behind impulse categories before snacks alone show the break.',
+      hiddenConstraint: 'The useful demand unit is household impulse surface area.',
+      falsifier: 'Treated households keep impulse category spend stable after adoption.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_dash_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Dashboard Live',
+        summary: 'Direct dashboard live baseline answer.',
+        mechanism: 'Measure treated household impulse surface area once.',
+        claimedDelta: 'Baseline for Doppl survivor comparison.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_dash_live',
+          criticId: 'grounding',
+          score: 68,
+          pressure: 'Reasonable control answer.',
+          revisionMandate: 'Add stronger cross-category specificity.',
+        },
+      ],
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'dash_live_reward_budget',
+          agenomeId: 'ag_polymath',
+          title: 'Reward Budget Ledger',
+          summary: 'Follow treated households across snacks, alcohol, and other impulse rewards.',
+          mechanism: 'Build a household panel that compares pre/post GLP-1 baskets across impulse categories.',
+          claimedDelta: 'Finds demand destruction before snack SKU substitutions make it obvious.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'dash_live_tripwire',
+          agenomeId: 'ag_blindside',
+          title: 'Checkout Tripwire',
+          summary: 'Use checkout add-on disappearance as the first public signal.',
+          mechanism: 'Watch baskets, convenience trips, and add-on rates for treated versus untreated households.',
+          claimedDelta: 'Turns medical adoption into a retailer signal.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'dash_live_reward_budget',
+          criticId: 'grounding',
+          score: 92,
+          pressure: 'The household panel directly tests the cross-category mechanism.',
+          revisionMandate: 'Name the impulse categories and comparison cohort.',
+        },
+        {
+          candidateId: 'dash_live_tripwire',
+          criticId: 'novelty',
+          score: 86,
+          pressure: 'Checkout add-ons are an early and non-obvious signal.',
+          revisionMandate: 'Separate treated households from broad channel weakness.',
+        },
+      ],
+    }),
+  ]);
+
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_enabled',
+        casePath: 'fixtures/glp1-seed.json',
+        liveModel: true,
+        model: 'fixture-model',
+        generations: 4,
+        budget: 4,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.runMode, 'live');
+  assert.equal(response.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(response.body.generations, 1);
+  assert.equal(response.body.budget.usedUnits, 1);
+  assert.equal(response.body.child.id, 'child_dash_live_reward_budget_dash_live_tripwire');
+  assert.ok(response.body.modelCalls.path.endsWith('model-calls.jsonl'));
+  assert.equal(fakeOpenRouter.calls.length, 5);
+  assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route replays a model-backed run from recorded calls', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-replay-run-'));
+  const outDir = path.join(root, 'vault');
+  const fakeOpenRouter = createOpenRouterFetch([
+    JSON.stringify({
+      title: 'Replayable Live Recovery',
+      recoveredProblem:
+        'GLP-1 adoption changes the household reward budget before snack sales alone reveal it.',
+      hiddenConstraint: 'The useful measurement unit is treated household impulse spend.',
+      falsifier: 'Treated and untreated household impulse baskets remain identical.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_replayable_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Replayable Live',
+        summary: 'Direct recorded baseline answer.',
+        mechanism: 'Use a simple treated-household impulse comparison.',
+        claimedDelta: 'Baseline for replayable Doppl survivor.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_replayable_live',
+          criticId: 'grounding',
+          score: 67,
+          pressure: 'Replayable clean answer is valid but broad.',
+          revisionMandate: 'Doppl should produce a sharper mechanism.',
+        },
+      ],
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'replayable_reward_budget',
+          agenomeId: 'ag_polymath',
+          title: 'Replayable Reward Budget',
+          summary: 'Track treated household reward categories as a single budget.',
+          mechanism: 'Replay the same model output through a later run id.',
+          claimedDelta: 'Turns an expensive live call into a reusable replay artifact.',
+          citedKnowledge: ['K1', 'K2'],
+        },
+        {
+          id: 'replayable_tripwire',
+          agenomeId: 'ag_blindside',
+          title: 'Replayable Checkout Tripwire',
+          summary: 'Watch checkout add-ons as the first visible public signal.',
+          mechanism: 'Use recorded model calls while keeping prompts server-side.',
+          claimedDelta: 'Lets operators inspect the run without another model call.',
+          citedKnowledge: ['K1'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'replayable_reward_budget',
+          criticId: 'grounding',
+          score: 91,
+          pressure: 'The household panel is directly testable.',
+          revisionMandate: 'Preserve cohort definitions.',
+        },
+        {
+          candidateId: 'replayable_tripwire',
+          criticId: 'novelty',
+          score: 84,
+          pressure: 'Checkout behavior is an early non-obvious signal.',
+          revisionMandate: 'Separate treatment effects from retailer weakness.',
+        },
+      ],
+    }),
+  ]);
+
+  const source = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_replay_source',
+        casePath: 'fixtures/glp1-seed.json',
+        liveModel: true,
+        model: 'fixture-model',
+        generations: 1,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board-source'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(source.status, 200);
+  assert.equal(source.body.runMode, 'live');
+  assert.equal(source.body.modelCalls.path, 'model-calls.jsonl');
+  assert.equal(fakeOpenRouter.calls.length, 5);
+
+  const replay = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_replay_target',
+        casePath: 'fixtures/glp1-seed.json',
+        replayRunId: 'dashboard_replay_source',
+        generations: 1,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board-replay'),
+      }),
+    },
+    {
+      env: {
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      async fetch() {
+        throw new Error('replay should not make a fresh model call');
+      },
+    },
+  );
+
+  assert.equal(replay.status, 200);
+  assert.equal(replay.body.runMode, 'replay');
+  assert.equal(replay.body.replaySourceRunId, 'dashboard_replay_source');
+  assert.equal(replay.body.caseId, 'glp1-snack-demand-destruction');
+  assert.equal(replay.body.child.id, 'child_replayable_reward_budget_replayable_tripwire');
+  assert.ok(replay.body.modelCalls.path.endsWith('model-calls.jsonl'));
+  assert.doesNotMatch(JSON.stringify(replay.body), /server-side-model-key/);
+
+  const history = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs?outDir=${encodeURIComponent(outDir)}`,
+  });
+  assert.equal(history.status, 200);
+  assert.equal(
+    history.body.runs.find((run: { runId?: string }) => run.runId === 'dashboard_replay_source')
+      ?.hasModelCalls,
+    true,
+  );
+});
+
+test('kernel dashboard route requires a live demo token when configured', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-live-token-'));
+  const fakeOpenRouter = createOpenRouterFetch([]);
+
+  const denied = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_live_token_denied',
+        casePath: 'fixtures/glp1-seed.json',
+        liveModel: true,
+        model: 'fixture-model',
+        outDir: path.join(root, 'vault-denied'),
+        proofBoardDir: path.join(root, 'proof-board-denied'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        DOPPL_REQUIRE_LIVE_DEMO_TOKEN: 'true',
+        DOPPL_LIVE_DEMO_TOKEN: 'live-demo-token',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+      fetch: fakeOpenRouter.fetch,
+    },
+  );
+
+  assert.equal(denied.status, 403);
+  assert.match(String(denied.body.error), /live demo token/i);
+  assert.equal(fakeOpenRouter.calls.length, 0);
+  assert.doesNotMatch(JSON.stringify(denied.body), /server-side-model-key|live-demo-token/);
+});
+
+test('kernel dashboard route applies an approved fitness lens without exposing secrets', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-lens-'));
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_lens_fixture',
+        casePath: 'fixtures/fsd-seed.json',
+        fitnessLens: 'feasibility',
+        generations: 1,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        KERNEL_API_KEY: 'must-not-be-in-browser',
+        OPENROUTER_API_KEY: 'server-side-model-key',
+      },
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.fitnessRecords[0].selection.lens.name, 'feasibility');
+  assert.ok(response.body.fitnessRecords[0].selection.lens.multiplier <= 1);
+  assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
+});
+
+test('kernel dashboard route applies an approved fitness schedule', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-schedule-'));
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_schedule_fixture',
+      casePath: 'fixtures/fsd-seed.json',
+      fitnessSchedule: 'converge',
+      generations: 1,
+      outDir: path.join(root, 'vault'),
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.fitnessRecords[0].selection.dial, 'converge');
+  assert.equal(response.body.fitnessRecords[0].selection.weights.grounding, 0.72);
+});
+
+test('kernel dashboard route rejects unknown fitness lenses', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_bad_lens',
+      fitnessLens: 'magic',
+    }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.match(String(response.body.error), /fitnessLens/);
+});
+
+test('kernel dashboard route rejects unknown fitness schedules', async () => {
+  const response = await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_bad_schedule',
+      fitnessSchedule: 'sideways',
+    }),
+  });
+
+  assert.equal(response.status, 400);
+  assert.match(String(response.body.error), /fitnessSchedule/);
+});
+
+test('kernel dashboard route lists recent exported runs without an API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-history-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_history_fixture',
+      casePath: 'fixtures/fsd-seed.json',
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const response = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(response.body.runs));
+  assert.equal(response.body.runs[0].runId, 'dashboard_history_fixture');
+  assert.equal(response.body.runs[0].caseId, 'fsd-ownership-unwind');
+  assert.match(response.body.runs[0].child, /cand_liability_clock_[a-z]+_g3/);
+});
+
+test('kernel dashboard route runs all approved real case fixtures with unique results', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-all-cases-'));
+  const outDir = path.join(root, 'vault');
+  const cases = [
+    {
+      caseId: 'fsd-ownership-unwind',
+      casePath: 'fixtures/fsd-seed.json',
+      expectedRecovery: /autonomy removes the human-driver reason/i,
+    },
+    {
+      caseId: 'glp1-snack-demand-destruction',
+      casePath: 'fixtures/glp1-seed.json',
+      expectedRecovery: /reward system behind impulse eating occasions/i,
+    },
+    {
+      caseId: 'ai-overviews-zero-click-publishing',
+      casePath: 'fixtures/ai-power-seed.json',
+      expectedRecovery: /answer layers remove the click itself/i,
+    },
+    {
+      caseId: 'starship-launch-cost-collapse',
+      casePath: 'fixtures/starship-seed.json',
+      expectedRecovery: /launch-cost collapse re-prices every downstream constraint/i,
+    },
+  ];
+
+  const childIds: string[] = [];
+  const recoveryTexts: string[] = [];
+  for (const caseStudy of cases) {
+    const response = await handleKernelHttpRequest({
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: `${caseStudy.caseId}_dashboard_fixture_test`,
+        casePath: caseStudy.casePath,
+        generations: 2,
+        budget: 2,
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.caseId, caseStudy.caseId);
+    assert.match(response.body.child.id, /_[a-z]+_g1/);
+    assert.equal(response.body.candidates.length, 6);
+    assert.equal(new Set(response.body.candidates.map((candidate: { id: string }) => candidate.id)).size, 6);
+    assert.equal(response.body.evolution.length, 2);
+    assert.notDeepEqual(response.body.evolution[0].candidateIds, response.body.evolution[1].candidateIds);
+    assert.ok(response.body.evolution[1].candidateIds.includes(response.body.evolution[0].childId));
+    assert.match(String(response.body.dashboardArtifact), caseStudy.expectedRecovery);
+    assert.ok(Array.isArray(response.body.dashboardEvents));
+    assert.ok(response.body.dashboardEvents.some((event: { runId?: string }) => event.runId));
+    childIds.push(response.body.child.id);
+    recoveryTexts.push(String(response.body.dashboardArtifact));
+  }
+
+  assert.equal(new Set(childIds).size, cases.length);
+  assert.equal(new Set(recoveryTexts).size, cases.length);
+});
+
+test('kernel HTTP server requires an API key when configured', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-auth-'));
+  const unauthorized = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_http_auth_missing',
+        outDir: path.join(root, 'unauthorized-vault'),
+        proofBoardDir: path.join(root, 'unauthorized-proof-board'),
+      }),
+    },
+    { env: { KERNEL_API_KEY: 'kernel-test-key' } },
+  );
+  const authorized = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      headers: { authorization: 'Bearer kernel-test-key' },
+      body: JSON.stringify({
+        runId: 'run_http_auth_ok',
+        generations: 1,
+        budget: 1,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    { env: { KERNEL_API_KEY: 'kernel-test-key' } },
+  );
+
+  assert.equal(unauthorized.status, 401);
+  assert.deepEqual(unauthorized.body, { error: 'unauthorized' });
+  assert.equal(authorized.status, 200);
+  assert.equal(authorized.body.runId, 'run_http_auth_ok');
+});
+
+test('kernel HTTP server reads exported run indexes and artifacts', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-read-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_readback',
+      generations: 1,
+      budget: 1,
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_readback?outDir=${encodeURIComponent(outDir)}`,
+  });
+  const artifactResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_readback/artifacts/problem-recovery.md?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.runId, 'run_http_readback');
+  assert.equal(indexResponse.body.caseId, 'fsd-ownership-unwind');
+  assert.equal(indexResponse.body.problemRecovery.path, 'problem-recovery.md');
+  assert.equal(artifactResponse.status, 200);
+  assert.equal(artifactResponse.body.artifactPath, 'problem-recovery.md');
+  assert.match(artifactResponse.body.content, /Recover The Ownership Premise/);
+});
+
+test('kernel HTTP server exposes canonical run events, SSE stream, and run health', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-events-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/runs',
+    body: JSON.stringify({
+      runId: 'run_http_events',
+      generations: 1,
+      budget: 1,
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const eventsResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/events?outDir=${encodeURIComponent(outDir)}&after=1`,
+  });
+  const streamResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/stream?outDir=${encodeURIComponent(outDir)}`,
+  });
+  const healthResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/runs/run_http_events/health?outDir=${encodeURIComponent(outDir)}`,
+  });
+
+  assert.equal(eventsResponse.status, 200);
+  assert.equal(eventsResponse.body.runId, 'run_http_events');
+  assert.ok(Array.isArray(eventsResponse.body.events));
+  assert.ok(eventsResponse.body.events.every((event: { sequence: number }) => event.sequence > 1));
+  assert.ok(
+    eventsResponse.body.events.every(
+      (event: { id?: string; runId?: string; actor?: string; schemaVersion?: number }) =>
+        event.id && event.runId === 'run_http_events' && event.actor && event.schemaVersion === 1,
+    ),
+  );
+  assert.equal(streamResponse.status, 200);
+  assert.equal(streamResponse.contentType, 'text/event-stream; charset=utf-8');
+  assert.match(streamResponse.bodyText, /^id: 0/m);
+  assert.match(streamResponse.bodyText, /data: .*"type":"run.completed"/);
+  assert.equal(healthResponse.status, 200);
+  assert.deepEqual(healthResponse.body.status, 'completed');
+  assert.equal(healthResponse.body.runId, 'run_http_events');
+  assert.equal(healthResponse.body.candidatesInFlight, 0);
+  assert.ok(Number(healthResponse.body.sequenceThrough) > 0);
+});
+
+test('kernel dashboard exposes keyless event stream without exposing API key', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-stream-'));
+  const outDir = path.join(root, 'vault');
+  await handleKernelHttpRequest({
+    method: 'POST',
+    url: '/kernel/dashboard/runs',
+    body: JSON.stringify({
+      runId: 'dashboard_stream_fixture',
+      casePath: 'fixtures/fsd-seed.json',
+      outDir,
+      proofBoardDir: path.join(root, 'proof-board'),
+    }),
+  });
+
+  const protectedResponse = await handleKernelHttpRequest(
+    {
+      method: 'GET',
+      url: `/kernel/runs/dashboard_stream_fixture/stream?outDir=${encodeURIComponent(outDir)}`,
+    },
+    { env: { KERNEL_API_KEY: 'server-only-key' } },
+  );
+  const dashboardResponse = await handleKernelHttpRequest(
+    {
+      method: 'GET',
+      url: `/kernel/dashboard/runs/dashboard_stream_fixture/stream?outDir=${encodeURIComponent(outDir)}`,
+    },
+    { env: { KERNEL_API_KEY: 'server-only-key' } },
+  );
+
+  assert.equal(protectedResponse.status, 401);
+  assert.equal(dashboardResponse.status, 200);
+  assert.equal(dashboardResponse.contentType, 'text/event-stream; charset=utf-8');
+  assert.match(dashboardResponse.bodyText, /data: .*"runId":"dashboard_stream_fixture"/);
+  assert.doesNotMatch(dashboardResponse.bodyText, /server-only-key/);
+});
+
+test('kernel dashboard async live runs stream model operation starts before completion', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-dashboard-async-'));
+  const outDir = path.join(root, 'vault');
+  let releaseFirstCall!: () => void;
+  const firstCallGate = new Promise<void>((resolve) => {
+    releaseFirstCall = resolve;
+  });
+  const outputs = [
+    JSON.stringify({
+      title: 'Async Live Recovery',
+      recoveredProblem: 'The run should expose model work before the first call completes.',
+      hiddenConstraint: 'The dashboard needs an event before final vault export exists.',
+      falsifier: 'Only run.completed appears in the stream.',
+    }),
+    JSON.stringify({
+      candidate: {
+        id: 'clean_async_live',
+        agenomeId: 'ag_clean_control',
+        title: 'Clean Async Live',
+        summary: 'Direct async baseline answer.',
+        mechanism: 'Solve once before the evolving population begins.',
+        claimedDelta: 'Gives the stream a control lane to score.',
+        citedKnowledge: ['K1'],
+      },
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'clean_async_live',
+          criticId: 'grounding',
+          score: 65,
+          pressure: 'Baseline exists but lacks evolved specificity.',
+          revisionMandate: 'Keep the live stream free of prompts and secrets.',
+        },
+      ],
+    }),
+    JSON.stringify({
+      candidates: [
+        {
+          id: 'async_live_a',
+          agenomeId: 'ag_blindside',
+          title: 'Early Operation Beacon',
+          summary: 'Emit model starts as soon as the provider boundary is crossed.',
+          mechanism: 'Persist the operation-start event before awaiting provider output.',
+          claimedDelta: 'Makes live runs visibly alive before completion.',
+          citedKnowledge: ['K1'],
+        },
+        {
+          id: 'async_live_b',
+          agenomeId: 'ag_first_principles',
+          title: 'Completion Export Mirror',
+          summary: 'Fetch the dashboard index after the terminal stream event.',
+          mechanism: 'Use event logs for liveness and run-index for final artifacts.',
+          claimedDelta: 'Keeps replay truth and live UX aligned.',
+          citedKnowledge: ['K2'],
+        },
+      ],
+    }),
+    JSON.stringify({
+      verdicts: [
+        {
+          candidateId: 'async_live_a',
+          criticId: 'grounding',
+          score: 86,
+          pressure: 'Provider-boundary starts are directly observable.',
+          revisionMandate: 'Keep payloads free of prompts and secrets.',
+        },
+        {
+          candidateId: 'async_live_b',
+          criticId: 'novelty',
+          score: 78,
+          pressure: 'Final fetch is useful but less immediate.',
+          revisionMandate: 'Tie final fetch to terminal stream events.',
+        },
+      ],
+    }),
+  ];
+  let fetchCount = 0;
+  const fetch = async (_url: string, init: { headers: Record<string, string>; body: string }) => {
+    fetchCount += 1;
+    if (fetchCount === 1) await firstCallGate;
+    const outputText = outputs.shift();
+    if (!outputText) throw new Error('unexpected extra async model call');
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => 'async-request-id' },
+      async json() {
+        return { choices: [{ message: { content: outputText } }] };
+      },
+    };
+  };
+
+  const startResponse = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/dashboard/runs',
+      body: JSON.stringify({
+        runId: 'dashboard_async_live_stream',
+        casePath: 'fixtures/fsd-seed.json',
+        liveModel: true,
+        async: true,
+        model: 'fixture-model',
+        outDir,
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    {
+      env: {
+        DOPPL_ENABLE_LIVE_LLM: 'true',
+        OPENROUTER_API_KEY: 'server-only-openrouter-key',
+      },
+      fetch,
+    },
+  );
+
+  assert.equal(startResponse.status, 200);
+  assert.equal(startResponse.body.runId, 'dashboard_async_live_stream');
+  assert.equal(startResponse.body.status, 'running');
+  assert.equal(startResponse.body.async, true);
+
+  const partialStream = await waitFor(
+    () =>
+      handleKernelHttpRequest({
+        method: 'GET',
+        url: `/kernel/dashboard/runs/dashboard_async_live_stream/stream?outDir=${encodeURIComponent(outDir)}`,
+      }),
+    (response) =>
+      response.status === 200 &&
+      Boolean(response.bodyText?.includes('"type":"model.operation_started"')),
+  );
+  assert.equal(partialStream.status, 200);
+  assert.match(partialStream.bodyText, /"type":"model.operation_started"/);
+  assert.match(partialStream.bodyText, /"purpose":"problem_recovery"/);
+  assert.doesNotMatch(partialStream.bodyText, /run.completed/);
+  assert.doesNotMatch(partialStream.bodyText, /server-only-openrouter-key/);
+
+  releaseFirstCall();
+
+  const healthResponse = await waitFor(
+    () =>
+      handleKernelHttpRequest({
+        method: 'GET',
+        url: `/kernel/dashboard/runs/dashboard_async_live_stream/health?outDir=${encodeURIComponent(outDir)}`,
+      }),
+    (response) => response.status === 200 && response.body.status === 'completed',
+  );
+  assert.equal(healthResponse.status, 200);
+  assert.equal(healthResponse.body.status, 'completed');
+
+  const indexResponse = await handleKernelHttpRequest({
+    method: 'GET',
+    url: `/kernel/dashboard/runs/dashboard_async_live_stream?outDir=${encodeURIComponent(outDir)}`,
+  });
+  assert.equal(indexResponse.status, 200);
+  assert.equal(indexResponse.body.runId, 'dashboard_async_live_stream');
+  assert.equal(indexResponse.body.caseId, 'fsd-ownership-unwind');
+});

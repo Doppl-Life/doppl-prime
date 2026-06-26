@@ -1,18 +1,18 @@
 {
-  "name": "doppl-kernel",
+  "name": "doppl-prime",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test kernel/test/*.test.ts",
+    "test": "node --experimental-strip-types --test test/kernel/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint 'kernel/src/**/*.ts'",
-    "build": "pnpm run typecheck && pnpm run lint && pnpm test && pnpm run kernel:web:build",
-    "kernel:run": "node --experimental-strip-types kernel/src/cli.ts",
-    "kernel:serve": "node --experimental-strip-types kernel/src/server.ts",
-    "kernel:publish": "node --experimental-strip-types kernel/src/publish-cli.ts",
-    "kernel:web:build": "vite build --config kernel/web/vite.config.js",
-    "prestart": "pnpm run kernel:web:build",
+    "lint": "eslint 'src/kernel/**/*.ts'",
+    "build": "pnpm run typecheck && pnpm run lint && pnpm test && pnpm run web:build",
+    "kernel:run": "node --experimental-strip-types src/kernel/cli.ts",
+    "kernel:serve": "node --experimental-strip-types src/kernel/server.ts",
+    "kernel:publish": "node --experimental-strip-types src/kernel/publish-cli.ts",
+    "web:build": "vite build --config web/vite.config.js",
+    "prestart": "pnpm run web:build",
     "start": "pnpm run kernel:serve"
   },
   "engines": {

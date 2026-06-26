@@ -1,0 +1,40 @@
+{
+  "id": "packet:fixture:starship-launch-cost-collapse",
+  "targetCase": "starship-launch-cost-collapse",
+  "items": [
+    {
+      "recordId": "knowledge_cost_collapse",
+      "citeHandle": "K1",
+      "text": "A one-to-two-order-of-magnitude launch-cost collapse changes the binding question from destination to downstream economic beneficiaries.",
+      "sourceCase": "starship-launch-cost-collapse",
+      "citation": "fixtures/starship-seed.json",
+      "trustTier": "target-problem",
+      "visibility": "public"
+    },
+    {
+      "recordId": "knowledge_picks_shovels",
+      "citeHandle": "K2",
+      "text": "The EV analogy points to inputs and picks-and-shovels rather than only the headline vehicle maker.",
+      "sourceCase": "starship-launch-cost-collapse",
+      "citation": "fixtures/starship-seed.json",
+      "trustTier": "target-problem",
+      "visibility": "public"
+    },
+    {
+      "recordId": "knowledge_payload_classes",
+      "citeHandle": "K3",
+      "text": "Cheap launch can make previously uneconomic payload classes viable, including orbital compute, in-space services, and space-grade component supply.",
+      "sourceCase": "starship-launch-cost-collapse",
+      "citation": "fixtures/starship-seed.json",
+      "trustTier": "target-problem",
+      "visibility": "public"
+    }
+  ],
+  "excluded": [
+    {
+      "recordId": "withheld_solution_target",
+      "case": "starship-launch-cost-collapse",
+      "reason": "target case solution material withheld from retrieval"
+    }
+  ]
+}

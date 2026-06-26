@@ -27,11 +27,7 @@ Change that one value to retarget every producer. The kernel writes through the 
 
 ## Producers
 
-Two things produce vault content; both emit the same contract shape, but they do not have the same
-filesystem reach:
+One thing produces vault content:
 
 - **Kernel** (`pnpm grow`, Node) — runs a seed end-to-end (discovery → engine → compile) and writes
   the survivor and discoveries through the sink, directly into the configured vault.
-- **Spike** ([`../../experiment-spike/index.html`](../../experiment-spike), a browser) — a browser
-  cannot write the filesystem. It exports contract-shaped markdown that a human places into the vault
-  by hand (manual drop). The browser never writes the vault itself.

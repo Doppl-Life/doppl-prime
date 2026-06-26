@@ -1,0 +1,40 @@
+{
+  "id": "packet:fixture:fsd-ownership-unwind",
+  "targetCase": "fsd-ownership-unwind",
+  "items": [
+    {
+      "recordId": "knowledge_residual_values",
+      "citeHandle": "K1",
+      "text": "Residual values, lease math, floorplan lending, and auto ABS become pressure points when fleet utilization reduces household demand for privately owned vehicles.",
+      "sourceCase": "fsd-accident-economy",
+      "citation": "fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json",
+      "trustTier": "case-sibling",
+      "visibility": "public"
+    },
+    {
+      "recordId": "knowledge_liability_subject",
+      "citeHandle": "K2",
+      "text": "Autonomy changes who is treated as the legal subject of driving: driver, OEM, fleet operator, insurer, or software provider.",
+      "sourceCase": "fsd-enforcement-economy",
+      "citation": "fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json",
+      "trustTier": "case-sibling",
+      "visibility": "public"
+    },
+    {
+      "recordId": "knowledge_dealer_floorplan",
+      "citeHandle": "K3",
+      "text": "Dealer floorplan economics depend on inventory velocity and unit sales; both are exposed if mobility reorganizes around fleet miles.",
+      "sourceCase": "fsd-mobility-and-time",
+      "citation": "fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json",
+      "trustTier": "case-sibling",
+      "visibility": "public"
+    }
+  ],
+  "excluded": [
+    {
+      "recordId": "withheld_solution_target",
+      "case": "fsd-ownership-unwind",
+      "reason": "target case solution material withheld from retrieval"
+    }
+  ]
+}

@@ -7,10 +7,10 @@ import tseslint from 'typescript-eslint';
 // written reason, so it stays loud, rare, and reviewed.
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'kernel/web/**', 'out/**', 'published/**', 'eslint.config.js'],
+    ignores: ['node_modules/**', 'web/**', 'out/**', 'published/**', 'eslint.config.js'],
   },
   {
-    files: ['kernel/src/**/*.ts'],
+    files: ['src/kernel/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: {

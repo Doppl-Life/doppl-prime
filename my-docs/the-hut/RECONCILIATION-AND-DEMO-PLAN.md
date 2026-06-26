@@ -8,7 +8,7 @@ tickets live and move.
 
 All work is on the `michael-reconciliation` worktree (`../doppl-prime-reconciliation`). Source of
 truth: git history + this doc + the harness task list. Context is disposable. Package manager: pnpm.
-Kernel green: `node --experimental-strip-types --test kernel/test/*.test.ts` → 118/118.
+Kernel green: `node --experimental-strip-types --test test/kernel/*.test.ts` → 118/118.
 
 **Done & committed:** R0 (dalton base) · R1 (canonical `flow/<slug>/<slug>.md` vault + `slugId`,
 SSOT) · R2 (clean case node vs `node.md`) · R3 (provider layer — one OpenAI-compatible client +
@@ -28,13 +28,13 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    already off `| string`. All producers in `run-kernel`/`server` typecheck clean (fixed a real `status:
    unknown` leak; dropped dead `agenomeId`/`candidateId` push-options that `normalizeRunEvent` already
    derives from payload). This is **R4's first step, done**. 118/118 still green.
-3. ✅ `deslop` — repointed `tsconfig.json` `include` → `kernel/src/**`, so `pnpm typecheck` now compiles
+3. ✅ `deslop` — repointed `tsconfig.json` `include` → `src/kernel/**`, so `pnpm typecheck` now compiles
    the *real* kernel (it was compiling the dead root) and is **green** — fixed all 17 pre-existing strict
    errors it surfaced (node-compiler `run.fusion` guard ×3, run-kernel selected-parent closure narrowing
    ×2, scoring `frontier` optional-index + `proposalRating.scale` literal ×2, server `unknown` int-parse
    `typeof` guards ×2 + `readdir` Dirent overload via inference ×4); deduped the `.gitignore` env block
    (kept `!.env.sample`); **deleted dead root `/src` + `/tools`** (orphaned old michael kernel — nothing
-   in `kernel/` imported them; 118/118 still green). Follow-ups: add `kernel/test/**` to `include` (its
+   in `kernel/` imported them; 118/118 still green). Follow-ups: add `test/kernel/**` to `include` (its
    partial-payload legacy fixtures need boundary casts first); optional `vault-export` assay extraction.
 3.5. ✅ **Type-safety guardrails (ESLint).** Flat config (`eslint.config.js`) on **`strictTypeChecked`**
    base, banning silent checker circumvention: `no-explicit-any`, `no-non-null-assertion`,
@@ -286,24 +286,15 @@ Format: `[ID] Title — owner · depends on`.
   as the kernel: pick the strongest process-viz, fold into the one viewer.
 - **[E3] Live progress (streaming) view** — Melissa · E1. Stages light up live during a run.
 
-### Epic F — Experimental spike feature extraction
-
-- **[F1] Inventory `experiment-spike/index.html` features** — Michael · none. Table of every
-  capability (IndexedDB store, provider matrix, similarity search, clustering, graph chatbot,
-  export/import, harness bridge) with keep/drop/port.
-- **[F2] Port the "keep" features into the real app** — Michael · F1, H1.
-- **[F3] Rework `experiment-spike/index.html` to run on our system** — Michael · F1, G1. Wire the spike
-  to the real provider layer, contracts, and sink/export path instead of its standalone in-page logic.
-
 ### Epic G — Model routing / the fusion
 
 - **[G1] Provider abstraction** — Dalton · none. One interface over OpenRouter (incl. fusion), local
-  Ollama/LM Studio, and paid subscriptions (harness-bridge). Extract the spike's provider layer as the
-  seed. Swap providers without touching the kernel.
+  Ollama/LM Studio, and paid subscriptions (harness-bridge). Swap providers without touching the
+  kernel.
 - **[G2] Define "fusion" + expose it as a cognition target** — Dalton · G1. `cognition.reasoning:
   "fusion"` does not exist yet; it needs the provider layer to back an OpenRouter-fusion option.
   Ensemble vote? Best-of-N? Per-stage routing? Recommendation: per-stage routing first (cheap for
-  scoring, strong for generation; the spike already isolates generation as the only model call).
+  scoring, strong for generation).
 - **[G3] Local + subscription paths verified end-to-end** — Dalton · G1. A full run completes on Ollama
   and on the harness-bridge with no paid API.
 - **[G4] Cost guardrails: per-run budget cap + kill switch** — Dalton · G1. A run aborts when its
@@ -365,17 +356,14 @@ All new reconciliation work lives on **`michael-reconciliation`** (worktree:
 stay clean and are *referenced*, never written. The agent makes reversible file changes; the human
 owns every `git` op (stage/commit/reset/merge).
 
-## Spike instruments to mine (the control surface)
+## Control Surface
 
-`experiment-spike/index.html` is already a full outer-view **control panel for the kernel**, not just a
-provider list. Mine the whole instrument set; expand the model-orchestration ones.
+The control surface is derived from the kernel trace and dashboard projection.
+It is not imported from a standalone spike.
 
-- **Model orchestration** — provider segment (Ollama·local / OpenAI-compatible / Harness-bridge /
-  Offline) + Test connection + provider pill. **Expand into**: OpenRouter *fusion*, per-role routing
-  (cheap-for-scoring / strong-for-generation, judge pinned), local LLM, and subscription wiring.
-- **The dial** — diverge·novelty ◇ / converge·grounding ◆: the fitness dial as a control.
-- **Campaign** — BFS/DFS traversal + dial schedule (auto/converge/diverge): the outer control surface
-  for dalton's evolution loop (generations × population).
+- **Model orchestration** — OpenRouter fusion, per-role routing, local LLM, and subscription wiring.
+- **The dial** — diverge/converge fitness control.
+- **Campaign** — traversal and dial schedule over generations and population.
 - **Analyze** — Similarity / Clusters / Doppelgängers: novelty + anti-collapse instruments.
 - **Connect aGarden** (File System Access — read case studies, write nodes/stock back), **Insights**
   (graph-aware chat), **Inspector + inline rating**, **Export**, **run-trace console**, **proof board**.

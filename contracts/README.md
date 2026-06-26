@@ -2,7 +2,7 @@
 
 The MarkScript contracts for the model — what each durable artifact must contain so a human can read it and a parser can recover it. The **model** is defined in the hut ([`my-docs/the-hut/**`](../my-docs/the-hut)); a contract here is where a hut decision lands once it is deliberately frozen into the kernel. `MEMORY.md` records fork decisions.
 
-> Not to be confused with the kernel's **boundary contracts** — the runtime module-I/O packets — which live beside their code at [`src/contracts/`](../src/contracts/README.md). These are *model artifact* contracts; those are *runtime boundary* contracts.
+> Not to be confused with the kernel's **boundary contracts** — the runtime module-I/O packets — which live beside their code at [`src/kernel/contracts.ts`](../src/kernel/contracts.ts). These are *model artifact* contracts; those are *runtime boundary* contracts.
 
 ## Cross-document links
 

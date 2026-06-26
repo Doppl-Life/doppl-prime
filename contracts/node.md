@@ -142,7 +142,7 @@ prev_id: null
 ---
 id: actuarial-collapse-in-specialty-auto-reinsurance-59cd965f
 stage: problem_recovery
-kernel: melissa
+kernel: prime
 temporal: false
 mutagen_lineage: [breakout, polymath]
 next: doppl
@@ -158,7 +158,7 @@ prev_id: [[when-the-crashes-dont-come-575845a4]]
 ### Type contract
 
 ```ts
-type KernelName = 'cody' | 'melissa' | 'michael' | 'dalton' | 'prime';
+type KernelName = 'prime';
 
 // rating.md composes the judge score with the human-ratings-ledger.md projection
 type Scores = ScoresProjection;
