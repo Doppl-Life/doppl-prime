@@ -65,28 +65,27 @@ Collaborator "Michael" drives evolutionary-design calls. Demo: Docker doppl-pg u
 raised); `DOPPL_GATEWAY=live DOPPL_MUTATION_STRATEGY=<s> DOPPL_ELITE_COUNT=<n> DOPPL_SEED_FIXTURE=
 pnpm -C apps/api start`.
 
-FIRST read docs/planning/evolution-climb-plan.md (the active build plan) + docs/sessions/009-*.md (orient).
-The goal is a REAL per-generation climb (each gen's best beats the last). No single lever climbs — build the
-MIX: ratchet (Step 1) + drive (Step 3) + gradient (Steps 2+4). Honest metric = bestFreshThisGen slope +
-advancementCount vs a random-restart control, NEVER the running-max line.
+FIRST read docs/planning/evolution-climb-plan.md (the active build plan, incl. the WAVE 1 VALIDATION RESULT)
++ docs/sessions/009-*.md (orient). The goal is a REAL per-generation climb. WAVE 1 IS DONE + LIVE-VALIDATED
+(commits 0f4141e/1408aa7/3dd31d5): it lifted the fitness band ~+0.10 (critic_scores: constant-0 → 25–28
+distinct; directed fusion fires) BUT the validation ISOLATED the remaining ceiling to the JUDGE
+(judge_acceptance = 5–6 distinct values, capped 0.68 — the dominant 46% can't separate the top → no
+monotonic climb). So Wave 2 (the judge) is now the REQUIRED, data-justified next lever.
 
 Do, in order (TDD the deterministic parts, /eval the LLM-output parts, full /preflight, commit per slice):
-1. (Wave 1 Step 1 — FINISH) The champion ledger + bestSoFar floor is committed (0f4141e). Build the fuller
-   CARRY: the champion CANDIDATE carried as a non-regenerating eligible parent (config hallOfFameCarry,
-   default 0) so Step 3 breeds against a locked target. KERNEL SAFETY-INVARIANT SLICE — isolate it; pins in
-   the plan (replay state-equivalence, maxPopulation clamp, no novelty-accumulator leak, no energy debit).
-2. (Wave 1 Step 2) Critic calibration — activeCount:5 + anchored 0-5 critic prompts + fixed-key sub-axis
-   scores (repair≤1, NOT hard-required) + re-record fixtures. Rule-#6-free.
-3. (Wave 1 Step 3) Directed reproduction — judge weakest-axis → fuse "repair the weak axis", elite paired
-   with a FIT partner (not most-distant). Reads judge OUTPUT (rule #6 untouched); FLAG for review.
-4. Re-run the live bake-off (control vs the Wave-1 stack, n≥3) and confirm advancementCount>0 + a rising
-   bestFreshThisGen slope. Use a MUTATING strategy (not fusion_only) for the diverge phase.
-5. (Wave 2 Step 4) Judge top-end discrimination — the dominant 46%, RULE #6. Present Michael Option A
-   (scale 0-5→0-10) vs Option B (true comparative judge) via AskUserQuestion; build only after his sign-off.
-6. THEN the research engine: tool fixes (x_search/youtube-transcripts/fetch_url-SSRF) + the shared knowledge
-   space (docs/planning/shared-knowledge-space.md — stigmergy + pgvector). Build deferred until the climb lands.
+1. (WAVE 2 Step 4 — THE ACTIVE WORK) Judge top-end discrimination — the dominant 46%, RULE #6, needs
+   Michael's EXPLICIT sign-off. Present Option A (widen the per-axis scale 0–5 → 0–10, lighter) vs Option B
+   (true comparative judge — peer context lets the WINNER spread up; needs the multi-blob rule-#5 isolation
+   seam + hoist the judge out of the per-candidate loop) via AskUserQuestion. policyVersion mvp-2→mvp-3 +
+   coherent scoringPolicyVersion; acceptance stays runner-computed; pin the FLOOR test. After it lands, re-run
+   the live bake-off (n≥3) and confirm advancementCount climbs above the Wave-1 baseline (0–1/4).
+2. (Optional Wave-1 refinements, rule-#6-free, if useful) the fuller champion-CANDIDATE carry (config
+   hallOfFameCarry) + pair the elite's directed slot with a FIT partner (not most-distant). Both deferred in
+   Wave 1 as non-blocking (the directed "don't average" prompt already counters the distant-partner drag).
+3. THEN the research engine: tool fixes (x_search dead / youtube→transcripts / fetch_url-SSRF) + the shared
+   knowledge space (docs/planning/shared-knowledge-space.md — stigmergy + pgvector). Deferred until the climb.
 
-Mode: autonomous within Wave 1 (rule-#6-free); STOP for Michael's sign-off before Wave 2. Michael authorized
-paid live experimentation ("spend until clear view") — run replicates (n≥3); n=1 is noise. Decouple novelty
-from scalar fitness when you get to it (fitness = per-gen quality; novelty = diverge/cull pressure).
+Mode: STOP for Michael's sign-off before Wave 2 (it's the rule-#6 judge anchor). Michael authorized paid live
+experimentation ("spend until clear view") — run replicates (n≥3); n=1 is noise. Decouple novelty from scalar
+fitness when you get to it (fitness = per-gen quality; novelty = diverge/cull pressure).
 ```

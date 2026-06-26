@@ -1,8 +1,27 @@
 # Evolution CLIMB plan — make each generation's best reliably beat the last
 
-> **Status:** Wave 1 STARTED (Step 1 foundation committed). From the 22-agent fan-out adversarial analysis
-> (`wf_cf51573d-3b1`, 2026-06-25) + the n=3 live de-noise. Branch `experiment/mutagen-dynamics` (off cody),
-> nothing pushed. North star (user/Michael): **each generation's best fitness reliably BETTER than the last.**
+> **Status:** **WAVE 1 COMPLETE + live-validated** (Steps 1–3 committed). Wave 2 (judge, rule-#6 sign-off)
+> is next session. From the 22-agent fan-out adversarial analysis (`wf_cf51573d-3b1`, 2026-06-25) + n=3 live
+> validation. Branch `experiment/mutagen-dynamics` (off cody), nothing pushed. North star (user/Michael):
+> **each generation's best fitness reliably BETTER than the last.**
+
+## ✅ WAVE 1 LIVE VALIDATION RESULT (n=3, fusion_only, pop6×5gen) — the data Wave 2 needs
+
+| | prior (elitism only) | Wave 1 stack (elitism + calibrated critics + directed fusion) |
+|---|---|---|
+| per-gen best peaks | ~0.637, all fell back | **0.716–0.735 (band lifted ~+0.10)** |
+| critic_scores component | **CONSTANT 0** (15% drag) | **25–28 distinct, 0.50–0.77, sd ~0.05** ✅ Step 2 win |
+| directed fusion | n/a | **FIRES** — directedAxis recorded (grounding×24/novelty×4/falsification×2) ✅ Step 3 |
+| advancementCount (gens beating the running champion) | ~0 | **0–1 / 4 — still NO monotonic climb** |
+
+**Verdict:** Wave 1 did its job — it **lifted the band ~0.10** (critic_scores went from a flat-0 drag to real
+discrimination) and the **drive fires** (directed fusion targets the weakest judged axis). But the per-gen
+best still bounces, and the validation **isolated the remaining ceiling to the JUDGE**: `judge_acceptance`
+(the dominant 46%) compresses to only **5–6 distinct values, capped at 0.68** — it cannot separate the top
+candidates, so even a genuinely-better directed offspring scores the same as the champion → no advancement.
+This is exactly the workflow's prediction: **Wave 1 is necessary, and it proves Wave 2 (the judge) is the
+required next lever** — the data now JUSTIFIES Michael's rule-#6 sign-off (the climb is judge-gated, not
+skippable). Runs: seed42 `2fc2a682`, seed7 `a57687df`, seed99 `6567c364`.
 
 ## The decisive diagnosis (all 4 design proposals scored 0/3 climb votes — same reason)
 
