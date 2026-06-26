@@ -122,7 +122,7 @@ test('exports the real model call evidence recorded on the run', async () => {
 
 test('exports the separate clean-agent baseline the live run produced', async () => {
   const run = loadCapturedRun();
-  const baselineId = run.controlBaseline!.candidate.id;
+  const baselineId = run.controlBaseline!.id;
 
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-clean-baseline-'));
   const manifest = await exportRunToVault(run, outDir);
