@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test 'test/kernel/**/*.test.ts'",
+    "test:live": "node --experimental-strip-types --test 'test/live/**/*.test.ts'",
+    "capture": "node --experimental-strip-types tools/capture-run.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint 'src/kernel/**/*.ts'",
     "build": "pnpm run typecheck && pnpm run lint && pnpm test && pnpm run web:build",
