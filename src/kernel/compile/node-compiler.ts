@@ -64,10 +64,11 @@ function knowledgeDiscovery(run: KernelRun): string {
   return run.knowledgePacket.items
     .map((item) => {
       if (item.trustTier === 'agarden-stock') {
-        // citation is the relative path to the stock file; derive the slug for a wikilink.
         const field = item.citation.replace(/.*\//, '').replace(/\.md$/, '');
-        const anchor = item.recordId.replace(/[^A-Za-z0-9_-]/g, '-');
-        return `- [[${field}#^${anchor}]] — ${item.citeHandle}`;
+        // recordId is the ^anchor when the stock file has one; fallback is "fieldId:N" (colon = no anchor)
+        const hasAnchor = !item.recordId.includes(':');
+        const link = hasAnchor ? `[[${field}#^${item.recordId}]]` : `[[${field}]]`;
+        return `- ${link} — ${item.citeHandle}`;
       }
       // web-firecrawl: link to the stock field that will be admitted after this run.
       const fieldId = slugId(`${run.caseStudy.title} discoveries`, `stock\n${run.caseStudy.id}`);

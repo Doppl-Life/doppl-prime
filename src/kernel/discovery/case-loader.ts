@@ -49,9 +49,14 @@ export async function loadCaseStudy(sourcePath: string): Promise<CaseStudy> {
   const markdown = raw;
   const id = idFromSourcePath(sourcePath);
   const title = titleFromMarkdown(markdown, id);
-  const statedProblem = markdown
+  // MarkScript nodes have YAML frontmatter and a `prev_id:` line — skip both before extracting.
+  const body = markdown.replace(/^---\n[\s\S]*?\n---\n/, '');
+  const statedProblem = body
     .split('\n')
-    .filter((line) => line.trim().length > 0 && !line.startsWith('#'))
+    .filter((line) => {
+      const t = line.trim();
+      return t.length > 0 && !t.startsWith('#') && !t.startsWith('prev_id:');
+    })
     .slice(0, 8)
     .join('\n');
   if (!statedProblem) throw new Error(`case study has no stated problem: ${sourcePath}`);
