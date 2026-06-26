@@ -94,6 +94,7 @@ export async function runFromRequestBody(
   const run = await runKernel({
     ...defaultKernelArgs,
     runId: parsed.runId || defaultKernelArgs.runId,
+    stage: 'doppl',
     casePath,
     vault: parsed.vault || defaultKernelArgs.vault,
     fixturePath: parsed.fixturePath,

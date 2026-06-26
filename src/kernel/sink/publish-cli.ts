@@ -1,8 +1,8 @@
 import { defaultKernelArgs } from '../cli.ts';
 import { publishStaticKernelRun, writePublishedIndex } from './publish.ts';
-import { runKernel } from '../engine/run-kernel.ts';
+import { runChain } from '../engine/run-kernel.ts';
 
-const run = await runKernel(defaultKernelArgs);
+const { doppl: run } = await runChain(defaultKernelArgs);
 const manifest = await publishStaticKernelRun(run, defaultKernelArgs.publishDir);
 const siteIndex = await writePublishedIndex('published', {
   kernelHref: 'kernel/',

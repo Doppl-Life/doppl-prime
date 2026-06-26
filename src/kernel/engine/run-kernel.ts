@@ -6,8 +6,10 @@ import {
   type EvolutionGeneration,
   type FitnessRecord,
   type FusionResult,
+  type GrowthStage,
   type KernelRun,
   type MemoryMode,
+  type NodeSummary,
 } from '../boundary.ts';
 import { loadCaseStudy } from '../discovery/case-loader.ts';
 import { createAgardenStockKnowledgeGateway, createJsonKnowledgeGateway } from '../discovery/knowledge-gateway.ts';
@@ -70,6 +72,8 @@ function allocationUnitsForAgenome(agenomeId: string): number {
 
 export async function runKernel(input: {
   runId: string;
+  stage: GrowthStage;
+  parentNode?: NodeSummary;
   casePath: string;
   vault: string;
   fixturePath?: string;
@@ -113,7 +117,7 @@ export async function runKernel(input: {
   for (const item of knowledgePacket.items) {
     trace.push('knowledge.item_injected', {
       citeHandle: item.citeHandle,
-      recipientRole: 'problem_recovery',
+      recipientRole: input.stage,
     });
   }
 
@@ -154,14 +158,6 @@ export async function runKernel(input: {
       { actor: 'system' },
     );
   }
-
-  traceModelOperation('problem_recovery');
-  const problemRecovery = await generationProviders.problemRecovery.recover({
-    runId: input.runId,
-    caseStudy,
-    knowledgePacket,
-  });
-  trace.push('problem_recovery.created', { recoveryId: problemRecovery.id });
 
   const candidates: CandidateSolution[] = [];
   const criticVerdicts: CriticVerdict[] = [];
@@ -213,8 +209,9 @@ export async function runKernel(input: {
     traceModelOperation('control_baseline_generation');
     controlBaseline = await generationProviders.cleanBaseline.generate({
       runId: input.runId,
+      stage: input.stage,
+      parentNode: input.parentNode,
       caseStudy,
-      problemRecovery,
       knowledgePacket,
       generation: 0,
       agenomePool,
@@ -239,8 +236,9 @@ export async function runKernel(input: {
     traceModelOperation('control_baseline_judgment');
     const controlVerdicts = await generationProviders.criticCouncil.judge({
       runId: input.runId,
+      stage: input.stage,
+      parentNode: input.parentNode,
       caseStudy,
-      problemRecovery,
       candidates: [controlBaseline],
       knowledgePacket,
     });
@@ -282,8 +280,9 @@ export async function runKernel(input: {
     traceModelOperation('candidate_generation', generation);
     const freshCandidates = await generationProviders.candidateGenerator.generate({
       runId: input.runId,
+      stage: input.stage,
+      parentNode: input.parentNode,
       caseStudy,
-      problemRecovery,
       knowledgePacket,
       generation,
       previousChild: carryoverChild,
@@ -316,8 +315,9 @@ export async function runKernel(input: {
     traceModelOperation('critic_judgment', generation);
     const generationVerdicts = await generationProviders.criticCouncil.judge({
       runId: input.runId,
+      stage: input.stage,
+      parentNode: input.parentNode,
       caseStudy,
-      problemRecovery,
       candidates: generationCandidates,
       knowledgePacket,
     });
@@ -446,7 +446,8 @@ export async function runKernel(input: {
     knowledgePacket,
     energyLedger,
     agenomes,
-    problemRecovery,
+    stage: input.stage,
+    parentNode: input.parentNode,
     controlBaseline,
     candidates,
     criticVerdicts,
@@ -459,4 +460,27 @@ export async function runKernel(input: {
     events: trace.events,
     modelCallRecords,
   });
+}
+
+export type RunChainResult = {
+  problemRecovery: KernelRun;
+  doppl: KernelRun;
+};
+
+// A full case→doppl chain: two agenomic passes. The first arrow breeds the problem_recovery;
+// its compiled survivor is fed as the second arrow's parent. Each pass is one runKernel and
+// emits one RunTrace. There is no one-shot stage — both arrows are the same engine.
+export async function runChain(
+  input: Omit<Parameters<typeof runKernel>[0], 'stage' | 'parentNode'>,
+): Promise<RunChainResult> {
+  // The problem_recovery arrow breeds under a derived id; the doppl arrow is the primary output —
+  // it keeps the requested runId and owns the streamed event log.
+  const { onEvent, ...passInput } = input;
+  const problemRecovery = await runKernel({ ...passInput, runId: `${input.runId}_recovery`, stage: 'problem_recovery' });
+  const survivor = problemRecovery.fusion?.child;
+  const parentNode: NodeSummary | undefined = survivor
+    ? { stage: 'problem_recovery', id: survivor.id, title: survivor.title, synopsis: survivor.summary }
+    : undefined;
+  const doppl = await runKernel({ ...passInput, runId: input.runId, stage: 'doppl', parentNode, onEvent });
+  return { problemRecovery, doppl };
 }

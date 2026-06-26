@@ -122,6 +122,14 @@ envelope-reshape adapter validated vs melissa's strict Zod envelope → drop the
 event types. Detail on the R4 task + the mapping in the Fusion spec. Then R5 (melissa dashboard +
 cody skin), R6 (spike→kernel), R7 (demo floors).
 
+**Symmetric kernel landed (2026-06-26):** the engine is now one agenomic pass per spine arrow
+(`runKernel(input, stage)`); `runChain()` chains case→problem_recovery→doppl, feeding each arrow's
+survivor in as the next arrow's `parentNode`. The one-shot `ProblemRecovery`/`recover()` is deleted;
+`problem_recovery` is bred from problem-frames like `doppl` is bred from solutions. `KernelRun` is
+single-stage; `buildRunTrace` is 1:1 with a run. The server runs the doppl arrow per request; the CLI
+runs the full chain. Decision in [`../MEMORY.md`](../MEMORY.md); invariant in [`../INVARIANTS.md`](../INVARIANTS.md) #1.
+`pnpm build` green (132/132).
+
 **To resume in a fresh window:** read this section + `git log --oneline` + the task list, then continue
 at the ▶ pass.
 

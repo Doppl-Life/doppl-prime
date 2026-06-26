@@ -10,8 +10,9 @@ import {
   regimeMutagens,
   type CandidateGenerator,
   type CriticCouncil,
-  type ProblemRecoveryProvider,
 } from '../../../src/kernel/engine/generation-providers.ts';
+import { createReplayModelClient, type ModelCallRecord } from '../../../src/kernel/model/model-gateway.ts';
+import { initialAgenomePool } from '../../../src/kernel/engine/agenomes.ts';
 
 test('the tide adapts: a converged population reaches for divergence, a scattered one consolidates', () => {
   const verdict = (score: number): CriticVerdict => ({
@@ -21,40 +22,47 @@ test('the tide adapts: a converged population reaches for divergence, a scattere
     pressure: '',
     revisionMandate: '',
   });
-  // Bunched scores = a converged population -> reach for divergence mutagens to escape the crowd.
   assert.ok(regimeMutagens([verdict(9), verdict(10)]).includes('polymath'));
-  // Widely spread scores = a scattered population -> consolidate with convergence mutagens.
   assert.ok(regimeMutagens([verdict(2), verdict(10)]).includes('breakthrough'));
-  // Mid-spread = the balanced default (no divergence-only or convergence-only move).
   const balanced = regimeMutagens([verdict(6), verdict(10)]);
   assert.ok(balanced.includes('blindside') && !balanced.includes('polymath'));
 });
-import { createReplayModelClient, type ModelCallRecord } from '../../../src/kernel/model/model-gateway.ts';
-import { initialAgenomePool } from '../../../src/kernel/engine/agenomes.ts';
 
-test('fixture generation providers expose recovery, candidate, and critic boundaries', async () => {
+test('the problem_recovery arrow breeds problem-frames from the seed', async () => {
   const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_provider',
-    targetCase: caseStudy.id,
-    maxItems: 3,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_frames', targetCase: caseStudy.id, maxItems: 3 });
   const providers = await createFixtureGenerationProviders(
     'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
   );
 
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_provider',
+  const frames = await providers.candidateGenerator.generate({
+    runId: 'run_frames',
     caseStudy,
+    stage: 'problem_recovery',
     knowledgePacket,
+    generation: 0,
   });
+  assert.ok(frames.length >= 2, 'a real pass needs a population to select from');
+  assert.ok(frames.every((frame) => frame.id.startsWith('frame_')));
+});
+
+test('fixture generation providers expose candidate and critic boundaries', async () => {
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
+  const gateway = await createJsonKnowledgeGateway(
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+  );
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_provider', targetCase: caseStudy.id, maxItems: 3 });
+  const providers = await createFixtureGenerationProviders(
+    'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+  );
+
   const candidates = await providers.candidateGenerator.generate({
     runId: 'run_provider',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     knowledgePacket,
     generation: 0,
     agenomePool: initialAgenomePool(),
@@ -62,7 +70,7 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
   const secondGenerationCandidates = await providers.candidateGenerator.generate({
     runId: 'run_provider',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     knowledgePacket,
     generation: 1,
     previousChild: {
@@ -81,13 +89,11 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
   const verdicts = await providers.criticCouncil.judge({
     runId: 'run_provider',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     candidates,
     knowledgePacket,
   });
 
-  assert.equal(recovery.caseId, 'fsd-ownership-unwind');
-  assert.equal(recovery.citedKnowledge.length, 3);
   assert.equal(candidates.length, 3);
   assert.equal(candidates[0]?.generation, 0);
   assert.match(candidates[0]?.summary || '', /Agenome/);
@@ -107,23 +113,14 @@ test('fixture generation can narrow candidates from the supplied Agenome pool', 
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_provider_pool',
-    targetCase: caseStudy.id,
-    maxItems: 3,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_provider_pool', targetCase: caseStudy.id, maxItems: 3 });
   const providers = await createFixtureGenerationProviders(
     'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
   );
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_provider_pool',
-    caseStudy,
-    knowledgePacket,
-  });
   const candidates = await providers.candidateGenerator.generate({
     runId: 'run_provider_pool',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     knowledgePacket,
     generation: 0,
     agenomePool: initialAgenomePool(['ag_blindside', 'ag_first_principles']),
@@ -136,19 +133,6 @@ test('fixture generation can narrow candidates from the supplied Agenome pool', 
 });
 
 test('provider interfaces can be implemented without fixture files', async () => {
-  const problemRecovery: ProblemRecoveryProvider = {
-    async recover({ caseStudy, knowledgePacket }) {
-      return {
-        id: `live_recovery_${caseStudy.id}`,
-        caseId: caseStudy.id,
-        title: 'Live Recovery',
-        recoveredProblem: 'Recovered by a provider boundary.',
-        hiddenConstraint: 'The generator must be swappable.',
-        falsifier: 'If fixture files are required, this fails.',
-        citedKnowledge: knowledgePacket.items.map((item) => item.citeHandle),
-      };
-    },
-  };
   const candidateGenerator: CandidateGenerator = {
     async generate({ caseStudy, generation }) {
       return [
@@ -179,19 +163,16 @@ test('provider interfaces can be implemented without fixture files', async () =>
   };
   const criticCouncil: CriticCouncil = {
     async judge({ candidates }) {
-      return candidates.flatMap((candidate, index) => [
-        {
-          candidateId: candidate.id,
-          criticId: 'grounding',
-          score: index === 0 ? 90 : 50,
-          pressure: 'pressure',
-          revisionMandate: 'revise',
-        },
-      ]);
+      return candidates.map((candidate, index) => ({
+        candidateId: candidate.id,
+        criticId: 'grounding',
+        score: index === 0 ? 90 : 50,
+        pressure: 'pressure',
+        revisionMandate: 'revise',
+      }));
     },
   };
 
-  assert.equal(typeof problemRecovery.recover, 'function');
   assert.equal(typeof candidateGenerator.generate, 'function');
   assert.equal(typeof criticCouncil.judge, 'function');
 });
@@ -201,32 +182,9 @@ test('model generation providers parse replayed structured outputs', async () =>
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_provider',
-    targetCase: caseStudy.id,
-    maxItems: 2,
-  });
-  const prompts = {
-    recovery: 'recover prompt',
-    candidates: 'candidate prompt',
-    critics: 'critic prompt',
-  };
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_provider', targetCase: caseStudy.id, maxItems: 2 });
+  const prompts = { candidates: 'candidate prompt', critics: 'critic prompt' };
   const records: ModelCallRecord[] = [
-    {
-      id: 'call_recovery',
-      runId: 'run_model_provider',
-      purpose: 'problem_recovery',
-      provider: 'replay',
-      model: 'fixture-model',
-      prompt: prompts.recovery,
-      outputText: JSON.stringify({
-        title: 'Model Recovery',
-        recoveredProblem: 'Recovered from model output.',
-        hiddenConstraint: 'Structured recovery must validate.',
-        falsifier: 'Bad JSON fails the contract.',
-      }),
-      metadata: {},
-    },
     {
       id: 'call_candidates',
       runId: 'run_model_provider',
@@ -236,24 +194,8 @@ test('model generation providers parse replayed structured outputs', async () =>
       prompt: prompts.candidates,
       outputText: JSON.stringify({
         candidates: [
-          {
-            id: 'model_a',
-            agenomeId: 'ag_model',
-            title: 'Model A',
-            summary: 'summary',
-            mechanism: 'mechanism',
-            claimedDelta: 'delta',
-            citedKnowledge: ['K1'],
-          },
-          {
-            id: 'model_b',
-            agenomeId: 'ag_model',
-            title: 'Model B',
-            summary: 'summary',
-            mechanism: 'mechanism',
-            claimedDelta: 'delta',
-            citedKnowledge: ['K2'],
-          },
+          { id: 'model_a', agenomeId: 'ag_model', title: 'Model A', summary: 'summary', mechanism: 'mechanism', claimedDelta: 'delta', citedKnowledge: ['K1'] },
+          { id: 'model_b', agenomeId: 'ag_model', title: 'Model B', summary: 'summary', mechanism: 'mechanism', claimedDelta: 'delta', citedKnowledge: ['K2'] },
         ],
       }),
       metadata: {},
@@ -267,20 +209,8 @@ test('model generation providers parse replayed structured outputs', async () =>
       prompt: prompts.critics,
       outputText: JSON.stringify({
         verdicts: [
-          {
-            candidateId: 'model_a',
-            criticId: 'grounding',
-            score: 88,
-            pressure: 'strong',
-            revisionMandate: 'keep',
-          },
-          {
-            candidateId: 'model_b',
-            criticId: 'grounding',
-            score: 44,
-            pressure: 'weak',
-            revisionMandate: 'revise',
-          },
+          { candidateId: 'model_a', criticId: 'grounding', score: 88, pressure: 'strong', revisionMandate: 'keep' },
+          { candidateId: 'model_b', criticId: 'grounding', score: 44, pressure: 'weak', revisionMandate: 'revise' },
         ],
       }),
       metadata: {},
@@ -289,39 +219,25 @@ test('model generation providers parse replayed structured outputs', async () =>
   const providers = createModelGenerationProviders({
     client: createReplayModelClient(records),
     model: 'fixture-model',
-    prompts: {
-      problemRecovery: () => prompts.recovery,
-      candidateGeneration: () => prompts.candidates,
-      criticJudgment: () => prompts.critics,
-    },
+    prompts: { candidateGeneration: () => prompts.candidates, criticJudgment: () => prompts.critics },
   });
 
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_model_provider',
-    caseStudy,
-    knowledgePacket,
-  });
   const candidates = await providers.candidateGenerator.generate({
     runId: 'run_model_provider',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     knowledgePacket,
     generation: 0,
   });
   const verdicts = await providers.criticCouncil.judge({
     runId: 'run_model_provider',
     caseStudy,
-    problemRecovery: recovery,
+    stage: 'doppl',
     candidates,
     knowledgePacket,
   });
 
-  assert.equal(recovery.id, 'recovery_fsd-ownership-unwind');
-  assert.equal(recovery.title, 'Model Recovery');
-  assert.deepEqual(
-    candidates.map((candidate) => candidate.id),
-    ['model_a', 'model_b'],
-  );
+  assert.deepEqual(candidates.map((candidate) => candidate.id), ['model_a', 'model_b']);
   assert.equal(candidates[0]?.caseId, caseStudy.id);
   assert.equal(verdicts.length, 2);
   assert.equal(verdicts[0]?.score, 88);
@@ -332,14 +248,7 @@ test('model generation providers parse replayed clean baseline outputs', async (
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_clean_baseline',
-    targetCase: caseStudy.id,
-    maxItems: 2,
-  });
-  const prompts = {
-    cleanBaseline: 'clean baseline prompt',
-  };
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_clean_baseline', targetCase: caseStudy.id, maxItems: 2 });
   const records: ModelCallRecord[] = [
     {
       id: 'call_clean_baseline',
@@ -347,7 +256,7 @@ test('model generation providers parse replayed clean baseline outputs', async (
       purpose: 'control_baseline_generation',
       provider: 'replay',
       model: 'fixture-model',
-      prompt: prompts.cleanBaseline,
+      prompt: 'clean baseline prompt',
       outputText: JSON.stringify({
         candidate: {
           id: 'clean_model_baseline',
@@ -365,23 +274,13 @@ test('model generation providers parse replayed clean baseline outputs', async (
   const providers = createModelGenerationProviders({
     client: createReplayModelClient(records),
     model: 'fixture-model',
-    prompts: {
-      cleanBaseline: () => prompts.cleanBaseline,
-    },
+    prompts: { cleanBaseline: () => 'clean baseline prompt' },
   });
 
   const baseline = await providers.cleanBaseline!.generate({
     runId: 'run_model_clean_baseline',
     caseStudy,
-    problemRecovery: {
-      id: 'recovery_fsd-ownership-unwind',
-      caseId: caseStudy.id,
-      title: 'Recovered',
-      recoveredProblem: 'Recovered problem.',
-      hiddenConstraint: 'Hidden constraint.',
-      falsifier: 'Falsifier.',
-      citedKnowledge: [],
-    },
+    stage: 'doppl',
     knowledgePacket,
     generation: 0,
   });
@@ -390,10 +289,7 @@ test('model generation providers parse replayed clean baseline outputs', async (
   assert.equal(baseline.caseId, caseStudy.id);
   assert.equal(baseline.generation, 0);
   assert.equal(baseline.agenomeId, 'ag_clean_control');
-  assert.deepEqual(
-    providers.modelCallRecords.map((record) => record.purpose),
-    ['control_baseline_generation'],
-  );
+  assert.deepEqual(providers.modelCallRecords.map((record) => record.purpose), ['control_baseline_generation']);
 });
 
 test('model generation providers expose default prompts and captured call records', async () => {
@@ -401,43 +297,30 @@ test('model generation providers expose default prompts and captured call record
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_defaults',
-    targetCase: caseStudy.id,
-    maxItems: 1,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_defaults', targetCase: caseStudy.id, maxItems: 1 });
   const prompts = createDefaultModelGenerationPrompts();
-  const recoveryPrompt = prompts.problemRecovery({ runId: 'run_model_defaults', caseStudy, knowledgePacket });
+  const candidatePrompt = prompts.candidateGeneration({ runId: 'run_model_defaults', caseStudy, stage: 'doppl', knowledgePacket, generation: 0 });
   const records: ModelCallRecord[] = [
     {
-      id: 'call_recovery',
+      id: 'call_candidates',
       runId: 'run_model_defaults',
-      purpose: 'problem_recovery',
+      purpose: 'candidate_generation',
       provider: 'replay',
       model: 'fixture-model',
-      prompt: recoveryPrompt,
+      prompt: candidatePrompt,
       outputText: JSON.stringify({
-        title: 'Default Prompt Recovery',
-        recoveredProblem: 'Recovered from default prompt.',
-        hiddenConstraint: 'Prompts are generated centrally.',
-        falsifier: 'Prompt renderer is absent.',
+        candidates: [
+          { id: 'default_a', agenomeId: 'ag_model', title: 'Default A', summary: 's', mechanism: 'm', claimedDelta: 'd', citedKnowledge: ['K1'] },
+          { id: 'default_b', agenomeId: 'ag_model', title: 'Default B', summary: 's', mechanism: 'm', claimedDelta: 'd', citedKnowledge: ['K1'] },
+        ],
       }),
       metadata: {},
     },
   ];
-  const providers = createModelGenerationProviders({
-    client: createReplayModelClient(records),
-    model: 'fixture-model',
-    prompts,
-  });
+  const providers = createModelGenerationProviders({ client: createReplayModelClient(records), model: 'fixture-model', prompts });
 
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_model_defaults',
-    caseStudy,
-    knowledgePacket,
-  });
+  await providers.candidateGenerator.generate({ runId: 'run_model_defaults', caseStudy, stage: 'doppl', knowledgePacket, generation: 0 });
 
-  assert.equal(recovery.title, 'Default Prompt Recovery');
   assert.match(providers.modelCallRecords[0]?.prompt || '', /Return JSON only/);
   assert.match(providers.modelCallRecords[0]?.prompt || '', /FSD|ownership|unwind/i);
 });
@@ -447,24 +330,12 @@ test('default candidate prompt includes Agenome traits for live generation', asy
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_agenomes',
-    targetCase: caseStudy.id,
-    maxItems: 1,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_agenomes', targetCase: caseStudy.id, maxItems: 1 });
   const prompts = createDefaultModelGenerationPrompts();
   const prompt = prompts.candidateGeneration({
     runId: 'run_model_agenomes',
     caseStudy,
-    problemRecovery: {
-      id: 'recovery_fsd-ownership-unwind',
-      caseId: caseStudy.id,
-      title: 'Recovered',
-      recoveredProblem: 'Recovered problem.',
-      hiddenConstraint: 'Hidden constraint.',
-      falsifier: 'Falsifier.',
-      citedKnowledge: [],
-    },
+    stage: 'doppl',
     knowledgePacket,
     generation: 0,
     agenomePool: initialAgenomePool(['ag_blindside']),
@@ -482,34 +353,13 @@ test('model generation providers request schemas for structured outputs', async 
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_schemas',
-    targetCase: caseStudy.id,
-    maxItems: 1,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_schemas', targetCase: caseStudy.id, maxItems: 1 });
   const requestedSchemas: Array<string | undefined> = [];
   const providers = createModelGenerationProviders({
     model: 'fixture-model',
     client: {
       async complete(request) {
         requestedSchemas.push(request.responseSchema?.name);
-        if (request.purpose === 'problem_recovery') {
-          return {
-            id: 'call_recovery',
-            runId: request.runId,
-            purpose: request.purpose,
-            provider: 'stub',
-            model: request.model,
-            prompt: request.prompt,
-            outputText: JSON.stringify({
-              title: 'Schema Recovery',
-              recoveredProblem: 'Recovered with a schema.',
-              hiddenConstraint: 'Schemas constrain model output.',
-              falsifier: 'No schema is attached.',
-            }),
-            metadata: {},
-          };
-        }
         if (request.purpose === 'candidate_generation') {
           return {
             id: 'call_candidates',
@@ -520,24 +370,8 @@ test('model generation providers request schemas for structured outputs', async 
             prompt: request.prompt,
             outputText: JSON.stringify({
               candidates: [
-                {
-                  id: 'schema_a',
-                  agenomeId: 'ag_blindside',
-                  title: 'Schema Candidate A',
-                  summary: 'First schema candidate.',
-                  mechanism: 'Uses structured candidate output.',
-                  claimedDelta: 'Stable parsing.',
-                  citedKnowledge: ['K1'],
-                },
-                {
-                  id: 'schema_b',
-                  agenomeId: 'ag_first_principles',
-                  title: 'Schema Candidate B',
-                  summary: 'Second schema candidate.',
-                  mechanism: 'Uses structured candidate output.',
-                  claimedDelta: 'Stable parsing.',
-                  citedKnowledge: ['K1'],
-                },
+                { id: 'schema_a', agenomeId: 'ag_blindside', title: 'Schema Candidate A', summary: 'First schema candidate.', mechanism: 'Uses structured candidate output.', claimedDelta: 'Stable parsing.', citedKnowledge: ['K1'] },
+                { id: 'schema_b', agenomeId: 'ag_first_principles', title: 'Schema Candidate B', summary: 'Second schema candidate.', mechanism: 'Uses structured candidate output.', claimedDelta: 'Stable parsing.', citedKnowledge: ['K1'] },
               ],
             }),
             metadata: {},
@@ -552,20 +386,8 @@ test('model generation providers request schemas for structured outputs', async 
           prompt: request.prompt,
           outputText: JSON.stringify({
             verdicts: [
-              {
-                candidateId: 'schema_a',
-                criticId: 'grounding',
-                score: 88,
-                pressure: 'Grounded.',
-                revisionMandate: 'Keep it specific.',
-              },
-              {
-                candidateId: 'schema_b',
-                criticId: 'grounding',
-                score: 77,
-                pressure: 'Mostly grounded.',
-                revisionMandate: 'Tighten mechanism.',
-              },
+              { candidateId: 'schema_a', criticId: 'grounding', score: 88, pressure: 'Grounded.', revisionMandate: 'Keep it specific.' },
+              { candidateId: 'schema_b', criticId: 'grounding', score: 77, pressure: 'Mostly grounded.', revisionMandate: 'Tighten mechanism.' },
             ],
           }),
           metadata: {},
@@ -574,31 +396,10 @@ test('model generation providers request schemas for structured outputs', async 
     },
   });
 
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_model_schemas',
-    caseStudy,
-    knowledgePacket,
-  });
-  const candidates = await providers.candidateGenerator.generate({
-    runId: 'run_model_schemas',
-    caseStudy,
-    problemRecovery: recovery,
-    knowledgePacket,
-    generation: 0,
-  });
-  await providers.criticCouncil.judge({
-    runId: 'run_model_schemas',
-    caseStudy,
-    problemRecovery: recovery,
-    candidates,
-    knowledgePacket,
-  });
+  const candidates = await providers.candidateGenerator.generate({ runId: 'run_model_schemas', caseStudy, stage: 'doppl', knowledgePacket, generation: 0 });
+  await providers.criticCouncil.judge({ runId: 'run_model_schemas', caseStudy, stage: 'doppl', candidates, knowledgePacket });
 
-  assert.deepEqual(requestedSchemas, [
-    'problem_recovery',
-    'candidate_generation',
-    'critic_judgment',
-  ]);
+  assert.deepEqual(requestedSchemas, ['candidate_generation', 'critic_judgment']);
 });
 
 test('model generation providers repair invalid structured outputs once', async () => {
@@ -606,28 +407,15 @@ test('model generation providers repair invalid structured outputs once', async 
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_repair',
-    targetCase: caseStudy.id,
-    maxItems: 1,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_repair', targetCase: caseStudy.id, maxItems: 1 });
   const calls: string[] = [];
   const providers = createModelGenerationProviders({
     model: 'fixture-model',
     client: {
       async complete(request) {
         calls.push(request.purpose);
-        if (request.purpose === 'problem_recovery') {
-          return {
-            id: 'call_bad',
-            runId: request.runId,
-            purpose: request.purpose,
-            provider: 'stub',
-            model: request.model,
-            prompt: request.prompt,
-            outputText: '{"title":',
-            metadata: {},
-          };
+        if (calls.length === 1) {
+          return { id: 'call_bad', runId: request.runId, purpose: request.purpose, provider: 'stub', model: request.model, prompt: request.prompt, outputText: '{"candidates":', metadata: {} };
         }
         return {
           id: 'call_repaired',
@@ -637,10 +425,10 @@ test('model generation providers repair invalid structured outputs once', async 
           model: request.model,
           prompt: request.prompt,
           outputText: JSON.stringify({
-            title: 'Repaired Recovery',
-            recoveredProblem: 'Recovered after repair.',
-            hiddenConstraint: 'One repair is allowed.',
-            falsifier: 'The repair output is ignored.',
+            candidates: [
+              { id: 'repaired_a', agenomeId: 'ag_model', title: 'Repaired A', summary: 's', mechanism: 'm', claimedDelta: 'd', citedKnowledge: ['K1'] },
+              { id: 'repaired_b', agenomeId: 'ag_model', title: 'Repaired B', summary: 's', mechanism: 'm', claimedDelta: 'd', citedKnowledge: ['K1'] },
+            ],
           }),
           metadata: {},
         };
@@ -648,14 +436,10 @@ test('model generation providers repair invalid structured outputs once', async 
     },
   });
 
-  const recovery = await providers.problemRecovery.recover({
-    runId: 'run_model_repair',
-    caseStudy,
-    knowledgePacket,
-  });
+  const candidates = await providers.candidateGenerator.generate({ runId: 'run_model_repair', caseStudy, stage: 'doppl', knowledgePacket, generation: 0 });
 
-  assert.equal(recovery.title, 'Repaired Recovery');
-  assert.deepEqual(calls, ['problem_recovery', 'problem_recovery.repair']);
+  assert.deepEqual(candidates.map((candidate) => candidate.id), ['repaired_a', 'repaired_b']);
+  assert.deepEqual(calls, ['candidate_generation', 'candidate_generation.repair']);
   assert.equal(providers.modelCallRecords.length, 2);
   assert.equal(providers.modelCallRecords[0]?.metadata.status, 'repair_requested');
   assert.equal(providers.modelCallRecords[1]?.metadata.status, 'repaired');
@@ -666,36 +450,18 @@ test('model generation providers reject output after one failed repair', async (
   const gateway = await createJsonKnowledgeGateway(
     'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
-  const knowledgePacket = await gateway.selectPacket({
-    runId: 'run_model_reject',
-    targetCase: caseStudy.id,
-    maxItems: 1,
-  });
+  const knowledgePacket = await gateway.selectPacket({ runId: 'run_model_reject', targetCase: caseStudy.id, maxItems: 1 });
   const providers = createModelGenerationProviders({
     model: 'fixture-model',
     client: {
       async complete(request) {
-        return {
-          id: `call_${request.purpose}`,
-          runId: request.runId,
-          purpose: request.purpose,
-          provider: 'stub',
-          model: request.model,
-          prompt: request.prompt,
-          outputText: '{"still":',
-          metadata: {},
-        };
+        return { id: `call_${request.purpose}`, runId: request.runId, purpose: request.purpose, provider: 'stub', model: request.model, prompt: request.prompt, outputText: '{"still":', metadata: {} };
       },
     },
   });
 
   await assert.rejects(
-    () =>
-      providers.problemRecovery.recover({
-        runId: 'run_model_reject',
-        caseStudy,
-        knowledgePacket,
-      }),
+    () => providers.candidateGenerator.generate({ runId: 'run_model_reject', caseStudy, stage: 'doppl', knowledgePacket, generation: 0 }),
     /model output rejected after repair/,
   );
   assert.equal(providers.modelCallRecords.length, 2);

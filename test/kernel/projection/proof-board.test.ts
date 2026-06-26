@@ -7,7 +7,7 @@ import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { renderProofBoard, writeProofBoard } from '../../../src/kernel/projection/proof-board.ts';
 
 async function fixtureRun() {
-  return runKernel({
+  return runKernel({ stage: 'doppl',
     runId: 'run_proof_board',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -20,7 +20,7 @@ async function fixtureRun() {
 
 test('renders proof board with recovery, parents, fitness, and fused child', async () => {
   const html = renderProofBoard(await fixtureRun());
-  assert.match(html, /Recover The Ownership Premise/);
+  assert.match(html, /Problem Recovery/);
   assert.match(html, /cand_liability_clock/);
   assert.match(html, /parent A inheritance/);
   assert.match(html, /child_cand_liability_clock_cand_recovery_market/);

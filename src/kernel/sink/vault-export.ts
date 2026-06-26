@@ -9,7 +9,7 @@ import type {
 } from '../boundary.ts';
 import { replayRunProjection, writeRunEvents } from '../trace/event-store.ts';
 import { writeModelCallRecords } from '../model/model-gateway.ts';
-import { compileProposalNodes } from '../compile/node-compiler.ts';
+import { compileCaseStudyNode, compileNode } from '../compile/node-compiler.ts';
 import { initialAgenomePool } from '../engine/agenomes.ts';
 import {
   scoreCandidates,
@@ -587,7 +587,41 @@ function assayControl(run: KernelRun): Record<string, unknown> | null {
   };
 }
 
+type RecoveredProblem = {
+  id: string;
+  title: string;
+  recoveredProblem: string;
+  hiddenConstraint: string;
+  falsifier: string;
+  citedKnowledge: string[];
+};
+
+// The recovered problem for a run: the winning bred problem-frame (a problem_recovery run) or
+// the parent the doppl was bred against (a doppl run).
+function recoveredProblemOf(run: KernelRun): RecoveredProblem {
+  const child = run.fusion?.child;
+  if (run.stage === 'problem_recovery' && child) {
+    return {
+      id: child.id,
+      title: child.title,
+      recoveredProblem: child.summary,
+      hiddenConstraint: child.mechanism,
+      falsifier: child.claimedDelta,
+      citedKnowledge: child.citedKnowledge,
+    };
+  }
+  return {
+    id: run.parentNode?.id ?? `${run.caseStudy.id}_problem`,
+    title: run.parentNode?.title ?? run.caseStudy.title,
+    recoveredProblem: run.parentNode?.synopsis ?? run.caseStudy.statedProblem,
+    hiddenConstraint: '',
+    falsifier: '',
+    citedKnowledge: [],
+  };
+}
+
 function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<string, unknown> {
+  const recovered = recoveredProblemOf(run);
   const fitnessByCandidate = new Map(
     run.fitnessRecords.map((fitness) => [fitness.candidateId, fitness.total]),
   );
@@ -606,13 +640,13 @@ function runIndex(run: KernelRun, paths: { modelCallsPath?: string }): Record<st
       decompositionPolicy: agenome.decompositionPolicy,
     })),
     problemRecovery: {
-      id: run.problemRecovery.id,
+      id: recovered.id,
       path: 'problem-recovery.md',
-      title: run.problemRecovery.title,
-      recoveredProblem: run.problemRecovery.recoveredProblem,
-      hiddenConstraint: run.problemRecovery.hiddenConstraint,
-      falsifier: run.problemRecovery.falsifier,
-      citedKnowledge: run.problemRecovery.citedKnowledge,
+      title: recovered.title,
+      recoveredProblem: recovered.recoveredProblem,
+      hiddenConstraint: recovered.hiddenConstraint,
+      falsifier: recovered.falsifier,
+      citedKnowledge: recovered.citedKnowledge,
     },
     agenomes: run.agenomes,
     candidates: run.candidates.map((candidate) => ({
@@ -740,27 +774,28 @@ ${candidate.citedKnowledge.join(', ') || 'none'}
 }
 
 function problemRecoveryMarkdown(run: KernelRun, fields: Record<string, string> = {}): string {
+  const recovered = recoveredProblemOf(run);
   return `${frontmatter({
     artifact_type: 'problem_recovery',
-    artifact_id: run.problemRecovery.id,
+    artifact_id: recovered.id,
     case_id: run.caseStudy.id,
     ...fields,
   })}
-# ${run.problemRecovery.title}
+# ${recovered.title}
 
-${run.problemRecovery.recoveredProblem}
+${recovered.recoveredProblem}
 
 ## Hidden Constraint
 
-${run.problemRecovery.hiddenConstraint}
+${recovered.hiddenConstraint}
 
 ## Falsifier
 
-${run.problemRecovery.falsifier}
+${recovered.falsifier}
 
 ## Knowledge Citations
 
-${run.problemRecovery.citedKnowledge.join(', ') || 'none'}
+${recovered.citedKnowledge.join(', ') || 'none'}
 `;
 }
 
@@ -771,7 +806,7 @@ function calibrationManifest(run: KernelRun): Record<string, unknown> {
     caseId: run.caseStudy.id,
     caseTitle: run.caseStudy.title,
     problemRecovery: {
-      id: run.problemRecovery.id,
+      id: recoveredProblemOf(run).id,
       path: 'problem-recovery.md',
     },
     candidates: run.candidates.map((candidate) => ({
@@ -818,7 +853,9 @@ export async function exportRunToVault(
     files.push(solutionPath);
   }
 
-  for (const node of compileProposalNodes(run)) {
+  const growthNode = compileNode(run);
+  const nodes = growthNode ? [compileCaseStudyNode(run), growthNode] : [compileCaseStudyNode(run)];
+  for (const node of nodes) {
     const nodePath = path.join(runDir, node.path);
     await mkdir(path.dirname(nodePath), { recursive: true });
     await writeFile(nodePath, node.markdown, 'utf8');

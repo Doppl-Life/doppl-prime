@@ -82,7 +82,6 @@ test('replays events into an inspectable run projection', () => {
   const projection = replayRunProjection([
     { index: 0, type: 'run.started', payload: { runId: 'run_test', caseId: 'case_a' } },
     { index: 1, type: 'knowledge.packet_selected', payload: { packetId: 'packet_1', items: 3 } },
-    { index: 2, type: 'problem_recovery.created', payload: { recoveryId: 'recovery_case_a' } },
     { index: 3, type: 'candidate.created', payload: { candidateId: 'cand_a', agenomeId: 'a' } },
     { index: 4, type: 'candidate.created', payload: { candidateId: 'cand_b', agenomeId: 'b' } },
     { index: 5, type: 'fitness.scored', payload: { candidateId: 'cand_a', total: 80 } },
@@ -106,12 +105,11 @@ test('replays events into an inspectable run projection', () => {
     runId: 'run_test',
     caseId: 'case_a',
     packetId: 'packet_1',
-    recoveryId: 'recovery_case_a',
     candidateIds: ['cand_a', 'cand_b'],
     fitnessTotals: { cand_a: 80, cand_b: 40 },
     childId: 'child_cand_a_cand_b',
     completed: true,
-    eventCount: 16,
+    eventCount: 15,
     sequenceThrough: 15,
     lastEventAt: new Date(0).toISOString(),
     modelOutputs: {

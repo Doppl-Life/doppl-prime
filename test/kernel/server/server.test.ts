@@ -80,16 +80,6 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
   };
   const records: ModelCallRecord[] = [
     {
-      id: 'call_http_replay_problem',
-      runId,
-      purpose: 'problem_recovery',
-      provider: 'test-replay',
-      model,
-      prompt: prompts.problemRecovery({ runId, caseStudy, knowledgePacket }),
-      outputText: JSON.stringify(problemRecovery),
-      metadata: {},
-    },
-    {
       id: 'call_http_replay_clean_baseline',
       runId,
       purpose: 'control_baseline_generation',
@@ -98,7 +88,7 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
       prompt: prompts.cleanBaseline({
         runId,
         caseStudy,
-        problemRecovery: completedProblemRecovery,
+        stage: 'doppl',
         knowledgePacket,
         generation: 0,
         agenomePool: initialAgenomePool(),
@@ -115,7 +105,7 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
       prompt: prompts.criticJudgment({
         runId,
         caseStudy,
-        problemRecovery: completedProblemRecovery,
+        stage: 'doppl',
         candidates: [completedCleanBaseline],
         knowledgePacket,
       }),
@@ -141,7 +131,7 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
       prompt: prompts.candidateGeneration({
         runId,
         caseStudy,
-        problemRecovery: completedProblemRecovery,
+        stage: 'doppl',
         knowledgePacket,
         generation: 0,
         agenomePool: initialAgenomePool(),
@@ -158,7 +148,7 @@ async function writeReplayCalls(filePath: string, runId: string, model: string):
       prompt: prompts.criticJudgment({
         runId,
         caseStudy,
-        problemRecovery: completedProblemRecovery,
+        stage: 'doppl',
         candidates: completedCandidates,
         knowledgePacket,
       }),
@@ -627,7 +617,7 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
   assert.match(response.body.assayControl.statement, /baseline|Assay/i);
   assert.match(response.body.assayControl.limits[0], /in-run critic fitness/i);
   assert.equal(response.body.knowledgePacket.items.length, 3);
-  assert.match(response.body.dashboardArtifact, /reward system behind impulse eating occasions/);
+  assert.match(response.body.dashboardArtifact, /GLP-1/i);
   assert.ok(Array.isArray(response.body.dashboardEvents));
   assert.ok(response.body.dashboardEvents.length > 0);
   assert.equal(fakeOpenRouter.calls.length, 0);
@@ -1064,22 +1054,22 @@ test('kernel dashboard route runs all approved real case fixtures with unique re
     {
       caseId: 'fsd-ownership-unwind',
       casePath: 'test/fixtures/fsd-seed.json',
-      expectedRecovery: /autonomy removes the human-driver reason/i,
+      expectedRecovery: /self-driving/i,
     },
     {
       caseId: 'glp1-snack-demand-destruction',
       casePath: 'test/fixtures/glp1-seed.json',
-      expectedRecovery: /reward system behind impulse eating occasions/i,
+      expectedRecovery: /GLP-1/i,
     },
     {
       caseId: 'ai-overviews-zero-click-publishing',
       casePath: 'test/fixtures/ai-power-seed.json',
-      expectedRecovery: /answer layers remove the click itself/i,
+      expectedRecovery: /dispatchable power/i,
     },
     {
       caseId: 'starship-launch-cost-collapse',
       casePath: 'test/fixtures/starship-seed.json',
-      expectedRecovery: /launch-cost collapse re-prices every downstream constraint/i,
+      expectedRecovery: /mass-to-orbit/i,
     },
   ];
 
@@ -1188,7 +1178,7 @@ test('kernel HTTP server reads exported run indexes and artifacts', async () => 
   assert.equal(indexResponse.body.problemRecovery.path, 'problem-recovery.md');
   assert.equal(artifactResponse.status, 200);
   assert.equal(artifactResponse.body.artifactPath, 'problem-recovery.md');
-  assert.match(artifactResponse.body.content, /Recover The Ownership Premise/);
+  assert.match(artifactResponse.body.content, /Car You Stop Owning/i);
 });
 
 test('kernel HTTP server exposes canonical run events, SSE stream, and run health', async () => {
@@ -1411,7 +1401,7 @@ test('kernel dashboard async live runs stream model operation starts before comp
   );
   assert.equal(partialStream.status, 200);
   assert.match(partialStream.bodyText, /"type":"model.operation_started"/);
-  assert.match(partialStream.bodyText, /"purpose":"problem_recovery"/);
+  assert.match(partialStream.bodyText, /"purpose":"control_baseline_generation"/);
   assert.doesNotMatch(partialStream.bodyText, /run.completed/);
   assert.doesNotMatch(partialStream.bodyText, /server-only-openrouter-key/);
 

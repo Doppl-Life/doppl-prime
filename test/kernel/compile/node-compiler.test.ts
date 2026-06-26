@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
-import { compileProposalNodes } from '../../../src/kernel/compile/node-compiler.ts';
+import { runChain } from '../../../src/kernel/engine/run-kernel.ts';
+import { compileChainNodes } from '../../../src/kernel/compile/node-compiler.ts';
 
-async function fixtureRun() {
-  return runKernel({
+async function fixtureChain() {
+  return runChain({
     runId: 'run_node_compiler',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -15,10 +15,9 @@ async function fixtureRun() {
   });
 }
 
-test('compiles a kernel run into proposal stage nodes', async () => {
-  const run = await fixtureRun();
-  const ids = ['case-node', 'recovery-node', 'doppl-node'];
-  const nodes = compileProposalNodes(run, { idFactory: () => ids.shift()!, kernel: 'prime' });
+test('compiles a chain into case_study, problem_recovery, and doppl nodes', async () => {
+  const { problemRecovery, doppl } = await fixtureChain();
+  const nodes = compileChainNodes(problemRecovery, doppl, { kernel: 'prime' });
 
   assert.deepEqual(nodes.map((node) => node.stage), ['case_study', 'problem_recovery', 'doppl']);
   assert.deepEqual(nodes.map((node) => node.path), [

@@ -187,3 +187,25 @@ kernel owner must not accidentally undo.
   The dashboard needs rich objects for rendering, but that is a view contract; the kernel needs enough trace facts for every projection to rebuild its view deterministically.
 - **Revisit if:** a projection needs a fact that cannot be derived from the trace and is not merely display shape.
   Add that fact to `src/contracts/run-trace.md` first, then update the kernel and adapters.
+
+### Every spine arrow is one agenomic pass - 2026-06-26
+
+- **Chose:** the kernel runs one agenomic pass (generate → score → select → fuse →
+  compile) per spine arrow, parameterized by `stage`. `problem_recovery` is *bred*
+  from problem-frames exactly as `doppl` is bred from solution-candidates — there is
+  no one-shot `recover()`. `runKernel(input, stage)` is one arrow; `runChain()` feeds
+  the first arrow's compiled survivor in as the second arrow's `parentNode`. One run =
+  one arrow = one `RunTrace`. The fixture providers breed problem-frames from the seed
+  with the same `regimeMutagens`/`mutagenMove` machinery used for solutions.
+- **Over:** the asymmetric kernel where problem recovery was a single `ProblemRecovery`
+  model call and one `runKernel` conflated two arrows. `ProblemRecovery`, the `recover`
+  provider, `KernelRun.problemRecovery`, and the `problem_recovery.created` event are
+  deleted. `KernelRun` is single-stage (`stage` + `parentNode`).
+- **Because:** the canon (`INVARIANTS.md` #1, `engine.md`, `run-trace.md`) always said
+  problem-identification and solution-search are *modes of one engine*. The one-shot
+  recovery was a separate engine — an invariant violation the kernel kept re-growing.
+- **Server vs CLI:** the HTTP server runs the doppl arrow per request (streams one run,
+  replay/live model budget covers one arrow); the CLI runs the full `runChain` and
+  writes case_study + problem_recovery + doppl into the vault.
+- **Revisit if:** the server needs to stream both arrows live (then record/budget both),
+  or `buildRunTraces` needs to emit multiple doppl traces per run.

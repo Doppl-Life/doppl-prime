@@ -240,9 +240,6 @@ export function replayRunProjection(events: RunEvent[]): RunProjection {
     if (event.type === 'knowledge.packet_selected') {
       projection.packetId = stringPayloadValue(event, 'packetId');
     }
-    if (event.type === 'problem_recovery.created') {
-      projection.recoveryId = stringPayloadValue(event, 'recoveryId');
-    }
     if (event.type === 'candidate.created') {
       const candidateId = stringPayloadValue(event, 'candidateId');
       if (candidateId) projection.candidateIds.push(candidateId);

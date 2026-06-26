@@ -7,7 +7,7 @@ import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { publishStaticKernelRun, writePublishedIndex } from '../../../src/kernel/sink/publish.ts';
 
 async function fixtureRun() {
-  return runKernel({
+  return runKernel({ stage: 'doppl',
     runId: 'run_publish',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',

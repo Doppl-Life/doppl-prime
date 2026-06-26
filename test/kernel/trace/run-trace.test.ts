@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { buildRunTraces } from '../../../src/kernel/trace/run-trace.ts';
-import { compileProposalNodes } from '../../../src/kernel/compile/node-compiler.ts';
+import { compileNode } from '../../../src/kernel/compile/node-compiler.ts';
 
 async function fixtureRun() {
-  return runKernel({
+  return runKernel({ stage: 'doppl',
     runId: 'run_trace',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -27,7 +27,7 @@ test('projects a KernelRun into the canonical RunTrace specimen', async () => {
   assert.equal(trace.identity.stage, 'doppl');
   assert.equal(trace.identity.kernel, 'prime');
 
-  assert.deepEqual(trace.inputs.parent_nodes, [run.caseStudy.id, run.problemRecovery.id]);
+  assert.deepEqual(trace.inputs.parent_nodes, [run.caseStudy.id]);
   assert.ok(trace.generations.length >= 1);
 
   for (const generation of trace.generations) {
@@ -45,7 +45,7 @@ test('projects a KernelRun into the canonical RunTrace specimen', async () => {
 test('judge and compile fields point at the compiled doppl', async () => {
   const run = await fixtureRun();
   const trace = buildRunTraces(run)[0]!;
-  const doppl = compileProposalNodes(run).find((node) => node.stage === 'doppl');
+  const doppl = compileNode(run);
 
   assert.equal(trace.judge.candidate_id, run.fusion!.child.id);
   assert.equal(trace.judge.result.axes.length, 5);

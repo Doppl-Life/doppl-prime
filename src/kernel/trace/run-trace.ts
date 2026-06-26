@@ -24,7 +24,7 @@ import type {
   Mutagen,
   RunEvent,
 } from '../boundary.ts';
-import { compileProposalNodes } from '../compile/node-compiler.ts';
+import { compileNode } from '../compile/node-compiler.ts';
 
 type SlugId = string;
 type Uuid = string;
@@ -320,25 +320,25 @@ export function buildRunTraces(run: KernelRun): RunTrace[] {
   if (!firstGeneration) return [];
   const generations: NonEmptyArray<GenerationStep> = [firstGeneration, ...restGenerations];
 
-  const doppl = compileProposalNodes(run).find((node) => node.stage === 'doppl');
+  const node = compileNode(run);
   const startedAt = eventTime(run.events, 'run.started') ?? new Date(0).toISOString();
   const completedAt = eventTime(run.events, 'run.completed') ?? startedAt;
+  const caseSynopsis = { stage: 'case_study' as const, node_id: run.caseStudy.id, synopsis: run.caseStudy.statedProblem };
 
   return [
     {
-      identity: { run_id: run.id, stage: 'doppl', kernel: 'prime', started_at: startedAt, completed_at: completedAt },
+      identity: { run_id: run.id, stage: run.stage, kernel: 'prime', started_at: startedAt, completed_at: completedAt },
       inputs: {
-        parent_nodes: [run.caseStudy.id, run.problemRecovery.id],
-        trace_synopses: [
-          { stage: 'case_study', node_id: run.caseStudy.id, synopsis: run.caseStudy.statedProblem },
-          { stage: 'problem_recovery', node_id: run.problemRecovery.id, synopsis: run.problemRecovery.recoveredProblem },
-        ],
+        parent_nodes: run.parentNode ? [run.caseStudy.id, run.parentNode.id] : [run.caseStudy.id],
+        trace_synopses: run.parentNode
+          ? [caseSynopsis, { stage: run.parentNode.stage, node_id: run.parentNode.id, synopsis: run.parentNode.synopsis }]
+          : [caseSynopsis],
         discovery: discoveryInput(run),
       },
       generations,
       lens: buildLens(compiledRecord),
-      judge: buildJudge(compiled.id, compiledRecord, run.problemRecovery.falsifier),
-      compile: { output: { node_id: doppl?.id ?? compiled.id, ...(doppl?.path === undefined ? {} : { path: doppl.path }) } },
+      judge: buildJudge(compiled.id, compiledRecord, compiled.claimedDelta),
+      compile: { output: { node_id: node?.id ?? compiled.id, ...(node?.path === undefined ? {} : { path: node.path }) } },
     },
   ];
 }

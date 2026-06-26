@@ -156,25 +156,29 @@ ${caseSynopsis}
 
 function problemRecoveryNode(
   run: KernelRun,
-  ids: { self: string; root: string },
+  ids: { self: string; root: string; prev: string[] },
   options: Required<Pick<ProposalNodeCompileOptions, 'kernel'>>,
-): ProposalNodeArtifact {
+): ProposalNodeArtifact | undefined {
+  // The problem_recovery node is the projection of the winning bred problem-frame — recovered
+  // problem, hidden constraint, and falsifier map from the survivor candidate's fields.
+  const child = run.fusion?.child;
+  if (!child) return undefined;
   const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'problem_recovery'],
     ['root', ids.root],
-    ['prev', [ids.root]],
+    ['prev', ids.prev],
     ['kernel', options.kernel],
     ['temporal', false],
-    ['mutagen_lineage', []],
+    ['mutagen_lineage', child.mutagenLineage ?? []],
     ['next', 'doppl'],
     ['scores', rawYaml(scoreInline(judgeRating))],
     ['doppelgangers', 0],
   ])}
 
-# ${run.problemRecovery.title}
+# ${child.title}
 
 ## Trace
 
@@ -192,15 +196,15 @@ surface complaint -> deleted assumption -> hidden variable -> actual problem -> 
 
 ### Recovered problem
 
-${run.problemRecovery.recoveredProblem}
+${child.summary}
 
 ### Hidden constraint
 
-${run.problemRecovery.hiddenConstraint}
+${child.mechanism}
 
 ### Falsifier
 
-${run.problemRecovery.falsifier}
+${child.claimedDelta}
 
 ### Skin in the Game
 
@@ -218,8 +222,8 @@ ${evaluationSection({
     'Projected from Dalton internal selection fitness. Replace with proposal held-out judge output in the assay/control phase.',
   temporal: false,
   noveltyReason: 'Problem recovery is scored separately so a good answer to the wrong problem cannot hide.',
-  groundingReason: `The recovery cites ${run.problemRecovery.citedKnowledge.join(', ') || 'no injected knowledge handles'}.`,
-  falsifiabilityReason: run.problemRecovery.falsifier,
+  groundingReason: `The recovery cites ${child.citedKnowledge.join(', ') || 'no injected knowledge handles'}.`,
+  falsifiabilityReason: child.claimedDelta,
   costReason: 'Validation cost is expressed as Skin in the Game rather than hidden in solution prose.',
   relevanceReason: 'The recovered problem defines what later doppl nodes must matter to.',
 })}
@@ -238,7 +242,7 @@ next: doppl
 
 function dopplNode(
   run: KernelRun,
-  ids: { self: string; root: string; recovery: string },
+  ids: { self: string; root: string; prev: string[] },
   options: Required<Pick<ProposalNodeCompileOptions, 'kernel'>>,
 ): ProposalNodeArtifact | undefined {
   const fusion = run.fusion;
@@ -246,13 +250,13 @@ function dopplNode(
   const child = fusion.child;
   const judgeRating = selectedParentRating(run);
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
-  const recoverySynopsis = synopsis(run.problemRecovery.recoveredProblem);
+  const recoverySynopsis = synopsis(run.parentNode?.synopsis ?? run.caseStudy.statedProblem);
   const parentSummary = fusion.parentCandidateIds.join(' + ');
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'doppl'],
     ['root', ids.root],
-    ['prev', [ids.recovery]],
+    ['prev', ids.prev],
     ['kernel', options.kernel],
     ['temporal', false],
     ['mutagen_lineage', child.mutagenLineage ?? []],
@@ -308,7 +312,7 @@ ${evaluationSection({
   temporal: false,
   noveltyReason: 'The doppl fuses selected parent mechanisms rather than merely picking a single candidate.',
   groundingReason: `The doppl carries citations ${child.citedKnowledge.join(', ') || 'none'}.`,
-  falsifiabilityReason: run.problemRecovery.falsifier,
+  falsifiabilityReason: child.claimedDelta,
   costReason: 'Cost-efficiency is provisional until the proposal rating map is implemented.',
   relevanceReason: 'The doppl is judged against the recovered problem, not only against candidate-local appeal.',
 })}
@@ -320,24 +324,51 @@ null
   return { stage: 'doppl', id: ids.self, path: 'proposal-nodes/doppl.md', markdown };
 }
 
-export function compileProposalNodes(
+// Seed each slug's hash with its stage so the stages can never collide on a shared title
+// (a weak model can echo the case title into the recovery title).
+function stageSlug(stage: ProposalNodeStage, title: string): string {
+  return slugId(title, `${stage}\n${title}`);
+}
+
+function caseRootId(run: KernelRun, options: ProposalNodeCompileOptions): string {
+  return options.idFactory ? options.idFactory() : stageSlug('case_study', cleanTitle(run.caseStudy.title));
+}
+
+// The case_study seed node — the run's root, written once when a chain ingests a fresh seed.
+export function compileCaseStudyNode(
   run: KernelRun,
   options: ProposalNodeCompileOptions = {},
-): ProposalNodeArtifact[] {
-  const { idFactory } = options;
+): ProposalNodeArtifact {
+  return caseStudyNode(run, caseRootId(run, options));
+}
+
+// One run, one growth-stage node — the projection of this arrow's winning bred candidate. The
+// case_study seed is compiled separately (compileCaseStudyNode).
+export function compileNode(
+  run: KernelRun,
+  options: ProposalNodeCompileOptions = {},
+): ProposalNodeArtifact | undefined {
   const kernel = options.kernel || 'prime';
-  // Seed each slug's hash with its stage so the three stages of one run can never collide on a
-  // shared title (a weak model can echo the case title into the recovery title).
-  const stageSlug = (stage: ProposalNodeStage, title: string): string =>
-    slugId(title, `${stage}\n${title}`);
-  const rootId = idFactory ? idFactory() : stageSlug('case_study', cleanTitle(run.caseStudy.title));
-  const recoveryId = idFactory ? idFactory() : stageSlug('problem_recovery', run.problemRecovery.title);
-  const dopplId = idFactory ? idFactory() : stageSlug('doppl', run.fusion?.child.title ?? 'doppl');
-  const nodes = [
-    caseStudyNode(run, rootId),
-    problemRecoveryNode(run, { self: recoveryId, root: rootId }, { kernel }),
-  ];
-  const doppl = dopplNode(run, { self: dopplId, root: rootId, recovery: recoveryId }, { kernel });
-  if (doppl) nodes.push(doppl);
+  const rootId = caseRootId(run, options);
+  if (run.stage === 'problem_recovery') {
+    const self = stageSlug('problem_recovery', run.fusion?.child.title ?? 'problem recovery');
+    return problemRecoveryNode(run, { self, root: rootId, prev: [rootId] }, { kernel });
+  }
+  const self = stageSlug('doppl', run.fusion?.child.title ?? 'doppl');
+  const prev = run.parentNode ? [run.parentNode.id] : [rootId];
+  return dopplNode(run, { self, root: rootId, prev }, { kernel });
+}
+
+// The three spine nodes from a full chain: the case_study seed plus each arrow's growth node.
+export function compileChainNodes(
+  problemRecovery: KernelRun,
+  doppl: KernelRun,
+  options: ProposalNodeCompileOptions = {},
+): ProposalNodeArtifact[] {
+  const nodes = [compileCaseStudyNode(doppl, options)];
+  const recovery = compileNode(problemRecovery, options);
+  if (recovery) nodes.push(recovery);
+  const dopplNodeArtifact = compileNode(doppl, options);
+  if (dopplNodeArtifact) nodes.push(dopplNodeArtifact);
   return nodes;
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { runKernel } from './engine/run-kernel.ts';
+import { runChain } from './engine/run-kernel.ts';
 import { exportRunToVault } from './sink/vault-export.ts';
-import { compileProposalNodes } from './compile/node-compiler.ts';
+import { compileChainNodes } from './compile/node-compiler.ts';
 import { writeFlowNodes } from './sink/vault-sink.ts';
 import { writeProofBoard } from './projection/proof-board.ts';
 import { createModelGenerationProviders } from './engine/generation-providers.ts';
@@ -189,20 +189,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const cliArgs = parseKernelCliArgs(process.argv.slice(2));
   const generationProviders =
     liveGenerationProvidersFromCliArgs(cliArgs) || (await generationProvidersFromCliArgs(cliArgs));
-  const run = await runKernel({ ...cliArgs, generationProviders });
-  const manifest = await exportRunToVault(run, cliArgs.outDir);
-  const vaultFiles = writeFlowNodes(cliArgs.vault, compileProposalNodes(run));
-  const proofBoard = await writeProofBoard(run, cliArgs.proofBoardDir);
+  const { problemRecovery, doppl } = await runChain({ ...cliArgs, generationProviders });
+  await exportRunToVault(problemRecovery, cliArgs.outDir);
+  const manifest = await exportRunToVault(doppl, cliArgs.outDir);
+  const vaultFiles = writeFlowNodes(cliArgs.vault, compileChainNodes(problemRecovery, doppl));
+  const proofBoard = await writeProofBoard(doppl, cliArgs.proofBoardDir);
   console.log(
     JSON.stringify(
       {
-        runId: run.id,
-        caseId: run.caseStudy.id,
-        problemRecovery: run.problemRecovery.id,
-        candidates: run.candidates.length,
-        generations: run.evolution.length,
-        budget: run.budget,
-        child: run.fusion?.child.id || null,
+        runId: doppl.id,
+        caseId: doppl.caseStudy.id,
+        problemRecovery: problemRecovery.id,
+        candidates: doppl.candidates.length,
+        generations: doppl.evolution.length,
+        budget: doppl.budget,
+        child: doppl.fusion?.child.id || null,
         proofBoard,
         vault: cliArgs.vault,
         vaultFiles,

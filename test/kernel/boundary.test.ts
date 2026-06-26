@@ -9,7 +9,6 @@ import {
   assertFusionResult,
   assertKernelRun,
   assertKnowledgePacket,
-  assertProblemRecovery,
   calculateInheritanceWeights,
 } from '../../src/kernel/boundary.ts';
 import { materializeAgenomes } from '../../src/kernel/engine/agenomes.ts';
@@ -18,8 +17,8 @@ test('inheritance weights preserve a 2:1 parent fitness ratio', () => {
   assert.deepEqual(calculateInheritanceWeights(80, 40), { parentA: 0.667, parentB: 0.333 });
 });
 
-test('kernel run assertion rejects missing problem recovery', () => {
-  assert.throws(() => assertKernelRun({ id: 'run_bad' }), /problemRecovery/);
+test('kernel run assertion rejects a missing growth stage', () => {
+  assert.throws(() => assertKernelRun({ id: 'run_bad' }), /stage/);
 });
 
 test('knowledge packet assertion rejects malformed items', () => {
@@ -32,21 +31,6 @@ test('knowledge packet assertion rejects malformed items', () => {
         excluded: [],
       }),
     /KnowledgePacket.items\[0\].recordId/,
-  );
-});
-
-test('problem recovery assertion requires cited knowledge references', () => {
-  assert.throws(
-    () =>
-      assertProblemRecovery({
-        id: 'recovery_a',
-        caseId: 'case_a',
-        title: 'Recover A',
-        recoveredProblem: 'problem',
-        hiddenConstraint: 'constraint',
-        falsifier: 'falsifier',
-      }),
-    /ProblemRecovery.citedKnowledge/,
   );
 });
 

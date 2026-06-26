@@ -1,14 +1,14 @@
 import {
   assertCandidateSolution,
   assertCriticVerdict,
-  assertProblemRecovery,
   type Agenome,
   type CandidateSolution,
   type CaseStudy,
   type CriticVerdict,
+  type GrowthStage,
   type KnowledgePacket,
   type Mutagen,
-  type ProblemRecovery,
+  type NodeSummary,
 } from '../boundary.ts';
 import { loadKernelFixture } from '../fixtures.ts';
 import { parseJsonObjectResponse, type ModelCallRecord, type ModelClient } from '../model/model-gateway.ts';
@@ -99,33 +99,26 @@ function mutagenMove(
   }
 }
 
-export type ProblemRecoveryInput = {
+// One pass over one spine arrow. The stage names what unit is bred (problem-frame vs
+// solution-candidate); parentNode carries the immediate parent's content (absent for the
+// problem_recovery arrow, whose parent is the case_study already on the run).
+export type PassContext = {
   runId: string;
+  stage: GrowthStage;
   caseStudy: CaseStudy;
+  parentNode?: NodeSummary;
   knowledgePacket: KnowledgePacket;
 };
 
-export type CandidateGenerationInput = {
-  runId: string;
-  caseStudy: CaseStudy;
-  problemRecovery: ProblemRecovery;
-  knowledgePacket: KnowledgePacket;
+export type CandidateGenerationInput = PassContext & {
   generation: number;
   previousChild?: CandidateSolution;
   previousCriticVerdicts?: CriticVerdict[];
   agenomePool?: Agenome[];
 };
 
-export type CriticJudgmentInput = {
-  runId: string;
-  caseStudy: CaseStudy;
-  problemRecovery: ProblemRecovery;
+export type CriticJudgmentInput = PassContext & {
   candidates: CandidateSolution[];
-  knowledgePacket: KnowledgePacket;
-};
-
-export type ProblemRecoveryProvider = {
-  recover(input: ProblemRecoveryInput): Promise<ProblemRecovery>;
 };
 
 export type CandidateGenerator = {
@@ -141,14 +134,18 @@ export type CriticCouncil = {
 };
 
 export type GenerationProviders = {
-  problemRecovery: ProblemRecoveryProvider;
   cleanBaseline?: CleanBaselineGenerator;
   candidateGenerator: CandidateGenerator;
   criticCouncil: CriticCouncil;
 };
 
+// The problem the arrow breeds against: the immediate parent's synopsis (the recovered
+// problem, for the doppl arrow) or the seed's stated problem (for the problem_recovery arrow).
+function problemContext(input: PassContext): string {
+  return input.parentNode?.synopsis ?? input.caseStudy.statedProblem;
+}
+
 export type ModelGenerationPromptRenderers = {
-  problemRecovery(input: ProblemRecoveryInput): string;
   cleanBaseline(input: CandidateGenerationInput): string;
   candidateGeneration(input: CandidateGenerationInput): string;
   criticJudgment(input: CriticJudgmentInput): string;
@@ -165,6 +162,8 @@ export type ModelGenerationProviders = GenerationProviders & {
   modelProvider: string;
   model: string;
 };
+
+type SeedCandidate = Omit<CandidateSolution, 'caseId' | 'generation'>;
 
 export async function createFixtureGenerationProviders(
   fixturePath: string,
@@ -183,6 +182,7 @@ export async function createFixtureGenerationProviders(
     if (candidate.id.includes('_stability_probe_g')) return 91;
     if (candidate.id.includes('_failure_probe_g')) return 80;
     if (candidate.id.includes('_signal_probe_g')) return 67;
+    if (candidate.id.startsWith('frame_')) return Number((78 - index * 6).toFixed(1));
     return Number((baseAverage || Math.max(45, 88 - index * 13)).toFixed(1));
   }
 
@@ -199,24 +199,50 @@ export async function createFixtureGenerationProviders(
     if (candidate.id.includes('_signal_probe_g')) {
       return `Signal probe expands the search surface, but ${criticId} still needs stronger proof.`;
     }
+    if (candidate.id.startsWith('frame_')) {
+      return `${criticId} presses whether ${candidate.title} recovers the real problem rather than restating the symptom.`;
+    }
     return fixture.critics.find((verdict) => verdict.candidateId === candidate.id && verdict.criticId === criticId)
       ?.pressure || `${candidate.title} receives ${criticId} pressure.`;
+  }
+
+  // The problem_recovery arrow breeds problem-frames from the seed using the same mutagen
+  // machinery the doppl arrow uses on solutions — one engine, no hand-authored frames.
+  function problemFrameSeeds(): SeedCandidate[] {
+    const seed = fixture.problemRecovery;
+    const framings: ReadonlyArray<readonly [string, Mutagen]> = [
+      ['root', 'first-principles'],
+      ['edge', 'blindside'],
+      ['reframe', 'breakout'],
+    ];
+    return framings.map(([tag, mutagen]) => {
+      const move = mutagenMove(mutagen, { title: seed.title, mechanism: seed.hiddenConstraint }, seed.title, 'the case');
+      return {
+        id: `frame_${tag}`,
+        agenomeId: `ag_problem_framer_${tag}`,
+        title: `${seed.title} — ${move.tag}`,
+        summary: `${seed.recoveredProblem} ${move.summary}`,
+        mechanism: `${seed.hiddenConstraint} ${move.mechanism}`,
+        claimedDelta: `${seed.falsifier} ${move.claimedDelta}`,
+        citedKnowledge: [],
+        mutagen,
+        mutagenLineage: [mutagen],
+      };
+    });
   }
 
   function agenomeFor(input: CandidateGenerationInput, agenomeId: string): Agenome | undefined {
     return input.agenomePool?.find((agenome) => agenome.id === agenomeId);
   }
 
-  function fixtureCandidatesFor(input: CandidateGenerationInput): Array<typeof fixture.candidates[number]> {
+  function seedPool(input: CandidateGenerationInput): SeedCandidate[] {
+    if (input.stage === 'problem_recovery') return problemFrameSeeds();
     const poolIds = new Set((input.agenomePool || []).map((agenome) => agenome.id));
     const selected = fixture.candidates.filter((candidate) => poolIds.has(candidate.agenomeId));
     return selected.length >= 2 ? selected : fixture.candidates;
   }
 
-  function candidateWithAgenomeContext(
-    candidate: Omit<CandidateSolution, 'caseId' | 'generation'>,
-    input: CandidateGenerationInput,
-  ): Omit<CandidateSolution, 'caseId' | 'generation'> {
+  function candidateWithAgenomeContext(candidate: SeedCandidate, input: CandidateGenerationInput): SeedCandidate {
     const agenome = agenomeFor(input, candidate.agenomeId);
     if (!agenome) return candidate;
     return {
@@ -227,22 +253,20 @@ export async function createFixtureGenerationProviders(
   }
 
   function evolveCandidates(input: CandidateGenerationInput): CandidateSolution[] {
-    const fixtureCandidates = fixtureCandidatesFor(input);
+    const pool = seedPool(input);
     if (input.generation === 0 || !input.previousChild) {
-      return fixtureCandidates.map((candidate) => {
-        const contextualCandidate = candidateWithAgenomeContext(candidate, input);
-        return assertCandidateSolution({
-          ...contextualCandidate,
+      return pool.map((candidate) =>
+        assertCandidateSolution({
+          ...candidateWithAgenomeContext(candidate, input),
           caseId: input.caseStudy.id,
           generation: input.generation,
-        });
-      });
+        }),
+      );
     }
 
-    const [primary, secondary, tertiary] = fixtureCandidates;
+    const [primary, secondary, tertiary] = pool;
     if (!primary || !secondary || !tertiary) {
-      // Fewer than three candidates to mutate; fall back to a straight contextual pass.
-      return fixtureCandidates.map((candidate) =>
+      return pool.map((candidate) =>
         assertCandidateSolution({
           ...candidateWithAgenomeContext(candidate, input),
           caseId: input.caseStudy.id,
@@ -258,7 +282,7 @@ export async function createFixtureGenerationProviders(
       knowledge[offset % Math.max(1, knowledge.length)]?.citeHandle ?? 'the packet';
     // The population's state picks the mutagens this generation reaches for (the tide).
     const [mutagenA, mutagenB, mutagenC] = regimeMutagens(input.previousCriticVerdicts ?? []);
-    const assignments: Array<[Omit<CandidateSolution, 'caseId' | 'generation'>, Mutagen]> = [
+    const assignments: Array<[SeedCandidate, Mutagen]> = [
       [primary, mutagenA],
       [secondary, mutagenB],
       [tertiary, mutagenC],
@@ -266,7 +290,6 @@ export async function createFixtureGenerationProviders(
     const variants = assignments.map(([source, mutagen], index) => {
       const move = mutagenMove(mutagen, source, previousTitle, handleAt(index));
       return {
-        source,
         mutagen,
         mutagenLineage: [...baseLineage, mutagen],
         id: `${source.id}_${move.tag}_g${generation}`,
@@ -279,7 +302,7 @@ export async function createFixtureGenerationProviders(
       };
     });
 
-    return variants.map(({ source: _source, ...candidate }) =>
+    return variants.map((candidate) =>
       assertCandidateSolution({
         ...candidateWithAgenomeContext(candidate, input),
         caseId: input.caseStudy.id,
@@ -288,40 +311,25 @@ export async function createFixtureGenerationProviders(
     );
   }
 
+  function ensureCase(caseStudy: CaseStudy): void {
+    if (fixture.caseId !== caseStudy.id) {
+      throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
+    }
+  }
+
   return {
     caseId: fixture.caseId,
-    problemRecovery: {
-      async recover({ caseStudy, knowledgePacket }) {
-        if (fixture.caseId !== caseStudy.id) {
-          throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-        }
-        return assertProblemRecovery({
-          id: `recovery_${caseStudy.id}`,
-          caseId: caseStudy.id,
-          ...fixture.problemRecovery,
-          citedKnowledge: knowledgePacket.items.map((item) => item.citeHandle),
-        });
-      },
-    },
     candidateGenerator: {
       async generate(input) {
-        const { caseStudy } = input;
-        if (fixture.caseId !== caseStudy.id) {
-          throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-        }
+        ensureCase(input.caseStudy);
         return evolveCandidates(input);
       },
     },
     cleanBaseline: {
       async generate(input) {
-        const { caseStudy } = input;
-        if (fixture.caseId !== caseStudy.id) {
-          throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-        }
-        const [candidate] = fixtureCandidatesFor(input);
-        if (!candidate) {
-          throw new Error('clean baseline requires at least one fixture candidate');
-        }
+        ensureCase(input.caseStudy);
+        const [candidate] = seedPool(input);
+        if (!candidate) throw new Error('clean baseline requires at least one seed candidate');
         const contextualCandidate = candidateWithAgenomeContext(
           {
             ...candidate,
@@ -334,16 +342,14 @@ export async function createFixtureGenerationProviders(
         );
         return assertCandidateSolution({
           ...contextualCandidate,
-          caseId: caseStudy.id,
+          caseId: input.caseStudy.id,
           generation: 0,
         });
       },
     },
     criticCouncil: {
       async judge({ caseStudy, candidates }) {
-        if (fixture.caseId !== caseStudy.id) {
-          throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-        }
+        ensureCase(caseStudy);
         return candidates.flatMap((candidate, index) => {
           const total = scoreFor(candidate, index);
           return ['grounding', 'novelty', 'mechanism'].map((criticId, criticIndex) =>
@@ -397,6 +403,10 @@ function agenomeSummary(agenomes: Agenome[] = []): string {
     .join('\n');
 }
 
+function unitFor(stage: GrowthStage): string {
+  return stage === 'problem_recovery' ? 'problem-frame' : 'solution-candidate';
+}
+
 function stringSchema(): Record<string, unknown> {
   return { type: 'string' };
 }
@@ -404,21 +414,6 @@ function stringSchema(): Record<string, unknown> {
 function stringArraySchema(): Record<string, unknown> {
   return { type: 'array', items: stringSchema() };
 }
-
-const problemRecoveryResponseSchema = {
-  name: 'problem_recovery',
-  schema: {
-    type: 'object',
-    properties: {
-      title: stringSchema(),
-      recoveredProblem: stringSchema(),
-      hiddenConstraint: stringSchema(),
-      falsifier: stringSchema(),
-    },
-    required: ['title', 'recoveredProblem', 'hiddenConstraint', 'falsifier'],
-    additionalProperties: false,
-  },
-};
 
 const candidateSchema = {
   type: 'object',
@@ -494,57 +489,49 @@ const criticJudgmentResponseSchema = {
 
 export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRenderers {
   return {
-    problemRecovery({ caseStudy, knowledgePacket }) {
+    cleanBaseline(input) {
       return [
-        'Return JSON only for a ProblemRecovery without id, caseId, or citedKnowledge.',
-        `Case: ${caseStudy.title}`,
-        `Stated problem: ${caseStudy.statedProblem}`,
-        'Knowledge:',
-        knowledgeSummary(knowledgePacket),
-      ].join('\n');
-    },
-    cleanBaseline({ caseStudy, problemRecovery, knowledgePacket, agenomePool }) {
-      return [
-        'Return JSON only with a candidate object.',
-        `Case: ${caseStudy.title}`,
-        `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        `Return JSON only with a candidate object breeding a ${unitFor(input.stage)}.`,
+        `Case: ${input.caseStudy.title}`,
+        `Problem to address: ${problemContext(input)}`,
         'Create a single-pass clean-agent baseline before Doppl evolution, selection, mutation, or fusion.',
         'Agenome pool:',
-        agenomeSummary(agenomePool),
+        agenomeSummary(input.agenomePool),
         'The candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
-        'Use agenomeId ag_clean_control unless a supplied Agenome clearly fits better.',
         'Do not mention Doppl as improving this answer; this is the plain control lane.',
         'Knowledge:',
-        knowledgeSummary(knowledgePacket),
+        knowledgeSummary(input.knowledgePacket),
       ].join('\n');
     },
-    candidateGeneration({ caseStudy, problemRecovery, knowledgePacket, generation, previousChild, previousCriticVerdicts, agenomePool }) {
+    candidateGeneration(input) {
       return [
-        'Return JSON only with a candidates array.',
-        `Case: ${caseStudy.title}`,
-        `Generation: ${generation}`,
-        `Recovered problem: ${problemRecovery.recoveredProblem}`,
+        `Return JSON only with a candidates array breeding ${unitFor(input.stage)}s.`,
+        `Case: ${input.caseStudy.title}`,
+        `Generation: ${input.generation}`,
+        input.stage === 'problem_recovery'
+          ? `Stated problem to recover the real cause of: ${problemContext(input)}`
+          : `Recovered problem to solve: ${problemContext(input)}`,
         'Agenome pool:',
-        agenomeSummary(agenomePool),
-        previousChild
-          ? `Previous survivor: ${previousChild.id} / ${previousChild.title} / ${previousChild.summary}`
+        agenomeSummary(input.agenomePool),
+        input.previousChild
+          ? `Previous survivor: ${input.previousChild.id} / ${input.previousChild.title} / ${input.previousChild.summary}`
           : 'Previous survivor: none; create the initial population.',
-        previousCriticVerdicts?.length
-          ? `Prior critic mandates: ${previousCriticVerdicts.map((verdict) => `${verdict.candidateId}:${verdict.revisionMandate}`).join(' | ')}`
+        input.previousCriticVerdicts?.length
+          ? `Prior critic mandates: ${input.previousCriticVerdicts.map((verdict) => `${verdict.candidateId}:${verdict.revisionMandate}`).join(' | ')}`
           : 'Prior critic mandates: none.',
         'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
         'Choose agenomeId from the supplied Agenome pool and make the candidate reflect that Agenome persona, policy, and value weights.',
         'For generation > 0, do not repeat prior candidate IDs or simply rename them. Generate mutations, probes, or recombinations that respond to the previous survivor and critic mandates.',
         'Knowledge:',
-        knowledgeSummary(knowledgePacket),
+        knowledgeSummary(input.knowledgePacket),
       ].join('\n');
     },
-    criticJudgment({ caseStudy, problemRecovery, candidates }) {
+    criticJudgment(input) {
       return [
         'Return JSON only with a verdicts array.',
-        `Case: ${caseStudy.title}`,
-        `Recovered problem: ${problemRecovery.recoveredProblem}`,
-        `Candidates: ${candidates.map((candidate) => candidate.id).join(', ')}`,
+        `Case: ${input.caseStudy.title}`,
+        `Problem under judgment: ${problemContext(input)}`,
+        `Candidates: ${input.candidates.map((candidate) => candidate.id).join(', ')}`,
         'Each verdict must include candidateId, criticId, score, pressure, revisionMandate.',
       ].join('\n');
     },
@@ -606,27 +593,6 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
     modelCallRecords,
     modelProvider: 'model_generation_provider',
     model: input.model,
-    problemRecovery: {
-      async recover(providerInput) {
-        return parseWithRepair(
-          {
-            runId: providerInput.runId,
-            purpose: 'problem_recovery',
-            prompt: prompts.problemRecovery(providerInput),
-            model: input.model,
-            responseFormat: 'json_object',
-            responseSchema: problemRecoveryResponseSchema,
-          },
-          (parsed) =>
-            assertProblemRecovery({
-              id: `recovery_${providerInput.caseStudy.id}`,
-              caseId: providerInput.caseStudy.id,
-              ...parsed,
-              citedKnowledge: providerInput.knowledgePacket.items.map((item) => item.citeHandle),
-            }),
-        );
-      },
-    },
     cleanBaseline: {
       async generate(providerInput) {
         return parseWithRepair(

@@ -10,7 +10,7 @@ import { createReplayModelClient, type ModelCallRecord } from '../../../src/kern
 test('requires explicit generation providers outside the test fixture harness', async () => {
   await assert.rejects(
     () =>
-      runKernel({
+      runKernel({ stage: 'doppl',
         runId: 'run_requires_provider',
         casePath: 'test/fixtures/fsd-seed.json',
         vault: '../agarden',
@@ -45,7 +45,7 @@ test('reads configured agarden stock for product knowledge', async () => {
     'utf8',
   );
   let citedKnowledge: string[] = [];
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_product_stock',
     casePath: 'test/fixtures/fsd-seed.json',
     vault,
@@ -107,12 +107,12 @@ test('reads configured agarden stock for product knowledge', async () => {
     },
   });
 
-  assert.deepEqual(run.problemRecovery.citedKnowledge, ['direct-settlement']);
+  assert.ok(run.knowledgePacket.items.some((item) => item.citeHandle === 'direct-settlement'));
   assert.equal(run.knowledgePacket.items[0]?.trustTier, 'agarden-stock');
 });
 
 test('runs deterministic kernel loop end to end', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_test',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -121,7 +121,8 @@ test('runs deterministic kernel loop end to end', async () => {
     memoryMode: 'auto',
     allowTestFixtureProviders: true,
   });
-  assert.equal(run.problemRecovery.caseId, 'fsd-ownership-unwind');
+  assert.equal(run.caseStudy.id, 'fsd-ownership-unwind');
+  assert.equal(run.stage, 'doppl');
   assert.equal(run.candidates.length, 3);
   assert.equal(run.selectedParents.length, 2);
   assert.ok((run.fusion?.inheritanceWeights.parentA || 0) > 0.5);
@@ -142,7 +143,7 @@ test('runs deterministic kernel loop end to end', async () => {
 });
 
 test('tags mutated candidates with their mutagen and accumulates the lineage', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_mutagen',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -188,7 +189,7 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
 });
 
 test('runs through injected generation providers', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_injected',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -261,7 +262,7 @@ test('runs through injected generation providers', async () => {
     },
   });
 
-  assert.equal(run.problemRecovery.title, 'Injected Recovery');
+  assert.equal(run.stage, 'doppl');
   assert.deepEqual(
     run.candidates.map((candidate) => candidate.id),
     ['injected_a', 'injected_b'],
@@ -271,7 +272,7 @@ test('runs through injected generation providers', async () => {
 });
 
 test('runs a clean baseline outside evolutionary selection', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_clean_baseline',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -360,7 +361,7 @@ test('runs a clean baseline outside evolutionary selection', async () => {
 
 test('can evolve a child across multiple generations', async () => {
   const seenAgenomePools: string[][] = [];
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_evolution',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -451,7 +452,7 @@ test('can evolve a child across multiple generations', async () => {
 
 test('stops evolution when the generation budget is exhausted', async () => {
   let generateCalls = 0;
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_budgeted_evolution',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -542,21 +543,6 @@ test('runs through replayed model generation providers', async () => {
     critics: 'judge for run model',
   };
   const records: ModelCallRecord[] = [
-    {
-      id: 'call_recovery',
-      runId: 'run_model_generation',
-      purpose: 'problem_recovery',
-      provider: 'replay',
-      model: 'fixture-model',
-      prompt: prompts.recovery,
-      outputText: JSON.stringify({
-        title: 'Replay Model Recovery',
-        recoveredProblem: 'Recovered through the model gateway.',
-        hiddenConstraint: 'Model outputs must become contracts.',
-        falsifier: 'The loop ignores the model provider.',
-      }),
-      metadata: {},
-    },
     {
       id: 'call_clean_baseline',
       runId: 'run_model_generation',
@@ -657,7 +643,7 @@ test('runs through replayed model generation providers', async () => {
     },
   ];
 
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_model_generation',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -669,7 +655,6 @@ test('runs through replayed model generation providers', async () => {
       client: createReplayModelClient(records),
       model: 'fixture-model',
       prompts: {
-        problemRecovery: () => prompts.recovery,
         cleanBaseline: () => prompts.cleanBaseline,
         candidateGeneration: () => prompts.candidates,
         criticJudgment: ({ candidates }) =>
@@ -680,7 +665,7 @@ test('runs through replayed model generation providers', async () => {
     }),
   });
 
-  assert.equal(run.problemRecovery.title, 'Replay Model Recovery');
+  assert.equal(run.stage, 'doppl');
   assert.deepEqual(
     run.candidates.map((candidate) => candidate.id),
     ['gateway_a', 'gateway_b'],
@@ -688,11 +673,10 @@ test('runs through replayed model generation providers', async () => {
   assert.equal(run.controlBaseline?.id, 'clean_gateway');
   assert.equal(run.candidates.some((candidate) => candidate.id === 'clean_gateway'), false);
   assert.equal(run.fusion?.inheritanceWeights.parentA, 0.667);
-  assert.equal(run.modelCallRecords?.length, 5);
+  assert.equal(run.modelCallRecords?.length, 4);
   assert.deepEqual(
     run.modelCallRecords?.map((record) => record.purpose),
     [
-      'problem_recovery',
       'control_baseline_generation',
       'critic_judgment',
       'candidate_generation',
@@ -703,7 +687,6 @@ test('runs through replayed model generation providers', async () => {
   assert.deepEqual(
     startedEvents.map((event) => event.payload.purpose),
     [
-      'problem_recovery',
       'control_baseline_generation',
       'control_baseline_judgment',
       'candidate_generation',
@@ -728,7 +711,6 @@ test('runs through replayed model generation providers', async () => {
       .filter((event) => event.type.startsWith('model.output_'))
       .map((event) => [event.type, event.payload.purpose]),
     [
-      ['model.output_accepted', 'problem_recovery'],
       ['model.output_accepted', 'control_baseline_generation'],
       ['model.output_accepted', 'critic_judgment'],
       ['model.output_accepted', 'candidate_generation'],
@@ -746,37 +728,6 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
     critics: 'judge repair trace',
   };
   const records: ModelCallRecord[] = [
-    {
-      id: 'call_bad_recovery',
-      runId: 'run_model_repair_trace',
-      purpose: 'problem_recovery',
-      provider: 'replay',
-      model: 'fixture-model',
-      prompt: prompts.recovery,
-      outputText: '{"title":',
-      metadata: {},
-    },
-    {
-      id: 'call_repaired_recovery',
-      runId: 'run_model_repair_trace',
-      purpose: 'problem_recovery.repair',
-      provider: 'replay',
-      model: 'fixture-model',
-      prompt: [
-        prompts.recovery,
-        '',
-        'Repair the previous output into valid JSON only.',
-        'Previous output:',
-        '{"title":',
-      ].join('\n'),
-      outputText: JSON.stringify({
-        title: 'Repaired Recovery',
-        recoveredProblem: 'Recovered through repair.',
-        hiddenConstraint: 'Repair lifecycle should be visible.',
-        falsifier: 'Repair events are absent.',
-      }),
-      metadata: {},
-    },
     {
       id: 'call_clean_baseline',
       runId: 'run_model_repair_trace',
@@ -818,32 +769,26 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
       metadata: {},
     },
     {
-      id: 'call_candidates',
+      id: 'call_bad_candidates',
       runId: 'run_model_repair_trace',
       purpose: 'candidate_generation',
       provider: 'replay',
       model: 'fixture-model',
       prompt: prompts.candidates,
+      outputText: '{"candidates":',
+      metadata: {},
+    },
+    {
+      id: 'call_repaired_candidates',
+      runId: 'run_model_repair_trace',
+      purpose: 'candidate_generation.repair',
+      provider: 'replay',
+      model: 'fixture-model',
+      prompt: [prompts.candidates, '', 'Repair the previous output into valid JSON only.', 'Previous output:', '{"candidates":'].join('\n'),
       outputText: JSON.stringify({
         candidates: [
-          {
-            id: 'repair_a',
-            agenomeId: 'ag_gateway',
-            title: 'Repair A',
-            summary: 'summary',
-            mechanism: 'mechanism',
-            claimedDelta: 'delta',
-            citedKnowledge: ['K1'],
-          },
-          {
-            id: 'repair_b',
-            agenomeId: 'ag_gateway',
-            title: 'Repair B',
-            summary: 'summary',
-            mechanism: 'mechanism',
-            claimedDelta: 'delta',
-            citedKnowledge: ['K2'],
-          },
+          { id: 'repair_a', agenomeId: 'ag_gateway', title: 'Repair A', summary: 'summary', mechanism: 'mechanism', claimedDelta: 'delta', citedKnowledge: ['K1'] },
+          { id: 'repair_b', agenomeId: 'ag_gateway', title: 'Repair B', summary: 'summary', mechanism: 'mechanism', claimedDelta: 'delta', citedKnowledge: ['K2'] },
         ],
       }),
       metadata: {},
@@ -877,7 +822,7 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
     },
   ];
 
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_model_repair_trace',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -889,7 +834,6 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
       client: createReplayModelClient(records),
       model: 'fixture-model',
       prompts: {
-        problemRecovery: () => prompts.recovery,
         cleanBaseline: () => prompts.cleanBaseline,
         candidateGeneration: () => prompts.candidates,
         criticJudgment: ({ candidates }) =>
@@ -905,11 +849,10 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
       .filter((event) => event.type.startsWith('model.output_'))
       .map((event) => [event.type, event.payload.purpose]),
     [
-      ['model.output_repair_requested', 'problem_recovery'],
-      ['model.output_repaired', 'problem_recovery.repair'],
       ['model.output_accepted', 'control_baseline_generation'],
       ['model.output_accepted', 'critic_judgment'],
-      ['model.output_accepted', 'candidate_generation'],
+      ['model.output_repair_requested', 'candidate_generation'],
+      ['model.output_repaired', 'candidate_generation.repair'],
       ['model.output_accepted', 'critic_judgment'],
     ],
   );

@@ -7,7 +7,7 @@ import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { exportRunToCalibrationVault } from '../../../src/kernel/sink/vault-export.ts';
 
 test('exports a calibrator vault with unrated review fields', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_calibration',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',

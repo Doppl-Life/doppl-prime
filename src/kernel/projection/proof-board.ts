@@ -340,13 +340,13 @@ ${modelHealthNav}      <a href="#trace">Trace</a>
     <div>
       <section id="recovery">
         <h2>Problem Recovery</h2>
-        <h3>${escapeHtml(run.problemRecovery.title)}</h3>
-        <p>${escapeHtml(run.problemRecovery.recoveredProblem)}</p>
+        <h3>${escapeHtml(run.parentNode?.title ?? run.fusion?.child.title ?? run.caseStudy.title)}</h3>
+        <p>${escapeHtml(run.parentNode?.synopsis ?? run.fusion?.child.summary ?? run.caseStudy.statedProblem)}</p>
         <dl>
           <dt>Hidden constraint</dt>
-          <dd>${escapeHtml(run.problemRecovery.hiddenConstraint)}</dd>
+          <dd>${escapeHtml(run.fusion?.child.mechanism ?? '')}</dd>
           <dt>Falsifier</dt>
-          <dd>${escapeHtml(run.problemRecovery.falsifier)}</dd>
+          <dd>${escapeHtml(run.fusion?.child.claimedDelta ?? '')}</dd>
         </dl>
       </section>
       <section id="memory">

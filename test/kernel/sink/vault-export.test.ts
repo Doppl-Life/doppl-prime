@@ -9,7 +9,7 @@ import { readRunEvents, replayRunProjection } from '../../../src/kernel/trace/ev
 import { readModelCallRecords } from '../../../src/kernel/model/model-gateway.ts';
 
 test('exports problem recovery and child solution markdown separately', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_export',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -24,7 +24,6 @@ test('exports problem recovery and child solution markdown separately', async ()
   assert.ok(manifest.files.some((file) => file.endsWith('control-baseline.md')));
   assert.ok(manifest.files.some((file) => file.includes('child_')));
   assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/case-study.md')));
-  assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/problem-recovery.md')));
   assert.ok(manifest.files.some((file) => file.endsWith('proposal-nodes/doppl.md')));
   assert.ok(manifest.files.some((file) => file.endsWith('events.jsonl')));
   const recovery = await readFile(
@@ -40,7 +39,7 @@ test('exports problem recovery and child solution markdown separately', async ()
 });
 
 test('exports a calibrator-facing run index', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_export_index',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -124,7 +123,7 @@ test('exports a calibrator-facing run index', async () => {
 });
 
 test('exports model call evidence when present on the run', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_export_model_calls',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
@@ -155,7 +154,7 @@ test('exports model call evidence when present on the run', async () => {
 });
 
 test('exports a separate clean-agent baseline when the run provides one', async () => {
-  const run = await runKernel({
+  const run = await runKernel({ stage: 'doppl',
     runId: 'run_export_clean_baseline',
     casePath: 'test/fixtures/fsd-seed.json',
     vault: '../agarden',
