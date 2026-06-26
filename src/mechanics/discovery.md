@@ -55,10 +55,11 @@ Discovery must be told where things live and how to write them:
 
 `stock_location` and `write_method` are the **sink's** concern ([`sink.md`](./sink.md)): discovery reads and writes stock *through the sink*, whose destination is configured once (`doppl.config.json`). Only `backend` is discovery's own choice per call.
 
-The stock source/projection shape is defined in [`../../contracts/stock.md`](../../contracts/stock.md).
+The stock source/projection shape is defined in [`../contracts/stock.md`](../contracts/stock.md).
 
 ## Boundaries
 
-Source recipes (the backends) and source-quality signals live in `tools/source-radar.ts`. Scoring
+Source recipes (the backends) are chosen per call from the configured `doppl.config.json` discovery
+providers. Scoring
 and decay/expiry are not discovery's job: scoring belongs to the filter that sets the bar;
 decay/expiry belongs to the stock-maintenance function.

@@ -34,7 +34,7 @@ actually needs the concept.
 
 > Evidence note: the hut replaces the separate lineage ledger with *the node graph as the
 > memory* — a stored `doppelgangers` count plus a derived `convergence` query
-> (`contracts/node.md`). The "ledger evidence" fields below describe the signal
+> (`src/contracts/node.md`). The "ledger evidence" fields below describe the signal
 > shapes to watch for; read them off the node graph, not a separate ledger schema.
 
 ### OW-001 Lineage rehash masquerading as evolution - 2026-06-21

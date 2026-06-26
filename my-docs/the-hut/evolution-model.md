@@ -4,14 +4,14 @@
 - **Vocabulary** — `agenome`, `mutagen`, the two pressures / tides, `soil`, the gardener are named in
   [`../GLOSSARY.md`](../GLOSSARY.md), reconciled with terms already there (`Stage`-as-breeding,
   `Convergence`-as-derived, `temporal`-replacing-`subtype`).
-- **`contracts/run-trace.md`** — `OperatorId` → `Mutagen`; `Candidate` carries `mutagen` + `mutagen_lineage`
+- **`src/contracts/run-trace.md`** — `OperatorId` → `Mutagen`; `Candidate` carries `mutagen` + `mutagen_lineage`
   (the record of which moves shaped a survivor).
 
 Remaining canon steps (deliberate, not find-replace):
 - **`run-trace.md` restructure** — `RunTrace` as the genuine multi-generation working memory, and
   `Dial`/`SelectionSchedule` (the old "set the direction" framing) → selection-as-emergent-tides. This is a
   spec redesign, not a rename.
-- **`contracts/node.md`** — the survivor node carries its `mutagen_lineage` (and `temporal`), so "which
+- **`src/contracts/node.md`** — the survivor node carries its `mutagen_lineage` (and `temporal`), so "which
   mutagens produced this idea" is visible in the artifact.
 - **kernel follows** — once canon settles, dalton's kernel catches up (agenomes carry mutagen-lineage; emit
   the rich trace). Why-record in [MEMORY.md](../MEMORY.md).
@@ -82,7 +82,7 @@ stop being separate things — they become *facets of one agenome's journey*.
 
 **Caveat:** n=1 per arm, one problem, self-graded — empirical signal weak; the two-level = tide-in-a-costume
 conclusion is structural and holds regardless. The probe *retired the "dial"* for emergent tides (decision #5).
-All open questions are now closed — the spine is ready to freeze to `contracts/` on your nod.
+All open questions are now closed — the spine is ready to freeze to `src/contracts/` on your nod.
 
 ## Projections fall out (no canon growth)
 

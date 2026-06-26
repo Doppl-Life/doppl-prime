@@ -1,6 +1,6 @@
 # Glossary
 
-The single vocabulary — both the **model** terms (doppl, node, stage, stock, the spine) and the **engine-mechanics** terms the running kernel uses. Engine behavior is specified in [`../mechanics/`](../mechanics); the typed shapes in [`../contracts/`](../contracts).
+The single vocabulary — both the **model** terms (doppl, node, stage, stock, the spine) and the **engine-mechanics** terms the running kernel uses. Engine behavior is specified in [`../src/mechanics/`](../src/mechanics); the typed shapes in [`../src/contracts/`](../src/contracts).
 
 ## Model
 
@@ -10,7 +10,7 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 ### Node
 
-- **Def:** one step in a flow: `## Trace` + `## Discovery` + `## Growth` (+ `### Evaluation`) + `## Path`. See [`../contracts/node.md`](../contracts/node.md).
+- **Def:** one step in a flow: `## Trace` + `## Discovery` + `## Growth` (+ `### Evaluation`) + `## Path`. See [`../src/contracts/node.md`](../src/contracts/node.md).
 
 ### Stage
 
@@ -27,7 +27,7 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
   mechanism, delta, growth) and the qualities that mark its survival: lineage, energy,
   fitness, and the **mutagens that shaped it**. One level: the idea *is* the organism — there
   is no separate evolving "agent." The surviving agenome is rendered into a
-  [node](../contracts/node.md).
+  [node](../src/contracts/node.md).
 
 ### Seed
 
@@ -39,11 +39,11 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 ### Stock
 
-- **Def:** persistent domain memory the flow reads from and writes to — admitted discoveries grouped by field. See [`../contracts/stock.md`](../contracts/stock.md).
+- **Def:** persistent domain memory the flow reads from and writes to — admitted discoveries grouped by field. See [`../src/contracts/stock.md`](../src/contracts/stock.md).
 
 ### Discovery (the tool / the bar)
 
-- **Def:** a one-job kernel function — gather high-signal context (web + stock), clear a bar, write keepers to stock, return. Not a stage; see [`../mechanics/kernel/discovery.md`](../mechanics/kernel/discovery.md). A *find* is anything retrieved; a *discovery* is a find that clears the bar and enters stock.
+- **Def:** a one-job kernel function — gather high-signal context (web + stock), clear a bar, write keepers to stock, return. Not a stage; see [`../src/mechanics/discovery.md`](../src/mechanics/discovery.md). A *find* is anything retrieved; a *discovery* is a find that clears the bar and enters stock.
 
 ### Anti-fragile
 
@@ -59,7 +59,7 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 
 - **Def:** the reusable operation `generate -> evaluate -> select -> generate
   again`, parameterized by direction, reproduction unit, fitness source, and
-  schedule. See [`../mechanics/kernel/engine.md`](../mechanics/kernel/engine.md).
+  schedule. See [`../src/mechanics/engine.md`](../src/mechanics/engine.md).
 
 ### Direction
 
@@ -126,7 +126,7 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 ### Rating
 
 - **Def:** a `−5…+5` judgment of worth (the judge's and the human's output). See
-  [`../contracts/rating.md`](../contracts/rating.md).
+  [`../src/contracts/rating.md`](../src/contracts/rating.md).
 
 ### Novelty
 
@@ -158,7 +158,7 @@ The single vocabulary — both the **model** terms (doppl, node, stage, stock, t
 - **Def:** observer-relative feasibility or fit applied after intrinsic fitness.
   The engine scores what is novel, grounded, and durable; the lens asks whether it
   is worth acting on for this user. (Open: may fold into the judge's
-  Cost-efficiency/Relevance rating axes — see `../mechanics/kernel/engine.md`.)
+  Cost-efficiency/Relevance rating axes — see `../src/mechanics/engine.md`.)
 
 ### Mechanism Cost
 
@@ -251,7 +251,7 @@ both.
 ### The garden
 
 - **Def:** the codebase we want — the cultivated, good code: the running kernel
-  (`src/`, `tools/`) and the frozen canon it follows (`contracts/`, `mechanics/`).
+  (`src/`, `tools/`) and the frozen canon it follows (`src/contracts/`, `src/mechanics/`).
   What the hut's decisions venture out into. Distinct from the agarden; the garden is
   code, the agarden is produced artifacts.
 
@@ -283,7 +283,7 @@ both.
   — where the kernel writes what a run produces: all flow nodes
   (`flow/<slug>/<slug>.md`), all stock (`stock/<slug>.md`), and the ratings ledger
   (`ratings-ledger.json`). An Obsidian vault that is also a git repo. The sink
-  ([`../mechanics/kernel/sink.md`](../mechanics/kernel/sink.md)) is its only writer;
+  ([`../src/mechanics/sink.md`](../src/mechanics/sink.md)) is its only writer;
   the destination is one config value, `doppl.config.json` → `vault`. Not the garden:
   the garden is code, the agarden is output.
 
@@ -292,6 +292,6 @@ both.
 - **Def:** the human-facing app over the agarden. It surfaces nodes for people to
   rate (rater identified by email) and writes each score to the ratings ledger — the
   source that materializes a node's `scores.human` / `scores.n` (see
-  [`../contracts/human-ratings-ledger.md`](../contracts/human-ratings-ledger.md)). Its
+  [`../src/contracts/human-ratings-ledger.md`](../src/contracts/human-ratings-ledger.md)). Its
   job is the judge-vs-human delta: read nodes, collect ratings, update the ledger.
   Pressure, not storage — it holds no artifacts.

@@ -113,21 +113,6 @@ still only being watched.
   answer key.
 - **Carry forward:** signals can be input; synthesis targets cannot.
 
-### Fixture answer-key marker - 2026-06-22
-
-- **Mistake:** letting seed-visible case material carry answer-key, solution, or
-  scoring language.
-- **Symptom:** a rendered node can look like the kernel discovered the exact
-  answer when it actually carried contaminated candidate evidence.
-- **Mitigation:** seed-visible `case-study.md` must contain no evaluator-only
-  language; the seed leakage guard in `tools/case-study-corpus.ts` rejects it, and
-  evaluator-only material stays in `solution.md` (judge access only).
-- **Tripwire:** `pnpm case-study:lint` must reject any `case-study.md` that leaks
-  answer-key, solution, scoring, or known-solution language.
-- **Pass condition:** every seed view loads clean; the solution stays judge-side.
-- **Carry forward:** answer-key labels are poison even when the surrounding
-  evidence is otherwise seed-visible.
-
 ### Contract drift - 2026-06-21
 
 - **Mistake:** letting docs, generated artifacts, and code disagree about what

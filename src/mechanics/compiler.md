@@ -12,7 +12,7 @@ kind: kernel function · markdown-as-code · a cheap model is enough
 
 # compiler
 
-Takes the compiled candidate and judge evaluation from [`../../contracts/run-trace.md`](../../contracts/run-trace.md) and writes a node that conforms to [`../../contracts/node.md`](../../contracts/node.md). It does not reason — it renders. A small, fast model is enough (Qwen / GLM / a mini tier); save the strong models for generate→select and for the judge, not the rendering.
+Takes the compiled candidate and judge evaluation from [`../contracts/run-trace.md`](../contracts/run-trace.md) and writes a node that conforms to [`../contracts/node.md`](../contracts/node.md). It does not reason — it renders. A small, fast model is enough (Qwen / GLM / a mini tier); save the strong models for generate→select and for the judge, not the rendering.
 
 ## Inputs
 
@@ -27,7 +27,7 @@ Takes the compiled candidate and judge evaluation from [`../../contracts/run-tra
 
 - **`temporal` comes from the judge.** It is a judgment (is this timing-bound?), emitted as the
   judge's final output just before compile. The compiler never guesses it.
-- **Human scores are absent at birth.** A node is compiled judge-only: `scores: { judge, human: null, n: 0 }`. The human number is materialized later from the human ratings ledger (`../../contracts/human-ratings-ledger.md`), never by the compiler.
+- **Human scores are absent at birth.** A node is compiled judge-only: `scores: { judge, human: null, n: 0 }`. The human number is materialized later from the human ratings ledger (`../contracts/human-ratings-ledger.md`), never by the compiler.
 - **`doppelgangers` is born `0`.** The compiler always writes `0`; the dedup pass over the node graph increments it later. The compiler never computes a dedup count.
 
 ## Procedure

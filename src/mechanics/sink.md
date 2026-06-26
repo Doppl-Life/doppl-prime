@@ -9,8 +9,8 @@ I/O edge. Nothing writes the vault except the sink.
 A sink persists the two durable artifacts and reads stock back so discovery can use it:
 
 - `readStock(fieldId)` — what discovery reads before reaching outward.
-- `writeStock(fieldId, markdown)` — admitted discoveries, in the [`../../contracts/stock.md`](../../contracts/stock.md) shape.
-- `writeNode(node)` — the compiled flow node, in the [`../../contracts/node.md`](../../contracts/node.md) shape.
+- `writeStock(fieldId, markdown)` — admitted discoveries, in the [`../contracts/stock.md`](../contracts/stock.md) shape.
+- `writeNode(node)` — the compiled flow node, in the [`../contracts/node.md`](../contracts/node.md) shape.
 - `publish(message)` — push the vault to its remote. A seam; not built.
 
 ## The vault

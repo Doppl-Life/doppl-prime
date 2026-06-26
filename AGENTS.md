@@ -2,11 +2,11 @@
 
 ## Canon and the hut
 
-The frozen model lives in two homes: `contracts/**` (typed MarkScript artifact shapes) and
-`mechanics/**` (kernel behavior — engine, discovery, compiler). Vocabulary is `my-docs/GLOSSARY.md`.
+The frozen model lives in two homes: `src/contracts/**` (typed MarkScript artifact shapes) and
+`src/mechanics/**` (kernel behavior — engine, discovery, compiler). Vocabulary is `my-docs/GLOSSARY.md`.
 `my-docs/the-hut/` is the **proposal space** — where unfrozen decisions are still being shaped.
 
-When canon (contracts/mechanics) and the running kernel (`src/`, `tools/`) disagree, **canon wins**;
+When canon (contracts/mechanics) and the running kernel (`src/kernel/`) disagree, **canon wins**;
 the kernel follows, deliberately. Change the decision in canon first; the kernel catches up as its
 own planned step. "It's still in the kernel" is not an argument for keeping a concept canon has cut.
 
@@ -16,7 +16,7 @@ contract.
 
 ## The thing is the thing (no history in canon)
 
-Canon — `contracts/`, `mechanics/`, the model — states what **is**, in present tense. It never narrates
+Canon — `src/contracts/`, `src/mechanics/`, the model — states what **is**, in present tense. It never narrates
 what was. Do not write "the old X", "burned", "replaced the old", "no longer", "formerly", "promoted
 from", "reconcile later (jungle)", or name a removed/dead concept to warn against it — naming a dead
 thing sends the next agent hunting for it, which is the exact harm. If you feel the urge to explain a
@@ -28,10 +28,11 @@ old concepts.
 
 - Do not change `src/**` kernel semantics unless the user explicitly asks. (Canon tells you
   *what* to build toward; it is not standing permission to rewrite the engine.)
-- Trace truth: `src/trace.ts` via `buildRunTrace()`. Every human surface is a projection of
-  the trace; the trace is the specimen.
+- Trace truth: `src/kernel/trace/run-trace.ts` via `buildRunTraces()` — the projection of the
+  `KernelRun` aggregate into the canonical `RunTrace` specimen. Every human surface is a
+  projection of the trace; the trace is the specimen.
 - `out/**` is disposable drill-down output.
-- Contracts live under `contracts/**`, kernel behavior under `mechanics/kernel/**`, unfrozen proposals in
+- Contracts live under `src/contracts/**`, kernel behavior under `src/mechanics/**`, unfrozen proposals in
   `my-docs/the-hut/**`; durable kernel decisions live in `my-docs/MEMORY.md`.
 - This branch is Doppl. Do not qualify it with migration tracks, compatibility branches, or
   derivative paths.
@@ -78,8 +79,8 @@ Log durable findings in one home:
 
 | Finding | File |
 | --- | --- |
-| Typed artifact shape (node, rating, stock, trace, projection) | `contracts/**` |
-| Kernel behavior (engine, discovery, compiler) | `mechanics/kernel/**` |
+| Typed artifact shape (node, rating, stock, trace, projection) | `src/contracts/**` |
+| Kernel behavior (engine, discovery, compiler) | `src/mechanics/**` |
 | Term / vocabulary | `my-docs/GLOSSARY.md` |
 | Unfrozen proposal | `my-docs/the-hut/**` |
 | Active fork or ownership decision | `my-docs/MEMORY.md` |
@@ -88,7 +89,7 @@ Log durable findings in one home:
 | Reward hack or confirmed failure | `my-docs/BUGS_AND_MITIGATIONS.md` |
 | Operational watch item | `my-docs/OPERATIONAL_WATCHLIST.md` |
 | Kernel invariant | `my-docs/INVARIANTS.md` |
-| How to run/use the kernel | `README.md` or `tools/README.md` |
+| How to run/use the kernel | `README.md` |
 
 Do not dump transient debug notes into registers. One idea, one home.
 

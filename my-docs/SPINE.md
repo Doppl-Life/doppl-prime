@@ -1,6 +1,6 @@
 # The Spine - one kernel, two directions
 
-> The conceptual heart. The build contracts live in `contracts/**`; the build plan
+> The conceptual heart. The build contracts live in `src/contracts/**`; the build plan
 > is in `SPEC.md`. This doc is the *why* - the thing every build decision should
 > trace back to. Keep it short on purpose.
 
@@ -87,7 +87,7 @@ So fitness is not one scale, and not three rubrics. It is **one two-axis space
 (novelty × grounding), and each application is a different weighting / trajectory
 through it.** You maintain *two fitness signals and a weighting schedule* — the
   schedule is the application. The sprout-vs-conclusion split (a high-novelty side-idea kept
-  for later vs. the doppl itself) lives on the node — see `contracts/node.md`.
+  for later vs. the doppl itself) lives on the node — see `src/contracts/node.md`.
 
 ---
 

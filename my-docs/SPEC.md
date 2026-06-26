@@ -30,7 +30,7 @@ Given configured **case_study nodes** from the agarden flow, it:
 2. **Converges** — computes the two-axis fitness (novelty × grounding), culls weak.
 3. **Recurses** — expands selected survivors under hard caps.
 4. **Decays / lenses** — applies engine decay during selection and feasibility after selection.
-5. **Shows** — a compact board first; nodes (`contracts/node.md`) render the
+5. **Shows** — a compact board first; nodes (`src/contracts/node.md`) render the
    machine trace into portable, human-readable artifacts.
 
 The proof it works: **the same harness runs multiple seeds and makes selection behavior
@@ -67,10 +67,9 @@ Keep these few and clean — they ARE the kernel:
 
 ---
 
-## Source-radar contract
+## Discovery & scoring components
 
-The source-radar contract lives in `tools/source-radar.ts`. Reuse the contract
-and typed knowledge it exposes:
+The engine's discovery and scoring concerns — what each is, and where it lives today:
 
 - **Problem Recovery + temporal classify** — the convergent move + the
   ±5-year discriminator (zeitgeist vs. transfer). Reuse as the grounding/classify component.
@@ -126,8 +125,8 @@ the dial explicit.
 Use these clean seams when splitting implementation work:
 
 1. **Kernel core** — `generate / select / dial / lineage / caps`.
-2. **Fitness** — the two-axis `FitnessSource` (novelty + grounding), reusing
-   source-radar scoring where it fits.
+2. **Fitness** — the two-axis `FitnessSource` (novelty + grounding), scored in
+   `src/kernel/engine/scoring.ts`.
 3. **Applications** — discovery (diverge) + ripple (diverge-on-consequences), as kernel
    configs.
 4. **Harness + demo** — run on real seeds, render lineage + survivors, the judgeable output.

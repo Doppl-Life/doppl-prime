@@ -55,14 +55,14 @@ kernel owner must not accidentally undo.
   reconciled on purpose, not bedrock. The insulation is the point — it keeps a wet
   decision clean before it freezes.
 - **Revisit if:** the hut is deliberately frozen into the kernel; then the
-  frozen contract moves into `contracts/**` and the kernel.
+  frozen contract moves into `src/contracts/**` and the kernel.
 
 ### Burn-and-rebuild: old surface cut, engine promoted first - 2026-06-22
 
 - **Chose:** burn the pepsi pipeline, the verdict/judgment stack, the
   viewer/deploy/microscope surface, the superseded engine specs, the original-Prime
   `docs/**` quarantine, and the old eval fixtures. Before burning, promote the
-  generate→select engine contract into `mechanics/kernel/engine.md`.
+  generate→select engine contract into `src/mechanics/engine.md`.
 - **Over:** surgically de-vocabularying dead surfaces, or burning the engine without
   first salvaging its contract.
 - **Because:** the hut holds the model's spirit but not the engine internals; the
@@ -92,8 +92,9 @@ kernel owner must not accidentally undo.
 
 ### Trace is source of truth - 2026-06-21
 
-- **Chose:** `buildRunTrace()` remains the canonical pipeline; every view is a
-  projection of one trace contract.
+- **Chose:** the run trace is the canonical pipeline; every view is a projection of one trace
+  contract. Realized as `buildRunTraces(run): RunTrace[]` in `src/kernel/trace/run-trace.ts`,
+  projecting the `KernelRun` aggregate into the `RunTrace` specimen.
 - **Over:** view-specific trace assembly, static narratives, or generated reports
   acting as truth.
 - **Revisit if:** a new artifact needs data not expressible in `RunTrace`; then
@@ -120,7 +121,7 @@ kernel owner must not accidentally undo.
 ### Distill, do not bulk import - 2026-06-21
 
 - **Chose:** distill raw conversations, comparison docs, and legacy source into the
-  hut, `contracts/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
+  hut, `src/contracts/**`, `MEMORY.md`, or fixtures; then delete the raw copies. Old
   source is raw material, not operating authority.
 - **Over:** preserving a live museum of transcripts and inherited planning docs.
 - **Because:** old source becomes fake authority unless it is a build contract or an
@@ -185,4 +186,4 @@ kernel owner must not accidentally undo.
 - **Because:** trace truth has to support multiple projections without adopting any one projection's model.
   The dashboard needs rich objects for rendering, but that is a view contract; the kernel needs enough trace facts for every projection to rebuild its view deterministically.
 - **Revisit if:** a projection needs a fact that cannot be derived from the trace and is not merely display shape.
-  Add that fact to `contracts/run-trace.md` first, then update the kernel and adapters.
+  Add that fact to `src/contracts/run-trace.md` first, then update the kernel and adapters.

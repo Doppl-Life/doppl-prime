@@ -132,7 +132,7 @@ each of the four branches and fills what any single branch is missing — kernel
 one working whole. The demo is *of that reconciled kernel*.
 
 The **run-trace is the substrate that makes this one problem instead of six.** Every surface is a
-projection of `buildRunTrace()`. So: reconcile the kernel → it emits one canonical trace shape → every
+projection of `buildRunTraces()`. So: reconcile the kernel → it emits one canonical trace shape → every
 view (inside-the-kernel process views from cody/melissa/dalton; outside-the-run view from michael)
 becomes a lens on that one trace. "How it all works together" falls out of getting the trace right.
 Kernel synthesis is Epic A; view synthesis is Epic E; both reconcile against the single trace.
@@ -204,19 +204,19 @@ the interactive Agora rating UI.
 The reconciliation exists to settle what becomes canon. Call these out explicitly as the bake-off
 runs:
 
-- **Contracts** (`contracts/**`) — the typed shapes that win: `markscript.md`, `node.md`, `stock.md`,
+- **Contracts** (`src/contracts/**`) — the typed shapes that win: `markscript.md`, `node.md`, `stock.md`,
   `rating.md`, `human-ratings-ledger.md`, `run-trace.md`, `projection.md`.
-- **Mechanics** (`mechanics/kernel/**`) — `compiler.md`, `discovery.md`, `sink.md`.
+- **Mechanics** (`src/mechanics/**`) — `compiler.md`, `discovery.md`, `sink.md`.
 - **Kernel** (`src/**`) — only the reconciled engine, after canon settles. Canon wins; kernel follows.
 - **Discovery semantics** — how retrieval becomes stock and is admitted to the agarden. This is the
-  most contested concept and must be pinned in `mechanics/kernel/discovery.md` before it freezes.
+  most contested concept and must be pinned in `src/mechanics/discovery.md` before it freezes.
 
 ## Three reframes (read before ticketing)
 
 1. **Bake-off, not hand-merge.** The run-trace is the specimen (canon). Diff traces, pick winners per
    stage. Subjective argument becomes a diff review.
 2. **Internal UI and external UI are one viewer, two lenses.** Every surface is a projection of
-   `buildRunTrace()`. Internal = stage mechanics (cody/melissa/dalton's process views). External =
+   `buildRunTraces()`. Internal = stage mechanics (cody/melissa/dalton's process views). External =
    idea-as-it-emerges (michael's experimental view). One trace stream, two lenses.
 3. **Bake an offline golden run.** The spike already has an "Offline demo" provider. Freeze one seed →
    full agarden run into it so the live demo never depends on a key, rate limit, or wifi.
@@ -248,12 +248,12 @@ Format: `[ID] Title — owner · depends on`.
 
 ### Epic B — Kernel concepts (newest paths → discrete tickets)
 
-- **[B1] MarkScript: contract vs kernel parity** — Michael · A4. Reconcile `src/io/*` against
-  `contracts/markscript.md`. Canon wins.
-- **[B2] Discovery: specialized retrieval → stock** — Michael · A4. Split: (a) retrieval/source-radar,
+- **[B1] MarkScript: contract vs kernel parity** — Michael · A4. Reconcile `src/kernel/compile/`
+  + `src/kernel/sink/` against `src/contracts/markscript.md`. Canon wins.
+- **[B2] Discovery: specialized retrieval → stock** — Michael · A4. Split: (a) retrieval/source selection,
   (b) stock compilation, (c) admit-to-agarden. One seed run lands new stock in `agarden/stock/`.
 - **[B3] Discovery acceptance criteria + scoring** — Michael · B2. The novelty × grounding gate for
-  admitting stock. Documented in `mechanics/kernel/discovery.md`, enforced in code.
+  admitting stock. Documented in `src/mechanics/discovery.md`, enforced in code.
 - **[B4] Provenance + reproducibility frontmatter** — Michael · A4 · *canon change*. Record per stage,
   in `run-trace.md` (and projected into `node.md` frontmatter): model id, version, temperature, and
   role (reasoning/fusion/judge). Pin the judge per run; pin generation (temp 0) during the bake-off.
@@ -265,7 +265,7 @@ Format: `[ID] Title — owner · depends on`.
 - **[C1] Agora read: render the flow from agarden** — Cody · none. Read `agarden/flow/**` + `stock/**`,
   render the spine `case_study → problem_recovery → doppl`.
 - **[C2] Agora write: edit/append the ratings ledger** — Cody · C1. Human ratings → `agarden/
-  ratings-ledger.json` per `contracts/human-ratings-ledger.md`.
+  ratings-ledger.json` per `src/contracts/human-ratings-ledger.md`.
 - **[C3] Agora ↔ kernel handoff** — Cody · C1, B2. "Grow this" in Agora triggers a run.
 - **[C4] Ledger write model: per-rater files → generated ledger** — Cody · C2 · *post-demo*. Each rater
   owns `ratings/<rater>.jsonl`; `ratings-ledger.json` becomes a derived projection compiled from them.
@@ -280,7 +280,7 @@ Format: `[ID] Title — owner · depends on`.
 
 ### Epic E — Trace viewer (merges internal + external UI)
 
-- **[E1] One trace stream, two lenses** — Melissa · A4. Single viewer over `buildRunTrace()`; toggle
+- **[E1] One trace stream, two lenses** — Melissa · A4. Single viewer over `buildRunTraces()`; toggle
   internal/external lens on the same run.
 - **[E2] Harvest the best internal UI from cody/melissa/dalton** — Melissa · E1. Same bake-off logic
   as the kernel: pick the strongest process-viz, fold into the one viewer.
@@ -377,7 +377,7 @@ Non-negotiable, in docs, architecture, code, and UX:
 
 - **Radical simplicity first.** Delete before optimize; the simplest thing that is honest. Length and
   abstraction must earn themselves.
-- **Single source of truth.** One home per fact (canon = `contracts/**` + `mechanics/**`); the trace /
+- **Single source of truth.** One home per fact (canon = `src/contracts/**` + `src/mechanics/**`); the trace /
   event log is the truth, every view a projection. No shadow copies.
 - **SOLID + modular.** One responsibility per module; depend on interfaces (`Sink`, `ModelClient`,
   event adapter) not implementations; additive over invasive.
@@ -397,7 +397,7 @@ the human drives; the rest are agent file-work the human commits.
   (`flow/<slug>/<slug>.md` + `stock/<slug>.md`) + `slugId()`. SSOT: one module owns vault writes.
   *Done:* a fixture Die Hard run writes canonical nodes into `../agarden`; tests updated + green.
 - **R2 — Node-compiler → MarkScript canon.** dalton's `node-compiler` emits michael's exact
-  frontmatter + load-bearing headings (`contracts/node.md`). Canon wins. *Done:* output validates
+  frontmatter + load-bearing headings (`src/contracts/node.md`). Canon wins. *Done:* output validates
   against the node contract.
 - **R3 — Provider layer (mine + expand the spike).** One `ModelClient` boundary; port spike's Ollama /
   OpenAI-compatible / harness-bridge; add OpenRouter-fusion + per-role routing; judge pinned. DRY.

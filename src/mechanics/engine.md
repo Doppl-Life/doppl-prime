@@ -1,9 +1,10 @@
 # The Engine — the generate→select crucible
 
 Each spine arrow — `case_study → problem_recovery → doppl` — is one pass of the
-generate→select crucible over a population (`../../contracts/node.md`). This doc is the
-authority for that mechanism; `src/generate.ts`, `src/fitness.ts`, `src/select.ts`,
-`src/lens.ts`, and `src/trace.ts` implement it.
+generate→select crucible over a population (`../contracts/node.md`). This doc is the
+authority for that mechanism; `src/kernel/engine/run-kernel.ts` runs it — `engine/generation-providers.ts`
+generates, `engine/scoring.ts` measures, selects, and lenses, `engine/fusion.ts` reproduces, and
+`trace/run-trace.ts` projects the run into the `RunTrace` specimen.
 
 ## What one spine arrow does
 
@@ -14,9 +15,9 @@ generate candidates → score them (measurements) → select survivors (dial) �
 ```
 
 It does **not** pick the best candidate. It **breeds a stronger child** from the population
-(`../../contracts/node.md`, `../../my-docs/GLOSSARY.md`). The bar is anti-fragility: a child that gets stronger
+(`../contracts/node.md`, `../../my-docs/GLOSSARY.md`). The bar is anti-fragility: a child that gets stronger
 under variation. The compiler then writes the survivor into the next node; the judge's
-−5…+5 rating (`../../contracts/rating.md`) is a separate pass layered on the same survivor.
+−5…+5 rating (`../contracts/rating.md`) is a separate pass layered on the same survivor.
 
 ## The dial: diverge ↔ converge
 
@@ -31,7 +32,7 @@ A run dials between them; the schedule *is* the application.
 
 ## Measurements (0–1) — the two axes
 
-These are **measurements**, not ratings (`../../contracts/rating.md`): instrument readings clamped
+These are **measurements**, not ratings (`../contracts/rating.md`): instrument readings clamped
 to `[0,1]`, rounded to 3 decimals. They feed the judge's −5…+5 rating; they are never shown
 as a verdict. Novelty and grounding stay **separate** — never collapsed to one number before
 selection has made the tradeoff visible.
@@ -58,7 +59,7 @@ self-grading** (it must point at absence-from-record); **grounding must point ou
 prose**. Swap in a richer scorer only when it has a named consumer and clearer failure
 detection.
 
-> Reconciliation: the five judge axes (`../../contracts/rating.md`) are −5…+5 *ratings*.
+> Reconciliation: the five judge axes (`../contracts/rating.md`) are −5…+5 *ratings*.
 > These two 0–1 *measurements* map **into** Novelty and Grounding. Falsifiability,
 > Cost-efficiency, and Relevance are judge-only ratings with no engine instrument yet —
 > open: build instruments or leave judge-only.
@@ -155,4 +156,4 @@ but never requires a specific external skill loader to run; skill expressions th
 
 ## The trace is the spine
 
-One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../../contracts/run-trace.md`](../../contracts/run-trace.md). The compiler (`compiler.md`) is the projection writer: it turns a pass's survivor + the judge's evaluation into a node.
+One pass emits an ordered machine trace: `generate → fitness → select → lens → judge → compile`, each step naming its inputs, decision, and goal-checks. Every human surface (node, board, viewer) is a **projection** of that trace — the trace is the specimen. The contract lives in [`../contracts/run-trace.md`](../contracts/run-trace.md). The compiler (`compiler.md`) is the projection writer: it turns a pass's survivor + the judge's evaluation into a node.

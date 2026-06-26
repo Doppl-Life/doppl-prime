@@ -43,7 +43,7 @@ Growth-stage nodes carry `## Trace`, `## Discovery`, `## Growth`, and `## Path`.
 
 Trace copies prior stage synopses verbatim. Discovery records what was found. Path names the next stage.
 
-The node contract lives in [`../../contracts/node.md`](../../contracts/node.md).
+The node contract lives in [`../../src/contracts/node.md`](../../src/contracts/node.md).
 
 ## Discovery And Stock
 
@@ -53,7 +53,7 @@ Stock is durable domain memory. It stores admitted discoveries, not raw search o
 
 Stock has two gates: admission decides whether a find is worth remembering, and enrichment decides whether an admitted discovery is new, merged, or dropped as a rehash.
 
-The stock contract lives in [`../../contracts/stock.md`](../../contracts/stock.md).
+The stock contract lives in [`../../src/contracts/stock.md`](../../src/contracts/stock.md).
 
 ## Engine
 
@@ -93,7 +93,7 @@ The human gives one slider. Human ratings live in the human ratings ledger, one 
 
 The node stores only the materialized human projection: `scores.human` and `scores.n`.
 
-The rating contract lives in [`../../contracts/rating.md`](../../contracts/rating.md). The human ratings contract lives in [`../../contracts/human-ratings-ledger.md`](../../contracts/human-ratings-ledger.md).
+The rating contract lives in [`../../src/contracts/rating.md`](../../src/contracts/rating.md). The human ratings contract lives in [`../../src/contracts/human-ratings-ledger.md`](../../src/contracts/human-ratings-ledger.md).
 
 ## Temporal
 

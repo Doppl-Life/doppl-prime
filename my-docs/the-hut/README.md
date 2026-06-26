@@ -1,7 +1,7 @@
 # The Hut — the proposal space (still wet)
 
 Where unfrozen decisions are shaped before they freeze out into canon. The frozen model lives in
-[`../../contracts/`](../../contracts) (typed shapes), [`../../mechanics/`](../../mechanics) (kernel
+[`../../src/contracts/`](../../src/contracts) (typed shapes), [`../../src/mechanics/`](../../src/mechanics) (kernel
 behavior), and [`../GLOSSARY.md`](../GLOSSARY.md) (vocabulary). This folder holds only what is still
 being decided.
 
@@ -11,7 +11,7 @@ copy of something that already froze.
 
 ## Rule of the hut
 
-- **A live proposal beats the kernel.** When a hut decision and the running kernel (`src/`, `tools/`)
+- **A live proposal beats the kernel.** When a hut decision and the running kernel (`src/kernel/`)
   disagree, the decision wins once frozen; the kernel follows, deliberately.
 - **Decide here in writing, then freeze out.** Change the decision here first; freeze it into
   contracts/mechanics; the kernel catches up as its own step.
@@ -25,4 +25,4 @@ copy of something that already froze.
 
 ## Reconciling the kernel
 
-The kernel still differs from canon in places; bringing it in line is a planned step, not a fact to memorize. Why each decision was made lives in [`../MEMORY.md`](../MEMORY.md); what canon *is* lives in [`../../contracts/`](../../contracts) and [`../../mechanics/`](../../mechanics).
+The kernel still differs from canon in places; bringing it in line is a planned step, not a fact to memorize. Why each decision was made lives in [`../MEMORY.md`](../MEMORY.md); what canon *is* lives in [`../../src/contracts/`](../../src/contracts) and [`../../src/mechanics/`](../../src/mechanics).
