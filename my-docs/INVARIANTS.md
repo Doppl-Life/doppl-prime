@@ -52,39 +52,56 @@ these, it changes the kernel contract.
     finding the same attractor should trigger synthesis, not another paraphrase
     and not immediate pruning.
 
+## Garden I/O
+
+16. **Nodes in, nodes out.** Product input is a MarkScript node from the configured
+    agarden. Product output is one or more surviving MarkScript nodes written back
+    to the configured agarden.
+17. **The agarden is required configuration.** The default local vault is
+    `../agarden`, but the path is configurable. Product commands fail loudly when
+    the configured vault is missing.
+18. **Stock is read before research and written after survival.** Discovery reads
+    existing agarden stock before reaching outward. New stock is admitted only when
+    it supports surviving output nodes.
+19. **Agenomes are inner runtime, not outer nodes.** Candidates under selection are
+    agenomes. They become nodes only after they survive and compile to a garden
+    artifact.
+20. **No product fixture path.** JSON fixtures may exist for tests, but product
+    defaults do not treat fixtures as source material.
+
 ## Proof and artifacts
 
-16. **Trace first, views separate.** The kernel emits machine-clean process
+21. **Trace first, views separate.** The kernel emits machine-clean process
     facts. Human-readable views (nodes, the proof board) translate those facts
     outside the engine; they never become the trace.
-17. **Generated output is disposable.** `out/**` is inspection output. Promote a
-    run only when it becomes evidence for a decision or regression.
-18. **A report must change a decision.** If an artifact cannot help a human make
+22. **Local output is not product output.** `out/**` is temporary inspection state
+    when present. Durable product output is agarden flow and stock.
+23. **A report must change a decision.** If an artifact cannot help a human make
     a decision quickly, cut it, demote it, or make it drill-down only.
-19. **Every boundary has a contract.** Module boundaries should name inputs,
+24. **Every boundary has a contract.** Module boundaries should name inputs,
     outputs, owner, consumer, and the goal check that proves the boundary worked.
-20. **Every proof has a tripwire.** A claim about the kernel should have a cheap
+25. **Every proof has a tripwire.** A claim about the kernel should have a cheap
     way to fail: command, fixture, comparison, held-out case, or ledger query.
 
 ## Safety rails
 
-21. **Finite by construction.** Generation depth, population, tool calls, wall
+26. **Finite by construction.** Generation depth, population, tool calls, wall
     time, and spend must have explicit caps.
-22. **No secret-dependent design.** Secrets are never copied into docs, fixtures,
+27. **No secret-dependent design.** Secrets are never copied into docs, fixtures,
     traces, prompts, generated artifacts, or tests.
-23. **No silent source-of-truth split.** If a fact is authoritative, say where it
+28. **No silent source-of-truth split.** If a fact is authoritative, say where it
     lives. If a file is a projection, trace, digest, or background note, say so.
-24. **Distill, do not bulk import.** Historical source is raw material. Bring
+29. **Distill, do not bulk import.** Historical source is raw material. Bring
     in only the mechanisms that make this kernel better, safer, or easier to
     judge.
 
 ## Nodes
 
-25. **A node's slug is frozen at creation.** A SlugId (`{slug}-{shortId}`) is
+30. **A node's slug is frozen at creation.** A SlugId (`{slug}-{shortId}`) is
     minted once from the node's name and never recomputed. Headlines may be
     reworded; the slug — and every inbound `[[wikilink]]` that points at it —
     must not move.
-26. **A node is read-only except its human projection.** After creation the only
+31. **A node is read-only except its human projection.** After creation the only
     fields ever overwritten are `scores.human` and `scores.n`, patched by the
     human-ratings projection job. Judge score, growth, discovery, lineage, and
     identity are immutable in place.

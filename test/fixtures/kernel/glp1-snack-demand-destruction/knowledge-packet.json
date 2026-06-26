@@ -7,7 +7,7 @@
       "citeHandle": "K1",
       "text": "GLP-1 adoption should be read as reward-budget compression, not only a healthier-food preference shift.",
       "sourceCase": "glp1-snack-demand-destruction",
-      "citation": "fixtures/glp1-seed.json",
+      "citation": "test/fixtures/glp1-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     },
@@ -16,7 +16,7 @@
       "citeHandle": "K2",
       "text": "Food-noise reduction points to fewer impulse and grazing occasions across the whole household basket.",
       "sourceCase": "glp1-snack-demand-destruction",
-      "citation": "fixtures/glp1-seed.json",
+      "citation": "test/fixtures/glp1-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     },
@@ -25,7 +25,7 @@
       "citeHandle": "K3",
       "text": "Early reward-system signals suggest possible knock-on demand changes in alcohol, nicotine, cannabis, shopping, and gambling.",
       "sourceCase": "glp1-snack-demand-destruction",
-      "citation": "fixtures/glp1-seed.json",
+      "citation": "test/fixtures/glp1-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     }

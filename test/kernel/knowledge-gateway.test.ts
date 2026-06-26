@@ -7,7 +7,7 @@ import { createJsonKnowledgeGateway, createReplayKnowledgeGateway } from '../../
 
 test('json gateway selects a packet for the target case', async () => {
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const packet = await gateway.selectPacket({
     runId: 'run_1',
@@ -20,7 +20,7 @@ test('json gateway selects a packet for the target case', async () => {
 
 test('replay gateway returns the persisted packet without fresh retrieval', async () => {
   const live = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const packet = await live.selectPacket({
     runId: 'run_1',

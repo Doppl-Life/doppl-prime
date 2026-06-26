@@ -7,14 +7,14 @@ import { loadCaseStudy } from '../../src/kernel/case-loader.ts';
 import { loadKernelFixture } from '../../src/kernel/fixtures.ts';
 
 test('loads a markdown case study with a stable id and title', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   assert.equal(caseStudy.id, 'fsd-ownership-unwind');
   assert.match(caseStudy.title, /FSD|ownership|unwind/i);
   assert.match(caseStudy.statedProblem, /./);
 });
 
 test('loads deterministic run fixture data', async () => {
-  const fixture = await loadKernelFixture('fixtures/kernel/fsd-ownership-unwind/run-fixture.json');
+  const fixture = await loadKernelFixture('test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json');
   assert.equal(fixture.caseId, 'fsd-ownership-unwind');
   assert.equal(fixture.candidates.length, 3);
   assert.equal(fixture.critics.length, 9);
@@ -29,7 +29,7 @@ test('loads deterministic run fixture data for every dashboard case', async () =
   ];
 
   for (const caseId of caseIds) {
-    const fixture = await loadKernelFixture(`fixtures/kernel/${caseId}/run-fixture.json`);
+    const fixture = await loadKernelFixture(`test/fixtures/kernel/${caseId}/run-fixture.json`);
     assert.equal(fixture.caseId, caseId);
     assert.equal(fixture.candidates.length, 3);
     assert.equal(fixture.critics.length, 9);

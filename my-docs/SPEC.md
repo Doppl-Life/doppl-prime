@@ -23,13 +23,12 @@ discovery/ripple as its visible skin.
 
 ## The artifact
 
-**A small runnable program that demonstrates the kernel on real ideas.**
+**A small runnable program that demonstrates the kernel on real agarden nodes.**
 
-Given several **seed fixtures** (AI-unlock theses or problem statements), it:
+Given configured **case_study nodes** from the agarden flow, it:
 1. **Diverges** — generates children (ripples / candidate theses / candidate solutions).
 2. **Converges** — computes the two-axis fitness (novelty × grounding), culls weak.
-3. **Recurses** — expands fixture-authored generation-2 child packets from selected
-   survivors under hard caps.
+3. **Recurses** — expands selected survivors under hard caps.
 4. **Decays / lenses** — applies engine decay during selection and feasibility after selection.
 5. **Shows** — a compact board first; nodes (`contracts/node.md`) render the
    machine trace into portable, human-readable artifacts.
@@ -107,13 +106,13 @@ the dial explicit.
 - **Schedule representation.** Is the diverge→converge schedule a simple per-generation
   weight curve, a bandit, or operator-set? *Start: simple curve; learn from runs.*
 - **How recursive for the demo?** Depth-1 (seed → ripples) vs depth-N (ripples of
-  ripples)? *Current: bounded generation 2 proof mode using fixture-authored
-  child packets with maxGenerations=2, maxChildrenPerParent=2, maxPopulation=12.*
+  ripples)? *Current: bounded generation proof mode with maxGenerations=2,
+  maxChildrenPerParent=2, maxPopulation=12.*
 - **Novelty metric.** Embedding-cosine vs cluster-coverage vs
   LLM-judged distinctness? *Current: deterministic text/source signals; replace only
   when a richer scorer has a named consumer and clearer failure detection.*
-- **What's the seed source for the demo?** Live harvest vs a curated set of AI-unlock
-  seeds? *Current: curated fixtures; live harvest remains optional.*
+- **What's the seed source for the demo?** Configured agarden nodes vs live harvest?
+  *Current: configured agarden flow nodes; deterministic fixtures are test-only.*
 - **Where does Doppl-the-agent-breeder fit?** Same kernel, `ReproductionUnit=agenome` —
   but do we build that now or just leave the seam? *Lean: leave the seam, build
   thesis/consequence reproduction first.*

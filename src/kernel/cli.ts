@@ -38,10 +38,10 @@ export type KernelCliArgs = {
 };
 
 export const defaultKernelArgs: KernelCliArgs = {
-  runId: 'run_fsd_ownership_fixture',
-  casePath: 'fixtures/fsd-seed.json',
-  fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-  knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+  runId: 'run_fsd_ownership',
+  casePath: '../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md',
+  fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+  knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   memoryMode: 'auto' as const,
   generations: 1,
   evolutionBudget: { maxUnits: 1 },

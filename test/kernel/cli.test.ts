@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultKernelArgs, parseKernelCliArgs } from '../../src/kernel/cli.ts';
 
-test('default CLI args point at the FSD fixture', () => {
-  assert.equal(defaultKernelArgs.casePath, 'fixtures/fsd-seed.json');
+test('default CLI args point at the FSD agarden node', () => {
+  assert.equal(
+    defaultKernelArgs.casePath,
+    '../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md',
+  );
   assert.equal(defaultKernelArgs.memoryMode, 'auto');
   assert.equal(defaultKernelArgs.proofBoardDir, 'out/kernel/proof-board');
   assert.equal(defaultKernelArgs.publishDir, 'published/kernel');
@@ -34,12 +37,12 @@ test('CLI args can configure generations and evolution budget', () => {
 test('CLI args can configure replayed model calls', () => {
   const args = parseKernelCliArgs([
     '--replay-model-calls',
-    'fixtures/kernel/model-calls.jsonl',
+    'test/fixtures/kernel/model-calls.jsonl',
     '--model',
     'fixture-model',
   ]);
 
-  assert.equal(args.replayModelCallsPath, 'fixtures/kernel/model-calls.jsonl');
+  assert.equal(args.replayModelCallsPath, 'test/fixtures/kernel/model-calls.jsonl');
   assert.equal(args.model, 'fixture-model');
 });
 
@@ -57,7 +60,7 @@ test('CLI args reject invalid numeric values', () => {
 
 test('CLI args require a model when replaying model calls', () => {
   assert.throws(
-    () => parseKernelCliArgs(['--replay-model-calls', 'fixtures/kernel/model-calls.jsonl']),
+    () => parseKernelCliArgs(['--replay-model-calls', 'test/fixtures/kernel/model-calls.jsonl']),
     /--model is required when --replay-model-calls is set/,
   );
 });

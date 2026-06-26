@@ -55,33 +55,37 @@ export const DASHBOARD_CASE_STUDIES = [
   {
     id: 'fsd-ownership-unwind',
     title: 'FSD Ownership Unwind',
-    path: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    path: '../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md',
+    testSeedPath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     mode: 'fixture',
   },
   {
     id: 'glp1-snack-demand-destruction',
     title: 'GLP-1 Snack Demand',
-    path: 'fixtures/glp1-seed.json',
-    fixturePath: 'fixtures/kernel/glp1-snack-demand-destruction/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/glp1-snack-demand-destruction/knowledge-packet.json',
+    path: '../agarden/flow/glp1-snack-demand-destruction-fee90f49/glp1-snack-demand-destruction-fee90f49.md',
+    testSeedPath: 'test/fixtures/glp1-seed.json',
+    fixturePath: 'test/fixtures/kernel/glp1-snack-demand-destruction/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/glp1-snack-demand-destruction/knowledge-packet.json',
     mode: 'fixture',
   },
   {
     id: 'ai-overviews-zero-click-publishing',
     title: 'AI Overviews Publishing',
-    path: 'fixtures/ai-power-seed.json',
-    fixturePath: 'fixtures/kernel/ai-overviews-zero-click-publishing/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/ai-overviews-zero-click-publishing/knowledge-packet.json',
+    path: '../agarden/flow/ai-overviews-zero-click-publishing-62167f2d/ai-overviews-zero-click-publishing-62167f2d.md',
+    testSeedPath: 'test/fixtures/ai-power-seed.json',
+    fixturePath: 'test/fixtures/kernel/ai-overviews-zero-click-publishing/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/ai-overviews-zero-click-publishing/knowledge-packet.json',
     mode: 'fixture',
   },
   {
     id: 'starship-launch-cost-collapse',
     title: 'Starship Launch Cost',
-    path: 'fixtures/starship-seed.json',
-    fixturePath: 'fixtures/kernel/starship-launch-cost-collapse/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/starship-launch-cost-collapse/knowledge-packet.json',
+    path: '../agarden/flow/starship-launch-cost-collapse-49cce9a5/starship-launch-cost-collapse-49cce9a5.md',
+    testSeedPath: 'test/fixtures/starship-seed.json',
+    fixturePath: 'test/fixtures/kernel/starship-launch-cost-collapse/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/starship-launch-cost-collapse/knowledge-packet.json',
     mode: 'fixture',
   },
 ] as const;
@@ -255,20 +259,22 @@ export function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
   const normalized = path.posix.normalize(value);
+  const isAgardenNode = normalized.startsWith('../agarden/flow/') && normalized.endsWith('.md');
+  const isTestFixture = normalized.startsWith('test/fixtures/') && normalized.endsWith('-seed.json');
   if (
     path.isAbsolute(value) ||
-    normalized.startsWith('..') ||
     normalized.includes('/../') ||
-    !normalized.startsWith('fixtures/') ||
-    !normalized.endsWith('-seed.json')
+    (!isAgardenNode && !isTestFixture)
   ) {
-    throw new Error('casePath must point at an approved fixtures/*-seed.json file');
+    throw new Error('casePath must point at an agarden flow node or test fixture seed');
   }
   return normalized;
 }
 
 export function approvedDashboardCase(casePath: string): (typeof DASHBOARD_CASE_STUDIES)[number] {
-  const match = DASHBOARD_CASE_STUDIES.find((caseStudy) => caseStudy.path === casePath);
+  const match = DASHBOARD_CASE_STUDIES.find(
+    (caseStudy) => caseStudy.path === casePath || caseStudy.testSeedPath === casePath,
+  );
   if (!match) throw new Error('dashboard case is not approved');
   return match;
 }

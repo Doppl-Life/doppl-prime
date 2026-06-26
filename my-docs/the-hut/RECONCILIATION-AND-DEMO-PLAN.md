@@ -241,7 +241,7 @@ Format: `[ID] Title — owner · depends on`.
   is missing. Output: a synthesis table (stage → best idea(s) → source branch(es) → what's missing).
 - **[A4] Synthesize the reconciled kernel on `michael-reconciliation`** — Michael · A3. Merge the best
   ideas per stage and fill the gaps into one kernel — not a copy of any single branch. Passes
-  `pnpm typecheck && pnpm build && pnpm proof` and runs Die Hard end-to-end clean. Held separate from
+  `pnpm typecheck && pnpm build` and runs Die Hard end-to-end clean. Held separate from
   `michael`.
 - **[A5] Name what freezes to canon/main** — team · A4. From the bake-off, list the contracts,
   mechanics, and kernel changes that must reach `main`. Map to the "What must reach `main`" section.

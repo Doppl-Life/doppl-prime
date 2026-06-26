@@ -39,7 +39,7 @@ old concepts.
   Temporary scans, lists of dead names, and one-off guards do not survive the cleanup they
   enabled.
 - Cut to the safety net; the human holds the ledger. Scale cut-depth to reversibility, not
-  human refactor-pain: where git + `pnpm proof` cover a change, burn hard ("if you don't have
+  human refactor-pain: where git + `pnpm build` cover a change, burn hard ("if you don't have
   to put anything back, you didn't cut enough"). This is safe because the labor is split —
   **you delete, the human commits.** The agent makes reversible cuts. Never burn irreversible
   or external side-effects this way. Full move in [`HEURISTICS.md`](HEURISTICS.md).
@@ -61,7 +61,7 @@ For strategic, architectural, spec, product-direction, or abstraction-setting wo
 treat existing repo assumptions as bedrock. Treat them as evidence to test against current
 goals, kernel behavior, the hut, and explicit user intent.
 
-Use the `./cursor/skills/first-principles/SKILL.md` mutagen skill actively for this class of work: reduce the problem
+Use the `.cursor/skills/first-principles/SKILL.md` mutagen skill actively for this class of work: reduce the problem
 to invariants, name the provisional assumption you are rejecting or depending on, and only
 then branch into implementation or documentation.
 
@@ -121,5 +121,4 @@ Default verification for tooling changes:
 ```bash
 pnpm typecheck
 pnpm build
-pnpm proof
 ```

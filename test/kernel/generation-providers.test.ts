@@ -33,9 +33,9 @@ import { createReplayModelClient, type ModelCallRecord } from '../../src/kernel/
 import { initialAgenomePool } from '../../src/kernel/agenomes.ts';
 
 test('fixture generation providers expose recovery, candidate, and critic boundaries', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_provider',
@@ -43,7 +43,7 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
     maxItems: 3,
   });
   const providers = await createFixtureGenerationProviders(
-    'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
   );
 
   const recovery = await providers.problemRecovery.recover({
@@ -103,9 +103,9 @@ test('fixture generation providers expose recovery, candidate, and critic bounda
 });
 
 test('fixture generation can narrow candidates from the supplied Agenome pool', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_provider_pool',
@@ -113,7 +113,7 @@ test('fixture generation can narrow candidates from the supplied Agenome pool', 
     maxItems: 3,
   });
   const providers = await createFixtureGenerationProviders(
-    'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
   );
   const recovery = await providers.problemRecovery.recover({
     runId: 'run_provider_pool',
@@ -197,9 +197,9 @@ test('provider interfaces can be implemented without fixture files', async () =>
 });
 
 test('model generation providers parse replayed structured outputs', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_provider',
@@ -328,9 +328,9 @@ test('model generation providers parse replayed structured outputs', async () =>
 });
 
 test('model generation providers parse replayed clean baseline outputs', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_clean_baseline',
@@ -397,9 +397,9 @@ test('model generation providers parse replayed clean baseline outputs', async (
 });
 
 test('model generation providers expose default prompts and captured call records', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_defaults',
@@ -443,9 +443,9 @@ test('model generation providers expose default prompts and captured call record
 });
 
 test('default candidate prompt includes Agenome traits for live generation', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_agenomes',
@@ -478,9 +478,9 @@ test('default candidate prompt includes Agenome traits for live generation', asy
 });
 
 test('model generation providers request schemas for structured outputs', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_schemas',
@@ -602,9 +602,9 @@ test('model generation providers request schemas for structured outputs', async 
 });
 
 test('model generation providers repair invalid structured outputs once', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_repair',
@@ -662,9 +662,9 @@ test('model generation providers repair invalid structured outputs once', async 
 });
 
 test('model generation providers reject output after one failed repair', async () => {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId: 'run_model_reject',

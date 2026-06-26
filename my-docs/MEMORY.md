@@ -5,23 +5,19 @@ kernel owner must not accidentally undo.
 
 ## Entries
 
-### Case-study corpus moved to the agarden repo - 2026-06-23
+### Product I/O is the configured agarden - 2026-06-23
 
-- **Chose:** the case studies live in the [agarden](https://github.com/Doppl-Life/agarden)
-  Obsidian vault as `case_study` nodes (`slug-id/slug-id.md` + frontmatter, `solution.md`
-  beside them). The in-repo `case-studies/**` corpus was migrated and deleted, and the tooling
-  hard-wired to it was burned: `tools/case-study-corpus.ts`, `tools/case-study-seed-lint.ts`,
-  the `pnpm case-study:lint` script, and the proof-board case-study enrichment in `run.ts`.
-  The engine already runs off `fixtures/*.json`, so `pnpm proof`/`build` are unaffected.
-  doppl-prime is the engine + contracts; agarden is the seed/vault data.
-- **Over:** keeping the seed corpus vendored in the kernel repo, or leaving a path-coupled
-  loader pointed at a deleted folder.
-- **Because:** the seeds are now an Obsidian-native, slug-linked vault meant to be shared and
-  grown across people; that is data, not engine. The hard-wired corpus path was a
-  dependency-inversion failure — burn it rather than tombstone it. This fired the
-  access-boundary entry's "corpus moves" revisit condition.
-- **Revisit if:** the kernel needs to read live seeds again — build a seed source as an injected
-  abstraction (point it at an agarden checkout), not a hard-coded in-repo path.
+- **Chose:** product input and output are configured agarden node files.
+  The local default is the sibling `../agarden` Obsidian vault.
+  `case_study` seeds, generated `problem_recovery` nodes, generated `doppl` nodes, reseeded `case_study` nodes, admitted `stock`, and the ratings ledger live there.
+  In-repo deterministic fixtures live under `test/fixtures/**` and are only a harness for repeatable tests and demos.
+  doppl-prime is the kernel, contracts, compiler, and dashboard; agarden is the durable node and stock surface.
+- **Over:** keeping product seed material vendored in this repo, treating JSON fixtures as product input, or writing product outputs to local drill-down folders.
+- **Because:** the product loop is nodes in, nodes out.
+  The kernel may inspect and use existing stock before research, then write only stock that supports surviving output nodes.
+  Agenomes are inner runtime candidates under selection; only survivors compile into agarden nodes.
+- **Revisit if:** the kernel still needs test fixture bridges for live product paths.
+  Delete or isolate the bridge once generation and stock retrieval read directly from the configured agarden.
 
 ### The hut is canon - 2026-06-22
 

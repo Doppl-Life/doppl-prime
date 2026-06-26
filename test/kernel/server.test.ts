@@ -12,9 +12,9 @@ import { initialAgenomePool } from '../../src/kernel/agenomes.ts';
 import { type ModelCallRecord, writeModelCallRecords } from '../../src/kernel/model-gateway.ts';
 
 async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
-  const caseStudy = await loadCaseStudy('fixtures/fsd-seed.json');
+  const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
-    'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   );
   const knowledgePacket = await gateway.selectPacket({
     runId,
@@ -248,8 +248,8 @@ test('kernel dashboard source is built on React Flow', async () => {
   assert.match(lineage, /<ReactFlow/);
   assert.match(lineage, /<MiniMap/);
   assert.match(client, /\/kernel\/dashboard\/runs/);
-  assert.match(client, /fixtures\/glp1-seed\.json/);
-  assert.match(client, /fixtures\/ai-power-seed\.json/);
+  assert.match(client, /agarden\/flow\/glp1-snack-demand-destruction-fee90f49/);
+  assert.match(client, /agarden\/flow\/ai-overviews-zero-click-publishing-62167f2d/);
   assert.doesNotMatch(app + shell + lineage + client, /DOPPL_DASHBOARD_API_KEY/);
   assert.doesNotMatch(app + shell + lineage + client, /sk-or-v1/);
 });
@@ -308,6 +308,7 @@ test('kernel HTTP server runs from replayed model calls', async () => {
     url: '/kernel/runs',
     body: JSON.stringify({
       runId: 'run_http_replay',
+      casePath: 'test/fixtures/fsd-seed.json',
       generations: 1,
       budget: 1,
       model: 'fixture-model',
@@ -505,7 +506,7 @@ test('kernel HTTP server runs a requested case study path with live model reques
       url: '/kernel/runs',
       body: JSON.stringify({
         runId: 'run_glp1_live',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         generations: 1,
         budget: 1,
         liveModel: true,
@@ -542,7 +543,7 @@ test('kernel dashboard route runs approved cases without exposing the kernel API
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_glp1_fixture',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         model: 'fixture-model',
         outDir: path.join(root, 'vault'),
         proofBoardDir: path.join(root, 'proof-board'),
@@ -612,7 +613,7 @@ test('kernel dashboard route refuses live generation unless explicitly enabled',
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_live_disabled',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         liveModel: true,
         model: 'fixture-model',
         outDir: path.join(root, 'vault'),
@@ -713,7 +714,7 @@ test('kernel dashboard route can run enabled live generation without exposing se
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_live_enabled',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         liveModel: true,
         model: 'fixture-model',
         generations: 4,
@@ -824,7 +825,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_replay_source',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         liveModel: true,
         model: 'fixture-model',
         generations: 1,
@@ -852,7 +853,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_replay_target',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         replayRunId: 'dashboard_replay_source',
         generations: 1,
         outDir,
@@ -899,7 +900,7 @@ test('kernel dashboard route requires a live demo token when configured', async 
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_live_token_denied',
-        casePath: 'fixtures/glp1-seed.json',
+        casePath: 'test/fixtures/glp1-seed.json',
         liveModel: true,
         model: 'fixture-model',
         outDir: path.join(root, 'vault-denied'),
@@ -931,7 +932,7 @@ test('kernel dashboard route applies an approved fitness lens without exposing s
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_lens_fixture',
-        casePath: 'fixtures/fsd-seed.json',
+        casePath: 'test/fixtures/fsd-seed.json',
         fitnessLens: 'feasibility',
         generations: 1,
         outDir: path.join(root, 'vault'),
@@ -959,7 +960,7 @@ test('kernel dashboard route applies an approved fitness schedule', async () => 
     url: '/kernel/dashboard/runs',
     body: JSON.stringify({
       runId: 'dashboard_schedule_fixture',
-      casePath: 'fixtures/fsd-seed.json',
+      casePath: 'test/fixtures/fsd-seed.json',
       fitnessSchedule: 'converge',
       generations: 1,
       outDir: path.join(root, 'vault'),
@@ -1008,7 +1009,7 @@ test('kernel dashboard route lists recent exported runs without an API key', asy
     url: '/kernel/dashboard/runs',
     body: JSON.stringify({
       runId: 'dashboard_history_fixture',
-      casePath: 'fixtures/fsd-seed.json',
+      casePath: 'test/fixtures/fsd-seed.json',
       outDir,
       proofBoardDir: path.join(root, 'proof-board'),
     }),
@@ -1032,22 +1033,22 @@ test('kernel dashboard route runs all approved real case fixtures with unique re
   const cases = [
     {
       caseId: 'fsd-ownership-unwind',
-      casePath: 'fixtures/fsd-seed.json',
+      casePath: 'test/fixtures/fsd-seed.json',
       expectedRecovery: /autonomy removes the human-driver reason/i,
     },
     {
       caseId: 'glp1-snack-demand-destruction',
-      casePath: 'fixtures/glp1-seed.json',
+      casePath: 'test/fixtures/glp1-seed.json',
       expectedRecovery: /reward system behind impulse eating occasions/i,
     },
     {
       caseId: 'ai-overviews-zero-click-publishing',
-      casePath: 'fixtures/ai-power-seed.json',
+      casePath: 'test/fixtures/ai-power-seed.json',
       expectedRecovery: /answer layers remove the click itself/i,
     },
     {
       caseId: 'starship-launch-cost-collapse',
-      casePath: 'fixtures/starship-seed.json',
+      casePath: 'test/fixtures/starship-seed.json',
       expectedRecovery: /launch-cost collapse re-prices every downstream constraint/i,
     },
   ];
@@ -1213,7 +1214,7 @@ test('kernel dashboard exposes keyless event stream without exposing API key', a
     url: '/kernel/dashboard/runs',
     body: JSON.stringify({
       runId: 'dashboard_stream_fixture',
-      casePath: 'fixtures/fsd-seed.json',
+      casePath: 'test/fixtures/fsd-seed.json',
       outDir,
       proofBoardDir: path.join(root, 'proof-board'),
     }),
@@ -1340,7 +1341,7 @@ test('kernel dashboard async live runs stream model operation starts before comp
       url: '/kernel/dashboard/runs',
       body: JSON.stringify({
         runId: 'dashboard_async_live_stream',
-        casePath: 'fixtures/fsd-seed.json',
+        casePath: 'test/fixtures/fsd-seed.json',
         liveModel: true,
         async: true,
         model: 'fixture-model',

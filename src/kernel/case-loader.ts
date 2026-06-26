@@ -26,7 +26,9 @@ function titleFromMarkdown(markdown: string, fallback: string): string {
 
 function idFromSourcePath(sourcePath: string): string {
   const basename = path.basename(sourcePath);
-  return fixtureCaseIds[basename] ?? path.basename(path.dirname(sourcePath));
+  const dirname = path.basename(path.dirname(sourcePath));
+  if (sourcePath.includes('/agarden/flow/')) return dirname.replace(/-[0-9a-f]{8}$/i, '');
+  return fixtureCaseIds[basename] ?? dirname;
 }
 
 function caseStudyFromSeedFixture(sourcePath: string, raw: string): CaseStudy {

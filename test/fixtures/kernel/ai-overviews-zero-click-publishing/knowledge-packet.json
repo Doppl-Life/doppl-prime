@@ -7,7 +7,7 @@
       "citeHandle": "K1",
       "text": "AI answer layers can preserve ranking visibility while removing the click that funded pageview advertising.",
       "sourceCase": "ai-overviews-zero-click-publishing",
-      "citation": "fixtures/ai-power-seed.json",
+      "citation": "test/fixtures/ai-power-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     },
@@ -16,7 +16,7 @@
       "citeHandle": "K2",
       "text": "The new distribution asset is citation share inside answers plus owned audience, not ranking-for-traffic alone.",
       "sourceCase": "ai-overviews-zero-click-publishing",
-      "citation": "fixtures/ai-power-seed.json",
+      "citation": "test/fixtures/ai-power-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     },
@@ -25,7 +25,7 @@
       "citeHandle": "K3",
       "text": "Surviving clicks may convert better because the visitor already consumed the summary and wants depth, brand, or freshness.",
       "sourceCase": "ai-overviews-zero-click-publishing",
-      "citation": "fixtures/ai-power-seed.json",
+      "citation": "test/fixtures/ai-power-seed.json",
       "trustTier": "target-problem",
       "visibility": "public"
     }

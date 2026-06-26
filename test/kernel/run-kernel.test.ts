@@ -7,9 +7,9 @@ import { createReplayModelClient, type ModelCallRecord } from '../../src/kernel/
 test('runs deterministic kernel loop end to end', async () => {
   const run = await runKernel({
     runId: 'run_test',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
   });
   assert.equal(run.problemRecovery.caseId, 'fsd-ownership-unwind');
@@ -35,9 +35,9 @@ test('runs deterministic kernel loop end to end', async () => {
 test('tags mutated candidates with their mutagen and accumulates the lineage', async () => {
   const run = await runKernel({
     runId: 'run_mutagen',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generations: 2,
   });
@@ -79,9 +79,9 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
 test('runs through injected generation providers', async () => {
   const run = await runKernel({
     runId: 'run_injected',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generationProviders: {
       problemRecovery: {
@@ -160,9 +160,9 @@ test('runs through injected generation providers', async () => {
 test('runs a clean baseline outside evolutionary selection', async () => {
   const run = await runKernel({
     runId: 'run_clean_baseline',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generationProviders: {
       problemRecovery: {
@@ -247,9 +247,9 @@ test('can evolve a child across multiple generations', async () => {
   const seenAgenomePools: string[][] = [];
   const run = await runKernel({
     runId: 'run_evolution',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generations: 2,
     generationProviders: {
@@ -336,9 +336,9 @@ test('stops evolution when the generation budget is exhausted', async () => {
   let generateCalls = 0;
   const run = await runKernel({
     runId: 'run_budgeted_evolution',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generations: 3,
     evolutionBudget: { maxUnits: 1 },
@@ -540,9 +540,9 @@ test('runs through replayed model generation providers', async () => {
 
   const run = await runKernel({
     runId: 'run_model_generation',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generationProviders: createModelGenerationProviders({
       client: createReplayModelClient(records),
@@ -758,9 +758,9 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
 
   const run = await runKernel({
     runId: 'run_model_repair_trace',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generationProviders: createModelGenerationProviders({
       client: createReplayModelClient(records),

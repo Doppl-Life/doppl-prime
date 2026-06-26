@@ -11,9 +11,9 @@ import { readModelCallRecords } from '../../src/kernel/model-gateway.ts';
 test('exports problem recovery and child solution markdown separately', async () => {
   const run = await runKernel({
     runId: 'run_export',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-'));
@@ -40,9 +40,9 @@ test('exports problem recovery and child solution markdown separately', async ()
 test('exports a calibrator-facing run index', async () => {
   const run = await runKernel({
     runId: 'run_export_index',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-index-'));
@@ -122,9 +122,9 @@ test('exports a calibrator-facing run index', async () => {
 test('exports model call evidence when present on the run', async () => {
   const run = await runKernel({
     runId: 'run_export_model_calls',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
   });
   run.modelCallRecords = [
@@ -151,9 +151,9 @@ test('exports model call evidence when present on the run', async () => {
 test('exports a separate clean-agent baseline when the run provides one', async () => {
   const run = await runKernel({
     runId: 'run_export_clean_baseline',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
     generationProviders: {
       problemRecovery: {

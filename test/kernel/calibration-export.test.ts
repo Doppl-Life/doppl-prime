@@ -9,9 +9,9 @@ import { exportRunToCalibrationVault } from '../../src/kernel/vault-export.ts';
 test('exports a calibrator vault with unrated review fields', async () => {
   const run = await runKernel({
     runId: 'run_calibration_export',
-    casePath: 'fixtures/fsd-seed.json',
-    fixturePath: 'fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+    casePath: 'test/fixtures/fsd-seed.json',
+    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-calibration-vault-'));

@@ -166,22 +166,22 @@ const DASHBOARD_RUNS_PATH = "/kernel/dashboard/runs";
 
 const CURATED_PROMPTS: CuratedPrompt[] = [
   {
-    id: "fixtures/fsd-seed.json",
+    id: "../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md",
     title: "FSD ownership unwind",
     subtype: "zeitgeist_synthesis",
   },
   {
-    id: "fixtures/glp1-seed.json",
+    id: "../agarden/flow/glp1-snack-demand-destruction-fee90f49/glp1-snack-demand-destruction-fee90f49.md",
     title: "GLP-1 snack demand destruction",
     subtype: "zeitgeist_synthesis",
   },
   {
-    id: "fixtures/ai-power-seed.json",
+    id: "../agarden/flow/ai-overviews-zero-click-publishing-62167f2d/ai-overviews-zero-click-publishing-62167f2d.md",
     title: "AI overviews zero-click publishing",
     subtype: "zeitgeist_synthesis",
   },
   {
-    id: "fixtures/starship-seed.json",
+    id: "../agarden/flow/starship-launch-cost-collapse-49cce9a5/starship-launch-cost-collapse-49cce9a5.md",
     title: "Starship launch-cost collapse",
     subtype: "cross_domain_transfer",
   },

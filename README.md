@@ -33,13 +33,35 @@ the crucible (`mechanics/kernel/engine.md`): generate candidates → score (nove
 select survivors under a diverge/converge dial → lens. A problem may yield more than one
 doppl.
 
+## The Architecture
+
+Doppl's product loop is nodes in, nodes out:
+
+```text
+agarden flow/stock -> kernel trace and agenomes -> agarden flow/stock
+```
+
+The configured agarden vault is the durable source and sink.
+The local default is `../agarden`, but the path is configurable in `doppl.config.json`.
+If the configured vault is missing, product commands should fail loudly.
+
+Inputs are MarkScript nodes from `flow/`.
+A seed is a `case_study` node with `prev_id: null`.
+A reseeded case study is the same stage with `prev_id` pointing at the doppl that produced it.
+
+Outputs are surviving nodes written back to `flow/` and admitted stock written to `stock/`.
+The kernel's in-memory trace, event stream, candidate pool, and agenomes are inner runtime state, not durable outer artifacts.
+
+See [`my-docs/ARCHITECTURE.md`](my-docs/ARCHITECTURE.md).
+
 ## The kernel
 
-The engine lives in `src/`:
+The engine lives in `src/kernel/`:
 
-- `src/contracts/index.ts` — the machine contracts.
-- `src/trace.ts` — `buildRunTrace()`, the canonical pipeline. The trace is the specimen.
-- `src/generate.ts` · `src/fitness.ts` · `src/select.ts` · `src/lens.ts` — the crucible.
+- `src/kernel/contracts.ts` — runtime boundary contracts.
+- `src/kernel/run-kernel.ts` — the generate-under-selection loop.
+- `src/kernel/event-store.ts` — the live trace/event projection.
+- `src/kernel/vault-sink.ts` — the writer for agarden flow nodes.
 
 Fitness keeps **novelty and grounding** as separate 0–1 measurements, never collapsed before
 selection. **Decay** is the engine's time axis: a `temporal` (zeitgeist) idea decays on a
@@ -50,20 +72,14 @@ after selection. These 0–1 measurements map into the judge's −5…+5 **ratin
 ## Run it
 
 ```bash
-pnpm build          # typecheck + the multi-seed proof board
-pnpm proof          # the proof board alone
-pnpm grow           # grow a seed end-to-end into the vault (flow/ + stock/)
-pnpm proof:export   # replay artifacts under out/proof-board/** (ephemeral, gitignored)
-pnpm clear:run-data    # clear local out/** run data
+pnpm build          # typecheck + lint + tests + web build
+pnpm kernel:run     # run the kernel CLI
+pnpm kernel:serve   # serve the dashboard and kernel HTTP API
+pnpm web:build      # build the React dashboard
 ```
 
-`pnpm grow` runs a seed through discovery → engine → compile and writes contract-shaped markdown to
-the vault named in `doppl.config.json` (`vault`, default `../agarden`). The sink
-([`mechanics/kernel/sink.md`](mechanics/kernel/sink.md)) is the only writer. Pass a path as the 2nd
-arg to override, e.g. `pnpm grow fixtures/fsd-seed.json out/vault`.
-
-The proof board prints one line per seed:
-`seed → generated → rejected → Explore keeps → Proof keeps → swap → failed checks`.
+The product target is configured in `doppl.config.json` (`vault`, local default `../agarden`).
+The sink ([`mechanics/kernel/sink.md`](mechanics/kernel/sink.md)) is the only writer.
 
 ## Registers
 

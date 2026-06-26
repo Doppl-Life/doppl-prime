@@ -1,43 +1,39 @@
-# Kernel Artifact Policy
+# Artifact Policy
 
-Visibility is not volume, and human readability is not part of the kernel
-contract. `src/` emits machine-clean process facts; nodes and the proof board
-translate those facts into derived human views.
+Doppl's durable artifacts are garden nodes and stock.
+The product path is agarden in, agarden out.
 
-The default proof path should minimize process, not create an archive chore.
-Prefer one command and one glance when the domain allows it. `pnpm build`
-typechecks and prints the multi-seed proof board directly to stdout:
-`seed -> generated -> rejected -> Explore keeps -> Proof keeps -> swap -> failed checks`.
-Files are for replay and investigation after the human already knows what happened.
+The kernel may keep rich process state while a run is happening.
+That state is for the inner view and debugging; it is not the outer product artifact.
 
 ## Read Order
 
-1. `pnpm build` - default proof. Typecheck plus compact multi-seed board.
-2. `pnpm proof` - the proof board alone.
-3. `pnpm proof:export` - optional replay output under `out/proof-board/**`.
-4. `run-trace.json` - machine trace. Use it for tooling, replay, comparison, or
-   contract debugging when `pnpm proof:export` has created it.
+1. `../agarden/flow/**` - durable surviving nodes.
+2. `../agarden/stock/**` - admitted discoveries that support surviving nodes.
+3. `ratings-ledger.json` - human ratings for scored nodes.
+4. Live run trace - inner process view while selection is happening.
 
 ## Artifact Classes
 
 | Class | Paths | Keep? | Why |
 | --- | --- | --- | --- |
-| Source contracts | `src/contracts/index.ts` | yes | Load-bearing boundary definitions. |
-| The model | `my-docs/the-hut/**` | yes | Canon: the engine, rating, object model, vocabulary. |
-| Fixture inputs | `fixtures/*.json` | yes | Reproducible seed material. |
-| Case-study corpus | external — [Doppl-Life/agarden](https://github.com/Doppl-Life/agarden) | n/a | The seeds. Migrated out of this repo; they live in the agarden Obsidian vault as `case_study` nodes (`slug-id/slug-id.md` + frontmatter), `solution.md` beside them, judge-only. |
-| Generated run output | `out/**` | no | Ephemeral inspection output; regenerate with `pnpm proof:export`. |
-| Promoted proof | `records/<slug>/...` | only by decision | Keep when a run becomes evidence for a design decision or regression. |
+| Product input nodes | `../agarden/flow/**` | yes | MarkScript nodes the kernel grows from. |
+| Product output nodes | `../agarden/flow/**` | yes | Surviving `problem_recovery`, `doppl`, and reseeded `case_study` nodes. |
+| Stock | `../agarden/stock/**` | yes | Domain memory read before research and written when used by survivors. |
+| Human ratings | `../agarden/ratings-ledger.json` | yes | Human score source for node projections. |
+| Runtime trace | memory / event stream | no | Inner process state for the current run. |
+| Test fixtures | `test/fixtures/**` | test-only | Deterministic harness data, never product input. |
+| Local drill-down output | `out/**` or OS temp dirs | no | Temporary inspection state, not product output. |
 
-Default rule: do not preserve generated output just because it exists. Promote a
-run only when the board or trace names a behavior we intend to compare against later.
+Default rule: a product artifact is either a garden node, garden stock, or the ratings ledger.
+Everything else must be test-only or temporary.
 
 ## Kill Rules
 
 - If a human-facing artifact cannot change a decision in under one minute,
   delete it or demote it to machine trace.
-- If an artifact is generated every run but is not read for three meaningful
-  runs, stop generating it by default.
+- If an artifact is generated every run and is not a garden node, garden stock,
+  a rating, or a live inner trace, stop generating it by default.
 - If a report repeats information already visible in stdout or the proof board,
   cut the repeated section unless it supports drill-down.
 - If an artifact has no named consumer, action, or regression it can catch, it
@@ -45,10 +41,8 @@ run only when the board or trace names a behavior we intend to compare against l
 - If human-language fields leak into `src/contracts`, move them to a view or delete them.
 - If a filename, command, heading, or doc frame uses conversational process
   language where object-level language would do, rename it before it hardens.
-- If the kernel behavior changes materially, the default human surface must expose
-  the new RunTrace facts before selector details.
+- If deterministic data is needed for tests, put it under a test-only path and
+  keep product defaults pointed at the configured agarden.
 
-Rich data is fine. Mandatory human reading is the scarce resource.
-
-The principle is "best process is no process." One-button proof is a design
-pressure, not a literal law.
+Rich process data is fine inside the run.
+The outer product surface is the garden.
