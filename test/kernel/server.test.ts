@@ -13,11 +13,13 @@ import { type ModelCallRecord, writeModelCallRecords } from '../../src/kernel/mo
 
 process.env.DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS = 'true';
 
+const FSD_FIXTURE_PATH = 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json';
+const FSD_KNOWLEDGE_PACKET_PATH = 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json';
+const GLP1_KNOWLEDGE_PACKET_PATH = 'test/fixtures/kernel/glp1-snack-demand-destruction/knowledge-packet.json';
+
 async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
   const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
-  const gateway = await createJsonKnowledgeGateway(
-    'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-  );
+  const gateway = await createJsonKnowledgeGateway(FSD_KNOWLEDGE_PACKET_PATH);
   const knowledgePacket = await gateway.selectPacket({
     runId,
     targetCase: caseStudy.id,
@@ -305,6 +307,8 @@ test('kernel HTTP server runs a fixture kernel request', async () => {
     url: '/kernel/runs',
     body: JSON.stringify({
       runId: 'run_http_fixture',
+      fixturePath: FSD_FIXTURE_PATH,
+      knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
       generations: 1,
       budget: 1,
       outDir: path.join(root, 'vault'),
@@ -332,6 +336,7 @@ test('kernel HTTP server runs from replayed model calls', async () => {
     body: JSON.stringify({
       runId: 'run_http_replay',
       casePath: 'test/fixtures/fsd-seed.json',
+      knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
       generations: 1,
       budget: 1,
       model: 'fixture-model',
@@ -432,6 +437,7 @@ test('kernel HTTP server runs live model requests with a server-side key', async
         budget: 1,
         liveModel: true,
         model: 'fixture-model',
+        knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
         outDir: path.join(root, 'vault'),
         proofBoardDir: path.join(root, 'proof-board'),
       }),
@@ -530,6 +536,7 @@ test('kernel HTTP server runs a requested case study path with live model reques
       body: JSON.stringify({
         runId: 'run_glp1_live',
         casePath: 'test/fixtures/glp1-seed.json',
+        knowledgePacketPath: GLP1_KNOWLEDGE_PACKET_PATH,
         generations: 1,
         budget: 1,
         liveModel: true,
@@ -1132,6 +1139,8 @@ test('kernel HTTP server requires an API key when configured', async () => {
       headers: { authorization: 'Bearer kernel-test-key' },
       body: JSON.stringify({
         runId: 'run_http_auth_ok',
+        fixturePath: FSD_FIXTURE_PATH,
+        knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
         generations: 1,
         budget: 1,
         outDir: path.join(root, 'vault'),
@@ -1155,6 +1164,8 @@ test('kernel HTTP server reads exported run indexes and artifacts', async () => 
     url: '/kernel/runs',
     body: JSON.stringify({
       runId: 'run_http_readback',
+      fixturePath: FSD_FIXTURE_PATH,
+      knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
       generations: 1,
       budget: 1,
       outDir,
@@ -1188,6 +1199,8 @@ test('kernel HTTP server exposes canonical run events, SSE stream, and run healt
     url: '/kernel/runs',
     body: JSON.stringify({
       runId: 'run_http_events',
+      fixturePath: FSD_FIXTURE_PATH,
+      knowledgePacketPath: FSD_KNOWLEDGE_PACKET_PATH,
       generations: 1,
       budget: 1,
       outDir,

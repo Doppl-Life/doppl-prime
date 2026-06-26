@@ -20,8 +20,6 @@ import {
 export type KernelCliArgs = {
   runId: string;
   casePath: string;
-  fixturePath: string;
-  knowledgePacketPath: string;
   memoryMode: 'auto';
   generations: number;
   evolutionBudget: { maxUnits: number };
@@ -40,8 +38,6 @@ export type KernelCliArgs = {
 export const defaultKernelArgs: KernelCliArgs = {
   runId: 'run_fsd_ownership',
   casePath: '../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md',
-  fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-  knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
   memoryMode: 'auto' as const,
   generations: 1,
   evolutionBudget: { maxUnits: 1 },
@@ -79,12 +75,6 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
       index += 1;
     } else if (flag === '--case') {
       args.casePath = readFlagValue(argv, index, flag);
-      index += 1;
-    } else if (flag === '--fixture') {
-      args.fixturePath = readFlagValue(argv, index, flag);
-      index += 1;
-    } else if (flag === '--knowledge-packet') {
-      args.knowledgePacketPath = readFlagValue(argv, index, flag);
       index += 1;
     } else if (flag === '--generations') {
       args.generations = readIntegerFlag(argv, index, flag, 1);

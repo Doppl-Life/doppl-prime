@@ -12,6 +12,7 @@ export type KernelRunRequest = {
   knowledgePacketPath?: string;
   generations?: number;
   budget?: number;
+  vault?: string;
   outDir?: string;
   proofBoardDir?: string;
   replayModelCallsPath?: string;

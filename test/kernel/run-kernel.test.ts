@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
 import { runKernel } from '../../src/kernel/run-kernel.ts';
 import { createModelGenerationProviders } from '../../src/kernel/generation-providers.ts';
 import { createReplayModelClient, type ModelCallRecord } from '../../src/kernel/model-gateway.ts';
@@ -10,6 +13,7 @@ test('requires explicit generation providers outside the test fixture harness', 
       runKernel({
         runId: 'run_requires_provider',
         casePath: 'test/fixtures/fsd-seed.json',
+        vault: '../agarden',
         fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
         knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
         memoryMode: 'auto',
@@ -18,10 +22,100 @@ test('requires explicit generation providers outside the test fixture harness', 
   );
 });
 
+test('reads configured agarden stock for product knowledge', async () => {
+  const vault = await mkdtemp(path.join(tmpdir(), 'doppl-product-stock-'));
+  await mkdir(path.join(vault, 'stock'), { recursive: true });
+  await writeFile(
+    path.join(vault, 'stock', 'claims-adjustment.md'),
+    [
+      '---',
+      'id: claims-adjustment',
+      'name: "Claims adjustment"',
+      '---',
+      '',
+      '# Claims adjustment',
+      '',
+      '## Load-bearing facts',
+      '',
+      '### OEM direct settlement changes the claims layer',
+      '',
+      'When the vehicle records the event and the OEM settles directly, claims work moves upstream.',
+      '_Grounded: NAIC telematics._ ^direct-settlement',
+    ].join('\n'),
+    'utf8',
+  );
+  let citedKnowledge: string[] = [];
+  const run = await runKernel({
+    runId: 'run_product_stock',
+    casePath: 'test/fixtures/fsd-seed.json',
+    vault,
+    memoryMode: 'auto',
+    generationProviders: {
+      problemRecovery: {
+        async recover({ caseStudy, knowledgePacket }) {
+          citedKnowledge = knowledgePacket.items.map((item) => item.citeHandle);
+          return {
+            id: `stock_recovery_${caseStudy.id}`,
+            caseId: caseStudy.id,
+            title: 'Stock Recovery',
+            recoveredProblem: 'Recover from stock-backed context.',
+            hiddenConstraint: 'The product path reads agarden stock.',
+            falsifier: 'The run uses a JSON knowledge packet.',
+            citedKnowledge,
+          };
+        },
+      },
+      candidateGenerator: {
+        async generate({ caseStudy, generation }) {
+          return [
+            {
+              id: 'stock_a',
+              caseId: caseStudy.id,
+              agenomeId: 'ag_stock_a',
+              generation,
+              title: 'Stock A',
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge,
+            },
+            {
+              id: 'stock_b',
+              caseId: caseStudy.id,
+              agenomeId: 'ag_stock_b',
+              generation,
+              title: 'Stock B',
+              summary: 'summary',
+              mechanism: 'mechanism',
+              claimedDelta: 'delta',
+              citedKnowledge,
+            },
+          ];
+        },
+      },
+      criticCouncil: {
+        async judge({ candidates }) {
+          return candidates.map((candidate, index) => ({
+            candidateId: candidate.id,
+            criticId: 'stock',
+            score: 90 - index,
+            pressure: 'stock-backed',
+            revisionMandate: 'keep stock citations',
+          }));
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(run.problemRecovery.citedKnowledge, ['direct-settlement']);
+  assert.equal(run.knowledgePacket.items[0]?.trustTier, 'agarden-stock');
+});
+
 test('runs deterministic kernel loop end to end', async () => {
   const run = await runKernel({
     runId: 'run_test',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -51,6 +145,7 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
   const run = await runKernel({
     runId: 'run_mutagen',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -96,6 +191,7 @@ test('runs through injected generation providers', async () => {
   const run = await runKernel({
     runId: 'run_injected',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -178,6 +274,7 @@ test('runs a clean baseline outside evolutionary selection', async () => {
   const run = await runKernel({
     runId: 'run_clean_baseline',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -266,6 +363,7 @@ test('can evolve a child across multiple generations', async () => {
   const run = await runKernel({
     runId: 'run_evolution',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -356,6 +454,7 @@ test('stops evolution when the generation budget is exhausted', async () => {
   const run = await runKernel({
     runId: 'run_budgeted_evolution',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -561,6 +660,7 @@ test('runs through replayed model generation providers', async () => {
   const run = await runKernel({
     runId: 'run_model_generation',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -780,6 +880,7 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
   const run = await runKernel({
     runId: 'run_model_repair_trace',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',

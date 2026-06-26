@@ -42,6 +42,9 @@ Stock is domain memory.
 Discovery reads existing stock before reaching outward.
 Discovery may produce new stock candidates during a run.
 Only stock used by surviving output nodes is admitted to the agarden.
+Product knowledge packets are selected from configured agarden `stock/*.md`.
+JSON knowledge packets are a deterministic test harness input only.
+If the configured vault has no `stock/` directory, product runs fail loudly.
 
 ## Views
 
@@ -61,6 +64,7 @@ They must live under an explicitly test-only path or carry an explicit test-only
 Product runs do not fall back to fixture generation providers.
 The kernel requires live, replay, or CLI model generation providers unless a test explicitly enables `allowTestFixtureProviders` or `DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS=true`.
 HTTP product routes accept test fixture seed paths only behind that same harness gate.
+That same harness gate is the only path that allows JSON knowledge packets.
 
 `out/` is not product output.
 If a command writes local run inspection files, that path is temporary drill-down state.

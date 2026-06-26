@@ -12,6 +12,7 @@ test('exports problem recovery and child solution markdown separately', async ()
   const run = await runKernel({
     runId: 'run_export',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -42,6 +43,7 @@ test('exports a calibrator-facing run index', async () => {
   const run = await runKernel({
     runId: 'run_export_index',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -125,6 +127,7 @@ test('exports model call evidence when present on the run', async () => {
   const run = await runKernel({
     runId: 'run_export_model_calls',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
@@ -155,6 +158,7 @@ test('exports a separate clean-agent baseline when the run provides one', async 
   const run = await runKernel({
     runId: 'run_export_clean_baseline',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',

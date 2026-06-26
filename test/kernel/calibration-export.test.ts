@@ -8,8 +8,9 @@ import { exportRunToCalibrationVault } from '../../src/kernel/vault-export.ts';
 
 test('exports a calibrator vault with unrated review fields', async () => {
   const run = await runKernel({
-    runId: 'run_calibration_export',
+    runId: 'run_calibration',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',

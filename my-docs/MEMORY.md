@@ -30,6 +30,17 @@ kernel owner must not accidentally undo.
 - **Revisit if:** fixture generation appears in a non-test product path.
   Treat that as boundary drift and cut it back behind the harness gate.
 
+### Product knowledge reads agarden stock - 2026-06-26
+
+- **Chose:** product runs build their knowledge packet from configured agarden `stock/*.md`.
+  The stock reader fails loudly when the configured vault has no `stock/` directory.
+  JSON knowledge packets remain available only through the explicit test fixture harness.
+- **Over:** using `test/fixtures/kernel/**/knowledge-packet.json` as a product knowledge source.
+- **Because:** Doppl is building domain expertise.
+  Runs must read existing stock before reaching outward, and test packets cannot stand in for that product memory.
+- **Revisit if:** JSON knowledge packets appear in a non-test path.
+  Move them back behind `allowTestFixtureProviders` or delete the bridge.
+
 ### The hut is canon - 2026-06-22
 
 - **Chose:** `my-docs/the-hut/**` is the protected inner source of truth for the

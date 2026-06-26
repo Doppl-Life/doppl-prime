@@ -10,7 +10,7 @@ import {
   type MemoryMode,
 } from './contracts.ts';
 import { loadCaseStudy } from './case-loader.ts';
-import { createJsonKnowledgeGateway } from './knowledge-gateway.ts';
+import { createAgardenStockKnowledgeGateway, createJsonKnowledgeGateway } from './knowledge-gateway.ts';
 import {
   scoreCandidates,
   selectParents,
@@ -71,8 +71,9 @@ function allocationUnitsForAgenome(agenomeId: string): number {
 export async function runKernel(input: {
   runId: string;
   casePath: string;
-  fixturePath: string;
-  knowledgePacketPath: string;
+  vault: string;
+  fixturePath?: string;
+  knowledgePacketPath?: string;
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
   allowTestFixtureProviders?: boolean;
@@ -90,7 +91,16 @@ export async function runKernel(input: {
     memoryMode: input.memoryMode,
   });
 
-  const gateway = await createJsonKnowledgeGateway(input.knowledgePacketPath);
+  let gateway;
+  if (input.allowTestFixtureProviders) {
+    const knowledgePacketPath = input.knowledgePacketPath;
+    if (!knowledgePacketPath) {
+      throw new Error('knowledgePacketPath is required for the test fixture harness');
+    }
+    gateway = await createJsonKnowledgeGateway(knowledgePacketPath);
+  } else {
+    gateway = await createAgardenStockKnowledgeGateway(input.vault);
+  }
   const knowledgePacket = await gateway.selectPacket({
     runId: input.runId,
     targetCase: caseStudy.id,
@@ -107,9 +117,14 @@ export async function runKernel(input: {
     });
   }
 
-  const generationProviders = input.generationProviders || (input.allowTestFixtureProviders
-    ? await createFixtureGenerationProviders(input.fixturePath)
-    : undefined);
+  let generationProviders = input.generationProviders;
+  if (!generationProviders && input.allowTestFixtureProviders) {
+    const fixturePath = input.fixturePath;
+    if (!fixturePath) {
+      throw new Error('fixturePath is required for the test fixture harness');
+    }
+    generationProviders = await createFixtureGenerationProviders(fixturePath);
+  }
   if (!generationProviders) {
     throw new Error(
       'generationProviders are required; product runs must use live, replay, or CLI model providers',

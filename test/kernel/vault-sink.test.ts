@@ -11,8 +11,9 @@ import { slugId } from '../../src/kernel/slug.ts';
 
 async function fixtureRun() {
   return runKernel({
-    runId: 'vault_sink_canonical',
+    runId: 'run_vault_sink',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',

@@ -8,8 +8,9 @@ import { renderProofBoard, writeProofBoard } from '../../src/kernel/proof-board.
 
 async function fixtureRun() {
   return runKernel({
-    runId: 'run_board',
+    runId: 'run_proof_board',
     casePath: 'test/fixtures/fsd-seed.json',
+    vault: '../agarden',
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
