@@ -235,67 +235,35 @@ test('kernel HTTP server serves a visible production page', async () => {
 });
 
 test('kernel dashboard source is built on React Flow', async () => {
-  const source = await readFile('kernel/web/src/App.jsx', 'utf8');
+  const app = await readFile('kernel/web/src/App.tsx', 'utf8');
+  const shell = await readFile('kernel/web/src/layout/DashboardShell.tsx', 'utf8');
+  const lineage = await readFile('kernel/web/src/lineage/LineageGraph.tsx', 'utf8');
+  const client = await readFile('kernel/web/src/data/runClient.ts', 'utf8');
 
-  assert.match(source, /@xyflow\/react/);
-  assert.match(source, /<ReactFlow/);
-  assert.doesNotMatch(source, /<MiniMap/);
-  assert.match(source, /nodesDraggable=\{false\}/);
-  assert.match(source, /nodesConnectable=\{false\}/);
-  assert.match(source, /draggable: false/);
-  assert.match(source, /fitness-metrics/);
-  assert.match(source, /Pareto frontier/);
-  assert.match(source, /proposalRating/);
-  assert.match(source, /fitnessLens/);
-  assert.match(source, /Fitness lens/);
-  assert.match(source, /fitnessSchedule/);
-  assert.match(source, /Fitness schedule/);
-  assert.match(source, /scheduleComparisons/);
-  assert.match(source, /Schedule comparison/);
-  assert.match(source, /assayControl/);
-  assert.match(source, /Assay control/);
-  assert.match(source, /controlArtifact/);
-  assert.match(source, /control artifact/);
-  assert.match(source, /heldOutJudge/);
-  assert.match(source, /Held-out judge/);
-  assert.match(source, /referenceBenchmark/);
-  assert.match(source, /Reference benchmark/);
-  assert.match(source, /referenceCase/);
-  assert.match(source, /Reference case/);
-  assert.match(source, /sealed evaluator only/);
-  assert.match(source, /clean generation-0 baseline/);
-  assert.match(source, /agenomes/);
-  assert.match(source, /Agenome persona/);
-  assert.match(source, /runMode/);
-  assert.match(source, /Run mode/);
-  assert.match(source, /async: true/);
-  assert.match(source, /replayRunId/);
-  assert.match(source, /hasModelCalls/);
-  assert.match(source, /Replay/);
-  assert.match(source, /fetchDashboardRunIndex/);
-  assert.match(source, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
-  assert.match(source, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
-  assert.doesNotMatch(source, /DOPPL_DASHBOARD_API_KEY/);
-  assert.doesNotMatch(source, /sk-or-v1/);
+  assert.match(app, /DashboardShell/);
+  assert.match(shell, /RunsListPanel/);
+  assert.match(shell, /AgentActivityTable/);
+  assert.match(shell, /FinalIdeaPanel/);
+  assert.match(lineage, /@xyflow\/react/);
+  assert.match(lineage, /<ReactFlow/);
+  assert.match(lineage, /<MiniMap/);
+  assert.match(client, /\/kernel\/dashboard\/runs/);
+  assert.match(client, /case-studies\/glp1-snack-demand-destruction\/problem-statement\.md/);
+  assert.match(client, /case-studies\/ai-overviews-zero-click-publishing\/problem-statement\.md/);
+  assert.doesNotMatch(app + shell + lineage + client, /DOPPL_DASHBOARD_API_KEY/);
+  assert.doesNotMatch(app + shell + lineage + client, /sk-or-v1/);
 });
 
-test('kernel dashboard styles keep graph controls readable without a minimap', async () => {
-  const styles = await readFile('kernel/web/src/styles.css', 'utf8');
+test('kernel dashboard styles carry the lifted theme and lineage graph polish', async () => {
+  const styles = `${await readFile('kernel/web/src/ui/theme.css', 'utf8')}\n${await readFile(
+    'kernel/web/src/lineage/lineageAnimations.css',
+    'utf8',
+  )}`;
 
-  assert.match(styles, /\.react-flow__controls-button/);
-  assert.match(styles, /background: #31d4ff/);
-  assert.match(styles, /color: #04111c/);
-  assert.match(styles, /\.fitness-metrics/);
-  assert.match(styles, /\.schedule-panel/);
-  assert.match(styles, /\.schedule-list/);
-  assert.match(styles, /\.assay-panel/);
-  assert.match(styles, /\.assay-artifact/);
-  assert.match(styles, /\.assay-comparison/);
-  assert.match(styles, /\.assay-evidence/);
-  assert.match(styles, /\.assay-judge/);
-  assert.match(styles, /\.assay-reference/);
-  assert.match(styles, /\.history-action/);
-  assert.doesNotMatch(styles, /\.react-flow-minimap/);
+  assert.match(styles, /--doppl-accent: #2fe6ad/);
+  assert.match(styles, /--doppl-status-ok/);
+  assert.match(styles, /data-rail="left"/);
+  assert.match(styles, /\.doppl-flow/);
 });
 
 test('kernel HTTP server rejects missing dashboard assets', async () => {

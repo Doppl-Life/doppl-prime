@@ -1,0 +1,405 @@
+/**
+ * Doppl theme — SCI-FI / FUTURISTIC HUD.
+ *
+ * Deep-space surfaces, neon cyan + violet accents, thin glowing
+ * borders and soft glow shadows instead of hard offsets, HUD-style
+ * uppercase tracked headings. Status palette stays redundant (shape +
+ * icon + label + color) and hue-distinguishable while glowing on dark.
+ */
+:root {
+  /* Surface tokens — deep navy */
+  --doppl-bg: #07101f; /* page / void */
+  --doppl-bg-elevated: rgba(15, 27, 47, 0.8); /* deep navy panel */
+  --doppl-bg-solid: #0e1c31; /* opaque panel */
+  --doppl-bg-input: rgba(9, 18, 33, 0.8); /* input wells */
+  --doppl-sidebar-bg: linear-gradient(180deg, #0b1426 0%, #070e1b 100%);
+  --doppl-glass-blur: blur(14px) saturate(130%);
+  --doppl-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 42%);
+  --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --doppl-bg-glow: radial-gradient(circle at 85% -5%, rgba(43, 214, 255, 0.1), transparent 42%),
+    radial-gradient(circle at 0% 100%, rgba(47, 230, 173, 0.06), transparent 45%);
+  /* Quiet slate hairline for panel/divider edges (not glowing cyan). */
+  --doppl-hairline: rgba(124, 162, 214, 0.2);
+  --doppl-border: rgba(124, 162, 214, 0.26); /* charts grid / axes / lineage edges */
+  --doppl-border-strong: rgba(124, 162, 214, 0.5);
+
+  /* Text — cool HUD ink */
+  --doppl-text-primary: #dce8f7;
+  --doppl-text-secondary: #8aa2c4;
+  --doppl-text-muted: #5d7095;
+
+  /* Light ink on the (dark) sidebar — same family as primary here */
+  --doppl-on-dark: #e4eefb;
+  --doppl-on-dark-muted: #93a6c6;
+
+  /* Accent — mint-green primary (active/selected/buttons); cyan for links */
+  --doppl-accent: #2fe6ad;
+  --doppl-accent-hover: #5cf0c2;
+  --doppl-on-accent: #04211a;
+  --doppl-accent-glow: rgba(47, 230, 173, 0.4);
+  --doppl-link: #4fb6e8;
+
+  /* Alert — neon red/magenta */
+  --doppl-red: #ff4d6a;
+  --doppl-red-hover: #ff7388;
+  --doppl-on-red: #1a0309;
+
+  /* Neon, desaturated-on-purpose-no — bright + hue-distinguishable */
+  --doppl-cyan: #2bd6ff; /* info */
+  --doppl-green: #36f5a0; /* ok — neon mint */
+  --doppl-orange: #ffb454; /* warn — amber */
+  --doppl-yellow: #ffe26b; /* pending — gold */
+  --doppl-blue: #5a8bff; /* electric blue */
+  --doppl-vermilion: #ff4d6a; /* error — neon red */
+  --doppl-pink: #c46bff; /* skip — violet */
+  --doppl-neutral: #6f86a8; /* slate */
+
+  /* Status semantics (semantic aliases; never use color alone) */
+  --doppl-status-ok: var(--doppl-green);
+  --doppl-status-warn: var(--doppl-orange);
+  --doppl-status-error: var(--doppl-vermilion);
+  --doppl-status-skip: var(--doppl-pink);
+  --doppl-status-info: var(--doppl-cyan);
+  --doppl-status-pending: var(--doppl-yellow);
+  --doppl-status-neutral: var(--doppl-neutral);
+  --doppl-status-success: var(--doppl-green);
+  --doppl-status-warning: #ffb454;
+  --doppl-status-warning-bg: rgba(255, 180, 84, 0.16);
+
+  /* Font scale (projector-legible) */
+  --doppl-fs-xs: 14px;
+  --doppl-fs-sm: 16px;
+  --doppl-fs-base: 18px;
+  --doppl-fs-lg: 22px;
+  --doppl-fs-xl: 28px;
+  --doppl-fs-2xl: 36px;
+  --doppl-fs-3xl: 48px;
+  --doppl-mono: "JetBrains Mono", "SF Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+
+  /* Spacing */
+  --doppl-sp-1: 4px;
+  --doppl-sp-2: 8px;
+  --doppl-sp-3: 12px;
+  --doppl-sp-4: 16px;
+  --doppl-sp-6: 24px;
+  --doppl-sp-8: 32px;
+  --doppl-sp-12: 48px;
+
+  /* Radius — rounded panel-grade */
+  --doppl-radius-sm: 6px;
+  --doppl-radius: 10px;
+  --doppl-radius-lg: 14px;
+
+  /* Surface primitives — quiet hairline edge + soft depth shadow (glow is reserved
+     for active/selected states, applied per-element). */
+  --nb-border: 1px solid var(--doppl-hairline);
+  --nb-border-thin: 1px solid rgba(124, 162, 214, 0.14);
+  --nb-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --nb-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.46);
+  --nb-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.3);
+
+  /* Focus ring — mint glow */
+  --doppl-focus-ring: 0 0 0 2px var(--doppl-bg), 0 0 0 4px var(--doppl-accent),
+    0 0 14px var(--doppl-accent-glow);
+}
+
+/* ============================================================
+   LIGHT MODE — toggled via <html data-theme="light">.
+   Overrides the token values only; every component follows.
+   ============================================================ */
+:root[data-theme="light"] {
+  --doppl-bg: #eef2f8; /* page — kept light */
+  --doppl-bg-elevated: rgba(255, 255, 255, 0.7);
+  --doppl-bg-solid: #ffffff;
+  --doppl-bg-input: rgba(255, 255, 255, 0.78);
+  /* Distinct tinted slate sidebar so it reads as a separate panel on light. */
+  --doppl-sidebar-bg: linear-gradient(180deg, #cdd8ea 0%, #bccbe2 100%);
+  --doppl-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 45%);
+  --doppl-glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --doppl-bg-glow: radial-gradient(circle at 20% -10%, rgba(11, 159, 196, 0.07), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(155, 70, 216, 0.06), transparent 40%);
+  --doppl-hairline: rgba(13, 22, 38, 0.16);
+  --doppl-border: #0b9fc4;
+  --doppl-border-strong: #0883a3;
+  --doppl-link: #0883a3;
+  --doppl-accent-glow: rgba(10, 166, 201, 0.3);
+
+  --doppl-text-primary: #0d1626;
+  --doppl-text-secondary: #41506b;
+  --doppl-text-muted: #6c7b94;
+  --doppl-on-dark: #0d1626;
+  --doppl-on-dark-muted: #41506b;
+
+  --doppl-accent: #0aa6c9;
+  --doppl-accent-hover: #0bbbe0;
+  --doppl-on-accent: #03121b;
+
+  --doppl-red: #d83a52;
+  --doppl-red-hover: #ed4d65;
+  --doppl-on-red: #fff2f4;
+
+  --doppl-cyan: #0b9fc4;
+  --doppl-green: #1f9e6a;
+  --doppl-orange: #c97f1f;
+  --doppl-yellow: #a9851a;
+  --doppl-blue: #2f5fd6;
+  --doppl-vermilion: #d83a52;
+  --doppl-pink: #9b46d8;
+  --doppl-neutral: #5a6b86;
+
+  --doppl-status-warning: #9a6a12;
+  --doppl-status-warning-bg: rgba(201, 127, 31, 0.14);
+
+  /* softer, drop-shadow depth instead of neon glow on light */
+  --nb-border: 1px solid rgba(11, 159, 196, 0.5);
+  --nb-border-thin: 1px solid rgba(11, 159, 196, 0.3);
+  --nb-shadow: 0 1px 4px rgba(13, 22, 38, 0.12), 0 0 0 1px rgba(11, 159, 196, 0.1);
+  --nb-shadow-lg: 0 4px 16px rgba(13, 22, 38, 0.16);
+  --nb-shadow-sm: 0 1px 3px rgba(13, 22, 38, 0.12);
+
+  --doppl-focus-ring: 0 0 0 2px var(--doppl-bg), 0 0 0 4px var(--doppl-accent);
+}
+
+:root[data-theme="light"] h1 {
+  text-shadow: none;
+}
+
+/* Light mode: give the sidebar a crisp neutral divider + depth shadow so
+   the tinted rail separates clearly from the white main area. */
+:root[data-theme="light"] aside[data-rail="left"] {
+  border-right: 1px solid rgba(13, 22, 38, 0.16) !important;
+  box-shadow: 4px 0 18px rgba(13, 22, 38, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--doppl-bg);
+  background-image: var(--doppl-bg-glow);
+  color: var(--doppl-text-primary);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  font-size: var(--doppl-fs-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--doppl-focus-ring);
+}
+
+/* ---- Headings: HUD uppercase, tracked, faint glow ---- */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--doppl-text-primary);
+}
+h1 {
+  letter-spacing: 0.16em;
+}
+h2,
+h3 {
+  letter-spacing: 0.08em;
+}
+
+a {
+  color: var(--doppl-link);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--doppl-link) 40%, transparent);
+  font-weight: 600;
+}
+a:hover {
+  color: #7fcdf0;
+}
+
+/* ---- Panels: frosted glass blocks, glowing edge ---- */
+section[aria-label],
+[data-panel="fitness"],
+[data-panel="generations"] {
+  background-color: var(--doppl-bg-elevated);
+  background-image: var(--doppl-glass-sheen);
+  backdrop-filter: var(--doppl-glass-blur);
+  -webkit-backdrop-filter: var(--doppl-glass-blur);
+  border: var(--nb-border);
+  border-radius: var(--doppl-radius);
+  box-shadow: var(--nb-shadow), var(--doppl-glass-edge);
+  padding: var(--doppl-sp-4);
+}
+
+/* Frost the inline-styled panels too (translucent bg set in JSX). */
+[data-panel="lineage"],
+[data-rail="inspector"],
+[role="table"] {
+  backdrop-filter: var(--doppl-glass-blur);
+  -webkit-backdrop-filter: var(--doppl-glass-blur);
+}
+
+/* Left sidebar — command rail. Distinct surface + quiet hairline edge. */
+aside[data-rail="left"] {
+  background: var(--doppl-sidebar-bg) !important;
+  backdrop-filter: var(--doppl-glass-blur);
+  -webkit-backdrop-filter: var(--doppl-glass-blur);
+  color: var(--doppl-on-dark);
+  border-right: 1px solid var(--doppl-hairline) !important;
+  box-shadow: 1px 0 24px rgba(0, 0, 0, 0.35);
+}
+aside[data-rail="left"] output span {
+  color: var(--doppl-on-dark) !important;
+}
+aside[data-rail="right"] {
+  border-left: 1px solid var(--doppl-hairline) !important;
+}
+
+/* Lineage graph container */
+[data-panel="lineage"] {
+  border: var(--nb-border) !important;
+  border-radius: var(--doppl-radius) !important;
+  box-shadow: var(--nb-shadow);
+}
+
+/* React Flow nodes get a soft glow */
+.react-flow__node > div {
+  box-shadow: var(--nb-shadow-sm);
+}
+
+/* ---- Buttons — neon HUD ---- */
+button {
+  font-family: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--doppl-fs-sm);
+  background: var(--doppl-accent);
+  color: var(--doppl-on-accent);
+  border: 1px solid var(--doppl-accent-hover);
+  border-radius: var(--doppl-radius-sm);
+  box-shadow: 0 0 16px var(--doppl-accent-glow);
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+button:hover:not(:disabled) {
+  background: var(--doppl-accent-hover);
+  box-shadow: 0 0 24px var(--doppl-accent-glow);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 0 8px var(--doppl-accent-glow);
+}
+button:disabled {
+  background: transparent;
+  color: var(--doppl-text-muted);
+  border-color: rgba(120, 140, 170, 0.35);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Destructive / kill-switch buttons */
+button[data-variant="danger"] {
+  background: var(--doppl-red);
+  color: var(--doppl-on-red);
+  border-color: var(--doppl-red-hover);
+  box-shadow: 0 0 14px rgba(255, 77, 106, 0.45);
+}
+button[data-variant="danger"]:hover:not(:disabled) {
+  background: var(--doppl-red-hover);
+  box-shadow: 0 0 22px rgba(255, 77, 106, 0.7);
+}
+
+/* ---- Form fields (text-like inputs only; radios/checkboxes excluded) ---- */
+input:not([type="radio"]):not([type="checkbox"]),
+select,
+textarea {
+  font-family: inherit;
+  font-size: var(--doppl-fs-sm);
+  background: var(--doppl-bg-input);
+  color: var(--doppl-text-primary);
+  border: 1px solid var(--doppl-hairline);
+  border-radius: var(--doppl-radius-sm);
+  padding: 8px 10px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--doppl-text-muted);
+}
+input:not([type="radio"]):not([type="checkbox"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--doppl-accent);
+  box-shadow: var(--doppl-focus-ring);
+}
+input[type="radio"],
+input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--doppl-accent);
+  cursor: pointer;
+}
+
+label {
+  font-weight: 600;
+  color: var(--doppl-text-primary);
+}
+
+/* ---- Dividers — quiet hairline ---- */
+hr {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--doppl-hairline),
+    transparent
+  ) !important;
+  margin: var(--doppl-sp-3) 0;
+}
+
+/* ---- Disclosure ---- */
+details summary {
+  font-weight: 600;
+}
+
+/* ---- Tooltips — themed glass HUD bubble (portaled, fixed-positioned) ---- */
+.doppl-tip {
+  align-items: center;
+}
+.doppl-tip__bubble {
+  z-index: 1000;
+  pointer-events: none;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  white-space: normal;
+  color: var(--doppl-text-primary);
+  background: var(--doppl-bg-solid);
+  border: 1px solid var(--doppl-border);
+  border-radius: var(--doppl-radius-sm);
+  box-shadow: var(--nb-shadow), var(--doppl-glass-edge);
+  animation: doppl-tip-in 0.12s ease;
+}
+@keyframes doppl-tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
