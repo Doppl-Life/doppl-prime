@@ -25,12 +25,13 @@ export const JUDGE_ACCEPTANCE_KEY = 'judge_acceptance';
 
 /**
  * The per-axis maximum score of the held-out-judge rubric (the 0–{@link JUDGE_AXIS_MAX_SCORE} scale).
- * The 0–5 axis scale is a runtime/scoring concern (lesson §6 — the contract pins SHAPE only), so it is a
- * single named constant here, mirroring the `judge-call.ts` `0–5` instruction. `acceptance` is the
- * weighted sum `Σ axisScore·weight`, so the maximum acceptance under a rubric is
- * `JUDGE_AXIS_MAX_SCORE · Σ(axis weights)` (see {@link judgeAcceptance}'s `maxValue`).
+ * The 0–10 axis scale is a runtime/scoring concern (lesson §6 — the contract pins SHAPE only), so it is a
+ * single named constant here, mirroring the `judge-call.ts` `0–10` instruction + the `axisScore` schema's
+ * `.max(10)` (Wave 2 Step 4 widened it 0–5 → 0–10; the three move together). `acceptance` is the weighted
+ * sum `Σ axisScore·weight`, so the maximum acceptance under a rubric is `JUDGE_AXIS_MAX_SCORE · Σ(axis
+ * weights)` (see {@link judgeAcceptance}'s `maxValue`).
  */
-export const JUDGE_AXIS_MAX_SCORE = 5;
+export const JUDGE_AXIS_MAX_SCORE = 10;
 
 export interface JudgeAcceptanceResult {
   /** True only when a valid, policy-matched acceptance was read; false for absence / version mismatch. */
@@ -42,9 +43,9 @@ export interface JudgeAcceptanceResult {
   value: number;
   /**
    * The maximum representable acceptance under THIS rubric — `JUDGE_AXIS_MAX_SCORE · Σ(axis weights)` (e.g.
-   * 5 · 5 = 25 for the 5-axis equal-weight MVP rubric). The SCORER divides `value` by `maxValue` to bring
+   * 10 · 5 = 50 for the 5-axis equal-weight MVP rubric). The SCORER divides `value` by `maxValue` to bring
    * the raw 0–maxValue acceptance onto the [0,1] scale the other fitness components use (the CRITICAL scale
-   * fix — a raw 0–25 acceptance must not dominate the 0–1 components). Always ≥ 0; a degenerate all-zero
+   * fix — a raw 0–50 acceptance must not dominate the 0–1 components). Always ≥ 0; a degenerate all-zero
    * rubric weight-sum yields 0 (the scorer treats `maxValue ≤ 0` as "no normalization basis" → component 0).
    */
   maxValue: number;

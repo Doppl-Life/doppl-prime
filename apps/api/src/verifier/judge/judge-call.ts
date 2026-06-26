@@ -35,12 +35,16 @@ export interface JudgeRunContext {
 
 /**
  * Permissive per-axis judge-model-output schema (runner-local — NOT a frozen contract; only the model's
- * raw per-axis input). The model fills ONLY the 5 axis scores (each on the rubric's 0–5 scale); `z.object`
+ * raw per-axis input). The model fills ONLY the 5 axis scores (each on the rubric's 0–10 scale); `z.object`
  * STRIPS any model-sent aggregate (`score`/`total`/`acceptance`) or identity (`id`), so the model can
  * never supply its own winning number or the record's identity (rule #6). The runner computes the
  * `acceptance` aggregate + sets the `id`; the result is the frozen `JudgeResult`. Keys mirror `FinalJudgeAxis`.
  */
-const axisScore = z.number().min(0).max(5);
+// Wave 2 Step 4 — the per-axis scale is 0–10 (widened from 0–5 for finer top-end quantization; the scale is
+// a runtime/scoring concern, NOT a frozen-rubric field — lesson §6). Mirror in `judge-acceptance.ts`'s
+// `JUDGE_AXIS_MAX_SCORE` (the normalization basis) and the JUDGE_INSTRUCTION anchors below; the three move
+// together or the normalized fitness component breaks.
+const axisScore = z.number().min(0).max(10);
 const JudgeModelOutput = z.object({
   grounding: axisScore,
   novelty: axisScore,
@@ -76,22 +80,25 @@ export interface RunJudgeParams {
   rubricSource?: unknown;
 }
 
-// EXPERIMENT (judge gradient) — the prior instruction said only "score 0–5", which let the judge model
-// cluster every axis at 3–4 (central-tendency bias: grounding was LITERALLY always 4) → acceptance ~0.75
-// for every candidate → NO selection gradient. This version supplies explicit per-level anchors, a strict
-// full-range mandate, and per-axis criteria + weakness-hunting so the judge DIFFERENTIATES. Rule #6 intact:
-// it is still the immutable held-out anchor (loaded from the frozen const, runner-computed acceptance,
-// agent-unwritable); the change is a developer recalibration, recorded via the bumped rubric policyVersion.
-// Rule #5 intact: candidate-INDEPENDENT trusted system text (the candidate rides a wrapUntrusted user msg).
+// EXPERIMENT (judge gradient) — the 0–5 instruction let the judge model cluster every axis at 3–4 (central-
+// tendency bias: grounding was LITERALLY always 4) → acceptance compressed to 5–6 distinct values capped
+// ~0.68 → the dominant 46% fitness weight could not separate the top candidates → NO climb. Wave 2 Step 4
+// (Michael-signed-off, rule #6) WIDENS the scale to 0–10 for finer top-end quantization AND supplies explicit
+// per-level anchors + a strict full-range mandate + per-axis criteria + weakness-hunting so the judge
+// DIFFERENTIATES. Rule #6 intact: still the immutable held-out anchor (loaded from the frozen const,
+// runner-computed acceptance, agent-unwritable); the change is a developer recalibration recorded via the
+// bumped rubric policyVersion (mvp-2 → mvp-3). Rule #5 intact: candidate-INDEPENDENT trusted system text (the
+// candidate rides a wrapUntrusted user msg). The peer-comparative variant lives in `comparative-judge.ts`.
 const JUDGE_INSTRUCTION =
   'You are the held-out final judge — the strict quality bar the organism cannot move. Score the candidate ' +
   'idea on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
-  'subtype_check_pass), each as an INTEGER 0–5. Calibrate EVERY axis to this scale: 0 = absent/failed, ' +
-  '1 = poor, 2 = below average, 3 = solid but unremarkable, 4 = strong, 5 = exceptional (genuinely rare). ' +
-  'Be a SKEPTICAL critic, not a cheerleader: most ideas are average, so anchor a typical idea at 2–3, reserve ' +
-  '4 for clearly strong work, and 5 only for the truly exceptional. Actively hunt each axis for its weakest ' +
-  'point and let it pull the score DOWN. USE THE FULL 0–5 RANGE and DIFFERENTIATE — do NOT cluster every axis ' +
-  'at 3–4; an idea that is weak or unsupported on an axis MUST score 0–2 there. Judge each axis on its own ' +
+  'subtype_check_pass), each as an INTEGER 0–10. Calibrate EVERY axis to this scale: 0 = absent/failed, ' +
+  '1–2 = poor, 3–4 = below average, 5–6 = solid but unremarkable, 7–8 = strong, 9–10 = exceptional ' +
+  '(genuinely rare). Be a SKEPTICAL critic, not a cheerleader: most ideas are average, so anchor a typical ' +
+  'idea at 5–6, reserve 7–8 for clearly strong work, and 9–10 only for the truly exceptional. Actively hunt ' +
+  'each axis for its weakest point and let it pull the score DOWN. USE THE FULL 0–10 RANGE and DIFFERENTIATE ' +
+  '— do NOT cluster every axis at 5–6; an idea that is weak or unsupported on an axis MUST score 0–4 there. ' +
+  'Judge each axis on its own ' +
   'meaning: grounding = backed by specific, verifiable evidence (not vague assertion); novelty = a genuinely ' +
   'non-obvious transfer (not a well-known mapping); feasibility = buildable/testable with current means (not ' +
   'hand-wavy); falsification_survival = makes a falsifiable prediction that would plausibly survive a real ' +

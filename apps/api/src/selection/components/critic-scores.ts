@@ -23,8 +23,9 @@ import type { CriticReview } from '@doppl/contracts';
  * `CriticReview.scores` record is an OPEN `z.number()` (the contract pins shape only, lesson §6) and the
  * mandate prompts do not enforce a numeric scale, so the critic-council fitness component value can be any
  * non-negative magnitude. The SCORER (P5.6) divides the value by this max to bring it onto the [0,1] scale
- * the other components use, mirroring the held-out judge's 0–5 axis scale — so a critic emitting larger
- * raw numbers cannot dominate the weighted fitness average.
+ * the other components use — so a critic emitting larger raw numbers cannot dominate the weighted fitness
+ * average. The critic scale stays 0–5 (set by the council mandate prompts) and is INDEPENDENT of the
+ * held-out judge's per-axis scale (Wave 2 Step 4 widened the judge to 0–10; critics were untouched).
  */
 export const CRITIC_SCORE_MAX = 5;
 

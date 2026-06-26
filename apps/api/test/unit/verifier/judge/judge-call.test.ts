@@ -230,6 +230,37 @@ describe('runJudge — produces the frozen JudgeResult (P0.16 seam, immutable an
     expect(Object.keys(judged ?? {}).sort()).toEqual(JUDGE_RESULT_FIELDS);
   });
 
+  // Wave 2 Step 4 (rule #6) — the per-axis scale is 0-10: an axis score in 6..10 (rejected under the old
+  // 0-5 scale) is now ACCEPTED and the runner sums it. 9+8+10+7+9 = 43 over the 5 equal-weight axes.
+  test('test_accepts_wide_scale_0_to_10_axis_scores', async () => {
+    const judged = await runJudge({
+      gateway: judgeGateway({
+        grounding: 9,
+        novelty: 8,
+        feasibility: 10,
+        falsification_survival: 7,
+        subtype_check_pass: 9,
+      }),
+      store: noopStore(),
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: RUN_CONTEXT,
+    });
+    expect(judged?.acceptance).toBe(43);
+    expect(JudgeResult.safeParse(judged).success).toBe(true);
+  });
+
+  // Wave 2 Step 4 (rule #6) — the scale ceiling is enforced: a per-axis score above 10 is an invalid judge
+  // output → rejected (never a fabricated record).
+  test('test_axis_score_above_10_rejected', async () => {
+    const judged = await runJudge({
+      gateway: judgeGateway({ ...PER_AXIS_OUTPUT, grounding: 11 }),
+      store: noopStore(),
+      candidate: validCandidateIdeaCrossDomain,
+      runContext: RUN_CONTEXT,
+    });
+    expect(judged).toBeNull();
+  });
+
   // spec(§14) rule #6 — the boot-source-provenance obligation (the P4.3 [low]): the runner loads the
   // immutable DEFAULT_JUDGE_RUBRIC by default; no candidate value sets the rubric source.
   test('test_rubric_source_is_immutable_default_only', async () => {
