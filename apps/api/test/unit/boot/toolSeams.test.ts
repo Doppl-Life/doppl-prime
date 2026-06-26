@@ -5,11 +5,43 @@
 import { describe, it, expect } from 'vitest';
 import {
   createGroundedSearch,
+  createResolveAddresses,
   createResolveHostIsPublic,
   createSafeHttpGet,
   createToolExecutorSeams,
   createWebSearch,
 } from '../../../src/boot/toolSeams';
+
+/** A fake `fetchPinned` that plays a scripted sequence of responses, recording the (url, pinnedIp) each hop. */
+function fakePinned(steps: { status: number; location?: string; text?: string }[]): {
+  fetchPinned: (
+    url: string,
+    ip: string,
+  ) => Promise<{ status: number; location?: string; text: string }>;
+  calls: { url: string; ip: string }[];
+} {
+  const calls: { url: string; ip: string }[] = [];
+  let i = 0;
+  return {
+    calls,
+    fetchPinned: async (url, ip) => {
+      calls.push({ url, ip });
+      const step = steps[i++] ?? { status: 200, text: 'END' };
+      return {
+        status: step.status,
+        ...(step.location !== undefined ? { location: step.location } : {}),
+        text: step.text ?? '',
+      };
+    },
+  };
+}
+
+/** A resolver over a host→addresses map; an unmapped host resolves to null (blocked, fail-closed). */
+function fakeResolver(
+  map: Record<string, string[]>,
+): (hostname: string) => Promise<string[] | null> {
+  return async (hostname) => map[hostname] ?? null;
+}
 
 describe('createResolveHostIsPublic (TU.5, rule #3 DNS-rebinding defense)', () => {
   it('allows a hostname whose EVERY A/AAAA record is public', async () => {
@@ -50,47 +82,105 @@ describe('createResolveHostIsPublic (TU.5, rule #3 DNS-rebinding defense)', () =
   });
 });
 
-describe('createSafeHttpGet (TU.5, rule #3 redirect-SSRF defense)', () => {
-  it('fetches a 200 body with redirect:manual + a timeout signal', async () => {
-    let capturedOpts: RequestInit | undefined;
-    const httpGet = createSafeHttpGet((async (_url: string, opts?: RequestInit) => {
-      capturedOpts = opts;
-      return { status: 200, text: async () => 'hello world' } as Response;
-    }) as unknown as typeof fetch);
-    const result = await httpGet('https://example.com/');
-    expect(result).toEqual({ status: 200, text: 'hello world' });
-    expect(capturedOpts?.redirect).toBe('manual'); // never follow a redirect to an unguarded host
-    expect(capturedOpts?.signal).toBeInstanceOf(AbortSignal); // per-call timeout (finiteness)
+describe('createResolveAddresses (TU.5 — the DNS-rebinding primitive that ALSO returns the pin IP)', () => {
+  it('returns EVERY resolved address when all are public', async () => {
+    const resolve = createResolveAddresses(async () => [
+      { address: '93.184.216.34' },
+      { address: '2606:2800:220:1:248:1893:25c8:1946' },
+    ]);
+    expect(await resolve('example.com')).toEqual([
+      '93.184.216.34',
+      '2606:2800:220:1:248:1893:25c8:1946',
+    ]);
   });
 
-  it('stream-reads with a hard byte cap (no unbounded buffering — DoS bound, security-reviewer [medium])', async () => {
-    const huge = 'x'.repeat(2_000_000); // 2 MB — far over the ~256 KiB cap
-    const httpGet = createSafeHttpGet((async () => {
-      const body = new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(huge));
-          controller.close();
-        },
-      });
-      return { status: 200, body, text: async () => huge } as unknown as Response;
-    }) as unknown as typeof fetch);
-    const result = await httpGet('https://example.com/big');
-    expect(result.status).toBe(200);
-    expect(result.text.length).toBeLessThanOrEqual(256 * 1024); // capped at MAX_FETCH_BODY_BYTES
+  it('returns null when ANY record is private (split-horizon / multi-record rebinding)', async () => {
+    const resolve = createResolveAddresses(async () => [
+      { address: '93.184.216.34' },
+      { address: '10.0.0.5' },
+    ]);
+    expect(await resolve('rebind.example.com')).toBeNull();
   });
 
-  it('does NOT follow a 3xx redirect (returns a guard note, not the redirected body)', async () => {
-    const httpGet = createSafeHttpGet(
-      (async () =>
-        ({
-          status: 302,
-          text: async () => 'should-not-read',
-        }) as Response) as unknown as typeof fetch,
+  it('canonicalizes an IP literal (no DNS): public → [ip], private → null', async () => {
+    const resolve = createResolveAddresses(async () => {
+      throw new Error('DNS must not be called for an IP literal');
+    });
+    expect(await resolve('8.8.8.8')).toEqual(['8.8.8.8']);
+    expect(await resolve('127.0.0.1')).toBeNull();
+  });
+
+  it('fails closed (null) on a lookup error or empty result', async () => {
+    expect(
+      await createResolveAddresses(async () => {
+        throw new Error('NXDOMAIN');
+      })('nope.example.com'),
+    ).toBeNull();
+    expect(await createResolveAddresses(async () => [])('empty.example.com')).toBeNull();
+  });
+});
+
+describe('createSafeHttpGet (TU.5 — safe redirect-FOLLOWING + resolve→connect TOCTOU close)', () => {
+  it('FOLLOWS a redirect, re-validating + re-pinning EACH hop to the freshly-resolved IP', async () => {
+    const resolve = fakeResolver({ 'a.example': ['1.1.1.1'], 'b.example': ['2.2.2.2'] });
+    const { fetchPinned, calls } = fakePinned([
+      { status: 302, location: 'https://b.example/landing' },
+      { status: 200, text: 'FINAL BODY' },
+    ]);
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned });
+    const result = await httpGet('https://a.example/start');
+    expect(result).toEqual({ status: 200, text: 'FINAL BODY' });
+    // each hop pinned to ITS host's freshly-validated IP — the TOCTOU close, end to end
+    expect(calls).toEqual([
+      { url: 'https://a.example/start', ip: '1.1.1.1' },
+      { url: 'https://b.example/landing', ip: '2.2.2.2' },
+    ]);
+  });
+
+  it('pins the socket to the VALIDATED IP, never the hostname (TOCTOU close)', async () => {
+    const resolve = fakeResolver({ 'host.example': ['93.184.216.34'] });
+    const { fetchPinned, calls } = fakePinned([{ status: 200, text: 'ok' }]);
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned });
+    await httpGet('https://host.example/page');
+    expect(calls[0]?.ip).toBe('93.184.216.34'); // the resolved IP — not 'host.example'
+  });
+
+  it('BLOCKS a redirect to a literal private host (cloud-metadata SSRF) and never connects to it', async () => {
+    const resolve = fakeResolver({ 'a.example': ['1.1.1.1'] });
+    const { fetchPinned, calls } = fakePinned([
+      { status: 301, location: 'http://169.254.169.254/latest/meta-data/' },
+    ]);
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned });
+    await expect(httpGet('https://a.example/')).rejects.toThrow();
+    expect(calls.map((c) => c.url)).toEqual(['https://a.example/']); // never connected to the metadata IP
+  });
+
+  it('BLOCKS a redirect whose host RESOLVES private (DNS-rebinding on the hop)', async () => {
+    const resolve = fakeResolver({ 'a.example': ['1.1.1.1'] }); // rebind.example → unmapped → null
+    const { fetchPinned, calls } = fakePinned([
+      { status: 302, location: 'http://rebind.example/' },
+    ]);
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned });
+    await expect(httpGet('https://a.example/')).rejects.toThrow();
+    expect(calls).toHaveLength(1); // the rebinding host was never connected to
+  });
+
+  it('throws on TOO MANY redirects (no infinite loop)', async () => {
+    const resolve = fakeResolver({ 'loop.example': ['1.1.1.1'] });
+    const { fetchPinned, calls } = fakePinned(
+      Array.from({ length: 20 }, () => ({ status: 302, location: 'https://loop.example/next' })),
     );
-    const result = await httpGet('https://example.com/redir');
-    expect(result.status).toBe(302);
-    expect(result.text).toContain('redirect not followed');
-    expect(result.text).not.toContain('should-not-read');
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned, maxRedirects: 3 });
+    await expect(httpGet('https://loop.example/start')).rejects.toThrow();
+    expect(calls.length).toBeLessThanOrEqual(4); // initial + at most maxRedirects hops
+  });
+
+  it('fails closed when the INITIAL host resolves private (defense in depth)', async () => {
+    const resolve = fakeResolver({}); // every host → null
+    const { fetchPinned, calls } = fakePinned([{ status: 200, text: 'never' }]);
+    const httpGet = createSafeHttpGet({ resolveAddresses: resolve, fetchPinned });
+    await expect(httpGet('https://private.example/')).rejects.toThrow();
+    expect(calls).toHaveLength(0);
   });
 });
 

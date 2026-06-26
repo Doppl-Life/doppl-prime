@@ -1,27 +1,40 @@
 import { isIP } from 'node:net';
+import http from 'node:http';
+import https from 'node:https';
 import { lookup as dnsLookup } from 'node:dns/promises';
-import { isPrivateHost, type ToolExecutorDeps } from '../model-gateway';
+import {
+  assertSafeFetchUrl,
+  isPrivateHost,
+  unbracketHost,
+  type ToolExecutorDeps,
+} from '../model-gateway';
 import { mapLimit } from '../concurrency/pLimit';
 
 /**
  * Real tool-execution IO seams (tool-use TU.5, KEY SAFETY RULE #3 — the live counterpart of the injected
  * `ToolExecutorDeps`). These close the SSRF-hardening obligations the pure executors documented:
- *  - `resolveHostIsPublic`: resolves a hostname to ALL its A/AAAA records and requires EVERY one to be
- *    public (a single private record fails the check — defeats split-horizon / multi-record rebinding);
+ *  - `resolveAddresses` / `resolveHostIsPublic`: resolve a hostname to ALL its A/AAAA records and require
+ *    EVERY one to be public (a single private record fails — defeats split-horizon / multi-record rebinding);
  *    an IP-literal input is canonicalized through the same private-range guard; a lookup error fails closed.
- *  - `httpGet`: fetches with `redirect:'manual'` so a public URL can NEVER 30x-redirect to a private host
- *    (the executor guards + resolves only the INITIAL url); a per-call timeout bounds it (finiteness).
+ *    `resolveAddresses` additionally RETURNS the validated public IPs so the fetch can pin to one.
+ *  - `httpGet`: FOLLOWS redirects safely — it re-runs the literal SSRF gate AND the all-records DNS check on
+ *    EVERY hop (so a public URL can never 30x-redirect into a private host), bounds the hop count + body
+ *    size + per-call time, and pins each connection to the freshly-validated IP.
  *  - `webSearch`: a grounded search via OpenRouter's `web` plugin (Option A — no new keys), the key
  *    env-only (rule #4) and closed over the seam, never returned.
- * Every primitive (fetch / dns lookup) is INJECTED so the seams are deterministically unit-testable.
+ * Every primitive (pinned fetch / dns lookup) is INJECTED so the seams are deterministically unit-testable.
  *
- * RESIDUAL (accepted for the MVP): a resolve→connect TOCTOU window remains — `httpGet` re-resolves the
- * hostname when it connects, so a hostile DNS could answer public to the resolver and private to the fetch.
- * Closing it fully needs connecting to the validated IP with a Host header (a hardening follow-up); the
- * manual-redirect + all-records-resolve already block the common SSRF vectors.
+ * The resolve→connect TOCTOU is now CLOSED: `createPinnedFetch` connects to the exact IP that
+ * `resolveAddresses` validated (node's `lookup` hook) while the TLS SNI + Host header keep the hostname, so a
+ * rebinding DNS that answered "public" to the resolver cannot be re-resolved to a private IP at connect time.
  */
 
 const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
+/** Max 30x hops a single fetch_url will follow before giving up (loop bound). */
+const DEFAULT_MAX_REDIRECTS = 5;
+/** A browser-ish UA so content sites don't serve a bot-block page to the agent's reader. */
+const FETCH_USER_AGENT =
+  'Mozilla/5.0 (compatible; DopplResearchBot/1.0; +https://github.com/doppl)';
 const DEFAULT_WEB_SEARCH_TIMEOUT_MS = 30_000;
 const DEFAULT_WEB_SEARCH_MODEL = 'openai/gpt-4o-mini';
 /** TU.7 — the web plugin enables BOTH web + X search for xAI models (live-verified: grok-4.3 + the `web`
@@ -47,72 +60,145 @@ const MAX_FETCH_BODY_BYTES = 256 * 1024;
 
 export type DnsLookupAll = (hostname: string) => Promise<readonly { address: string }[]>;
 
-/** resolveHostIsPublic — all-records DNS check + IP-literal canonicalization; fail-closed (rule #3). */
-export function createResolveHostIsPublic(
+/** A single pinned GET: connect to `pinnedIp`, do NOT follow redirects, return status + Location + body. */
+export type PinnedFetch = (
+  url: string,
+  pinnedIp: string,
+) => Promise<{ status: number; location?: string; text: string }>;
+
+/**
+ * resolveAddresses — the DNS-rebinding primitive that ALSO returns the validated IPs (for connection
+ * pinning). All-records public → the addresses; ANY private record / IP-literal-private / lookup error /
+ * empty → null (fail-closed, rule #3). An IP literal is canonicalized without DNS.
+ */
+export function createResolveAddresses(
   lookupAll: DnsLookupAll,
-): (hostname: string) => Promise<boolean> {
+): (hostname: string) => Promise<string[] | null> {
   return async (hostname) => {
-    if (isIP(hostname) !== 0) return !isPrivateHost(hostname); // an IP literal — canonicalize, no DNS needed
+    if (isIP(hostname) !== 0) return isPrivateHost(hostname) ? null : [hostname]; // IP literal — no DNS
     let records: readonly { address: string }[];
     try {
       records = await lookupAll(hostname);
     } catch {
-      return false; // a resolution error fails closed
+      return null; // a resolution error fails closed
     }
-    if (records.length === 0) return false;
-    return records.every((record) => !isPrivateHost(record.address)); // EVERY A/AAAA must be public
+    if (records.length === 0) return null;
+    if (records.some((record) => isPrivateHost(record.address))) return null; // EVERY A/AAAA must be public
+    return records.map((record) => record.address);
   };
 }
 
-/** httpGet — a redirect-non-following, timeout-bounded, body-size-bounded GET (the executor SSRF-guards
- *  the url first). The body is STREAM-read with a hard byte cap so a large/hostile endpoint can never
- *  buffer more than `MAX_FETCH_BODY_BYTES` into memory (the timeout alone doesn't bound bandwidth). */
-export function createSafeHttpGet(
-  fetchFn: typeof fetch,
-  timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS,
-): (url: string) => Promise<{ status: number; text: string }> {
+/** resolveHostIsPublic — the boolean view of {@link createResolveAddresses} (single-sourced; rule #3). */
+export function createResolveHostIsPublic(
+  lookupAll: DnsLookupAll,
+): (hostname: string) => Promise<boolean> {
+  const resolveAddresses = createResolveAddresses(lookupAll);
+  return async (hostname) => (await resolveAddresses(hostname)) !== null;
+}
+
+/**
+ * httpGet — a SAFE redirect-FOLLOWING GET (rule #3). The executor SSRF-guards the initial URL; this seam
+ * then, on every hop: (1) re-runs the literal {@link assertSafeFetchUrl} gate, (2) re-runs the all-records
+ * DNS publicness check via `resolveAddresses`, and (3) calls `fetchPinned` PINNED to the freshly-validated
+ * IP (closing the resolve→connect TOCTOU). A blocked hop / exhausted redirect budget throws (the executor
+ * maps it to `fetch_failed`, ok:false — no energy). Pure over the two injected primitives → unit-testable.
+ */
+export function createSafeHttpGet(deps: {
+  resolveAddresses: (hostname: string) => Promise<string[] | null>;
+  fetchPinned: PinnedFetch;
+  maxRedirects?: number;
+}): (url: string) => Promise<{ status: number; text: string }> {
+  const maxRedirects = deps.maxRedirects ?? DEFAULT_MAX_REDIRECTS;
   return async (url) => {
-    const response = await fetchFn(url, {
-      redirect: 'manual', // NEVER follow a redirect to an unguarded host (redirect-SSRF)
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (response.status >= 300 && response.status < 400) {
-      return { status: response.status, text: '[redirect not followed — SSRF guard]' };
+    let current = url;
+    for (let hop = 0; hop <= maxRedirects; hop += 1) {
+      const guard = assertSafeFetchUrl(current); // literal gate EACH hop (scheme / creds / IP-literal host)
+      if (!guard.ok) throw new Error(`blocked: ${guard.reason}`);
+      const addresses = await deps.resolveAddresses(unbracketHost(new URL(guard.url).hostname));
+      if (addresses === null || addresses.length === 0)
+        throw new Error('blocked: private_host (resolved)');
+      const response = await deps.fetchPinned(guard.url, addresses[0]!); // pin to a validated IP (TOCTOU close)
+      if (response.status >= 300 && response.status < 400 && response.location !== undefined) {
+        current = new URL(response.location, guard.url).href; // resolve relative; re-validated next iteration
+        continue;
+      }
+      return { status: response.status, text: response.text };
     }
-    const text = await readBounded(response, MAX_FETCH_BODY_BYTES);
-    return { status: response.status, text };
+    throw new Error('blocked: too_many_redirects');
   };
 }
 
-/** Stream-read a Response body, stopping at `maxBytes` (never buffers the whole body — DoS bound). Falls
- *  back to `text()` when no stream body is exposed (e.g. a test fake), still capping the result. */
-async function readBounded(response: Response, maxBytes: number): Promise<string> {
-  const stream = response.body as ReadableStream<Uint8Array> | null | undefined;
-  if (stream === null || stream === undefined || typeof stream.getReader !== 'function') {
-    return (await response.text()).slice(0, maxBytes);
-  }
-  const reader = stream.getReader();
-  const decoder = new TextDecoder('utf-8', { fatal: false });
-  let text = '';
-  let total = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value !== undefined) {
-        total += value.length;
-        text += decoder.decode(value, { stream: true });
-        if (total >= maxBytes) {
-          await reader.cancel(); // stop pulling bytes — bound the memory footprint
-          break;
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock?.();
-  }
-  text += decoder.decode();
-  return text.slice(0, maxBytes);
+/**
+ * createPinnedFetch — the real {@link PinnedFetch}: a node http/https GET whose socket is PINNED to the
+ * pre-validated IP via the `lookup` hook (so connect performs NO second DNS resolution — the TOCTOU close)
+ * while the request's Host header + TLS SNI keep the original hostname. Redirects are NOT followed (the loop
+ * re-validates each hop). The body is stream-read with a hard byte cap (a slow/huge endpoint can't exhaust
+ * memory) and a per-call timeout bounds it (finiteness). This is the un-injected IO leaf (faked in tests).
+ */
+export function createPinnedFetch(opts?: { timeoutMs?: number; maxBytes?: number }): PinnedFetch {
+  const timeoutMs = opts?.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS;
+  const maxBytes = opts?.maxBytes ?? MAX_FETCH_BODY_BYTES;
+  return (url, pinnedIp) =>
+    new Promise((resolve, reject) => {
+      const parsed = new URL(url);
+      const transport = parsed.protocol === 'https:' ? https : http;
+      const family = isIP(pinnedIp) === 6 ? 6 : 4; // 0 only on a malformed IP, which the resolver never returns
+      const request = transport.request(
+        url,
+        {
+          method: 'GET',
+          // Pin the socket to the validated IP — node calls this INSTEAD of a fresh DNS resolution at connect.
+          // `net` may invoke it with `{all:true}` (→ array callback) or the scalar form; support both.
+          lookup: (
+            _hostname: string,
+            options: { all?: boolean | undefined },
+            callback: unknown,
+          ) => {
+            if (options.all === true) {
+              (callback as (e: null, a: { address: string; family: number }[]) => void)(null, [
+                { address: pinnedIp, family },
+              ]);
+            } else {
+              (callback as (e: null, a: string, f: number) => void)(null, pinnedIp, family);
+            }
+          },
+          headers: { 'user-agent': FETCH_USER_AGENT, accept: 'text/html,*/*' },
+        },
+        (response) => {
+          const status = response.statusCode ?? 0;
+          const location = response.headers.location;
+          const chunks: Buffer[] = [];
+          let total = 0;
+          let settled = false;
+          const finish = (): void => {
+            if (settled) return;
+            settled = true;
+            resolve({
+              status,
+              ...(location !== undefined ? { location } : {}),
+              text: Buffer.concat(chunks).toString('utf-8').slice(0, maxBytes),
+            });
+          };
+          response.on('data', (chunk: Buffer) => {
+            total += chunk.length;
+            if (total <= maxBytes) chunks.push(chunk);
+            else {
+              chunks.push(chunk.subarray(0, Math.max(0, maxBytes - (total - chunk.length))));
+              response.destroy(); // stop pulling bytes — bound the memory footprint
+              finish(); // 'end' won't fire after destroy → resolve with what we have
+            }
+          });
+          response.on('end', finish);
+          response.on('close', finish); // also covers the destroy path
+          response.on('error', (error) => {
+            if (!settled) reject(error);
+          });
+        },
+      );
+      request.setTimeout(timeoutMs, () => request.destroy(new Error('fetch_timeout')));
+      request.on('error', reject);
+      request.end();
+    });
 }
 
 /**
@@ -335,8 +421,10 @@ export function createYoutubeResearch(deps: {
 }
 
 export interface ToolSeamConfig {
-  /** Outbound fetch primitive (default the global `fetch`). Injected for tests. */
+  /** Outbound fetch primitive for the grounded-search seams (default the global `fetch`). Injected for tests. */
   readonly fetchFn?: typeof fetch;
+  /** Pinned GET primitive for fetch_url (default {@link createPinnedFetch}). Injected for tests. */
+  readonly fetchPinned?: PinnedFetch;
   /** All-records DNS lookup (default `dns.lookup` with `{all:true}`). Injected for tests. */
   readonly lookupAll?: DnsLookupAll;
   /** The OpenRouter key for the grounded-search seams (env-only, rule #4). Absent → no web_search/x_search/
@@ -352,7 +440,11 @@ export function createToolExecutorSeams(config: ToolSeamConfig = {}): ToolExecut
   const fetchFn = config.fetchFn ?? fetch;
   const lookupAll: DnsLookupAll =
     config.lookupAll ?? ((hostname) => dnsLookup(hostname, { all: true }));
-  const httpGet = createSafeHttpGet(fetchFn);
+  const resolveAddresses = createResolveAddresses(lookupAll);
+  const httpGet = createSafeHttpGet({
+    resolveAddresses,
+    fetchPinned: config.fetchPinned ?? createPinnedFetch(),
+  });
   const resolveHostIsPublic = createResolveHostIsPublic(lookupAll);
   if (config.openRouterApiKey !== undefined && config.openRouterApiKey !== '') {
     const apiKey = config.openRouterApiKey;
