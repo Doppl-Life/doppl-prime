@@ -8,6 +8,7 @@ import {
   validAgenome,
   validCandidateIdeaCrossDomain,
   validFinalJudgeRubric,
+  validFitnessScore,
   validProviderMeta,
 } from '@doppl/contracts';
 import type {
@@ -95,6 +96,50 @@ async function seedRepro(
     type,
     actor: 'agenome',
     payload: repro as unknown as Record<string, unknown>,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+  });
+}
+
+// Seed a scored candidate for a parent in a generation (candidate.created + fitness.scored), so the
+// elitism ranking has a per-parent fitness basis to read back from the log (rule #7 — read, not recompute).
+async function seedScoredCandidate(
+  runId: string,
+  generationId: string,
+  agenomeId: string,
+  candidateId: string,
+  total: number,
+): Promise<void> {
+  await store.append({
+    id: `${runId}-seed-${seedCounter++}`,
+    runId,
+    generationId,
+    agenomeId,
+    candidateId,
+    type: 'candidate.created',
+    actor: 'runtime',
+    payload: {
+      ...validCandidateIdeaCrossDomain,
+      id: candidateId,
+      runId,
+      generationId,
+      agenomeId,
+      status: 'created',
+    } as unknown as Record<string, unknown>,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+  });
+  await store.append({
+    id: `${runId}-seed-${seedCounter++}`,
+    runId,
+    generationId,
+    candidateId,
+    type: 'fitness.scored',
+    actor: 'selection_controller',
+    payload: {
+      ...validFitnessScore,
+      id: `fit-${candidateId}`,
+      candidateId,
+      total,
+    } as unknown as Record<string, unknown>,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   });
 }
@@ -230,6 +275,83 @@ describe('createSuccessorThreading — the real nextPopulation hook over real PG
     await expect(
       hook(buildArgs('not-a-valid-gen-id', [p], await store.readByRun(runId))),
     ).rejects.toThrow(/cannot derive the next generationId/);
+  });
+
+  // spec(§8) ELITISM (anti-regression) — with eliteCount ≥ 1 the top-fitness scored survivor is carried
+  // UNCHANGED into gen N+1 (SAME identity — the individual survives), PREPENDED so the kernel's maxPopulation
+  // clamp drops trailing offspring, never an elite. Its genome (personaWeights/systemPrompt) is byte-identical
+  // — re-home touches only generationId/status/spawnBudget. This stops the loop from finding a good idea and
+  // throwing it away each generation (the 0.70→0.57 trajectory drop = no elitism + regressive reproduction).
+  test('test_elitism_carries_top_survivor_unchanged_into_next_gen', async () => {
+    const runId = 'thread-elitism';
+    const hi: Agenome = {
+      ...parent(runId, 'agn_hi'),
+      personaWeights: { curiosity: 0.9, rigor: 0.4 },
+    };
+    const lo: Agenome = { ...parent(runId, 'agn_lo'), personaWeights: { curiosity: 0.2 } };
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_hi', `${runId}-c-hi`, 0.82);
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_lo', `${runId}-c-lo`, 0.31);
+    // an offspring is also reproduced → gen N+1 = elite + offspring.
+    await seedRepro(
+      runId,
+      `${runId}-gen0`,
+      'agenome.reproduced',
+      mutationEvent(runId, 'agn_hi', 'child_1'),
+    );
+
+    const deps: SuccessorThreadingDeps = { caps: CAPS, eliteCount: 1 };
+    const pop = await createSuccessorThreading(deps)(
+      buildArgs(`${runId}-gen0`, [hi, lo], await store.readByRun(runId)),
+    );
+
+    const elite = pop[0]!; // prepended → first.
+    expect(elite.id).toBe('agn_hi'); // the SAME individual (elitism keeps identity), the higher-fitness one.
+    expect(elite.generationId).toBe(`${runId}-gen1`); // re-homed to gen N+1…
+    expect(elite.status).toBe('seeded');
+    expect(elite.personaWeights).toEqual(hi.personaWeights); // …but the genome is carried BYTE-IDENTICAL.
+    expect(pop.map((a) => a.id)).toContain('child_1'); // alongside the reproduced offspring.
+  });
+
+  // spec(§8) elitism is OPT-IN — absent eliteCount → offspring-only (byte-identical to pre-elitism, so the
+  // additive seam never changes the default path; the headline test below relies on this).
+  test('test_no_elitism_by_default_offspring_only', async () => {
+    const runId = 'thread-no-elitism';
+    const hi = parent(runId, 'agn_hi');
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_hi', `${runId}-c-hi`, 0.82);
+    await seedRepro(
+      runId,
+      `${runId}-gen0`,
+      'agenome.reproduced',
+      mutationEvent(runId, 'agn_hi', 'child_1'),
+    );
+    const pop = await createSuccessorThreading(THREADING_DEPS)(
+      buildArgs(`${runId}-gen0`, [hi], await store.readByRun(runId)),
+    );
+    expect(pop.map((a) => a.id)).toEqual(['child_1']); // ONLY the offspring; the parent is NOT carried.
+  });
+
+  // spec(§8) elitism carries the top-K in fitness order (desc; tie-break agenome id asc — deterministic,
+  // replay-stable, rule #7), dropping the weakest.
+  test('test_elitism_carries_top_k_in_fitness_order', async () => {
+    const runId = 'thread-elitism-k2';
+    const a = parent(runId, 'agn_a');
+    const b = parent(runId, 'agn_b');
+    const c = parent(runId, 'agn_c');
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_a', `${runId}-c-a`, 0.5);
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_b', `${runId}-c-b`, 0.9);
+    await seedScoredCandidate(runId, `${runId}-gen0`, 'agn_c', `${runId}-c-c`, 0.2);
+    await seedRepro(
+      runId,
+      `${runId}-gen0`,
+      'agenome.reproduced',
+      mutationEvent(runId, 'agn_b', 'child_1'),
+    );
+    const deps: SuccessorThreadingDeps = { caps: { ...CAPS, maxPopulation: 6 }, eliteCount: 2 };
+    const pop = await createSuccessorThreading(deps)(
+      buildArgs(`${runId}-gen0`, [a, b, c], await store.readByRun(runId)),
+    );
+    expect(pop.slice(0, 2).map((x) => x.id)).toEqual(['agn_b', 'agn_a']); // top-2 by fitness desc.
+    expect(pop.map((x) => x.id)).not.toContain('agn_c'); // the weakest is NOT carried.
   });
 
   // spec(§8) THE HEADLINE — drive the REAL loop with all 3 real seams (verify + W1 score + W2 reproduce) +

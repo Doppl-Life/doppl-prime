@@ -1,5 +1,6 @@
-import { Agenome, ReproductionEvent } from '@doppl/contracts';
+import { Agenome, CandidateIdea, FitnessScore, ReproductionEvent } from '@doppl/contracts';
 import type { RunCaps } from '@doppl/contracts';
+import type { RunEventRow } from '../../event-store';
 import { clampSpawnBudget, type NextPopulationArgs } from '../../runtime';
 import { applyReproduction } from '../reproduction/reproduce';
 import type { FusionParent } from '../reproduction/parent-distance';
@@ -19,6 +20,17 @@ import type { FusionParent } from '../reproduction/parent-distance';
  */
 export interface SuccessorThreadingDeps {
   readonly caps: RunCaps;
+  /**
+   * ELITISM (anti-regression) — how many top-fitness scored survivors to carry UNCHANGED into the next
+   * generation, in addition to the reproduced offspring. Without elitism (the default 0) gen N+1 is
+   * offspring-ONLY, so each generation's BEST genome is lost to regressive reproduction (fusion blends
+   * toward the mean, mutation drifts) — the loop finds a good idea and throws it away (the 0.70→0.57
+   * best-fitness drop). Carrying the top-K survivor agenomes forward UNCHANGED (the SAME individuals
+   * survive) lets proven-best genomes persist + keep breeding, so selection compounds and the trajectory
+   * holds its peaks. Pure ranking over the persisted log (rule #7 — replay-stable). Default 0 keeps the
+   * seam additive: absent → byte-identical to the pre-elitism offspring-only threading.
+   */
+  readonly eliteCount?: number;
 }
 
 /** The loop's per-generation id scheme is `${runId}-gen${g}` (generationLoop.ts) — derive gen N+1 from it. */
@@ -58,6 +70,51 @@ function rehome(child: Agenome, nextGenerationId: string, caps: RunCaps): Agenom
   });
 }
 
+/**
+ * Rank the eligible parents by their BEST candidate fitness in the just-completed generation (descending;
+ * tie-break agenome id ascending — deterministic). PURE over the persisted log: `fitness.scored.total`
+ * keyed back to its producing agenome via `candidate.created` (rule #7 — read the recorded outcome, never
+ * recompute; replay reconstructs the identical order). Scoped to `completedGenerationId` so elitism keeps
+ * THIS generation's best — a genome that stopped performing isn't retained on a stale historical peak. A
+ * parent with no scored candidate this generation is dropped (no fitness basis — never an elite).
+ */
+function rankEligibleByFitness(
+  eligibleParents: readonly Agenome[],
+  completedGenerationId: string,
+  log: readonly RunEventRow[],
+): Agenome[] {
+  const candidateAgenome = new Map<string, string>(); // candidateId → agenomeId (this generation)
+  const bestByCandidate = new Map<string, number>(); // candidateId → best fitness.total
+  for (const row of log) {
+    if (row.generationId !== completedGenerationId) continue;
+    if (row.type === 'candidate.created') {
+      const parsed = CandidateIdea.safeParse(row.payload);
+      if (parsed.success) candidateAgenome.set(parsed.data.id, parsed.data.agenomeId);
+    } else if (row.type === 'fitness.scored' && row.candidateId !== null) {
+      const parsed = FitnessScore.safeParse(row.payload);
+      if (!parsed.success) continue;
+      const prev = bestByCandidate.get(row.candidateId);
+      if (prev === undefined || parsed.data.total > prev) {
+        bestByCandidate.set(row.candidateId, parsed.data.total);
+      }
+    }
+  }
+  const fitnessByAgenome = new Map<string, number>(); // agenomeId → its best candidate's total
+  for (const [candidateId, agenomeId] of candidateAgenome) {
+    const fit = bestByCandidate.get(candidateId);
+    if (fit === undefined) continue;
+    const prev = fitnessByAgenome.get(agenomeId);
+    if (prev === undefined || fit > prev) fitnessByAgenome.set(agenomeId, fit);
+  }
+  return eligibleParents
+    .filter((agenome) => fitnessByAgenome.has(agenome.id))
+    .sort((a, b) => {
+      const fa = fitnessByAgenome.get(a.id) ?? 0;
+      const fb = fitnessByAgenome.get(b.id) ?? 0;
+      return fb !== fa ? fb - fa : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+}
+
 export function createSuccessorThreading(
   deps: SuccessorThreadingDeps,
 ): (args: NextPopulationArgs) => Promise<readonly Agenome[]> {
@@ -80,6 +137,19 @@ export function createSuccessorThreading(
       const child = applyReproduction(pool, parsed.data);
       children.push(rehome(child, nextGenerationId, deps.caps));
     }
-    return children;
+
+    // ELITISM — carry the top-K scored survivors UNCHANGED into gen N+1, PREPENDED so the kernel's
+    // maxPopulation clamp (generationLoop.ts — `population.slice(0, maxPopulation)`) drops trailing
+    // offspring, never an elite (rule #1: selection proposes, the kernel bounds). Each elite is the SAME
+    // individual re-homed via the same `rehome` as an offspring (status seeded, spawnBudget clamped) — its
+    // genome rides through BYTE-IDENTICAL (re-home touches only generationId/status/spawnBudget, never
+    // personaWeights/systemPrompt/toolPermissions). The elite keeps its ORIGINAL id, so it is already a
+    // node in current-state (no fabricated lineage). Default 0 → offspring-only (byte-identical to HEAD).
+    const eliteCount = deps.eliteCount ?? 0;
+    if (eliteCount <= 0) return children;
+    const elites = rankEligibleByFitness(eligibleParents, completedGenerationId, log)
+      .slice(0, eliteCount)
+      .map((parent) => rehome(parent, nextGenerationId, deps.caps));
+    return [...elites, ...children];
   };
 }

@@ -114,4 +114,9 @@ export interface AppConfig {
   /** EXPERIMENT (mutagen-dynamics bake-off) — the mutation/mutagen strategy under test
    * (`DOPPL_MUTATION_STRATEGY`). Default `fusion_only` keeps the kernel byte-identical to HEAD. */
   readonly mutationStrategy: import('../loop/mutagenStrategy').MutationStrategy;
+  /** ELITISM (anti-regression) — how many top-fitness scored survivors the successor-threading hook carries
+   * UNCHANGED into the next generation (`DOPPL_ELITE_COUNT`; default 1). Without it, each generation's best
+   * genome is lost to regressive reproduction (the 0.70→0.57 best-fitness drop). 0 = offspring-only control.
+   * The kernel still clamps the returned population to `maxPopulation` (rule #1). */
+  readonly eliteCount: number;
 }

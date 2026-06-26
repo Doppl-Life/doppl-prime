@@ -203,7 +203,13 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     mutationFraction: strategyParams(config.mutationStrategy).baseMutationFraction,
     adaptive: strategyParams(config.mutationStrategy).usesAdaptiveFraction,
   });
-  const nextPopulation = createSuccessorThreading({ caps: config.caps });
+  // ELITISM (anti-regression) — carry the top-K scored survivors UNCHANGED into the next generation so the
+  // population doesn't regress to the mean each generation (the kernel still clamps the returned population
+  // to maxPopulation — rule #1). Default 1 (config.eliteCount); 0 = offspring-only control.
+  const nextPopulation = createSuccessorThreading({
+    caps: config.caps,
+    eliteCount: config.eliteCount,
+  });
 
   // TU.5 — the population_generator gateway: the tool-orchestrating gateway when the live tool seams are
   // wired (agents do their own research), else the pass-through (recorded/replay — replay reads persisted

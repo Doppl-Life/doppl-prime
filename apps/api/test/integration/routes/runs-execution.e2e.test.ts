@@ -210,13 +210,28 @@ describe('POST /runs → runWorker — the production entry point (HTTP e2e, rea
         )
         .map((r) => ReproductionEvent.parse(r.payload).childAgenomeId),
     );
+    // gen-0's candidate producers (the seeds) — an elitism carry-forward reappears here as a gen-1 producer.
+    const gen0Parents = new Set(
+      rows
+        .filter((r) => r.type === 'candidate.created' && r.generationId === `${runId}-gen0`)
+        .map((r) => r.agenomeId)
+        .filter((id): id is string => id !== null),
+    );
     const gen1Agenomes = new Set(
       rows
         .filter((r) => r.type === 'candidate.created' && r.generationId === `${runId}-gen1`)
-        .map((r) => r.agenomeId),
+        .map((r) => r.agenomeId)
+        .filter((id): id is string => id !== null),
     );
     expect(gen0Offspring.size).toBeGreaterThan(0);
-    expect(gen1Agenomes).toEqual(gen0Offspring); // gen N+1 evolves from gen N.
+    // gen N+1 evolves from gen N: with elitism (eliteCount default 1) gen-1's population is the carried-
+    // forward top survivor(s) PLUS gen-0's reproduced offspring (clamped to maxPopulation). So every gen-1
+    // agenome is either a gen-0 reproduced offspring OR a carried-forward gen-0 survivor (an elite seed)…
+    for (const agenomeId of gen1Agenomes) {
+      expect(gen0Offspring.has(agenomeId) || gen0Parents.has(agenomeId)).toBe(true);
+    }
+    expect([...gen1Agenomes].some((a) => gen0Parents.has(a))).toBe(true); // …≥1 elite carried forward…
+    expect([...gen1Agenomes].some((a) => gen0Offspring.has(a))).toBe(true); // …alongside ≥1 offspring.
 
     const terminal = rows.find((r) => r.type === 'run.completed' || r.type === 'run.failed');
     expect(terminal).toBeDefined();

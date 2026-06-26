@@ -125,6 +125,11 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
   // EXPERIMENT — the mutagen-dynamics strategy under test (env-gated; garbage/absent → fusion_only = HEAD).
   const mutationStrategy = parseMutationStrategy(env.DOPPL_MUTATION_STRATEGY);
 
+  // ELITISM (anti-regression) — the top-K scored survivors the successor hook carries UNCHANGED into the
+  // next generation (env-gated DOPPL_ELITE_COUNT; absent/garbage → 1 = carry the single best). Bounded to
+  // [0, maxPopulation]; the kernel still clamps the returned population (rule #1). 0 = offspring-only control.
+  const eliteCount = parseEliteCount(env.DOPPL_ELITE_COUNT, caps.maxPopulation);
+
   // 4. One composed, deep-frozen immutable handle — downstream kernel code cannot mutate boot config.
   return deepFreeze({
     runConfig,
@@ -135,5 +140,15 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     problemSets,
     seedSet,
     mutationStrategy,
+    eliteCount,
   });
+}
+
+/** Parse `DOPPL_ELITE_COUNT` → a non-negative integer clamped to `maxPopulation`; absent/garbage/negative
+ *  → 1 (carry the single best survivor). An explicit `0` disables elitism (the offspring-only control). */
+function parseEliteCount(raw: string | undefined, maxPopulation: number): number {
+  if (raw === undefined || raw.trim() === '') return 1;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) return 1;
+  return Math.min(n, maxPopulation);
 }
