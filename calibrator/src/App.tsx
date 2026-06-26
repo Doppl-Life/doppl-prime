@@ -13,6 +13,7 @@ import {
 } from "./reviewability";
 import { isAllowedRater, normalizeRaterEmail } from "./raters";
 import { readGitHubAgardenIndex, type GitHubAgardenIndexConfig } from "./githubAgardenIndex";
+import { AgoraApp } from "./Agora";
 
 type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
@@ -740,6 +741,7 @@ function hostedEndpointRequiresAccessCode(endpoint: string): boolean {
 }
 
 export function App() {
+  const isAgoraRoute = /\/agora\/?$/.test(window.location.pathname);
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
   const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<string | null>(null);
@@ -1119,7 +1121,7 @@ export function App() {
     return (
       <main className="app-shell">
         <p className="eyebrow">Doppl Life</p>
-        <h1>Calibrator</h1>
+        <h1>{isAgoraRoute ? "Agora" : "Calibrator"}</h1>
         <p role="alert" className="error">
           {error}
         </p>
@@ -1131,10 +1133,14 @@ export function App() {
     return (
       <main className="app-shell">
         <p className="eyebrow">Doppl Life</p>
-        <h1>Calibrator</h1>
+        <h1>{isAgoraRoute ? "Agora" : "Calibrator"}</h1>
         <p>Loading vault index...</p>
       </main>
     );
+  }
+
+  if (isAgoraRoute) {
+    return <AgoraApp index={index} />;
   }
 
   if (reviewableCases.length === 0 || !selectedCase) {

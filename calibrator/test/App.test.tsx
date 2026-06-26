@@ -113,6 +113,7 @@ async function waitForReviewWorkspace(name = "Crash-Volume Revenue Dependency") 
 
 describe("App", () => {
   beforeEach(() => {
+    window.history.pushState({}, "", "/calibrator/");
     window.localStorage.clear();
     window.localStorage.setItem("doppl-calibrator-reviewer-email", "dalton.dinderman@challenger.gauntletai.com");
     delete window.DOPPL_CALIBRATOR_CONFIG;
@@ -138,7 +139,55 @@ describe("App", () => {
 
   afterEach(() => {
     cleanup();
+    window.history.pushState({}, "", "/calibrator/");
     vi.unstubAllGlobals();
+  });
+
+  it("renders the hidden Agora route without reviewer login", async () => {
+    window.localStorage.clear();
+    window.history.pushState({}, "", `${window.location.origin}/calibrator/agora/`);
+    const agoraFixture: CalibratorIndex = structuredClone(fixture);
+    agoraFixture.cases[0].problem_recoveries[1].scores = { judge: 1, human: 4, n: 2 };
+    agoraFixture.cases[0].problem_recoveries[1].human_ratings = [
+      {
+        rating_id: "rating_agora_1",
+        rating_target: "problem_recovery",
+        case_id: "fsd-accident-economy",
+        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        score: 4,
+        reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
+        submitted_at: "2026-06-25T12:00:00.000Z",
+        app_version: "calibrator-v0",
+        body: "",
+      },
+      {
+        rating_id: "rating_agora_2",
+        rating_target: "problem_recovery",
+        case_id: "fsd-accident-economy",
+        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        score: 5,
+        reviewer_email: "cody.clayton@challenger.gauntletai.com",
+        submitted_at: "2026-06-25T12:01:00.000Z",
+        app_version: "calibrator-v0",
+        body: "",
+      },
+    ];
+    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url === "/api/index") return new Response(JSON.stringify(agoraFixture), { status: 200 });
+      return new Response("not found", { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(window.location.pathname).toBe("/calibrator/agora/");
+    expect(await screen.findByText("Judge vs Agora")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Agora" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Crash-Volume Revenue Dependency").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Judge missed").length).toBeGreaterThan(1);
+    expect(screen.getByText("Total human ratings")).toBeInTheDocument();
+    expect(screen.getAllByText("+3.5").length).toBeGreaterThan(1);
   });
 
   it("loads the single-column trace and disables submit until score is selected", async () => {

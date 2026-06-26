@@ -8,6 +8,8 @@ const outputPath = join(repoRoot, "published/calibrator");
 await rm(outputPath, { recursive: true, force: true });
 await mkdir(outputPath, { recursive: true });
 await cp(sourcePath, outputPath, { recursive: true });
+await mkdir(join(outputPath, "agora"), { recursive: true });
+await cp(join(sourcePath, "index.html"), join(outputPath, "agora/index.html"));
 await writeFile(join(outputPath, ".nojekyll"), "", "utf8");
 
 console.log(`Exported ${sourcePath} -> ${outputPath}`);
