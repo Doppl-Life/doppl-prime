@@ -259,20 +259,19 @@ describe("App", () => {
     expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
   });
 
-  it("gates the calibrator behind an exact reviewer email check", async () => {
+  it("gates the calibrator behind a valid reviewer email", async () => {
     window.localStorage.clear();
     render(<App />);
     const reviewerInput = await screen.findByLabelText("Reviewer email");
     expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
-    expect(screen.queryByText("Choose one of the allow-listed reviewer emails.")).not.toBeInTheDocument();
     await userEvent.type(reviewerInput, "melissa");
     expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByLabelText("Reviewer email")).toBeInTheDocument();
-    expect(screen.getByText("That email is not on the reviewer allow-list. Enter your full approved email address.")).toBeInTheDocument();
+    expect(screen.getByText("Enter a valid email address to continue.")).toBeInTheDocument();
     await userEvent.clear(reviewerInput);
-    await userEvent.type(reviewerInput, "melissa.hargis@challenger.gauntletai.com");
-    expect(screen.queryByText("That email is not on the reviewer allow-list. Enter your full approved email address.")).not.toBeInTheDocument();
+    await userEvent.type(reviewerInput, "outside@example.com");
+    expect(screen.queryByText("Enter a valid email address to continue.")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();

@@ -64,9 +64,7 @@ export async function upsertAgardenRating(input: UpsertAgardenRatingInput): Prom
   }
 
   const raterId = normalizeRaterEmail(input.raterId);
-  if (!isAllowedRater(raterId)) {
-    throw new Error("rater_id must be an allow-listed rater");
-  }
+  if (!isAllowedRater(raterId)) throw new Error("rater_id must be a valid email address");
 
   const now = input.now ?? new Date();
   const ledgerAbsolutePath = input.ledgerPath ?? join(input.agardenRoot, "ratings-ledger.json");

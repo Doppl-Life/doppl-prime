@@ -42,7 +42,7 @@ function errorStatus(error: unknown): number {
   }
   if (error instanceof Error) {
     if (
-      /unknown|missing|required|mismatch|allow-listed|non-primary|cannot be rated|invalid/i.test(error.message)
+      /unknown|missing|required|mismatch|non-primary|cannot be rated|invalid|email/i.test(error.message)
     ) {
       return 400;
     }

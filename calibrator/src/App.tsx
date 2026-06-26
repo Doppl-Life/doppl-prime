@@ -11,7 +11,7 @@ import {
   reviewMode,
   type ReviewArtifact,
 } from "./reviewability";
-import { ALLOWED_RATERS, isAllowedRater, normalizeRaterEmail } from "./raters";
+import { isAllowedRater, normalizeRaterEmail } from "./raters";
 import { readGitHubAgardenIndex, type GitHubAgardenIndexConfig } from "./githubAgardenIndex";
 
 type RatingTarget = "problem_recovery" | "solution";
@@ -428,6 +428,7 @@ function labeledBlock(block: string):
   | { label: string; items: string[]; list: true }
   | { label: string; body: string; list: false }
   | null {
+  const listLabels = new Set(["Implications", "Opportunities", "Sprouts", "Skin in the Game"]);
   const labels = [
     "Implications",
     "Opportunities",
@@ -446,10 +447,7 @@ function labeledBlock(block: string):
     if (!match) continue;
     const body = renderInlineText(match[1]);
     const parts = generatedListItems(body);
-    if (
-      ["Implications", "Opportunities", "Sprouts", "Skin in the Game"].includes(label) &&
-      (parts.length > 1 || /^\s*[-–]\s+/.test(body))
-    ) {
+    if (listLabels.has(label) && parts.length > 0) {
       return { label, items: parts, list: true };
     }
     return { label, body, list: false };
@@ -475,7 +473,7 @@ function MarkdownBlock({ text }: { text: string }) {
     const heading = block.match(/^#{2,4}\s+(.+)$/);
     const label = heading ? cleanHeading(heading[1]) : "";
     const nextBlock = blocks[index + 1] ?? "";
-    if (listLabels.has(label) && nextBlock && generatedListItems(nextBlock).length > 1) {
+    if (listLabels.has(label) && nextBlock && generatedListItems(nextBlock).length > 0) {
       renderedBlocks.push(
         <section className="generated-list" key={`${block}-${nextBlock}`.slice(0, 120)}>
           <h5>{label}:</h5>
@@ -982,7 +980,7 @@ export function App() {
   async function submitRating() {
     if (!index || !selectedCase || !activeReviewArtifact || score === null) return;
     if (!reviewerIsAllowed) {
-      setError("Choose a reviewer from the allow-list before submitting.");
+      setError("Enter a valid reviewer email before submitting.");
       return;
     }
     if (!activeIsSubmittable) {
@@ -1078,9 +1076,7 @@ export function App() {
     setLoginEmail("");
     setLoginError("");
     try {
-      if (isAllowedRater(value)) {
-        window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
-      }
+      window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
     } catch {
       // Local storage is a convenience only; rating validation remains server-side.
     }
@@ -1103,7 +1099,7 @@ export function App() {
   function submitLogin() {
     const normalized = normalizeRaterEmail(loginEmail);
     if (!isAllowedRater(normalized)) {
-      setLoginError("That email is not on the reviewer allow-list. Enter your full approved email address.");
+      setLoginError("Enter a valid email address to continue.");
       return;
     }
     updateReviewerEmail(normalized);
@@ -1158,7 +1154,7 @@ export function App() {
           <div>
             <p className="eyebrow">Doppl Life</p>
             <h1>Calibrator</h1>
-            <p className="login-copy">Choose your reviewer identity to begin rating problem recoveries and doppls.</p>
+            <p className="login-copy">Enter your email so your ratings can be saved to the ledger.</p>
           </div>
           <label className="field login-field">
             <span>Reviewer email</span>

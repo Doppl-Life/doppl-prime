@@ -68,19 +68,19 @@ describe("vault schemas", () => {
     });
   });
 
-  it("rejects a rating submission from a non-allow-listed reviewer email", () => {
+  it("rejects a rating submission with an invalid reviewer email", () => {
     expect(() =>
       RatingSubmission.parse({
         case_id: "fsd-accident-economy",
         rating_target: "problem_recovery",
         problem_recovery_id: "pr_fsd_accident_economy",
         score: 4,
-        reviewer_email: "unknown@example.com",
+        reviewer_email: "unknown",
       }),
-    ).toThrow("reviewer_email must be an allow-listed rater");
+    ).toThrow();
   });
 
-  it("accepts and normalizes an allow-listed reviewer email", () => {
+  it("accepts and normalizes any valid reviewer email", () => {
     expect(
       RatingSubmission.parse({
         case_id: "fsd-accident-economy",

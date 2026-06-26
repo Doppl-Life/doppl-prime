@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isAllowedRater, normalizeRaterEmail } from "../raters";
+import { normalizeRaterEmail } from "../raters";
 
 const IsoDateString = z.preprocess((value) => {
   if (value instanceof Date) return value.toISOString();
@@ -150,13 +150,6 @@ export const RatingSubmission = z
         code: z.ZodIssueCode.custom,
         path: ["problem_recovery_id"],
         message: "problem_recovery_id is required",
-      });
-    }
-    if (value.reviewer_email && !isAllowedRater(value.reviewer_email)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["reviewer_email"],
-        message: "reviewer_email must be an allow-listed rater",
       });
     }
   });

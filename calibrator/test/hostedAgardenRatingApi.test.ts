@@ -240,13 +240,13 @@ describe("createHostedAgardenRatingHandler", () => {
         problem_recovery_id: "node-pr",
         node_id: "node-pr",
         score: 4,
-        reviewer_email: "unknown@example.com",
+        reviewer_email: "unknown",
       }),
     );
     const body = await response.json();
 
     expect(response.status).toBe(400);
-    expect(body.error).toContain("allow-listed");
+    expect(body.error).toContain("email");
     expect(client.commits).toHaveLength(0);
   });
 

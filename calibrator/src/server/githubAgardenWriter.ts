@@ -1,7 +1,7 @@
 import matter from "gray-matter";
 import { z } from "zod";
 import { canSubmitRating } from "../reviewability";
-import { isAllowedRater, normalizeRaterEmail } from "../raters";
+import { normalizeRaterEmail } from "../raters";
 import type { CalibratorIndex, CalibratorProblemRecovery, CalibratorSolution } from "../types";
 import { RatingSubmission, type RatingSubmission as RatingSubmissionType } from "./vaultSchemas";
 
@@ -204,7 +204,6 @@ export async function writeGithubAgardenRating(
   const submission = RatingSubmission.parse(input.submission);
   const artifact = selectedArtifact(input.index, submission);
   const raterId = normalizeRaterEmail(submission.reviewer_email ?? "");
-  if (!isAllowedRater(raterId)) throw new Error("rater_id must be an allow-listed rater");
   const now = input.now ?? new Date();
 
   try {

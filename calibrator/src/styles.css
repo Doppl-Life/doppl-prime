@@ -358,14 +358,16 @@ textarea {
 }
 
 .review-guide {
-  background: rgba(17, 23, 38, 0.78);
-  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(31, 42, 61, 0.92), rgba(19, 27, 42, 0.96));
+  border: 1px solid rgba(90, 169, 255, 0.28);
   border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(230, 236, 247, 0.05);
   display: grid;
   gap: 9px;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  margin: 0 0 10px;
-  padding: 10px 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
 }
 
 .guide-rubric p:last-child,
@@ -399,10 +401,10 @@ textarea {
 
 .guide-steps li::before {
   align-items: center;
-  background: rgba(154, 167, 190, 0.16);
-  border: 1px solid rgba(154, 167, 190, 0.26);
+  background: #42d8c8;
+  border: 0;
   border-radius: 999px;
-  color: var(--ink);
+  color: #06100e;
   content: counter(guide-step);
   counter-increment: guide-step;
   display: inline-flex;
@@ -414,8 +416,8 @@ textarea {
 }
 
 .mode-explainer {
-  border-top: 1px solid var(--line);
-  color: var(--muted);
+  border-top: 1px solid rgba(154, 167, 190, 0.18);
+  color: #c3cede;
   grid-column: 1 / -1;
   padding-top: 8px;
 }
@@ -918,6 +920,8 @@ textarea {
   }
 
   .review-controls > .target-toggle {
+    align-self: end;
+    margin-top: 17px;
     order: 2;
   }
 

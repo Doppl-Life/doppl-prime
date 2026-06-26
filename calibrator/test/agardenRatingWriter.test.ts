@@ -87,17 +87,17 @@ describe("upsertAgardenRating", () => {
     ]);
   });
 
-  it("rejects invalid scores and non-allow-listed raters", async () => {
+  it("rejects invalid scores and invalid rater emails", async () => {
     const agardenRoot = await mkdtemp(join(tmpdir(), "agarden-rating-"));
 
     await expect(
       upsertAgardenRating({
         agardenRoot,
         nodeId: "node-a",
-        raterId: "unknown@example.com",
+        raterId: "unknown",
         score: 3,
       }),
-    ).rejects.toThrow("allow-listed");
+    ).rejects.toThrow("valid email");
 
     await expect(
       upsertAgardenRating({
