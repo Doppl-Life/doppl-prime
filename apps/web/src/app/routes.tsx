@@ -70,7 +70,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<RunsHomeScreen />} />
+        <Route index element={<OuterBloomRoute />} />
+        <Route path="runs-home" element={<RunsHomeScreen />} />
         <Route path="bloom" element={<OuterBloomRoute />} />
         <Route path="launch" element={<LaunchRoute />} />
         <Route path="runs/:id" element={<OrganismRoute mode="live" />} />
