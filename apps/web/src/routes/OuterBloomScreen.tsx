@@ -541,16 +541,15 @@ function BloomGraph({
         {layout.edges.map((edge) => {
           const isPathEdge = selectedPath.has(edge.source.id) && selectedPath.has(edge.target.id);
           return (
-            <line
+            <path
               key={edge.id}
-              x1={edge.source.x}
-              y1={edge.source.y}
-              x2={edge.target.x}
-              y2={edge.target.y}
-              stroke={isPathEdge ? 'var(--accent)' : 'var(--fg-faint)'}
-              strokeWidth={isPathEdge ? 3 : edge.type === 'recovered' ? 1.5 : 1}
-              strokeOpacity={selected === null ? 0.34 : isPathEdge ? 0.86 : 0.12}
-              strokeDasharray={edge.type === 'descended' ? '6 7' : undefined}
+              d={edgePath(edge)}
+              fill="none"
+              stroke={isPathEdge ? 'var(--accent)' : edgeStroke(edge)}
+              strokeWidth={isPathEdge ? 3.2 : edge.type === 'recovered' ? 1.8 : 1.15}
+              strokeOpacity={selected === null ? 0.42 : isPathEdge ? 0.9 : 0.15}
+              strokeDasharray={edge.type === 'descended' ? '7 7' : undefined}
+              strokeLinecap="round"
             />
           );
         })}
@@ -603,6 +602,15 @@ function BloomGraph({
                 stroke={isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'}
                 strokeWidth={isSelected ? 3 : 1.2}
               />
+              {node.status === 'selected' && (
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.radius * 0.42}
+                  fill="var(--fg-default)"
+                  opacity="0.86"
+                />
+              )}
               {showLabel && (
                 <text
                   x={node.x + label.dx}
@@ -610,7 +618,8 @@ function BloomGraph({
                   textAnchor={label.anchor}
                   fill={isSelected ? 'var(--fg-default)' : 'var(--fg-muted)'}
                   fontFamily="var(--font-mono)"
-                  fontSize="11"
+                  fontSize={isSelected || node.stage !== 'doppl' ? 12 : 11}
+                  fontWeight={isSelected ? 700 : 500}
                 >
                   {truncate(node.label, isSelected ? 44 : label.max)}
                 </text>
@@ -767,6 +776,7 @@ function ProofBoard({
   const selectedCount = nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length;
   const rejectedCount = nodes.filter((node) => ['rejected', 'culled', 'invalid'].includes(node.status)).length;
   const scoredCount = nodes.filter((node) => node.score !== null || node.judgeAcceptance !== null).length;
+  const sequenceThrough = island?.sequenceThrough ?? 0;
   return (
     <section style={panel} aria-label="Bloom proof board">
       <div
@@ -774,7 +784,7 @@ function ProofBoard({
         style={{
           padding: 'var(--space-3)',
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) repeat(4, auto)',
+          gridTemplateColumns: 'minmax(0, 1fr) repeat(5, auto)',
           gap: 'var(--space-3)',
           alignItems: 'center',
         }}
@@ -791,6 +801,7 @@ function ProofBoard({
         <MiniStat label="scored" value={scoredCount} />
         <MiniStat label="selected" value={selectedCount} />
         <MiniStat label="pruned" value={rejectedCount} />
+        <MiniStat label="seq" value={sequenceThrough} />
       </div>
     </section>
   );
@@ -914,7 +925,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function layoutBloom(bloom: OuterBloomProjection) {
   const islandCount = Math.max(1, bloom.islands.length);
-  const islandRadius = islandCount === 1 ? 0 : Math.max(360, islandCount * 92);
+  const islandRadius = islandCount === 1 ? 0 : Math.max(460, islandCount * 124);
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
 
@@ -926,10 +937,21 @@ function layoutBloom(bloom: OuterBloomProjection) {
     };
     const placed = new Map<string, LayoutNode>();
     const childrenByParent = childrenIndex(island);
+    const branchAngle = islandCount === 1 ? 0 : islandAngle;
 
     for (const node of island.nodes) {
       if (node.stage !== 'case_study') continue;
-      const layoutNode = { ...node, x: center.x, y: center.y, radius: 12, islandIndex };
+      const rootOffset =
+        islandCount === 1
+          ? { x: -220, y: 0 }
+          : { x: -Math.cos(branchAngle) * 58, y: -Math.sin(branchAngle) * 58 };
+      const layoutNode = {
+        ...node,
+        x: center.x + rootOffset.x,
+        y: center.y + rootOffset.y,
+        radius: 15,
+        islandIndex,
+      };
       nodes.push(layoutNode);
       placed.set(node.id, layoutNode);
       placeChildren({
@@ -938,7 +960,7 @@ function layoutBloom(bloom: OuterBloomProjection) {
         placed,
         nodes,
         islandIndex,
-        baseAngle: islandAngle - Math.PI / 2,
+        baseAngle: branchAngle,
         depth: 1,
       });
     }
@@ -985,17 +1007,29 @@ function placeChildren({
   const children = childrenByParent.get(parent.id) ?? [];
   if (children.length === 0) return;
 
-  const spread = children.length === 1 ? 0 : Math.min(Math.PI * 0.92, Math.PI * 0.22 * (children.length - 1));
-  const distance = parent.stage === 'case_study' ? 112 : 104 + Math.min(44, depth * 10);
+  const stageSpread =
+    parent.stage === 'case_study'
+      ? Math.PI * 0.18
+      : parent.stage === 'problem_recovery'
+        ? Math.PI * 0.95
+        : Math.PI * 0.78;
+  const spread = children.length === 1 ? 0 : Math.min(stageSpread, Math.PI * 0.2 * (children.length - 1));
+  const distance =
+    parent.stage === 'case_study'
+      ? 196
+      : parent.stage === 'problem_recovery'
+        ? 168
+        : 126 + Math.min(56, depth * 12);
 
   children.forEach((child, index) => {
     if (placed.has(child.id)) return;
     const offset = children.length === 1 ? 0 : -spread / 2 + (spread * index) / (children.length - 1);
-    const angle = baseAngle + offset;
+    const angle = baseAngle + offset + deterministicWobble(child.id, 0.08);
+    const lobe = deterministicWobble(`${child.id}:lobe`, 18);
     const layoutNode = {
       ...child,
-      x: parent.x + Math.cos(angle) * distance,
-      y: parent.y + Math.sin(angle) * distance,
+      x: parent.x + Math.cos(angle) * (distance + lobe),
+      y: parent.y + Math.sin(angle) * (distance + lobe),
       radius: radiusForNode(child),
       islandIndex,
     };
@@ -1015,7 +1049,7 @@ function placeChildren({
 
 function boundsFor(nodes: readonly LayoutNode[]) {
   if (nodes.length === 0) return { minX: -400, minY: -300, width: 800, height: 600 };
-  const pad = 180;
+  const pad = 112;
   const xs = nodes.map((node) => node.x);
   const ys = nodes.map((node) => node.y);
   const minX = Math.min(...xs) - pad;
@@ -1023,6 +1057,36 @@ function boundsFor(nodes: readonly LayoutNode[]) {
   const maxX = Math.max(...xs) + pad;
   const maxY = Math.max(...ys) + pad;
   return { minX, minY, width: maxX - minX, height: maxY - minY };
+}
+
+function deterministicWobble(seed: string, amplitude: number): number {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
+  }
+  return ((Math.abs(hash) % 1000) / 500 - 1) * amplitude;
+}
+
+function edgePath(edge: LayoutEdge): string {
+  const dx = edge.target.x - edge.source.x;
+  const dy = edge.target.y - edge.source.y;
+  const distance = Math.hypot(dx, dy) || 1;
+  const bend = edge.type === 'recovered' ? 0.08 : edge.type === 'solved_by' ? 0.24 : 0.18;
+  const normalX = -dy / distance;
+  const normalY = dx / distance;
+  const direction = edge.source.islandIndex % 2 === 0 ? 1 : -1;
+  const curve = Math.min(72, distance * bend) * direction;
+  const c1x = edge.source.x + dx * 0.42 + normalX * curve;
+  const c1y = edge.source.y + dy * 0.42 + normalY * curve;
+  const c2x = edge.source.x + dx * 0.72 + normalX * curve;
+  const c2y = edge.source.y + dy * 0.72 + normalY * curve;
+  return `M ${edge.source.x} ${edge.source.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${edge.target.x} ${edge.target.y}`;
+}
+
+function edgeStroke(edge: LayoutEdge): string {
+  if (edge.type === 'recovered') return 'color-mix(in srgb, var(--subtype-zeitgeist) 58%, var(--fg-faint))';
+  if (edge.type === 'solved_by') return 'color-mix(in srgb, var(--accent) 52%, var(--fg-faint))';
+  return 'var(--fg-faint)';
 }
 
 function scaledBounds(bounds: BloomBounds, zoom: number, pan: BloomPan): BloomBounds {
@@ -1041,7 +1105,7 @@ function scaledBounds(bounds: BloomBounds, zoom: number, pan: BloomPan): BloomBo
 function radiusForNode(node: OuterBloomNode): number {
   const score = node.score ?? node.judgeAcceptance ?? 0.3;
   const scaled = Math.max(0, Math.min(1, score > 1 ? score / 5 : score));
-  return 7 + scaled * 8 + (node.status === 'selected' ? 4 : 0);
+  return 8 + scaled * 9 + (node.status === 'selected' ? 4 : 0);
 }
 
 function colorForBloomNode(node: OuterBloomNode): string {
@@ -1061,9 +1125,9 @@ function labelForStage(stage: OuterBloomNode['stage']): string {
 }
 
 function labelPlacement(node: LayoutNode): { dx: number; dy: number; anchor: 'start' | 'middle'; max: number } {
-  if (node.stage === 'case_study') return { dx: node.radius + 12, dy: 4, anchor: 'start', max: 26 };
-  if (node.stage === 'problem_recovery') return { dx: 0, dy: node.radius + 20, anchor: 'middle', max: 32 };
-  return { dx: 0, dy: node.radius + 20, anchor: 'middle', max: 28 };
+  if (node.stage === 'case_study') return { dx: 0, dy: -node.radius - 14, anchor: 'middle', max: 32 };
+  if (node.stage === 'problem_recovery') return { dx: 0, dy: node.radius + 24, anchor: 'middle', max: 34 };
+  return { dx: 0, dy: node.radius + 22, anchor: 'middle', max: 28 };
 }
 
 function truncate(value: string, max: number): string {
