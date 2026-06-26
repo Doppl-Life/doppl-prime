@@ -17,11 +17,19 @@ export function App() {
     () => createRunClient({ baseUrl: resolveApiBaseUrl(import.meta.env) }),
     [],
   );
+  const basename = resolveRouterBasename(import.meta.env.BASE_URL);
+  const routerProps = basename === undefined ? {} : { basename };
   return (
-    <BrowserRouter>
+    <BrowserRouter {...routerProps}>
       <RunClientProvider client={runClient}>
         <AppRoutes />
       </RunClientProvider>
     </BrowserRouter>
   );
+}
+
+function resolveRouterBasename(baseUrl: string): string | undefined {
+  const normalized = baseUrl.trim();
+  if (normalized === '' || normalized === '/') return undefined;
+  return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
 }

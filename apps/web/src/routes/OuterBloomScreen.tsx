@@ -54,42 +54,17 @@ const shell: CSSProperties = {
 const header: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) auto',
-  gap: 'var(--space-4)',
-  alignItems: 'end',
-  padding: 'var(--space-5) var(--space-5) var(--space-3)',
+  gap: 'var(--space-2)',
+  alignItems: 'center',
+  padding: '0.55rem var(--space-4)',
   borderBottom: 'thin solid var(--border-subtle)',
 };
-const eyebrow: CSSProperties = {
-  margin: 0,
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-label)',
-  color: 'var(--accent)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.12em',
-};
 const title: CSSProperties = {
-  margin: 'var(--space-1) 0 0',
-  fontSize: 'clamp(1.8rem, 3vw, 3.2rem)',
-  lineHeight: 1,
+  margin: 0,
+  fontSize: 'clamp(1.15rem, 1.8vw, 1.55rem)',
+  lineHeight: 1.05,
   letterSpacing: 0,
 };
-const subtitle: CSSProperties = {
-  margin: 'var(--space-2) 0 0',
-  color: 'var(--fg-muted)',
-  maxWidth: '62rem',
-};
-const statRail: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(86px, 1fr))',
-  gap: 'var(--space-2)',
-};
-const statCard: CSSProperties = {
-  border: 'thin solid var(--border-subtle)',
-  borderRadius: 'var(--radius-md)',
-  background: 'var(--bg-surface)',
-  padding: 'var(--space-2) var(--space-3)',
-};
-const statValue: CSSProperties = { display: 'block', fontWeight: 800, fontSize: 'var(--text-h3)' };
 const statLabel: CSSProperties = {
   display: 'block',
   fontFamily: 'var(--font-mono)',
@@ -98,7 +73,7 @@ const statLabel: CSSProperties = {
 };
 const body: CSSProperties = {
   minHeight: 0,
-  height: 'calc(100vh - 220px)',
+  height: 'calc(100vh - 112px)',
   display: 'grid',
   gridTemplateColumns: '300px minmax(0, 1fr) 360px',
   gap: 'var(--space-3)',
@@ -186,6 +161,22 @@ const inputStyle: CSSProperties = {
   font: 'inherit',
 };
 
+const compactBloomMeta: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  gap: 'var(--space-2)',
+  flexWrap: 'wrap',
+  color: 'var(--fg-muted)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+};
+
+const compactMetaStrong: CSSProperties = {
+  color: 'var(--fg-default)',
+  fontWeight: 800,
+};
+
 export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -245,18 +236,24 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     <main aria-label="Outer bloom view" style={shell}>
       <header className="outer-bloom-header" style={header}>
         <div>
-          <p style={eyebrow}>Outer View</p>
           <h1 style={title}>Bloom Map</h1>
-          <p style={subtitle}>
-            Case-study islands and their generated problem recoveries and Doppl leaves, projected from
-            the kernel run log. Open a node to inspect the selected outer artifact.
-          </p>
         </div>
-        <div className="outer-bloom-stats" style={statRail} aria-label="Bloom totals">
-          <Stat value={state.bloom.totals.runs} label="runs" />
-          <Stat value={state.bloom.totals.problemRecoveries} label="problem recoveries" />
-          <Stat value={state.bloom.totals.doppls} label="doppls" />
-          <Stat value={state.bloom.totals.selected} label="selected" />
+        <div className="outer-bloom-compact-meta" style={compactBloomMeta} aria-label="Bloom totals">
+          <span>
+            <span style={compactMetaStrong}>{state.bloom.totals.runs}</span> runs
+          </span>
+          <span>·</span>
+          <span>
+            <span style={compactMetaStrong}>{state.bloom.totals.problemRecoveries}</span> recoveries
+          </span>
+          <span>·</span>
+          <span>
+            <span style={compactMetaStrong}>{state.bloom.totals.doppls}</span> Doppls
+          </span>
+          <span>·</span>
+          <span>
+            <span style={compactMetaStrong}>{state.bloom.totals.selected}</span> selected
+          </span>
         </div>
       </header>
 
@@ -298,15 +295,6 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
         </section>
       )}
     </main>
-  );
-}
-
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div style={statCard}>
-      <span style={statValue}>{value}</span>
-      <span style={statLabel}>{label}</span>
-    </div>
   );
 }
 
@@ -403,7 +391,10 @@ function BloomLibrary({
       </div>
       <div style={islandList}>
         {visibleBloom.islands.map((island) => {
-          const caseStudy = island.nodes.find((node) => node.stage === 'case_study') ?? island.nodes[0];
+          const caseStudy =
+            island.nodes.find((node) => node.parentId === null) ??
+            island.nodes.find((node) => node.stage === 'case_study') ??
+            island.nodes[0];
           const listedNodes = sortLibraryNodes(
             island.nodes.filter((node) => node.stage !== 'case_study'),
             sortMode,
@@ -939,12 +930,16 @@ function layoutBloom(bloom: OuterBloomProjection) {
     const childrenByParent = childrenIndex(island);
     const branchAngle = islandCount === 1 ? 0 : islandAngle;
 
-    for (const node of island.nodes) {
-      if (node.stage !== 'case_study') continue;
+    const explicitRoots = island.nodes.filter((node) => node.parentId === null);
+    const rootNodes = explicitRoots.length > 0 ? explicitRoots : island.nodes.slice(0, 1);
+
+    rootNodes.forEach((node, rootIndex) => {
+      const rootSpread = rootNodes.length === 1 ? 0 : (rootIndex - (rootNodes.length - 1) / 2) * 0.34;
+      const rootAngle = branchAngle + rootSpread;
       const rootOffset =
         islandCount === 1
-          ? { x: -220, y: 0 }
-          : { x: -Math.cos(branchAngle) * 58, y: -Math.sin(branchAngle) * 58 };
+          ? { x: -220, y: (rootIndex - (rootNodes.length - 1) / 2) * 92 }
+          : { x: -Math.cos(rootAngle) * 58, y: -Math.sin(rootAngle) * 58 };
       const layoutNode = {
         ...node,
         x: center.x + rootOffset.x,
@@ -960,10 +955,10 @@ function layoutBloom(bloom: OuterBloomProjection) {
         placed,
         nodes,
         islandIndex,
-        baseAngle: branchAngle,
+        baseAngle: rootAngle,
         depth: 1,
       });
-    }
+    });
 
     for (const edge of island.edges) {
       const source = placed.get(edge.source);

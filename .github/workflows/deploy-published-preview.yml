@@ -1,0 +1,93 @@
+name: Deploy Published Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dalton-outer-view
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-published-preview.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    env:
+      OUTER_BLOOM_API_BASE: ${{ vars.OUTER_BLOOM_API_BASE }}
+    steps:
+      - name: Checkout outer view branch
+        uses: actions/checkout@v4
+        with:
+          path: doppl-prime
+
+      - name: Checkout published calibrator
+        uses: actions/checkout@v4
+        with:
+          ref: calibration
+          path: calibration-branch
+
+      - name: Require public API base
+        run: |
+          if [ -z "${OUTER_BLOOM_API_BASE}" ]; then
+            echo "::error::Set repository variable OUTER_BLOOM_API_BASE to the public API origin that serves /bloom."
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: doppl-prime/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: doppl-prime
+        run: pnpm install --frozen-lockfile
+
+      - name: Build outer view
+        working-directory: doppl-prime
+        env:
+          VITE_API_BASE: ${{ env.OUTER_BLOOM_API_BASE }}
+          VITE_BASE_PATH: /doppl-prime/
+        run: pnpm --filter @doppl/web build
+
+      - name: Compose Pages artifact
+        run: |
+          mkdir -p doppl-prime/published
+          cp -R doppl-prime/apps/web/dist/. doppl-prime/published/
+          cp -R calibration-branch/published/calibrator doppl-prime/published/calibrator
+          touch doppl-prime/published/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload published preview
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doppl-prime/published
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

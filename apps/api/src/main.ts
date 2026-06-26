@@ -67,6 +67,7 @@ export const BOOT_ORCHESTRATION_ENV = [
   'DOPPL_GATEWAY',
   'DOPPL_SEED_FIXTURE',
   'DOPPL_FIXTURE_DIR',
+  'CORS_ALLOWED_ORIGINS',
   'HOST',
   'PORT',
 ] as const;
@@ -208,6 +209,14 @@ function parsePort(raw: string | undefined): number {
   return port;
 }
 
+function parseAllowedOrigins(raw: string | undefined): readonly string[] {
+  if (raw === undefined) return [];
+  return raw
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+}
+
 export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp> {
   const env = overrides.env ?? process.env;
 
@@ -290,6 +299,7 @@ export async function bootApp(overrides: BootOverrides = {}): Promise<BootedApp>
       requestStop: operatorStop.request,
       // PD.5a — expose the boot prepared-problem catalog at GET /problem-sets (read-only; PD.5b reads it).
       problemSets: config.problemSets,
+      corsAllowedOrigins: parseAllowedOrigins(env.CORS_ALLOWED_ORIGINS),
     });
 
     await app.listen({ host, port });

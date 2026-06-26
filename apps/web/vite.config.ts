@@ -8,6 +8,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 // data-client tests are DOM-free + deterministic via injected transport doubles); the render-smoke
 // test opts into happy-dom with a `// @vitest-environment happy-dom` docblock.
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH ?? '/',
   plugins: [react()],
   resolve: {
     alias: {

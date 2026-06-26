@@ -17,10 +17,6 @@
     align-items: start !important;
   }
 
-  .outer-bloom-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
-
   .outer-bloom-body {
     grid-template-columns: 1fr !important;
     height: auto !important;
@@ -32,10 +28,6 @@
 }
 
 @media (max-width: 640px) {
-  .outer-bloom-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
   .outer-bloom-svg {
     min-height: 460px !important;
   }

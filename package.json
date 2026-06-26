@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@11.5.2",
   "scripts": {
+    "start": "pnpm --filter @doppl/api start",
     "lint": "pnpm -r --if-present lint",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",

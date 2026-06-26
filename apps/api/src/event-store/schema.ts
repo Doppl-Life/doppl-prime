@@ -163,3 +163,37 @@ export const dashboardSnapshots = pgTable('dashboard_snapshots', {
   sequence: integer('sequence').notNull(),
   snapshot: jsonb('snapshot').notNull(),
 });
+
+/**
+ * Imported outer-bloom artifacts — a narrow read model for case-study → problem-recovery → Doppl trees.
+ * This is the bridge for the hosted outer view while the inner kernel learns to emit first-class outer
+ * artifact events. It is intentionally separate from `run_events`: boot/runtime remains append-only, and
+ * this table can be truncated/rebuilt from aGarden or, tomorrow, from durable outer-artifact projections.
+ */
+export const outerBloomArtifacts = pgTable(
+  'outer_bloom_artifacts',
+  {
+    id: text('id').primaryKey(),
+    runId: text('run_id').notNull(),
+    stage: text('stage').notNull(),
+    label: text('label').notNull(),
+    summary: text('summary').notNull(),
+    status: text('status').notNull(),
+    parentId: text('parent_id'),
+    generationIndex: integer('generation_index'),
+    score: doublePrecision('score'),
+    novelty: doublePrecision('novelty'),
+    judgeAcceptance: doublePrecision('judge_acceptance'),
+    sourceId: text('source_id'),
+    agenomeId: text('agenome_id'),
+    artifactPath: text('artifact_path').notNull(),
+    sequence: integer('sequence').notNull(),
+    body: text('body').notNull(),
+    importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('outer_bloom_artifacts_run_id_idx').on(t.runId),
+    index('outer_bloom_artifacts_parent_id_idx').on(t.parentId),
+    index('outer_bloom_artifacts_stage_idx').on(t.stage),
+  ],
+);

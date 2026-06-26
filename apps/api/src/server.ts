@@ -80,10 +80,13 @@ export interface BuildServerDeps {
   /** PD.3 — latch an operator stop (the boot `operatorStopRegistry.request`); `POST /runs/:id/stop` signals
    *  the in-flight worker through it. Absent → a no-op default (the route still 202s; nothing drains). */
   requestStop?: (runId: string) => void;
+  /** Optional browser origins allowed to call read APIs from static hosts such as GitHub Pages. */
+  corsAllowedOrigins?: readonly string[];
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
   const app = Fastify({ bodyLimit: deps.bodyLimit ?? DEFAULT_BODY_LIMIT });
+  installCors(app, deps.corsAllowedOrigins ?? []);
   // Boundary error hygiene: a 5xx (e.g. an unexpected ProjectionError from reading a foreign-producer
   // log with an unsupported schemaVersion) must never leak an internal error message at the trust
   // boundary. 4xx (validation / bodyLimit-413) pass through with their code. The route handlers send
@@ -123,4 +126,23 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
   // REAL ceiling (fixing the cap-default 422). Read-only; overCapField stays the sole cap authority.
   registerCapMaximaRoutes(app, { defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG });
   return app;
+}
+
+function installCors(app: FastifyInstance, allowedOrigins: readonly string[]): void {
+  const allowed = new Set(allowedOrigins.map((origin) => origin.trim()).filter(Boolean));
+  if (allowed.size === 0) return;
+
+  app.addHook('onRequest', async (request, reply) => {
+    const origin = request.headers.origin;
+    if (origin === undefined || !allowed.has(origin)) return;
+
+    reply.header('Access-Control-Allow-Origin', origin);
+    reply.header('Vary', 'Origin');
+    reply.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type,Idempotency-Key,Last-Event-ID');
+
+    if (request.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
 }

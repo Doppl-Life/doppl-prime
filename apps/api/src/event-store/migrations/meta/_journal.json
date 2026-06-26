@@ -15,6 +15,13 @@
       "when": 1782021417405,
       "tag": "0001_run_events_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782513195551,
+      "tag": "0002_complex_lake",
+      "breakpoints": true
     }
   ]
 }
