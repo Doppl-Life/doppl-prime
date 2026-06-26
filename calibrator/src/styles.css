@@ -1187,11 +1187,7 @@ textarea {
 }
 
 .agora-hero {
-  align-items: end;
-  display: grid;
-  gap: 20px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  padding: 4px 0 18px;
+  padding: 4px 0 16px;
 }
 
 .agora-hero h1 {
@@ -1204,7 +1200,7 @@ textarea {
 .agora-hero p {
   color: var(--muted);
   font-size: 16px;
-  max-width: 760px;
+  max-width: 820px;
 }
 
 .agora-kicker {
@@ -1216,38 +1212,9 @@ textarea {
   text-transform: uppercase;
 }
 
-.agora-legend {
-  background: rgba(17, 23, 38, 0.82);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 12px;
-}
-
-.agora-legend span {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  font-size: 12px;
-  font-weight: 800;
-  gap: 7px;
-  white-space: nowrap;
-}
-
-.agora-legend i,
 .agora-status,
 .agora-point {
   --status-color: var(--faint);
-}
-
-.agora-legend i {
-  background: var(--status-color);
-  border-radius: 999px;
-  display: inline-block;
-  height: 9px;
-  width: 9px;
 }
 
 .aligned,
@@ -1354,7 +1321,7 @@ textarea {
 }
 
 .agora-section-heading {
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid var(--line);
   display: flex;
   gap: 12px;
@@ -1364,15 +1331,30 @@ textarea {
 }
 
 .agora-section-heading h2 {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1.1;
   margin: 2px 0 0;
 }
 
 .agora-section-heading p {
   font-size: 12px;
-  margin: 0;
-  text-align: right;
+  line-height: 1.4;
+  margin: 5px 0 0;
+  max-width: 560px;
+  text-align: left;
+}
+
+.agora-section-heading > strong {
+  background: rgba(59, 227, 208, 0.1);
+  border: 1px solid rgba(59, 227, 208, 0.32);
+  border-radius: 999px;
+  color: var(--teal-bright);
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 1;
+  margin-top: 2px;
+  padding: 7px 10px;
+  white-space: nowrap;
 }
 
 .agora-scatter {
@@ -1484,8 +1466,8 @@ textarea {
 
 .agora-table-row:hover,
 .agora-table-row.selected {
-  border-color: var(--teal);
-  background: rgba(59, 227, 208, 0.08);
+  border-color: color-mix(in srgb, var(--status-color), var(--teal) 30%);
+  background: color-mix(in srgb, var(--status-color), transparent 91%);
 }
 
 .agora-artifact-title {
@@ -1520,6 +1502,20 @@ textarea {
   padding: 4px 8px;
   white-space: nowrap;
 }
+
+.agora-table-row.aligned,
+.agora-table-row.missed,
+.agora-table-row.overrated,
+.agora-table-row.polarizing,
+.agora-table-row.thin,
+.agora-table-row.unscored {
+  --status-color: var(--faint);
+}
+
+.agora-table-row.aligned { --status-color: var(--teal); }
+.agora-table-row.missed { --status-color: var(--gold); }
+.agora-table-row.overrated { --status-color: var(--rose); }
+.agora-table-row.polarizing { --status-color: var(--blue); }
 
 .agora-inspector {
   position: sticky;
@@ -1659,13 +1655,8 @@ textarea {
     padding: 16px;
   }
 
-  .agora-hero,
   .agora-workspace {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .agora-legend {
-    justify-self: start;
   }
 
   .agora-metrics {
@@ -1698,7 +1689,6 @@ textarea {
     font-size: 14px;
   }
 
-  .agora-legend,
   .agora-metrics,
   .agora-controls {
     grid-template-columns: minmax(0, 1fr);

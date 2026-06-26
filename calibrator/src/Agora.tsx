@@ -225,10 +225,11 @@ function AgoraScatter({
     <section className="agora-panel agora-scatter-panel" aria-label="Judge to human score map">
       <div className="agora-section-heading">
         <div>
-          <p className="agora-kicker">Map</p>
-          <h2>Judge vs Agora</h2>
+          <p className="agora-kicker">Score comparison</p>
+          <h2>Score map</h2>
+          <p>Each point is an artifact with both a human average and a judge score.</p>
         </div>
-        <p>{scored.length} comparable artifacts</p>
+        <strong>{scored.length} comparable</strong>
       </div>
       <div className="agora-scatter" role="img" aria-label="Scatterplot of judge scores against average human scores">
         <div className="agora-axis-label agora-axis-y">Human average</div>
@@ -364,36 +365,30 @@ export function AgoraApp({ index }: { index: CalibratorIndex }) {
     <main className="agora-app">
       <section className="agora-hero">
         <div>
-          <p className="agora-kicker">Doppl Life</p>
+          <p className="agora-kicker">Doppl Life · Read-only</p>
           <h1>Agora</h1>
           <p>
-            Compare the human ratings from the Calibrator with the kernel judge scores for every problem recovery and doppl.
-            Use this page to spot agreement, judge misses, overrating, and polarizing artifacts.
+            Human calibrator ratings compared with kernel judge scores. Use this view to find artifacts humans
+            trust, artifacts the judge overrated, and disagreements worth auditing.
           </p>
-        </div>
-        <div className="agora-legend" aria-label="How to read Agora">
-          <span><i className="aligned" /> Aligned</span>
-          <span><i className="missed" /> Judge missed</span>
-          <span><i className="overrated" /> Judge overrated</span>
-          <span><i className="polarizing" /> Polarizing</span>
         </div>
       </section>
 
       <section className="agora-metrics" aria-label="Agora summary">
         <div>
-          <span>Artifacts with ratings</span>
+          <span>Rated artifacts</span>
           <strong>{ratedArtifacts.length}</strong>
         </div>
         <div>
-          <span>Total human ratings</span>
+          <span>Human ratings</span>
           <strong>{ratingCount}</strong>
         </div>
         <div>
-          <span>Average human score</span>
+          <span>Avg human score</span>
           <strong>{scoreText(averageHuman)}</strong>
         </div>
         <div>
-          <span>Largest disagreement</span>
+          <span>Largest gap</span>
           <strong>{largestDisagreement ? scoreText(largestDisagreement.disagreement) : "n/a"}</strong>
         </div>
       </section>
@@ -445,10 +440,11 @@ export function AgoraApp({ index }: { index: CalibratorIndex }) {
           <section className="agora-panel" aria-label="Agora artifacts">
             <div className="agora-section-heading">
               <div>
-                <p className="agora-kicker">Artifacts</p>
-                <h2>{filtered.length} results</h2>
+                <p className="agora-kicker">Artifact review</p>
+                <h2>Comparison table</h2>
+                <p>Sort by gap, score, rating count, or polarization. Select a row to inspect the evidence.</p>
               </div>
-              <p>Human average minus judge score is shown as delta.</p>
+              <strong>{filtered.length} shown</strong>
             </div>
             <div className="agora-table" role="table" aria-label="Human and judge comparison table">
               <div className="agora-table-head" role="row">
@@ -461,7 +457,9 @@ export function AgoraApp({ index }: { index: CalibratorIndex }) {
               {filtered.map((artifact) => (
                 <button
                   type="button"
-                  className={`agora-table-row ${artifact.id === selectedArtifact?.id ? "selected" : ""}`}
+                  className={`agora-table-row ${artifact.verdict.tone} ${
+                    artifact.id === selectedArtifact?.id ? "selected" : ""
+                  }`}
                   key={artifact.id}
                   onClick={() => setSelectedId(artifact.id)}
                   role="row"
@@ -476,6 +474,9 @@ export function AgoraApp({ index }: { index: CalibratorIndex }) {
                   <span><i className={`agora-status ${artifact.verdict.tone}`}>{artifact.verdict.label}</i></span>
                 </button>
               ))}
+              {filtered.length === 0 ? (
+                <p className="agora-empty">No artifacts match the current filters.</p>
+              ) : null}
             </div>
           </section>
         </div>

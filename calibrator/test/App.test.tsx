@@ -181,12 +181,13 @@ describe("App", () => {
     render(<App />);
 
     expect(window.location.pathname).toBe("/calibrator/agora/");
-    expect(await screen.findByText("Judge vs Agora")).toBeInTheDocument();
+    expect(await screen.findByText("Score map")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agora" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
     expect(screen.getAllByText("Crash-Volume Revenue Dependency").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Judge missed").length).toBeGreaterThan(1);
-    expect(screen.getByText("Total human ratings")).toBeInTheDocument();
+    expect(screen.getByText("Human ratings")).toBeInTheDocument();
+    expect(screen.getByText("Comparison table")).toBeInTheDocument();
     expect(screen.getAllByText("+3.5").length).toBeGreaterThan(1);
   });
 
