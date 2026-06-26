@@ -241,29 +241,9 @@ describe('LineageGraph — React Flow lineage panel', () => {
     expect(onNodeClick).toHaveBeenCalledWith('a0', 'agn_0', 'agenome');
   });
 
-  // smoke: mounts without throwing and surfaces the live activity feed derived from the event stream.
-  it('test_renders_activity_feed_from_events', async () => {
-    render(
-      <LineageGraph
-        projection={multiNodeLineage}
-        events={[
-          {
-            id: 'evt_1',
-            runId: 'run_1',
-            type: 'critic.review_started',
-            sequence: 13,
-            occurredAt: '2026-06-20T12:00:13.000Z',
-            actor: 'critic',
-            payload: {},
-            schemaVersion: 2,
-            candidateId: 'cand_0',
-          },
-        ]}
-      />,
-    );
-    const feed = await screen.findByTestId('lineage-activity');
-    expect(feed.textContent).toMatch(/review/i); // the in-flight op surfaced in the feed
-  });
+  // The in-flight derivation still drives the React Flow node-bridge (workingEntityIds), but its
+  // event-list rendering moved off the lineage panel (the S2 left-rail Activity tab shows the full
+  // event stream — the in-graph feed below was a redundant surface).
 
   // spec(rule #6): the lineage module imports nothing from apps/api.
   it('test_no_apps_api_import', () => {

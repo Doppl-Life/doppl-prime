@@ -76,6 +76,41 @@ const rungLabel: CSSProperties = {
   marginRight: 'var(--space-2)',
 };
 
+/** The kernel-emitted human-readable terminal summary string carried on `run.{completed,failed,stopped}`.
+ *  Read-only display; never re-judges (rule #6). Returns null if absent or non-string. */
+function readTerminalSummary(
+  events: readonly RunEventEnvelope[],
+  runStatus: RunEventType,
+): string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const env = events[i]!;
+    if (env.type !== runStatus) continue;
+    const summary = (env.payload as { terminalSummary?: unknown }).terminalSummary;
+    return typeof summary === 'string' && summary.length > 0 ? summary : null;
+  }
+  return null;
+}
+
+/** Counts of high-traffic events so a no-winner terminal screen still tells the operator what happened. */
+function tallyRun(events: readonly RunEventEnvelope[]): {
+  generations: number;
+  candidates: number;
+  critiques: number;
+  scored: number;
+} {
+  let generations = 0;
+  let candidates = 0;
+  let critiques = 0;
+  let scored = 0;
+  for (const env of events) {
+    if (env.type === 'generation.completed') generations++;
+    else if (env.type === 'candidate.created') candidates++;
+    else if (env.type === 'critic.reviewed') critiques++;
+    else if (env.type === 'fitness.scored') scored++;
+  }
+  return { generations, candidates, critiques, scored };
+}
+
 function ProofSection({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
@@ -125,12 +160,27 @@ export function FinalIdeaPanel({
 
   // No selected winner — graceful, NEVER a fabricated winner (rule #6). A TERMINAL run with no winner
   // reflects its terminal state (PD.7 zero-survivors); a non-terminal run keeps the in-progress affordance.
+  // Even without a selected winner we surface the kernel-emitted `terminalSummary` from the run-terminal
+  // event + lightweight event tallies so the payoff screen isn't barren for pre-PD.11 / stale-fixture runs.
   if (winner === null) {
     if (runStatus !== undefined && isRunTerminal(runStatus)) {
       const word = TERMINAL_WORD[runStatus] ?? 'ended';
+      const summary = readTerminalSummary(events, runStatus);
+      const tallies = tallyRun(events);
       return (
-        <div role="img" aria-label={`Final idea — none; run ${word}`} style={empty}>
-          No surviving idea — run {word}.
+        <div
+          role="img"
+          aria-label={`Final idea — none; run ${word}`}
+          style={{ ...section, padding: 'var(--space-4)' }}
+        >
+          <div style={empty}>No surviving idea — run {word}.</div>
+          {summary !== null && (
+            <ProofSection label="kernel terminal summary">{summary}</ProofSection>
+          )}
+          <ProofSection label="run summary">
+            {tallies.generations} generation(s) · {tallies.candidates} candidate(s) ·{' '}
+            {tallies.critiques} critic review(s) · {tallies.scored} fitness score(s)
+          </ProofSection>
         </div>
       );
     }

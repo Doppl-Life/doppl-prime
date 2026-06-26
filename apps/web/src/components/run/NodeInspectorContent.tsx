@@ -139,7 +139,9 @@ export function NodeInspectorContent({
         <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <span style={monoId}>{selectedNode.dataRef}</span>
           {node?.status !== undefined && (
-            <StatusBadge domain="agenome" status={node.status} size="sm" />
+            <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+              <StatusBadge domain="agenome" status={node.status} size="sm" />
+            </span>
           )}
         </header>
         <div style={label}>energy: {energy !== null ? `${energy.total} doppl_energy` : '—'}</div>
