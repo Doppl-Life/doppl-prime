@@ -309,6 +309,109 @@ describe('researchNotesReducer — the graveyard (culled agenomes / dead-end res
   });
 });
 
+describe('researchNotesReducer — in-run retrieval (candidate.generation_started → "retrieved" edges)', () => {
+  const generationStarted = (
+    over: Partial<RunEventRow> & { payload: Record<string, unknown> },
+  ): RunEventRow => row({ ...over, type: 'candidate.generation_started' });
+
+  it('emits an agenome→note "retrieved" edge for each retrieved note id (the stigmergy read)', () => {
+    const state = fold([
+      generationStarted({
+        agenomeId: 'ag2',
+        generationId: 'run_1-gen1',
+        sequence: 5,
+        payload: {
+          agenomeId: 'ag2',
+          retrievedNoteIds: ['research-note:run_1:3', 'research-note:run_1:4'],
+          retrievalDirection: 'near',
+          retrievalMethod: 'cosine',
+        },
+      }),
+    ]);
+    expect(state.edges['retrieved:ag2->research-note:run_1:3']).toEqual({
+      id: 'retrieved:ag2->research-note:run_1:3',
+      source: 'ag2',
+      target: 'research-note:run_1:3',
+      type: 'retrieved',
+    });
+    expect(state.edges['retrieved:ag2->research-note:run_1:4']?.type).toBe('retrieved');
+  });
+
+  it('records the retrieving agenome (culled:false by default)', () => {
+    const state = fold([
+      generationStarted({
+        agenomeId: 'ag2',
+        sequence: 5,
+        payload: {
+          agenomeId: 'ag2',
+          retrievedNoteIds: ['research-note:run_1:3'],
+          retrievalDirection: 'near',
+          retrievalMethod: 'cosine',
+        },
+      }),
+    ]);
+    expect(state.agenomes['ag2']).toEqual({ id: 'ag2', culled: false });
+  });
+
+  it('does not clobber an already-culled retrieving agenome (ordering-robust)', () => {
+    const state = fold([
+      row({
+        type: 'lineage.culled',
+        sequence: 1,
+        payload: { targetIds: ['ag2'], scoreSnapshot: { ag2: 0.3 }, reason: 'truncation' },
+      }),
+      generationStarted({
+        agenomeId: 'ag2',
+        sequence: 2,
+        payload: {
+          agenomeId: 'ag2',
+          retrievedNoteIds: ['research-note:run_1:9'],
+          retrievalDirection: 'far',
+          retrievalMethod: 'lexical_jaccard',
+        },
+      }),
+    ]);
+    expect(state.agenomes['ag2']).toEqual({ id: 'ag2', culled: true, score: 0.3 });
+  });
+
+  it('an empty / absent retrievedNoteIds is a no-op (no edge, no phantom agenome)', () => {
+    const empty = fold([
+      generationStarted({
+        agenomeId: 'ag2',
+        sequence: 5,
+        payload: {
+          agenomeId: 'ag2',
+          retrievedNoteIds: [],
+          retrievalDirection: 'near',
+          retrievalMethod: 'cosine',
+        },
+      }),
+    ]);
+    expect(Object.values(empty.edges).some((e) => e.type === 'retrieved')).toBe(false);
+    expect(empty.agenomes['ag2']).toBeUndefined();
+    const absent = fold([
+      generationStarted({ agenomeId: 'ag2', sequence: 6, payload: { agenomeId: 'ag2' } }),
+    ]);
+    expect(Object.values(absent.edges).some((e) => e.type === 'retrieved')).toBe(false);
+  });
+
+  it('is idempotent on re-fold (keyed by edge id)', () => {
+    const events = [
+      generationStarted({
+        agenomeId: 'ag2',
+        sequence: 5,
+        payload: {
+          agenomeId: 'ag2',
+          retrievedNoteIds: ['research-note:run_1:3'],
+          retrievalDirection: 'near',
+          retrievalMethod: 'cosine',
+        },
+      }),
+    ];
+    expect(canonicalize(fold(events))).toBe(canonicalize(fold([...events, ...events])));
+  });
+});
+
 describe('buildResearchNotes — via the §51 builder (watermark + ordered fold)', () => {
   it("returns a watermark-tagged graph over a run's events", () => {
     const events = [

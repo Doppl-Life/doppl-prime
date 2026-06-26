@@ -41,11 +41,11 @@ export interface ResearchNote {
   readonly eventId: string;
 }
 
-export type ResearchEdgeType = 'researched' | 'cited';
+export type ResearchEdgeType = 'researched' | 'cited' | 'retrieved';
 
 export interface ResearchEdge {
   readonly id: string;
-  /** agenomeId (researched) or candidateId (cited). */
+  /** agenomeId (researched / retrieved) or candidateId (cited). */
   readonly source: string;
   /** the ResearchNote id. */
   readonly target: string;
@@ -119,8 +119,9 @@ function normalizeQuery(raw: string | undefined): string | undefined {
 
 /**
  * The reducer (injected into the §51 `buildProjection`): folds `tool_call.finished` into notes + a
- * `researched` edge, and `candidate.created` evidenceRef citations into `cited` edges. Every other event is
- * a no-op. Pure — no provider/embedding (rule #7); the citation match is by the persisted event id.
+ * `researched` edge, `candidate.created` evidenceRef citations into `cited` edges, and the in-run-retrieval
+ * `candidate.generation_started` marker into `retrieved` edges (the stigmergy read — slice ③). Every other
+ * event is a no-op. Pure — no provider/embedding (rule #7); the citation match is by the persisted event id.
  */
 export function researchNotesReducer(
   state: ResearchKnowledgeGraph,
@@ -186,6 +187,32 @@ export function researchNotesReducer(
         };
       }
       return agenomes === state.agenomes ? state : { ...state, agenomes };
+    }
+    case 'candidate.generation_started': {
+      // KB in-run retrieval (slice ③): the loop persists the retrieved-note-id SET on this marker (rule #7).
+      // Fold it into agenome→note `retrieved` edges — the STIGMERGY read (an agent following / departing from
+      // prior agents' trails), distinct from the `researched` write edge. Pure: no provider (rule #7).
+      const payload = event.payload as Record<string, unknown>;
+      const noteIds = Array.isArray(payload.retrievedNoteIds) ? payload.retrievedNoteIds : [];
+      const agenomeId =
+        event.agenomeId ?? (typeof payload.agenomeId === 'string' ? payload.agenomeId : null);
+      if (agenomeId === null || noteIds.length === 0) return state;
+      let edges = state.edges;
+      for (const noteId of noteIds) {
+        if (typeof noteId !== 'string') continue;
+        const edgeId = `retrieved:${agenomeId}->${noteId}`;
+        edges = {
+          ...edges,
+          [edgeId]: { id: edgeId, source: agenomeId, target: noteId, type: 'retrieved' },
+        };
+      }
+      // Record the retrieving agenome (default not-culled); never clobber an existing culled status
+      // (a `lineage.culled` may have folded before this marker — ordering-robust, mirrors `researched`).
+      const agenomes =
+        state.agenomes[agenomeId] !== undefined
+          ? state.agenomes
+          : { ...state.agenomes, [agenomeId]: { id: agenomeId, culled: false } };
+      return { ...state, edges, agenomes };
     }
     case 'candidate.created': {
       const candidate = event.payload as Partial<CandidateIdea>;
