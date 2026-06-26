@@ -279,7 +279,9 @@ const criticVerdictSchema = {
     pressure: stringSchema(),
     revisionMandate: stringSchema(),
   },
-  required: ['candidateId', 'criticId', 'score', 'pressure', 'revisionMandate'],
+  // pressure and revisionMandate are requested but not required — the score is load-bearing, the
+  // prose is explanatory, so a fast/small model that returns score-only still validates.
+  required: ['candidateId', 'criticId', 'score'],
   additionalProperties: false,
 };
 

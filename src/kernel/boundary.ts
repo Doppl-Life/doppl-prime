@@ -546,10 +546,15 @@ export function assertAgenomeEnergyLedgerEntry(value: unknown): AgenomeEnergyLed
 
 export function assertCriticVerdict(value: unknown): CriticVerdict {
   const verdict = assertObject(value, 'CriticVerdict');
-  for (const field of ['candidateId', 'criticId', 'pressure', 'revisionMandate']) {
+  for (const field of ['candidateId', 'criticId']) {
     assertStringField(verdict, field, 'CriticVerdict');
   }
   assertNumberRangeField(verdict, 'score', 'CriticVerdict', 0, 100);
+  // pressure and revisionMandate are explanatory prose, not load-bearing — the score drives
+  // selection. A fast/small model may omit them; default to empty so the score still flows, and
+  // richer models still supply the prose.
+  verdict.pressure = typeof verdict.pressure === 'string' ? verdict.pressure : '';
+  verdict.revisionMandate = typeof verdict.revisionMandate === 'string' ? verdict.revisionMandate : '';
   return verdict as CriticVerdict;
 }
 
