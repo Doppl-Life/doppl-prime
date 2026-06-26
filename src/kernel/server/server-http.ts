@@ -52,7 +52,17 @@ export class KernelHttpError extends Error {
   }
 }
 
-export const DASHBOARD_CASE_STUDIES = [
+export interface DashboardCaseStudy {
+  id: string;
+  title: string;
+  path: string;
+  testSeedPath: string;
+  fixturePath: string;
+  knowledgePacketPath: string;
+  mode: 'fixture' | 'live';
+}
+
+export const DASHBOARD_CASE_STUDIES: readonly DashboardCaseStudy[] = [
   {
     id: 'fsd-ownership-unwind',
     title: 'FSD Ownership Unwind',
@@ -89,7 +99,7 @@ export const DASHBOARD_CASE_STUDIES = [
     knowledgePacketPath: 'test/fixtures/kernel/starship-launch-cost-collapse/knowledge-packet.json',
     mode: 'fixture',
   },
-] as const;
+];
 
 export function writeHttpResponse(response: ServerResponse, result: KernelHttpResponse): void {
   const contentType = result.contentType || 'application/json';

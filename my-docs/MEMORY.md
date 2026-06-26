@@ -41,6 +41,21 @@ kernel owner must not accidentally undo.
 - **Revisit if:** JSON knowledge packets appear in a non-test path.
   Move them back behind `allowTestFixtureProviders` or delete the bridge.
 
+### The outer judgement surface is external - 2026-06-26
+
+- **Chose:** the outer view — the judgement surface / Agora that reads, displays, and rates the garden
+  — is owned and built by someone else, outside this kernel. It grafts on through the agarden vault and
+  needs no knowledge of our internals. Our side of the contract is the vault only: the kernel writes
+  canonical `flow/`/`stock/` nodes via the `Sink` and reads the ratings ledger
+  (`src/contracts/human-ratings-ledger.md`) when present. We build the inner view (the live process
+  dashboard) and the vault contract — not the outer surface, its UI, or its run trigger.
+- **Over:** building the Agora ourselves (former R6 / Epics C, D), or coupling the kernel to the outer
+  surface through anything but the vault.
+- **Because:** the vault is the clean graft seam — nodes in, nodes out. Owning the inner view plus the
+  vault contract is the whole obligation; the outer surface is a separate consumer.
+- **Revisit if:** the outer surface needs a richer handoff than the vault + run API can express; treat
+  that as a contract question on the vault, not a reason to absorb the surface.
+
 ### The hut is canon - 2026-06-22
 
 - **Chose:** `my-docs/the-hut/**` is the protected inner source of truth for the
