@@ -13,6 +13,8 @@ type LoadState =
   | { readonly kind: 'error' }
   | { readonly kind: 'ready'; readonly bloom: OuterBloomProjection };
 
+type StageFilter = 'all' | 'case_study' | 'problem_recovery' | 'doppl' | 'selected';
+
 interface LayoutNode extends OuterBloomNode {
   x: number;
   y: number;
@@ -84,7 +86,7 @@ const body: CSSProperties = {
   minHeight: 0,
   height: 'calc(100vh - 220px)',
   display: 'grid',
-  gridTemplateColumns: '280px minmax(0, 1fr) 340px',
+  gridTemplateColumns: '300px minmax(0, 1fr) 360px',
   gap: 'var(--space-3)',
   padding: 'var(--space-3)',
 };
@@ -127,6 +129,12 @@ const graphPanel: CSSProperties = {
   position: 'relative',
   overflow: 'hidden',
 };
+const centerColumn: CSSProperties = {
+  minHeight: 0,
+  display: 'grid',
+  gridTemplateRows: 'minmax(0, 1fr) auto',
+  gap: 'var(--space-3)',
+};
 const svgStyle: CSSProperties = { width: '100%', height: '100%', display: 'block' };
 const inspectorBody: CSSProperties = {
   padding: 'var(--space-4)',
@@ -144,10 +152,31 @@ const badge: CSSProperties = {
   fontSize: 'var(--text-caption)',
   color: 'var(--fg-muted)',
 };
+const fieldLabel: CSSProperties = {
+  display: 'block',
+  marginBottom: 'var(--space-1)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+};
+const inputStyle: CSSProperties = {
+  width: '100%',
+  minHeight: 38,
+  border: 'thin solid var(--border-subtle)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg-surface)',
+  color: 'var(--fg-default)',
+  padding: '0 var(--space-2)',
+  font: 'inherit',
+};
 
 export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<StageFilter>('all');
+  const [query, setQuery] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -158,7 +187,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
       .then((bloom) => {
         if (!active) return;
         setState({ kind: 'ready', bloom });
-        setSelectedId((current) => current ?? bloom.islands[0]?.nodes[0]?.id ?? null);
+        setSelectedId((current) => current ?? defaultBloomSelection(bloom));
       })
       .catch(() => active && setState({ kind: 'error' }));
     return () => {
@@ -186,9 +215,14 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     );
   }
 
+  const visibleBloom = filterBloom(state.bloom, stageFilter, query);
+  const allNodes = state.bloom.islands.flatMap((island) => island.nodes);
   const selected =
-    state.bloom.islands.flatMap((island) => island.nodes).find((node) => node.id === selectedId) ??
+    allNodes.find((node) => node.id === selectedId) ??
     state.bloom.islands[0]?.nodes[0] ??
+    null;
+  const selectedIsland =
+    state.bloom.islands.find((island) => island.nodes.some((node) => node.id === selected?.id)) ??
     null;
 
   return (
@@ -220,42 +254,27 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
         </section>
       ) : (
         <section className="outer-bloom-body" style={body}>
-          <aside style={panel} aria-label="Bloom islands">
-            <div style={panelHeader}>
-              <h2 style={panelTitle}>Islands</h2>
-            </div>
-            <div style={islandList}>
-              {state.bloom.islands.map((island) => (
-                <button
-                  key={island.runId}
-                  type="button"
-                  style={{
-                    ...islandButton,
-                    borderColor:
-                      island.nodes.some((node) => node.id === selected?.id)
-                        ? 'var(--accent)'
-                        : 'var(--border-subtle)',
-                  }}
-                  onClick={() => setSelectedId(island.nodes[0]?.id ?? null)}
-                >
-                  <strong>{island.nodes[0]?.label ?? island.runId}</strong>
-                  <span style={{ display: 'block', color: 'var(--fg-muted)', marginTop: 4 }}>
-                    {island.nodes.filter((node) => node.stage === 'problem_recovery').length} PR ·{' '}
-                    {island.nodes.filter((node) => node.stage === 'doppl').length} doppls ·{' '}
-                    {island.status ?? 'unknown'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </aside>
-
-          <BloomGraph
+          <BloomLibrary
             bloom={state.bloom}
+            visibleBloom={visibleBloom}
             selectedId={selected?.id ?? null}
+            stageFilter={stageFilter}
+            query={query}
+            onStageFilterChange={setStageFilter}
+            onQueryChange={setQuery}
             onSelect={setSelectedId}
           />
 
-          <Inspector node={selected} />
+          <div style={centerColumn}>
+            <BloomGraph
+              bloom={visibleBloom}
+              selectedId={selected?.id ?? null}
+              onSelect={setSelectedId}
+            />
+            <ProofBoard island={selectedIsland} selected={selected} />
+          </div>
+
+          <Inspector node={selected} island={selectedIsland} />
         </section>
       )}
     </main>
@@ -271,6 +290,130 @@ function Stat({ value, label }: { value: number; label: string }) {
   );
 }
 
+function BloomLibrary({
+  bloom,
+  visibleBloom,
+  selectedId,
+  stageFilter,
+  query,
+  onStageFilterChange,
+  onQueryChange,
+  onSelect,
+}: {
+  bloom: OuterBloomProjection;
+  visibleBloom: OuterBloomProjection;
+  selectedId: string | null;
+  stageFilter: StageFilter;
+  query: string;
+  onStageFilterChange: (filter: StageFilter) => void;
+  onQueryChange: (query: string) => void;
+  onSelect: (id: string) => void;
+}) {
+  const visibleCount = visibleBloom.islands.reduce((count, island) => count + island.nodes.length, 0);
+  return (
+    <aside style={panel} aria-label="Bloom library">
+      <div style={panelHeader}>
+        <h2 style={panelTitle}>Library</h2>
+        <p style={{ margin: 'var(--space-2) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+          {visibleCount} of {bloom.totals.nodes} outer artifacts visible
+        </p>
+      </div>
+      <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
+        <label>
+          <span style={fieldLabel}>Search</span>
+          <input
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Title or summary"
+            style={inputStyle}
+          />
+        </label>
+        <div>
+          <span style={fieldLabel}>Stage</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+            {stageFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onStageFilterChange(option.value)}
+                style={{
+                  border: 'thin solid',
+                  borderColor: stageFilter === option.value ? 'var(--accent)' : 'var(--border-subtle)',
+                  borderRadius: '999px',
+                  background:
+                    stageFilter === option.value
+                      ? 'color-mix(in srgb, var(--accent) 24%, var(--bg-surface))'
+                      : 'var(--bg-surface-2)',
+                  color: stageFilter === option.value ? 'var(--fg-default)' : 'var(--fg-muted)',
+                  padding: '0.42rem 0.65rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-caption)',
+                  cursor: 'pointer',
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={islandList}>
+        {visibleBloom.islands.map((island) => {
+          const caseStudy = island.nodes.find((node) => node.stage === 'case_study') ?? island.nodes[0];
+          return (
+            <div key={island.runId} style={{ display: 'grid', gap: 'var(--space-2)' }}>
+              <button
+                type="button"
+                style={{
+                  ...islandButton,
+                  borderColor:
+                    island.nodes.some((node) => node.id === selectedId)
+                      ? 'var(--accent)'
+                      : 'var(--border-subtle)',
+                }}
+                onClick={() => onSelect(caseStudy?.id ?? island.nodes[0]?.id ?? island.runId)}
+              >
+                <strong>{caseStudy?.label ?? island.runId}</strong>
+                <span style={{ display: 'block', color: 'var(--fg-muted)', marginTop: 4 }}>
+                  {countStage(island, 'problem_recovery')} problem recoveries ·{' '}
+                  {countStage(island, 'doppl')} Doppls
+                </span>
+              </button>
+              {island.nodes
+                .filter((node) => node.stage !== 'case_study')
+                .slice(0, 8)
+                .map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => onSelect(node.id)}
+                    style={{
+                      textAlign: 'left',
+                      border: 'thin solid',
+                      borderColor: node.id === selectedId ? 'var(--accent)' : 'transparent',
+                      borderRadius: 'var(--radius-sm)',
+                      background: node.id === selectedId ? 'var(--bg-surface-2)' : 'transparent',
+                      color: 'var(--fg-default)',
+                      padding: 'var(--space-2)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ ...fieldLabel, marginBottom: 2, color: colorForBloomNode(node) }}>
+                      {labelForStage(node.stage)}
+                    </span>
+                    <span style={{ display: 'block', fontSize: 'var(--text-body-sm)' }}>
+                      {truncate(node.label, 42)}
+                    </span>
+                  </button>
+                ))}
+            </div>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 function BloomGraph({
   bloom,
   selectedId,
@@ -282,6 +425,7 @@ function BloomGraph({
 }) {
   const layout = useMemo(() => layoutBloom(bloom), [bloom]);
   const selected = layout.nodes.find((node) => node.id === selectedId) ?? null;
+  const selectedPath = selected === null ? new Set<string>() : ancestrySet(selected, layout.nodes);
   const viewBox = `${layout.bounds.minX} ${layout.bounds.minY} ${layout.bounds.width} ${layout.bounds.height}`;
 
   return (
@@ -316,24 +460,31 @@ function BloomGraph({
           fill="transparent"
         />
 
-        {layout.edges.map((edge) => (
-          <line
-            key={edge.id}
-            x1={edge.source.x}
-            y1={edge.source.y}
-            x2={edge.target.x}
-            y2={edge.target.y}
-            stroke="var(--fg-faint)"
-            strokeWidth={edge.type === 'seeded' ? 1.3 : 1}
-            strokeOpacity={edge.type === 'seeded' ? 0.48 : 0.32}
-          />
-        ))}
+        {layout.edges.map((edge) => {
+          const isPathEdge = selectedPath.has(edge.source.id) && selectedPath.has(edge.target.id);
+          return (
+            <line
+              key={edge.id}
+              x1={edge.source.x}
+              y1={edge.source.y}
+              x2={edge.target.x}
+              y2={edge.target.y}
+              stroke={isPathEdge ? 'var(--accent)' : 'var(--fg-faint)'}
+              strokeWidth={isPathEdge ? 3 : edge.type === 'recovered' ? 1.5 : 1}
+              strokeOpacity={selected === null ? 0.34 : isPathEdge ? 0.86 : 0.12}
+              strokeDasharray={edge.type === 'descended' ? '6 7' : undefined}
+            />
+          );
+        })}
 
         {layout.nodes.map((node) => {
           const isSelected = node.id === selected?.id;
+          const isPathNode = selectedPath.has(node.id);
+          const isDimmed = selected !== null && !isPathNode;
           const fill = colorForBloomNode(node);
           const label = labelPlacement(node);
           const showLabel = node.stage !== 'doppl' || isSelected || layout.nodes.length <= 3;
+          const haloOpacity = haloOpacityForNode(node, isSelected, isPathNode);
           return (
             <g
               key={node.id}
@@ -345,8 +496,26 @@ function BloomGraph({
                 if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
               }}
               style={{ cursor: 'pointer' }}
+              opacity={isDimmed ? 0.28 : 1}
             >
-              <circle cx={node.x} cy={node.y} r={node.radius * 3.4} fill="url(#bloom-halo)" />
+              <circle
+                cx={node.x}
+                cy={node.y}
+                r={node.radius * (3.1 + haloOpacity)}
+                fill="url(#bloom-halo)"
+                opacity={haloOpacity}
+              />
+              {node.novelty !== null && (
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.radius + 5 + Math.max(0, Math.min(6, node.novelty * 6))}
+                  fill="none"
+                  stroke="color-mix(in srgb, var(--accent) 70%, white)"
+                  strokeOpacity={0.26 + Math.min(0.42, node.novelty * 0.42)}
+                  strokeWidth="1.6"
+                />
+              )}
               <circle
                 cx={node.x}
                 cy={node.y}
@@ -397,7 +566,64 @@ function BloomGraph({
   );
 }
 
-function Inspector({ node }: { node: OuterBloomNode | null }) {
+function ProofBoard({
+  island,
+  selected,
+}: {
+  island: OuterBloomIsland | null;
+  selected: OuterBloomNode | null;
+}) {
+  const nodes = island?.nodes ?? [];
+  const selectedCount = nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length;
+  const rejectedCount = nodes.filter((node) => ['rejected', 'culled', 'invalid'].includes(node.status)).length;
+  const scoredCount = nodes.filter((node) => node.score !== null || node.judgeAcceptance !== null).length;
+  return (
+    <section style={panel} aria-label="Bloom proof board">
+      <div
+        className="outer-bloom-proof-content"
+        style={{
+          padding: 'var(--space-3)',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) repeat(4, auto)',
+          gap: 'var(--space-3)',
+          alignItems: 'center',
+        }}
+      >
+        <div>
+          <h2 style={panelTitle}>Proof Board</h2>
+          <p style={{ margin: 'var(--space-1) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+            {selected === null
+              ? 'Select an artifact to inspect its local bloom evidence.'
+              : `${labelForStage(selected.stage)} selected from ${island?.status ?? 'unknown'} island`}
+          </p>
+        </div>
+        <MiniStat label="nodes" value={nodes.length} />
+        <MiniStat label="scored" value={scoredCount} />
+        <MiniStat label="selected" value={selectedCount} />
+        <MiniStat label="pruned" value={rejectedCount} />
+      </div>
+    </section>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ minWidth: 68, textAlign: 'right' }}>
+      <strong style={{ display: 'block', fontSize: 'var(--text-h4)' }}>{value}</strong>
+      <span style={{ ...statLabel, color: 'var(--fg-muted)' }}>{label}</span>
+    </div>
+  );
+}
+
+function Inspector({
+  node,
+  island,
+}: {
+  node: OuterBloomNode | null;
+  island: OuterBloomIsland | null;
+}) {
+  const children = island?.nodes.filter((childNode) => childNode.parentId === node?.id) ?? [];
+  const lineage = node === null || island === null ? [] : lineageForNode(node, island.nodes);
   return (
     <aside style={panel} aria-label="Bloom inspector">
       <div style={panelHeader}>
@@ -413,6 +639,7 @@ function Inspector({ node }: { node: OuterBloomNode | null }) {
             <span style={badge}>{labelForStage(node.stage)}</span>
             <span style={badge}>{node.status}</span>
             {node.generationIndex !== null && <span style={badge}>gen {node.generationIndex}</span>}
+            {children.length > 0 && <span style={badge}>{children.length} children</span>}
           </div>
           <h2 style={{ margin: 0, fontSize: 'var(--text-h3)', lineHeight: 1.15 }}>{node.label}</h2>
           <p style={{ margin: 0, color: 'var(--fg-muted)', lineHeight: 1.55 }}>{node.summary}</p>
@@ -420,7 +647,53 @@ function Inspector({ node }: { node: OuterBloomNode | null }) {
             <Metric label="fitness" value={formatScore(node.score)} />
             <Metric label="novelty" value={formatScore(node.novelty)} />
             <Metric label="judge" value={formatScore(node.judgeAcceptance)} />
+            <Metric label="children" value={String(children.length)} />
           </div>
+          {lineage.length > 1 && (
+            <div style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+              <h3 style={panelTitle}>Lineage</h3>
+              <ol
+                style={{
+                  margin: 'var(--space-2) 0 0',
+                  paddingLeft: '1.2rem',
+                  color: 'var(--fg-muted)',
+                  display: 'grid',
+                  gap: 'var(--space-1)',
+                }}
+              >
+                {lineage.map((lineageNode) => (
+                  <li key={lineageNode.id}>
+                    <span style={{ color: colorForBloomNode(lineageNode) }}>{labelForStage(lineageNode.stage)}</span>
+                    {' · '}
+                    {truncate(lineageNode.label, 52)}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {children.length > 0 && (
+            <div style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+              <h3 style={panelTitle}>Children</h3>
+              <div style={{ display: 'grid', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                {children.slice(0, 5).map((child) => (
+                  <div
+                    key={child.id}
+                    style={{
+                      border: 'thin solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: 'var(--space-2)',
+                      background: 'var(--bg-surface-2)',
+                    }}
+                  >
+                    <strong style={{ display: 'block' }}>{truncate(child.label, 44)}</strong>
+                    <span style={{ color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+                      {labelForStage(child.stage)} · {child.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {node.sourceId !== null && (
             <Button variant="secondary" glyph="↗" onClick={() => window.open(`/runs/${node.runId}`, '_self')}>
               Open inner run
@@ -597,4 +870,124 @@ function truncate(value: string, max: number): string {
 function formatScore(value: number | null): string {
   if (value === null) return 'not scored';
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function defaultBloomSelection(bloom: OuterBloomProjection): string | null {
+  const nodes = bloom.islands.flatMap((island) => island.nodes);
+  return (
+    nodes.find((node) => node.stage === 'doppl' && node.status === 'selected')?.id ??
+    nodes.find((node) => node.stage === 'doppl')?.id ??
+    nodes.find((node) => node.stage === 'problem_recovery')?.id ??
+    nodes[0]?.id ??
+    null
+  );
+}
+
+const stageFilterOptions: readonly { value: StageFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'case_study', label: 'Cases' },
+  { value: 'problem_recovery', label: 'Problems' },
+  { value: 'doppl', label: 'Doppls' },
+  { value: 'selected', label: 'Selected' },
+];
+
+function filterBloom(
+  bloom: OuterBloomProjection,
+  stageFilter: StageFilter,
+  query: string,
+): OuterBloomProjection {
+  const normalizedQuery = query.trim().toLowerCase();
+  const islands = bloom.islands
+    .map((island) => {
+      const matched = island.nodes.filter((node) => {
+        const stageMatches =
+          stageFilter === 'all' ||
+          node.stage === stageFilter ||
+          (stageFilter === 'selected' && node.stage === 'doppl' && node.status === 'selected');
+        const textMatches =
+          normalizedQuery.length === 0 ||
+          `${node.label} ${node.summary} ${island.seed}`.toLowerCase().includes(normalizedQuery);
+        return stageMatches && textMatches;
+      });
+      if (matched.length === 0) return null;
+
+      const keepIds = new Set<string>();
+      for (const node of matched) {
+        keepIds.add(node.id);
+        let parentId = node.parentId;
+        while (parentId !== null) {
+          const parent = island.nodes.find((parentNode) => parentNode.id === parentId);
+          if (parent === undefined) break;
+          keepIds.add(parent.id);
+          parentId = parent.parentId;
+        }
+      }
+
+      const nodes = island.nodes.filter((node) => keepIds.has(node.id));
+      const edges = island.edges.filter((edge) => keepIds.has(edge.source) && keepIds.has(edge.target));
+      return { ...island, nodes, edges };
+    })
+    .filter((island): island is OuterBloomIsland => island !== null);
+
+  return buildVisibleProjection(islands);
+}
+
+function buildVisibleProjection(islands: readonly OuterBloomIsland[]): OuterBloomProjection {
+  const doppls = islands.reduce(
+    (count, island) => count + island.nodes.filter((node) => node.stage === 'doppl').length,
+    0,
+  );
+  const problemRecoveries = islands.reduce(
+    (count, island) => count + island.nodes.filter((node) => node.stage === 'problem_recovery').length,
+    0,
+  );
+  const selected = islands.reduce(
+    (count, island) =>
+      count + island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length,
+    0,
+  );
+  return {
+    islands: [...islands],
+    totals: {
+      runs: islands.length,
+      nodes: islands.reduce((count, island) => count + island.nodes.length, 0),
+      problemRecoveries,
+      doppls,
+      selected,
+    },
+  };
+}
+
+function countStage(island: OuterBloomIsland, stage: OuterBloomNode['stage']): number {
+  return island.nodes.filter((node) => node.stage === stage).length;
+}
+
+function ancestrySet(selected: LayoutNode, nodes: readonly LayoutNode[]): Set<string> {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const ids = new Set<string>();
+  let cursor: LayoutNode | undefined = selected;
+  while (cursor !== undefined) {
+    ids.add(cursor.id);
+    cursor = cursor.parentId === null ? undefined : byId.get(cursor.parentId);
+  }
+  return ids;
+}
+
+function lineageForNode(selected: OuterBloomNode, nodes: readonly OuterBloomNode[]): OuterBloomNode[] {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const lineage: OuterBloomNode[] = [];
+  let cursor: OuterBloomNode | undefined = selected;
+  while (cursor !== undefined) {
+    lineage.push(cursor);
+    cursor = cursor.parentId === null ? undefined : byId.get(cursor.parentId);
+  }
+  return lineage.reverse();
+}
+
+function haloOpacityForNode(node: OuterBloomNode, isSelected: boolean, isPathNode: boolean): number {
+  if (isSelected) return 0.98;
+  if (isPathNode) return 0.62;
+  const score = node.score ?? node.judgeAcceptance ?? 0;
+  const scaled = Math.max(0, Math.min(1, score > 1 ? score / 5 : score));
+  return 0.2 + scaled * 0.34;
 }

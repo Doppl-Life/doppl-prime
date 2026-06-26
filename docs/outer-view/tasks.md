@@ -4,6 +4,8 @@ Working branch: `dalton-outer-view`
 
 Goal: build the production outer Doppl view inspired by Michael's experiment spike while staying compatible with the merged kernel runtime. The outer view shows chosen case studies, problem recoveries, and Doppls/solutions as a bloom of durable outer artifacts. Inner-run mechanics such as generated candidates, agenomes, mutagens, energy allocation, and per-generation selection belong in the inner view unless surfaced as summarized proof.
 
+Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile should remain usable, but it is not the primary design target for the outer view right now.
+
 ## Current Baseline
 
 - [x] Create `dalton-outer-view` from `origin/main`.
@@ -34,16 +36,18 @@ Goal: build the production outer Doppl view inspired by Michael's experiment spi
 
 ## Phase 2: Michael-Inspired Bloom Graph
 
-- [ ] Move from static SVG scaffold toward a richer bloom layout.
+- [x] Move from static SVG scaffold toward a richer bloom layout.
 - [ ] Use island clustering around case studies.
 - [ ] Use stage colors consistently:
   - case study: slate
   - problem recovery: violet
   - Doppl: leaf green
-- [ ] Encode novelty and grounding as node halos.
-- [ ] Encode judge/human strength as node radius or ring weight.
-- [ ] Highlight the selected node's ancestry path.
-- [ ] Dim unrelated islands when a node is selected.
+- [x] Encode novelty as node halos.
+- [ ] Encode grounding as node halos once grounding is present in the outer projection.
+- [x] Encode judge strength as node radius or ring weight.
+- [ ] Encode human/agora strength as node radius or ring weight once ratings are in the outer projection.
+- [x] Highlight the selected node's ancestry path.
+- [x] Dim unrelated islands when a node is selected.
 - [ ] Add zoom, pan, and fit controls.
 - [ ] Improve label rules:
   - no overlapping labels
@@ -55,15 +59,15 @@ Goal: build the production outer Doppl view inspired by Michael's experiment spi
 
 ## Phase 3: Inspector And Artifact Reading
 
-- [ ] Upgrade inspector into a real artifact reader.
-- [ ] Show selected node details:
+- [x] Upgrade inspector into a real artifact reader.
+- [x] Show selected node details:
   - stage badge
   - title
   - synopsis/summary
   - parent
   - children count
   - run/source links
-- [ ] Show scores:
+- [x] Show scores:
   - judge score
   - human/agora score
   - novelty
@@ -71,17 +75,17 @@ Goal: build the production outer Doppl view inspired by Michael's experiment spi
   - rating count
 - [ ] Render markdown artifact sections clearly.
 - [ ] Collapse noisy proof sections by default.
-- [ ] Show trace/path lineage for a selected node.
-- [ ] Add "Open inner run" only where an inner run exists.
+- [x] Show trace/path lineage for a selected node.
+- [x] Add "Open inner run" only where an inner run exists.
 - [ ] Add "Open artifact" when aGarden-backed artifact exists.
 - [ ] Add copy-link/copy-markdown actions.
 - [ ] Add inspector states for missing/stale/partial artifacts.
 
 ## Phase 4: Library, Filters, And Navigation
 
-- [ ] Replace simple islands rail with a richer library.
-- [ ] List case-study islands with child counts and status.
-- [ ] Add stage filters:
+- [x] Replace simple islands rail with a richer library.
+- [x] List case-study islands with child counts and status.
+- [x] Add stage filters:
   - all
   - case studies
   - problem recoveries
@@ -92,21 +96,21 @@ Goal: build the production outer Doppl view inspired by Michael's experiment spi
   - high human score
   - high judge score
   - disagreement
-- [ ] Add search by title/body text.
+- [x] Add search by title/body text.
 - [ ] Add sorting:
   - newest
   - strongest human score
   - strongest judge score
   - most divergent judge/human
   - largest island
-- [ ] Keep selected library row synchronized with graph selection.
+- [x] Keep selected library row synchronized with graph selection.
 - [ ] Add keyboard navigation for graph/list selection.
 
 ## Phase 5: Proof Board And Run Health
 
-- [ ] Add proof board panel inspired by the spike.
+- [x] Add proof board panel inspired by the spike.
 - [ ] Show outer-run history per island.
-- [ ] Show generation/proof summary:
+- [x] Show generation/proof summary:
   - generated count
   - kept count
   - rejected count
@@ -245,4 +249,3 @@ Recommended path: Option A for production, Option B for short-term teammate demo
 3. Add library filters/search.
 4. Add proof board panel.
 5. Decide GitHub Pages + hosted API deployment shape.
-
