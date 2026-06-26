@@ -17,6 +17,7 @@ import {
   type OpenAICompatibleProvider,
 } from './model/model-gateway.ts';
 import { createFirecrawlRetrieval } from './discovery/web-retrieval.ts';
+import { admitDiscoveredStock } from './sink/stock-admission.ts';
 
 export type KernelCliArgs = {
   runId: string;
@@ -201,6 +202,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   await exportRunToVault(problemRecovery, cliArgs.outDir);
   const manifest = await exportRunToVault(doppl, cliArgs.outDir);
   const vaultFiles = writeFlowNodes(cliArgs.vault, compileChainNodes(problemRecovery, doppl));
+  const stockFiles = await admitDiscoveredStock(cliArgs.vault, [problemRecovery, doppl]);
   const proofBoard = await writeProofBoard(doppl, cliArgs.proofBoardDir);
   console.log(
     JSON.stringify(
@@ -215,6 +217,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         proofBoard,
         vault: cliArgs.vault,
         vaultFiles,
+        stockFiles,
         files: manifest.files,
       },
       null,

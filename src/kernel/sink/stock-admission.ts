@@ -41,6 +41,19 @@ function parseExistingFacts(markdown: string): Map<string, AdmittedFact> {
   return facts;
 }
 
+const STOP = new Set(['the','and','for','that','this','with','from','into','over','than','they','have','are','was','not','its','can','will','would','could','how']);
+
+function keywordsFrom(facts: AdmittedFact[]): string[] {
+  const freq = new Map<string, number>();
+  for (const fact of facts) {
+    const words = `${fact.claim} ${fact.synopsis}`.toLowerCase().split(/[^a-z0-9]+/);
+    for (const w of words) {
+      if (w.length > 3 && !STOP.has(w)) freq.set(w, (freq.get(w) ?? 0) + 1);
+    }
+  }
+  return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([w]) => w);
+}
+
 function renderStockField(
   fieldId: string,
   name: string,
@@ -48,13 +61,15 @@ function renderStockField(
   created: string,
   updated: string,
 ): string {
+  const keywords = keywordsFrom(facts);
+  const kwYaml = `[${keywords.map((k) => `"${k}"`).join(', ')}]`;
   const body = facts
     .map((fact) => `### ${fact.claim}\n\n${fact.synopsis}\n_Grounded: ${fact.grounded}_ ^${fact.anchor}`)
     .join('\n\n');
   return `---
 id: ${fieldId}
 name: ${JSON.stringify(name)}
-keywords: []
+keywords: ${kwYaml}
 discoveries: ${facts.length}
 finds_screened: ${facts.length}
 created: ${created}
@@ -62,8 +77,6 @@ updated: ${updated}
 ---
 
 # ${name}
-
-Discovered web sources admitted while growing ${name}.
 
 ## Load-bearing facts
 
