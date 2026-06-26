@@ -62,6 +62,9 @@ export interface RunWorkerDeps {
   /** P5.11 — forwarded to the loop's successor-threading hook (additive; absent → no threading). The W3b
    *  boot root injects the real impl here. */
   readonly nextPopulation?: GenerationLoopDeps['nextPopulation'];
+  /** KB in-run retrieval — forwarded to the loop's `retrieveKnowledge` seam (additive; absent → no
+   *  retrieval). The boot root injects the shared-KB retriever here. */
+  readonly retrieveKnowledge?: GenerationLoopDeps['retrieveKnowledge'];
 }
 
 export type RunWorkerSkipReason =
@@ -142,6 +145,7 @@ export async function runWorker(deps: RunWorkerDeps): Promise<RunWorkerResult> {
       ? { minPopulationSurvival: deps.minPopulationSurvival }
       : {}),
     ...(deps.nextPopulation !== undefined ? { nextPopulation: deps.nextPopulation } : {}),
+    ...(deps.retrieveKnowledge !== undefined ? { retrieveKnowledge: deps.retrieveKnowledge } : {}),
   });
 
   return {

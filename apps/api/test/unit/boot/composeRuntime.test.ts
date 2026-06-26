@@ -122,6 +122,14 @@ describe('FB.4 — mergePerRunConfig threads the per-run generationBias', () => 
   });
 });
 
+describe('KB in-run retrieval — composeRunWorkerDeps wires the retrieveKnowledge seam', () => {
+  test('the shared-KB retriever is wired into the worker deps (reachability)', () => {
+    // lesson §96 — wire-and-prove the same slice: the boot composition reaches the loop's retrieval seam.
+    const deps = composeWith({});
+    expect(typeof deps.retrieveKnowledge).toBe('function');
+  });
+});
+
 describe('FB.2 — composeRunWorkerDeps selects the per-run override gateway', () => {
   test('test_compose_uses_override_gateway_when_present', () => {
     // when the run carries an override AND a gatewayForOverride factory is injected, compose builds the

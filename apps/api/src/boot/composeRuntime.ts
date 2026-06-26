@@ -11,6 +11,7 @@ import type { EventStore } from '../event-store';
 import type { ModelGateway, ToolExecutorDeps } from '../model-gateway';
 import { type GenerationGateway, type RunWorkerDeps } from '../runtime';
 import { createToolOrchestratingGateway } from './toolOrchestrator';
+import { createKnowledgeRetriever } from './knowledgeRetriever';
 import { createVerifySeam } from '../verifier/verify-seam';
 import { DEFAULT_JUDGE_RUBRIC } from '../verifier/judge/rubric';
 import {
@@ -216,6 +217,19 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     eliteCount: config.eliteCount,
   });
 
+  // KB in-run retrieval (shared-knowledge stigmergy) — agents query the run's accumulated research notes at
+  // generation time. SELF-GATING: it folds notes via `readByRun` and returns `undefined` when there are none
+  // (gen-0, or any non-tool-using run — the recorded/replay path surfaces no tool calls), so wiring it
+  // unconditionally is byte-identical to the baseline UNTIL a tool-using run leaves notes (then gen-1+
+  // retrieve them). The loop persists the retrieved set on `candidate.generation_started` (rule #7) + threads
+  // it as wrapUntrusted DATA into the population_generator request ONLY (rule #5/#6). Lexical MVP (keyless).
+  const retrieveKnowledge = createKnowledgeRetriever({
+    readByRun: eventStore.readByRun,
+    ...(config.runConfig.generationBias !== undefined
+      ? { generationBias: config.runConfig.generationBias }
+      : {}),
+  });
+
   // TU.5 — the population_generator gateway: the tool-orchestrating gateway when the live tool seams are
   // wired (agents do their own research), else the pass-through (recorded/replay — replay reads persisted
   // tool results, never re-executes; rule #7). Rule #6: this gateway is the population_generator path ONLY;
@@ -235,6 +249,7 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     gateway: generationGateway,
     seams: { verify, score, reproduce },
     nextPopulation,
+    retrieveKnowledge,
     listRunIds,
     ...(input.operatorStop !== undefined ? { operatorStop: input.operatorStop } : {}),
   };
