@@ -41,6 +41,25 @@ kernel owner must not accidentally undo.
 - **Revisit if:** JSON knowledge packets appear in a non-test path.
   Move them back behind `allowTestFixtureProviders` or delete the bridge.
 
+### No fakes — live or recorded-real, never fabricated - 2026-06-26
+
+- **Chose:** the kernel has no fabricated generation. Every run is a live model call or a replay of
+  recorded real calls. Deleted the fixture generation engine (`createFixtureGenerationProviders`, the
+  `mutagenMove`/`deterministicAxisScore` fabricators), the `DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS`
+  harness, the JSON knowledge gateway, and fixture dashboard mode. The "self-regulating tide"
+  (`regimeMutagens`) moved from the fake into the live generation prompt. Tests stand on a captured
+  real run (`test/captured/**`: serialized `KernelRun` aggregates + the model-call records that
+  produced them) for the fast deterministic suite; `pnpm test:live` runs a real grok chain; `pnpm
+  capture` re-records. Server run-tests keep a mock-`fetch` transport stub — it verifies HTTP
+  plumbing (auth, secret redaction, routing, SSE, replay), not model intelligence.
+- **Over:** fixture-backed runs, hand-authored replay records, deterministic stand-in judges, or any
+  "the system works" claim that never called a model.
+- **Because:** the system works or it doesn't, and we stand on that pillar. A green test or a clean
+  demo must mean the real engine ran. Pure-function tests (slug, projection shape, reducer) stay
+  deterministic — they test real pure code, not fabricated intelligence.
+- **Revisit if:** any fixture/stub generation reappears in a product or engine path. Burn it back to
+  live or recorded-real. See [[the trace is the SSOT; views own their taxonomies]].
+
 ### The outer judgement surface is external - 2026-06-26
 
 - **Chose:** the outer view — the judgement surface / Agora that reads, displays, and rates the garden

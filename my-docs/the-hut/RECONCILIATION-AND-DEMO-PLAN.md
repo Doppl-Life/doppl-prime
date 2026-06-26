@@ -17,8 +17,14 @@ Epics C, D). Our boundary is the vault: kernel writes canonical `flow/`/`stock/`
 reads/rates. `pnpm build` (typecheck → lint → test → web build) restored green: typecheck clean, lint
 clean, **132/132**, web build OK (fixed a stale `no-unnecessary-condition` lint error in
 `server-runs.ts` — `DashboardCaseStudy.mode` is now a real `'fixture' | 'live'` union, no runtime
-change). **Next open work:** R7 demo floors (offline golden run J1) and the Epic-A discovery frontier;
-the inner-view spine is complete.
+change). **No fakes (2026-06-26):** burned all fabricated generation — the fixture generation engine, the
+`DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS` harness, the JSON knowledge gateway, fixture dashboard mode, the
+hand-authored replay records, and the planned offline golden run (J1). Every run is now a live model
+call or a replay of recorded real calls. The fast `pnpm test` suite stands on a captured real grok run
+(`test/captured/**`); `pnpm test:live` runs a real grok chain; `pnpm capture` re-records. The
+"self-regulating tide" moved from the fake into the live generation prompt. Build green: typecheck,
+lint, **98/98**, web build. Decision in [`../MEMORY.md`](../MEMORY.md) (*No fakes — live or
+recorded-real*). **Next open work:** the Epic-A discovery frontier; the inner-view spine is complete.
 
 **Done & committed:** R0 (dalton base) · R1 (canonical `flow/<slug>/<slug>.md` vault + `slugId`,
 SSOT) · R2 (clean case node vs `node.md`) · R3 (provider layer — one OpenAI-compatible client +

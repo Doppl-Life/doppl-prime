@@ -74,6 +74,9 @@ after selection. These 0–1 measurements map into the judge's −5…+5 **ratin
 
 ```bash
 pnpm build          # typecheck + lint + tests + web build
+pnpm test           # fast suite: pure logic + a captured real run (deterministic, no model calls)
+pnpm test:live      # the live proof: a real grok run end to end (skips if the grok CLI is absent)
+pnpm capture        # re-record the captured run via a live grok run (after a run-shape change)
 pnpm kernel:run     # run the kernel CLI
 pnpm kernel:serve   # serve the dashboard and kernel HTTP API
 pnpm web:build      # build the React dashboard
@@ -81,6 +84,12 @@ pnpm web:build      # build the React dashboard
 
 The product target is configured in `doppl.config.json` (`vault`, local default `../agarden`).
 The sink ([`src/mechanics/sink.md`](src/mechanics/sink.md)) is the only writer.
+
+**No fakes.** The kernel has no fabricated generation: every run is a live model call (or a replay of
+recorded real calls). The fast `pnpm test` suite asserts against `test/captured/**` — serialized real
+runs plus the model-call records that produced them, not hand-authored fixtures. `pnpm test:live` proves
+the live path; `pnpm capture` refreshes the recordings. The system works or it doesn't, and we stand on
+that.
 
 ## Registers
 
