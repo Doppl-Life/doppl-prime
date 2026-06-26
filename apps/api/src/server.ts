@@ -12,7 +12,7 @@ import { registerCapMaximaRoutes } from './routes/cap-maxima';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
 import type { EventBridgeOptions } from './sse/event-bridge';
-import type { ProblemSets } from './runtime/config/configSchema';
+import { DEFAULT_CAPS, type ProblemSets } from './runtime/config/configSchema';
 
 /**
  * The Fastify server bootstrap (ARCHITECTURE.md §11/§14). Stands up the HTTP layer and registers the
@@ -27,7 +27,13 @@ import type { ProblemSets } from './runtime/config/configSchema';
 /** Default request-body ingestion limit (1 MiB) — pairs with the P0.10 MAX_PAYLOAD_BYTES ceiling. */
 export const DEFAULT_BODY_LIMIT = 1_048_576;
 
-/** Default run configuration; its `caps` are the maxima a POST /runs request may lower but not exceed. */
+/** Default run configuration; its `caps` are the maxima a POST /runs request may lower but not exceed.
+ *  These maxima are deliberately GENEROUS (≥ the boot ceiling) — this is the standalone/test default;
+ *  production overrides `defaultConfig` with the live boot caps (main.ts). The two research-bounded fields
+ *  are single-sourced from the boot ceiling (`DEFAULT_CAPS`) so this ceiling can never drift BELOW the boot
+ *  caps a recorded `run.configured` carries: B1 raised `DEFAULT_CAPS` (tool-calls 64→600, wall-clock 10→20
+ *  min) but left this copy stale at 200 tool-calls / 10-min wall-clock, so boot-derived POST bodies 422'd
+ *  themselves against this ceiling. The other four stay generous, all already ≥ the boot defaults. */
 export const DEFAULT_RUN_CONFIG: RunConfig = {
   seed: 'default-scenario',
   enabledSubtypes: ['cross_domain_transfer', 'zeitgeist_synthesis'],
@@ -36,8 +42,8 @@ export const DEFAULT_RUN_CONFIG: RunConfig = {
     maxGenerations: 10,
     energyBudget: 100_000,
     maxSpawnDepth: 5,
-    maxToolCalls: 200,
-    wallClockTimeoutMs: 600_000,
+    maxToolCalls: DEFAULT_CAPS.maxToolCalls,
+    wallClockTimeoutMs: DEFAULT_CAPS.wallClockTimeoutMs,
   },
   modelProfile: 'default',
   scoringPolicyVersion: 'scoring-v1',
