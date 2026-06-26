@@ -8,7 +8,6 @@ import {
   createOpenAICompatibleModelClient,
   createRoutingModelClient,
   createFusionModelClient,
-  createFallbackModelClient,
   createReplayModelClient,
   createRecordingModelClient,
   parseJsonObjectResponse,

@@ -1,14 +1,17 @@
 import path from 'node:path';
 import { defaultKernelArgs } from '../cli.ts';
-import { createModelGenerationProviders, type GenerationProviders } from '../engine/generation-providers.ts';
 import {
-  createFallbackModelClient,
+  createFallbackGenerationProviders,
+  createModelGenerationProviders,
+  type GenerationProviders,
+  type ModelGenerationProviders,
+} from '../engine/generation-providers.ts';
+import {
   createOpenRouterModelClient,
   createPresetModelClient,
   createReplayModelClient,
   readModelCallRecords,
-  type ModelClient,
-  type ModelClientLayer,
+  type ModelCallRecord,
 } from '../model/model-gateway.ts';
 import { runKernel } from '../engine/run-kernel.ts';
 import { exportRunToVault } from '../sink/vault-export.ts';
@@ -38,37 +41,44 @@ import {
 } from './server-store.ts';
 
 const HOSTED_MODEL = 'openai/gpt-4.1-mini';
-const FAST_LOCAL_MODEL = 'gemma4:e4b'; // the cascade floor: small, fast, keyless, always available.
+const FAST_LOCAL_MODEL = 'gemma4:e4b'; // a fast first attempt for the keyless local path.
+const RELIABLE_LOCAL_MODEL = 'qwen3.6:35b-a3b'; // the floor: capable enough to validate, MoE-fast.
 
 // A representative model label for a live run (the cascade pins each layer's own model).
 export function defaultLiveModel(options: KernelHttpOptions): string {
   return envValue(options, 'DOPPL_LIVE_MODEL') || FAST_LOCAL_MODEL;
 }
 
-// The cascading live model client. Try the preferred provider, fall through on failure (provider
-// unreachable, model missing, auth rejected), ending at a fast small local model as the floor — so
-// a live run always has a working path without holding up the user. Order:
-//   1. hosted OpenRouter, when a key is present (for `/kernel/runs` the API caller is authenticated;
-//      the public dashboard hides the key unless the operator consents to spend — see the handler);
-//   2. a pinned local model (`DOPPL_LIVE_MODEL`), the operator's stronger local choice;
-//   3. the floor — a fast small local model, keyless and free.
-function liveModelCascade(parsed: KernelRunRequest, options: KernelHttpOptions): ModelClient {
+// The cascading live providers. Each layer is a full set of model-backed providers; a generation or
+// judgment falls through to the next layer when one fails — including when a weak model's output
+// won't validate even after repair. So a fast model leads and a reliable local model is the floor,
+// per call. Order:
+//   1. hosted OpenRouter, when a key is present (`/kernel/runs` is authenticated; the public
+//      dashboard hides the key unless the operator consents to spend — see the handler);
+//   2. the local lead — a pinned model (`DOPPL_LIVE_MODEL`) or a fast small default;
+//   3. the floor — a capable local model that reliably validates, keyless and free.
+function liveProviderCascade(parsed: KernelRunRequest, options: KernelHttpOptions): GenerationProviders {
   const fetch = options.fetch;
-  const layers: ModelClientLayer[] = [];
+  const records: ModelCallRecord[] = [];
+  const layers: ModelGenerationProviders[] = [];
   const hostedKey = envValue(options, 'OPENROUTER_API_KEY').trim();
   if (hostedKey) {
-    layers.push({
+    layers.push(createModelGenerationProviders({
       client: createOpenRouterModelClient({ apiKey: hostedKey, fetch }),
       model: parsed.model || HOSTED_MODEL,
-      label: 'openrouter',
-    });
+      records,
+    }));
   }
-  const pinnedLocal = envValue(options, 'DOPPL_LIVE_MODEL');
-  if (pinnedLocal) {
-    layers.push({ client: createPresetModelClient('ollama', { fetch }), model: pinnedLocal, label: 'ollama' });
+  const localModels = [envValue(options, 'DOPPL_LIVE_MODEL') || FAST_LOCAL_MODEL];
+  if (!localModels.includes(RELIABLE_LOCAL_MODEL)) localModels.push(RELIABLE_LOCAL_MODEL);
+  for (const model of localModels) {
+    layers.push(createModelGenerationProviders({
+      client: createPresetModelClient('ollama', { fetch }),
+      model,
+      records,
+    }));
   }
-  layers.push({ client: createPresetModelClient('ollama', { fetch }), model: FAST_LOCAL_MODEL, label: 'ollama-fast' });
-  return createFallbackModelClient(layers);
+  return createFallbackGenerationProviders(layers, records);
 }
 
 export async function generationProvidersFromRequest(
@@ -79,10 +89,7 @@ export async function generationProvidersFromRequest(
     throw new Error('liveModel cannot be combined with replay model calls');
   }
   if (parsed.liveModel) {
-    return createModelGenerationProviders({
-      client: liveModelCascade(parsed, options),
-      model: parsed.model || defaultLiveModel(options),
-    });
+    return liveProviderCascade(parsed, options);
   }
   if (!parsed.replayModelCallsPath) return undefined;
   const records = await readModelCallRecords(parsed.replayModelCallsPath);

@@ -148,6 +148,8 @@ export type ModelGenerationProviderInput = {
   client: ModelClient;
   model: string;
   prompts?: Partial<ModelGenerationPromptRenderers>;
+  // Optional shared record sink, so a cascade of providers writes into one trace.
+  records?: ModelCallRecord[];
 };
 
 export type ModelGenerationProviders = GenerationProviders & {
@@ -403,7 +405,7 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
 
 export function createModelGenerationProviders(input: ModelGenerationProviderInput): ModelGenerationProviders {
   const prompts = { ...createDefaultModelGenerationPrompts(), ...input.prompts };
-  const modelCallRecords: ModelCallRecord[] = [];
+  const modelCallRecords = input.records ?? [];
 
   async function complete(request: Parameters<ModelClient['complete']>[0]): Promise<ModelCallRecord> {
     const response = await input.client.complete(request);
@@ -530,6 +532,55 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
           (parsed) => heldOutJudgeFromParsed(providerInput.candidate.id, parsed),
         );
       },
+    },
+  };
+}
+
+// A quality-aware provider cascade: try each layer's generation/judgment, falling through to the
+// next when a layer throws — including when a model's output fails validation even after repair (a
+// weak model omitting required fields). So a fast model can lead and a reliable model can be the
+// floor, per call. Layers should share one record sink (pass the same `records` array to each
+// createModelGenerationProviders) so the trace stays whole; this exposes that shared sink.
+export function createFallbackGenerationProviders(
+  layers: readonly ModelGenerationProviders[],
+  records: ModelCallRecord[],
+): ModelGenerationProviders {
+  const [first] = layers;
+  if (!first) throw new Error('createFallbackGenerationProviders requires at least one layer');
+  async function viaLayers<T>(what: string, call: (layer: ModelGenerationProviders) => Promise<T>): Promise<T> {
+    const failures: string[] = [];
+    for (const layer of layers) {
+      try {
+        return await call(layer);
+      } catch (error) {
+        failures.push(`${layer.model}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    throw new Error(`all generation layers failed for ${what} — ${failures.join(' | ')}`);
+  }
+  return {
+    modelCallRecords: records,
+    modelProvider: 'cascade',
+    model: first.model,
+    cleanBaseline: {
+      generate: (input) => viaLayers('control_baseline', (layer) => {
+        const baseline = layer.cleanBaseline;
+        if (!baseline) throw new Error('layer has no clean baseline');
+        return baseline.generate(input);
+      }),
+    },
+    candidateGenerator: {
+      generate: (input) => viaLayers('candidate_generation', (layer) => layer.candidateGenerator.generate(input)),
+    },
+    criticCouncil: {
+      judge: (input) => viaLayers('critic_judgment', (layer) => layer.criticCouncil.judge(input)),
+    },
+    heldOutJudge: {
+      judge: (input) => viaLayers('held_out_judgment', (layer) => {
+        const judge = layer.heldOutJudge;
+        if (!judge) throw new Error('layer has no held-out judge');
+        return judge.judge(input);
+      }),
     },
   };
 }
