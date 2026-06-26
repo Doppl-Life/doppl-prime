@@ -499,13 +499,20 @@ function fakeOpenRouterClient(opts: { onCall?: () => void } = {}): OpenRouterCli
       if (role === 'embedding') {
         output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
       } else if (role === 'final_judge') {
-        output = {
+        // Wave 2 Step 4 — the judge is hoisted to ONE peer-context call; a multi-candidate request carries
+        // [CANDIDATE ref=N] DATA blobs → comparative {candidates:[{ref,...}]} shape; single → flat.
+        const axes = {
           grounding: 4,
           novelty: 3,
           feasibility: 5,
           falsification_survival: 2,
           subtype_check_pass: 4,
         };
+        const refs = params.messages
+          .filter((m) => m.role === 'user')
+          .map((m) => /\[CANDIDATE ref=([^\]]+)\]/.exec(m.content)?.[1])
+          .filter((r): r is string => r !== undefined);
+        output = refs.length === 0 ? axes : { candidates: refs.map((ref) => ({ ref, ...axes })) };
       } else if (role === 'fusion_synthesis') {
         output = { synthesis: 'a merged child system prompt' };
       } else if (role === 'population_generator') {

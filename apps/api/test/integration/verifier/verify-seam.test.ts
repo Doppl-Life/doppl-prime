@@ -19,6 +19,7 @@ import {
   type ScoreSeam,
 } from '../../../src/runtime/loop/generationLoop';
 import { createVerifySeam } from '../../../src/verifier/verify-seam';
+import { judgeFakeOutput } from '../_support/judge-output';
 
 /**
  * P4.12 unified VerifySeam adapter — integration (testcontainers, real PG). The LOAD-BEARING proof: the
@@ -66,7 +67,9 @@ const populationGateway: GenerationGateway = {
 };
 
 // Multi-role fake gateway for the SEAM's council + judge (.call), with a provider-call counter for the
-// replay assertion. (final_judge needs per-axis output — the P2.9 fixture's `{score:3}` is stale.)
+// replay assertion. The held-out judge is HOISTED to ONE peer-context call over the whole generation (Wave 2
+// Step 4), so the final_judge output is the comparative `{candidates:[{ref,...axes}]}` shape — shaped from
+// the request's [CANDIDATE ref=N] blobs by the shared judgeFakeOutput helper (robust to N).
 function countingVerifyGateway() {
   let calls = 0;
   const gateway: ModelGateway = {
@@ -77,7 +80,7 @@ function countingVerifyGateway() {
         validationResult: 'accepted',
         output:
           request.role === 'final_judge'
-            ? PER_AXIS
+            ? judgeFakeOutput(request, PER_AXIS)
             : { critique: 'stub critique', confidence: 0.5 },
         providerMeta: validProviderMeta,
       });

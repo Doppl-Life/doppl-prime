@@ -18,6 +18,7 @@ import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
 import { composeRunWorkerDeps } from '../../../src/boot/composeRuntime';
 import { DEFAULT_JUDGE_RUBRIC } from '../../../src/verifier/judge/rubric';
 import { JUDGE_AXIS_MAX_SCORE } from '../../../src/selection/components/judge-acceptance';
+import { judgeFakeOutput } from '../_support/judge-output';
 
 // The maximum acceptance representable under the production rubric (Σ axis weights × the per-axis max) —
 // the score seam divides JudgeResult.acceptance by this to bring the held-out-judge component onto [0,1].
@@ -62,13 +63,13 @@ function multiRoleProviderCall(onCall?: () => void): ProviderCallFn {
     if (request.role === 'embedding') {
       output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
     } else if (request.role === 'final_judge') {
-      output = {
+      output = judgeFakeOutput(request, {
         grounding: 4,
         novelty: 3,
         feasibility: 5,
         falsification_survival: 2,
         subtype_check_pass: 4,
-      };
+      });
     } else if (request.role === 'fusion_synthesis') {
       output = { synthesis: 'a merged child system prompt' };
     } else if (request.role === 'population_generator') {

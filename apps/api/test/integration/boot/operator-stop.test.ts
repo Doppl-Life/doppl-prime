@@ -9,6 +9,7 @@ import { buildCurrentState } from '../../../src/projections';
 import { isRunTerminal } from '../../../src/runtime/worker/activeRunGuard';
 import { createOperatorStopRegistry } from '../../../src/boot/operatorStop';
 import { bootApp } from '../../../src/main';
+import { judgeFakeOutput } from '../_support/judge-output';
 
 /**
  * PD.3 stop-path rewire — `POST /runs/:id/stop` SIGNALS the kernel operator-stop kill-and-drain
@@ -96,13 +97,13 @@ function multiRoleProviderCall(opts: { onCall?: () => void } = {}): ProviderCall
     if (request.role === 'embedding') {
       output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
     } else if (request.role === 'final_judge') {
-      output = {
+      output = judgeFakeOutput(request, {
         grounding: 4,
         novelty: 3,
         feasibility: 5,
         falsification_survival: 2,
         subtype_check_pass: 4,
-      };
+      });
     } else if (request.role === 'fusion_synthesis') {
       output = { synthesis: 'a merged child system prompt' };
     } else if (request.role === 'population_generator') {

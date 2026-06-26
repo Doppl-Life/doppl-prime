@@ -8,7 +8,7 @@ import { runCheck } from '../check-runners/run-check';
 import { mapLimit } from '../concurrency/pLimit';
 import { runCouncil } from './council/run-council';
 import { selectCriticMandates } from './council/rotation';
-import { runJudge } from './judge/judge-call';
+import { runComparativeJudge } from './judge/comparative-judge';
 
 /**
  * Default candidate-level concurrency for the verifier. The council/judge/checks debit NO energy (rule #8),
@@ -94,11 +94,12 @@ export function createVerifySeam(deps: VerifySeamDeps): VerifySeam {
     //    route their writes through the injected `ctx.append` (the seam contract); reads delegate harmlessly.
     const store: EventStore = { append: ctx.append, readByRun: deps.eventStore.readByRun };
 
-    // 4. Per candidate (DATA): council → subtype-matched allowlisted checks → held-out judge. Candidates
-    //    are verified CONCURRENTLY (bounded by maxConcurrency) — each candidate's pipeline is independent
-    //    and emits no energy (rule #8), so the only cross-candidate shared resource is the append path,
-    //    whose advisory-locked sequence already serializes writes (rule #2). Within a candidate the three
-    //    stages stay ordered (council → checks → judge) for readable per-candidate progress.
+    // 4. Per candidate (DATA): council → subtype-matched allowlisted checks. Candidates are verified
+    //    CONCURRENTLY (bounded by maxConcurrency) — each candidate's pipeline is independent and emits no
+    //    energy (rule #8), so the only cross-candidate shared resource is the append path, whose advisory-
+    //    locked sequence already serializes writes (rule #2). The held-out judge is HOISTED out of this map
+    //    (step 5) — it now runs ONCE over the whole generation (peer context), so it cannot be per-candidate
+    //    here; council + checks stay per-candidate (they are inherently per-candidate signals).
     await mapLimit(
       candidates,
       deps.maxConcurrency ?? DEFAULT_VERIFY_CONCURRENCY,
@@ -131,16 +132,22 @@ export function createVerifySeam(deps: VerifySeamDeps): VerifySeam {
             runContext,
           });
         }
-
-        // 4c. Held-out final judge (P4.8) — emits judge.reviewed←JudgeResult keyed by candidateId (§2.5 seam).
-        await runJudge({
-          gateway: deps.gateway,
-          store,
-          candidate,
-          runContext,
-          ...(deps.rubricSource !== undefined ? { rubricSource: deps.rubricSource } : {}),
-        });
       },
     );
+
+    // 5. Held-out final judge (P4.8) — Wave 2 Step 4: HOISTED to ONE peer-context call over the WHOLE
+    //    generation. The comparative judge sees all candidates together so it can spread its absolute scores
+    //    (breaking the central-tendency compression that stalled the climb), while the runner still computes
+    //    each candidate's acceptance from ITS axes × the immutable weights (rule #6, peer-invariant FLOOR). It
+    //    runs AFTER council+checks because the judge is independent of their outputs — it reads only the
+    //    candidate. Emits judge.review_started + judge.reviewed←JudgeResult keyed by candidateId (§2.5 seam),
+    //    one per candidate, identical event shapes to the single-candidate path.
+    await runComparativeJudge({
+      gateway: deps.gateway,
+      store,
+      candidates,
+      runContext: { runId: ctx.runId, generationId: ctx.generationId },
+      ...(deps.rubricSource !== undefined ? { rubricSource: deps.rubricSource } : {}),
+    });
   };
 }

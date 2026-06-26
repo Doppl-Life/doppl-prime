@@ -27,6 +27,7 @@ import {
 import type { GenerationLoopDeps, NextPopulationArgs } from '../../../src/runtime';
 import { createVerifySeam } from '../../../src/verifier/verify-seam';
 import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
+import { judgeFakeOutput } from '../_support/judge-output';
 import {
   applyReproduction,
   createReproduceSeam,
@@ -393,13 +394,13 @@ describe('createSuccessorThreading — the real nextPopulation hook over real PG
         if (request.role === 'embedding') {
           output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
         } else if (request.role === 'final_judge') {
-          output = {
+          output = judgeFakeOutput(request, {
             grounding: 4,
             novelty: 3,
             feasibility: 5,
             falsification_survival: 2,
             subtype_check_pass: 4,
-          };
+          });
         } else if (request.role === 'fusion_synthesis') {
           output = { synthesis: 'a merged child system prompt' };
         } else {

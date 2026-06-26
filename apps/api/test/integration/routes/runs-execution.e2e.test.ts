@@ -12,6 +12,7 @@ import { loadConfig } from '../../../src/runtime/config/loadConfig';
 import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
 import { buildServer, DEFAULT_RUN_CONFIG } from '../../../src/server';
 import { createStartRun } from '../../../src/boot/startRun';
+import { judgeFakeOutput } from '../_support/judge-output';
 
 /**
  * P5.11 demo POST /runs trigger — HTTP e2e (testcontainers, real PG + Fastify inject + fake gateway §24).
@@ -77,13 +78,13 @@ function multiRoleProviderCall(
     if (request.role === 'embedding') {
       output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
     } else if (request.role === 'final_judge') {
-      output = {
+      output = judgeFakeOutput(request, {
         grounding: 4,
         novelty: 3,
         feasibility: 5,
         falsification_survival: 2,
         subtype_check_pass: 4,
-      };
+      });
     } else if (request.role === 'fusion_synthesis') {
       output = { synthesis: 'a merged child system prompt' };
     } else if (request.role === 'population_generator') {

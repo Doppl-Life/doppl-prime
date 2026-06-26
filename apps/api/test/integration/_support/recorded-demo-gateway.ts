@@ -7,6 +7,7 @@ import {
   type RunConfig,
 } from '@doppl/contracts';
 import { createGateway, type ModelGateway, type ProviderCallFn } from '../../../src/model-gateway';
+import { judgeFakeOutput } from './judge-output';
 import { createEventStore } from '../../../src/event-store';
 import { CHECK_RUNNER_REGISTRY } from '../../../src/check-runners/registry';
 import { listRunIds } from '../../../src/projections/run-list';
@@ -35,6 +36,15 @@ export const CANDIDATE_CONTENT = {
   subtypePayload: validCandidateIdeaCrossDomain.subtypePayload,
 };
 
+/** The per-axis scores the recorded judge emits for every candidate (0–10 scale, final-judge-mvp-3). */
+const RECORDED_JUDGE_AXES = {
+  grounding: 7,
+  novelty: 6,
+  feasibility: 8,
+  falsification_survival: 4,
+  subtype_check_pass: 7,
+};
+
 /** A deterministic multi-role `ProviderCallFn` — role-appropriate structured outputs, no network. */
 export function recordedDemoProviderCall(opts: { onCall?: () => void } = {}): ProviderCallFn {
   return (request) => {
@@ -43,13 +53,9 @@ export function recordedDemoProviderCall(opts: { onCall?: () => void } = {}): Pr
     if (request.role === 'embedding') {
       output = { vector: [0.1, 0.2, 0.3], embeddingModelId: 'fake-embed', dimension: 3 };
     } else if (request.role === 'final_judge') {
-      output = {
-        grounding: 4,
-        novelty: 3,
-        feasibility: 5,
-        falsification_survival: 2,
-        subtype_check_pass: 4,
-      };
+      // Wave 2 Step 4: the judge is HOISTED to ONE peer-context call per generation — shape the output to
+      // match (comparative for a multi-candidate request, flat for the single-candidate runJudge path).
+      output = judgeFakeOutput(request, RECORDED_JUDGE_AXES);
     } else if (request.role === 'fusion_synthesis') {
       output = { synthesis: 'a merged child system prompt' };
     } else if (request.role === 'population_generator') {
