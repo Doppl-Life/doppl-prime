@@ -3,8 +3,13 @@ import { defaultKernelArgs } from '../cli.ts';
 import { createModelGenerationProviders, type GenerationProviders } from '../engine/generation-providers.ts';
 import {
   createOpenRouterModelClient,
+  createPresetModelClient,
   createReplayModelClient,
+  LOCAL_PROVIDERS,
+  OPENAI_COMPATIBLE_PRESETS,
   readModelCallRecords,
+  type ModelClient,
+  type OpenAICompatibleProvider,
 } from '../model/model-gateway.ts';
 import { runKernel } from '../engine/run-kernel.ts';
 import { exportRunToVault } from '../sink/vault-export.ts';
@@ -33,6 +38,42 @@ import {
   replayModelCallsPathForRun,
 } from './server-store.ts';
 
+// The live provider, local-first. Explicit `DOPPL_LIVE_PROVIDER` wins; otherwise OpenRouter when a
+// key is present (fast hosted), else a keyless local Ollama model (free — the default for running
+// the system without a key). Local providers carry no secret and cost nothing.
+export function liveProviderName(options: KernelHttpOptions): OpenAICompatibleProvider {
+  const configured = envValue(options, 'DOPPL_LIVE_PROVIDER');
+  if (configured && configured in OPENAI_COMPATIBLE_PRESETS) {
+    return configured as OpenAICompatibleProvider;
+  }
+  return envValue(options, 'OPENROUTER_API_KEY')?.trim() ? 'openrouter' : 'ollama';
+}
+
+export function isLocalLiveProvider(options: KernelHttpOptions): boolean {
+  return LOCAL_PROVIDERS.has(liveProviderName(options));
+}
+
+// The default model for the active live provider when the request doesn't pin one.
+export function defaultLiveModel(options: KernelHttpOptions): string {
+  const configured = envValue(options, 'DOPPL_LIVE_MODEL');
+  if (configured) return configured;
+  return liveProviderName(options) === 'openrouter' ? 'openai/gpt-4.1-mini' : 'qwen3.6:35b-a3b';
+}
+
+function liveModelClient(parsed: KernelRunRequest, options: KernelHttpOptions): ModelClient {
+  const provider = liveProviderName(options);
+  if (provider === 'openrouter') {
+    return createOpenRouterModelClient({ apiKey: envValue(options, 'OPENROUTER_API_KEY') ?? '', fetch: options.fetch });
+  }
+  if (LOCAL_PROVIDERS.has(provider)) {
+    return createPresetModelClient(provider, { fetch: options.fetch });
+  }
+  return createPresetModelClient(provider, {
+    apiKey: envValue(options, `${provider.toUpperCase()}_API_KEY`),
+    fetch: options.fetch,
+  });
+}
+
 export async function generationProvidersFromRequest(
   parsed: KernelRunRequest,
   options: KernelHttpOptions,
@@ -43,10 +84,7 @@ export async function generationProvidersFromRequest(
   if (parsed.liveModel) {
     if (!parsed.model) throw new Error('model is required when liveModel is set');
     return createModelGenerationProviders({
-      client: createOpenRouterModelClient({
-        apiKey: envValue(options, 'OPENROUTER_API_KEY'),
-        fetch: options.fetch,
-      }),
+      client: liveModelClient(parsed, options),
       model: parsed.model,
     });
   }
@@ -154,10 +192,13 @@ export async function runDashboardCaseFromRequestBody(
   const replayRunId = typeof parsed.replayRunId === 'string' && parsed.replayRunId.trim()
     ? parsed.replayRunId.trim()
     : undefined;
-  if (liveModel && !envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM')) {
+  // A keyless local model (Ollama/LM Studio) is free and carries no secret, so it runs without the
+  // hosted-provider enable-gate or demo token. Hosted live generation still requires both.
+  const localLive = isLocalLiveProvider(options);
+  if (liveModel && !localLive && !envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM')) {
     throw new KernelHttpError(403, 'live dashboard generation is disabled');
   }
-  if (liveModel && !liveDemoAuthorized(request, options)) {
+  if (liveModel && !localLive && !liveDemoAuthorized(request, options)) {
     throw new KernelHttpError(403, 'live demo token is required');
   }
   if (!liveModel && !replayRunId) {
@@ -176,7 +217,7 @@ export async function runDashboardCaseFromRequestBody(
       budget: generations,
       liveModel,
       replayRunId,
-      model: liveModel ? parsed.model || 'openai/gpt-4.1-mini' : undefined,
+      model: liveModel ? parsed.model || defaultLiveModel(options) : undefined,
       fitnessLens: parseFitnessLens(parsed.fitnessLens),
       fitnessSchedule: parseFitnessSchedule(parsed.fitnessSchedule),
       vault: parsed.vault || defaultKernelArgs.vault,

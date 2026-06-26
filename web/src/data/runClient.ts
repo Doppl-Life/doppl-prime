@@ -389,6 +389,7 @@ export function createRunClient(options: RunClientOptions = {}): RunClient {
         body: JSON.stringify({
           casePath: prompt?.id,
           generations: body.capOverride?.maxGenerations,
+          liveModel: true,
           async: true,
         }),
       });
