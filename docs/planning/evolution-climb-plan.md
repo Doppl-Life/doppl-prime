@@ -1,5 +1,54 @@
 # Evolution CLIMB plan — make each generation's best reliably beat the last
 
+> **Status (2026-06-26):** **WAVE 1 + WAVE 2 + the RATCHET all COMPLETE + live-validated.** Branch
+> `experiment/mutagen-dynamics` (off cody), nothing pushed. North star (user/Michael): *each generation's
+> best fitness reliably BETTER than the last.*
+>
+> **⛔ COME BACK TO THIS — the climb is CEILING-BOUND, not algorithm-bound (see the "CLIMB REFRAME" section
+> below).** Two cheap diagnostic checks (2026-06-26) reframed the whole goal: a hand-crafted EXCELLENT answer
+> scores the SAME ~0.74 the evolved runs already reach (no headroom above), and `advancementCount` is
+> statistically indistinguishable from random restarts. The mechanism works; the *goal* was mis-framed.
+> Next move is NOT "build more drive levers" — it's a strategic choice (declare-done / weak-seed-demo /
+> harder-problem). Paused here to move onto the shared knowledge space (`shared-knowledge-space.md`).
+
+## ⛔ CLIMB REFRAME (2026-06-26) — read this FIRST on resume
+
+After Wave 2 (judge) + the ratchet landed, two diagnostic checks (drunk-claude's instinct, then verified)
+changed the picture:
+
+**Check 1 — judge-ceiling probe (live, `final-judge-mvp-3`).** Hand-crafted answers scored: EXCELLENT
+(airline yield-mgmt + Little's Law → ER) **0.740** (axes 7,7,7,8,8) · GOOD (Toyota lean) 0.620 · MEDIOCRE
+(vague AI) 0.480 · WEAK (work harder) 0.240. **The judge discriminates quality cleanly (Wave 2's real win),
+but a genuinely excellent answer caps at ~0.74** — the judge reserves 9–10 for "genuinely rare," so excellent
+gets 7–8s. The evolved runs ALSO top out at ~0.74. **There is no headroom above ~0.74 for this problem.**
+
+**Check 2 — random-restart control (analytic).** Observed `advancementCount` 1.22 vs the i.i.d.-noise
+expectation H(5)−1 = **1.28**. The metric cannot distinguish the algorithm from random restarts — it was
+never measuring a climb.
+
+**Why "no climb":** the model produces a ~0.69 answer on the FIRST try (gen 0), and the judge caps excellent
+at ~0.74. The run bounces inside that ~0.05 band — it's *already near the summit*, not failing to reach it.
+Building drive levers (judge-rationale→mutation, niching, MAP-Elites) chases headroom that doesn't exist.
+
+**Three honest paths (the decision to make on resume):**
+1. **Declare the mechanism done** — the system finds excellent-tier answers + the judge discriminates +
+   the ratchet holds the peak. Commit/merge Wave 2 + ratchet; stop optimizing a maxed number.
+2. **Make the climb VISIBLE by seeding weak** (recommended for a demo) — gen 0 starts ~0.69 so there's no
+   room; seed the population from deliberately weak answers (~0.24–0.48) and evolution shows a real
+   0.4 → 0.74 climb. Honest, dramatic, exercises everything built. The problem is gen 0 starts at the summit.
+3. **Harder problem with real headroom** — pick a problem the model is bad at on the first try.
+
+**What shipped (all green, nothing pushed):** Wave 2 = comparative 0–10 judge (`303119c`/`6ba20a3`/`2302bc4`/
+`f396354`/`a73a1d0`, mvp-2→mvp-3, Michael-signed-off rule #6). Ratchet = `a7e850c` (hall-of-fame carry,
+`DOPPL_HALL_OF_FAME_CARRY`, default 0). Live bake-off (n=3 × fusion_only/adaptive/ratchet): judge distinct
+9–12 (vs Wave-1 5–6), 0.68 ceiling broken to 0.74, **ratchet cut peak-to-final drop 0.030 → 0.006 (clean
+separation across all seeds)** — the ratchet's real, measured win is *holding* the peak, which is exactly
+right when there's no headroom above it.
+
+---
+
+## (Historical — superseded by the CLIMB REFRAME above)
+
 > **Status:** **WAVE 1 COMPLETE + live-validated** (Steps 1–3 committed). Wave 2 (judge, rule-#6 sign-off)
 > is next session. From the 22-agent fan-out adversarial analysis (`wf_cf51573d-3b1`, 2026-06-25) + n=3 live
 > validation. Branch `experiment/mutagen-dynamics` (off cody), nothing pushed. North star (user/Michael):
