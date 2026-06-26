@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { Button, StatusBadge } from '../ds';
 import type { RunSummary } from '../../data/runClient';
 
@@ -13,6 +13,8 @@ export interface RunCardProps {
   onOpenLive: (runId: string) => void;
   onReplay: (runId: string) => void;
   onFinal: (runId: string) => void;
+  /** Whole-card click target — navigates to the run's primary view (derived from status). */
+  onOpenCard: (runId: string) => void;
 }
 
 interface ActionSet {
@@ -48,6 +50,9 @@ const card: CSSProperties = {
   borderRadius: 'var(--radius-lg)',
   padding: 'var(--space-4)',
   fontFamily: 'var(--font-ui)',
+  cursor: 'pointer',
+  textAlign: 'left',
+  color: 'inherit',
 };
 const headerRow: CSSProperties = { display: 'flex', alignItems: 'center', gap: 'var(--space-3)' };
 const runId: CSSProperties = {
@@ -63,10 +68,20 @@ const meta: CSSProperties = {
 };
 const actionsRow: CSSProperties = { display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' };
 
-export function RunCard({ run, onOpenLive, onReplay, onFinal }: RunCardProps) {
+export function RunCard({ run, onOpenLive, onReplay, onFinal, onOpenCard }: RunCardProps) {
   const actions = actionsFor(run.status);
+  const stop = (cb: () => void) => (e: MouseEvent) => {
+    e.stopPropagation();
+    cb();
+  };
   return (
-    <div data-testid="run-card" style={card}>
+    <button
+      type="button"
+      data-testid="run-card"
+      aria-label={`Open run ${run.runId}`}
+      style={card}
+      onClick={() => onOpenCard(run.runId)}
+    >
       <div style={headerRow}>
         <StatusBadge domain="run" status={run.status ?? 'unknown'} size="sm" />
         <span style={runId}>{run.runId}</span>
@@ -74,21 +89,21 @@ export function RunCard({ run, onOpenLive, onReplay, onFinal }: RunCardProps) {
       <div style={meta}>seq {run.sequenceThrough}</div>
       <div style={actionsRow}>
         {actions.openLive && (
-          <Button size="sm" variant="primary" glyph="▸" onClick={() => onOpenLive(run.runId)}>
+          <Button size="sm" variant="primary" glyph="▸" onClick={stop(() => onOpenLive(run.runId))}>
             Open live
           </Button>
         )}
         {actions.replay && (
-          <Button size="sm" variant="secondary" glyph="⏮" onClick={() => onReplay(run.runId)}>
+          <Button size="sm" variant="secondary" glyph="⏮" onClick={stop(() => onReplay(run.runId))}>
             Replay
           </Button>
         )}
         {actions.final && (
-          <Button size="sm" variant="ghost" glyph="♔" onClick={() => onFinal(run.runId)}>
+          <Button size="sm" variant="ghost" glyph="♔" onClick={stop(() => onFinal(run.runId))}>
             Final idea
           </Button>
         )}
       </div>
-    </div>
+    </button>
   );
 }

@@ -18,7 +18,7 @@ const panel: CSSProperties = {
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--text-caption)',
   color: 'var(--fg-muted)',
-  maxWidth: 'var(--space-9)',
+  whiteSpace: 'nowrap',
 };
 const heading: CSSProperties = {
   fontFamily: 'var(--font-mono)',

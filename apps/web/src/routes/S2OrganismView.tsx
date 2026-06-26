@@ -14,7 +14,6 @@ import { NodeInspectorContent } from '../components/run/NodeInspectorContent';
 import { ReplayScrubber } from '../components/run/ReplayScrubber';
 import { LineageGraph } from '../lineage/LineageGraph';
 import { FitnessOverTime } from '../charts/FitnessOverTime';
-import { EnergyPanel } from '../panels/EnergyPanel';
 import { energyBudgetProgress } from '../panels/energyData';
 import { useRunObservatory } from './useRunObservatory';
 import { deriveHealthStatus, deriveTickerEvents, toHealthSummary } from './observatoryTelemetry';
@@ -61,7 +60,9 @@ const shell: CSSProperties = {
   gridTemplateColumns: 'minmax(auto, 20rem) minmax(0, 1fr) minmax(auto, 26rem)',
   gridTemplateRows: 'auto auto 1fr',
   gap: 'var(--space-4)',
-  padding: 'var(--space-5)',
+  // Outer padding === inter-column gap on the sides + bottom; top gets a slightly larger --space-5
+  // so the canvas/panes have a touch more breathing room below the nav bar.
+  padding: 'var(--space-5) var(--space-4) var(--space-4)',
   alignItems: 'stretch',
   height: `calc(100vh - ${APP_HEADER_H})`,
   minHeight: 0,
@@ -78,11 +79,10 @@ const leftRail: CSSProperties = {
   overflowY: 'auto',
 };
 const center: CSSProperties = {
-  display: 'grid',
+  display: 'flex',
+  flexDirection: 'column',
   gap: 'var(--space-4)',
-  alignContent: 'start',
   minHeight: 0,
-  overflowY: 'auto',
 };
 const railHeading: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -90,26 +90,89 @@ const railHeading: CSSProperties = {
   color: 'var(--fg-muted)',
   margin: 0,
 };
+// Banner stays in col 1 (left-rail) so the center + inspector columns both run edge-to-edge
+// top→bottom (right under the app nav bar) without the banner clipping either column's top.
 const bannerRow: CSSProperties = {
-  gridColumn: '1 / -1',
+  gridColumn: '1 / 2',
   display: 'flex',
   alignItems: 'center',
   gap: 'var(--space-4)',
 };
-const chartStrip: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))',
-  gap: 'var(--space-4)',
-};
 // The ActivityTicker fills its container (height:100%); flex:1 + min-height:0 lets it grow to fill the
 // left rail and scroll its live feed INTERNALLY (no fixed 20rem box, no page growth). FV.9 design-review
-// owns final placement/legibility — FV.6 lands it wired + rendering.
-const tickerWrap: CSSProperties = { flex: 1, minHeight: '12rem', display: 'flex' };
-const scrubberRow: CSSProperties = { gridColumn: '1 / -1', display: 'flex' };
-// Pane placement: the banner (+ optional scrubber) live in the auto rows; the three panes share the
-// 1fr row so they fill the remaining viewport and each scrolls independently.
+// owns final placement/legibility — FV.6 lands it wired + rendering. flex-column so the ticker child
+// stretches the cross-axis (full rail width); minWidth:0 lets the grid track honor its column max.
+const tickerWrap: CSSProperties = {
+  flex: 1,
+  minHeight: '12rem',
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+};
+// Tabbed pane in the left rail: a 2-button header + a flex:1 body so the selected tab (Agents OR
+// Activity) gets all the remaining rail height. Solves the "Activity is tiny, you scroll forever"
+// problem by giving each panel the full vertical budget when active.
+const tabsWrap: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-2)',
+};
+const tabHeader: CSSProperties = {
+  display: 'flex',
+  gap: 'var(--space-1)',
+  borderBottom: 'thin solid var(--border-subtle)',
+};
+const tabButtonBase: CSSProperties = {
+  flex: 1,
+  background: 'transparent',
+  border: 'none',
+  borderBottom: 'thin solid transparent',
+  padding: 'var(--space-2) var(--space-3)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-label)',
+  color: 'var(--fg-muted)',
+  cursor: 'pointer',
+  textAlign: 'center',
+};
+const tabButtonActive: CSSProperties = {
+  ...tabButtonBase,
+  color: 'var(--fg-default)',
+  borderBottom: 'thin solid var(--accent)',
+};
+const tabBody: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+};
+// Scrubber confined to col 1 (left-rail) so the center canvas + the inspector both reach the nav
+// bar without the bar running across them.
+const scrubberRow: CSSProperties = { gridColumn: '1 / 2', display: 'flex' };
+// Pane placement: the LEFT rail stays in row 3 with the banner/scrubber above it (rows 1/2). The
+// CENTER + INSPECTOR span all three rows so their canvases reach the nav bar.
 const paneRow: CSSProperties = { gridRow: 3 };
-const inspectorPane: CSSProperties = { gridRow: 3, minHeight: 0, overflowY: 'auto' };
+const centerPane: CSSProperties = {
+  gridRow: '1 / -1',
+  gridColumn: 2,
+  minHeight: 0,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+};
+// The inspector pane reaches all four edges of the shell's content box: spans all three rows (so it
+// starts right under the app nav bar) and cancels the shell's right + top + bottom padding via
+// negative margins so the panel runs viewport-edge to viewport-edge vertically and to the right edge
+// horizontally. Internal panel padding still provides comfortable inner spacing.
+const inspectorPane: CSSProperties = {
+  gridRow: '1 / -1',
+  gridColumn: 3,
+  minHeight: 0,
+  minWidth: 0,
+  display: 'flex',
+};
 
 export function S2OrganismView({
   runId,
@@ -152,8 +215,17 @@ export function S2OrganismView({
   const healthStatus = deriveHealthStatus(healthSummary);
   const energy = energyBudgetProgress(panelEvents);
 
+  const inspectorOpen = obs.selectedNode != null;
+  const shellStyle: CSSProperties = inspectorOpen
+    ? shell
+    : { ...shell, gridTemplateColumns: 'minmax(auto, 20rem) minmax(0, 1fr)' };
+
+  // Left-rail tab selection — defaults to 'agents'. 'activity' gives the ticker the full rail height;
+  // 'fitness' surfaces the run-level FitnessOverTime chart (the most-watched signal during a live run).
+  const [leftTab, setLeftTab] = useState<'agents' | 'activity' | 'fitness'>('agents');
+
   return (
-    <main aria-label="Doppl organism view" style={shell}>
+    <main aria-label="Doppl organism view" style={shellStyle}>
       <div style={bannerRow}>
         <ModeBanner mode={bannerMode(obs.store.getMode(), obs.runStatus)} />
       </div>
@@ -169,39 +241,82 @@ export function S2OrganismView({
         <StopControl runId={runId} store={obs.store} runClient={runClient} />
         <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
         <RunEnergyGauge spent={energy.spent} budget={energy.budget ?? 0} mode={mode} />
-        <h3 style={railHeading}>Agent roster</h3>
-        <AgentRoster lineage={obs.lineage} />
-        <div style={tickerWrap}>
-          <ActivityTicker events={tickerEvents} mode={mode} />
+        <div style={tabsWrap}>
+          <div role="tablist" aria-label="Left rail panels" style={tabHeader}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={leftTab === 'agents'}
+              style={leftTab === 'agents' ? tabButtonActive : tabButtonBase}
+              onClick={() => setLeftTab('agents')}
+            >
+              Agents
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={leftTab === 'activity'}
+              style={leftTab === 'activity' ? tabButtonActive : tabButtonBase}
+              onClick={() => setLeftTab('activity')}
+            >
+              Activity
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={leftTab === 'fitness'}
+              style={leftTab === 'fitness' ? tabButtonActive : tabButtonBase}
+              onClick={() => setLeftTab('fitness')}
+            >
+              Fitness
+            </button>
+          </div>
+          <div role="tabpanel" style={tabBody}>
+            {leftTab === 'agents' && (
+              <AgentRoster
+                lineage={obs.lineage}
+                onSelect={(dataRef) => obs.setSelectedNode({ dataRef, type: 'agenome' })}
+              />
+            )}
+            {leftTab === 'activity' && (
+              <div style={tickerWrap}>
+                {/* Tab button already says "Activity" — suppress the ticker's own duplicate heading. */}
+                <ActivityTicker events={tickerEvents} mode={mode} title="" />
+              </div>
+            )}
+            {leftTab === 'fitness' && (
+              <div style={tickerWrap}>
+                <FitnessOverTime events={panelEvents} />
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
-      <section style={{ ...center, ...paneRow }}>
+      <section style={{ ...center, ...centerPane }}>
         <LineageGraph
           projection={obs.lineage ?? emptyLineage(runId)}
           events={panelEvents}
           onNodeClick={(_id, dataRef, type) => obs.setSelectedNode({ dataRef, type })}
         />
-        <div style={chartStrip}>
-          <FitnessOverTime events={panelEvents} />
-          <EnergyPanel events={panelEvents} onSelectAgenome={() => undefined} />
-        </div>
       </section>
 
-      <div style={inspectorPane}>
-        <InspectorDrawer
-          selectedId={obs.selectedNode?.dataRef ?? null}
-          onClose={() => obs.setSelectedNode(null)}
-        >
-          <NodeInspectorContent
-            selectedNode={obs.selectedNode}
-            runId={runId}
-            runClient={runClient}
-            events={panelEvents}
-            lineage={obs.lineage}
-          />
-        </InspectorDrawer>
-      </div>
+      {inspectorOpen && (
+        <div style={inspectorPane}>
+          <InspectorDrawer
+            selectedId={obs.selectedNode?.dataRef ?? null}
+            onClose={() => obs.setSelectedNode(null)}
+          >
+            <NodeInspectorContent
+              selectedNode={obs.selectedNode}
+              runId={runId}
+              runClient={runClient}
+              events={panelEvents}
+              lineage={obs.lineage}
+            />
+          </InspectorDrawer>
+        </div>
+      )}
     </main>
   );
 }

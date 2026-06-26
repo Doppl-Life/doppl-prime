@@ -1,0 +1,37 @@
+/* React Flow `<Controls />` button color overrides — the library ships near-invisible light icons on
+   a white background in dark mode. Repaint to the design tokens so the zoom/fit controls have real
+   contrast. `!important` because React Flow's own CSS imports later via the TSX-level
+   `@xyflow/react/dist/style.css` and wins selector specificity otherwise. */
+.react-flow__controls {
+  background: var(--bg-surface) !important;
+  border: thin solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.react-flow__controls .react-flow__controls-button {
+  background: var(--bg-surface) !important;
+  color: var(--fg-default) !important;
+  border-bottom: thin solid var(--border-subtle) !important;
+  width: var(--space-5);
+  height: var(--space-5);
+}
+
+.react-flow__controls .react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls .react-flow__controls-button svg,
+.react-flow__controls .react-flow__controls-button path {
+  fill: var(--fg-default) !important;
+}
+
+.react-flow__controls .react-flow__controls-button:hover {
+  background: var(--bg-surface-2) !important;
+}
+
+.react-flow__controls .react-flow__controls-button:hover svg,
+.react-flow__controls .react-flow__controls-button:hover path {
+  fill: var(--accent) !important;
+}

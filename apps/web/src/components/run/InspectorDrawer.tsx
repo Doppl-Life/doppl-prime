@@ -2,11 +2,11 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '../ds';
 
 /**
- * InspectorDrawer (FV.4) — the S2 right-pane inspector SLOT. FV.4 builds the container + open/close +
- * an honest empty placeholder (never blank); FV.5 wires node-click → the content (CandidateInspector /
- * AgenomeInspector) as `children`. When `selectedId` is null the drawer shows the placeholder; when
- * set it slides in (the `drawer-in` keyframe via a named var(--motion-*) token — the global
- * prefers-reduced-motion guard in tokens/base.css neutralizes it) with a Close affordance.
+ * InspectorDrawer (FV.4) — the S2 right-pane inspector SLOT. FV.5 wires node-click → the content
+ * (CandidateInspector / AgenomeInspector) as `children`. When `selectedId` is null the drawer is
+ * unmounted entirely so the parent grid collapses the third column; when set it slides in (the
+ * `drawer-in` keyframe via a named var(--motion-*) token — the global prefers-reduced-motion guard in
+ * tokens/base.css neutralizes it) with a Close affordance.
  */
 export interface InspectorDrawerProps {
   /** The selected node's id (candidate/agenome). null → closed/empty placeholder. */
@@ -21,11 +21,16 @@ const panel: CSSProperties = {
   flexDirection: 'column',
   gap: 'var(--space-3)',
   height: '100%',
+  width: '100%',
+  minWidth: 0,
+  overflowY: 'auto',
+  overflowWrap: 'anywhere',
   background: 'var(--bg-surface)',
   borderLeft: 'thin solid var(--border-subtle)',
   padding: 'var(--space-4)',
   fontFamily: 'var(--font-ui)',
   color: 'var(--fg-default)',
+  boxSizing: 'border-box',
 };
 const header: CSSProperties = {
   display: 'flex',
@@ -38,26 +43,8 @@ const heading: CSSProperties = {
   color: 'var(--fg-muted)',
   margin: 0,
 };
-const empty: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-  textAlign: 'center',
-  color: 'var(--fg-faint)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 'var(--text-caption)',
-  padding: 'var(--space-4)',
-};
-
 export function InspectorDrawer({ selectedId, onClose, children }: InspectorDrawerProps) {
-  if (selectedId == null) {
-    return (
-      <aside aria-label="Inspector" style={panel}>
-        <div style={empty}>Select a node in the graph to inspect its details.</div>
-      </aside>
-    );
-  }
+  if (selectedId == null) return null;
 
   return (
     <aside

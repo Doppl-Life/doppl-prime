@@ -20,6 +20,7 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
     render(
       <RunCard
         run={summary({ runId: 'run_7f3a', status: 'completed', sequenceThrough: 42 })}
+        onOpenCard={noop}
         onOpenLive={noop}
         onReplay={noop}
         onFinal={noop}
@@ -34,7 +35,13 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
   // spec(§12 / null-safe): a null/unknown status renders the neutral badge, never crashes.
   it('test_card_null_status_neutral', () => {
     render(
-      <RunCard run={summary({ status: null })} onOpenLive={noop} onReplay={noop} onFinal={noop} />,
+      <RunCard
+        run={summary({ status: null })}
+        onOpenCard={noop}
+        onOpenLive={noop}
+        onReplay={noop}
+        onFinal={noop}
+      />,
     );
     expect(screen.getByText('unknown')).toBeTruthy(); // neutral handler
   });
@@ -47,6 +54,7 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
     render(
       <RunCard
         run={summary({ runId: 'r_live', status: 'running' })}
+        onOpenCard={noop}
         onOpenLive={onOpenLive}
         onReplay={noop}
         onFinal={noop}
@@ -64,6 +72,7 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
     render(
       <RunCard
         run={summary({ runId: 'r_done', status: 'completed' })}
+        onOpenCard={noop}
         onOpenLive={noop}
         onReplay={onReplay}
         onFinal={onFinal}
@@ -80,6 +89,7 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
     render(
       <RunCard
         run={summary({ runId: 'r_fail', status: 'failed' })}
+        onOpenCard={noop}
         onOpenLive={noop}
         onReplay={noop}
         onFinal={noop}
@@ -94,11 +104,39 @@ describe('RunCard — minimal machine-truth run card (FV.2)', () => {
     render(
       <RunCard
         run={summary({ runId: 'r_cfg', status: 'configured' })}
+        onOpenCard={noop}
         onOpenLive={noop}
         onReplay={noop}
         onFinal={noop}
       />,
     );
     expect(screen.queryByRole('button', { name: /open live|replay|final idea/i })).toBeNull();
+  });
+
+  // spec(card-as-link): clicking anywhere on the card body fires onOpenCard with the run id; clicking
+  // one of the per-action buttons fires only that action (stopPropagation — the card click does NOT
+  // also fire).
+  it('test_card_body_click_navigates_actions_stop_propagation', () => {
+    const onOpenCard = vi.fn();
+    const onReplay = vi.fn();
+    render(
+      <RunCard
+        run={summary({ runId: 'r_card', status: 'completed' })}
+        onOpenCard={onOpenCard}
+        onOpenLive={noop}
+        onReplay={onReplay}
+        onFinal={noop}
+      />,
+    );
+    // Card body click (the outer button, NOT one of the inner action buttons) → onOpenCard.
+    screen.getByRole('button', { name: /open run r_card/i }).click();
+    expect(onOpenCard).toHaveBeenCalledWith('r_card');
+    expect(onReplay).not.toHaveBeenCalled();
+
+    onOpenCard.mockClear();
+    // Inner action button click → only the action fires, NOT a bubbled card click.
+    screen.getByRole('button', { name: /replay/i }).click();
+    expect(onReplay).toHaveBeenCalledWith('r_card');
+    expect(onOpenCard).not.toHaveBeenCalled();
   });
 });
