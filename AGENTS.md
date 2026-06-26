@@ -41,8 +41,7 @@ old concepts.
 - Cut to the safety net; the human holds the ledger. Scale cut-depth to reversibility, not
   human refactor-pain: where git + `pnpm proof` cover a change, burn hard ("if you don't have
   to put anything back, you didn't cut enough"). This is safe because the labor is split —
-  **you delete, the human commits.** The agent makes reversible cuts; the human owns
-  stage/commit/unstage/reset, which is the net (see Shell and tools). Never burn irreversible
+  **you delete, the human commits.** The agent makes reversible cuts. Never burn irreversible
   or external side-effects this way. Full move in [`HEURISTICS.md`](HEURISTICS.md).
 
 ## Duplicate surfaces
@@ -62,7 +61,7 @@ For strategic, architectural, spec, product-direction, or abstraction-setting wo
 treat existing repo assumptions as bedrock. Treat them as evidence to test against current
 goals, kernel behavior, the hut, and explicit user intent.
 
-Use the `first-principles` mutagen skill actively for this class of work: reduce the problem
+Use the `./cursor/skills/first-principles/SKILL.md` mutagen skill actively for this class of work: reduce the problem
 to invariants, name the provisional assumption you are rejecting or depending on, and only
 then branch into implementation or documentation.
 
@@ -113,7 +112,6 @@ Use mutagen skills when the work is creative or strategic:
 - Use `rg`/`rtk grep` for search.
 - Use CodeGraph before broad semantic navigation.
 - Run `codegraph sync .` after meaningful edits.
-- Never stage, unstage, commit, or reset unless explicitly told.
 - Never read, diff, print, validate, or edit real env/secret files.
 
 ## Checks
