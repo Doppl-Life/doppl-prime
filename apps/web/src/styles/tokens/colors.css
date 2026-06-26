@@ -47,7 +47,7 @@
   --status-reproduced: #b98cff; /* violet — fused (two-parent) */
   --status-mutated: #f4b650; /* amber — mutation shimmer */
   --status-failed: #f2545b; /* red — dashed */
-  --status-culled: #465066; /* gray — faded + sunk */
+  --status-culled: #b23b43; /* deep "sunk" red — killed by selection (distinct from the bright failed red) */
 
   /* Candidate */
   --status-created: #9aa7be;
@@ -90,7 +90,7 @@
   --edge-reviewed: #5aa9ff;
   --edge-checked: #3fd17a;
   --edge-scored: #7fb2ff;
-  --edge-culled: #465066;
+  --edge-culled: #c2454d; /* red — the cull edge, visible against the dark canvas */
   --edge-fused: #b98cff;
   --edge-mutated: #f4b650;
   --edge-selected: #ffca3a;
@@ -152,7 +152,7 @@
   --status-reproduced: #7c4deb; /* violet */
   --status-mutated: #b5780c; /* amber */
   --status-failed: #d7343b;
-  --status-culled: #97a1b5;
+  --status-culled: #b23a41; /* deep "sunk" red — killed by selection (AA-legible on white) */
 
   --status-created: #6e7a93;
   --status-review: #0e9e90;
@@ -190,7 +190,7 @@
   --edge-reviewed: #2e72d6;
   --edge-checked: #1e9e57;
   --edge-scored: #3e72c9;
-  --edge-culled: #b3bccd;
+  --edge-culled: #c2454c; /* red — the cull edge */
   --edge-fused: #7c4deb;
   --edge-mutated: #b5780c;
   --edge-selected: #b07d08;

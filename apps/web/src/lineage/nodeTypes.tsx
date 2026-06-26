@@ -10,7 +10,7 @@ import type { LineageNodeData } from './lineageToFlow';
  * primitive (shape+label+icon+color, never color alone — rule #4 / §12). The redesign COLOR-CODES the
  * node body by the operation that produced it so a non-expert reads the evolution at a glance: a seeded
  * organism, a mutation, and a fusion are each a different hue (a prominent LEFT border bar + a faint
- * tinted body via color-mix), the winner glows gold, a culled node fades. The StatusBadge stays — color
+ * tinted body via color-mix), the winner glows gold, a culled node turns red. The StatusBadge stays — color
  * is the 4th redundant channel, never the only one. The `generation` node renders as a wide header chip
  * atop its column (it keeps Handles so `spawned` edges resolve). All colors/spacing via `var()` tokens
  * (no raw hex / no raw px). Pixel-level visuals are covered by the P7.15 Playwright smoke.
@@ -80,7 +80,7 @@ const headerChip: CSSProperties = {
 
 /**
  * The OPERATION color for a node — the hue that color-codes its body (LEFT bar + tinted background):
- *   - selected winner → gold ; culled → gray ; agenome by `bornBy` (seed / mutation / fusion) ;
+ *   - selected winner → gold ; culled → red ; agenome by `bornBy` (seed / mutation / fusion) ;
  *     other candidates → the scored accent. (Never the sole channel — the StatusBadge glyph+label stay.)
  */
 function bodyColorFor(data: LineageNodeData): string {
@@ -96,7 +96,7 @@ function bodyColorFor(data: LineageNodeData): string {
 }
 
 /** The full body style for a node card: a prominent left color bar + a faint tinted body, plus the
- *  winner glow / culled fade. Color-coding is redundant with the StatusBadge (rule #4). */
+ *  winner glow / a vivid red culled treatment. Color-coding is redundant with the StatusBadge (rule #4). */
 function bodyStyle(data: LineageNodeData): CSSProperties {
   const color = bodyColorFor(data);
   const isWinner = data.nodeType === 'candidate' && data.status === 'selected';
@@ -104,9 +104,12 @@ function bodyStyle(data: LineageNodeData): CSSProperties {
   return {
     ...card,
     borderLeft: `var(--space-1) solid ${color}`,
-    background: `color-mix(in srgb, ${color} 12%, var(--bg-surface-2))`,
+    // Culled lineages get a STRONGER red wash + a full red outline, only lightly de-emphasized — so a
+    // non-expert can SEE selection killing the weak (culling is half the evolutionary signal, and the
+    // old faint gray fade was too easy to miss). Live nodes keep the subtle 12% tint.
+    background: `color-mix(in srgb, ${color} ${isCulled ? '24%' : '12%'}, var(--bg-surface-2))`,
     ...(isWinner ? { boxShadow: 'var(--glow-winner)' } : {}),
-    ...(isCulled ? { opacity: 0.55 } : {}),
+    ...(isCulled ? { opacity: 0.82, borderColor: color } : {}),
   };
 }
 

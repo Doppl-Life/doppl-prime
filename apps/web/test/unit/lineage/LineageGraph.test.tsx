@@ -158,7 +158,7 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
       }),
     ).toContain('var(--status-selected)');
 
-    // a culled candidate → the culled (gray) hue.
+    // a culled candidate → the culled (red) hue.
     expect(
       cardLeftBorder({
         label: 'X',
