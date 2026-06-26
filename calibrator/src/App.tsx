@@ -1290,7 +1290,7 @@ export function App() {
       <section className="trace-surface" aria-label="Case and selected artifact review">
         <section className="review-guide" aria-label="Rating instructions">
           <div className="guide-rubric">
-            <p className="trace-label">What to rate</p>
+            <p className="trace-label">Rating guide</p>
             <p>
               Rate how useful this {ratingObjectLabel} is for understanding or solving the case. {ratingQuestion}
             </p>
@@ -1304,7 +1304,7 @@ export function App() {
         </section>
 
         <article className="trace-step selected-step">
-          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Growth - Problem Recovery" : "Growth - Doppl"}</p>
+          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</p>
           <h2>{activeTitle}</h2>
           {activeReviewArtifact ? (
             <ArtifactMarkdownBlock
