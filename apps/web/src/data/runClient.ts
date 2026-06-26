@@ -8,6 +8,7 @@ import {
 } from './contracts';
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
+import { KnowledgeGraph } from './knowledge';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
 import { FallbackLadderResponse, type RungDescriptor } from './fallbackLadderClient';
 import { parseOrThrow, TransportError } from './errors';
@@ -61,6 +62,11 @@ export interface RunClient {
    * contract yet; reconcile/promote at the demo→cody merge).
    */
   getRunHealth(runId: string): Promise<RunHealth>;
+  /**
+   * GET /runs/:id/knowledge (KB slice 2) — the ResearchNote knowledge graph (the agents' research folded
+   * from the log), validated through the WEB-LOCAL `KnowledgeGraph` schema (no frozen contract yet).
+   */
+  getKnowledge(runId: string): Promise<KnowledgeGraph>;
   /**
    * GET /problem-sets (PD.5a) — the boot prepared-problem catalog, validated through the WEB-LOCAL
    * `ProblemSet` mirror (no frozen contract yet; parallel to RunHealth). Returns the catalog array.
@@ -190,6 +196,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
       getJson('/runs', StartRunResult, postInit(config, opts?.idempotencyKey)),
     stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, StopRunResult, postInit()),
     getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
+    getKnowledge: (runId) => getJson(`/runs/${enc(runId)}/knowledge`, KnowledgeGraph),
     getProblemSets: async () => (await getJson('/problem-sets', ProblemSetsResponse)).problemSets,
     startDemoRun: (partial, opts) =>
       getJson('/runs', StartRunResult, postInit(partial, opts?.idempotencyKey)),

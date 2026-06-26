@@ -4,6 +4,7 @@ import { S1LauncherScreen } from '../routes/S1LauncherScreen';
 import { RunsHomeScreen } from '../routes/RunsHomeScreen';
 import { S2OrganismView } from '../routes/S2OrganismView';
 import { S5FinalIdeaScreen } from '../routes/S5FinalIdeaScreen';
+import { KnowledgeView } from '../routes/KnowledgeView';
 import { useRunClient } from '../data/RunClientProvider';
 import type { RunMode } from '../state/reducer';
 
@@ -35,6 +36,13 @@ function OrganismRoute({ mode }: { mode: RunMode }) {
   return <S2OrganismView key={`${mode}:${id}`} runId={id} mode={mode} runClient={runClient} />;
 }
 
+/** Knowledge-Evolution graph (KB) for /runs/:id/knowledge. Keyed by id so it remounts per run. */
+function KnowledgeRoute() {
+  const { id = '' } = useParams();
+  const runClient = useRunClient();
+  return <KnowledgeView key={`knowledge:${id}`} runId={id} runClient={runClient} />;
+}
+
 /** S5 Final-Idea / payoff screen (FV.7) for /runs/:id/final. Keyed by id; mode='live' (the replay-final
  *  label is FV.8). Clicking the winner's lineage ref jumps to the organism view to inspect that node. */
 function FinalRoute() {
@@ -60,6 +68,7 @@ export function AppRoutes() {
         <Route path="launch" element={<LaunchRoute />} />
         <Route path="runs/:id" element={<OrganismRoute mode="live" />} />
         <Route path="runs/:id/replay" element={<OrganismRoute mode="replay" />} />
+        <Route path="runs/:id/knowledge" element={<KnowledgeRoute />} />
         <Route path="runs/:id/final" element={<FinalRoute />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

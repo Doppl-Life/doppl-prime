@@ -69,6 +69,7 @@ describe('runClient — read-only REST seam', () => {
         'getCapMaxima',
         'getEvents',
         'getFallbackLadder',
+        'getKnowledge',
         'getLineage',
         'getProblemSets',
         'getReplay',
@@ -81,6 +82,43 @@ describe('runClient — read-only REST seam', () => {
         'stopRun',
       ].sort(),
     );
+  });
+
+  // KB slice 2 — getKnowledge fetches /runs/:id/knowledge and validates the watermarked ResearchNote graph.
+  it('test_get_knowledge_parses_research_graph', async () => {
+    const graph = {
+      runId: 'run_1',
+      sequenceThrough: 9,
+      state: {
+        notes: {
+          'research-note:run_1:3': {
+            id: 'research-note:run_1:3',
+            runId: 'run_1',
+            generationId: 'run_1-gen0',
+            agenomeId: 'agn_0',
+            toolName: 'web_search',
+            query: 'patient flow',
+            snippet: 'findings',
+            sourceUrls: ['https://example.com/a'],
+            sequence: 3,
+            eventId: 'evt-3',
+          },
+        },
+        edges: {
+          'researched:agn_0->research-note:run_1:3': {
+            id: 'researched:agn_0->research-note:run_1:3',
+            source: 'agn_0',
+            target: 'research-note:run_1:3',
+            type: 'researched',
+          },
+        },
+      },
+    };
+    const fetch = fakeFetch(graph);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const result = await client.getKnowledge('run_1');
+    expect(result).toEqual(graph);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/run_1/knowledge`);
   });
 
   // spec(§11): the two mutating commands hit the correct method+path and validate the Run response;
