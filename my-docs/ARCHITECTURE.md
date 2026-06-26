@@ -58,6 +58,9 @@ The transition from outer to inner is by run context: select a durable node, the
 Deterministic fixtures are allowed only as test or demo harness material.
 They are not product input, not canon, and not a substitute for agarden nodes.
 They must live under an explicitly test-only path or carry an explicit test-only label.
+Product runs do not fall back to fixture generation providers.
+The kernel requires live, replay, or CLI model generation providers unless a test explicitly enables `allowTestFixtureProviders` or `DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS=true`.
+HTTP product routes accept test fixture seed paths only behind that same harness gate.
 
 `out/` is not product output.
 If a command writes local run inspection files, that path is temporary drill-down state.

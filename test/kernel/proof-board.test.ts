@@ -13,6 +13,7 @@ async function fixtureRun() {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
 }
 

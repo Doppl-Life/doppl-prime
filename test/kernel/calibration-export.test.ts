@@ -13,6 +13,7 @@ test('exports a calibrator vault with unrated review fields', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-calibration-vault-'));
   const manifest = await exportRunToCalibrationVault(run, outDir);

@@ -15,6 +15,7 @@ test('exports problem recovery and child solution markdown separately', async ()
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-'));
   const manifest = await exportRunToVault(run, outDir);
@@ -44,6 +45,7 @@ test('exports a calibrator-facing run index', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-index-'));
   const manifest = await exportRunToVault(run, outDir);
@@ -126,6 +128,7 @@ test('exports model call evidence when present on the run', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
   run.modelCallRecords = [
     {
@@ -155,6 +158,7 @@ test('exports a separate clean-agent baseline when the run provides one', async 
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generationProviders: {
       problemRecovery: {
         async recover({ caseStudy }) {

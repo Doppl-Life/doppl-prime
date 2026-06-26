@@ -63,6 +63,10 @@ export async function generationProvidersFromRequest(
   });
 }
 
+function testFixtureProvidersEnabled(options: KernelHttpOptions): boolean {
+  return envFlagEnabled(options, 'DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS');
+}
+
 export async function runFromRequestBody(
   body: string | undefined,
   options: KernelHttpOptions,
@@ -71,7 +75,10 @@ export async function runFromRequestBody(
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
-  const casePath = casePathFromRequest(parsed.casePath);
+  const allowTestFixtureProviders = testFixtureProvidersEnabled(options);
+  const casePath = casePathFromRequest(parsed.casePath, {
+    allowTestFixtures: allowTestFixtureProviders,
+  });
   const fitnessLens = parseFitnessLens(parsed.fitnessLens);
   const fitnessSchedule = parseFitnessSchedule(parsed.fitnessSchedule);
   if (parsed.replayModelCallsPath && parsed.replayRunId) {
@@ -95,6 +102,7 @@ export async function runFromRequestBody(
     fitnessLens,
     fitnessSchedule,
     generationProviders,
+    allowTestFixtureProviders,
     onEvent: runtime.onEvent,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
@@ -147,7 +155,10 @@ export async function runDashboardCaseFromRequestBody(
   options: KernelHttpOptions,
 ): Promise<Record<string, unknown>> {
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
-  const casePath = casePathFromRequest(parsed.casePath);
+  const allowTestFixtureProviders = testFixtureProvidersEnabled(options);
+  const casePath = casePathFromRequest(parsed.casePath, {
+    allowTestFixtures: allowTestFixtureProviders,
+  });
   const dashboardCase = approvedDashboardCase(casePath);
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = Boolean(parsed.liveModel);
@@ -159,6 +170,12 @@ export async function runDashboardCaseFromRequestBody(
   }
   if (liveModel && !liveDemoAuthorized(request, options)) {
     throw new KernelHttpError(403, 'live demo token is required');
+  }
+  if (!liveModel && !replayRunId && !allowTestFixtureProviders) {
+    throw new KernelHttpError(
+      400,
+      'dashboard runs require liveModel or replayRunId; fixture providers are test-only',
+    );
   }
   const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
   const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);

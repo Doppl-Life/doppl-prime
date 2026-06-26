@@ -11,6 +11,8 @@ import { createJsonKnowledgeGateway } from '../../src/kernel/knowledge-gateway.t
 import { initialAgenomePool } from '../../src/kernel/agenomes.ts';
 import { type ModelCallRecord, writeModelCallRecords } from '../../src/kernel/model-gateway.ts';
 
+process.env.DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS = 'true';
+
 async function writeReplayCalls(filePath: string, runId: string, model: string): Promise<void> {
   const caseStudy = await loadCaseStudy('test/fixtures/fsd-seed.json');
   const gateway = await createJsonKnowledgeGateway(
@@ -273,6 +275,27 @@ test('kernel HTTP server rejects missing dashboard assets', async () => {
   });
 
   assert.equal(response.status, 404);
+});
+
+test('kernel HTTP server rejects product runs without a generation provider', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'doppl-http-no-provider-'));
+  const response = await handleKernelHttpRequest(
+    {
+      method: 'POST',
+      url: '/kernel/runs',
+      body: JSON.stringify({
+        runId: 'run_http_no_provider',
+        generations: 1,
+        budget: 1,
+        outDir: path.join(root, 'vault'),
+        proofBoardDir: path.join(root, 'proof-board'),
+      }),
+    },
+    { env: { DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS: 'false' } },
+  );
+
+  assert.equal(response.status, 400);
+  assert.match(String(response.body.error), /generationProviders are required/);
 });
 
 test('kernel HTTP server runs a fixture kernel request', async () => {

@@ -19,6 +19,17 @@ kernel owner must not accidentally undo.
 - **Revisit if:** the kernel still needs test fixture bridges for live product paths.
   Delete or isolate the bridge once generation and stock retrieval read directly from the configured agarden.
 
+### Fixture generation is test-harness only - 2026-06-26
+
+- **Chose:** product runs require live, replay, or CLI model generation providers.
+  The kernel no longer falls back to deterministic fixture generation unless a test explicitly enables the fixture harness with `allowTestFixtureProviders` or `DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS=true`.
+  HTTP product routes also reject test fixture seed paths unless that harness gate is enabled.
+- **Over:** silent fixture-backed product demos.
+- **Because:** a product run must prove whether the agenome process works against configured agarden input and real/replayed model output.
+  Fixture providers are regression scaffolding, not a substitute product engine.
+- **Revisit if:** fixture generation appears in a non-test product path.
+  Treat that as boundary drift and cut it back behind the harness gate.
+
 ### The hut is canon - 2026-06-22
 
 - **Chose:** `my-docs/the-hut/**` is the protected inner source of truth for the

@@ -255,12 +255,15 @@ export function liveDemoAuthorized(request: KernelHttpRequest, options: KernelHt
   return suppliedToken === configuredToken;
 }
 
-export function casePathFromRequest(value: unknown): string {
+export function casePathFromRequest(value: unknown, options: { allowTestFixtures?: boolean } = {}): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
   const normalized = path.posix.normalize(value);
   const isAgardenNode = normalized.startsWith('../agarden/flow/') && normalized.endsWith('.md');
-  const isTestFixture = normalized.startsWith('test/fixtures/') && normalized.endsWith('-seed.json');
+  const isTestFixture =
+    Boolean(options.allowTestFixtures) &&
+    normalized.startsWith('test/fixtures/') &&
+    normalized.endsWith('-seed.json');
   if (
     path.isAbsolute(value) ||
     normalized.includes('/../') ||

@@ -4,6 +4,20 @@ import { runKernel } from '../../src/kernel/run-kernel.ts';
 import { createModelGenerationProviders } from '../../src/kernel/generation-providers.ts';
 import { createReplayModelClient, type ModelCallRecord } from '../../src/kernel/model-gateway.ts';
 
+test('requires explicit generation providers outside the test fixture harness', async () => {
+  await assert.rejects(
+    () =>
+      runKernel({
+        runId: 'run_requires_provider',
+        casePath: 'test/fixtures/fsd-seed.json',
+        fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
+        knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
+        memoryMode: 'auto',
+      }),
+    /generationProviders are required/,
+  );
+});
+
 test('runs deterministic kernel loop end to end', async () => {
   const run = await runKernel({
     runId: 'run_test',
@@ -11,6 +25,7 @@ test('runs deterministic kernel loop end to end', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
   });
   assert.equal(run.problemRecovery.caseId, 'fsd-ownership-unwind');
   assert.equal(run.candidates.length, 3);
@@ -39,6 +54,7 @@ test('tags mutated candidates with their mutagen and accumulates the lineage', a
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generations: 2,
   });
 
@@ -83,6 +99,7 @@ test('runs through injected generation providers', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generationProviders: {
       problemRecovery: {
         async recover({ caseStudy, knowledgePacket }) {
@@ -164,6 +181,7 @@ test('runs a clean baseline outside evolutionary selection', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generationProviders: {
       problemRecovery: {
         async recover({ caseStudy }) {
@@ -251,6 +269,7 @@ test('can evolve a child across multiple generations', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generations: 2,
     generationProviders: {
       problemRecovery: {
@@ -340,6 +359,7 @@ test('stops evolution when the generation budget is exhausted', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generations: 3,
     evolutionBudget: { maxUnits: 1 },
     generationProviders: {
@@ -544,6 +564,7 @@ test('runs through replayed model generation providers', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generationProviders: createModelGenerationProviders({
       client: createReplayModelClient(records),
       model: 'fixture-model',
@@ -762,6 +783,7 @@ test('emits model lifecycle trace events for repaired outputs', async () => {
     fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
     knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
     memoryMode: 'auto',
+    allowTestFixtureProviders: true,
     generationProviders: createModelGenerationProviders({
       client: createReplayModelClient(records),
       model: 'fixture-model',

@@ -75,6 +75,7 @@ export async function runKernel(input: {
   knowledgePacketPath: string;
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
+  allowTestFixtureProviders?: boolean;
   generations?: number;
   evolutionBudget?: { maxUnits: number };
   fitnessLens?: FitnessLensId;
@@ -106,8 +107,14 @@ export async function runKernel(input: {
     });
   }
 
-  const generationProviders =
-    input.generationProviders || (await createFixtureGenerationProviders(input.fixturePath));
+  const generationProviders = input.generationProviders || (input.allowTestFixtureProviders
+    ? await createFixtureGenerationProviders(input.fixturePath)
+    : undefined);
+  if (!generationProviders) {
+    throw new Error(
+      'generationProviders are required; product runs must use live, replay, or CLI model providers',
+    );
+  }
   const activeModelProvider = modelProviderInfo(generationProviders);
   const generationCount = Math.max(1, Math.floor(input.generations ?? 1));
   const maxBudgetUnits = Math.max(0, Math.floor(input.evolutionBudget?.maxUnits ?? generationCount));
