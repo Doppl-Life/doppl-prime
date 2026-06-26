@@ -182,6 +182,11 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     config,
     // rule #6 single-source — the held-out judge produces JudgeResult under THIS exact rubric.
     rubricSource: DEFAULT_JUDGE_RUBRIC,
+    // Wave 1, Step 2 — run ALL 5 critic mandates every generation (no K=3 rotation), so critic_scores is
+    // measured over the same axes each generation (no cross-gen "moving measuring stick") AND the two
+    // previously-rotated-out mandates (falsification / subtype_specific) always review. Critics debit no
+    // energy (rule #8), so this costs provider fan-out only.
+    activeCount: 5,
   });
   const score = createScoreSeam({
     gateway: modelGateway,
