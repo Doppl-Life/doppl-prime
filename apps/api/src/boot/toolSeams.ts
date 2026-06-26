@@ -1,6 +1,7 @@
 import { isIP } from 'node:net';
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { isPrivateHost, type ToolExecutorDeps } from '../model-gateway';
+import { mapLimit } from '../concurrency/pLimit';
 
 /**
  * Real tool-execution IO seams (tool-use TU.5, KEY SAFETY RULE #3 — the live counterpart of the injected
@@ -27,11 +28,19 @@ const DEFAULT_WEB_SEARCH_MODEL = 'openai/gpt-4o-mini';
  *  plugin returns real X post citations). `grok-4.1-fast` was DEPRECATED → a silent 404 = x_search "returned
  *  nothing"; keep this pinned to a current xAI model (the silent-empty is now also thrown loudly below). */
 const DEFAULT_X_SEARCH_MODEL = 'x-ai/grok-4.3';
-/** TU.7 — Gemini with web grounding surfaces YouTube / video content. */
+/** TU.7 — Gemini natively INGESTS a YouTube `video_url` (live-verified: it transcribes the real audio,
+ *  e.g. returns exact sung lyrics — not a hallucinated summary). Also used for grounded URL discovery. */
 const DEFAULT_YOUTUBE_MODEL = 'google/gemini-2.5-flash';
-/** Nudges the YouTube model to surface + summarize video content for the query. */
-const YOUTUBE_QUERY_PREFIX =
-  'Find and summarize relevant YouTube videos (with their key insights) about: ';
+/** How many SUCCESSFULLY-transcribed videos to surface (the model can't ingest some videos — live-verified
+ *  it's video-specific, not random — so we want a few good transcripts, not a fixed attempt count). */
+const DEFAULT_YOUTUBE_MAX_VIDEOS = 2;
+/** How many discovered candidates to ATTEMPT (> maxVideos so a couple of un-ingestable videos don't starve
+ *  the result; each is a separate native-video model call, bounded by maxToolCalls upstream). */
+const DEFAULT_YOUTUBE_DISCOVER_COUNT = 4;
+/** Max videos ingested concurrently (each is one provider round-trip; bounded for rate-limit politeness). */
+const DEFAULT_YOUTUBE_CONCURRENCY = 2;
+/** Per-video transcript cap so a few long videos can't crowd out the others before the 8 KB registry cap. */
+const YOUTUBE_PER_VIDEO_MAX_CHARS = 2_500;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 /** Bound the raw body we read into memory (the tool registry truncates further before re-injection). */
 const MAX_FETCH_BODY_BYTES = 256 * 1024;
@@ -193,6 +202,138 @@ export function createWebSearch(deps: {
   return createGroundedSearch({ ...deps, model: deps.model ?? DEFAULT_WEB_SEARCH_MODEL });
 }
 
+/** Matches every YouTube video form (watch?…v= / youtu.be / shorts / embed / v) anchored to a YouTube host
+ *  so a non-YouTube `?v=<11chars>` (e.g. `example.com/watch?v=notyoutube1`) is NOT mistaken for a video. */
+const YOUTUBE_VIDEO_RE =
+  /(?:youtube\.com\/watch\?[^\s"')]*v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/|youtube\.com\/v\/)([A-Za-z0-9_-]{11})/gi;
+
+/** Extract the YouTube video ids from arbitrary text + canonicalize to watch URLs, deduped (any URL form). */
+export function extractYoutubeUrls(text: string): string[] {
+  if (typeof text !== 'string') return [];
+  const ids: string[] = [];
+  for (const match of text.matchAll(YOUTUBE_VIDEO_RE)) {
+    const id = match[1];
+    if (id !== undefined && !ids.includes(id)) ids.push(id);
+  }
+  return ids.map((id) => `https://www.youtube.com/watch?v=${id}`);
+}
+
+/** The TRUSTED, candidate-independent instruction for native video ingestion. NO "if you can't, say X"
+ *  escape hatch — live-verified that offering one makes Gemini FALSELY decline (VIDEO_UNAVAILABLE) even
+ *  when it can transcribe; a direct "report the actual content" prompt reliably transcribes the real audio. */
+const YOUTUBE_INGEST_INSTRUCTION =
+  'You are watching the linked YouTube video. Report its ACTUAL content: transcribe or closely paraphrase ' +
+  'the key spoken points, and list the concrete claims, facts, figures, techniques, and notable quotes as ' +
+  'they are really presented. Be specific and faithful to what is actually said or shown in the video.';
+
+function truncatePerVideo(text: string): string {
+  return text.length <= YOUTUBE_PER_VIDEO_MAX_CHARS
+    ? text
+    : `${text.slice(0, YOUTUBE_PER_VIDEO_MAX_CHARS)}…[truncated]`;
+}
+
+/** Detects the model DECLINING to ingest a video ("I cannot access/watch/process this video …") near the
+ *  start of its reply, so a refusal is never surfaced as if it were a real transcript. Live-verified: some
+ *  videos are reliably un-ingestable, and Gemini answers with this kind of prose rather than failing. */
+const VIDEO_REFUSAL_RE =
+  /\b(cannot|can'?t|unable to|not able to|do(?:es)? not have|don'?t have|no ability|my (?:current )?capabilities)\b[^.]{0,60}\b(access|process|watch|play|view|video|link|external|directly)\b/i;
+export function isVideoRefusal(content: string): boolean {
+  return VIDEO_REFUSAL_RE.test(content.slice(0, 300));
+}
+
+/**
+ * youtube_search seam (TU.7). The OLD seam asked Gemini to "find and summarize" videos → ungrounded model
+ * summaries (NOT transcripts). This rewrite mirrors how a human researches video: (1) DISCOVER real watch
+ * URLs via a web-grounded search (the `web` plugin returns current, real videos — not hallucinated ids),
+ * then (2) INGEST each video IN PARALLEL through Gemini's native `video_url` part (the model watches the
+ * actual video — live-verified it transcribes real audio, e.g. exact lyrics), then (3) COMBINE. Each step
+ * is an injected-`fetchFn` HTTP call (key env-only, rule #4) → deterministic + unit-testable. A per-video
+ * failure is isolated (skipped, never sinks the batch); replay reads the persisted tool result (rule #7).
+ */
+export function createYoutubeResearch(deps: {
+  fetchFn: typeof fetch;
+  apiKey: string;
+  model?: string;
+  baseUrl?: string;
+  timeoutMs?: number;
+  maxVideos?: number;
+  discoverCount?: number;
+  concurrency?: number;
+}): (query: string) => Promise<string> {
+  const model = deps.model ?? DEFAULT_YOUTUBE_MODEL;
+  const baseUrl = deps.baseUrl ?? OPENROUTER_BASE_URL;
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_WEB_SEARCH_TIMEOUT_MS;
+  const maxVideos = deps.maxVideos ?? DEFAULT_YOUTUBE_MAX_VIDEOS;
+  const discoverCount = deps.discoverCount ?? DEFAULT_YOUTUBE_DISCOVER_COUNT;
+  const concurrency = deps.concurrency ?? DEFAULT_YOUTUBE_CONCURRENCY;
+
+  // Discovery reuses the grounded-search seam (web plugin + loud-on-error); the prompt asks for real watch
+  // URLs, which `extractYoutubeUrls` parses out of the returned text (incl. any appended citation sources).
+  const discover = createGroundedSearch({
+    fetchFn: deps.fetchFn,
+    apiKey: deps.apiKey,
+    model,
+    baseUrl,
+    timeoutMs,
+    queryPrefix:
+      `Find up to ${discoverCount} real, currently-available YouTube videos that best explain or demonstrate ` +
+      'the topic below. Return ONLY their full https://www.youtube.com/watch?v=… URLs, one per line.\n\nTopic: ',
+  });
+
+  /** Ingest ONE video via Gemini's native `video_url` part. Fail-soft: any error / empty / VIDEO_UNAVAILABLE
+   *  → null (skipped) so a single bad video never sinks the whole batch. No web plugin (direct ingestion). */
+  const ingestVideo = async (url: string): Promise<string | null> => {
+    try {
+      const response = await deps.fetchFn(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${deps.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: YOUTUBE_INGEST_INSTRUCTION },
+                { type: 'video_url', video_url: { url } },
+              ],
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const data = (await response.json()) as GroundedCompletion;
+      if (data.error !== undefined) return null;
+      const content = data.choices?.[0]?.message?.content ?? '';
+      // A blank reply OR a refusal ("I cannot watch this video…") is NOT a transcript → skip it, so refusal
+      // prose never masquerades as real content (the agent would otherwise treat it as grounding DATA).
+      return content.trim() === '' || isVideoRefusal(content) ? null : content;
+    } catch {
+      return null;
+    }
+  };
+
+  return async (query) => {
+    const discovered = await discover(query); // throws on a discovery API error → executor reports failure
+    // ATTEMPT up to discoverCount candidates (> maxVideos), ingest in parallel, then KEEP the first maxVideos
+    // that actually transcribed — so a couple of un-ingestable videos don't starve the result.
+    const urls = extractYoutubeUrls(discovered).slice(0, discoverCount);
+    if (urls.length === 0) return 'youtube_search found no usable videos for this query.';
+    const ingested = await mapLimit(urls, concurrency, async (url) => ({
+      url,
+      content: await ingestVideo(url),
+    }));
+    const usable = ingested
+      .filter((result): result is { url: string; content: string } => result.content !== null)
+      .slice(0, maxVideos);
+    if (usable.length === 0) {
+      return `youtube_search found ${urls.length} candidate video(s) for this query but none could be transcribed.`;
+    }
+    return `Researched ${usable.length} YouTube video(s) for "${query}":\n\n${usable
+      .map((result) => `Video: ${result.url}\n${truncatePerVideo(result.content)}`)
+      .join('\n\n')}`;
+  };
+}
+
 export interface ToolSeamConfig {
   /** Outbound fetch primitive (default the global `fetch`). Injected for tests. */
   readonly fetchFn?: typeof fetch;
@@ -228,11 +369,10 @@ export function createToolExecutorSeams(config: ToolSeamConfig = {}): ToolExecut
         apiKey,
         model: config.xSearchModel ?? DEFAULT_X_SEARCH_MODEL,
       }),
-      youtubeSearch: createGroundedSearch({
+      youtubeSearch: createYoutubeResearch({
         fetchFn,
         apiKey,
-        model: config.youtubeModel ?? DEFAULT_YOUTUBE_MODEL,
-        queryPrefix: YOUTUBE_QUERY_PREFIX,
+        ...(config.youtubeModel !== undefined ? { model: config.youtubeModel } : {}),
       }),
     };
   }
