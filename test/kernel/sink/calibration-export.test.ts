@@ -3,19 +3,11 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { exportRunToCalibrationVault } from '../../../src/kernel/sink/vault-export.ts';
+import { loadCapturedRun } from '../captured-run.ts';
 
 test('exports a calibrator vault with unrated review fields', async () => {
-  const run = await runKernel({ stage: 'doppl',
-    runId: 'run_calibration',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
+  const run = loadCapturedRun();
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-calibration-vault-'));
   const manifest = await exportRunToCalibrationVault(run, outDir);
 

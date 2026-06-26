@@ -37,12 +37,12 @@ test('CLI args can configure generations and evolution budget', () => {
 test('CLI args can configure replayed model calls', () => {
   const args = parseKernelCliArgs([
     '--replay-model-calls',
-    'test/fixtures/kernel/model-calls.jsonl',
+    'test/captured/fsd/model-calls.jsonl',
     '--model',
     'fixture-model',
   ]);
 
-  assert.equal(args.replayModelCallsPath, 'test/fixtures/kernel/model-calls.jsonl');
+  assert.equal(args.replayModelCallsPath, 'test/captured/fsd/model-calls.jsonl');
   assert.equal(args.model, 'fixture-model');
 });
 
@@ -60,7 +60,7 @@ test('CLI args reject invalid numeric values', () => {
 
 test('CLI args require a model when replaying model calls', () => {
   assert.throws(
-    () => parseKernelCliArgs(['--replay-model-calls', 'test/fixtures/kernel/model-calls.jsonl']),
+    () => parseKernelCliArgs(['--replay-model-calls', 'test/captured/fsd/model-calls.jsonl']),
     /--model is required when --replay-model-calls is set/,
   );
 });

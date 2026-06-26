@@ -3,29 +3,18 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { publishStaticKernelRun, writePublishedIndex } from '../../../src/kernel/sink/publish.ts';
-
-async function fixtureRun() {
-  return runKernel({ stage: 'doppl',
-    runId: 'run_publish',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
-}
+import { loadCapturedRun } from '../captured-run.ts';
 
 test('publishes proof board and vault artifacts into a static directory', async () => {
+  const run = loadCapturedRun();
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-published-'));
-  const manifest = await publishStaticKernelRun(await fixtureRun(), outDir);
+  const manifest = await publishStaticKernelRun(run, outDir);
   assert.equal(manifest.indexHtml, path.join(outDir, 'index.html'));
   assert.ok(manifest.files.some((file) => file.endsWith('trace.json')));
   assert.ok(manifest.files.some((file) => file.endsWith('events.jsonl')));
   assert.ok(manifest.files.some((file) => file.endsWith('problem-recovery.md')));
-  assert.ok(manifest.files.some((file) => file.includes('child_cand_liability_clock')));
+  assert.ok(manifest.files.some((file) => file.includes(run.fusion!.child.id)));
   const html = await readFile(manifest.indexHtml, 'utf8');
   assert.match(html, /Doppl Kernel Proof Board/);
   assert.match(html, /published-vault/);

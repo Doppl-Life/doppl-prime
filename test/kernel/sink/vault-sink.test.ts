@@ -4,22 +4,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { runChain } from '../../../src/kernel/engine/run-kernel.ts';
 import { compileChainNodes, cleanTitle } from '../../../src/kernel/compile/node-compiler.ts';
 import { writeFlowNodes } from '../../../src/kernel/sink/vault-sink.ts';
 import { slugId } from '../../../src/kernel/compile/slug.ts';
-
-async function fixtureChain() {
-  return runChain({
-    runId: 'run_vault_sink',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
-}
+import { loadCapturedChain } from '../captured-run.ts';
 
 test('slugId is deterministic, link-safe, and seed-disambiguable', () => {
   assert.equal(slugId('Hello, World!'), slugId('Hello, World!'));
@@ -30,7 +18,7 @@ test('slugId is deterministic, link-safe, and seed-disambiguable', () => {
 });
 
 test('default node ids are unique slugs derived from titles (not UUIDs)', async () => {
-  const { problemRecovery, doppl } = await fixtureChain();
+  const { problemRecovery, doppl } = loadCapturedChain();
   const nodes = compileChainNodes(problemRecovery, doppl);
   for (const node of nodes) {
     assert.match(node.id, /^[a-z0-9-]+-[0-9a-f]{8}$/, `${node.stage} id should be a slug`);
@@ -42,7 +30,7 @@ test('default node ids are unique slugs derived from titles (not UUIDs)', async 
 });
 
 test('writeFlowNodes writes canonical flow/<slug>/<slug>.md layout', async () => {
-  const { problemRecovery, doppl } = await fixtureChain();
+  const { problemRecovery, doppl } = loadCapturedChain();
   const vault = await mkdtemp(path.join(tmpdir(), 'doppl-vault-'));
   const nodes = compileChainNodes(problemRecovery, doppl);
   const written = writeFlowNodes(vault, nodes);

@@ -1,22 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runChain } from '../../../src/kernel/engine/run-kernel.ts';
 import { compileChainNodes } from '../../../src/kernel/compile/node-compiler.ts';
-
-async function fixtureChain() {
-  return runChain({
-    runId: 'run_node_compiler',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
-}
+import { loadCapturedChain } from '../captured-run.ts';
 
 test('compiles a chain into case_study, problem_recovery, and doppl nodes', async () => {
-  const { problemRecovery, doppl } = await fixtureChain();
+  const { problemRecovery, doppl } = loadCapturedChain();
   const nodes = compileChainNodes(problemRecovery, doppl, { kernel: 'prime' });
 
   assert.deepEqual(nodes.map((node) => node.stage), ['case_study', 'problem_recovery', 'doppl']);
