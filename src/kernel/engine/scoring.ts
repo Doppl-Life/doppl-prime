@@ -243,7 +243,12 @@ export function scoreCandidates(
             dominatedBy: [],
           },
         },
-        rationale: rows.map((row) => row.pressure).join(' | '),
+        // Prefer the critics' prose; fall back to the numeric verdicts when a fast model returned
+        // score-only verdicts (rationale is a required, non-empty field).
+        rationale:
+          rows.map((row) => row.pressure).filter((pressure) => pressure.trim().length > 0).join(' | ') ||
+          rows.map((row) => `${row.criticId}:${row.score}`).join(' | ') ||
+          'score-only critic verdicts',
       };
     })
     .sort((a, b) => b.total - a.total);

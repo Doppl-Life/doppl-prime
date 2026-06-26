@@ -201,10 +201,6 @@ export async function runDashboardCaseFromRequestBody(
       'dashboard runs require liveModel or replayRunId',
     );
   }
-  // A required demo token is a hard gate on any live run (public-deploy protection).
-  if (liveModel && !liveDemoAuthorized(request, options)) {
-    throw new KernelHttpError(403, 'live demo token is required');
-  }
   // Spending on the public dashboard needs explicit consent (a key AND the enable flag). Without
   // consent we do not 403 — we hide the hosted key so the live run falls through the cascade to the
   // free local floor. The run still happens; it just never spends without consent.
@@ -212,6 +208,11 @@ export async function runDashboardCaseFromRequestBody(
     liveModel &&
     Boolean(envValue(options, 'OPENROUTER_API_KEY').trim()) &&
     envFlagEnabled(options, 'DOPPL_ENABLE_LIVE_LLM');
+  // A required demo token gates only the consented hosted (paid) path. A free local run is never
+  // gated — that is the always-works default; gates protect spend, not function.
+  if (hostedConsent && !liveDemoAuthorized(request, options)) {
+    throw new KernelHttpError(403, 'live demo token is required');
+  }
   const runOptions: KernelHttpOptions =
     liveModel && !hostedConsent
       ? { ...options, env: { ...options.env, OPENROUTER_API_KEY: '' } }

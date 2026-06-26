@@ -36,8 +36,8 @@ export function OperatorPromptPanel(props: OperatorPromptPanelProps): JSX.Elemen
   const [prompts, setPrompts] = useState<CuratedPrompt[]>(props.initialPrompts ?? []);
   const [selectedId, setSelectedId] = useState<string>(props.initialPrompts?.[0]?.id ?? "");
   const [operatorPrompt, setOperatorPrompt] = useState("");
-  const [maxPopulation, setMaxPopulation] = useState<string>("");
-  const [maxGenerations, setMaxGenerations] = useState<string>("");
+  const [maxPopulation, setMaxPopulation] = useState<string>("10");
+  const [maxGenerations, setMaxGenerations] = useState<string>("2");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
