@@ -6,6 +6,16 @@ Goal: build the production outer Doppl view inspired by Michael's experiment spi
 
 Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile should remain usable, but it is not the primary design target for the outer view right now.
 
+## Design Principles From NotebookLM + Experiment Spike
+
+- Preserve the radial bloom feel from `doppl-prime-michael-experiment-spike/experiment-spike/`: a living map of outer artifacts, not a generic dashboard table.
+- Treat Postgres `run_events` and derived projections as the runtime truth. The bloom should carry `sequenceThrough`/watermark metadata and never invent lineage outside projection rules.
+- Keep outer semantics first: case study -> problem recovery -> Doppl/solution -> possible reseeded case-study island. Inner terms such as candidate, agenome, mutagen, and reproduction belong only in proof summaries or links to the inner observatory.
+- Prefer a dedicated outer-artifact projection over relabeling the inner lineage graph forever. The current adapter is a bridge until the kernel emits first-class outer artifact events.
+- Surface the proof that makes a branch trustworthy: selected lineage, judge strength, novelty, grounding/evidence, human/agora ratings, retrieved/cited research trails, and dead-end/graveyard signals.
+- Keep safety and replay posture visible but quiet: sequence ordering, replay-derived state, failed/stale runs, and provider/tool failures should be inspectable without crowding the bloom.
+- Use the shared-knowledge/stigmergy model when available: research written by one branch, retrieved by another, cited by artifacts, and culled as negative knowledge.
+
 ## Current Baseline
 
 - [x] Create `dalton-outer-view` from `origin/main`.
@@ -22,7 +32,17 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 - [x] Project existing inner runtime outputs into an outer shape.
 - [x] Create explicit path: `case_study -> problem_recovery -> doppl`.
 - [x] Hide inner "candidate" language behind the adapter boundary.
+- [ ] Add projection watermark/source metadata to `/bloom`:
+  - `sequenceThrough`
+  - source run IDs
+  - projection freshness/staleness
 - [ ] Identify first-class outer artifact events once the kernel emits them.
+- [ ] Draft first-class outer artifact event candidates:
+  - `artifact.case_study.created`
+  - `artifact.problem_recovery.created`
+  - `artifact.doppl.created`
+  - `artifact.linked`
+  - `artifact.reseeded`
 - [ ] Replace synthetic problem-recovery adapter with real problem-recovery nodes.
 - [ ] Preserve durable parent-child IDs across runs and reloads.
 - [ ] Decide whether the long-term outer source of truth is Postgres, aGarden, or a reconciled projection of both.
@@ -37,6 +57,12 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 ## Phase 2: Michael-Inspired Bloom Graph
 
 - [x] Move from static SVG scaffold toward a richer bloom layout.
+- [ ] Recreate the experiment-spike radial bloom language more faithfully:
+  - central case-study root
+  - branching/lobed children
+  - curved parent-child paths
+  - organic spacing without label collisions
+  - selected branch as a luminous path
 - [ ] Use island clustering around case studies.
 - [ ] Use stage colors consistently:
   - case study: slate
@@ -46,6 +72,8 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 - [ ] Encode grounding as node halos once grounding is present in the outer projection.
 - [x] Encode judge strength as node radius or ring weight.
 - [ ] Encode human/agora strength as node radius or ring weight once ratings are in the outer projection.
+- [ ] Add retrieved/cited research path styling once knowledge data is in the outer projection.
+- [ ] Add culled/dead-end visual language for failed or low-fitness branches without exposing inner candidates.
 - [x] Highlight the selected node's ancestry path.
 - [x] Dim unrelated islands when a node is selected.
 - [x] Add zoom, pan, and fit controls.
@@ -75,6 +103,12 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
   - rating count
 - [ ] Render markdown artifact sections clearly.
 - [ ] Collapse noisy proof sections by default.
+- [ ] Add "why this exists" proof section:
+  - source run
+  - source event sequence
+  - selected/final status
+  - judge policy version
+  - replay status
 - [x] Show trace/path lineage for a selected node.
 - [x] Add "Open inner run" only where an inner run exists.
 - [ ] Add "Open artifact" when aGarden-backed artifact exists.
@@ -115,6 +149,7 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 ## Phase 5: Proof Board And Run Health
 
 - [x] Add proof board panel inspired by the spike.
+- [ ] Show projection watermark and latest event sequence.
 - [ ] Show outer-run history per island.
 - [x] Show generation/proof summary:
   - generated count
@@ -132,6 +167,11 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
   - failed
   - stopped
   - waiting for rating
+- [ ] Show tool/research health if present:
+  - research notes written
+  - notes retrieved
+  - tool failures
+  - grounding unavailable
 
 ## Phase 6: Live Growth Experience
 
@@ -140,6 +180,7 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 - [ ] Show active run console/progress without overwhelming the graph.
 - [ ] Add a clear "stop" affordance for long growth operations.
 - [ ] Make growth events replayable from persisted events.
+- [ ] Support replay scrub of the outer bloom once outer artifact events exist.
 - [ ] Avoid exposing inner candidate mechanics in the outer UI; summarize them as proof only.
 - [ ] Add loading states that distinguish:
   - loading projection
@@ -181,6 +222,16 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
   - calibrator ratings API
   - reconciled projection
 - [ ] Avoid letting ratings UI clutter the outer graph.
+- [ ] Show judge/human disagreement as an optional analysis mode, not the default bloom mode.
+
+## Phase 8.5: Knowledge And Evidence Overlay
+
+- [ ] Consume `GET /runs/:id/knowledge` or a bloom-integrated knowledge projection.
+- [ ] Show research-written trails as subtle peripheral evidence marks.
+- [ ] Show retrieved trails as "branch learned from prior branch" links.
+- [ ] Show cited notes in inspector proof, even if they are not graph nodes.
+- [ ] Show culled-lineage research as negative knowledge/dead ends.
+- [ ] Avoid making the outer bloom a second inner knowledge graph; use knowledge as proof/evidence overlay.
 
 ## Phase 9: Analysis Tools
 
@@ -250,8 +301,9 @@ Recommended path: Option A for production, Option B for short-term teammate demo
 
 ## Near-Term Next Work
 
-1. Improve graph visual language and selected-path highlighting.
-2. Upgrade inspector to read like an artifact page.
-3. Add library filters/search.
-4. Add proof board panel.
-5. Decide GitHub Pages + hosted API deployment shape.
+1. Tighten the graph toward the experiment-spike radial bloom language.
+2. Add projection watermark/source metadata to `/bloom` and UI proof board.
+3. Draft/prepare first-class outer artifact event shapes for when the kernel supports them.
+4. Add knowledge/evidence overlay design using `GET /runs/:id/knowledge`.
+5. Improve inspector proof sections with source sequence, replay status, judge version, and artifact links.
+6. Decide GitHub Pages + hosted API deployment shape.
