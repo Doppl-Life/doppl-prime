@@ -110,13 +110,11 @@ agarden nodes (no key, no paste). claude CLI works on the user's machine (not in
    So: **the trace is the SSOT; node / dashboard / organism-view are sibling projections.** A subtype is a
    *label a projection derives*, not something the kernel adopts. Keep classification a **cheap heuristic on
    melissa's side** (or skip it); it only becomes kernel-and-canon work if it ever needs a model call worth
-   recording — and then it's one neutral trace field, not melissa's shape. **The real canon question
-   (reframed onto the trace):** dalton's trace *events* are thin (ids); the rich candidate sits in the run
-   aggregate / `run-index`. Settle in `run-trace.md` whether the trace carries rich candidates or views read
-   the aggregate. That, plus the lifecycle slice (done), is the substance — *not* a per-repo taxonomy merge.
-   ▶ **NEXT:** answer the trace-richness question, then **R5** = lift melissa's ~40-file web app (App, charts,
-   lineage, ~15 panels, reducer/store), feed from this SSE (her dashboard derives subtype itself), add deps
-   (Recharts, zod), skin with cody tokens — a dedicated frontend session.
+   recording; then it's one neutral trace field, not melissa's shape.
+   **Trace-richness decision landed:** `RunTrace` carries projection-neutral machine facts; dashboard-rich objects are adapter projections from trace/aggregate facts, not canon.
+   The lifecycle slice stays in `toDashboardEnvelope`; rich event objects belong in an aggregate-aware dashboard projection.
+   **NEXT:** **R5** = lift melissa's ~40-file web app (App, charts, lineage, ~15 panels, reducer/store), feed from this SSE (her dashboard derives subtype itself), add deps (Recharts, zod), skin with cody tokens - a dedicated frontend session.
+   If the lifted reducer requires rich events before it can render, add `projectRunToDashboardEvents(run: KernelRun): DashboardEnvelope[]` as the adapter, with the trace facts as the source and melissa's payload shapes as the view contract.
 
 **Then R4 (enrich events → thin adapter):** type payloads (from pass #2) → emit `run.configured`,
 full candidate, mapped `CriticReview`, in-run agenome lifecycle, shaped fitness/energy → thin

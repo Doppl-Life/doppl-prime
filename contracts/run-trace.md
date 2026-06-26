@@ -266,6 +266,12 @@ type CompileStep = {
 
 The full trace is one node-attempt's multi-generation working memory: a sequence of generations — each `generate → fitness → selection` — feeding the next, then `lens`, `judge`, and `compile` on the final survivor. It is the source of generation truth for the compiled node.
 
+The trace carries the machine facts needed to explain and project the run.
+Candidates, measurements, selection decisions, lens results, judge output, and compile output live here because they define what happened.
+Projection-specific view objects do not live here.
+A dashboard, node renderer, organism view, or proof board reads the trace facts and shapes its own payloads at the adapter boundary.
+If a field requires non-repeatable compute to derive, record the neutral trace fact that makes the compute auditable; do not store a view-owned taxonomy as trace canon.
+
 ### Type contract
 
 ```ts
@@ -285,4 +291,3 @@ type RunTrace<S extends GrowthStage> = {
   compile: CompileStep;
 };
 ```
-

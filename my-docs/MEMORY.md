@@ -156,3 +156,15 @@ kernel owner must not accidentally undo.
 - **Supersedes:** the earlier same-day "kernel adopts melissa's taxonomy" call — reversed by
   first-principles ([[the hut]]): michael's contracts are I/O artifact shapes, the trace is
   the boundary record, and a view's taxonomy is not canon.
+
+### Trace richness stops at projection-neutral machine facts - 2026-06-25
+
+- **Chose:** `RunTrace` carries the machine facts needed to explain and project a run: generated candidates, measurements, selection decisions, lens result, judge result, and compiler output.
+  Rich dashboard objects are built at the dashboard adapter boundary from those trace or aggregate facts.
+  A view-owned taxonomy is recorded only when the derivation requires non-repeatable compute, and even then the trace records the neutral fact, not the view's object model.
+- **Over:** treating the current run aggregate / `run-index` as a second source of truth for
+  facts the trace must explain, or inflating `RunTrace` with dashboard payload shapes.
+- **Because:** trace truth has to support multiple projections without adopting any one projection's model.
+  The dashboard needs rich objects for rendering, but that is a view contract; the kernel needs enough trace facts for every projection to rebuild its view deterministically.
+- **Revisit if:** a projection needs a fact that cannot be derived from the trace and is not merely display shape.
+  Add that fact to `contracts/run-trace.md` first, then update the kernel and adapters.
