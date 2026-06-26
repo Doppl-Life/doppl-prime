@@ -75,6 +75,8 @@ jobs:
         run: |
           mkdir -p doppl-prime/published
           cp -R doppl-prime/apps/web/dist/. doppl-prime/published/
+          mkdir -p doppl-prime/published/bloom
+          cp doppl-prime/published/index.html doppl-prime/published/bloom/index.html
           cp doppl-prime/published/index.html doppl-prime/published/404.html
           cp -R calibration-branch/published/calibrator doppl-prime/published/calibrator
           touch doppl-prime/published/.nojekyll
