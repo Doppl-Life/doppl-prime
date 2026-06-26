@@ -13,7 +13,7 @@ import {
   type NodeSummary,
 } from '../boundary.ts';
 import { loadCaseStudy } from '../discovery/case-loader.ts';
-import { createAgardenStockKnowledgeGateway, createJsonKnowledgeGateway } from '../discovery/knowledge-gateway.ts';
+import { createAgardenStockKnowledgeGateway } from '../discovery/knowledge-gateway.ts';
 import type { WebRetrieval } from '../discovery/web-retrieval.ts';
 import { compileNode } from '../compile/node-compiler.ts';
 import {
@@ -26,10 +26,7 @@ import {
 import { fuseCandidates } from './fusion.ts';
 import { initialAgenomePool, materializeAgenomes } from './agenomes.ts';
 import { createMemoryEventRecorder, type EventRecorderListener } from '../trace/event-store.ts';
-import {
-  createFixtureGenerationProviders,
-  type GenerationProviders,
-} from './generation-providers.ts';
+import { type GenerationProviders } from './generation-providers.ts';
 import type { ModelCallRecord } from '../model/model-gateway.ts';
 
 function selectedCandidates(
@@ -79,12 +76,9 @@ export async function runKernel(input: {
   parentNode?: NodeSummary;
   casePath: string;
   vault: string;
-  fixturePath?: string;
-  knowledgePacketPath?: string;
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
   webRetrieval?: WebRetrieval;
-  allowTestFixtureProviders?: boolean;
   generations?: number;
   evolutionBudget?: { maxUnits: number };
   fitnessLens?: FitnessLensId;
@@ -99,16 +93,7 @@ export async function runKernel(input: {
     memoryMode: input.memoryMode,
   });
 
-  let gateway;
-  if (input.allowTestFixtureProviders) {
-    const knowledgePacketPath = input.knowledgePacketPath;
-    if (!knowledgePacketPath) {
-      throw new Error('knowledgePacketPath is required for the test fixture harness');
-    }
-    gateway = await createJsonKnowledgeGateway(knowledgePacketPath);
-  } else {
-    gateway = await createAgardenStockKnowledgeGateway(input.vault, input.webRetrieval);
-  }
+  const gateway = await createAgardenStockKnowledgeGateway(input.vault, input.webRetrieval);
   const knowledgePacket = await gateway.selectPacket({
     runId: input.runId,
     targetCase: caseStudy.id,
@@ -126,17 +111,10 @@ export async function runKernel(input: {
     });
   }
 
-  let generationProviders = input.generationProviders;
-  if (!generationProviders && input.allowTestFixtureProviders) {
-    const fixturePath = input.fixturePath;
-    if (!fixturePath) {
-      throw new Error('fixturePath is required for the test fixture harness');
-    }
-    generationProviders = await createFixtureGenerationProviders(fixturePath);
-  }
+  const generationProviders = input.generationProviders;
   if (!generationProviders) {
     throw new Error(
-      'generationProviders are required; product runs must use live, replay, or CLI model providers',
+      'generationProviders are required; runs must use live, replay, or CLI model providers',
     );
   }
   const activeModelProvider = modelProviderInfo(generationProviders);

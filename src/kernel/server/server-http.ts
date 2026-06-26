@@ -8,8 +8,6 @@ import type { FitnessLensId, FitnessScheduleMode } from '../engine/scoring.ts';
 export type KernelRunRequest = {
   runId?: string;
   casePath?: string;
-  fixturePath?: string;
-  knowledgePacketPath?: string;
   generations?: number;
   budget?: number;
   vault?: string;
@@ -56,10 +54,6 @@ export interface DashboardCaseStudy {
   id: string;
   title: string;
   path: string;
-  testSeedPath: string;
-  fixturePath: string;
-  knowledgePacketPath: string;
-  mode: 'fixture' | 'live';
 }
 
 export const DASHBOARD_CASE_STUDIES: readonly DashboardCaseStudy[] = [
@@ -67,37 +61,21 @@ export const DASHBOARD_CASE_STUDIES: readonly DashboardCaseStudy[] = [
     id: 'fsd-ownership-unwind',
     title: 'FSD Ownership Unwind',
     path: '../agarden/flow/fsd-ownership-unwind-0caef8e3/fsd-ownership-unwind-0caef8e3.md',
-    testSeedPath: 'test/fixtures/fsd-seed.json',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    mode: 'fixture',
   },
   {
     id: 'glp1-snack-demand-destruction',
     title: 'GLP-1 Snack Demand',
     path: '../agarden/flow/glp1-snack-demand-destruction-fee90f49/glp1-snack-demand-destruction-fee90f49.md',
-    testSeedPath: 'test/fixtures/glp1-seed.json',
-    fixturePath: 'test/fixtures/kernel/glp1-snack-demand-destruction/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/glp1-snack-demand-destruction/knowledge-packet.json',
-    mode: 'fixture',
   },
   {
     id: 'ai-overviews-zero-click-publishing',
     title: 'AI Overviews Publishing',
     path: '../agarden/flow/ai-overviews-zero-click-publishing-62167f2d/ai-overviews-zero-click-publishing-62167f2d.md',
-    testSeedPath: 'test/fixtures/ai-power-seed.json',
-    fixturePath: 'test/fixtures/kernel/ai-overviews-zero-click-publishing/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/ai-overviews-zero-click-publishing/knowledge-packet.json',
-    mode: 'fixture',
   },
   {
     id: 'starship-launch-cost-collapse',
     title: 'Starship Launch Cost',
     path: '../agarden/flow/starship-launch-cost-collapse-49cce9a5/starship-launch-cost-collapse-49cce9a5.md',
-    testSeedPath: 'test/fixtures/starship-seed.json',
-    fixturePath: 'test/fixtures/kernel/starship-launch-cost-collapse/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/starship-launch-cost-collapse/knowledge-packet.json',
-    mode: 'fixture',
   },
 ];
 
@@ -266,29 +244,19 @@ export function liveDemoAuthorized(request: KernelHttpRequest, options: KernelHt
   return suppliedToken === configuredToken;
 }
 
-export function casePathFromRequest(value: unknown, options: { allowTestFixtures?: boolean } = {}): string {
+export function casePathFromRequest(value: unknown): string {
   if (value === undefined) return defaultKernelArgs.casePath;
   if (typeof value !== 'string') throw new Error('casePath must be a string');
   const normalized = path.posix.normalize(value);
   const isAgardenNode = normalized.startsWith('../agarden/flow/') && normalized.endsWith('.md');
-  const isTestFixture =
-    Boolean(options.allowTestFixtures) &&
-    normalized.startsWith('test/fixtures/') &&
-    normalized.endsWith('-seed.json');
-  if (
-    path.isAbsolute(value) ||
-    normalized.includes('/../') ||
-    (!isAgardenNode && !isTestFixture)
-  ) {
-    throw new Error('casePath must point at an agarden flow node or test fixture seed');
+  if (path.isAbsolute(value) || normalized.includes('/../') || !isAgardenNode) {
+    throw new Error('casePath must point at an agarden flow node');
   }
   return normalized;
 }
 
-export function approvedDashboardCase(casePath: string): (typeof DASHBOARD_CASE_STUDIES)[number] {
-  const match = DASHBOARD_CASE_STUDIES.find(
-    (caseStudy) => caseStudy.path === casePath || caseStudy.testSeedPath === casePath,
-  );
+export function approvedDashboardCase(casePath: string): DashboardCaseStudy {
+  const match = DASHBOARD_CASE_STUDIES.find((caseStudy) => caseStudy.path === casePath);
   if (!match) throw new Error('dashboard case is not approved');
   return match;
 }

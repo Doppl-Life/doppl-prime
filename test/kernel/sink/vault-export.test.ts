@@ -3,21 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { exportRunToVault } from '../../../src/kernel/sink/vault-export.ts';
 import { readRunEvents, replayRunProjection } from '../../../src/kernel/trace/event-store.ts';
 import { readModelCallRecords } from '../../../src/kernel/model/model-gateway.ts';
+import { loadCapturedRun } from '../captured-run.ts';
 
 test('exports problem recovery and child solution markdown separately', async () => {
-  const run = await runKernel({ stage: 'doppl',
-    runId: 'run_export',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
+  const run = loadCapturedRun();
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-'));
   const manifest = await exportRunToVault(run, outDir);
   assert.ok(manifest.files.some((file) => file.endsWith('problem-recovery.md')));
@@ -33,28 +25,20 @@ test('exports problem recovery and child solution markdown separately', async ()
   assert.match(recovery, /artifact_type: problem_recovery/);
   const eventLogPath = manifest.files.find((file) => file.endsWith('events.jsonl'))!;
   const projection = replayRunProjection(await readRunEvents(eventLogPath));
-  assert.equal(projection.runId, 'run_export');
+  assert.equal(projection.runId, run.id);
   assert.equal(projection.completed, true);
   assert.equal(projection.childId, run.fusion?.child.id);
 });
 
 test('exports a calibrator-facing run index', async () => {
-  const run = await runKernel({ stage: 'doppl',
-    runId: 'run_export_index',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
+  const run = loadCapturedRun();
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-index-'));
   const manifest = await exportRunToVault(run, outDir);
   const indexPath = manifest.files.find((file) => file.endsWith('run-index.json'))!;
   const index = JSON.parse(await readFile(indexPath, 'utf8'));
 
   assert.equal(index.artifact_type, 'kernel_run_index');
-  assert.equal(index.runId, 'run_export_index');
+  assert.equal(index.runId, run.id);
   assert.ok(index.initialAgenomePool.some((agenome: { id: string }) => agenome.id === 'ag_blindside'));
   assert.equal(index.problemRecovery.path, 'problem-recovery.md');
   assert.ok(index.agenomes.length >= 2);
@@ -116,136 +100,43 @@ test('exports a calibrator-facing run index', async () => {
   const controlMarkdown = await readFile(controlPath, 'utf8');
   assert.match(controlMarkdown, /artifact_type: control_baseline/);
   assert.match(controlMarkdown, /Clean Control Baseline/);
-  assert.equal(index.modelOutputs.accepted, 0);
+  assert.ok(index.modelOutputs.accepted > 0, 'real run records accepted model outputs');
   assert.deepEqual(index.evolution.map((generation: { generation: number }) => generation.generation), [0]);
   assert.equal(index.budget.usedUnits, 1);
   assert.equal(index.budget.exhausted, false);
 });
 
-test('exports model call evidence when present on the run', async () => {
-  const run = await runKernel({ stage: 'doppl',
-    runId: 'run_export_model_calls',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
-  run.modelCallRecords = [
-    {
-      id: 'call_1',
-      runId: run.id,
-      purpose: 'problem_recovery',
-      provider: 'replay',
-      model: 'fixture-model',
-      prompt: 'recover',
-      outputText: '{"title":"Recovered"}',
-      metadata: {},
-    },
-  ];
+test('exports the real model call evidence recorded on the run', async () => {
+  const run = loadCapturedRun();
+  assert.ok(run.modelCallRecords.length > 0, 'captured run carries real model calls');
 
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-model-'));
   const manifest = await exportRunToVault(run, outDir);
   const modelCallsPath = manifest.files.find((file) => file.endsWith('model-calls.jsonl'))!;
 
   assert.ok(modelCallsPath);
-  assert.equal((await readModelCallRecords(modelCallsPath))[0]?.prompt, 'recover');
+  const exported = await readModelCallRecords(modelCallsPath);
+  assert.equal(exported.length, run.modelCallRecords.length);
+  assert.equal(exported[0]?.prompt, run.modelCallRecords[0]?.prompt);
 });
 
-test('exports a separate clean-agent baseline when the run provides one', async () => {
-  const run = await runKernel({ stage: 'doppl',
-    runId: 'run_export_clean_baseline',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-    generationProviders: {
-      problemRecovery: {
-        async recover({ caseStudy }) {
-          return {
-            id: `clean_export_recovery_${caseStudy.id}`,
-            caseId: caseStudy.id,
-            title: 'Clean Export Recovery',
-            recoveredProblem: 'Recover for clean export.',
-            hiddenConstraint: 'The clean baseline is separate from evolution.',
-            falsifier: 'The run index points at a generation-0 fallback instead.',
-            citedKnowledge: [],
-          };
-        },
-      },
-      cleanBaseline: {
-        async generate({ caseStudy }) {
-          return {
-            id: 'clean_export_baseline',
-            caseId: caseStudy.id,
-            agenomeId: 'ag_clean_control',
-            generation: 0,
-            title: 'Clean Export Baseline',
-            summary: 'Single-pass clean control.',
-            mechanism: 'Direct clean-agent answer.',
-            claimedDelta: 'Control answer.',
-            citedKnowledge: [],
-          };
-        },
-      },
-      candidateGenerator: {
-        async generate({ caseStudy, generation }) {
-          return [
-            {
-              id: `export_evolved_${generation}_a`,
-              caseId: caseStudy.id,
-              agenomeId: 'ag_export_a',
-              generation,
-              title: 'Export Evolved A',
-              summary: 'summary',
-              mechanism: 'mechanism',
-              claimedDelta: 'delta',
-              citedKnowledge: [],
-            },
-            {
-              id: `export_evolved_${generation}_b`,
-              caseId: caseStudy.id,
-              agenomeId: 'ag_export_b',
-              generation,
-              title: 'Export Evolved B',
-              summary: 'summary',
-              mechanism: 'mechanism',
-              claimedDelta: 'delta',
-              citedKnowledge: [],
-            },
-          ];
-        },
-      },
-      criticCouncil: {
-        async judge({ candidates }) {
-          return candidates.map((candidate, index) => ({
-            candidateId: candidate.id,
-            criticId: 'export-control',
-            score: candidate.id === 'clean_export_baseline' ? 68 : 88 - index,
-            pressure: 'export pressure',
-            revisionMandate: 'export honestly',
-          }));
-        },
-      },
-    },
-  });
+test('exports the separate clean-agent baseline the live run produced', async () => {
+  const run = loadCapturedRun();
+  const baselineId = run.controlBaseline!.candidate.id;
 
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-vault-clean-baseline-'));
   const manifest = await exportRunToVault(run, outDir);
   const indexPath = manifest.files.find((file) => file.endsWith('run-index.json'))!;
   const index = JSON.parse(await readFile(indexPath, 'utf8'));
 
-  assert.equal(index.controlBaseline.sourceCandidateId, 'clean_export_baseline');
+  assert.equal(index.controlBaseline.sourceCandidateId, baselineId);
   assert.equal(index.controlBaseline.selection, 'clean_agent_baseline_provider');
-  assert.equal(index.assayControl.baseline.candidateId, 'clean_export_baseline');
+  assert.equal(index.assayControl.baseline.candidateId, baselineId);
   assert.equal(index.assayControl.controlArtifact.selection, 'clean_agent_baseline_provider');
-  assert.equal(index.assayControl.heldOutJudge.baseline.candidateId, 'clean_export_baseline');
+  assert.equal(index.assayControl.heldOutJudge.baseline.candidateId, baselineId);
   assert.equal(index.assayControl.heldOutJudge.baseline.factors.some((factor: string) => /citation/i.test(factor)), true);
   const controlPath = manifest.files.find((file) => file.endsWith('control-baseline.md'))!;
   const controlMarkdown = await readFile(controlPath, 'utf8');
-  assert.match(controlMarkdown, /source_candidate_id: clean_export_baseline/);
+  assert.match(controlMarkdown, new RegExp(`source_candidate_id: ${baselineId}`));
   assert.match(controlMarkdown, /selection: clean_agent_baseline_provider/);
 });

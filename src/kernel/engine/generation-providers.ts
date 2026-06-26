@@ -13,7 +13,6 @@ import {
   type Mutagen,
   type NodeSummary,
 } from '../boundary.ts';
-import { loadKernelFixture } from '../fixtures.ts';
 import { parseJsonObjectResponse, type ModelCallRecord, type ModelClient } from '../model/model-gateway.ts';
 
 const DIVERGE_MUTAGENS: readonly [Mutagen, Mutagen, Mutagen] = ['breakout', 'blindside', 'polymath'];
@@ -41,66 +40,18 @@ export function regimeMutagens(verdicts: CriticVerdict[]): readonly [Mutagen, Mu
   return BALANCED_MUTAGENS;
 }
 
-// Each mutagen's variation applied to a parent candidate, given the prior survivor and a
-// knowledge handle. The seven moves correspond to the .cursor/skills mutagens.
-function mutagenMove(
-  mutagen: Mutagen,
-  source: Pick<CandidateSolution, 'title' | 'mechanism'>,
-  previousTitle: string,
-  handle: string,
-): { tag: string; summary: string; mechanism: string; claimedDelta: string } {
-  switch (mutagen) {
-    case 'constraint-injection':
-      return {
-        tag: 'constraint',
-        summary: `Mutates ${previousTitle} into a stricter ${source.title} test.`,
-        mechanism: `${source.mechanism} It must now satisfy a tighter mandate.`,
-        claimedDelta: `Keeps the survivor only if its strongest mechanism survives new pressure.`,
-      };
-    case 'blindside':
-      return {
-        tag: 'blindside',
-        summary: `Turns the prior critic mandate into a falsifier against ${previousTitle}.`,
-        mechanism: `${source.mechanism} It attacks the survivor through its weakest assumption.`,
-        claimedDelta: `Adds a failure mode instead of re-running the parent.`,
-      };
-    case 'breakout':
-      return {
-        tag: 'breakout',
-        summary: `Escapes the frame around ${previousTitle} toward a different signal.`,
-        mechanism: `${source.mechanism} It is redirected toward evidence from ${handle}.`,
-        claimedDelta: `Broadens the search without collapsing to the same parent pair.`,
-      };
-    case 'breakthrough':
-      return {
-        tag: 'breakthrough',
-        summary: `Adds the single highest-leverage extension to ${previousTitle}.`,
-        mechanism: `${source.mechanism} It is extended by the strongest available addition.`,
-        claimedDelta: `Compounds the survivor instead of merely defending it.`,
-      };
-    case 'first-principles':
-      return {
-        tag: 'bedrock',
-        summary: `Rebuilds ${previousTitle} from its irreducible invariants.`,
-        mechanism: `${source.mechanism} It is reduced to bedrock and rebuilt from what must be true.`,
-        claimedDelta: `Discards inherited framing the survivor never earned.`,
-      };
-    case 'polymath':
-      return {
-        tag: 'polymath',
-        summary: `Transplants a mechanism from an adjacent domain into ${previousTitle}.`,
-        mechanism: `${source.mechanism} It imports a pattern sourced from ${handle}.`,
-        claimedDelta: `Crosses a domain boundary the parent pair never reached.`,
-      };
-    case 'addition-by-subtraction':
-      return {
-        tag: 'subtraction',
-        summary: `Strips ${previousTitle} to its load-bearing core.`,
-        mechanism: `${source.mechanism} Everything non-essential to the core is removed.`,
-        claimedDelta: `Wins by removal, not accretion.`,
-      };
-  }
-}
+// The move each mutagen instructs the model to make this generation. The tide
+// (regimeMutagens) picks which three the population reaches for; these briefs go into
+// the live generation prompt so the model applies them to the survivor.
+const MUTAGEN_BRIEF: Record<Mutagen, string> = {
+  'constraint-injection': 'add the one productive constraint that forces the survivor to prove its strongest mechanism under tighter pressure',
+  blindside: 'turn the prior critic mandate into a falsifier and attack the survivor through its weakest assumption',
+  breakout: 'escape the frame around the survivor toward a different signal; broaden the search instead of defending the parent',
+  breakthrough: 'add the single highest-leverage extension to the survivor so it compounds rather than merely holds',
+  'first-principles': 'reduce the survivor to its irreducible invariants and rebuild from what must be true, discarding inherited framing',
+  polymath: 'transplant a mechanism from an adjacent domain to cross a boundary the parent pair never reached',
+  'addition-by-subtraction': 'strip the survivor to its load-bearing core; win by removal, not accretion',
+};
 
 // One pass over one spine arrow. The stage names what unit is bred (problem-frame vs
 // solution-candidate); parentNode carries the immediate parent's content (absent for the
@@ -160,16 +111,6 @@ function judgeBoilDown(axes: ReadonlyArray<{ score: number }>): number {
   return clampRating(axes.reduce((sum, axis) => sum + axis.score, 0) / axes.length);
 }
 
-// A deterministic 1…5 axis score for the fixture judge (the real judge is a model call).
-function deterministicAxisScore(seed: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ((hash >>> 0) % 5) + 1;
-}
-
 // The problem the arrow breeds against: the immediate parent's synopsis (the recovered
 // problem, for the doppl arrow) or the seed's stated problem (for the problem_recovery arrow).
 function problemContext(input: PassContext): string {
@@ -214,223 +155,6 @@ export type ModelGenerationProviders = GenerationProviders & {
   modelProvider: string;
   model: string;
 };
-
-type SeedCandidate = Omit<CandidateSolution, 'caseId' | 'generation'>;
-
-export async function createFixtureGenerationProviders(
-  fixturePath: string,
-): Promise<GenerationProviders & { caseId: string }> {
-  const fixture = await loadKernelFixture(fixturePath);
-
-  function mandateFor(index: number): string {
-    return fixture.critics[index % fixture.critics.length]?.revisionMandate || 'tighten the mechanism';
-  }
-
-  function scoreFor(candidate: CandidateSolution, index: number): number {
-    const baseAverage = fixture.critics
-      .filter((verdict) => verdict.candidateId === candidate.id)
-      .reduce((sum, verdict, _, rows) => sum + verdict.score / rows.length, 0);
-    if (candidate.id.startsWith('child_')) return 83;
-    if (candidate.id.includes('_stability_probe_g')) return 91;
-    if (candidate.id.includes('_failure_probe_g')) return 80;
-    if (candidate.id.includes('_signal_probe_g')) return 67;
-    if (candidate.id.startsWith('frame_')) return Number((78 - index * 6).toFixed(1));
-    return Number((baseAverage || Math.max(45, 88 - index * 13)).toFixed(1));
-  }
-
-  function criticPressure(candidate: CandidateSolution, criticId: string, generation?: number): string {
-    if (candidate.id.startsWith('child_')) {
-      return `Carryover child keeps the prior fused mechanism alive but must beat generation ${generation ?? candidate.generation} mutations.`;
-    }
-    if (candidate.id.includes('_stability_probe_g')) {
-      return `Mutation stress-tests whether ${candidate.title} preserves the survivor's strongest mechanism.`;
-    }
-    if (candidate.id.includes('_failure_probe_g')) {
-      return `Failure probe applies critic pressure so the survivor cannot coast on the prior generation.`;
-    }
-    if (candidate.id.includes('_signal_probe_g')) {
-      return `Signal probe expands the search surface, but ${criticId} still needs stronger proof.`;
-    }
-    if (candidate.id.startsWith('frame_')) {
-      return `${criticId} presses whether ${candidate.title} recovers the real problem rather than restating the symptom.`;
-    }
-    return fixture.critics.find((verdict) => verdict.candidateId === candidate.id && verdict.criticId === criticId)
-      ?.pressure || `${candidate.title} receives ${criticId} pressure.`;
-  }
-
-  // The problem_recovery arrow breeds problem-frames from the seed using the same mutagen
-  // machinery the doppl arrow uses on solutions — one engine, no hand-authored frames.
-  function problemFrameSeeds(): SeedCandidate[] {
-    const seed = fixture.problemRecovery;
-    const framings: ReadonlyArray<readonly [string, Mutagen]> = [
-      ['root', 'first-principles'],
-      ['edge', 'blindside'],
-      ['reframe', 'breakout'],
-    ];
-    return framings.map(([tag, mutagen]) => {
-      const move = mutagenMove(mutagen, { title: seed.title, mechanism: seed.hiddenConstraint }, seed.title, 'the case');
-      return {
-        id: `frame_${tag}`,
-        agenomeId: `ag_problem_framer_${tag}`,
-        title: `${seed.title} — ${move.tag}`,
-        summary: `${seed.recoveredProblem} ${move.summary}`,
-        mechanism: `${seed.hiddenConstraint} ${move.mechanism}`,
-        claimedDelta: `${seed.falsifier} ${move.claimedDelta}`,
-        citedKnowledge: [],
-        mutagen,
-        mutagenLineage: [mutagen],
-      };
-    });
-  }
-
-  function agenomeFor(input: CandidateGenerationInput, agenomeId: string): Agenome | undefined {
-    return input.agenomePool?.find((agenome) => agenome.id === agenomeId);
-  }
-
-  function seedPool(input: CandidateGenerationInput): SeedCandidate[] {
-    if (input.stage === 'problem_recovery') return problemFrameSeeds();
-    const poolIds = new Set((input.agenomePool || []).map((agenome) => agenome.id));
-    const selected = fixture.candidates.filter((candidate) => poolIds.has(candidate.agenomeId));
-    return selected.length >= 2 ? selected : fixture.candidates;
-  }
-
-  function candidateWithAgenomeContext(candidate: SeedCandidate, input: CandidateGenerationInput): SeedCandidate {
-    const agenome = agenomeFor(input, candidate.agenomeId);
-    if (!agenome) return candidate;
-    return {
-      ...candidate,
-      summary: `${candidate.summary} Agenome ${agenome.label} applies ${agenome.persona}.`,
-      mechanism: `${candidate.mechanism} Agenome policy: ${agenome.decompositionPolicy}`,
-    };
-  }
-
-  function evolveCandidates(input: CandidateGenerationInput): CandidateSolution[] {
-    const pool = seedPool(input);
-    if (input.generation === 0 || !input.previousChild) {
-      return pool.map((candidate) =>
-        assertCandidateSolution({
-          ...candidateWithAgenomeContext(candidate, input),
-          caseId: input.caseStudy.id,
-          generation: input.generation,
-        }),
-      );
-    }
-
-    const [primary, secondary, tertiary] = pool;
-    if (!primary || !secondary || !tertiary) {
-      return pool.map((candidate) =>
-        assertCandidateSolution({
-          ...candidateWithAgenomeContext(candidate, input),
-          caseId: input.caseStudy.id,
-          generation: input.generation,
-        }),
-      );
-    }
-    const knowledge = input.knowledgePacket.items;
-    const previousTitle = input.previousChild.title.replace(/\s+fusion$/i, '');
-    const generation = input.generation;
-    const baseLineage = input.previousChild.mutagenLineage ?? [];
-    const handleAt = (offset: number): string =>
-      knowledge[offset % Math.max(1, knowledge.length)]?.citeHandle ?? 'the packet';
-    // The population's state picks the mutagens this generation reaches for (the tide).
-    const [mutagenA, mutagenB, mutagenC] = regimeMutagens(input.previousCriticVerdicts ?? []);
-    const assignments: Array<[SeedCandidate, Mutagen]> = [
-      [primary, mutagenA],
-      [secondary, mutagenB],
-      [tertiary, mutagenC],
-    ];
-    const variants = assignments.map(([source, mutagen], index) => {
-      const move = mutagenMove(mutagen, source, previousTitle, handleAt(index));
-      return {
-        mutagen,
-        mutagenLineage: [...baseLineage, mutagen],
-        id: `${source.id}_${move.tag}_g${generation}`,
-        title: `${source.title} ${move.tag} probe`,
-        summary: move.summary,
-        mechanism: move.mechanism,
-        claimedDelta: move.claimedDelta,
-        citedKnowledge: [...new Set([...source.citedKnowledge, handleAt(index)])],
-        agenomeId: `${source.agenomeId}_${move.tag}_g${generation}`,
-      };
-    });
-
-    return variants.map((candidate) =>
-      assertCandidateSolution({
-        ...candidateWithAgenomeContext(candidate, input),
-        caseId: input.caseStudy.id,
-        generation,
-      }),
-    );
-  }
-
-  function ensureCase(caseStudy: CaseStudy): void {
-    if (fixture.caseId !== caseStudy.id) {
-      throw new Error(`fixture case ${fixture.caseId} does not match loaded case ${caseStudy.id}`);
-    }
-  }
-
-  return {
-    caseId: fixture.caseId,
-    candidateGenerator: {
-      async generate(input) {
-        ensureCase(input.caseStudy);
-        return evolveCandidates(input);
-      },
-    },
-    cleanBaseline: {
-      async generate(input) {
-        ensureCase(input.caseStudy);
-        const [candidate] = seedPool(input);
-        if (!candidate) throw new Error('clean baseline requires at least one seed candidate');
-        const contextualCandidate = candidateWithAgenomeContext(
-          {
-            ...candidate,
-            id: `clean_${candidate.id}`,
-            title: `Clean ${candidate.title}`,
-            summary: `Single-pass clean-agent control: ${candidate.summary}`,
-            claimedDelta: `Control answer before Doppl fusion: ${candidate.claimedDelta}`,
-          },
-          input,
-        );
-        return assertCandidateSolution({
-          ...contextualCandidate,
-          caseId: input.caseStudy.id,
-          generation: 0,
-        });
-      },
-    },
-    criticCouncil: {
-      async judge({ caseStudy, candidates }) {
-        ensureCase(caseStudy);
-        return candidates.flatMap((candidate, index) => {
-          const total = scoreFor(candidate, index);
-          return ['grounding', 'novelty', 'mechanism'].map((criticId, criticIndex) =>
-            assertCriticVerdict({
-              candidateId: candidate.id,
-              criticId,
-              score: Math.max(0, Math.min(100, Number((total - criticIndex * 2).toFixed(1)))),
-              pressure: criticPressure(candidate, criticId, candidate.generation),
-              revisionMandate:
-                fixture.critics.find((verdict) => verdict.candidateId === candidate.id && verdict.criticId === criticId)
-                  ?.revisionMandate || mandateFor(index + criticIndex),
-            }),
-          );
-        });
-      },
-    },
-    heldOutJudge: {
-      async judge({ caseStudy, candidate }) {
-        ensureCase(caseStudy);
-        const axes = JUDGE_AXES.map((axis) => ({
-          axis,
-          score: deterministicAxisScore(`${candidate.id}:${axis}`),
-          reasoning: `Held-out fixture judgment of ${candidate.title} on ${axis}.`,
-        }));
-        return { candidateId: candidate.id, axes, judge: judgeBoilDown(axes), temporal: false };
-      },
-    },
-  };
-}
 
 function arrayField(value: Record<string, unknown>, field: string): unknown[] {
   const array = value[field];
@@ -608,6 +332,13 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
         input.previousCriticVerdicts?.length
           ? `Prior critic mandates: ${input.previousCriticVerdicts.map((verdict) => `${verdict.candidateId}:${verdict.revisionMandate}`).join(' | ')}`
           : 'Prior critic mandates: none.',
+        input.generation > 0
+          ? `The population's state calls for these moves this generation (the tide) — reach for them: ${regimeMutagens(
+              input.previousCriticVerdicts ?? [],
+            )
+              .map((mutagen) => `${mutagen} — ${MUTAGEN_BRIEF[mutagen]}`)
+              .join('; ')}.`
+          : 'Initial population: spread across distinct framings; do not converge yet.',
         'Each candidate omits caseId and generation; include id, agenomeId, title, summary, mechanism, claimedDelta, citedKnowledge.',
         'Choose agenomeId from the supplied Agenome pool and make the candidate reflect that Agenome persona, policy, and value weights.',
         'For generation > 0, do not repeat prior candidate IDs or simply rename them. Generate mutations, probes, or recombinations that respond to the previous survivor and critic mandates.',

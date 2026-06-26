@@ -3,43 +3,33 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { runKernel } from '../../../src/kernel/engine/run-kernel.ts';
 import { renderProofBoard, writeProofBoard } from '../../../src/kernel/projection/proof-board.ts';
-
-async function fixtureRun() {
-  return runKernel({ stage: 'doppl',
-    runId: 'run_proof_board',
-    casePath: 'test/fixtures/fsd-seed.json',
-    vault: '../agarden',
-    fixturePath: 'test/fixtures/kernel/fsd-ownership-unwind/run-fixture.json',
-    knowledgePacketPath: 'test/fixtures/kernel/fsd-ownership-unwind/knowledge-packet.json',
-    memoryMode: 'auto',
-    allowTestFixtureProviders: true,
-  });
-}
+import { loadCapturedRun } from '../captured-run.ts';
 
 test('renders proof board with recovery, parents, fitness, and fused child', async () => {
-  const html = renderProofBoard(await fixtureRun());
+  const run = loadCapturedRun();
+  const html = renderProofBoard(run);
   assert.match(html, /Problem Recovery/);
-  assert.match(html, /cand_liability_clock/);
+  assert.ok(html.includes(run.candidates[0]!.id), 'shows a real candidate id');
   assert.match(html, /parent A inheritance/);
-  assert.match(html, /child_cand_liability_clock_cand_recovery_market/);
+  assert.ok(html.includes(run.fusion!.child.id), 'shows the real fused child id');
   assert.match(html, /knowledge\.packet_selected/);
 });
 
 test('renders evolution budget and generation lineage', async () => {
-  const html = renderProofBoard(await fixtureRun());
+  const run = loadCapturedRun();
+  const html = renderProofBoard(run);
 
   assert.match(html, /Evolution/);
   assert.match(html, /budget used/);
   assert.match(html, /budget remaining/);
   assert.match(html, /Generation 0/);
-  assert.match(html, /cand_liability_clock/);
-  assert.match(html, /child_cand_liability_clock_cand_recovery_market/);
+  assert.ok(html.includes(run.candidates[0]!.id), 'shows a real candidate id');
+  assert.ok(html.includes(run.fusion!.child.id), 'shows the real fused child id');
 });
 
 test('renders model output health when lifecycle events are present', async () => {
-  const run = await fixtureRun();
+  const run = loadCapturedRun();
   run.events.push(
     {
       index: run.events.length,
@@ -69,7 +59,7 @@ test('renders model output health when lifecycle events are present', async () =
 
 test('writes proof board html to disk', async () => {
   const outDir = await mkdtemp(path.join(tmpdir(), 'doppl-board-'));
-  const filePath = await writeProofBoard(await fixtureRun(), outDir);
+  const filePath = await writeProofBoard(loadCapturedRun(), outDir);
   assert.equal(path.basename(filePath), 'index.html');
   assert.match(await readFile(filePath, 'utf8'), /Doppl Kernel Proof Board/);
 });

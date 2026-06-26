@@ -63,10 +63,6 @@ export async function generationProvidersFromRequest(
   });
 }
 
-function testFixtureProvidersEnabled(options: KernelHttpOptions): boolean {
-  return envFlagEnabled(options, 'DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS');
-}
-
 export async function runFromRequestBody(
   body: string | undefined,
   options: KernelHttpOptions,
@@ -75,10 +71,7 @@ export async function runFromRequestBody(
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
   const generations = parsePositiveInteger(parsed.generations, defaultKernelArgs.generations);
   const budget = parseBudget(parsed.budget, defaultKernelArgs.evolutionBudget.maxUnits);
-  const allowTestFixtureProviders = testFixtureProvidersEnabled(options);
-  const casePath = casePathFromRequest(parsed.casePath, {
-    allowTestFixtures: allowTestFixtureProviders,
-  });
+  const casePath = casePathFromRequest(parsed.casePath);
   const fitnessLens = parseFitnessLens(parsed.fitnessLens);
   const fitnessSchedule = parseFitnessSchedule(parsed.fitnessSchedule);
   if (parsed.replayModelCallsPath && parsed.replayRunId) {
@@ -97,14 +90,11 @@ export async function runFromRequestBody(
     stage: 'doppl',
     casePath,
     vault: parsed.vault || defaultKernelArgs.vault,
-    fixturePath: parsed.fixturePath,
-    knowledgePacketPath: parsed.knowledgePacketPath,
     generations,
     evolutionBudget: { maxUnits: budget },
     fitnessLens,
     fitnessSchedule,
     generationProviders,
-    allowTestFixtureProviders,
     onEvent: runtime.onEvent,
   });
   const manifest = await exportRunToVault(run, parsed.outDir || defaultKernelArgs.outDir);
@@ -157,15 +147,8 @@ export async function runDashboardCaseFromRequestBody(
   options: KernelHttpOptions,
 ): Promise<Record<string, unknown>> {
   const parsed = JSON.parse(body || '{}') as KernelRunRequest;
-  const allowTestFixtureProviders = testFixtureProvidersEnabled(options);
-  const casePath = casePathFromRequest(parsed.casePath, {
-    allowTestFixtures: allowTestFixtureProviders,
-  });
+  const casePath = casePathFromRequest(parsed.casePath);
   const dashboardCase = approvedDashboardCase(casePath);
-  const isFixtureCase = dashboardCase.mode === 'fixture';
-  const effectiveOptions: KernelHttpOptions = isFixtureCase
-    ? { ...options, env: { ...options.env, DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS: '1' } }
-    : options;
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = Boolean(parsed.liveModel);
   const replayRunId = typeof parsed.replayRunId === 'string' && parsed.replayRunId.trim()
@@ -177,7 +160,7 @@ export async function runDashboardCaseFromRequestBody(
   if (liveModel && !liveDemoAuthorized(request, options)) {
     throw new KernelHttpError(403, 'live demo token is required');
   }
-  if (!liveModel && !replayRunId && !isFixtureCase && !allowTestFixtureProviders) {
+  if (!liveModel && !replayRunId) {
     throw new KernelHttpError(
       400,
       'dashboard runs require liveModel or replayRunId',
@@ -189,8 +172,6 @@ export async function runDashboardCaseFromRequestBody(
   const runRequestBody = JSON.stringify({
       runId,
       casePath,
-      fixturePath: dashboardCase.fixturePath,
-      knowledgePacketPath: dashboardCase.knowledgePacketPath,
       generations,
       budget: generations,
       liveModel,
@@ -204,7 +185,7 @@ export async function runDashboardCaseFromRequestBody(
     });
   if (parsed.async) {
     const eventLogPath = path.join(outDir, dashboardCase.id, runId, 'events.jsonl');
-    startAsyncRun(runRequestBody, effectiveOptions, eventLogPath);
+    startAsyncRun(runRequestBody, options, eventLogPath);
     return {
       runId,
       caseId: dashboardCase.id,
@@ -219,7 +200,7 @@ export async function runDashboardCaseFromRequestBody(
       dashboardEvents: await readDashboardEvents(runId, outDir),
     };
   }
-  const summary = await runFromRequestBody(runRequestBody, effectiveOptions);
+  const summary = await runFromRequestBody(runRequestBody, options);
   const completedRunId = String(summary.runId);
   const runIndex = await readRunIndex(completedRunId, outDir);
   const problemRecovery = runIndex.problemRecovery as { path?: string } | undefined;
