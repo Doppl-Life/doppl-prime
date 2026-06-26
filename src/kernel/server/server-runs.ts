@@ -46,7 +46,7 @@ export function liveProviderName(options: KernelHttpOptions): OpenAICompatiblePr
   if (configured && configured in OPENAI_COMPATIBLE_PRESETS) {
     return configured as OpenAICompatibleProvider;
   }
-  return envValue(options, 'OPENROUTER_API_KEY')?.trim() ? 'openrouter' : 'ollama';
+  return envValue(options, 'OPENROUTER_API_KEY').trim() ? 'openrouter' : 'ollama';
 }
 
 export function isLocalLiveProvider(options: KernelHttpOptions): boolean {
@@ -63,7 +63,7 @@ export function defaultLiveModel(options: KernelHttpOptions): string {
 function liveModelClient(parsed: KernelRunRequest, options: KernelHttpOptions): ModelClient {
   const provider = liveProviderName(options);
   if (provider === 'openrouter') {
-    return createOpenRouterModelClient({ apiKey: envValue(options, 'OPENROUTER_API_KEY') ?? '', fetch: options.fetch });
+    return createOpenRouterModelClient({ apiKey: envValue(options, 'OPENROUTER_API_KEY'), fetch: options.fetch });
   }
   if (LOCAL_PROVIDERS.has(provider)) {
     return createPresetModelClient(provider, { fetch: options.fetch });
@@ -207,8 +207,11 @@ export async function runDashboardCaseFromRequestBody(
       'dashboard runs require liveModel or replayRunId',
     );
   }
-  const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
-  const generations = liveModel ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
+  // Hosted live generation is capped to one generation (cost); a keyless local model is free, so it
+  // honors the requested count like replay does.
+  const cappedLive = liveModel && !localLive;
+  const requestedGenerations = parsePositiveInteger(parsed.generations, cappedLive ? 1 : 4);
+  const generations = cappedLive ? Math.min(requestedGenerations, 1) : Math.min(requestedGenerations, 4);
   const runId = parsed.runId || `${dashboardCase.id}_${Date.now()}`;
   const runRequestBody = JSON.stringify({
       runId,

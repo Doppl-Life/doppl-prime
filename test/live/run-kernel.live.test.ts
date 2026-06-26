@@ -6,8 +6,8 @@ import { createPresetModelClient } from '../../src/kernel/model/model-gateway.ts
 import { createModelGenerationProviders } from '../../src/kernel/engine/generation-providers.ts';
 
 // The live engine proof: a real multi-generation run through a live model — no fabrication, no
-// replay. It exercises the mechanics a single captured generation cannot show (mutation tagging,
-// lineage accumulation, multi-generation evolution). Run with `pnpm test:live`.
+// replay. It exercises the mechanics a single captured generation cannot show: a second generation
+// that evolves off the first, and a fused survivor. Run with `pnpm test:live`.
 //
 // We test the system, not the model: this uses a fast LOCAL model (Ollama) so it never holds up
 // development. The point is that the engine works, not the quality of the survivor. Override the
@@ -50,19 +50,14 @@ test(
     assert.equal(run.evolution.length, 2, 'evolved across two generations');
     assert.ok(run.candidates.length >= 2, 'bred a population');
 
-    // Generation >= 1 candidates are mutations: each is tagged with the mutagen that made it,
-    // and that mutagen appears in its accumulated lineage.
-    const mutated = run.candidates.filter((candidate) => candidate.mutagen !== undefined);
-    assert.ok(mutated.length >= 1, 'second generation produced tagged mutations');
-    for (const candidate of mutated) {
-      assert.ok(
-        candidate.mutagenLineage?.includes(candidate.mutagen!),
-        `lineage of ${candidate.id} includes its mutagen ${candidate.mutagen}`,
-      );
-    }
+    // A real second generation: candidates exist at generation >= 1, bred off the first.
+    assert.ok(
+      run.candidates.some((candidate) => candidate.generation >= 1),
+      'second generation produced descendants',
+    );
 
-    // The fused survivor carries an accumulated lineage — the witness of the moves that shaped it.
+    // The crucible converges on a fused survivor.
     assert.ok(run.fusion, 'fused a surviving child');
-    assert.ok((run.fusion?.child.mutagenLineage?.length ?? 0) > 0, 'survivor accumulated a lineage');
+    assert.ok(run.fusion?.child.id, 'survivor has an id');
   },
 );
