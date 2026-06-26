@@ -48,6 +48,17 @@ const PER_AXIS = {
   subtype_check_pass: 4,
 };
 
+// Wave 2 Step 4 — the judge is HOISTED to ONE peer-context call per generation, so a multi-candidate request
+// carries `[CANDIDATE ref=N]` DATA blobs → return the comparative `{candidates:[{ref,...}]}` shape; a
+// single-candidate generation uses the flat runJudge request (no ref labels) → return the flat per-axis shape.
+function judgeOutput(request: ModelGatewayRequest): unknown {
+  const refs = (request.messages ?? [])
+    .filter((m) => m.role === 'user')
+    .map((m) => /\[CANDIDATE ref=([^\]]+)\]/.exec(m.content)?.[1])
+    .filter((r): r is string => r !== undefined);
+  return refs.length === 0 ? PER_AXIS : { candidates: refs.map((ref) => ({ ref, ...PER_AXIS })) };
+}
+
 /** Multi-role fake ModelGateway: critic output for the council, per-axis output for the held-out judge. */
 function verifyGateway(): ModelGateway {
   return {
@@ -57,7 +68,7 @@ function verifyGateway(): ModelGateway {
         validationResult: 'accepted',
         output:
           request.role === 'final_judge'
-            ? PER_AXIS
+            ? judgeOutput(request)
             : { critique: 'stub critique', confidence: 0.5 },
         providerMeta: validProviderMeta,
       }),
