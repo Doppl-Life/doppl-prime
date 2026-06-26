@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { assertKnowledgePacket, type KnowledgePacket } from '../boundary.ts';
+import type { WebRetrieval } from './web-retrieval.ts';
 
 export type KnowledgePacketRequest = {
   runId: string;
@@ -73,7 +74,10 @@ function stockFactBlocks(markdown: string): Array<{ title: string; body: string;
   }).filter((block) => block.title && block.body);
 }
 
-export async function createAgardenStockKnowledgeGateway(vaultDir: string): Promise<KnowledgeGateway> {
+export async function createAgardenStockKnowledgeGateway(
+  vaultDir: string,
+  retrieve?: WebRetrieval,
+): Promise<KnowledgeGateway> {
   const stockDir = path.join(vaultDir, 'stock');
   let files: string[];
   try {
@@ -111,11 +115,27 @@ export async function createAgardenStockKnowledgeGateway(vaultDir: string): Prom
         .map((item, index) => ({ item, index, score: relevanceScore(queryTerms, item.text) }))
         .sort((a, b) => b.score - a.score || a.index - b.index)
         .map((entry) => entry.item);
+      // Reach outward only after stock: fresh web material (relevant by construction) leads,
+      // ranked stock backfills the remaining slots. Retrieval is best-effort.
+      let webItems: KnowledgePacket['items'] = [];
+      if (retrieve && request.queryText) {
+        try {
+          const retrieved = await retrieve(request.queryText, request.maxItems);
+          webItems = retrieved.map((item) => ({
+            ...item,
+            sourceCase: request.targetCase,
+            visibility: 'problem_recovery',
+          }));
+        } catch {
+          webItems = [];
+        }
+      }
+      const merged = [...webItems, ...ranked];
       return assertKnowledgePacket({
         id: `stock:${request.runId}:${request.targetCase}`,
         targetCase: request.targetCase,
-        items: ranked.slice(0, request.maxItems),
-        excluded: ranked.slice(request.maxItems).map((item) => ({
+        items: merged.slice(0, request.maxItems),
+        excluded: merged.slice(request.maxItems).map((item) => ({
           reason: 'max_items',
           recordId: item.recordId,
         })),

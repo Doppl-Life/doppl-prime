@@ -14,6 +14,8 @@ import {
 } from '../boundary.ts';
 import { loadCaseStudy } from '../discovery/case-loader.ts';
 import { createAgardenStockKnowledgeGateway, createJsonKnowledgeGateway } from '../discovery/knowledge-gateway.ts';
+import type { WebRetrieval } from '../discovery/web-retrieval.ts';
+import { compileNode } from '../compile/node-compiler.ts';
 import {
   scoreCandidates,
   selectParents,
@@ -81,6 +83,7 @@ export async function runKernel(input: {
   knowledgePacketPath?: string;
   memoryMode: MemoryMode;
   generationProviders?: GenerationProviders;
+  webRetrieval?: WebRetrieval;
   allowTestFixtureProviders?: boolean;
   generations?: number;
   evolutionBudget?: { maxUnits: number };
@@ -104,7 +107,7 @@ export async function runKernel(input: {
     }
     gateway = await createJsonKnowledgeGateway(knowledgePacketPath);
   } else {
-    gateway = await createAgardenStockKnowledgeGateway(input.vault);
+    gateway = await createAgardenStockKnowledgeGateway(input.vault, input.webRetrieval);
   }
   const knowledgePacket = await gateway.selectPacket({
     runId: input.runId,
@@ -502,9 +505,13 @@ export async function runChain(
   const { onEvent, ...passInput } = input;
   const problemRecovery = await runKernel({ ...passInput, runId: `${input.runId}_recovery`, stage: 'problem_recovery' });
   const survivor = problemRecovery.fusion?.child;
-  const parentNode: NodeSummary | undefined = survivor
-    ? { stage: 'problem_recovery', id: survivor.id, title: survivor.title, synopsis: survivor.summary }
-    : undefined;
+  // The doppl's parent is the problem_recovery NODE — use its compiled slug so the doppl's
+  // `prev_id: [[...]]` wikilink resolves to the real file, not the survivor's candidate id.
+  const recoveryNode = compileNode(problemRecovery);
+  const parentNode: NodeSummary | undefined =
+    survivor && recoveryNode
+      ? { stage: 'problem_recovery', id: recoveryNode.id, title: survivor.title, synopsis: survivor.summary }
+      : undefined;
   const doppl = await runKernel({ ...passInput, runId: input.runId, stage: 'doppl', parentNode, onEvent });
   return { problemRecovery, doppl };
 }

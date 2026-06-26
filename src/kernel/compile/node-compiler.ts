@@ -156,11 +156,12 @@ function caseStudyNode(run: KernelRun, id: string): ProposalNodeArtifact {
     ['id', id],
     ['stage', 'case_study'],
     ['name', name],
-    ['case_id', run.caseStudy.id],
     ['next', 'problem_recovery'],
   ])}
 
 # ${name}
+
+prev_id: null
 
 ## Context
 
@@ -191,8 +192,6 @@ function problemRecoveryNode(
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'problem_recovery'],
-    ['root', ids.root],
-    ['prev', ids.prev],
     ['kernel', options.kernel],
     ['temporal', judgeTemporal],
     ['mutagen_lineage', child.mutagenLineage ?? []],
@@ -202,6 +201,8 @@ function problemRecoveryNode(
   ])}
 
 # ${child.title}
+
+prev_id: [[${ids.root}]]
 
 ## Trace
 
@@ -282,8 +283,6 @@ function dopplNode(
   const markdown = `${frontmatter([
     ['id', ids.self],
     ['stage', 'doppl'],
-    ['root', ids.root],
-    ['prev', ids.prev],
     ['kernel', options.kernel],
     ['temporal', judgeTemporal],
     ['mutagen_lineage', child.mutagenLineage ?? []],
@@ -293,6 +292,8 @@ function dopplNode(
   ])}
 
 # ${child.title}
+
+prev_id: [[${ids.prev[0] ?? ids.root}]]
 
 ## Trace
 

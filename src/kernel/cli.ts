@@ -16,6 +16,7 @@ import {
   type ModelClient,
   type OpenAICompatibleProvider,
 } from './model/model-gateway.ts';
+import { createFirecrawlRetrieval } from './discovery/web-retrieval.ts';
 
 export type KernelCliArgs = {
   runId: string;
@@ -33,6 +34,7 @@ export type KernelCliArgs = {
   provider: OpenAICompatibleProvider;
   fusionModels?: string[];
   cli?: string;
+  discover?: string;
 };
 
 export const defaultKernelArgs: KernelCliArgs = {
@@ -120,6 +122,9 @@ export function parseKernelCliArgs(argv: string[]): KernelCliArgs {
     } else if (flag === '--cli') {
       args.cli = readFlagValue(argv, index, flag);
       index += 1;
+    } else if (flag === '--discover') {
+      args.discover = readFlagValue(argv, index, flag);
+      index += 1;
     } else {
       throw new Error(`unknown CLI flag: ${flag}`);
     }
@@ -189,7 +194,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const cliArgs = parseKernelCliArgs(process.argv.slice(2));
   const generationProviders =
     liveGenerationProvidersFromCliArgs(cliArgs) || (await generationProvidersFromCliArgs(cliArgs));
-  const { problemRecovery, doppl } = await runChain({ ...cliArgs, generationProviders });
+  const webRetrieval = cliArgs.discover
+    ? createFirecrawlRetrieval(cliToolFromConfig(cliArgs.discover).cmd)
+    : undefined;
+  const { problemRecovery, doppl } = await runChain({ ...cliArgs, generationProviders, webRetrieval });
   await exportRunToVault(problemRecovery, cliArgs.outDir);
   const manifest = await exportRunToVault(doppl, cliArgs.outDir);
   const vaultFiles = writeFlowNodes(cliArgs.vault, compileChainNodes(problemRecovery, doppl));
