@@ -816,7 +816,8 @@ export function App() {
       }
     }
 
-    const staticResponse = await fetch(`calibration-index.json?v=${Date.now()}`, { cache: "no-store" });
+    const staticIndexPath = isAgoraRoute ? "../calibration-index.json" : "calibration-index.json";
+    const staticResponse = await fetch(`${staticIndexPath}?v=${Date.now()}`, { cache: "no-store" });
     if (!staticResponse.ok) throw new Error("Failed to load vault index");
     return mergeHostedRatingsLedger((await staticResponse.json()) as CalibratorIndex);
   }
