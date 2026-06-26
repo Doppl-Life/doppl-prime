@@ -131,6 +131,19 @@ export type CriticVerdict = {
   revisionMandate: string;
 };
 
+export const JUDGE_AXES = ['Novelty', 'Grounding', 'Falsifiability', 'Cost-efficiency', 'Relevance'] as const;
+export type JudgeAxis = (typeof JUDGE_AXES)[number];
+export type JudgeAxisRating = { axis: JudgeAxis; score: number; reasoning: string };
+
+// The held-out judge's verdict on a compiled survivor: rated fresh on the five −5…+5 axes,
+// independent of the in-run critics. `judge` is the boil-down (mean of axes, clamped −5…+5).
+export type HeldOutJudgeResult = {
+  candidateId: string;
+  axes: JudgeAxisRating[];
+  judge: number;
+  temporal: boolean;
+};
+
 export type FitnessRecord = {
   candidateId: string;
   total: number;
@@ -384,6 +397,7 @@ export type KernelRun = {
   selectedParents: [CandidateSolution, CandidateSolution] | [];
   fusion?: FusionResult;
   fusionChildren: FusionResult[];
+  judge?: HeldOutJudgeResult;
   evolution: EvolutionGeneration[];
   budget: EvolutionBudget;
   events: RunEvent[];

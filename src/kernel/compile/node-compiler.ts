@@ -1,4 +1,4 @@
-import type { KernelRun } from '../boundary.ts';
+import type { JudgeAxis, JudgeAxisRating, KernelRun } from '../boundary.ts';
 import { slugId } from './slug.ts';
 
 export type ProposalNodeStage = 'case_study' | 'problem_recovery' | 'doppl';
@@ -69,37 +69,56 @@ function knowledgeDiscovery(run: KernelRun): string {
     .join('\n\n');
 }
 
+function signed(score: number): string {
+  return `${score >= 0 ? '+' : ''}${score}`;
+}
+
+// When the held-out judge ran, each axis carries its own score + reasoning. Otherwise every
+// axis falls back to the projected rating and the node's prose reason.
 function evaluationSection(input: {
   judgeRating: number;
   scoreSource: string;
   temporal: boolean;
+  axes?: JudgeAxisRating[];
   noveltyReason: string;
   groundingReason: string;
   falsifiabilityReason: string;
   costReason: string;
   relevanceReason: string;
 }): string {
+  const byAxis = new Map((input.axes ?? []).map((entry) => [entry.axis, entry]));
+  const axis = (name: JudgeAxis, fallbackReason: string): { score: number; reason: string } => {
+    const found = byAxis.get(name);
+    return found
+      ? { score: found.score, reason: found.reasoning }
+      : { score: input.judgeRating, reason: fallbackReason };
+  };
+  const novelty = axis('Novelty', input.noveltyReason);
+  const grounding = axis('Grounding', input.groundingReason);
+  const falsifiability = axis('Falsifiability', input.falsifiabilityReason);
+  const cost = axis('Cost-efficiency', input.costReason);
+  const relevance = axis('Relevance', input.relevanceReason);
   return `### Evaluation
 
-#### Novelty ${input.judgeRating >= 0 ? '+' : ''}${input.judgeRating}
+#### Novelty ${signed(novelty.score)}
 
-${input.noveltyReason}
+${novelty.reason}
 
-#### Grounding ${input.judgeRating >= 0 ? '+' : ''}${input.judgeRating}
+#### Grounding ${signed(grounding.score)}
 
-${input.groundingReason}
+${grounding.reason}
 
-#### Falsifiability ${input.judgeRating >= 0 ? '+' : ''}${input.judgeRating}
+#### Falsifiability ${signed(falsifiability.score)}
 
-${input.falsifiabilityReason}
+${falsifiability.reason}
 
-#### Cost-efficiency ${input.judgeRating >= 0 ? '+' : ''}${input.judgeRating}
+#### Cost-efficiency ${signed(cost.score)}
 
-${input.costReason}
+${cost.reason}
 
-#### Relevance ${input.judgeRating >= 0 ? '+' : ''}${input.judgeRating}
+#### Relevance ${signed(relevance.score)}
 
-${input.relevanceReason}
+${relevance.reason}
 
 #### Temporal ${input.temporal ? 'true' : 'false'}
 
@@ -163,7 +182,11 @@ function problemRecoveryNode(
   // problem, hidden constraint, and falsifier map from the survivor candidate's fields.
   const child = run.fusion?.child;
   if (!child) return undefined;
-  const judgeRating = selectedParentRating(run);
+  const judgeRating = run.judge?.judge ?? selectedParentRating(run);
+  const judgeTemporal = run.judge?.temporal ?? false;
+  const scoreSource = run.judge
+    ? 'Held-out judge: rated the compiled survivor on five axes, independent of the in-run critics.'
+    : 'Projected from internal selection fitness until the held-out judge runs.';
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const markdown = `${frontmatter([
     ['id', ids.self],
@@ -171,7 +194,7 @@ function problemRecoveryNode(
     ['root', ids.root],
     ['prev', ids.prev],
     ['kernel', options.kernel],
-    ['temporal', false],
+    ['temporal', judgeTemporal],
     ['mutagen_lineage', child.mutagenLineage ?? []],
     ['next', 'doppl'],
     ['scores', rawYaml(scoreInline(judgeRating))],
@@ -218,9 +241,9 @@ ${child.claimedDelta}
 
 ${evaluationSection({
   judgeRating,
-  scoreSource:
-    'Projected from Dalton internal selection fitness. Replace with proposal held-out judge output in the assay/control phase.',
-  temporal: false,
+  scoreSource,
+  temporal: judgeTemporal,
+  ...(run.judge ? { axes: run.judge.axes } : {}),
   noveltyReason: 'Problem recovery is scored separately so a good answer to the wrong problem cannot hide.',
   groundingReason: `The recovery cites ${child.citedKnowledge.join(', ') || 'no injected knowledge handles'}.`,
   falsifiabilityReason: child.claimedDelta,
@@ -248,7 +271,11 @@ function dopplNode(
   const fusion = run.fusion;
   if (!fusion?.child) return undefined;
   const child = fusion.child;
-  const judgeRating = selectedParentRating(run);
+  const judgeRating = run.judge?.judge ?? selectedParentRating(run);
+  const judgeTemporal = run.judge?.temporal ?? false;
+  const scoreSource = run.judge
+    ? 'Held-out judge: rated the compiled survivor on five axes, independent of the in-run critics.'
+    : 'Projected from internal selected-parent fitness until the held-out judge runs.';
   const caseSynopsis = synopsis(run.caseStudy.statedProblem || run.caseStudy.markdown);
   const recoverySynopsis = synopsis(run.parentNode?.synopsis ?? run.caseStudy.statedProblem);
   const parentSummary = fusion.parentCandidateIds.join(' + ');
@@ -258,7 +285,7 @@ function dopplNode(
     ['root', ids.root],
     ['prev', ids.prev],
     ['kernel', options.kernel],
-    ['temporal', false],
+    ['temporal', judgeTemporal],
     ['mutagen_lineage', child.mutagenLineage ?? []],
     ['next', null],
     ['scores', rawYaml(scoreInline(judgeRating))],
@@ -307,9 +334,9 @@ ${child.summary}
 
 ${evaluationSection({
   judgeRating,
-  scoreSource:
-    'Projected from Dalton internal selected-parent fitness. Replace with proposal held-out judge output in the assay/control phase.',
-  temporal: false,
+  scoreSource,
+  temporal: judgeTemporal,
+  ...(run.judge ? { axes: run.judge.axes } : {}),
   noveltyReason: 'The doppl fuses selected parent mechanisms rather than merely picking a single candidate.',
   groundingReason: `The doppl carries citations ${child.citedKnowledge.join(', ') || 'none'}.`,
   falsifiabilityReason: child.claimedDelta,

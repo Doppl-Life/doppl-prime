@@ -6,7 +6,35 @@ export type KnowledgePacketRequest = {
   runId: string;
   targetCase: string;
   maxItems: number;
+  // The case text the packet is for. When present, stock is ranked by relevance to it
+  // instead of returned in filename order.
+  queryText?: string;
 };
+
+const STOPWORDS = new Set([
+  'the', 'and', 'for', 'that', 'this', 'with', 'from', 'into', 'under', 'over', 'than', 'then',
+  'they', 'them', 'their', 'what', 'when', 'where', 'which', 'while', 'have', 'has', 'are', 'was',
+  'not', 'but', 'its', 'his', 'her', 'how', 'why', 'who', 'can', 'will', 'would', 'could', 'should',
+]);
+
+function significantTerms(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9-]+/)
+      .filter((term) => term.length > 3 && !STOPWORDS.has(term)),
+  );
+}
+
+// Relevance = how many of the case's significant terms the fact contains. Zero query text
+// means no signal — fall back to the original order.
+function relevanceScore(queryTerms: Set<string>, factText: string): number {
+  if (queryTerms.size === 0) return 0;
+  const factTerms = significantTerms(factText);
+  let shared = 0;
+  for (const term of queryTerms) if (factTerms.has(term)) shared += 1;
+  return shared;
+}
 
 export type KnowledgeGateway = {
   selectPacket(request: KnowledgePacketRequest): Promise<KnowledgePacket>;
@@ -78,11 +106,16 @@ export async function createAgardenStockKnowledgeGateway(vaultDir: string): Prom
           visibility: 'problem_recovery',
         }));
       });
+      const queryTerms = significantTerms(request.queryText ?? '');
+      const ranked = items
+        .map((item, index) => ({ item, index, score: relevanceScore(queryTerms, item.text) }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map((entry) => entry.item);
       return assertKnowledgePacket({
         id: `stock:${request.runId}:${request.targetCase}`,
         targetCase: request.targetCase,
-        items: items.slice(0, request.maxItems),
-        excluded: items.slice(request.maxItems).map((item) => ({
+        items: ranked.slice(0, request.maxItems),
+        excluded: ranked.slice(request.maxItems).map((item) => ({
           reason: 'max_items',
           recordId: item.recordId,
         })),

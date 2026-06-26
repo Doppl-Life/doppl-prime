@@ -1,11 +1,14 @@
 import {
   assertCandidateSolution,
   assertCriticVerdict,
+  JUDGE_AXES,
   type Agenome,
   type CandidateSolution,
   type CaseStudy,
   type CriticVerdict,
   type GrowthStage,
+  type HeldOutJudgeResult,
+  type JudgeAxis,
   type KnowledgePacket,
   type Mutagen,
   type NodeSummary,
@@ -133,11 +136,39 @@ export type CriticCouncil = {
   judge(input: CriticJudgmentInput): Promise<CriticVerdict[]>;
 };
 
+// The held-out judge rates one compiled survivor, fresh, on the five −5…+5 axes — it never
+// sees the in-run critics, the population, or how the survivor was selected.
+export type HeldOutJudgeInput = PassContext & { candidate: CandidateSolution };
+export type HeldOutJudge = {
+  judge(input: HeldOutJudgeInput): Promise<HeldOutJudgeResult>;
+};
+
 export type GenerationProviders = {
   cleanBaseline?: CleanBaselineGenerator;
   candidateGenerator: CandidateGenerator;
   criticCouncil: CriticCouncil;
+  heldOutJudge?: HeldOutJudge;
 };
+
+function clampRating(value: number): number {
+  return Math.max(-5, Math.min(5, Math.round(value)));
+}
+
+// The judge boil-down: mean of the five axis scores, clamped to −5…+5.
+function judgeBoilDown(axes: ReadonlyArray<{ score: number }>): number {
+  if (axes.length === 0) return 0;
+  return clampRating(axes.reduce((sum, axis) => sum + axis.score, 0) / axes.length);
+}
+
+// A deterministic 1…5 axis score for the fixture judge (the real judge is a model call).
+function deterministicAxisScore(seed: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 5) + 1;
+}
 
 // The problem the arrow breeds against: the immediate parent's synopsis (the recovered
 // problem, for the doppl arrow) or the seed's stated problem (for the problem_recovery arrow).
@@ -149,7 +180,28 @@ export type ModelGenerationPromptRenderers = {
   cleanBaseline(input: CandidateGenerationInput): string;
   candidateGeneration(input: CandidateGenerationInput): string;
   criticJudgment(input: CriticJudgmentInput): string;
+  heldOutJudge(input: HeldOutJudgeInput): string;
 };
+
+function heldOutJudgeFromParsed(candidateId: string, parsed: Record<string, unknown>): HeldOutJudgeResult {
+  const rawAxes = parsed.axes;
+  if (!Array.isArray(rawAxes)) throw new Error('held-out judge response.axes must be an array');
+  const valid = new Set<string>(JUDGE_AXES);
+  const axes = rawAxes.map((entry) => {
+    const record = entry as Record<string, unknown>;
+    const axis = record.axis;
+    if (typeof axis !== 'string' || !valid.has(axis)) {
+      throw new Error(`held-out judge axis must be one of ${JUDGE_AXES.join(', ')}`);
+    }
+    if (typeof record.score !== 'number') throw new Error('held-out judge axis.score must be a number');
+    return {
+      axis: axis as JudgeAxis,
+      score: clampRating(record.score),
+      reasoning: typeof record.reasoning === 'string' ? record.reasoning : '',
+    };
+  });
+  return { candidateId, axes, judge: judgeBoilDown(axes), temporal: parsed.temporal === true };
+}
 
 export type ModelGenerationProviderInput = {
   client: ModelClient;
@@ -366,6 +418,17 @@ export async function createFixtureGenerationProviders(
         });
       },
     },
+    heldOutJudge: {
+      async judge({ caseStudy, candidate }) {
+        ensureCase(caseStudy);
+        const axes = JUDGE_AXES.map((axis) => ({
+          axis,
+          score: deterministicAxisScore(`${candidate.id}:${axis}`),
+          reasoning: `Held-out fixture judgment of ${candidate.title} on ${axis}.`,
+        }));
+        return { candidateId: candidate.id, axes, judge: judgeBoilDown(axes), temporal: false };
+      },
+    },
   };
 }
 
@@ -487,6 +550,32 @@ const criticJudgmentResponseSchema = {
   },
 };
 
+const heldOutJudgeResponseSchema = {
+  name: 'held_out_judgment',
+  schema: {
+    type: 'object',
+    properties: {
+      axes: {
+        type: 'array',
+        minItems: 5,
+        items: {
+          type: 'object',
+          properties: {
+            axis: stringSchema(),
+            score: { type: 'number', minimum: -5, maximum: 5 },
+            reasoning: stringSchema(),
+          },
+          required: ['axis', 'score', 'reasoning'],
+          additionalProperties: false,
+        },
+      },
+      temporal: { type: 'boolean' },
+    },
+    required: ['axes', 'temporal'],
+    additionalProperties: false,
+  },
+};
+
 export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRenderers {
   return {
     cleanBaseline(input) {
@@ -533,6 +622,20 @@ export function createDefaultModelGenerationPrompts(): ModelGenerationPromptRend
         `Problem under judgment: ${problemContext(input)}`,
         `Candidates: ${input.candidates.map((candidate) => candidate.id).join(', ')}`,
         'Each verdict must include candidateId, criticId, score, pressure, revisionMandate.',
+      ].join('\n');
+    },
+    heldOutJudge(input) {
+      return [
+        'You are a held-out judge. You did NOT see how this idea was generated, selected, or critiqued.',
+        `Rate this ${input.stage === 'problem_recovery' ? 'recovered problem' : 'solution'} on five axes — each an integer from -5 to +5 — with one sentence of reasoning each.`,
+        `Use these exact axis names: ${JUDGE_AXES.join(', ')}.`,
+        `Case: ${input.caseStudy.title}`,
+        `Problem context: ${problemContext(input)}`,
+        `Title: ${input.candidate.title}`,
+        `Summary: ${input.candidate.summary}`,
+        `Mechanism: ${input.candidate.mechanism}`,
+        `Claimed delta: ${input.candidate.claimedDelta}`,
+        'Return JSON only: {"axes":[{"axis":"Novelty","score":n,"reasoning":"..."}, ...five total...], "temporal": true|false}.',
       ].join('\n');
     },
   };
@@ -647,6 +750,21 @@ export function createModelGenerationProviders(input: ModelGenerationProviderInp
             responseSchema: criticJudgmentResponseSchema,
           },
           (parsed) => arrayField(parsed, 'verdicts').map(assertCriticVerdict),
+        );
+      },
+    },
+    heldOutJudge: {
+      async judge(providerInput) {
+        return parseWithRepair(
+          {
+            runId: providerInput.runId,
+            purpose: 'held_out_judgment',
+            prompt: prompts.heldOutJudge(providerInput),
+            model: input.model,
+            responseFormat: 'json_object',
+            responseSchema: heldOutJudgeResponseSchema,
+          },
+          (parsed) => heldOutJudgeFromParsed(providerInput.candidate.id, parsed),
         );
       },
     },

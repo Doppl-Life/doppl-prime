@@ -10,6 +10,7 @@ import type {
 import { replayRunProjection, writeRunEvents } from '../trace/event-store.ts';
 import { writeModelCallRecords } from '../model/model-gateway.ts';
 import { compileCaseStudyNode, compileNode } from '../compile/node-compiler.ts';
+import { buildRunTraces } from '../trace/run-trace.ts';
 import { initialAgenomePool } from '../engine/agenomes.ts';
 import {
   scoreCandidates,
@@ -885,6 +886,11 @@ export async function exportRunToVault(
     'utf8',
   );
   files.push(indexPath);
+
+  // The canonical specimen: KernelRun projected into the RunTrace contract shape.
+  const runTracePath = path.join(runDir, 'run-trace.json');
+  await writeFile(runTracePath, JSON.stringify(buildRunTraces(run), null, 2), 'utf8');
+  files.push(runTracePath);
 
   return { rootDir: runDir, files };
 }

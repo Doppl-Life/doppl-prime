@@ -7,6 +7,7 @@ import {
   type FitnessRecord,
   type FusionResult,
   type GrowthStage,
+  type HeldOutJudgeResult,
   type KernelRun,
   type MemoryMode,
   type NodeSummary,
@@ -109,6 +110,7 @@ export async function runKernel(input: {
     runId: input.runId,
     targetCase: caseStudy.id,
     maxItems: 4,
+    queryText: `${caseStudy.title}\n${caseStudy.statedProblem}`,
   });
   trace.push('knowledge.packet_selected', {
     packetId: knowledgePacket.id,
@@ -409,6 +411,27 @@ export async function runKernel(input: {
       budgetRemainingUnits: budget.remainingUnits,
     });
   }
+
+  // The held-out judge rates the compiled survivor fresh, independent of the in-run critics.
+  // Best-effort: a judge failure falls back to the projected rating rather than losing the run.
+  let judge: HeldOutJudgeResult | undefined;
+  if (fusion?.child && generationProviders.heldOutJudge) {
+    try {
+      const verdict = await generationProviders.heldOutJudge.judge({
+        runId: input.runId,
+        stage: input.stage,
+        parentNode: input.parentNode,
+        caseStudy,
+        candidate: fusion.child,
+        knowledgePacket,
+      });
+      traceModelOperation('held_out_judgment');
+      judge = verdict;
+    } catch {
+      judge = undefined;
+    }
+  }
+
   const agenomes = materializeAgenomes({ candidates, fusions: fusionChildren, energyLedger });
   for (const agenome of agenomes) {
     trace.push(
@@ -455,6 +478,7 @@ export async function runKernel(input: {
     selectedParents,
     fusion,
     fusionChildren,
+    judge,
     evolution,
     budget,
     events: trace.events,

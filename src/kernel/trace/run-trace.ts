@@ -269,7 +269,23 @@ function buildLens(compiledRecord: FitnessRecord | undefined): LensResult {
   };
 }
 
-function buildJudge(compiledId: Uuid, compiledRecord: FitnessRecord | undefined, falsifier: string): TraceJudgeStep {
+function buildJudge(
+  run: KernelRun,
+  compiledId: Uuid,
+  compiledRecord: FitnessRecord | undefined,
+  falsifier: string,
+): TraceJudgeStep {
+  // Prefer the held-out judge's real per-axis verdict; fall back to the projected bridge.
+  if (run.judge) {
+    return {
+      candidate_id: run.judge.candidateId,
+      result: {
+        judge: run.judge.judge,
+        temporal: run.judge.temporal,
+        axes: run.judge.axes.map((entry) => ({ axis: entry.axis, score: entry.score, reasoning: entry.reasoning })),
+      },
+    };
+  }
   const axes = axesOf(compiledRecord);
   const rating = compiledRecord?.selection?.proposalRating.judge ?? 0;
   return {
@@ -337,7 +353,7 @@ export function buildRunTraces(run: KernelRun): RunTrace[] {
       },
       generations,
       lens: buildLens(compiledRecord),
-      judge: buildJudge(compiled.id, compiledRecord, compiled.claimedDelta),
+      judge: buildJudge(run, compiled.id, compiledRecord, compiled.claimedDelta),
       compile: { output: { node_id: node?.id ?? compiled.id, ...(node?.path === undefined ? {} : { path: node.path }) } },
     },
   ];

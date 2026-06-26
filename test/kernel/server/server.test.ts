@@ -182,7 +182,11 @@ function createOpenRouterFetch(outputs: string[]) {
     calls,
     async fetch(_url: string, init: { headers: Record<string, string>; body: string }) {
       calls.push({ headers: init.headers, body: JSON.parse(init.body) as Record<string, unknown> });
-      const outputText = outputs.shift();
+      // The held-out judge is the trailing call; default it so each live test needn't enumerate it.
+      const heldOutDefault = init.body.includes('held-out judge')
+        ? '{"axes":[{"axis":"Novelty","score":3,"reasoning":"r"},{"axis":"Grounding","score":3,"reasoning":"r"},{"axis":"Falsifiability","score":3,"reasoning":"r"},{"axis":"Cost-efficiency","score":2,"reasoning":"r"},{"axis":"Relevance","score":3,"reasoning":"r"}],"temporal":false}'
+        : undefined;
+      const outputText = outputs.shift() ?? heldOutDefault;
       if (!outputText) throw new Error('unexpected extra model call');
       return {
         ok: true,
@@ -440,7 +444,7 @@ test('kernel HTTP server runs live model requests with a server-side key', async
 
   assert.equal(response.status, 200);
   assert.equal(response.body.child, 'child_http_live_a_http_live_b');
-  assert.equal(fakeOpenRouter.calls.length, 5);
+  assert.equal(fakeOpenRouter.calls.length, 6);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer test-key');
   assert.ok(response.body.files.some((file: string) => file.endsWith('model-calls.jsonl')));
 });
@@ -759,7 +763,7 @@ test('kernel dashboard route can run enabled live generation without exposing se
   assert.equal(response.body.budget.usedUnits, 1);
   assert.equal(response.body.child.id, 'child_dash_live_reward_budget_dash_live_tripwire');
   assert.ok(response.body.modelCalls.path.endsWith('model-calls.jsonl'));
-  assert.equal(fakeOpenRouter.calls.length, 5);
+  assert.equal(fakeOpenRouter.calls.length, 6);
   assert.equal(fakeOpenRouter.calls[0]!.headers.Authorization, 'Bearer server-side-model-key');
   assert.doesNotMatch(JSON.stringify(response.body), /server-side-model-key/);
 });
@@ -865,7 +869,7 @@ test('kernel dashboard route replays a model-backed run from recorded calls', as
   assert.equal(source.status, 200);
   assert.equal(source.body.runMode, 'live');
   assert.equal(source.body.modelCalls.path, 'model-calls.jsonl');
-  assert.equal(fakeOpenRouter.calls.length, 5);
+  assert.equal(fakeOpenRouter.calls.length, 6);
 
   const replay = await handleKernelHttpRequest(
     {
