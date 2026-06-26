@@ -236,8 +236,8 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
   <div class="wrap">
     <div class="sec-hd reveal">
       <div class="kicker">the arc</div>
-      <h2>Seven movements, one fire in the middle</h2>
-      <p>The project's shape arrives early as a contract, accumulates a corpus and a conscience, then is deliberately burned down to the part worth keeping — the garden — and regrown from it.</p>
+      <h2>Eight movements, two burns</h2>
+      <p>The project's shape arrives early as a contract, accumulates a corpus and a conscience, then is deliberately burned down to the part worth keeping — the hut — and regrown into a live kernel from it.</p>
     </div>
     <div class="phases" id="phases"></div>
   </div>
@@ -247,8 +247,8 @@ footer p{font-family:var(--mono);font-size:11.5px;color:var(--faintest);margin:1
   <div class="wrap">
     <div class="sec-hd reveal">
       <div class="kicker">the timeline</div>
-      <h2>42 commits, June 18–24</h2>
-      <p>Each commit shows its diff as a bar — growth in green, pruning in amber. Milestones carry an annotation explaining what changed and why it mattered. The burn is the one you can see from across the room.</p>
+      <h2>70 commits, June 18–26</h2>
+      <p>Each commit shows its diff as a bar — growth in green, pruning in amber. Milestones carry an annotation explaining what changed and why it mattered. The two burns are the ones you can see from across the room.</p>
     </div>
     <div class="tl-controls reveal" id="tlControls">
       <span class="tag" style="margin-right:4px">filter</span>
@@ -386,6 +386,43 @@ const COMMITS=[
 {h:'622c5b1',a:'MichaelHabermas',d:'2026-06-23',t:'23:45',f:2,ins:37,del:10,s:'Enhance stock documentation with refined load-bearing facts and improved clarity',ph:7,ms:0},
 {h:'d0ca679',a:'MichaelHabermas',d:'2026-06-23',t:'23:49',f:4,ins:14,del:5,s:'Enhance lexicon and object model documentation with new concepts and clarity',ph:7,ms:0},
 {h:'8055db3',a:'MichaelHabermas',d:'2026-06-24',t:'07:58',f:20,ins:79,del:71,s:'Update documentation to reflect changes in contracts and clarify model structure',ph:7,ms:0},
+/* ── Phase 8 · Reconciliation (Jun 24–26) ── */
+{h:'105cbc2',a:'MichaelHabermas',d:'2026-06-24',t:'',f:4,ins:61,del:0,s:'Add configuration for vault destination and discovery',ph:8,ms:0},
+{h:'365253e',a:'MichaelHabermas',d:'2026-06-24',t:'',f:7,ins:210,del:88,s:'Refactor discovery and cognition processes',ph:8,ms:0},
+{h:'30dc0c6',a:'MichaelHabermas',d:'2026-06-24',t:'',f:5,ins:140,del:44,s:'Enhance node generation and evaluation processes',ph:8,ms:0},
+{h:'e9b4f1f',a:'MichaelHabermas',d:'2026-06-24',t:'',f:6,ins:95,del:31,s:'Update cognition configuration and refine evaluation flow',ph:8,ms:0},
+{h:'fa5e750',a:'MichaelHabermas',d:'2026-06-25',t:'',f:2,ins:180,del:0,s:'Add kernel reconciliation & demo plan to the hut',ph:8,ms:0},
+{h:'4847cde',a:'MichaelHabermas',d:'2026-06-25',t:'',f:18,ins:950,del:820,s:'R0: dalton kernel as reconciliation base',ph:8,ms:1,tag:'reconciliation base',
+  note:'The <b>michael-reconciliation</b> branch picks the dalton kernel as its foundation. Four reconciliation steps are written down before any code lands: R0 (base), R1 (vault layout), R2 (case nodes), R3 (provider layer). The plan is in the hut before the first line changes.'},
+{h:'0c917e7',a:'MichaelHabermas',d:'2026-06-25',t:'',f:12,ins:340,del:180,s:'R1: canonical vault layout + deterministic slugs',ph:8,ms:0},
+{h:'fcd5510',a:'MichaelHabermas',d:'2026-06-25',t:'',f:8,ins:120,del:60,s:'R2: clean case node name + dedupe Context entries',ph:8,ms:0},
+{h:'46610ea',a:'MichaelHabermas',d:'2026-06-25',t:'',f:14,ins:480,del:120,s:'R3: provider layer — one OpenAI-compatible interface',ph:8,ms:1,tag:'provider layer',
+  note:'A single provider interface wraps any OpenAI-compatible model. From this point every model call in the kernel routes through one typed surface. The CLI ModelClient lands in the same pass — the automated harness that drives runs end-to-end without a human in the loop.'},
+{h:'49948ed',a:'MichaelHabermas',d:'2026-06-25',t:'',f:6,ins:95,del:40,s:'quality: make vault-sink a pure function',ph:8,ms:0},
+{h:'0b9a3b6',a:'MichaelHabermas',d:'2026-06-25',t:'',f:210,ins:300,del:19992,s:'Recenter app structure around kernel boundary',ph:8,ms:1,tag:'the clearing',
+  note:'The largest deletion since the June 23 burn: <b>−19,992 lines</b> to strip everything that did not belong to the kernel boundary. The app surface collapses to what the kernel actually owns. What survived this pass is load-bearing; everything else was scaffolding that had become noise.'},
+{h:'d3ebc98',a:'MichaelHabermas',d:'2026-06-25',t:'',f:36,ins:323,del:226,s:'Align kernel defaults with aGarden I/O',ph:8,ms:0},
+{h:'2bfcfcf',a:'MichaelHabermas',d:'2026-06-25',t:'',f:13,ins:101,del:6,s:'Gate fixture generation behind test harness',ph:8,ms:0},
+{h:'c135b86',a:'MichaelHabermas',d:'2026-06-25',t:'',f:16,ins:297,del:29,s:'Read product knowledge from aGarden stock',ph:8,ms:0},
+{h:'07ed417',a:'MichaelHabermas',d:'2026-06-25',t:'',f:12,ins:520,del:40,s:'Introduce comprehensive contracts — node, projection, rating, stock, run-trace',ph:8,ms:1,tag:'contracts canon',
+  note:'Every kernel artifact gets a typed MarkScript contract: <b>node, projection, rating, stock, run-trace</b>. These live in <code>src/contracts/</code>. From this commit forward, adding a new artifact means writing a contract first — the shape is decided in canon, the kernel follows.'},
+{h:'111c417',a:'MichaelHabermas',d:'2026-06-25',t:'',f:46,ins:100,del:100,s:'Enhance kernel structure with boundary and compile modules',ph:8,ms:0},
+{h:'001ec1d',a:'MichaelHabermas',d:'2026-06-25',t:'',f:20,ins:480,del:103,s:'Update doc paths to reflect new src structure',ph:8,ms:0},
+{h:'9b591b5',a:'MichaelHabermas',d:'2026-06-25',t:'',f:5,ins:65,del:2,s:'Enhance candidate structure with mutagen and lineage tracking',ph:8,ms:0},
+{h:'895ebbd',a:'MichaelHabermas',d:'2026-06-25',t:'',f:4,ins:17,del:3,s:'Extend candidate event payload with mutagen and lineage attributes',ph:8,ms:0},
+{h:'9f3fd05',a:'MichaelHabermas',d:'2026-06-25',t:'',f:4,ins:145,del:49,s:'Adaptive mutagen selection — the self-regulating tide',ph:8,ms:1,tag:'adaptive mutagens',
+  note:'The kernel now chooses its own mutagens based on population state. <b>Diverge → convergent mutagens cool; converge → exploratory mutagens heat.</b> The dial is self-regulating: the tide knows when to push out and when to pull back. This is the first time the kernel adjusts its own operators at runtime.'},
+{h:'abc8708',a:'MichaelHabermas',d:'2026-06-25',t:'',f:4,ins:786,del:3,s:'Project dashboard events from run aggregate',ph:8,ms:0},
+{h:'8affa71',a:'MichaelHabermas',d:'2026-06-25',t:'',f:72,ins:10487,del:2530,s:'Lift Melissa dashboard onto kernel API',ph:8,ms:1,tag:'melissa lives',
+  note:'The Melissa dashboard — the proof-board surface — is lifted entirely onto the kernel API. <b>+10,487 lines</b> of projection surface built on top of the trace contract, not beside it. Every panel derives from one <code>RunTrace</code> specimen. The display knows the run\'s shape because the trace is the specimen.'},
+{h:'8901559',a:'MichaelHabermas',d:'2026-06-26',t:'',f:3,ins:41,del:38,s:'Update kernel types and documentation for growth stages',ph:8,ms:0},
+{h:'15571dc',a:'MichaelHabermas',d:'2026-06-26',t:'',f:25,ins:503,del:724,s:'Symmetric kernel — one agenomic pass per spine arrow',ph:8,ms:1,tag:'symmetric kernel',
+  note:'The engine is refactored so <b>every spine arrow runs one agenomic pass</b> — generate, fitness, select, lens, judge, compile — in strict symmetry. Nothing happens between arrows that isn\'t in the trace. The deletion count (−724) is deliberate: asymmetric shortcuts that accumulated during reconciliation are cut. The kernel is smaller and more legible than before the burn.'},
+{h:'ed51a30',a:'MichaelHabermas',d:'2026-06-26',t:'',f:10,ins:273,del:29,s:'Implement held-out judge functionality in kernel',ph:8,ms:1,tag:'held-out judge',
+  note:'The <b>held-out judge</b> is wired into the kernel loop. The judge reads solution packets the generator never sees; its verdict is written into the RunTrace as a first-class event. Evaluation is now structural, not post-hoc. The access boundary that was a doc constraint since Jun 19 is now an enforced runtime split.'},
+{h:'f68e9b6',a:'MichaelHabermas',d:'2026-06-26',t:'',f:8,ins:208,del:15,s:'Integrate web retrieval and stock admission into kernel processing',ph:8,ms:0},
+{h:'356ae34',a:'MichaelHabermas',d:'2026-06-26',t:'',f:3,ins:32,del:8,s:'Enhance stock admission process and knowledge discovery linking',ph:8,ms:0},
+{h:'5c4cb3e',a:'MichaelHabermas',d:'2026-06-26',t:'',f:2,ins:11,del:5,s:'Refine knowledge discovery linking and case study loading',ph:8,ms:0},
 ];
 
 /* ---------- phases ---------- */
@@ -396,7 +433,8 @@ const PHASES=[
 {i:4,date:'Jun 22',t:'The conscience',c:'var(--doppl)',w:72,p:'A 205-file commit gives the kernel a memory: invariants, bugs, lessons, watchlist. The burn-and-rebuild begins.'},
 {i:5,date:'Jun 22',t:'Ledger out, crucible in',c:'var(--novelty)',w:80,p:'The separate lineage ledger is deleted; the node graph becomes the memory. engine.md writes the generate→select crucible down before more is built on it.'},
 {i:6,date:'Jun 23',t:'The burn',c:'var(--del)',w:92,p:'121 files, −24,712 lines. "The garden is canon" becomes doctrine. Fake authority is deleted faster than new surface is promoted.'},
-{i:7,date:'Jun 23–24',t:'Sharpen, name, and migrate',c:'var(--grounding)',w:100,p:'The vocabulary settles: the garden is renamed the hut, projection.md is born, and the corpus migrates to aGarden. UUIDv4 yields to SlugId. New terms enter the lexicon — sprout, reseed, forest loop, anti-fragile. Contracts move under src/contracts/. The model is small, load-bearing, and legible.'},
+{i:7,date:'Jun 23–24',t:'Sharpen, name, and migrate',c:'var(--grounding)',w:82,p:'The vocabulary settles: the garden is renamed the hut, projection.md is born, and the corpus migrates to aGarden. UUIDv4 yields to SlugId. New terms enter the lexicon — sprout, reseed, forest loop, anti-fragile. Contracts move under src/contracts/. The model is small, load-bearing, and legible.'},
+{i:8,date:'Jun 24–26',t:'Reconciliation — the live kernel',c:'var(--novelty)',w:100,p:'michael-reconciliation builds the kernel from the hut canon. Four structured R-steps lay the vault, provider layer, and case nodes. The app is cleared of 20k non-kernel lines. Typed contracts freeze for every artifact. Adaptive mutagen selection, the symmetric kernel, and the held-out judge are wired in. The machine runs.'},
 ];
 
 /* ---------- decisions (MEMORY.md) ---------- */
@@ -488,7 +526,7 @@ function renderHero(){
   const stats=[['v',COMMITS.length,'commits'],['v',days,'days'],['v',hands,'contributors'],['add','+'+totIns.toLocaleString(),'lines grown'],['del','−'+totDel.toLocaleString(),'lines pruned']];
   $('#heroStats').innerHTML=stats.map(s=>`<div class="stat ${s[0]==='add'?'add':s[0]==='del'?'del':''}"><div class="v">${s[1]}</div><div class="l">${s[2]}</div></div>`).join('');
   $('#stampText').textContent=`synced from michael · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · ${COMMITS.length} commits`;
-  $('#footText').innerHTML=`Generated from ${COMMITS.length} commits on branch <b class="mono">michael</b> · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · June 18–23, 2026<br>A live document — re-run against the repository to refresh the timeline.`;
+  $('#footText').innerHTML=`Generated from ${COMMITS.length} commits on branch <b class="mono">michael</b> · ${COMMITS[0].h} → ${COMMITS[COMMITS.length-1].h} · June 18–26, 2026<br>A live document — re-run against the repository to refresh the timeline.`;
   drawPulse();
 }
 function drawPulse(){

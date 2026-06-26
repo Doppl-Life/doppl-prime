@@ -162,6 +162,10 @@ export async function runDashboardCaseFromRequestBody(
     allowTestFixtures: allowTestFixtureProviders,
   });
   const dashboardCase = approvedDashboardCase(casePath);
+  const isFixtureCase = dashboardCase.mode === 'fixture';
+  const effectiveOptions: KernelHttpOptions = isFixtureCase
+    ? { ...options, env: { ...options.env, DOPPL_ALLOW_TEST_FIXTURE_PROVIDERS: '1' } }
+    : options;
   const outDir = parsed.outDir || defaultKernelArgs.outDir;
   const liveModel = Boolean(parsed.liveModel);
   const replayRunId = typeof parsed.replayRunId === 'string' && parsed.replayRunId.trim()
@@ -173,10 +177,10 @@ export async function runDashboardCaseFromRequestBody(
   if (liveModel && !liveDemoAuthorized(request, options)) {
     throw new KernelHttpError(403, 'live demo token is required');
   }
-  if (!liveModel && !replayRunId && !allowTestFixtureProviders) {
+  if (!liveModel && !replayRunId && !isFixtureCase && !allowTestFixtureProviders) {
     throw new KernelHttpError(
       400,
-      'dashboard runs require liveModel or replayRunId; fixture providers are test-only',
+      'dashboard runs require liveModel or replayRunId',
     );
   }
   const requestedGenerations = parsePositiveInteger(parsed.generations, liveModel ? 1 : 4);
