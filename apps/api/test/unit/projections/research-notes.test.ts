@@ -232,6 +232,60 @@ describe('researchNotesReducer — candidate citation edges', () => {
   });
 });
 
+describe('researchNotesReducer — the graveyard (culled agenomes / dead-end research)', () => {
+  const culled = (
+    agenomeIds: string[],
+    scores: Record<string, number>,
+    sequence: number,
+  ): RunEventRow =>
+    row({
+      type: 'lineage.culled',
+      sequence,
+      payload: { targetIds: agenomeIds, scoreSnapshot: scores, reason: 'truncation' },
+    });
+
+  it('records every researching agenome (culled:false by default)', () => {
+    const state = fold([
+      toolFinished({
+        agenomeId: 'ag1',
+        sequence: 1,
+        payload: { toolName: 'web_search', result: 'r' },
+      }),
+    ]);
+    expect(state.agenomes['ag1']).toEqual({ id: 'ag1', culled: false });
+  });
+
+  it('marks an agenome CULLED with its cull score from lineage.culled.scoreSnapshot', () => {
+    const state = fold([
+      toolFinished({
+        agenomeId: 'ag1',
+        sequence: 1,
+        payload: { toolName: 'web_search', result: 'r' },
+      }),
+      toolFinished({
+        agenomeId: 'ag2',
+        sequence: 2,
+        payload: { toolName: 'x_search', result: 'r' },
+      }),
+      culled(['ag1'], { ag1: 0.42 }, 3),
+    ]);
+    expect(state.agenomes['ag1']).toEqual({ id: 'ag1', culled: true, score: 0.42 });
+    expect(state.agenomes['ag2']).toEqual({ id: 'ag2', culled: false }); // the survivor stays un-culled
+  });
+
+  it('marks a culled agenome even when the cull event precedes its research (ordering-robust)', () => {
+    const state = fold([
+      culled(['ag1'], { ag1: 0.3 }, 1),
+      toolFinished({
+        agenomeId: 'ag1',
+        sequence: 2,
+        payload: { toolName: 'web_search', result: 'r' },
+      }),
+    ]);
+    expect(state.agenomes['ag1']).toEqual({ id: 'ag1', culled: true, score: 0.3 });
+  });
+});
+
 describe('buildResearchNotes — via the §51 builder (watermark + ordered fold)', () => {
   it("returns a watermark-tagged graph over a run's events", () => {
     const events = [

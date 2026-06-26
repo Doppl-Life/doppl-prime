@@ -31,12 +31,22 @@ export const ResearchEdge = z.object({
 });
 export type ResearchEdge = z.infer<typeof ResearchEdge>;
 
+/** A researching agenome's graveyard status — culled (a dead-end lineage) + the cull score, if any. */
+export const ResearchAgenome = z.object({
+  id: z.string(),
+  culled: z.boolean(),
+  score: z.number().optional(),
+});
+export type ResearchAgenome = z.infer<typeof ResearchAgenome>;
+
 export const KnowledgeGraph = z.object({
   runId: z.string(),
   sequenceThrough: z.number(),
   state: z.object({
     notes: z.record(z.string(), ResearchNote),
     edges: z.record(z.string(), ResearchEdge),
+    // optional/forward-tolerant: an older api without the graveyard fold omits it (→ no culled marks).
+    agenomes: z.record(z.string(), ResearchAgenome).optional(),
   }),
 });
 export type KnowledgeGraph = z.infer<typeof KnowledgeGraph>;

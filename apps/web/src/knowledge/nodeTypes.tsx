@@ -90,6 +90,12 @@ const hubCount: CSSProperties = {
   fontWeight: 400,
   color: 'var(--fg-muted)',
 };
+/** A culled lineage (dead-end research) — a red treatment + the "✕ culled" label (never color alone). */
+const culledTag: CSSProperties = {
+  fontWeight: 700,
+  color: 'var(--status-culled)',
+  letterSpacing: '0.03em',
+};
 const headerChip: CSSProperties = {
   background: 'var(--bg-surface-2)',
   border: 'thin solid var(--border-subtle)',
@@ -108,18 +114,22 @@ const headerChip: CSSProperties = {
 /** Presentational research-note card (no Handle / RF context) — directly unit-testable. */
 export function ResearchNoteCard({ data }: { data: KnowledgeNodeData }) {
   const tool = toolEncoding(data.toolName);
+  const culled = data.culled === true; // research from a culled (dead-end) lineage
+  const accent = culled ? 'var(--status-culled)' : tool.color;
   const sources = data.sourceUrls?.length ?? 0;
   return (
     <div
       style={{
         ...noteCard,
-        borderLeft: `var(--space-1) solid ${tool.color}`,
-        background: `color-mix(in srgb, ${tool.color} 10%, var(--bg-surface-2))`,
+        borderLeft: `var(--space-1) solid ${accent}`,
+        background: `color-mix(in srgb, ${accent} ${culled ? '16%' : '10%'}, var(--bg-surface-2))`,
+        ...(culled ? { opacity: 0.9 } : {}),
       }}
     >
-      <div style={{ ...toolRow, color: tool.color }}>
+      <div style={{ ...toolRow, color: accent }}>
         <span aria-hidden="true">{tool.glyph}</span>
         <span>{tool.label}</span>
+        {culled && <span style={culledTag}>✕ dead end</span>}
       </div>
       {data.query !== undefined && (
         <span style={queryText} title={data.query}>
@@ -136,16 +146,37 @@ export function ResearchNoteCard({ data }: { data: KnowledgeNodeData }) {
   );
 }
 
-/** Presentational agenome-hub card — the agent that left the research traces, with its note count. */
+/** Presentational agenome-hub card — the agent that left the research traces, its note count, and (for a
+ *  culled lineage) the dead-end marker + its cull score. */
 export function AgenomeHubCard({ data }: { data: KnowledgeNodeData }) {
+  const culled = data.culled === true;
   return (
-    <div style={hubCard}>
+    <div
+      style={{
+        ...hubCard,
+        ...(culled
+          ? {
+              borderLeft: 'var(--space-1) solid var(--status-culled)',
+              background: 'color-mix(in srgb, var(--status-culled) 16%, var(--bg-surface-2))',
+              opacity: 0.9,
+            }
+          : {}),
+      }}
+    >
       <span title={data.label}>{data.label}</span>
-      {data.noteCount !== undefined && (
-        <span style={hubCount}>
-          {data.noteCount} note{data.noteCount === 1 ? '' : 's'}
-        </span>
-      )}
+      <span style={hubCount}>
+        {data.noteCount !== undefined && (
+          <>
+            {data.noteCount} note{data.noteCount === 1 ? '' : 's'}
+          </>
+        )}
+        {culled && (
+          <span style={culledTag}>
+            {' · ✕ culled'}
+            {data.score !== undefined ? ` ${data.score.toFixed(2)}` : ''}
+          </span>
+        )}
+      </span>
     </div>
   );
 }

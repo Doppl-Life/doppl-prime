@@ -52,14 +52,28 @@ export interface ResearchEdge {
   readonly type: ResearchEdgeType;
 }
 
-/** The folded knowledge graph: notes + edges, each keyed by id (idempotent re-fold, like current-state). */
+/**
+ * An agenome that did research — carries its GRAVEYARD status: was it culled, and at what score? Research
+ * from a culled lineage is a "map of dead ends" (the swarm tried this and it scored low) — surfacing it
+ * fights survivorship bias so other agents stop re-walking known walls (the design's graveyard feature).
+ */
+export interface ResearchAgenome {
+  readonly id: string;
+  /** True iff this agenome appeared in a `lineage.culled.targetIds` (selection killed the lineage). */
+  readonly culled: boolean;
+  /** The cull score from `lineage.culled.scoreSnapshot` (the dead-end's fitness), when culled. */
+  readonly score?: number;
+}
+
+/** The folded knowledge graph: notes + edges + the researching agenomes' graveyard status, each keyed by id. */
 export interface ResearchKnowledgeGraph {
   readonly notes: Record<string, ResearchNote>;
   readonly edges: Record<string, ResearchEdge>;
+  readonly agenomes: Record<string, ResearchAgenome>;
 }
 
 export function emptyResearchGraph(): ResearchKnowledgeGraph {
-  return { notes: {}, edges: {} };
+  return { notes: {}, edges: {}, agenomes: {} };
 }
 
 /** Snippet length — long enough to be meaningful on hover, short enough to keep the projection lean. */
@@ -134,13 +148,44 @@ export function researchNotesReducer(
       const notes = { ...state.notes, [noteId]: note };
       if (event.agenomeId === null) return { ...state, notes };
       const edgeId = `researched:${event.agenomeId}->${noteId}`;
+      // Record the researching agenome (default not-culled). Do NOT clobber an already-recorded culled
+      // status — a `lineage.culled` may have folded BEFORE this note (ordering-robust).
+      const agenomes =
+        state.agenomes[event.agenomeId] !== undefined
+          ? state.agenomes
+          : { ...state.agenomes, [event.agenomeId]: { id: event.agenomeId, culled: false } };
       return {
         notes,
+        agenomes,
         edges: {
           ...state.edges,
           [edgeId]: { id: edgeId, source: event.agenomeId, target: noteId, type: 'researched' },
         },
       };
+    }
+    case 'lineage.culled': {
+      // The graveyard: mark each culled agenome + carry its cull score (the dead-end's fitness). Merge so a
+      // culled agenome that also researched keeps a single record; create one if the cull precedes its notes.
+      const payload = event.payload as {
+        targetIds?: unknown;
+        scoreSnapshot?: Record<string, unknown>;
+      };
+      const targetIds = Array.isArray(payload.targetIds) ? payload.targetIds : [];
+      const snapshot = payload.scoreSnapshot ?? {};
+      let agenomes = state.agenomes;
+      for (const targetId of targetIds) {
+        if (typeof targetId !== 'string') continue;
+        const score = snapshot[targetId];
+        agenomes = {
+          ...agenomes,
+          [targetId]: {
+            id: targetId,
+            culled: true,
+            ...(typeof score === 'number' ? { score } : {}),
+          },
+        };
+      }
+      return agenomes === state.agenomes ? state : { ...state, agenomes };
     }
     case 'candidate.created': {
       const candidate = event.payload as Partial<CandidateIdea>;

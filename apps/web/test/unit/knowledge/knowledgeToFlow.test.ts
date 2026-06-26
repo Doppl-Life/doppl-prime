@@ -28,10 +28,12 @@ function note(
 function graph(
   notes: KnowledgeGraph['state']['notes'][string][],
   edges: KnowledgeGraph['state']['edges'][string][] = [],
+  agenomes: { id: string; culled: boolean; score?: number }[] = [],
 ): KnowledgeGraph['state'] {
   return {
     notes: Object.fromEntries(notes.map((n) => [n.id, n])),
     edges: Object.fromEntries(edges.map((e) => [e.id, e])),
+    agenomes: Object.fromEntries(agenomes.map((a) => [a.id, a])),
   };
 }
 
@@ -149,5 +151,27 @@ describe('knowledgeToFlow — generations→columns, agenomes→hubs, notes→le
     const flow = knowledgeToFlow(graph([]));
     expect(flow.nodes).toEqual([]);
     expect(flow.edges).toEqual([]);
+  });
+
+  it('carries the graveyard culled status + score onto the hub AND its notes', () => {
+    const flow = knowledgeToFlow(
+      graph(
+        [
+          note({ id: 'research-note:run_1:1', agenomeId: 'agn_dead' }),
+          note({ id: 'research-note:run_1:2', agenomeId: 'agn_live' }),
+        ],
+        [],
+        [
+          { id: 'agn_dead', culled: true, score: 0.42 },
+          { id: 'agn_live', culled: false },
+        ],
+      ),
+    );
+    const hub = flow.nodes.find((n) => n.id === 'agn_dead');
+    expect(hub?.data.culled).toBe(true);
+    expect(hub?.data.score).toBe(0.42);
+    // a note inherits its agenome's culled state
+    expect(flow.nodes.find((n) => n.id === 'research-note:run_1:1')?.data.culled).toBe(true);
+    expect(flow.nodes.find((n) => n.id === 'research-note:run_1:2')?.data.culled).toBe(false);
   });
 });

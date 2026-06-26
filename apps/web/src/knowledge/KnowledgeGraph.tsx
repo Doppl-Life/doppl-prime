@@ -71,11 +71,14 @@ export function KnowledgeGraph({ graph, onNodeClick }: KnowledgeGraphProps) {
       .map((n) => n.agenomeId)
       .filter((id): id is string => id !== null),
   ).size;
+  const culledCount = Object.values(shown.state.agenomes ?? {}).filter((a) => a.culled).length;
 
   return (
     <section aria-label="Knowledge evolution graph" style={section}>
       <header data-testid="knowledge-summary" style={summary}>
-        {noteCount} research notes · {agentCount} agents · sequence {shown.sequenceThrough}
+        {noteCount} research notes · {agentCount} agents
+        {culledCount > 0 ? ` · ${culledCount} culled (dead ends)` : ''} · sequence{' '}
+        {shown.sequenceThrough}
       </header>
 
       <div style={graphWrap}>

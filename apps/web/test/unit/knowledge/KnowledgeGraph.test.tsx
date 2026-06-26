@@ -77,6 +77,15 @@ describe('ResearchNoteCard — accessible tool encoding (not color alone)', () =
     expect(screen.getByText('1 source')).toBeTruthy();
     expect(document.querySelector('[aria-hidden="true"]')?.textContent).toBeTruthy(); // glyph channel
   });
+
+  it('marks dead-end (culled) research with a label, not color alone (rule #4)', () => {
+    render(
+      <ResearchNoteCard
+        data={{ kind: 'note', label: 'q', toolName: 'web_search', query: 'q', culled: true }}
+      />,
+    );
+    expect(screen.getByText(/dead end/i)).toBeTruthy(); // the culled label channel
+  });
 });
 
 describe('KnowledgeGraph — React Flow knowledge panel', () => {

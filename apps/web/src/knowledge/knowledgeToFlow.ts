@@ -26,6 +26,10 @@ export type KnowledgeNodeData = {
   readonly sourceUrls?: readonly string[] | undefined;
   // agenome-hub-only field:
   readonly noteCount?: number | undefined;
+  // graveyard (agenome hubs + the notes under a culled agenome): the lineage was culled (a dead end), and
+  // its cull score (the dead-end's fitness). A note inherits its agenome's culled state.
+  readonly culled?: boolean | undefined;
+  readonly score?: number | undefined;
 };
 
 export type KnowledgeRfNode = Node<KnowledgeNodeData, KnowledgeNodeKind>;
@@ -62,6 +66,7 @@ export function knowledgeEdgeStyle(edgeType: string): CSSProperties {
 export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
   const notes = Object.values(state.notes);
   const projectionEdges = Object.values(state.edges);
+  const agenomeStatus = state.agenomes ?? {}; // graveyard status (culled + score) per agenome id
 
   // Distinct generations (from the notes' generationId) → header nodes; and each agenome's generation +
   // its note count → hub nodes.
@@ -92,6 +97,7 @@ export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
     });
   }
   for (const [agId, genId] of agenomeGen) {
+    const status = agenomeStatus[agId];
     nodes.push({
       id: agId,
       type: 'agenome',
@@ -101,10 +107,14 @@ export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
         label: `Agent ${shortId(agId)}`,
         generationIndex: generationIndexOf(genId),
         noteCount: agenomeNoteCount.get(agId),
+        culled: status?.culled ?? false,
+        ...(status?.score !== undefined ? { score: status.score } : {}),
       },
     });
   }
   for (const note of notes) {
+    const culled =
+      note.agenomeId !== null ? (agenomeStatus[note.agenomeId]?.culled ?? false) : false;
     nodes.push({
       id: note.id,
       type: 'note',
@@ -117,6 +127,7 @@ export function knowledgeToFlow(state: KnowledgeGraph['state']): KnowledgeFlow {
         query: note.query,
         snippet: note.snippet,
         sourceUrls: note.sourceUrls,
+        culled,
       },
     });
   }

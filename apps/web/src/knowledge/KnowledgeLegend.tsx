@@ -42,6 +42,12 @@ export function KnowledgeLegend() {
           <span>{tool.label}</span>
         </div>
       ))}
+      {/* the graveyard: research from a culled (dead-end) lineage */}
+      <div style={row}>
+        <span style={swatch('var(--status-culled)')} aria-hidden="true" />
+        <span aria-hidden="true">✕</span>
+        <span>culled (dead end)</span>
+      </div>
     </div>
   );
 }
