@@ -424,6 +424,20 @@ textarea {
   padding-top: 8px;
 }
 
+.case-study-heading {
+  color: var(--ink);
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.16;
+  margin: 1px auto 2px;
+  max-width: 900px;
+  text-align: center;
+}
+
+.case-study-heading span {
+  color: var(--muted);
+}
+
 .trace-step,
 .source-disclosure {
   background: rgba(17, 23, 38, 0.82);
@@ -1002,6 +1016,7 @@ textarea {
   select,
   input,
   textarea {
+    font-size: 16px;
     padding: 7px 9px;
   }
 
@@ -1068,6 +1083,11 @@ textarea {
 
   .trace-step h2 {
     font-size: 20px;
+  }
+
+  .case-study-heading {
+    font-size: 20px;
+    margin: 0 auto 1px;
   }
 
   .comparison-banner dl,

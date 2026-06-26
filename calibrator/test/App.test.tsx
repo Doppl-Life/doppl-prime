@@ -162,7 +162,9 @@ describe("App", () => {
     expect(screen.getByText("Read the doppl")).toBeInTheDocument();
     expect(screen.getByText("Doppls are judged on whether they offer a useful finding, implication, or solution path.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Problem recoveries" }));
-    expect(screen.getByLabelText("Case and selected artifact review")).not.toHaveTextContent("Case Study");
+    expect(screen.getByLabelText("Case study: When the Crashes Don't Come")).toHaveTextContent(
+      "Case Study: When the Crashes Don't Come",
+    );
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Include audit artifacts")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Current review status")).not.toBeInTheDocument();

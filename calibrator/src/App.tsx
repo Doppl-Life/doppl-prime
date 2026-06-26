@@ -1299,6 +1299,10 @@ export function App() {
           <p className="mode-explainer">{ratingModeDescription}</p>
         </section>
 
+        <div className="case-study-heading" aria-label={`Case study: ${selectedCase.title}`}>
+          <span>Case Study:</span> {selectedCase.title}
+        </div>
+
         <article className="trace-step selected-step">
           <p className="trace-label">{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</p>
           <h2>{activeTitle}</h2>
