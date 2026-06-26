@@ -204,7 +204,7 @@ export async function runDashboardCaseFromRequestBody(
     });
   if (parsed.async) {
     const eventLogPath = path.join(outDir, dashboardCase.id, runId, 'events.jsonl');
-    startAsyncRun(runRequestBody, options, eventLogPath);
+    startAsyncRun(runRequestBody, effectiveOptions, eventLogPath);
     return {
       runId,
       caseId: dashboardCase.id,
@@ -219,7 +219,7 @@ export async function runDashboardCaseFromRequestBody(
       dashboardEvents: await readDashboardEvents(runId, outDir),
     };
   }
-  const summary = await runFromRequestBody(runRequestBody, options);
+  const summary = await runFromRequestBody(runRequestBody, effectiveOptions);
   const completedRunId = String(summary.runId);
   const runIndex = await readRunIndex(completedRunId, outDir);
   const problemRecovery = runIndex.problemRecovery as { path?: string } | undefined;

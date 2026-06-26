@@ -9,7 +9,7 @@
     "lint": "eslint 'src/kernel/**/*.ts'",
     "build": "pnpm run typecheck && pnpm run lint && pnpm test && pnpm run web:build",
     "kernel:run": "node --experimental-strip-types src/kernel/cli.ts",
-    "kernel:serve": "node --experimental-strip-types src/kernel/server/server.ts",
+    "kernel:serve": "node --experimental-strip-types --env-file=.env src/kernel/server/server.ts",
     "kernel:publish": "node --experimental-strip-types src/kernel/sink/publish-cli.ts",
     "web:build": "vite build --config web/vite.config.js",
     "prestart": "pnpm run web:build",
