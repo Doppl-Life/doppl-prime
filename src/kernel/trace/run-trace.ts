@@ -226,7 +226,8 @@ function buildSelection(
   const priority_axis: MeasurementAxis = weights.novelty >= weights.grounding ? 'novelty' : 'grounding';
   const floor_axis: MeasurementAxis = priority_axis === 'novelty' ? 'grounding' : 'novelty';
   const tide: Tide = weights.novelty > weights.grounding ? 'diverge' : 'converge';
-  const retained = generation.selectedParentIds.length === 2 ? generation.selectedParentIds : [compiledId];
+  const [parentA, parentB] = generation.selectedParentIds;
+  const retained: NonEmptyArray<Uuid> = parentA && parentB ? [parentA, parentB] : [compiledId];
   const decisions: SelectionDecision[] = records.map((record) => ({
     candidate_id: record.candidateId,
     pareto_front: record.selection?.frontier.rank ?? 1,
@@ -238,7 +239,7 @@ function buildSelection(
     schedule: { keep: 3, priority_axis, floor_axis, floor: 0 },
     tide,
     decisions,
-    retained_candidate_ids: retained as NonEmptyArray<Uuid>,
+    retained_candidate_ids: retained,
     compiled_candidate_id: generation.childId ?? compiledId,
     regret_siblings: regretFor(retained, records),
   };
@@ -304,11 +305,20 @@ export function buildRunTraces(run: KernelRun): RunTrace[] {
   if (!compiled) return [];
 
   const compiledRecord = run.fitnessRecords.find((record) => record.candidateId === compiled.id);
-  const generationSource = run.evolution.length
-    ? run.evolution
-    : [{ generation: 0, candidateIds: run.candidates.map((candidate) => candidate.id), selectedParentIds: run.selectedParents.map((parent) => parent.id) as [string, string] | [], childId: compiled.id, fitnessTotals: [] }];
-  const generations = generationSource.map((generation) => buildGeneration(run, generation, compiled.id));
-  if (!generations.length) return [];
+  const [seedA, seedB] = run.selectedParents;
+  const syntheticGeneration: EvolutionGeneration = {
+    generation: 0,
+    candidateIds: run.candidates.map((candidate) => candidate.id),
+    selectedParentIds: seedA && seedB ? [seedA.id, seedB.id] : [],
+    childId: compiled.id,
+    fitnessTotals: [],
+  };
+  const generationSource = run.evolution.length ? run.evolution : [syntheticGeneration];
+  const [firstGeneration, ...restGenerations] = generationSource.map((generation) =>
+    buildGeneration(run, generation, compiled.id),
+  );
+  if (!firstGeneration) return [];
+  const generations: NonEmptyArray<GenerationStep> = [firstGeneration, ...restGenerations];
 
   const doppl = compileProposalNodes(run).find((node) => node.stage === 'doppl');
   const startedAt = eventTime(run.events, 'run.started') ?? new Date(0).toISOString();
@@ -325,7 +335,7 @@ export function buildRunTraces(run: KernelRun): RunTrace[] {
         ],
         discovery: discoveryInput(run),
       },
-      generations: generations as NonEmptyArray<GenerationStep>,
+      generations,
       lens: buildLens(compiledRecord),
       judge: buildJudge(compiled.id, compiledRecord, run.problemRecovery.falsifier),
       compile: { output: { node_id: doppl?.id ?? compiled.id, ...(doppl?.path === undefined ? {} : { path: doppl.path }) } },

@@ -44,14 +44,16 @@ export type KnowledgePacket = {
   excluded: Array<{ reason: string; case?: string; recordId?: string }>;
 };
 
-export type ProblemRecovery = {
+export type Stage = 'case_study' | 'problem_recovery' | 'doppl';
+export type GrowthStage = 'problem_recovery' | 'doppl';
+
+// The parent context an arrow breeds from: the prior node, summarized. The PR arrow's
+// parent is the case_study (already on the run); the doppl arrow's parent is the PR node.
+export type NodeSummary = {
+  stage: Stage;
   id: string;
-  caseId: string;
   title: string;
-  recoveredProblem: string;
-  hiddenConstraint: string;
-  falsifier: string;
-  citedKnowledge: string[];
+  synopsis: string;
 };
 
 export const MUTAGENS = [
@@ -232,7 +234,6 @@ export const RUN_EVENT_TYPES = [
   'agenome.materialized',
   'agenome.energy_allocated',
   'agenome.energy_spent',
-  'problem_recovery.created',
   'control_baseline.created',
   'control_baseline.scored',
   'generation.started',
@@ -315,7 +316,6 @@ export type RunEventPayloads = {
   };
   'agenome.energy_allocated': EnergyLedgerPayload;
   'agenome.energy_spent': EnergyLedgerPayload;
-  'problem_recovery.created': { recoveryId: string };
   'control_baseline.created': { candidateId: string; agenomeId: string };
   'control_baseline.scored': ScoredPayload;
   'generation.started': { generation: number };
@@ -375,7 +375,8 @@ export type KernelRun = {
   knowledgePacket: KnowledgePacket;
   energyLedger: AgenomeEnergyLedgerEntry[];
   agenomes: Agenome[];
-  problemRecovery: ProblemRecovery;
+  stage: GrowthStage;
+  parentNode?: NodeSummary;
   controlBaseline?: CandidateSolution;
   candidates: CandidateSolution[];
   criticVerdicts: CriticVerdict[];
@@ -469,22 +470,6 @@ export function assertKnowledgePacket(value: unknown): KnowledgePacket {
   });
   if (!Array.isArray(packet.excluded)) throw new Error('KnowledgePacket.excluded must be an array');
   return packet as KnowledgePacket;
-}
-
-export function assertProblemRecovery(value: unknown): ProblemRecovery {
-  const recovery = assertObject(value, 'ProblemRecovery');
-  for (const field of [
-    'id',
-    'caseId',
-    'title',
-    'recoveredProblem',
-    'hiddenConstraint',
-    'falsifier',
-  ]) {
-    assertStringField(recovery, field, 'ProblemRecovery');
-  }
-  assertStringArrayField(recovery, 'citedKnowledge', 'ProblemRecovery');
-  return recovery as ProblemRecovery;
 }
 
 export function assertCandidateSolution(value: unknown): CandidateSolution {
@@ -633,10 +618,11 @@ export function assertKernelRun(value: unknown): KernelRun {
   if (typeof value !== 'object' || value === null) throw new Error('KernelRun must be an object');
   const run = value as Partial<KernelRun>;
   if (!run.id) throw new Error('KernelRun.id is required');
-  if (!run.problemRecovery) throw new Error('KernelRun.problemRecovery is required');
+  if (run.stage !== 'problem_recovery' && run.stage !== 'doppl') {
+    throw new Error('KernelRun.stage must be problem_recovery or doppl');
+  }
   if (!run.caseStudy) throw new Error('KernelRun.caseStudy is required');
   if (!Array.isArray(run.events)) throw new Error('KernelRun.events is required');
-  assertProblemRecovery(run.problemRecovery);
   assertKnowledgePacket(run.knowledgePacket);
   if (!Array.isArray(run.energyLedger)) throw new Error('KernelRun.energyLedger is required');
   for (const entry of run.energyLedger) assertAgenomeEnergyLedgerEntry(entry);

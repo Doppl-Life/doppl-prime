@@ -6,9 +6,16 @@ these, it changes the kernel contract.
 
 ## Core engine
 
-1. **One kernel, multiple modes.** The core operation is generate under
-   selection. Discovery, problem recovery, and solution search are modes of that
-   operation, not separate engines.
+1. **One kernel, multiple modes — one agenomic pass per arrow.** The core
+   operation is generate under selection. Discovery, problem recovery, and
+   solution search are modes of that operation, not separate engines. **Every
+   spine arrow is one agenomic pass** (generate → score → select → fuse →
+   compile): `problem_recovery` is *bred* from problem-frames exactly as `doppl`
+   is bred from solution-candidates. A run breeds the target stage's unit. **No
+   stage is produced one-shot** — a dedicated `recover()` that emits a
+   problem_recovery without breeding is a separate engine and violates this
+   invariant. One run = one arrow = one `RunTrace`; a chain is runs fed
+   output-into-input.
 2. **The unit must be pluggable.** The thing being bred can be a thesis,
    consequence, problem frame, or later an agenome. Do not bake one reproduction
    unit into the kernel.
