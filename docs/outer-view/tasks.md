@@ -48,7 +48,7 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 - [ ] Encode human/agora strength as node radius or ring weight once ratings are in the outer projection.
 - [x] Highlight the selected node's ancestry path.
 - [x] Dim unrelated islands when a node is selected.
-- [ ] Add zoom, pan, and fit controls.
+- [x] Add zoom, pan, and fit controls.
 - [ ] Improve label rules:
   - no overlapping labels
   - selected node shows full label
@@ -91,16 +91,22 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
   - problem recoveries
   - Doppls
   - selected/final Doppls
-- [ ] Add score filters:
-  - unrated
-  - high human score
+- [x] Add initial signal filters:
+  - scored
+  - unscored
   - high judge score
+  - selected
+- [ ] Add human/agora filters once ratings are in the outer projection:
+  - high human score
   - disagreement
 - [x] Add search by title/body text.
-- [ ] Add sorting:
+- [x] Add initial sorting:
+  - lineage order
+  - strongest first
+  - selected first
+- [ ] Add source-of-truth sorting once metadata is available:
   - newest
   - strongest human score
-  - strongest judge score
   - most divergent judge/human
   - largest island
 - [x] Keep selected library row synchronized with graph selection.

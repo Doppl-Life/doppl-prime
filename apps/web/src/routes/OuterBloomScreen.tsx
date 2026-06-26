@@ -14,6 +14,8 @@ type LoadState =
   | { readonly kind: 'ready'; readonly bloom: OuterBloomProjection };
 
 type StageFilter = 'all' | 'case_study' | 'problem_recovery' | 'doppl' | 'selected';
+type ScoreFilter = 'all' | 'scored' | 'unscored' | 'strong_judge' | 'selected';
+type SortMode = 'lineage' | 'strongest' | 'selected';
 
 interface LayoutNode extends OuterBloomNode {
   x: number;
@@ -27,6 +29,18 @@ interface LayoutEdge {
   source: LayoutNode;
   target: LayoutNode;
   type: string;
+}
+
+interface BloomBounds {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
+interface BloomPan {
+  x: number;
+  y: number;
 }
 
 const shell: CSSProperties = {
@@ -176,6 +190,8 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stageFilter, setStageFilter] = useState<StageFilter>('all');
+  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('lineage');
   const [query, setQuery] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -215,7 +231,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     );
   }
 
-  const visibleBloom = filterBloom(state.bloom, stageFilter, query);
+  const visibleBloom = filterBloom(state.bloom, stageFilter, scoreFilter, query);
   const allNodes = state.bloom.islands.flatMap((island) => island.nodes);
   const selected =
     allNodes.find((node) => node.id === selectedId) ??
@@ -259,8 +275,12 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
             visibleBloom={visibleBloom}
             selectedId={selected?.id ?? null}
             stageFilter={stageFilter}
+            scoreFilter={scoreFilter}
+            sortMode={sortMode}
             query={query}
             onStageFilterChange={setStageFilter}
+            onScoreFilterChange={setScoreFilter}
+            onSortModeChange={setSortMode}
             onQueryChange={setQuery}
             onSelect={setSelectedId}
           />
@@ -295,8 +315,12 @@ function BloomLibrary({
   visibleBloom,
   selectedId,
   stageFilter,
+  scoreFilter,
+  sortMode,
   query,
   onStageFilterChange,
+  onScoreFilterChange,
+  onSortModeChange,
   onQueryChange,
   onSelect,
 }: {
@@ -304,8 +328,12 @@ function BloomLibrary({
   visibleBloom: OuterBloomProjection;
   selectedId: string | null;
   stageFilter: StageFilter;
+  scoreFilter: ScoreFilter;
+  sortMode: SortMode;
   query: string;
   onStageFilterChange: (filter: StageFilter) => void;
+  onScoreFilterChange: (filter: ScoreFilter) => void;
+  onSortModeChange: (mode: SortMode) => void;
   onQueryChange: (query: string) => void;
   onSelect: (id: string) => void;
 }) {
@@ -336,30 +364,50 @@ function BloomLibrary({
                 key={option.value}
                 type="button"
                 onClick={() => onStageFilterChange(option.value)}
-                style={{
-                  border: 'thin solid',
-                  borderColor: stageFilter === option.value ? 'var(--accent)' : 'var(--border-subtle)',
-                  borderRadius: '999px',
-                  background:
-                    stageFilter === option.value
-                      ? 'color-mix(in srgb, var(--accent) 24%, var(--bg-surface))'
-                      : 'var(--bg-surface-2)',
-                  color: stageFilter === option.value ? 'var(--fg-default)' : 'var(--fg-muted)',
-                  padding: '0.42rem 0.65rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 'var(--text-caption)',
-                  cursor: 'pointer',
-                }}
+                style={filterPillStyle(stageFilter === option.value)}
               >
                 {option.label}
               </button>
             ))}
           </div>
         </div>
+        <div>
+          <span style={fieldLabel}>Signal</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+            {scoreFilterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onScoreFilterChange(option.value)}
+                style={filterPillStyle(scoreFilter === option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label>
+          <span style={fieldLabel}>Sort</span>
+          <select
+            value={sortMode}
+            onChange={(event) => onSortModeChange(event.target.value as SortMode)}
+            style={inputStyle}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <div style={islandList}>
         {visibleBloom.islands.map((island) => {
           const caseStudy = island.nodes.find((node) => node.stage === 'case_study') ?? island.nodes[0];
+          const listedNodes = sortLibraryNodes(
+            island.nodes.filter((node) => node.stage !== 'case_study'),
+            sortMode,
+          );
           return (
             <div key={island.runId} style={{ display: 'grid', gap: 'var(--space-2)' }}>
               <button
@@ -379,8 +427,7 @@ function BloomLibrary({
                   {countStage(island, 'doppl')} Doppls
                 </span>
               </button>
-              {island.nodes
-                .filter((node) => node.stage !== 'case_study')
+              {listedNodes
                 .slice(0, 8)
                 .map((node) => (
                   <button
@@ -426,7 +473,38 @@ function BloomGraph({
   const layout = useMemo(() => layoutBloom(bloom), [bloom]);
   const selected = layout.nodes.find((node) => node.id === selectedId) ?? null;
   const selectedPath = selected === null ? new Set<string>() : ancestrySet(selected, layout.nodes);
-  const viewBox = `${layout.bounds.minX} ${layout.bounds.minY} ${layout.bounds.width} ${layout.bounds.height}`;
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<BloomPan>({ x: 0, y: 0 });
+  const visibleBounds = scaledBounds(layout.bounds, zoom, pan);
+  const viewBox = `${visibleBounds.minX} ${visibleBounds.minY} ${visibleBounds.width} ${visibleBounds.height}`;
+
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [layout.bounds.minX, layout.bounds.minY, layout.bounds.width, layout.bounds.height]);
+
+  const zoomBy = (delta: number) => {
+    setZoom((current) => Math.max(0.62, Math.min(2.8, Number((current + delta).toFixed(2)))));
+  };
+  const panBy = (direction: 'left' | 'right' | 'up' | 'down') => {
+    const stepX = layout.bounds.width * 0.1 / zoom;
+    const stepY = layout.bounds.height * 0.1 / zoom;
+    setPan((current) => ({
+      x: current.x + (direction === 'left' ? -stepX : direction === 'right' ? stepX : 0),
+      y: current.y + (direction === 'up' ? -stepY : direction === 'down' ? stepY : 0),
+    }));
+  };
+  const fitBloom = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+  const focusSelected = () => {
+    if (selected === null) return;
+    const centerX = layout.bounds.minX + layout.bounds.width / 2;
+    const centerY = layout.bounds.minY + layout.bounds.height / 2;
+    setZoom((current) => Math.max(current, 1.72));
+    setPan({ x: selected.x - centerX, y: selected.y - centerY });
+  };
 
   return (
     <section className="outer-bloom-graph-panel" style={graphPanel} aria-label="Radial bloom graph">
@@ -544,6 +622,81 @@ function BloomGraph({
       <div
         style={{
           position: 'absolute',
+          right: 'var(--space-3)',
+          top: 'var(--space-3)',
+          display: 'grid',
+          gap: 'var(--space-2)',
+          justifyItems: 'end',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--space-1)',
+            padding: 'var(--space-1)',
+            border: 'thin solid var(--border-subtle)',
+            borderRadius: '999px',
+            background: 'color-mix(in srgb, var(--bg-surface) 86%, transparent)',
+          }}
+          aria-label="Bloom zoom controls"
+        >
+          <GraphControl label="Zoom out" onClick={() => zoomBy(-0.2)}>
+            -
+          </GraphControl>
+          <GraphControl label="Reset graph view" onClick={fitBloom}>
+            Fit
+          </GraphControl>
+          <GraphControl label="Zoom in" onClick={() => zoomBy(0.2)}>
+            +
+          </GraphControl>
+          <GraphControl label="Focus selected artifact" disabled={selected === null} onClick={focusSelected}>
+            Focus
+          </GraphControl>
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 30px)',
+            gap: 4,
+            padding: 'var(--space-1)',
+            border: 'thin solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            background: 'color-mix(in srgb, var(--bg-surface) 86%, transparent)',
+          }}
+          aria-label="Bloom pan controls"
+        >
+          <span />
+          <GraphControl label="Pan up" onClick={() => panBy('up')}>
+            ↑
+          </GraphControl>
+          <span />
+          <GraphControl label="Pan left" onClick={() => panBy('left')}>
+            ←
+          </GraphControl>
+          <span
+            style={{
+              display: 'grid',
+              placeItems: 'center',
+              color: 'var(--fg-muted)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-caption)',
+            }}
+          >
+            {Math.round(zoom * 100)}
+          </span>
+          <GraphControl label="Pan right" onClick={() => panBy('right')}>
+            →
+          </GraphControl>
+          <span />
+          <GraphControl label="Pan down" onClick={() => panBy('down')}>
+            ↓
+          </GraphControl>
+          <span />
+        </div>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
           left: 'var(--space-3)',
           bottom: 'var(--space-3)',
           display: 'flex',
@@ -563,6 +716,43 @@ function BloomGraph({
         <span style={{ color: 'var(--success)' }}>selected</span>
       </div>
     </section>
+  );
+}
+
+function GraphControl({
+  label,
+  disabled = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        minWidth: children.length > 1 ? 48 : 30,
+        height: 30,
+        border: 'thin solid var(--border-subtle)',
+        borderRadius: '999px',
+        background: disabled ? 'transparent' : 'var(--bg-surface-2)',
+        color: disabled ? 'var(--fg-faint)' : 'var(--fg-default)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 'var(--text-caption)',
+        fontWeight: 700,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -835,6 +1025,19 @@ function boundsFor(nodes: readonly LayoutNode[]) {
   return { minX, minY, width: maxX - minX, height: maxY - minY };
 }
 
+function scaledBounds(bounds: BloomBounds, zoom: number, pan: BloomPan): BloomBounds {
+  const width = bounds.width / zoom;
+  const height = bounds.height / zoom;
+  const centerX = bounds.minX + bounds.width / 2 + pan.x;
+  const centerY = bounds.minY + bounds.height / 2 + pan.y;
+  return {
+    minX: centerX - width / 2,
+    minY: centerY - height / 2,
+    width,
+    height,
+  };
+}
+
 function radiusForNode(node: OuterBloomNode): number {
   const score = node.score ?? node.judgeAcceptance ?? 0.3;
   const scaled = Math.max(0, Math.min(1, score > 1 ? score / 5 : score));
@@ -891,9 +1094,24 @@ const stageFilterOptions: readonly { value: StageFilter; label: string }[] = [
   { value: 'selected', label: 'Selected' },
 ];
 
+const scoreFilterOptions: readonly { value: ScoreFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'scored', label: 'Scored' },
+  { value: 'unscored', label: 'Unscored' },
+  { value: 'strong_judge', label: 'Strong judge' },
+  { value: 'selected', label: 'Selected' },
+];
+
+const sortOptions: readonly { value: SortMode; label: string }[] = [
+  { value: 'lineage', label: 'Lineage order' },
+  { value: 'strongest', label: 'Strongest first' },
+  { value: 'selected', label: 'Selected first' },
+];
+
 function filterBloom(
   bloom: OuterBloomProjection,
   stageFilter: StageFilter,
+  scoreFilter: ScoreFilter,
   query: string,
 ): OuterBloomProjection {
   const normalizedQuery = query.trim().toLowerCase();
@@ -904,10 +1122,11 @@ function filterBloom(
           stageFilter === 'all' ||
           node.stage === stageFilter ||
           (stageFilter === 'selected' && node.stage === 'doppl' && node.status === 'selected');
+        const scoreMatches = scoreFilterMatches(node, scoreFilter);
         const textMatches =
           normalizedQuery.length === 0 ||
           `${node.label} ${node.summary} ${island.seed}`.toLowerCase().includes(normalizedQuery);
-        return stageMatches && textMatches;
+        return stageMatches && scoreMatches && textMatches;
       });
       if (matched.length === 0) return null;
 
@@ -930,6 +1149,48 @@ function filterBloom(
     .filter((island): island is OuterBloomIsland => island !== null);
 
   return buildVisibleProjection(islands);
+}
+
+function scoreFilterMatches(node: OuterBloomNode, filter: ScoreFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'selected') return node.stage === 'doppl' && node.status === 'selected';
+  const score = normalizedNodeStrength(node);
+  if (filter === 'scored') return score !== null;
+  if (filter === 'unscored') return score === null;
+  return score !== null && score >= 0.7;
+}
+
+function sortLibraryNodes(nodes: readonly OuterBloomNode[], sortMode: SortMode): OuterBloomNode[] {
+  const sorted = [...nodes];
+  if (sortMode === 'strongest') {
+    return sorted.sort((a, b) => (normalizedNodeStrength(b) ?? -1) - (normalizedNodeStrength(a) ?? -1));
+  }
+  if (sortMode === 'selected') {
+    return sorted.sort((a, b) => Number(b.status === 'selected') - Number(a.status === 'selected'));
+  }
+  return sorted;
+}
+
+function normalizedNodeStrength(node: OuterBloomNode): number | null {
+  const value = node.score ?? node.judgeAcceptance;
+  if (value === null) return null;
+  return Math.max(0, Math.min(1, value > 1 ? value / 5 : value));
+}
+
+function filterPillStyle(active: boolean): CSSProperties {
+  return {
+    border: 'thin solid',
+    borderColor: active ? 'var(--accent)' : 'var(--border-subtle)',
+    borderRadius: '999px',
+    background: active
+      ? 'color-mix(in srgb, var(--accent) 24%, var(--bg-surface))'
+      : 'var(--bg-surface-2)',
+    color: active ? 'var(--fg-default)' : 'var(--fg-muted)',
+    padding: '0.42rem 0.65rem',
+    fontFamily: 'var(--font-mono)',
+    fontSize: 'var(--text-caption)',
+    cursor: 'pointer',
+  };
 }
 
 function buildVisibleProjection(islands: readonly OuterBloomIsland[]): OuterBloomProjection {
