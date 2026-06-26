@@ -14,6 +14,7 @@
     "claude": { "cmd": "claude", "headless": ["-p"] },
     "codex": { "cmd": "codex", "headless": ["exec"] },
     "gemini": { "cmd": "gemini", "headless": ["-p"] },
+    "antigravity": { "cmd": "agy", "headless": ["-p"] },
     "grok": { "cmd": "grok", "headless": ["-p"] },
     "firecrawl": { "cmd": "firecrawl", "headless": ["search"] }
   }
