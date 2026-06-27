@@ -68,7 +68,43 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
     () => lineageToFlow(shown, inflight.workingEntityIds),
     [shown, inflight.workingEntityIds],
   );
-  const nodes = useMemo(() => layoutGraph(flow.nodes, flow.edges), [flow]);
+  // Run Dagre layout asynchronously so the main thread can paint a loading indicator first and the
+  // browser doesn't flag the tab as unresponsive on 1000+ node runs. We keep the previous laid-out
+  // nodes visible while the new layout is being computed (no flash of empty graph). requestIdleCallback
+  // when available, setTimeout(0) as the universal fallback.
+  const [nodes, setNodes] = useState<ReturnType<typeof layoutGraph>>([]);
+  const [layingOut, setLayingOut] = useState(false);
+  useEffect(() => {
+    setLayingOut(true);
+    let cancelled = false;
+    const compute = () => {
+      if (cancelled) return;
+      const laid = layoutGraph(flow.nodes, flow.edges);
+      if (cancelled) return;
+      setNodes(laid);
+      setLayingOut(false);
+    };
+    const ric = (
+      globalThis as unknown as {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === 'function') {
+      const id = ric(compute, { timeout: 500 });
+      return () => {
+        cancelled = true;
+        (
+          globalThis as unknown as { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback?.(id);
+      };
+    }
+    const handle = setTimeout(compute, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [flow]);
 
   return (
     <section aria-label="Lineage graph" style={section}>
@@ -82,6 +118,11 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
             nodesConnectable={false}
             fitView
             minZoom={0.1}
+            // Viewport culling — RF skips DOM mount for off-screen nodes. Cuts work from O(N) to
+            // O(visible) and unblocks the main thread on 1000+ node runs (Chrome's "Page
+            // Unresponsive" prompt). Only-render-visible costs a hair of re-render on pan/zoom but
+            // wins big on initial paint for large lineages.
+            onlyRenderVisibleElements
             proOptions={{ hideAttribution: true }}
             onNodeClick={(_, node) => {
               const data = node.data as LineageNodeData;
@@ -94,6 +135,7 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
             <Panel position="top-left">
               <div data-testid="lineage-summary" style={summary}>
                 {shown.nodes.length} nodes · sequence {shown.sequenceThrough}
+                {layingOut && nodes.length === 0 && ' · laying out…'}
               </div>
             </Panel>
             {/* Fixed-during-pan/zoom key so a non-expert can read the color-code + edge styles. */}

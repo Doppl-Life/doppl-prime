@@ -66,9 +66,11 @@ const BASE: CSSProperties = {
   zIndex: 'var(--z-banner)',
 };
 
-// Amber hatch via a token (color-mix over --warning) + spacing-token stops — no raw rgba/px.
+// Blue hatch via a token (color-mix over --info) + spacing-token stops — no raw rgba/px.
+// --info reads as "neutral, historical, not actionable" and stays clear of the gold winner banner +
+// the live/active accent without adding a new palette hue.
 const REPLAY_HATCH =
-  'repeating-linear-gradient(45deg, color-mix(in oklab, var(--warning) 16%, transparent) 0 var(--space-2), color-mix(in oklab, var(--warning) 5%, transparent) var(--space-2) var(--space-4))';
+  'repeating-linear-gradient(45deg, color-mix(in oklab, var(--info) 16%, transparent) 0 var(--space-2), color-mix(in oklab, var(--info) 5%, transparent) var(--space-2) var(--space-4))';
 
 export function ModeBanner({
   mode = 'live',
@@ -80,8 +82,8 @@ export function ModeBanner({
     const style: CSSProperties = {
       ...BASE,
       borderRadius: 'var(--radius-sm)',
-      color: 'var(--warning)',
-      border: 'thin solid var(--warning)',
+      color: 'var(--info)',
+      border: 'thin solid var(--info)',
       background: REPLAY_HATCH,
     };
     if (fullWidth) {
@@ -148,7 +150,7 @@ export function ModeBanner({
           animation: 'doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite',
         }}
       />
-      <span>● LIVE</span>
+      <span>LIVE</span>
       {generationLabel && (
         <span style={{ color: 'var(--fg-default)', fontWeight: 500 }}>— {generationLabel}</span>
       )}

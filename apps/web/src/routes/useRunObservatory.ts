@@ -55,6 +55,46 @@ export interface RunObservatory {
  *  new function each render → effect re-run loop; apps/web LESSONS §10). Tests inject their own. */
 const defaultEventSourceFactory = (url: string): EventSourceLike => new EventSource(url);
 
+/** Module-level cache keyed by runId — the projection/events fetched once for a run survives
+ *  navigations between sibling routes (Organism ↔ Knowledge ↔ Final). On a return visit the hook
+ *  seeds state synchronously from the cache (instant render) and refetches in the background to
+ *  cover any new events that may have arrived. Capped via a tiny LRU to keep memory bounded. */
+interface CachedObservatory {
+  readonly fold: FoldState;
+  readonly lineage: LineageGraphProjection | null;
+  readonly health: RunHealth | null;
+}
+const OBSERVATORY_CACHE_MAX = 8;
+const observatoryCache = new Map<string, CachedObservatory>();
+function readCache(runId: string): CachedObservatory | undefined {
+  const cached = observatoryCache.get(runId);
+  if (cached !== undefined) {
+    // LRU bump — re-insert so this runId moves to the most-recently-used end of the iteration order.
+    observatoryCache.delete(runId);
+    observatoryCache.set(runId, cached);
+  }
+  return cached;
+}
+/** Test seam — clear the module-level cache between renders so a prior test's runId doesn't seed
+ *  the next test's hook state. Not for production use. */
+export function __clearObservatoryCache(): void {
+  observatoryCache.clear();
+}
+function writeCache(runId: string, patch: Partial<CachedObservatory>): void {
+  const prev = observatoryCache.get(runId) ?? {
+    fold: emptyFoldState,
+    lineage: null,
+    health: null,
+  };
+  observatoryCache.set(runId, { ...prev, ...patch });
+  // Evict the oldest entry once we exceed the cap (insertion-order iteration → first is oldest).
+  while (observatoryCache.size > OBSERVATORY_CACHE_MAX) {
+    const oldest = observatoryCache.keys().next().value;
+    if (oldest === undefined) break;
+    observatoryCache.delete(oldest);
+  }
+}
+
 export function useRunObservatory({
   runId,
   mode,
@@ -70,9 +110,12 @@ export function useRunObservatory({
     [injectedStore, runId, runClient, mode],
   );
 
-  const [fold, setFold] = useState<FoldState>(emptyFoldState);
-  const [lineage, setLineage] = useState<LineageGraphProjection | null>(null);
-  const [health, setHealth] = useState<RunHealth | null>(null);
+  // Seed state synchronously from the module cache so a return visit (e.g. Knowledge → Organism)
+  // renders the lineage + events immediately. Background refetch (below) keeps things fresh.
+  const cached = readCache(runId);
+  const [fold, setFold] = useState<FoldState>(cached?.fold ?? emptyFoldState);
+  const [lineage, setLineage] = useState<LineageGraphProjection | null>(cached?.lineage ?? null);
+  const [health, setHealth] = useState<RunHealth | null>(cached?.health ?? null);
   const [selectedNode, setSelectedNode] = useState<SelectedNode | null>(null);
 
   const state = useSyncExternalStore(store.subscribe, store.getState);
@@ -86,11 +129,19 @@ export function useRunObservatory({
     const refetchProjections = (): void => {
       runClient
         .getLineage(runId)
-        .then((l) => active && setLineage(l))
+        .then((l) => {
+          if (!active) return;
+          setLineage(l);
+          writeCache(runId, { lineage: l });
+        })
         .catch(() => undefined);
       runClient
         .getRunHealth(runId)
-        .then((h) => active && setHealth(h))
+        .then((h) => {
+          if (!active) return;
+          setHealth(h);
+          writeCache(runId, { health: h });
+        })
         .catch(() => undefined);
     };
     const debouncedRefetch = debounce(refetchProjections, refetchDebounceMs);
@@ -98,7 +149,14 @@ export function useRunObservatory({
     // Seed the raw events fold + the initial projections.
     runClient
       .getEvents(runId)
-      .then((evs) => active && setFold((prev) => foldEvents(evs, prev)))
+      .then((evs) => {
+        if (!active) return;
+        setFold((prev) => {
+          const next = foldEvents(evs, prev);
+          writeCache(runId, { fold: next });
+          return next;
+        });
+      })
       .catch(() => undefined);
     refetchProjections();
 
@@ -111,7 +169,11 @@ export function useRunObservatory({
       eventSourceFactory,
       createStream,
       onEnvelope: (env) => {
-        setFold((f) => applyEnvelope(f, env));
+        setFold((f) => {
+          const next = applyEnvelope(f, env);
+          writeCache(runId, { fold: next });
+          return next;
+        });
         // PD.20 — debounced re-fetch on the SSE cadence; a TERMINAL envelope forces an immediate final
         // re-fetch so the FINAL graph always renders even if debounced updates were coalesced.
         if (isRunTerminal(env.type)) {

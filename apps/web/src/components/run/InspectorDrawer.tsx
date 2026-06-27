@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { Button } from '../ds';
 
 /**
  * InspectorDrawer (FV.4) — the S2 right-pane inspector SLOT. FV.5 wires node-click → the content
@@ -43,6 +42,20 @@ const heading: CSSProperties = {
   color: 'var(--fg-muted)',
   margin: 0,
 };
+// Icon-only close affordance — a soft × glyph in the muted text color so it reads as a button cue,
+// not as another heading. Brightens to --fg-default on hover via the .inspector-close class.
+const closeButton: CSSProperties = {
+  marginLeft: 'auto',
+  background: 'transparent',
+  border: 'none',
+  padding: 'var(--space-1)',
+  cursor: 'pointer',
+  color: 'var(--fg-muted)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 'var(--text-h3)',
+  lineHeight: 1,
+  borderRadius: 'var(--radius-sm)',
+};
 export function InspectorDrawer({ selectedId, onClose, children }: InspectorDrawerProps) {
   if (selectedId == null) return null;
 
@@ -54,17 +67,16 @@ export function InspectorDrawer({ selectedId, onClose, children }: InspectorDraw
     >
       <div style={header}>
         <h3 style={heading}>Inspector</h3>
-        <span style={{ marginLeft: 'auto' }}>
-          <Button
-            variant="ghost"
-            size="sm"
-            glyph="✕"
-            onClick={onClose}
-            aria-label="Close inspector"
-          >
-            Close
-          </Button>
-        </span>
+        <button
+          type="button"
+          className="inspector-close"
+          onClick={onClose}
+          aria-label="Close inspector"
+          title="Close inspector"
+          style={closeButton}
+        >
+          <span aria-hidden="true">✕</span>
+        </button>
       </div>
       {children ?? (
         <div

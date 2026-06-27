@@ -11,3 +11,4 @@
 @import './tokens/motion.css';
 @import './tokens/base.css';
 @import './reactflow-controls.css';
+@import './clickable-affordance.css';
