@@ -74,7 +74,7 @@ describe('RunsTable', () => {
     expect(onOpenLive).toHaveBeenCalledWith('r2');
   });
 
-  it('renders a status badge (label, not color alone) and em-dashes missing metadata', () => {
+  it('renders a status badge (label, not color alone) and a clear failure note for missing metadata', () => {
     render(
       <RunsTable
         runs={[run({ status: 'failed', problem: null, finalIdeaTitle: null, createdAt: null })]}
@@ -83,8 +83,11 @@ describe('RunsTable', () => {
         onOpenLive={vi.fn()}
       />,
     );
-    expect(screen.getByText(/failed/i)).toBeTruthy(); // StatusBadge label channel (rule #4)
-    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3); // date + problem + final idea
+    expect(screen.getAllByText(/failed/i).length).toBeGreaterThanOrEqual(1); // StatusBadge label (rule #4)
+    // A failed run with no winner reads "Failed before generating" rather than a bare em-dash.
+    expect(screen.getByText('Failed before generating')).toBeTruthy();
+    // The remaining missing metadata (time + problem) still renders as em-dashes.
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
   });
 
   it('opens a run when its id is clicked', () => {

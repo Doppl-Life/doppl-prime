@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import { RunsTable } from '../components/run/RunsTable';
+import { RunsKpiStrip } from '../components/run/RunsKpiStrip';
+import { RunsFilterBar } from '../components/run/RunsFilterBar';
+import { countByFilter, filterRuns } from '../components/run/runsSummary';
+import type { RunFilter } from '../components/run/runsSummary';
 import { useRunClient } from '../data/RunClientProvider';
 import type { RunSummary } from '../data/runClient';
 
 /**
- * RunsHomeScreen (FV.2, S0) — the `/` home: listRuns → a date-sorted RunsTable (one row per run with its
- * metadata — date, problem, final idea, status, and reproduction/cull/mutation activity — plus a Replay /
- * Open-live action). The backend serves the enriched RunSummary sorted newest-first. A New Run CTA →
- * /launch, and the DS Empty/Loading/Error states (never a blank screen, DS rule 5). Read-only over
- * listRuns (rule #2); nav via useNavigate.
+ * RunsHomeScreen (FV.2, S0) — the `/` home: listRuns → a KPI summary strip, a status/search filter
+ * toolbar, and a date-grouped RunsTable (one row per run with its metadata + a status-derived Replay /
+ * Open-live action). Filtering and search are client-side over the already-loaded list (no refetch).
+ * The backend serves the enriched RunSummary sorted newest-first. A New Run CTA → /launch, and the DS
+ * Empty/Loading/Error states (never a blank screen, DS rule 5). Read-only over listRuns (rule #2).
  */
 type LoadState =
   | { readonly kind: 'loading' }
@@ -31,12 +35,21 @@ const headerRow: CSSProperties = {
   gap: 'var(--space-4)',
 };
 const title: CSSProperties = { fontSize: 'var(--text-h2)', margin: 0 };
+const controls: CSSProperties = { display: 'grid', gap: 'var(--space-4)' };
+const noMatch: CSSProperties = {
+  padding: 'var(--space-6)',
+  textAlign: 'center',
+  color: 'var(--fg-muted)',
+  fontFamily: 'var(--font-ui)',
+};
 
 export function RunsHomeScreen() {
   const runClient = useRunClient();
   const navigate = useNavigate();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [reloadKey, setReloadKey] = useState(0);
+  const [filter, setFilter] = useState<RunFilter>('all');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -50,10 +63,14 @@ export function RunsHomeScreen() {
     };
   }, [runClient, reloadKey]);
 
+  const allRuns = state.kind === 'ready' ? state.runs : [];
+  const counts = useMemo(() => countByFilter(allRuns), [allRuns]);
+  const visibleRuns = useMemo(() => filterRuns(allRuns, filter, query), [allRuns, filter, query]);
+
   const newRun = () => navigate('/launch');
   const reload = () => setReloadKey((k) => k + 1);
-  // Default destination when clicking a card body: the primary view for that run's status.
-  // running/completing → live observatory; completed/stopped → replay; failed/cancelled → replay;
+  // Default destination when clicking a row: the primary view for that run's status.
+  // running/completing → live observatory; completed/stopped/failed/cancelled → replay;
   // anything else (e.g. configured) → the same generic observe URL.
   const openCard = (id: string, status: string | null) => {
     if (status === 'running' || status === 'completing') navigate(`/runs/${id}`);
@@ -88,12 +105,30 @@ export function RunsHomeScreen() {
       )}
 
       {state.kind === 'ready' && state.runs.length > 0 && (
-        <RunsTable
-          runs={state.runs}
-          onOpen={openCard}
-          onReplay={(id) => navigate(`/runs/${id}/replay`)}
-          onOpenLive={(id) => navigate(`/runs/${id}`)}
-        />
+        <>
+          <RunsKpiStrip runs={state.runs} />
+          <div style={controls}>
+            <RunsFilterBar
+              filter={filter}
+              query={query}
+              counts={counts}
+              onFilter={setFilter}
+              onSearch={setQuery}
+            />
+            {visibleRuns.length > 0 ? (
+              <RunsTable
+                runs={visibleRuns}
+                onOpen={openCard}
+                onReplay={(id) => navigate(`/runs/${id}/replay`)}
+                onOpenLive={(id) => navigate(`/runs/${id}`)}
+              />
+            ) : (
+              <p style={noMatch} role="status">
+                No runs match the current filter.
+              </p>
+            )}
+          </div>
+        </>
       )}
     </main>
   );
