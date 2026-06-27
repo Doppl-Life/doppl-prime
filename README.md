@@ -113,6 +113,16 @@ set -a; . ./.env; set +a      # the boot reads process.env directly (no dotenv a
 
 `.env.example` lists every env var the boot reads (each marked REQUIRED/OPTIONAL); it's single-sourced from the code allowlist and drift-guard-tested. Migrations run automatically at boot (`migrate → seed → start`).
 
+### One command (recommended)
+
+```bash
+pnpm dev
+```
+
+This runs `scripts/dev-local.sh`, which: brings up a local Postgres in Docker matching your `.env` `DATABASE_URL` (only when the DB host is local; skipped if you point at your own/remote Postgres), waits for it to be ready, then boots the **API on `:3000`** (`migrate → seed → start`) and the **web dashboard** (Vite, proxying `/api` → `:3000`) together. Ctrl-C stops both; the Postgres container is left running for next time (`pnpm db:down` to stop it, `pnpm db:logs` to tail it).
+
+Open the dashboard URL Vite prints. Whether it loads a seeded replay or boots live depends on your `.env` (`DOPPL_GATEWAY` / `DOPPL_SEED_FIXTURE`) — see the two paths below, or `docs/DEMO_RUNBOOK.md`.
+
 ### Path A — creds-free replay (the demo-of-record)
 
 The safe default: boots the real stack and replays a committed real run — no API keys, fully deterministic, identical choreography to a live run.
