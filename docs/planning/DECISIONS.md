@@ -52,7 +52,7 @@ Status: Locked
 
 ### Context
 
-Doppl is a two-week capstone with an ambitious agent-evolution concept and a June 29, 2026 showcase. The architecture must be deep enough for a 3-4 engineer team, but scoped to a credible MVP/prototype.
+Doppl is a two-week capstone with an ambitious agental-evolution concept and a June 29, 2026 showcase. The architecture must be deep enough for a 3-4 engineer team, but scoped to a credible MVP/prototype.
 
 ### Options Considered
 

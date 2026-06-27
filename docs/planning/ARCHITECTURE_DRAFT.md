@@ -12,7 +12,7 @@
 
 ## §1 Executive Summary
 
-Doppl is an experimental agent-evolution system. A human seeds a run, Doppl creates a bounded population of agent genomes ("agenomes"), those agenomes generate candidate ideas, adversarial critics and subtype-specific checks evaluate the ideas, and high-fitness lineages survive, fuse, mutate, and produce later generations. The MVP proof is that later generations produce stronger, more verifiable ideas than earlier generations, with lineage, energy, critic evidence, subtype checks, and fitness changes visible in the dashboard.
+Doppl is an experimental agental-evolution system. A human seeds a run, Doppl creates a bounded population of agent genomes ("agenomes"), those agenomes generate candidate ideas, adversarial critics and subtype-specific checks evaluate the ideas, and high-fitness lineages survive, fuse, mutate, and produce later generations. The MVP proof is that later generations produce stronger, more verifiable ideas than earlier generations, with lineage, energy, critic evidence, subtype checks, and fitness changes visible in the dashboard.
 
 The architecture uses a custom TypeScript Doppl kernel, Postgres append-only event log, provider-agnostic model gateway with OpenRouter primary, Langfuse Cloud trace correlation, simple embedding/semantic novelty scoring, REST + SSE APIs, and a React Flow lineage dashboard. Neo4j is deferred from the runtime but must be spiked early as a derived lineage-analysis read model.
 
@@ -20,7 +20,7 @@ The architecture uses a custom TypeScript Doppl kernel, Postgres append-only eve
 
 ### Goals
 
-- Run bounded agent-evolution loops over both supported candidate idea types: `cross_domain_transfer` and `zeitgeist_synthesis`.
+- Run bounded agental-evolution loops over both supported candidate idea types: `cross_domain_transfer` and `zeitgeist_synthesis`.
 - Preserve every important lifecycle decision in an append-only event log.
 - Make the organism inspectable: population tree, energy, critic gauntlet, subtype checks, novelty/fitness, culling, fusion, mutation, replay.
 - Support both live execution and replay mode.

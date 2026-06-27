@@ -9,7 +9,7 @@
 
 ## 1. What Doppl is (in design-relevant terms)
 
-**Doppl is an agent-evolution runtime that you _watch_.** It is not a chatbot, not a single agent, not a dashboard for one model's output. It is a **living ecosystem getting smarter in real time**, and the entire product is the experience of seeing that happen and being able to _trust_ it.
+**Doppl is an agental-evolution runtime that you _watch_.** It is not a chatbot, not a single agent, not a dashboard for one model's output. It is a **living ecosystem getting smarter in real time**, and the entire product is the experience of seeing that happen and being able to _trust_ it.
 
 A human seeds a run with a problem. Doppl spawns a **bounded population** of little agent "genomes" (we call them **agenomes**). Those agenomes generate **candidate ideas**. An adversarial **critic council**, a held-out **judge**, and objective **checks** score every candidate. Weak lineages are **culled** (they go dark). Strong agenomes become eligible parents, **fuse** in pairs to make children, and **mutate**. The next generation is measurably _better_ than the last. A **fitness-over-time** chart climbs. Lineages visibly **specialize**. At the end, the single best surviving idea is revealed — and it can **replay** the exact adversarial gauntlet it survived, and (for transfer ideas) **run a check live**.
 
