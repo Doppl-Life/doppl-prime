@@ -71,6 +71,7 @@ describe('runClient — read-only REST seam', () => {
         'getFallbackLadder',
         'getKnowledge',
         'getLineage',
+        'getModelRouteOverrides',
         'getProblemSets',
         'getReplay',
         'getRun',
