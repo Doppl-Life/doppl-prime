@@ -2,7 +2,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
+import { validCandidateIdeaCrossDomain, validRunEventEnvelope } from '@doppl/contracts';
 import type { LineageGraphProjection } from '@doppl/contracts';
 import { AppRoutes } from '../../../src/app/routes';
 import { RunClientProvider } from '../../../src/data/RunClientProvider';
@@ -41,6 +41,32 @@ beforeAll(() => {
 });
 afterEach(() => cleanup());
 
+class CapturingEventSource {
+  static instances: CapturingEventSource[] = [];
+  readonly listeners: ((event: { data: string }) => void)[] = [];
+  closed = false;
+
+  constructor(readonly url: string) {
+    CapturingEventSource.instances.push(this);
+  }
+
+  addEventListener(_type: 'message', listener: (event: { data: string }) => void): void {
+    this.listeners.push(listener);
+  }
+
+  removeEventListener() {}
+
+  close(): void {
+    this.closed = true;
+  }
+
+  emit(envelope: typeof validRunEventEnvelope): void {
+    for (const listener of this.listeners) {
+      listener({ data: JSON.stringify(envelope) });
+    }
+  }
+}
+
 const winnerLineage: LineageGraphProjection = {
   runId: 'run_1',
   nodes: [{ id: 'w', type: 'candidate', label: 'Winner', status: 'selected', dataRef: 'cand_1' }],
@@ -76,6 +102,51 @@ const bloomProjection: OuterBloomProjection = {
     },
   ],
   totals: { runs: 1, nodes: 1, problemRecoveries: 0, doppls: 0, selected: 0 },
+};
+
+const bloomProjectionWithCompletedNode: OuterBloomProjection = {
+  islands: [
+    {
+      runId: 'run_outer_live',
+      seed: 'Autonomy lowers crash frequency.',
+      status: 'running',
+      sequenceThrough: 4,
+      nodes: [
+        {
+          id: 'case-live',
+          runId: 'run_outer_live',
+          stage: 'case_study',
+          label: "When the Crashes Don't Come",
+          summary: 'Autonomy lowers crash frequency.',
+          status: 'created',
+          parentId: null,
+          generationIndex: null,
+          score: null,
+          novelty: null,
+          judgeAcceptance: null,
+          sourceId: 'case-live',
+          agenomeId: null,
+        },
+        {
+          id: 'problem-live',
+          runId: 'run_outer_live',
+          stage: 'problem_recovery',
+          label: 'Live Liability Recovery',
+          summary: 'The active run projected a newly completed outer problem recovery.',
+          status: 'selected',
+          parentId: 'case-live',
+          generationIndex: 0,
+          score: 0.82,
+          novelty: 0.7,
+          judgeAcceptance: 0.78,
+          sourceId: 'cand-live',
+          agenomeId: 'agn-live',
+        },
+      ],
+      edges: [{ id: 'case-live->problem-live', source: 'case-live', target: 'problem-live', type: 'recovered' }],
+    },
+  ],
+  totals: { runs: 1, nodes: 2, problemRecoveries: 1, doppls: 0, selected: 1 },
 };
 
 function fakeClient(): RunClient {
@@ -187,6 +258,53 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     fireEvent.click(runButton);
     expect(client.startRun).not.toHaveBeenCalled();
   });
+
+  it('test_bloom_map_refetches_and_follows_new_outer_nodes_from_live_stream', async () => {
+    CapturingEventSource.instances = [];
+    globalThis.EventSource = CapturingEventSource as unknown as typeof EventSource;
+    const client = fakeClient();
+    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    client.getOuterBloom = vi
+      .fn()
+      .mockResolvedValue(bloomProjectionWithCompletedNode)
+      .mockResolvedValueOnce(bloomProjection)
+      .mockResolvedValueOnce(bloomProjectionWithCompletedNode);
+    renderAt('/bloom', client);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
+    fireEvent.click(await screen.findByRole('button', { name: /run bloom/i }));
+
+    await waitFor(() => expect(CapturingEventSource.instances.length).toBe(1));
+    CapturingEventSource.instances[0]!.emit({
+      ...validRunEventEnvelope,
+      id: 'evt_live_4',
+      runId: 'run_outer_live',
+      sequence: 4,
+      type: 'generation.completed',
+      generationId: 'gen-live',
+      payload: { generationId: 'gen-live', selected: ['problem-live'] },
+    });
+
+    expect((await screen.findAllByText('Live Liability Recovery')).length).toBeGreaterThan(0);
+    expect(screen.getByText(/newly completed outer problem recovery/i)).toBeTruthy();
+    expect(client.getOuterBloom).toHaveBeenCalledTimes(2);
+  });
+
+  it('test_bloom_map_poll_refreshes_projection_while_run_is_streaming', async () => {
+    CapturingEventSource.instances = [];
+    globalThis.EventSource = CapturingEventSource as unknown as typeof EventSource;
+    const client = fakeClient();
+    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    client.getOuterBloom = vi.fn().mockResolvedValue(bloomProjection);
+    renderAt('/bloom', client);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
+    fireEvent.click(await screen.findByRole('button', { name: /run bloom/i }));
+    await waitFor(() => expect(CapturingEventSource.instances.length).toBe(1));
+    expect(client.getOuterBloom).toHaveBeenCalledTimes(2);
+
+    await waitFor(() => expect(client.getOuterBloom).toHaveBeenCalledTimes(3), { timeout: 3400 });
+  }, 5000);
 
   // spec(route-table completeness): an unknown path redirects to the bloom root.
   it('test_unknown_route_redirects_home', async () => {

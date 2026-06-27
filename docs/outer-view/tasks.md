@@ -152,7 +152,7 @@ Recommended sequencing:
   - On `201/200`, store active run id in local view state and show it in the live summary.
   - Follow-up: focus the new run's island once `/bloom` exposes it.
   - Show immediate "configured/starting" state while waiting for events.
-- [~] **R0.5-F: Live event subscription.**
+- [x] **R0.5-F: Live event subscription.**
   - Added a web SSE client for `GET /runs/:id/stream` after bloom launch.
   - Follow-up: resume with `Last-Event-ID`/`lastEventId` if disconnected.
   - Translate streamed events into:
@@ -160,8 +160,13 @@ Recommended sequencing:
     - proof-board counters
     - active progress state
     - optimistic graph updates where safe
-  - Current first slice refreshes `/bloom` on streamed events until first-class outer events exist.
+  - Current slice refreshes `/bloom` on streamed events until first-class outer events exist.
+  - Added a short live polling backstop while a launched run is streaming, so the bloom catches projection
+    updates even if an SSE frame is missed or the projection updates just after an event.
 - [~] **R0.5-G: Live graph growth.**
+  - The bloom now follows the active run: when `/bloom` exposes new nodes for the streamed run, the
+    selection moves to the newest meaningful outer artifact (selected Doppl, Doppl, problem recovery,
+    then case-study root).
   - Animate new nodes from streamed/projection changes.
   - Distinguish:
     - configured/starting

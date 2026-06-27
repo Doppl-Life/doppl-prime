@@ -75,6 +75,8 @@ interface BloomNodeActivation {
   timestamp: number;
 }
 
+const LIVE_BLOOM_REFRESH_MS = 2500;
+
 const shell: CSSProperties = {
   minHeight: 'calc(100vh - 56px)',
   display: 'grid',
@@ -236,6 +238,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [launchState, setLaunchState] = useState<LaunchState>({ kind: 'idle' });
   const [liveEvents, setLiveEvents] = useState<RunEventEnvelope[]>([]);
+  const liveNodeCountsRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     let active = true;
@@ -267,10 +270,34 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     return () => stream.close();
   }, [launchState]);
 
+  useEffect(() => {
+    if (launchState.kind !== 'streaming') return;
+    const timer = window.setInterval(() => {
+      setReloadKey((key) => key + 1);
+    }, LIVE_BLOOM_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [launchState]);
+
+  useEffect(() => {
+    if (launchState.kind !== 'streaming' || state.kind !== 'ready') return;
+    const island = state.bloom.islands.find((candidate) => candidate.runId === launchState.runId);
+    if (island === undefined) return;
+
+    const previousCount = liveNodeCountsRef.current.get(launchState.runId) ?? 0;
+    const selectedIsInLiveRun = island.nodes.some((node) => node.id === selectedId);
+    const newestNode = preferredLiveBloomNode(island);
+    liveNodeCountsRef.current.set(launchState.runId, island.nodes.length);
+
+    if (newestNode !== null && (!selectedIsInLiveRun || island.nodes.length > previousCount)) {
+      setSelectedId(newestNode.id);
+    }
+  }, [launchState, selectedId, state]);
+
   const handleStarted = (run: StartRunResult) => {
     setLaunchState({ kind: 'streaming', runId: run.runId });
     setSidebarMode('browse');
     setLiveEvents([]);
+    liveNodeCountsRef.current.delete(run.runId);
     setReloadKey((key) => key + 1);
   };
 
@@ -1722,6 +1749,21 @@ function defaultBloomSelection(bloom: OuterBloomProjection): string | null {
     nodes[0]?.id ??
     null
   );
+}
+
+function preferredLiveBloomNode(island: OuterBloomIsland): OuterBloomNode | null {
+  return (
+    lastOf(island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected')) ??
+    lastOf(island.nodes.filter((node) => node.stage === 'doppl')) ??
+    lastOf(island.nodes.filter((node) => node.stage === 'problem_recovery')) ??
+    lastOf(island.nodes.filter((node) => node.stage === 'case_study')) ??
+    island.nodes[island.nodes.length - 1] ??
+    null
+  );
+}
+
+function lastOf<T>(values: readonly T[]): T | null {
+  return values.length === 0 ? null : values[values.length - 1]!;
 }
 
 const stageFilterOptions: readonly { value: StageFilter; label: string }[] = [
