@@ -19,10 +19,11 @@
 - **Branch/PR state:** work lands to `main` via GitHub PRs (NEVER `git push origin main`; the team uses PRs —
   branch off `main` → push branch → `gh pr create --base main` → user merges). Ask before any push. **Active
   branch: `feature/coevolution-phase-a-honest-gate` (off `main`); A1 = `41afe08`, A2+A3 next commit. NOT pushed.**
-- **Where we are:** Phase A (A1 honest gate + adaptive default; A2 judge-keyed elitism; A3 ratchet-on) all
-  implemented + full apps/api preflight green (956 unit + 199 integration). Next: PR Phase A → merge → then
-  Decision D1 (headroom) gates whether/how to proceed to Phase B/C. The ceiling caveat (§3.4) is the live
-  strategic question.
+- **Where we are:** Phase A code-complete + green; **PR #15 open to `main`** (awaiting merge). D1 DECIDED:
+  weak-seed demo + harder-problem `/eval`. **Next concrete step (the "Headroom Gate" — must pass before Phase
+  B/C): (1) build the weak-seed capability ("give the climb room"), (2) run a live headroom check on a weak
+  seed with the Phase-A stack to confirm the bounce shrinks AND a real climb exists to couple for.** Only if
+  the climb is real do we proceed to Phase B/C. See §6 "Headroom Gate" + §8.
 - **Driver:** user/Michael makes the load-bearing calls (default cadence, eliteCount, headroom/problem choice).
 
 ---
@@ -202,7 +203,24 @@ Turn the existing machinery on and make it judge-honest. Three slices:
   byte-identically (rule #7); a recorded-gateway run shows the controller commits to exploit ONLY on a
   judge-component rise; PR merged to `main`.
 
-### Phase B — The cultural mirror (BUILD after A)
+### Headroom Gate — "give the climb room" + the headroom check (BUILD after A; BLOCKS Phase B/C)
+The ceiling caveat (§3.4) means Phase B/C must NOT be built until we've shown a real climb exists to couple
+*for*. Two steps, in order:
+- **HG1 — Weak-seed capability ("give the climb room").** Author a `WEAK_SEED_SET` (agenome templates whose
+  personas produce deliberately low-effort/surface answers so gen 0 scores ~0.4, not ~0.69) and a boot
+  selector (`DOPPL_SEED_PROFILE=default|weak`, default → `DEFAULT_SEED_SET`). Seed set is a boot config
+  (`loadConfig` `fileSources.seedSet ?? DEFAULT_SEED_SET`), not per-run, so this is an env-gated preset. Pure,
+  TDD-able config; **no cost.** (A harder *problem* for the `/eval` bake-off is the sibling lever — pick a
+  problem the model is bad at on the first try; that's data/config, not code.)
+- **HG2 — The headroom check (LIVE — costs $, needs the OpenRouter key + user go).** Boot the worker with the
+  weak seed + Phase-A stack, run live (`DOPPL_GATEWAY=live`, small pop×gens, low energy cap) on the demo
+  problem (and/or the harder problem). **Pass criteria:** (a) gen-0 best fitness is genuinely low (~0.4), (b)
+  best fitness *climbs* materially over generations (a real 0.4→0.7+ trajectory, not a 0.05 bounce), (c) the
+  honest gate + ratchet visibly hold/grow the peak (peak-to-final drop small). **If it climbs → proceed to
+  Phase B/C. If it flat-lines → STOP; the coupling won't help, and the work is a demo-framing problem, not an
+  algorithm problem.** This is the cheap de-risk that decides the whole Phase B/C investment.
+
+### Phase B — The cultural mirror (BUILD after the Headroom Gate passes)
 - **B1 — `trailEntropy(notes)`** pure primitive in `selection/knowledge/` (mean pairwise Jaccard-complement
   now; cosine when notes carry vectors — `retrieve.ts` auto-upgrades) + a `trailEntropyFloor`.
 - **Exit criteria:** unit-tested pure fn; wired read-only into a digest the retriever can see; no behavior
@@ -295,8 +313,11 @@ note-region tag + directed-repair bias (C2), the `coupled` strategy enum member 
 
 - **D1 — Headroom / problem selection (BLOCKS Phase C's payoff).** The demo problem is ceiling-bound (§3.4).
   To make the coupling's climb *visible/measurable*, pick a **weak seed** (gen 0 starts ~0.4 so there's room —
-  the reframe's recommended demo path) or a **harder problem** with real first-try headroom. **Recommendation:**
-  weak-seed for the demo + a harder problem for the real `/eval` bake-off. *Status: OPEN.*
+  the reframe's recommended demo path) or a **harder problem** with real first-try headroom. ***Status: DECIDED
+  (user, 2026-06-27)*** — **weak-seed for the demo + a harder problem for the `/eval` bake-off.** The weak-seed
+  capability ("give the climb room") is the ENABLER for the headroom check below — it must be built first.
+  Corollary: do NOT raise the ceiling by recalibrating the judge rubric (rule #6 / reward-hacking risk); create
+  headroom by seed/problem only.
 - **D2 — Default cadence.** Flip to `adaptive` first (Phase A) and prove the gate+ratchet win before paying for
   coupling — OR jump to `coupled`? **Recommendation:** staged (Phase A first). *Status: DECIDED — staged (per
   user, 2026-06-27).*
@@ -324,6 +345,10 @@ Phase A — Honest, non-regressive dynamics
   the existing recorded-run replay tests (now exercising the adaptive+ratchet path). `/eval` bounce check =
   pending a live run. **Remaining: open the Phase-A PR (ask first).**
 
+Headroom Gate (BLOCKS Phase B/C — D1 decided: weak-seed demo + harder-problem eval)
+- [ ] **HG1** Weak-seed capability — `WEAK_SEED_SET` + `DOPPL_SEED_PROFILE` boot selector (pure config, no cost)
+- [ ] **HG2** Live headroom check — weak seed + Phase-A stack; confirm a real climb exists (else STOP, don't build B/C)
+
 Phase B — Cultural mirror
 - [ ] **B1** `trailEntropy(notes)` pure primitive + floor (selection/knowledge) · PR merged
 
@@ -346,3 +371,7 @@ Levers (evidence-gated)
   code reads. Reconciled the 8 candidate breakthroughs with the existing (default-off, total-keyed) machinery
   and the CLIMB REFRAME ceiling caveat. User priority: build #3 + #6 (Phase A), then #2 (+#1 substrate) as
   Phase B/C, levers on evidence. Decision D2 = staged. Build starting on Phase A.
+- **2026-06-27 (later)** — Phase A built + green (A1 `41afe08`, A2+A3 `0b28c4e`); **PR #15** open to `main`.
+  User decided **D1 = weak-seed demo + harder-problem eval** and confirmed the "give the climb room" lever
+  (seed/problem, NOT judge recalibration). Added the **Headroom Gate** (HG1 weak-seed capability + HG2 live
+  headroom check) as the hard gate before any Phase B/C work. Next: HG1 (pure code, no cost), then HG2 (live, $).
