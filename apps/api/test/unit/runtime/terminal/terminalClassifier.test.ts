@@ -170,10 +170,21 @@ describe('classifyRunTerminal (P3.11 — pure run-terminal verdict over the pers
     expect(verdict.finalIdeaRef).toBe('c1'); // the top winner, preserved
   });
 
-  // The default (no maxWinners) is a SINGLE winner — byte-identical to the pre-A2 selection.
-  test('default_maxWinners_is_single_winner', () => {
-    const log = [fitnessScored('c1', 0.9, 1), fitnessScored('c2', 0.7, 2)];
+  // The default (no maxWinners) crowns the top-2 (DEFAULT_MAX_WINNERS = 2, the Islands-pivot activation).
+  test('default_maxWinners_crowns_top_2', () => {
+    const log = [
+      fitnessScored('c1', 0.9, 1),
+      fitnessScored('c2', 0.7, 2),
+      fitnessScored('c3', 0.5, 3),
+    ];
     const verdict = classifyRunTerminal({ log });
+    expect(verdict.finalIdeaRefs).toEqual(['c1', 'c2']); // top-2 by total
+    expect(verdict.finalIdeaRef).toBe('c1'); // the top winner, preserved
+  });
+
+  // A single scored survivor → exactly one winner even at the default cap of 2 (slice <= length).
+  test('default_with_one_survivor_crowns_one', () => {
+    const verdict = classifyRunTerminal({ log: [fitnessScored('c1', 0.9, 1)] });
     expect(verdict.finalIdeaRefs).toEqual(['c1']);
     expect(verdict.finalIdeaRef).toBe('c1');
   });
