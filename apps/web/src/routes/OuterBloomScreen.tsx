@@ -134,9 +134,14 @@ const titleRow: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 'var(--space-3)',
+  minHeight: 38,
+  alignSelf: 'center',
 };
 const runReplayButton: CSSProperties = {
   minHeight: 34,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   border: 'thin solid var(--accent)',
   borderRadius: '999px',
   background: 'color-mix(in srgb, var(--accent) 84%, var(--bg-surface))',
@@ -145,6 +150,7 @@ const runReplayButton: CSSProperties = {
   fontWeight: 800,
   cursor: 'pointer',
   boxShadow: 'var(--glow-active)',
+  lineHeight: 1,
 };
 const statLabel: CSSProperties = {
   display: 'block',
@@ -362,6 +368,12 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     replayTimersRef.current = [];
   };
 
+  const stopBloomReplay = () => {
+    clearReplayTimers();
+    replayTokenRef.current += 1;
+    setReplayState({ kind: 'idle' });
+  };
+
   const scheduleReplayNode = (
     island: OuterBloomIsland,
     nodeId: string,
@@ -490,10 +502,16 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
           <button
             type="button"
             style={runReplayButton}
-            onClick={() => startBloomReplay(state.bloom)}
-            title="Replay how the current Agarden graph grows from the origin case study"
+            onClick={() =>
+              replayState.kind === 'running' ? stopBloomReplay() : startBloomReplay(state.bloom)
+            }
+            title={
+              replayState.kind === 'running'
+                ? 'Stop the replay and show the full Agarden graph'
+                : 'Replay how the current Agarden graph grows from the origin case study'
+            }
           >
-            {replayState.kind === 'running' ? 'Restart Run' : 'Run'}
+            {replayState.kind === 'running' ? 'Stop Run' : 'Run'}
           </button>
         </div>
         <div
