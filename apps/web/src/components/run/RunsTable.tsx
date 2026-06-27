@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { CSSProperties, MouseEvent } from 'react';
 import { Button, StatusBadge } from '../ds';
 import { resolveStatus } from '../core/status-map';
@@ -6,15 +6,17 @@ import type { RunSummary } from '../../data/runClient';
 import { DEFAULT_SORT, failedBeforeGenerating, groupRunsByDay, timeOfDay } from './runsSummary';
 import type { RunGroup, SortKey, SortState } from './runsSummary';
 import { Sparkline } from './Sparkline';
+import { RunPeek } from './RunPeek';
 
 /**
  * RunsTable (S0 Runs home) — the date-grouped runs table. Rows are bucketed under day headers
  * ("Today" / "Yesterday" / "Jun 24") to cut the repeated-timestamp noise; each row carries a
  * status-colored accent bar (a redundant, scannable channel alongside the StatusBadge label — never
- * color alone, rule #4), the problem + final idea, a candidate meter (LENGTH is the truth), a compact
- * activity readout, and a status-derived action (Replay for terminal runs, Open live for running
- * ones). A live run's accent + meter breathe via the shared liveness pulse. Pure presentation over the
- * enriched RunSummary; read-only (rule #2) — actions navigate, they never mutate. Tokens only.
+ * color alone, rule #4), the problem + final idea, a fitness sparkline of the per-generation climb, a
+ * compact activity readout, and a status-derived action (Replay for terminal runs, Open live for
+ * running ones). A live run's accent breathes via the shared liveness pulse; sortable headers reorder
+ * the list (a non-default sort flattens the day grouping) and a chevron expands an inline RunPeek
+ * drawer. Pure presentation over the enriched RunSummary; read-only (rule #2). Tokens only.
  */
 export interface RunsTableProps {
   runs: readonly RunSummary[];
@@ -91,6 +93,28 @@ const sortBtn: CSSProperties = {
   gap: 'var(--space-1)',
 };
 const sortArrow: CSSProperties = { fontSize: 'var(--text-mono)', color: 'var(--accent)' };
+const runCell: CSSProperties = { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
+const chevronBtn: CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  padding: 0,
+  color: 'var(--fg-muted)',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+};
+const peekTd: CSSProperties = {
+  padding: '0 var(--space-3) var(--space-3)',
+  borderBottom: 'thin solid var(--border-subtle)',
+};
+function chevronStyle(open: boolean): CSSProperties {
+  return {
+    display: 'inline-block',
+    fontSize: 'var(--text-mono)',
+    transition: 'transform var(--motion-fast) var(--ease-out)',
+    transform: open ? 'rotate(90deg)' : 'none',
+  };
+}
 const td: CSSProperties = {
   padding: 'var(--space-2) var(--space-3)',
   borderBottom: 'thin solid var(--border-subtle)',
@@ -173,6 +197,14 @@ export function RunsTable({
   grouped = true,
 }: RunsTableProps) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const stop = (cb: () => void) => (e: MouseEvent) => {
     e.stopPropagation();
     cb();
@@ -238,6 +270,8 @@ export function RunsTable({
             rows={group.rows}
             hovered={hovered}
             setHovered={setHovered}
+            expanded={expanded}
+            onToggle={toggle}
             onOpen={onOpen}
             onReplay={onReplay}
             onOpenLive={onOpenLive}
@@ -254,6 +288,8 @@ function RunGroupRows({
   rows,
   hovered,
   setHovered,
+  expanded,
+  onToggle,
   onOpen,
   onReplay,
   onOpenLive,
@@ -263,6 +299,8 @@ function RunGroupRows({
   rows: ReturnType<typeof groupRunsByDay>[number]['rows'];
   hovered: string | null;
   setHovered: (id: string | null) => void;
+  expanded: ReadonlySet<string>;
+  onToggle: (id: string) => void;
   onOpen: (runId: string, status: string | null) => void;
   onReplay: (runId: string) => void;
   onOpenLive: (runId: string) => void;
@@ -292,111 +330,140 @@ function RunGroupRows({
         const fitness = run.fitnessByGeneration ?? [];
         const lastFromSeries = fitness.length > 0 ? fitness[fitness.length - 1] : undefined;
         const lastFit = run.winnerFitness ?? lastFromSeries ?? null;
+        const isExpanded = expanded.has(run.runId);
         return (
-          <tr
-            key={run.runId}
-            style={rowStyle}
-            onMouseEnter={() => setHovered(run.runId)}
-            onMouseLeave={() => setHovered(null)}
-            onClick={() => onOpen(run.runId, run.status)}
-          >
-            <td style={accentTd}>
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 'var(--space-1)',
-                  height: 'var(--space-5)',
-                  borderRadius: 'var(--radius-full)',
-                  background: spec.colorToken,
-                  animation: accentAnim,
-                }}
-              />
-            </td>
-            <td style={tdNum}>{index}</td>
-            <td style={td}>
-              <button
-                type="button"
-                aria-label={`Open run ${run.runId}`}
-                title={run.runId}
-                style={idButton}
-                onClick={stop(() => onOpen(run.runId, run.status))}
-              >
-                {shortId(run.runId)}
-              </button>
-            </td>
-            <td style={tdMuted}>{timeOfDay(run.createdAt)}</td>
-            <td style={td}>
-              <div style={clamp} title={run.problem ?? undefined}>
-                {orDash(run.problem)}
-              </div>
-            </td>
-            <td style={td}>
-              {failedNoIdea ? (
-                <div style={failedNote}>Failed before generating</div>
-              ) : (
-                <div style={clamp} title={run.finalIdeaSummary ?? run.finalIdeaTitle ?? undefined}>
-                  {orDash(run.finalIdeaTitle)}
-                </div>
-              )}
-            </td>
-            <td style={td}>
-              <StatusBadge domain="run" status={run.status ?? 'unknown'} size="sm" />
-            </td>
-            <td style={td}>
-              <div style={meterLabelRow}>
-                <span>
-                  <span data-testid={`run-gens-${run.runId}`}>{run.generations ?? 0}</span> gens
-                </span>
-                <span>
-                  <span data-testid={`run-cands-${run.runId}`}>{run.candidates ?? 0}</span> cands
-                </span>
-              </div>
-              {fitness.length > 0 ? (
-                <div style={sparkRow}>
-                  <Sparkline
-                    values={fitness}
-                    color={spec.colorToken}
-                    ariaLabel={`best fitness across ${fitness.length} generation${
-                      fitness.length === 1 ? '' : 's'
-                    }, latest ${lastFit !== null ? lastFit.toFixed(2) : 'unavailable'}`}
-                  />
-                  {lastFit !== null && <span style={fitVal}>{lastFit.toFixed(2)}</span>}
-                </div>
-              ) : (
-                <div style={meterTrack} aria-hidden="true" />
-              )}
-            </td>
-            <td
-              style={activityCell}
-              data-testid={`run-activity-${run.runId}`}
-              title={`${run.reproductions ?? 0} reproductions · ${run.culls ?? 0} culls · ${run.mutations ?? 0} mutations`}
+          <Fragment key={run.runId}>
+            <tr
+              style={rowStyle}
+              onMouseEnter={() => setHovered(run.runId)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => onOpen(run.runId, run.status)}
             >
-              {`↻${run.reproductions ?? 0} ✕${run.culls ?? 0} ⤳${run.mutations ?? 0}`}
-            </td>
-            <td style={td}>
-              {actions.replay && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  glyph="⏮"
-                  onClick={stop(() => onReplay(run.runId))}
-                >
-                  Replay
-                </Button>
-              )}
-              {actions.openLive && (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  glyph="▸"
-                  onClick={stop(() => onOpenLive(run.runId))}
-                >
-                  Open live
-                </Button>
-              )}
-              {!actions.replay && !actions.openLive && <span style={tdMuted}>{EM_DASH}</span>}
-            </td>
-          </tr>
+              <td style={accentTd}>
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 'var(--space-1)',
+                    height: 'var(--space-5)',
+                    borderRadius: 'var(--radius-full)',
+                    background: spec.colorToken,
+                    animation: accentAnim,
+                  }}
+                />
+              </td>
+              <td style={tdNum}>{index}</td>
+              <td style={td}>
+                <div style={runCell}>
+                  <button
+                    type="button"
+                    aria-label={
+                      isExpanded
+                        ? `Collapse detail for run ${run.runId}`
+                        : `Expand detail for run ${run.runId}`
+                    }
+                    aria-expanded={isExpanded}
+                    style={chevronBtn}
+                    onClick={stop(() => onToggle(run.runId))}
+                  >
+                    <span aria-hidden="true" style={chevronStyle(isExpanded)}>
+                      ▸
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Open run ${run.runId}`}
+                    title={run.runId}
+                    style={idButton}
+                    onClick={stop(() => onOpen(run.runId, run.status))}
+                  >
+                    {shortId(run.runId)}
+                  </button>
+                </div>
+              </td>
+              <td style={tdMuted}>{timeOfDay(run.createdAt)}</td>
+              <td style={td}>
+                <div style={clamp} title={run.problem ?? undefined}>
+                  {orDash(run.problem)}
+                </div>
+              </td>
+              <td style={td}>
+                {failedNoIdea ? (
+                  <div style={failedNote}>Failed before generating</div>
+                ) : (
+                  <div
+                    style={clamp}
+                    title={run.finalIdeaSummary ?? run.finalIdeaTitle ?? undefined}
+                  >
+                    {orDash(run.finalIdeaTitle)}
+                  </div>
+                )}
+              </td>
+              <td style={td}>
+                <StatusBadge domain="run" status={run.status ?? 'unknown'} size="sm" />
+              </td>
+              <td style={td}>
+                <div style={meterLabelRow}>
+                  <span>
+                    <span data-testid={`run-gens-${run.runId}`}>{run.generations ?? 0}</span> gens
+                  </span>
+                  <span>
+                    <span data-testid={`run-cands-${run.runId}`}>{run.candidates ?? 0}</span> cands
+                  </span>
+                </div>
+                {fitness.length > 0 ? (
+                  <div style={sparkRow}>
+                    <Sparkline
+                      values={fitness}
+                      color={spec.colorToken}
+                      ariaLabel={`best fitness across ${fitness.length} generation${
+                        fitness.length === 1 ? '' : 's'
+                      }, latest ${lastFit !== null ? lastFit.toFixed(2) : 'unavailable'}`}
+                    />
+                    {lastFit !== null && <span style={fitVal}>{lastFit.toFixed(2)}</span>}
+                  </div>
+                ) : (
+                  <div style={meterTrack} aria-hidden="true" />
+                )}
+              </td>
+              <td
+                style={activityCell}
+                data-testid={`run-activity-${run.runId}`}
+                title={`${run.reproductions ?? 0} reproductions · ${run.culls ?? 0} culls · ${run.mutations ?? 0} mutations`}
+              >
+                {`↻${run.reproductions ?? 0} ✕${run.culls ?? 0} ⤳${run.mutations ?? 0}`}
+              </td>
+              <td style={td}>
+                {actions.replay && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    glyph="⏮"
+                    onClick={stop(() => onReplay(run.runId))}
+                  >
+                    Replay
+                  </Button>
+                )}
+                {actions.openLive && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    glyph="▸"
+                    onClick={stop(() => onOpenLive(run.runId))}
+                  >
+                    Open live
+                  </Button>
+                )}
+                {!actions.replay && !actions.openLive && <span style={tdMuted}>{EM_DASH}</span>}
+              </td>
+            </tr>
+            {isExpanded && (
+              <tr>
+                <td colSpan={COL_COUNT} style={peekTd}>
+                  <RunPeek run={run} />
+                </td>
+              </tr>
+            )}
+          </Fragment>
         );
       })}
     </>

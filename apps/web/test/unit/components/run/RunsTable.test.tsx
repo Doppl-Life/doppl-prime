@@ -135,6 +135,22 @@ describe('RunsTable', () => {
     expect(screen.queryByText(/today|yesterday/i)).toBeNull();
   });
 
+  it('expands an inline peek with the run detail when the chevron is toggled', () => {
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1', reproductions: 7 })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('repro')).toBeNull(); // collapsed: no peek
+    fireEvent.click(screen.getByRole('button', { name: /expand detail for run r1/i }));
+    expect(screen.getByText('repro')).toBeTruthy(); // peek activity breakdown is shown
+    fireEvent.click(screen.getByRole('button', { name: /collapse detail for run r1/i }));
+    expect(screen.queryByText('repro')).toBeNull(); // toggled closed again
+  });
+
   it('styling uses var() tokens — no raw hex / no raw px', () => {
     const files = readdirSync(RUN_DIR).filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
     for (const f of files) {
