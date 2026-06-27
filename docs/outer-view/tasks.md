@@ -108,7 +108,10 @@ Recommended sequencing:
   - Map `RunsHomeScreen`, `RunConfigPanel`, `startDemoRun`, and `startRun` to the bloom view.
   - Decide what can be reused as-is and what should be extracted into shared launch components.
   - Confirm how the API's cap maxima should be fetched before rendering the bloom launch panel.
-- [ ] **R0.5-B: Define `StartBloomRequest` as a web-local view model, not a new frozen contract.**
+- [x] **R0.5-B: Define `StartBloomRequest` as a web-local view model, not a new frozen contract.**
+  - Implemented as `BloomGrowForm` in `apps/web/src/routes/outerBloomRunConfig.ts`.
+  - It intentionally maps to the existing frozen `RunConfig` contract at submit time; no new API payload
+    or browser-owned outer run model was introduced.
   - Fields:
     - title/name
     - seed/context text
@@ -116,16 +119,13 @@ Recommended sequencing:
     - optional uploaded case-study filename/body
     - generation mode: recover problem, grow Doppls, campaign
     - direction/dial
-    - generate count
-    - keep/survivor count
+    - population count
+    - spawn depth
     - mutagen operators
     - max generations/depth
-    - max population/nodes
     - max runtime/energy/tool calls
-    - optional model route override
-  - Convert this view model to `RunConfig` at submit time.
-  - Keep the conversion deterministic and test-covered.
-- [ ] **R0.5-C: Build the compact bloom launch panel.**
+  - Conversion is deterministic and unit-tested. Optional model route override remains a follow-up.
+- [x] **R0.5-C: Build the compact bloom launch panel.**
   - Place it behind a left-sidebar **Grow** tab next to the existing **Browse** tab.
   - Keep the default page state on **Browse** with the current `when-the-crashes-dont-come-575845a4`
     island selected and fit in the graph.
@@ -134,11 +134,11 @@ Recommended sequencing:
     - case-study selector/upload/manual paste
     - concise title/context/synopsis inputs
     - dial segmented control
-    - generated / keep controls mapped to caps
+    - population / spawn-depth / generation controls mapped to caps
     - mutagen chips from `GenerationOperator`
-    - start and stop buttons
+    - start button
   - Keep this panel collapsible or left-rail sized so it does not consume the radial map.
-- [ ] **R0.5-D: Add case-study file ingestion.**
+- [x] **R0.5-D: Add case-study file ingestion.**
   - Support markdown/text upload in the browser.
   - Parse frontmatter when present.
   - Extract reasonable defaults:
@@ -146,21 +146,22 @@ Recommended sequencing:
     - synopsis from frontmatter/`## Synopsis`/first paragraph
     - seed/context from full markdown body
   - Never upload secrets or file handles; the browser sends only the derived run config.
-- [ ] **R0.5-E: Start run from bloom.**
+- [x] **R0.5-E: Start run from bloom.**
   - Add `startBloomRun` UI flow using existing `runClient.startRun`.
   - Use an idempotency key per submit.
-  - On `201/200`, store active run id in route state and select/focus the run's island.
+  - On `201/200`, store active run id in local view state and show it in the live summary.
+  - Follow-up: focus the new run's island once `/bloom` exposes it.
   - Show immediate "configured/starting" state while waiting for events.
-- [ ] **R0.5-F: Live event subscription.**
-  - Add a web SSE client for `GET /runs/:id/stream`.
-  - Resume with `Last-Event-ID`/`lastEventId` if disconnected.
+- [~] **R0.5-F: Live event subscription.**
+  - Added a web SSE client for `GET /runs/:id/stream` after bloom launch.
+  - Follow-up: resume with `Last-Event-ID`/`lastEventId` if disconnected.
   - Translate streamed events into:
-    - run console rows
+    - live summary rows
     - proof-board counters
     - active progress state
     - optimistic graph updates where safe
-  - Periodically refresh `/bloom` or refresh on meaningful event types until first-class outer events exist.
-- [ ] **R0.5-G: Live graph growth.**
+  - Current first slice refreshes `/bloom` on streamed events until first-class outer events exist.
+- [~] **R0.5-G: Live graph growth.**
   - Animate new nodes from streamed/projection changes.
   - Distinguish:
     - configured/starting
@@ -173,11 +174,12 @@ Recommended sequencing:
   - Wire `POST /runs/:id/stop`.
   - Show stop-requested/draining until the SSE/projection reports `run.stopped` or another terminal state.
   - If the browser reloads mid-run, recover active run state from `GET /runs` and `/bloom`.
-- [ ] **R0.5-I: Tests.**
-  - Unit-test bloom request -> `RunConfig` mapping.
-  - Unit-test case-study file parsing.
+- [~] **R0.5-I: Tests.**
+  - Unit-tested bloom request -> `RunConfig` mapping.
+  - Unit-tested case-study file parsing.
   - Unit-test SSE reducer behavior over representative events.
-  - Integration-test `POST /runs` from bloom flow using API inject/fake gateway.
+  - Component-tested `POST /runs` from bloom flow using a fake `RunClient`, no provider spend.
+  - Follow-up: integration-test through API inject/fake gateway.
   - Browser-test live startup using a recorded/demo gateway so the graph changes without real provider spend.
 
 Important boundary:
@@ -337,18 +339,18 @@ Important boundary:
 
 ## Phase 6: Live Growth Experience
 
-- [ ] Stream live outer-run updates while a case study blooms.
-- [ ] Add Start Bloom panel modeled after experiment-spike's seed/run controls.
-- [ ] Let uploaded case-study markdown populate seed/title/synopsis/context automatically.
-- [ ] Map experiment-spike controls to production `RunConfig`:
+- [~] Stream live outer-run updates while a case study blooms.
+- [x] Add Start Bloom panel modeled after experiment-spike's seed/run controls.
+- [x] Let uploaded case-study markdown populate seed/title/synopsis/context automatically.
+- [x] Map experiment-spike controls to production `RunConfig`:
   - Direction/dial -> `generationBias`
   - Operators/mutagens -> `generationOperators`
-  - Generate count -> `caps.maxPopulation`
-  - Keep count -> selection/survivor policy follow-up; initially express through caps/proof, not as fake UI
-  - Depth -> `caps.maxGenerations` / future outer campaign depth
-  - Max nodes -> `caps.maxPopulation * caps.maxGenerations` guard / future campaign cap
+  - Population count -> `caps.maxPopulation`
+  - Spawn depth -> `caps.maxSpawnDepth`
+  - Depth -> `caps.maxGenerations`
+  - Energy/tool/runtime -> `caps.energyBudget`, `caps.maxToolCalls`, `caps.wallClockTimeoutMs`
   - Stop -> `POST /runs/:id/stop`
-- [ ] Add an SSE client for `GET /runs/:id/stream`.
+- [x] Add an SSE client for `GET /runs/:id/stream`.
 - [ ] Add run console/progress panel inspired by experiment-spike.
 - [ ] Refresh `/bloom` in response to live run events until first-class outer artifact events exist.
 - [ ] Animate newly created problem recoveries and Doppls entering the graph.

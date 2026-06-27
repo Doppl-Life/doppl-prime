@@ -7,6 +7,7 @@ import type { LineageGraphProjection } from '@doppl/contracts';
 import { AppRoutes } from '../../../src/app/routes';
 import { RunClientProvider } from '../../../src/data/RunClientProvider';
 import type { RunClient } from '../../../src/data/runClient';
+import type { OuterBloomProjection } from '../../../src/data/outerBloom';
 
 // React Flow (the lineage panel mounted on run routes) measures via ResizeObserver + matchMedia, and
 // the Dashboard wires the real SSE stream (new EventSource) — happy-dom has none of these. Stub them
@@ -47,6 +48,36 @@ const winnerLineage: LineageGraphProjection = {
   sequenceThrough: 10,
 };
 
+const bloomProjection: OuterBloomProjection = {
+  islands: [
+    {
+      runId: 'when-the-crashes-dont-come-575845a4',
+      seed: 'Autonomy lowers crash frequency.',
+      status: 'imported',
+      sequenceThrough: 1,
+      nodes: [
+        {
+          id: 'case',
+          runId: 'when-the-crashes-dont-come-575845a4',
+          stage: 'case_study',
+          label: "When the Crashes Don't Come",
+          summary: 'Autonomy lowers crash frequency.',
+          status: 'imported',
+          parentId: null,
+          generationIndex: null,
+          score: null,
+          novelty: null,
+          judgeAcceptance: null,
+          sourceId: 'case',
+          agenomeId: null,
+        },
+      ],
+      edges: [],
+    },
+  ],
+  totals: { runs: 1, nodes: 1, problemRecoveries: 0, doppls: 0, selected: 0 },
+};
+
 function fakeClient(): RunClient {
   return {
     listRuns: vi.fn(() => Promise.resolve([])),
@@ -71,6 +102,7 @@ function fakeClient(): RunClient {
     startDemoRun: vi.fn(() => Promise.resolve({ runId: 'run_demo' })),
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
+    getOuterBloom: vi.fn(() => Promise.resolve(bloomProjection)),
   } as unknown as RunClient;
 }
 
@@ -105,20 +137,43 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(await screen.findByText('REPLAY')).toBeTruthy();
   });
 
-  // spec(§12): / renders the S0 RunsHomeScreen (FV.2 — empty state here, listRuns→[]), NOT a run
-  // observatory (no run-health fetch). The launcher moved to /launch.
-  it('test_route_root_shows_home', async () => {
+  // spec(§12): / renders the outer bloom map, not a run observatory. The run-list remains at /runs-home.
+  it('test_route_root_shows_bloom', async () => {
     const { client } = renderAt('/');
-    // the S0 RunsHomeScreen-specific New Run CTA (the old Dashboard launcher had none) — distinguishes
-    // S0 from the FV.1 interim Dashboard mount.
-    expect(await screen.findByRole('button', { name: /new run/i })).toBeTruthy();
-    expect(client.getRunHealth).not.toHaveBeenCalled(); // home is not an observatory
+    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
+    expect((await screen.findAllByText("When the Crashes Don't Come")).length).toBeGreaterThan(0);
+    expect(client.getRunHealth).not.toHaveBeenCalled();
   });
 
-  // spec(route-table completeness): an unknown path redirects to the S0 home.
+  it('test_bloom_grow_tab_starts_run_with_existing_runconfig_contract', async () => {
+    const client = fakeClient();
+    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    renderAt('/bloom', client);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
+    expect(await screen.findByLabelText('Grow bloom')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /run bloom/i }));
+
+    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
+    const [config, options] = vi.mocked(client.startRun).mock.calls[0]!;
+    expect(config.seed).toContain("Title: When the Crashes Don't Come");
+    expect(config.enabledSubtypes).toEqual(['cross_domain_transfer', 'zeitgeist_synthesis']);
+    expect(config.caps).toMatchObject({
+      maxPopulation: 8,
+      maxGenerations: 4,
+      maxSpawnDepth: 3,
+      energyBudget: 12000,
+      maxToolCalls: 240,
+    });
+    expect(config.generationOperators).toEqual(['first_principles', 'polymath', 'blindside']);
+    expect(options?.idempotencyKey).toMatch(/^outer-bloom-/);
+    expect(await screen.findByText(/run_outer_live/i)).toBeTruthy();
+  });
+
+  // spec(route-table completeness): an unknown path redirects to the bloom root.
   it('test_unknown_route_redirects_home', async () => {
     renderAt('/totally/unknown/path');
-    expect(await screen.findByRole('button', { name: /new run/i })).toBeTruthy(); // → S0 home
+    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
     expect(screen.getByTestId('loc').textContent).toBe('/');
   });
 
@@ -134,6 +189,7 @@ describe('app router — route table + nav wiring (FV.1)', () => {
   // spec(§12): the AppShell global chrome (◆ Doppl wordmark + theme toggle) renders on EVERY route.
   it('test_app_shell_chrome_on_every_route', async () => {
     renderAt('/');
+    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /doppl/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /theme/i })).toBeTruthy();
     cleanup();

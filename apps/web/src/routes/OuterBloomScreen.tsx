@@ -1,8 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, PointerEvent, WheelEvent } from 'react';
+import type { ChangeEvent, CSSProperties, PointerEvent, WheelEvent } from 'react';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import type { RunClient } from '../data/runClient';
+import type { StartRunResult } from '../data/runClient';
 import type { OuterBloomIsland, OuterBloomNode, OuterBloomProjection } from '../data/outerBloom';
+import { resolveApiBaseUrl } from '../data/apiBase';
+import { createSseStream } from '../data/sseStream';
+import type { RunEventEnvelope } from '../data/contracts';
+import type { EventSourceLike, SseStream } from '../data/sseStream';
+import {
+  buildBloomRunConfig,
+  DEFAULT_BLOOM_GROW_FORM,
+  updateBloomGrowFormFromMarkdown,
+} from './outerBloomRunConfig';
+import type { BloomGrowForm, BloomGrowthDirection, BloomGrowthMode } from './outerBloomRunConfig';
 
 interface OuterBloomScreenProps {
   runClient: RunClient;
@@ -16,6 +27,12 @@ type LoadState =
 type StageFilter = 'all' | 'case_study' | 'problem_recovery' | 'doppl' | 'selected';
 type ScoreFilter = 'all' | 'scored' | 'unscored' | 'strong_judge' | 'selected';
 type SortMode = 'lineage' | 'strongest' | 'selected';
+type SidebarMode = 'browse' | 'grow';
+type LaunchState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'starting' }
+  | { readonly kind: 'streaming'; readonly runId: string }
+  | { readonly kind: 'error'; readonly message: string };
 
 interface LayoutNode extends OuterBloomNode {
   x: number;
@@ -175,6 +192,22 @@ const inputStyle: CSSProperties = {
   font: 'inherit',
 };
 
+const textAreaStyle: CSSProperties = {
+  ...inputStyle,
+  minHeight: 124,
+  resize: 'vertical',
+  padding: 'var(--space-2)',
+  lineHeight: 1.45,
+};
+
+const sidebarTabs: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: 'var(--space-2)',
+  padding: 'var(--space-3)',
+  borderBottom: 'thin solid var(--border-subtle)',
+};
+
 const compactBloomMeta: CSSProperties = {
   display: 'flex',
   justifyContent: 'flex-end',
@@ -194,15 +227,18 @@ const compactMetaStrong: CSSProperties = {
 export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>('browse');
   const [stageFilter, setStageFilter] = useState<StageFilter>('all');
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('lineage');
   const [query, setQuery] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [launchState, setLaunchState] = useState<LaunchState>({ kind: 'idle' });
+  const [liveEvents, setLiveEvents] = useState<RunEventEnvelope[]>([]);
 
   useEffect(() => {
     let active = true;
-    setState({ kind: 'loading' });
+    setState((current) => (current.kind === 'ready' ? current : { kind: 'loading' }));
     runClient
       .getOuterBloom()
       .then((bloom) => {
@@ -215,6 +251,27 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
       active = false;
     };
   }, [runClient, reloadKey]);
+
+  useEffect(() => {
+    if (launchState.kind !== 'streaming') return;
+    const baseUrl = resolveApiBaseUrl(import.meta.env);
+    const stream: SseStream = createSseStream({
+      url: `${baseUrl}/runs/${encodeURIComponent(launchState.runId)}/stream`,
+      eventSourceFactory: (url): EventSourceLike => new EventSource(url),
+      onEvent: (event) => {
+        setLiveEvents((current) => [...current.slice(-11), event]);
+        setReloadKey((key) => key + 1);
+      },
+    });
+    return () => stream.close();
+  }, [launchState]);
+
+  const handleStarted = (run: StartRunResult) => {
+    setLaunchState({ kind: 'streaming', runId: run.runId });
+    setSidebarMode('browse');
+    setLiveEvents([]);
+    setReloadKey((key) => key + 1);
+  };
 
   if (state.kind === 'loading') {
     return (
@@ -281,20 +338,42 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
         </section>
       ) : (
         <section className="outer-bloom-body" style={body}>
-          <BloomLibrary
-            bloom={state.bloom}
-            visibleBloom={visibleBloom}
-            selectedId={selected?.id ?? null}
-            stageFilter={stageFilter}
-            scoreFilter={scoreFilter}
-            sortMode={sortMode}
-            query={query}
-            onStageFilterChange={setStageFilter}
-            onScoreFilterChange={setScoreFilter}
-            onSortModeChange={setSortMode}
-            onQueryChange={setQuery}
-            onSelect={setSelectedId}
-          />
+          <aside style={panel} aria-label="Bloom control rail">
+            <div style={sidebarTabs}>
+              <SidebarTab active={sidebarMode === 'browse'} onClick={() => setSidebarMode('browse')}>
+                Browse
+              </SidebarTab>
+              <SidebarTab active={sidebarMode === 'grow'} onClick={() => setSidebarMode('grow')}>
+                Grow
+              </SidebarTab>
+            </div>
+            {sidebarMode === 'browse' ? (
+              <BloomLibrary
+                bloom={state.bloom}
+                visibleBloom={visibleBloom}
+                selectedId={selected?.id ?? null}
+                stageFilter={stageFilter}
+                scoreFilter={scoreFilter}
+                sortMode={sortMode}
+                query={query}
+                launchState={launchState}
+                liveEvents={liveEvents}
+                onStageFilterChange={setStageFilter}
+                onScoreFilterChange={setScoreFilter}
+                onSortModeChange={setSortMode}
+                onQueryChange={setQuery}
+                onSelect={setSelectedId}
+              />
+            ) : (
+              <BloomGrowPanel
+                runClient={runClient}
+                selectedIsland={selectedIsland}
+                launchState={launchState}
+                onLaunchState={setLaunchState}
+                onStarted={handleStarted}
+              />
+            )}
+          </aside>
 
           <div style={centerColumn}>
             <BloomGraph
@@ -320,6 +399,8 @@ function BloomLibrary({
   scoreFilter,
   sortMode,
   query,
+  launchState,
+  liveEvents,
   onStageFilterChange,
   onScoreFilterChange,
   onSortModeChange,
@@ -333,6 +414,8 @@ function BloomLibrary({
   scoreFilter: ScoreFilter;
   sortMode: SortMode;
   query: string;
+  launchState: LaunchState;
+  liveEvents: readonly RunEventEnvelope[];
   onStageFilterChange: (filter: StageFilter) => void;
   onScoreFilterChange: (filter: ScoreFilter) => void;
   onSortModeChange: (mode: SortMode) => void;
@@ -341,7 +424,7 @@ function BloomLibrary({
 }) {
   const visibleCount = visibleBloom.islands.reduce((count, island) => count + island.nodes.length, 0);
   return (
-    <aside style={panel} aria-label="Bloom library">
+    <div aria-label="Bloom library">
       <div style={panelHeader}>
         <h2 style={panelTitle}>Library</h2>
         <p style={{ margin: 'var(--space-2) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
@@ -402,6 +485,7 @@ function BloomLibrary({
             ))}
           </select>
         </label>
+        <LiveRunSummary launchState={launchState} liveEvents={liveEvents} />
       </div>
       <div style={islandList}>
         {visibleBloom.islands.map((island) => {
@@ -462,8 +546,323 @@ function BloomLibrary({
           );
         })}
       </div>
-    </aside>
+    </div>
   );
+}
+
+function SidebarTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: 'thin solid',
+        borderColor: active ? 'var(--accent)' : 'var(--border-subtle)',
+        borderRadius: '999px',
+        background: active ? 'var(--accent)' : 'var(--bg-surface-2)',
+        color: active ? 'var(--bg-base)' : 'var(--fg-muted)',
+        padding: '0.55rem 0.7rem',
+        fontWeight: 800,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function BloomGrowPanel({
+  runClient,
+  selectedIsland,
+  launchState,
+  onLaunchState,
+  onStarted,
+}: {
+  runClient: RunClient;
+  selectedIsland: OuterBloomIsland | null;
+  launchState: LaunchState;
+  onLaunchState: (state: LaunchState) => void;
+  onStarted: (run: StartRunResult) => void;
+}) {
+  const [form, setForm] = useState<BloomGrowForm>(() => bloomGrowFormFromIsland(selectedIsland));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const update = <Key extends keyof BloomGrowForm>(key: Key, value: BloomGrowForm[Key]) => {
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file === undefined) return;
+    const text = await file.text();
+    setForm((current) => updateBloomGrowFormFromMarkdown(current, text, file.name));
+  };
+
+  const submit = () => {
+    const result = buildBloomRunConfig(form);
+    if (!result.ok) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors({});
+    onLaunchState({ kind: 'starting' });
+    runClient
+      .startRun(result.config, { idempotencyKey: `outer-bloom-${crypto.randomUUID()}` })
+      .then(onStarted)
+      .catch((error: unknown) => {
+        onLaunchState({
+          kind: 'error',
+          message: error instanceof Error ? error.message : 'Failed to start bloom run.',
+        });
+      });
+  };
+
+  const busy = launchState.kind === 'starting';
+
+  return (
+    <div aria-label="Grow bloom" style={{ display: 'grid', gap: 'var(--space-3)' }}>
+      <div style={panelHeader}>
+        <h2 style={panelTitle}>Grow</h2>
+        <p style={{ margin: 'var(--space-2) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+          Start a kernel run and watch the bloom update from the event log.
+        </p>
+      </div>
+      <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
+        <label>
+          <span style={fieldLabel}>Case study file</span>
+          <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleFile} />
+        </label>
+        {selectedIsland !== null && (
+          <Button variant="secondary" glyph="↺" onClick={() => setForm(bloomGrowFormFromIsland(selectedIsland))}>
+            Use selected bloom
+          </Button>
+        )}
+        <label>
+          <span style={fieldLabel}>Title</span>
+          <input
+            value={form.title}
+            onChange={(event) => update('title', event.target.value)}
+            placeholder="When The Crashes Don't Come"
+            style={inputStyle}
+            aria-invalid={errors.title !== undefined}
+          />
+          {errors.title !== undefined && <FieldError>{errors.title}</FieldError>}
+        </label>
+        <label>
+          <span style={fieldLabel}>Synopsis</span>
+          <input
+            value={form.synopsis}
+            onChange={(event) => update('synopsis', event.target.value)}
+            placeholder="One-line case summary"
+            style={inputStyle}
+          />
+        </label>
+        <label>
+          <span style={fieldLabel}>Seed material</span>
+          <textarea
+            value={form.seedText}
+            onChange={(event) => update('seedText', event.target.value)}
+            placeholder="Paste the case study, observation, contradiction, or markdown source..."
+            style={textAreaStyle}
+            aria-invalid={errors.seedText !== undefined}
+          />
+          {errors.seedText !== undefined && <FieldError>{errors.seedText}</FieldError>}
+        </label>
+        <SegmentedControl
+          label="Mode"
+          value={form.generationMode}
+          options={[
+            ['recover_problem', 'Recover'],
+            ['grow_doppl', 'Doppl'],
+            ['campaign', 'Campaign'],
+          ]}
+          onChange={(value) => update('generationMode', value)}
+        />
+        <SegmentedControl
+          label="Dial"
+          value={form.direction}
+          options={[
+            ['auto', 'Auto'],
+            ['converge', 'Converge'],
+            ['diverge', 'Diverge'],
+          ]}
+          onChange={(value) => update('direction', value)}
+        />
+        <div>
+          <span style={fieldLabel}>Operators</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+            {generationOperatorOptions.map((operator) => {
+              const active = form.operators.includes(operator);
+              return (
+                <button
+                  key={operator}
+                  type="button"
+                  onClick={() =>
+                    update(
+                      'operators',
+                      active
+                        ? form.operators.filter((value) => value !== operator)
+                        : [...form.operators, operator],
+                    )
+                  }
+                  style={filterPillStyle(active)}
+                >
+                  {operator.replace(/_/g, ' ')}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <NumberField label="Population" value={form.generateCount} onChange={(value) => update('generateCount', value)} />
+          <NumberField
+            label="Spawn depth"
+            value={form.maxSpawnDepth}
+            onChange={(value) => update('maxSpawnDepth', value)}
+          />
+          <NumberField label="Depth" value={form.maxGenerations} onChange={(value) => update('maxGenerations', value)} />
+          <NumberField label="Energy" value={form.energyBudget} onChange={(value) => update('energyBudget', value)} />
+          <NumberField label="Tool calls" value={form.maxToolCalls} onChange={(value) => update('maxToolCalls', value)} />
+        </div>
+        {launchState.kind === 'error' && <FieldError>{launchState.message}</FieldError>}
+        <Button variant="primary" glyph="▶" onClick={submit} disabled={busy}>
+          {busy ? 'Starting bloom...' : 'Run bloom'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SegmentedControl<Value extends BloomGrowthMode | BloomGrowthDirection>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: Value;
+  options: readonly (readonly [Value, string])[];
+  onChange: (value: Value) => void;
+}) {
+  return (
+    <div>
+      <span style={fieldLabel}>{label}</span>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+          gap: 'var(--space-2)',
+        }}
+      >
+        {options.map(([optionValue, optionLabel]) => (
+          <button
+            key={optionValue}
+            type="button"
+            onClick={() => onChange(optionValue)}
+            style={filterPillStyle(value === optionValue)}
+          >
+            {optionLabel}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label>
+      <span style={fieldLabel}>{label}</span>
+      <input
+        type="number"
+        min={1}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        style={inputStyle}
+      />
+    </label>
+  );
+}
+
+function FieldError({ children }: { children: string }) {
+  return (
+    <span style={{ color: 'var(--danger)', fontSize: 'var(--text-caption)', fontWeight: 700 }}>{children}</span>
+  );
+}
+
+function LiveRunSummary({
+  launchState,
+  liveEvents,
+}: {
+  launchState: LaunchState;
+  liveEvents: readonly RunEventEnvelope[];
+}) {
+  if (launchState.kind === 'idle') return null;
+  const latest = liveEvents[liveEvents.length - 1];
+  return (
+    <div
+      style={{
+        border: 'thin solid var(--border-subtle)',
+        borderRadius: 'var(--radius-sm)',
+        padding: 'var(--space-3)',
+        background: 'var(--bg-surface-2)',
+      }}
+    >
+      <span style={fieldLabel}>Live bloom</span>
+      <strong style={{ display: 'block' }}>
+        {launchState.kind === 'starting'
+          ? 'Starting run'
+          : launchState.kind === 'streaming'
+            ? truncate(launchState.runId, 28)
+            : 'Launch failed'}
+      </strong>
+      <span style={{ display: 'block', color: 'var(--fg-muted)', marginTop: 'var(--space-1)' }}>
+        {latest === undefined ? 'Waiting for events...' : `${latest.type} · #${latest.sequence}`}
+      </span>
+    </div>
+  );
+}
+
+function bloomGrowFormFromIsland(island: OuterBloomIsland | null): BloomGrowForm {
+  const caseStudy =
+    island?.nodes.find((node) => node.parentId === null) ??
+    island?.nodes.find((node) => node.stage === 'case_study') ??
+    null;
+  if (caseStudy === null) return DEFAULT_BLOOM_GROW_FORM;
+  return {
+    ...DEFAULT_BLOOM_GROW_FORM,
+    title: caseStudy.label,
+    synopsis: caseStudy.summary,
+    seedText: uniqueNonEmpty([caseStudy.summary, island?.seed]).join('\n\n'),
+  };
+}
+
+function uniqueNonEmpty(values: readonly (string | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed === undefined || trimmed.length === 0 || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
 }
 
 function BloomGraph({
@@ -1318,6 +1717,16 @@ const sortOptions: readonly { value: SortMode; label: string }[] = [
   { value: 'strongest', label: 'Strongest first' },
   { value: 'selected', label: 'Selected first' },
 ];
+
+const generationOperatorOptions = [
+  'breakthrough',
+  'first_principles',
+  'polymath',
+  'breakout',
+  'blindside',
+  'subtraction',
+  'constraint',
+] as const;
 
 function filterBloom(
   bloom: OuterBloomProjection,
