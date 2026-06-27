@@ -12,6 +12,7 @@ import { SubtypeCheckPanel } from '../../panels/SubtypeCheckPanel';
 import { candidateFitness } from '../../panels/candidateFitness';
 import { deriveEnergyByAgenome } from '../../panels/energyData';
 import { deriveAgenomeTelemetry, deriveJudgeRationale } from '../../panels/nodeTelemetry';
+import { ToolCallResult } from './ToolCallResult';
 
 /**
  * NodeInspectorContent (FV.5a) — the node-click drawer content router. The lineage graph is decluttered
@@ -169,8 +170,7 @@ export function NodeInspectorContent({
             {telemetry.toolCalls.map((t, i) => (
               <div key={i} style={subsection}>
                 <span style={monoId}>{t.toolName}</span>
-                {t.query !== undefined && <div style={muted}>query: {t.query}</div>}
-                {t.result !== undefined && <div style={muted}>result: {t.result}</div>}
+                <ToolCallResult query={t.query} result={t.result} />
               </div>
             ))}
           </section>
