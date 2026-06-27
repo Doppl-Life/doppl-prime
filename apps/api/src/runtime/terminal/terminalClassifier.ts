@@ -57,9 +57,10 @@ export interface RunTerminalVerdict {
   readonly partialSummary?: PartialTerminalSummary;
 }
 
-/** Default max winners — 1 keeps behavior byte-identical (single winner) while the finalIdeaRefs[] machinery
- *  ships; the last Increment-A slice flips this to 2 once the projections + UI render N doppels. Rule #1 cap. */
-export const DEFAULT_MAX_WINNERS = 1;
+/** Default max winners — 2 (Islands pivot: a run crowns up to its top-2 scored survivors as doppels). The
+ *  cross-run case-study graph + per-run lineage render N 'selected' nodes; run-summary shows the top one.
+ *  A kernel/config cap (rule #1) — never prompt/judge-settable. */
+export const DEFAULT_MAX_WINNERS = 2;
 /** Default crowning floor — 0 excludes nothing (every scored survivor is eligible). Rule #1 cap. */
 export const DEFAULT_ACCEPTANCE_FLOOR = 0;
 
