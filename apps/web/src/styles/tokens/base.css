@@ -111,6 +111,31 @@ body {
     transform: scale(1);
   }
 }
+@keyframes doppl-map-spring-out {
+  0% {
+    opacity: 0;
+    transform: translate(var(--doppl-map-from-x), var(--doppl-map-from-y)) scale(0.38);
+  }
+  58% {
+    opacity: 1;
+    transform: translate(
+        calc(var(--doppl-map-from-x) * -0.08),
+        calc(var(--doppl-map-from-y) * -0.08)
+      )
+      scale(1.16);
+  }
+  78% {
+    transform: translate(
+        calc(var(--doppl-map-from-x) * 0.025),
+        calc(var(--doppl-map-from-y) * 0.025)
+      )
+      scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
 @keyframes drawer-in {
   from {
     transform: translateX(24px);

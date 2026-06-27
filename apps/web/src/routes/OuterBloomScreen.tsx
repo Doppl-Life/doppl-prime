@@ -43,6 +43,7 @@ type BloomReplayState =
       readonly visibleIds: ReadonlySet<string>;
       readonly processingIds: ReadonlySet<string>;
       readonly revealedAt: ReadonlyMap<string, number>;
+      readonly revealParents: ReadonlyMap<string, string>;
     };
 
 const DELETE_CONFIRM_CLICKS = 5;
@@ -104,8 +105,9 @@ interface BloomNodeActivation {
 }
 
 const LIVE_BLOOM_REFRESH_MS = 2500;
-const BLOOM_REPLAY_MIN_DELAY_MS = 10_000;
-const BLOOM_REPLAY_MAX_DELAY_MS = 20_000;
+const BLOOM_REPLAY_ROOT_DELAY_RANGE_MS = [4_000, 6_000] as const;
+const BLOOM_REPLAY_SECOND_DELAY_RANGE_MS = [8_000, 10_000] as const;
+const BLOOM_REPLAY_DEEP_DELAY_RANGE_MS = [10_000, 20_000] as const;
 const WHEN_CRASHES_ROOT_ID = 'when-the-crashes-dont-come-575845a4';
 
 const shell: CSSProperties = {
@@ -378,7 +380,8 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     island: OuterBloomIsland,
     nodeId: string,
     token: number,
-    delay = randomReplayDelayMs(),
+    generation: number,
+    delay = randomReplayDelayMs(generation),
   ) => {
     const timer = window.setTimeout(() => {
       const children = childrenForReplayNode(island, nodeId);
@@ -398,12 +401,14 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
         const visibleIds = new Set(current.visibleIds);
         const processingIds = new Set(current.processingIds);
         const revealedAt = new Map(current.revealedAt);
+        const revealParents = new Map(current.revealParents);
         processingIds.delete(nodeId);
 
         const now = window.performance.now();
         for (const child of children) {
           visibleIds.add(child.id);
           if (!revealedAt.has(child.id)) revealedAt.set(child.id, now);
+          revealParents.set(child.id, nodeId);
         }
         for (const child of childrenWithChildren) {
           processingIds.add(child.id);
@@ -416,11 +421,12 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
           visibleIds,
           processingIds,
           revealedAt,
+          revealParents,
         };
       });
 
       for (const child of childrenWithChildren) {
-        scheduleReplayNode(island, child.id, token);
+        scheduleReplayNode(island, child.id, token, generation + 1);
       }
     }, delay);
 
@@ -446,8 +452,9 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
       visibleIds: new Set([root.id]),
       processingIds,
       revealedAt: new Map([[root.id, window.performance.now()]]),
+      revealParents: new Map(),
     });
-    if (hasChildren) scheduleReplayNode(island, root.id, token);
+    if (hasChildren) scheduleReplayNode(island, root.id, token, 0);
   };
 
   useEffect(() => {
@@ -1204,11 +1211,14 @@ function childrenForReplayNode(
   return island.nodes.filter((node) => node.parentId === parentId).sort(compareOuterBloomNodes);
 }
 
-function randomReplayDelayMs(): number {
-  return (
-    BLOOM_REPLAY_MIN_DELAY_MS +
-    Math.round(Math.random() * (BLOOM_REPLAY_MAX_DELAY_MS - BLOOM_REPLAY_MIN_DELAY_MS))
-  );
+function randomReplayDelayMs(generation: number): number {
+  const [min, max] =
+    generation === 0
+      ? BLOOM_REPLAY_ROOT_DELAY_RANGE_MS
+      : generation === 1
+        ? BLOOM_REPLAY_SECOND_DELAY_RANGE_MS
+        : BLOOM_REPLAY_DEEP_DELAY_RANGE_MS;
+  return min + Math.round(Math.random() * (max - min));
 }
 
 function BloomGraph({
@@ -1229,6 +1239,8 @@ function BloomGraph({
     replayState.kind === 'running' ? replayState.processingIds : new Set<string>();
   const replayRevealedAt =
     replayState.kind === 'running' ? replayState.revealedAt : new Map<string, number>();
+  const replayRevealParents =
+    replayState.kind === 'running' ? replayState.revealParents : new Map<string, string>();
   const renderedNodes =
     replayVisibleIds === null
       ? layout.nodes
@@ -1492,6 +1504,22 @@ function BloomGraph({
           const haloOpacity = haloOpacityForNode(node, isSelected, isPathNode);
           const isProcessing = replayProcessingIds.has(node.id);
           const revealedAt = replayRevealedAt.get(node.id);
+          const revealParentId = replayRevealParents.get(node.id);
+          const revealParent =
+            revealParentId === undefined
+              ? null
+              : (layout.nodes.find((candidate) => candidate.id === revealParentId) ?? null);
+          const revealStyle =
+            replayState.kind === 'running' && revealedAt !== undefined && revealParent !== null
+              ? ({
+                  cursor: isDragging ? 'grabbing' : 'pointer',
+                  animation: 'doppl-map-spring-out 760ms var(--ease-out) both',
+                  transformBox: 'fill-box',
+                  transformOrigin: 'center',
+                  '--doppl-map-from-x': `${revealParent.x - node.x}px`,
+                  '--doppl-map-from-y': `${revealParent.y - node.y}px`,
+                } as CSSProperties)
+              : ({ cursor: isDragging ? 'grabbing' : 'pointer' } as CSSProperties);
           return (
             <g
               key={node.id}
@@ -1504,7 +1532,7 @@ function BloomGraph({
                 if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
                 if (event.key === 'Enter' && event.metaKey) openInnerRun(node.runId);
               }}
-              style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
+              style={revealStyle}
               opacity={isDimmed ? 0.84 : 1}
               data-replay-processing={isProcessing ? 'true' : undefined}
             >
@@ -1550,7 +1578,9 @@ function BloomGraph({
                 filter={isSelected ? 'url(#bloom-glow)' : undefined}
                 style={{
                   animation:
-                    replayState.kind === 'running' && revealedAt !== undefined
+                    replayState.kind === 'running' &&
+                    revealedAt !== undefined &&
+                    revealParent === null
                       ? 'doppl-map-pop 420ms var(--ease-out)'
                       : undefined,
                   transformBox: 'fill-box',
