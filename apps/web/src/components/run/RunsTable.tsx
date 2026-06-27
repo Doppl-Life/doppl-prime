@@ -59,11 +59,16 @@ function orDash(text: string | null | undefined): string {
 
 const table: CSSProperties = {
   width: '100%',
+  // Fixed layout + the <colgroup> below give the Problem + Final-idea columns the bulk of the width so the
+  // title is readable; the short metadata columns stay compact.
+  tableLayout: 'fixed',
   borderCollapse: 'collapse',
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--text-label)',
   color: 'var(--fg-default)',
 };
+/** Column widths (% — token-exempt geometry). Problem + Final idea get the lion's share. */
+const COLS: readonly string[] = ['3%', '9%', '9%', '25%', '25%', '9%', '4%', '4%', '6%', '6%'];
 const th: CSSProperties = {
   textAlign: 'left',
   padding: 'var(--space-2) var(--space-3)',
@@ -95,11 +100,14 @@ const idButton: CSSProperties = {
   cursor: 'pointer',
   textAlign: 'left',
 };
+/** Two-line clamp for the Problem / Final-idea title — shows most of it (the column is wide), the rest is
+ *  on hover via the cell `title`. Wraps rather than single-line-truncating so more text is visible. */
 const clamp: CSSProperties = {
-  maxWidth: 'var(--space-9)',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
+  lineHeight: 1.35,
 };
 const activityCell: CSSProperties = { ...tdNum, whiteSpace: 'nowrap', color: 'var(--fg-muted)' };
 
@@ -110,6 +118,11 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
   };
   return (
     <table style={table}>
+      <colgroup>
+        {COLS.map((width, i) => (
+          <col key={i} style={{ width }} />
+        ))}
+      </colgroup>
       <thead>
         <tr>
           <th style={thRight}>#</th>

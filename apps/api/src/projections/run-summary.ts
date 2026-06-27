@@ -12,7 +12,7 @@ import { buildCurrentState } from './current-state';
  * rejects an empty fold.
  */
 
-const PROBLEM_MAX = 240;
+const PROBLEM_TITLE_MAX = 200;
 const SUMMARY_MAX = 240;
 
 export interface RunSummaryItem {
@@ -36,6 +36,24 @@ export interface RunSummaryItem {
 
 function truncate(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max)}…`;
+}
+
+/**
+ * The problem TITLE for the runs list — the seed without its "Problem:" label boilerplate, collapsed to a
+ * single line (some seeds are multi-paragraph briefs), reduced to the first sentence when that's a
+ * reasonable length (the gist), and capped. So the list shows the problem itself, not "Problem: hospital…".
+ */
+function problemTitle(seed: string): string {
+  const cleaned = seed
+    .replace(/^\s*problem\s*:\s*/i, '') // drop a leading "Problem:" label
+    .replace(/\s+/g, ' ') // collapse newlines/whitespace (multi-line seeds → one line)
+    .trim();
+  const firstSentence = /^(.+?[.?!])(\s|$)/.exec(cleaned)?.[1];
+  const title =
+    firstSentence !== undefined && firstSentence.length <= PROBLEM_TITLE_MAX
+      ? firstSentence
+      : cleaned;
+  return truncate(title, PROBLEM_TITLE_MAX);
 }
 
 function stringField(payload: unknown, key: string): string | null {
@@ -91,7 +109,7 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
     status,
     sequenceThrough,
     createdAt: configured ? configured.occurredAt.toISOString() : null,
-    problem: seed !== null ? truncate(seed, PROBLEM_MAX) : null,
+    problem: seed !== null ? problemTitle(seed) : null,
     finalIdeaTitle: winner?.title ?? null,
     finalIdeaSummary: winner ? truncate(winner.summary, SUMMARY_MAX) : null,
     generations,
