@@ -4,7 +4,9 @@ Working branch: `dalton-outer-view`
 
 Goal: build the production outer Doppl view inspired by Michael's experiment spike while staying compatible with the merged kernel runtime. The outer view shows chosen case studies, problem recoveries, and Doppls/solutions as a bloom of durable outer artifacts. Inner-run mechanics such as generated candidates, agenomes, mutagens, energy allocation, and per-generation selection belong in the inner view unless surfaced as summarized proof.
 
-Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile should remain usable, but it is not the primary design target for the outer view right now.
+Top priority: make the bloom view an operator surface that can start a real outer run and show it growing in real time. Static browsing remains important because it gives users an immediate useful map, but the app's main value is live bloom kickoff, observation, and replay.
+
+Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile should remain usable, but it is not the primary design target for the outer view right now. The high-contrast visual treatment is the default product look, not an optional alternate theme.
 
 ## Design Principles From NotebookLM + Experiment Spike
 
@@ -26,6 +28,166 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 - [x] Avoid people's names and implementation handoff language in app copy.
 - [x] Verify local route at `http://localhost:5173/bloom`.
 - [x] Push branch to `origin/dalton-outer-view`.
+
+## Reference App: `michael/experiment-spike`
+
+Canonical reference: `origin/michael:experiment-spike/README.md` and
+`origin/michael:experiment-spike/index.html`.
+
+The experiment spike is not only a visualization. It is an outer-growth operator surface with these
+production-relevant behaviors:
+
+- A left sidebar can **plant a seed** from either a typed case/postulation or an aGarden case-study file.
+- A selected node can be grown one stage at a time:
+  - `case_study -> problem_recovery` with the converge/grounding dial.
+  - `problem_recovery -> doppl` with the diverge/novelty dial.
+  - `doppl` leaves can be reseeded into fresh `case_study` islands.
+- Run controls expose:
+  - direction/dial: diverge vs converge
+  - generated count
+  - keep count
+  - mutagen/operator skills
+- Campaign controls expose:
+  - depth
+  - max nodes
+  - BFS vs DFS traversal
+  - auto/converge/diverge dial schedule
+  - reseed leaves
+  - start from selected seed vs every seed
+- A live console streams run progress and regret/proof summaries while the graph grows.
+- The graph updates immediately after each fold, so the user watches the bloom unfold rather than waiting
+  for a finished batch.
+- The spike writes durable outer nodes and stock into aGarden, while current production main writes
+  authoritative inner runtime events to Postgres `run_events`.
+
+Production implication: our bloom view needs to become an **operator + observability surface**. It should
+start from experiment-spike's outer semantics, but route execution through the merged kernel's server-side
+contracts and event store instead of browser-local IndexedDB/model-provider code.
+
+## Phase 0.5: Run Kickoff And Live-Growth Architecture
+
+Current reality:
+
+- The production kernel already exposes `POST /runs`, `POST /runs/:id/stop`, `GET /runs/:id/stream`, and
+  `GET /bloom`.
+- `POST /runs` accepts a `RunConfig`, validates caps/model overrides, appends `run.configured`, and boots
+  the in-process worker through `onRunConfigured`.
+- `RunConfig` already has the experiment-spike equivalents for:
+  - seed text: `seed`
+  - generated/keep-ish bounds: `caps.maxPopulation`, `caps.maxGenerations`, `caps.maxSpawnDepth`
+  - budget: `caps.energyBudget`, `caps.maxToolCalls`, `caps.wallClockTimeoutMs`
+  - mutagen skills: `generationOperators`
+  - dial: `generationBias`
+  - model routing: `modelRouteOverride`
+- `GET /runs/:id/stream` streams authoritative per-run events using SSE and resumable sequence cursors.
+- `GET /bloom` currently mixes imported outer artifacts with an adapter over inner `candidate.created`
+  events. This lets us show live inner-run outputs as Doppl leaves, but it does not yet express real
+  first-class `problem_recovery` artifacts.
+
+Target shape:
+
+1. The bloom page opens on the best available existing bloom, currently **When The Crashes Don't Come**,
+   so the map is immediately meaningful before the operator starts anything new.
+2. The left sidebar becomes a two-mode rail:
+   - **Browse**: current library/search/filter/sort behavior.
+   - **Grow**: experiment-spike-inspired seed/run controls for starting a new bloom run.
+3. Uploading or selecting a case-study file should populate seed/title/synopsis/context fields where
+   possible, so users do not have to paste the same content into multiple boxes.
+4. Starting a run calls `POST /runs` with a production `RunConfig` derived from the panel.
+5. The page opens `GET /runs/:runId/stream` immediately after `POST /runs` returns.
+6. The graph updates incrementally from streamed events and/or periodic `/bloom` refreshes until the run
+   reaches a terminal status.
+7. Stop requests call `POST /runs/:id/stop` and the UI shows the draining/stopping state until the event log
+   terminalizes.
+8. First implementation should support a single selected case-study run; campaign/depth/reseed can layer on
+   once the one-run live path is solid.
+
+Recommended sequencing:
+
+- [ ] **R0.5-A: Inventory current launch surfaces.**
+  - Map `RunsHomeScreen`, `RunConfigPanel`, `startDemoRun`, and `startRun` to the bloom view.
+  - Decide what can be reused as-is and what should be extracted into shared launch components.
+  - Confirm how the API's cap maxima should be fetched before rendering the bloom launch panel.
+- [ ] **R0.5-B: Define `StartBloomRequest` as a web-local view model, not a new frozen contract.**
+  - Fields:
+    - title/name
+    - seed/context text
+    - synopsis
+    - optional uploaded case-study filename/body
+    - generation mode: recover problem, grow Doppls, campaign
+    - direction/dial
+    - generate count
+    - keep/survivor count
+    - mutagen operators
+    - max generations/depth
+    - max population/nodes
+    - max runtime/energy/tool calls
+    - optional model route override
+  - Convert this view model to `RunConfig` at submit time.
+  - Keep the conversion deterministic and test-covered.
+- [ ] **R0.5-C: Build the compact bloom launch panel.**
+  - Place it behind a left-sidebar **Grow** tab next to the existing **Browse** tab.
+  - Keep the default page state on **Browse** with the current `when-the-crashes-dont-come-575845a4`
+    island selected and fit in the graph.
+  - Use experiment-spike semantics, not all of its local-provider controls.
+  - Include:
+    - case-study selector/upload/manual paste
+    - concise title/context/synopsis inputs
+    - dial segmented control
+    - generated / keep controls mapped to caps
+    - mutagen chips from `GenerationOperator`
+    - start and stop buttons
+  - Keep this panel collapsible or left-rail sized so it does not consume the radial map.
+- [ ] **R0.5-D: Add case-study file ingestion.**
+  - Support markdown/text upload in the browser.
+  - Parse frontmatter when present.
+  - Extract reasonable defaults:
+    - title from frontmatter title or first heading
+    - synopsis from frontmatter/`## Synopsis`/first paragraph
+    - seed/context from full markdown body
+  - Never upload secrets or file handles; the browser sends only the derived run config.
+- [ ] **R0.5-E: Start run from bloom.**
+  - Add `startBloomRun` UI flow using existing `runClient.startRun`.
+  - Use an idempotency key per submit.
+  - On `201/200`, store active run id in route state and select/focus the run's island.
+  - Show immediate "configured/starting" state while waiting for events.
+- [ ] **R0.5-F: Live event subscription.**
+  - Add a web SSE client for `GET /runs/:id/stream`.
+  - Resume with `Last-Event-ID`/`lastEventId` if disconnected.
+  - Translate streamed events into:
+    - run console rows
+    - proof-board counters
+    - active progress state
+    - optimistic graph updates where safe
+  - Periodically refresh `/bloom` or refresh on meaningful event types until first-class outer events exist.
+- [ ] **R0.5-G: Live graph growth.**
+  - Animate new nodes from streamed/projection changes.
+  - Distinguish:
+    - configured/starting
+    - generating
+    - scoring/judging
+    - completed
+    - failed/stopped
+  - Keep inner event names out of the default UI; show them only in a technical run console/proof drawer.
+- [ ] **R0.5-H: Stop and recovery behavior.**
+  - Wire `POST /runs/:id/stop`.
+  - Show stop-requested/draining until the SSE/projection reports `run.stopped` or another terminal state.
+  - If the browser reloads mid-run, recover active run state from `GET /runs` and `/bloom`.
+- [ ] **R0.5-I: Tests.**
+  - Unit-test bloom request -> `RunConfig` mapping.
+  - Unit-test case-study file parsing.
+  - Unit-test SSE reducer behavior over representative events.
+  - Integration-test `POST /runs` from bloom flow using API inject/fake gateway.
+  - Browser-test live startup using a recorded/demo gateway so the graph changes without real provider spend.
+
+Important boundary:
+
+- The first live version should **not** try to reproduce experiment-spike's browser-local model provider
+  chooser. Production provider keys stay server-side/env-only.
+- The first live version should **not** implement full campaign traversal in the browser. Campaign semantics
+  need a server-side orchestrator or first-class outer-artifact events to be replay-safe.
+- The bloom UI can use experiment-spike labels like "Generate", "Keep", "Dial", "Campaign", and "Reseed",
+  but those must map to kernel-enforced caps/config. The browser never becomes the cap authority.
 
 ## Phase 1: Data Contract And Source Of Truth
 
@@ -176,6 +338,19 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 ## Phase 6: Live Growth Experience
 
 - [ ] Stream live outer-run updates while a case study blooms.
+- [ ] Add Start Bloom panel modeled after experiment-spike's seed/run controls.
+- [ ] Let uploaded case-study markdown populate seed/title/synopsis/context automatically.
+- [ ] Map experiment-spike controls to production `RunConfig`:
+  - Direction/dial -> `generationBias`
+  - Operators/mutagens -> `generationOperators`
+  - Generate count -> `caps.maxPopulation`
+  - Keep count -> selection/survivor policy follow-up; initially express through caps/proof, not as fake UI
+  - Depth -> `caps.maxGenerations` / future outer campaign depth
+  - Max nodes -> `caps.maxPopulation * caps.maxGenerations` guard / future campaign cap
+  - Stop -> `POST /runs/:id/stop`
+- [ ] Add an SSE client for `GET /runs/:id/stream`.
+- [ ] Add run console/progress panel inspired by experiment-spike.
+- [ ] Refresh `/bloom` in response to live run events until first-class outer artifact events exist.
 - [ ] Animate newly created problem recoveries and Doppls entering the graph.
 - [ ] Show active run console/progress without overwhelming the graph.
 - [ ] Add a clear "stop" affordance for long growth operations.
@@ -191,6 +366,10 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 ## Phase 7: Campaigns And Reseeding
 
 - [ ] Design production-safe campaign controls.
+- [ ] Decide where campaign orchestration lives:
+  - preferred: server-side campaign orchestrator that issues bounded runs and appends replayable campaign events
+  - temporary: UI starts one run at a time, no deep campaign
+  - avoid: browser-only campaign state that cannot replay from Postgres
 - [ ] Support bounded growth:
   - depth
   - max nodes
@@ -203,6 +382,10 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
   - converge for problem recovery
   - diverge for Doppls
 - [ ] Support reseeding a Doppl leaf as a new case-study island.
+- [ ] Define first-class reseed event/projection rule:
+  - `doppl` leaf -> new `case_study`
+  - parent link preserved across islands
+  - aGarden-compatible `prev_id` semantics
 - [ ] Make campaign runs auditable through the proof board.
 - [ ] Add guardrails so campaigns cannot accidentally spend unbounded model budget.
 
