@@ -13,6 +13,7 @@ import {
   modelRouteOverrideViolation,
   type ModelRouteOverrideAllowlist,
 } from '../model-gateway/model-route-override';
+import { deriveCaseStudyId } from './_support/deriveCaseStudyId';
 
 /**
  * The REST write path (ARCHITECTURE.md §11/§14/§15). POST /runs + POST /runs/:id/stop append
@@ -184,11 +185,16 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
       type: 'run.configured',
       actor: 'operator',
       // caseStudyId rides the generic run.configured payload as run-level metadata (NOT a RunConfig field
-      // — readRecordedConfig's extractRunConfig tolerates it). Added only when a non-empty string is given,
-      // so an absent caseStudyId leaves the payload byte-identical to today.
+      // — readRecordedConfig's extractRunConfig tolerates it). Islands pivot A4: EVERY run is tagged — the
+      // operator's explicit id (a chosen prepared problem) when given, else one DERIVED from the seed so a
+      // freeform run still lands in a bloom and re-running the same prompt groups those runs under one case
+      // study (the growing network). Deterministic → replay-safe (rule #7).
       payload: {
         ...config,
-        ...(typeof caseStudyId === 'string' && caseStudyId.length > 0 ? { caseStudyId } : {}),
+        caseStudyId:
+          typeof caseStudyId === 'string' && caseStudyId.length > 0
+            ? caseStudyId
+            : deriveCaseStudyId(config.seed),
       } as Record<string, unknown>,
       schemaVersion: CURRENT_SCHEMA_VERSION,
     });
