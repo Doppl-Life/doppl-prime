@@ -966,69 +966,83 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       break;
     }
 
-    // BUG 1 (run 6b714273) — the KERNEL computes the reproduction offspring spawn budget (rule #1): a HINT
-    // clamped to `min(maxPopulation, remaining-energy headroom)`. The seam previously hardcoded the raw
-    // `maxPopulation`, so it minted a fresh FULL cap of offspring EVERY generation regardless of remaining
-    // caps (runaway growth). `remaining-energy headroom in spawn-units` = floor(remainingEnergy / perSpawn)
-    // (perSpawn 0 → energy doesn't bound spawns → headroom is the cap). The seam MUST cap offspring to this;
-    // the kernel backstops it below (over-production → cap_breach kill — the un-bypassable enforcer).
-    const remainingEnergy = Math.max(
-      0,
-      caps.energyBudget - cumulativeSpend(scoredEvents, { kind: 'run', id: runId }),
-    );
-    const perSpawn = energyForSpawn(config.costMap);
-    const energyHeadroom =
-      perSpawn > 0 ? Math.floor(remainingEnergy / perSpawn) : caps.maxPopulation;
-    const spawnBudget = clampSpawnBudget(
-      caps.maxPopulation,
-      Math.min(caps.maxPopulation, energyHeadroom),
-    ).effectiveSpawns;
-
-    // Wave 1 Step 1 (the RATCHET — hall-of-fame carry) — when enabled, ALWAYS breed against the reigning
-    // champion, even if its re-rolled candidate was culled THIS generation (the live "reaches 0.744 then
-    // loses it" bounce: the peak lineage is dropped from the eligible set and reproduction mean-reverts off
-    // the weaker survivors). Pure decision (`withChampionParent`); `hallOfFameCarry === 0` → byte-identical.
-    const reproduceParents = withChampionParent(
-      eligibleParents,
-      championAgenome,
-      config.hallOfFameCarry,
-    );
-
-    // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
-    // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
-    status = transitionGenerationOrThrow(status, 'reproducing');
-    await appendEvent('generation.reproducing', { generationId }, { generationId });
-    // The kernel-owned offspring event types (RunEventRow.type is the DB column string — match by value).
-    const offspringTypes = new Set<string>(['agenome.fused', 'agenome.reproduced']);
-    await seams.reproduce({
-      runId,
-      generationId,
-      append: eventStore.append,
-      parents: reproduceParents,
-      outcomes,
-      scoredEvents,
-      mode: reproduceParents.length === 1 ? 'mutation_only' : 'fusion',
-      spawnBudget,
-    });
-
-    // BUG 1 backstop (rule #1 — un-bypassable) — COUNT the offspring the seam actually appended for THIS
-    // generation and KILL if it exceeded the kernel-supplied spawnBudget. A seam/hint can never raise a cap:
-    // an over-producing reproduce path is a cap breach, terminalized like any other (no silent runaway).
-    const postReproduce = await eventStore.readByRun(runId);
-    const offspringThisGen = postReproduce.filter(
-      (r) => r.generationId === generationId && offspringTypes.has(r.type),
-    ).length;
-    if (offspringThisGen > spawnBudget) {
-      killSummary = await executeKillAndDrain(
-        { kind: 'cap_breach', dimension: 'maxPopulation' },
-        'running',
-        [{ id: generationId, status: 'reproducing' }],
-        appendEvent,
+    // FINAL-GENERATION GUARD — reproduction (and the successor-population threading it feeds) exists SOLELY
+    // to seed the NEXT generation. The FINAL generation has no successor, so running the reproduce seam on it
+    // breeds offspring agenomes (agenome.reproduced/fused) that never generate a candidate — phantom lineage
+    // nodes the user sees "after the final generation." `willRunNextGeneration` is the inverse of the loop's
+    // own maxGenerations bound (this gen is `g`; gen `g+1` runs iff `enforceCap(maxGenerations, g+1, 1)`),
+    // so the last allowed generation skips reproduce + threading and takes scoring → completed directly
+    // (the same shortened lifecycle the zero-survivors path already uses, a legal P3.2 transition). Strictly
+    // LESS work + LESS spend → no cap/energy relaxation (rule #1/#8); the run-terminal verdict reads the
+    // scored survivors, not offspring, so the final idea is unaffected.
+    const willRunNextGeneration = enforceCap('maxGenerations', g + 1, 1, caps).allowed;
+    if (willRunNextGeneration) {
+      // BUG 1 (run 6b714273) — the KERNEL computes the reproduction offspring spawn budget (rule #1): a HINT
+      // clamped to `min(maxPopulation, remaining-energy headroom)`. The seam previously hardcoded the raw
+      // `maxPopulation`, so it minted a fresh FULL cap of offspring EVERY generation regardless of remaining
+      // caps (runaway growth). `remaining-energy headroom in spawn-units` = floor(remainingEnergy / perSpawn)
+      // (perSpawn 0 → energy doesn't bound spawns → headroom is the cap). The seam MUST cap offspring to this;
+      // the kernel backstops it below (over-production → cap_breach kill — the un-bypassable enforcer).
+      const remainingEnergy = Math.max(
+        0,
+        caps.energyBudget - cumulativeSpend(scoredEvents, { kind: 'run', id: runId }),
       );
-      break;
+      const perSpawn = energyForSpawn(config.costMap);
+      const energyHeadroom =
+        perSpawn > 0 ? Math.floor(remainingEnergy / perSpawn) : caps.maxPopulation;
+      const spawnBudget = clampSpawnBudget(
+        caps.maxPopulation,
+        Math.min(caps.maxPopulation, energyHeadroom),
+      ).effectiveSpawns;
+
+      // Wave 1 Step 1 (the RATCHET — hall-of-fame carry) — when enabled, ALWAYS breed against the reigning
+      // champion, even if its re-rolled candidate was culled THIS generation (the live "reaches 0.744 then
+      // loses it" bounce: the peak lineage is dropped from the eligible set and reproduction mean-reverts off
+      // the weaker survivors). Pure decision (`withChampionParent`); `hallOfFameCarry === 0` → byte-identical.
+      const reproduceParents = withChampionParent(
+        eligibleParents,
+        championAgenome,
+        config.hallOfFameCarry,
+      );
+
+      // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
+      // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
+      status = transitionGenerationOrThrow(status, 'reproducing');
+      await appendEvent('generation.reproducing', { generationId }, { generationId });
+      // The kernel-owned offspring event types (RunEventRow.type is the DB column string — match by value).
+      const offspringTypes = new Set<string>(['agenome.fused', 'agenome.reproduced']);
+      await seams.reproduce({
+        runId,
+        generationId,
+        append: eventStore.append,
+        parents: reproduceParents,
+        outcomes,
+        scoredEvents,
+        mode: reproduceParents.length === 1 ? 'mutation_only' : 'fusion',
+        spawnBudget,
+      });
+
+      // BUG 1 backstop (rule #1 — un-bypassable) — COUNT the offspring the seam actually appended for THIS
+      // generation and KILL if it exceeded the kernel-supplied spawnBudget. A seam/hint can never raise a cap:
+      // an over-producing reproduce path is a cap breach, terminalized like any other (no silent runaway).
+      const postReproduce = await eventStore.readByRun(runId);
+      const offspringThisGen = postReproduce.filter(
+        (r) => r.generationId === generationId && offspringTypes.has(r.type),
+      ).length;
+      if (offspringThisGen > spawnBudget) {
+        killSummary = await executeKillAndDrain(
+          { kind: 'cap_breach', dimension: 'maxPopulation' },
+          'running',
+          [{ id: generationId, status: 'reproducing' }],
+          appendEvent,
+        );
+        break;
+      }
     }
 
     // Complete — validate the terminal transition through the guard (no assign; status is not read after).
+    // `status` is 'reproducing' when this gen reproduced, or 'scoring' when reproduction was skipped (final
+    // gen / zero successors); both → completed are legal P3.2 transitions.
     transitionGenerationOrThrow(status, 'completed');
     await appendEvent(
       'generation.completed',
@@ -1039,8 +1053,9 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     // P5.11 successor-population threading — additive seam (guarded; absent → population unchanged, so the
     // default path is byte-for-byte today's behavior + the extra readByRun fires only when a hook is wired).
     // The hook reads this generation's reproduction events from the post-reproduce log to derive gen N+1's
-    // population; it RETURNS the population (the loop appends nothing on its behalf — rule #2).
-    if (deps.nextPopulation !== undefined) {
+    // population; it RETURNS the population (the loop appends nothing on its behalf — rule #2). Skipped on the
+    // final generation (no successor to thread into → no offspring were bred above).
+    if (willRunNextGeneration && deps.nextPopulation !== undefined) {
       const postReproduceLog = await eventStore.readByRun(runId);
       const threaded = await deps.nextPopulation({
         prevPopulation: population,
