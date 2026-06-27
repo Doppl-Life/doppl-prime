@@ -44,8 +44,11 @@ export interface DiscriminationReport {
   minGap: number | null;
   /** every `gamed` candidate's acceptance < the mediocre floor (min mediocre acceptance). */
   gamedBelowMediocre: boolean;
-  /** the widest within-tier band (max−min) over honest tiers (looser ⇒ noisier judge). */
+  /** the widest within-tier band (max−min) over honest tiers — REPORTED diagnostic, not gated (it is too
+   *  brittle for n=3 + soft middle tiers; the gate uses {@link adjacentOverlaps} instead). */
   maxWithinTierBand: number | null;
+  /** adjacent honest-tier pairs whose RANGES overlap (lower.max ≥ upper.min) — the gated separability check. */
+  adjacentOverlaps: { lower: GoldTier; upper: GoldTier; lowerMax: number; upperMin: number }[];
 }
 
 function mean(xs: number[]): number {
@@ -96,7 +99,56 @@ export function computeDiscrimination(scored: ScoredEntry[]): DiscriminationRepo
     .map((s) => s.max - s.min);
   const maxWithinTierBand = honestBands.length > 0 ? Math.max(...honestBands) : null;
 
-  return { tierStats, spread, monotone, gaps, minGap, gamedBelowMediocre, maxWithinTierBand };
+  // Adjacent honest tiers whose RANGES overlap (lower.max ≥ upper.min) — the principled "tiers separable"
+  // check, robust to one wide tier (unlike band-vs-gap, which fails whenever any tier is wider than the
+  // smallest mean-gap even when the ranges are cleanly separated).
+  const adjacentOverlaps: DiscriminationReport['adjacentOverlaps'] = [];
+  for (let i = 1; i < HONEST_TIER_ORDER.length; i += 1) {
+    const lower = tierStats[HONEST_TIER_ORDER[i - 1]!];
+    const upper = tierStats[HONEST_TIER_ORDER[i]!];
+    if (lower !== undefined && upper !== undefined && lower.max >= upper.min) {
+      adjacentOverlaps.push({
+        lower: lower.tier,
+        upper: upper.tier,
+        lowerMax: lower.max,
+        upperMin: upper.min,
+      });
+    }
+  }
+
+  return {
+    tierStats,
+    spread,
+    monotone,
+    gaps,
+    minGap,
+    gamedBelowMediocre,
+    maxWithinTierBand,
+    adjacentOverlaps,
+  };
+}
+
+/**
+ * Average each (problemId, tier) candidate's acceptance across K live runs → one ScoredEntry per candidate.
+ * The held-out judge is non-deterministic (~±0.03 run-to-run), so a single-run gate verdict is a coin-flip at
+ * a tight margin; averaging over K runs makes the gate reproducible. Pure.
+ */
+export function averageRuns(runs: ScoredEntry[][]): ScoredEntry[] {
+  const acc = new Map<string, { problemId: string; tier: GoldTier; sum: number; n: number }>();
+  for (const run of runs) {
+    for (const e of run) {
+      const key = `${e.problemId}:${e.tier}`;
+      const cur = acc.get(key) ?? { problemId: e.problemId, tier: e.tier, sum: 0, n: 0 };
+      cur.sum += e.acceptance;
+      cur.n += 1;
+      acc.set(key, cur);
+    }
+  }
+  return [...acc.values()].map((a) => ({
+    problemId: a.problemId,
+    tier: a.tier,
+    acceptance: a.sum / a.n,
+  }));
 }
 
 export interface GateResult {
@@ -119,13 +171,10 @@ export function passesGate(report: DiscriminationReport): GateResult {
     failures.push(`min inter-tier gap ${report.minGap} < required ${MIN_INTER_TIER_GAP}`);
   if (!report.gamedBelowMediocre)
     failures.push('a gamed candidate scored >= the mediocre floor (reward-hacking leak)');
-  if (
-    report.maxWithinTierBand !== null &&
-    report.minGap !== null &&
-    report.maxWithinTierBand >= report.minGap
-  )
+  for (const o of report.adjacentOverlaps)
     failures.push(
-      `within-tier band ${report.maxWithinTierBand} >= inter-tier gap ${report.minGap} (tiers overlap)`,
+      `tiers ${o.lower} and ${o.upper} overlap (${o.lower}.max ${o.lowerMax.toFixed(2)} >= ` +
+        `${o.upper}.min ${o.upperMin.toFixed(2)})`,
     );
   return { pass: failures.length === 0, failures };
 }

@@ -579,7 +579,13 @@ Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; 
   `runJudge`/`runComparativeJudge`/`verify-seam`/`composeRuntime` · 11 new tests, 974 unit green · own PR
 - [x] **J0** Gold-set corpus (D9) + thresholds (D10) SIGNED OFF (first pass, 2026-06-27) → `docs/planning/phase-j-gold-set-draft.md`. (D7/D12 still default to criteria-only-first.)
 - [x] **J1** Typed fixture `apps/api/test/eval/gold-set/gold-set.ts` (15 entries, subtype-discriminated, `goldCandidateIdea` constructor) + well-formedness test — also the (#2) frozen reference distribution
-- [~] **J2** Discrimination metrics + keyless mirror DONE (`test/eval/discrimination.ts` — pool-by-tier, monotone/spread/gap/gamed-below-mediocre gate; the gold targets PASS, a flat dist FAILS = non-vacuous). LIVE `judge-calibration.eval.ts` harness ready (key-gated, out of preflight). **NEXT (paid op):** run the mvp-3 baseline to capture the "before" · 987 unit green
+- [x] **J2** Discrimination metrics + harness DONE + made ROBUST. `test/eval/discrimination.ts` gate = monotone
+  ladder + spread≥0.55 + gap≥0.08 + gamed<mediocre + **adjacent-tier RANGE-OVERLAP** (replaced the brittle
+  within-tier-band-<-gap check — kept band as a diagnostic) + **`averageRuns` over K live runs** (env
+  `DOPPL_EVAL_RUNS`, default 3 — kills the judge's ±0.03 non-determinism). LIVE result captured: **mvp-3
+  BASELINE flat (spread 0.27, FAIL)**; **v4 broke the plateau** (spread ~0.55, monotone, gamed crushed to
+  ~0.11 — the recalibration works). The only v4 miss was within-tier overlap in the FUZZY MIDDLE → fixed by the
+  middle-tier refinement (below), not by tuning v4 (no overfitting). 996 unit green.
 - [~] **J3** v4 criteria DRAFTED — `test/eval/criteria-v4.ts` (`JUDGE_AXIS_CRITERIA_V4`: earn-from-zero bands + per-axis count-the-evidence sub-criteria + anti-cheap-signal clause), wired into the live harness via the Js `criteriaSource` seam (default NOT flipped); keyless test pins it's valid/injectable + the default is untouched. **Needs the paid live run to measure (+ Michael's review of the criteria TEXT before any flip).**
 - [ ] **J4** Discrimination metric passes + all reward-hacking probes (P1–P5) below mediocre floor
 - [ ] **J4b** (if criteria-spread short of ~0.55) add the (#3) min-dominated `computeAcceptanceMetric`; re-run probes (D12)

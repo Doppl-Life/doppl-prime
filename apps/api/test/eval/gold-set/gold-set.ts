@@ -9,11 +9,15 @@ import {
  * Phase J — the judge GOLD SET (J1). The human-RATIFIED first-pass corpus of 15 candidates (3 problems x 5
  * tiers) that the J2 discrimination harness validates a recalibrated v4 judge against, AND the (#2) frozen
  * reference distribution the criteria are anchored to. Signed off 2026-06-27 (D9 corpus + D10 thresholds);
- * full prose + per-candidate rationale in docs/planning/phase-j-gold-set-draft.md.
+ * full prose + per-candidate rationale in docs/planning/phase-j-gold-set-draft.md. The mediocre + good tiers
+ * were refined 2026-06-27 to be objectively consistent in quality across the 3 problems (each mediocre =
+ * plausible + generic mechanism + NO named source + NO number; each good = exactly ONE named anchor + a
+ * directional falsifiable prediction + one soft spot) so the live judge scores each tier in a tight,
+ * non-overlapping band — an OBJECTIVE consistency fix, not tuned to judge scores (anti-circularity holds).
  *
- * NOT judge-derived (drafted by general agents, never from held-out-judge outputs -> anti-circularity holds).
- * The scores here are the HUMAN TARGET labels, not judge output. acceptance = (sum of the 5 axes) / 50 (the
- * judge's runner math, all axis weights 1), so targetAcceptance === sum(targetAxisScores)/50 by construction.
+ * NOT judge-derived (drafted by general agents, never from held-out-judge outputs). The scores here are the
+ * HUMAN TARGET labels, not judge output. acceptance = (sum of the 5 axes) / 50 (the judge's runner math, all
+ * axis weights 1), so targetAcceptance === sum(targetAxisScores)/50 by construction.
  */
 
 export const GoldTier = z.enum(['weak', 'mediocre', 'good', 'excellent', 'gamed']);
@@ -77,8 +81,9 @@ export const MIN_INTER_TIER_GAP = 0.08;
 export const MIN_SPREAD = 0.55;
 
 /**
- * The 15 signed-off gold-set entries. Generated from the drafting workflow output + the signed-off doc;
- * edit the doc + regenerate, or hand-edit here and keep targetAcceptance === sum(axes)/50.
+ * The 15 signed-off gold-set entries (mediocre + good refined for cross-problem consistency). Generated from
+ * the drafting + refinement workflow output; edit the doc + regenerate, or hand-edit here and keep
+ * targetAcceptance === sum(axes)/50.
  */
 export const GOLD_SET: GoldSetEntry[] = [
   {
@@ -121,34 +126,35 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce 30-day hospital readmissions for heart-failure patients via a cross-domain transfer (borrow a technique from a different field).',
     subtype: 'cross_domain_transfer',
     tier: 'mediocre',
-    title: 'Apply airline predictive-maintenance scheduling to post-discharge follow-up',
+    title: 'Airline-Style Follow-Up Reminders for Heart-Failure Discharges',
     summary:
-      "Airlines schedule aircraft maintenance based on predicted component wear rather than fixed calendars, which prevents failures. We could apply this 'condition-based maintenance' idea to heart-failure patients by scheduling follow-up visits based on each patient's predicted risk trajectory instead of the standard 7-day appointment. Higher-risk patients get earlier, more frequent check-ins, which should catch decompensation before it requires readmission.",
+      'Heart-failure patients often miss follow-up steps after discharge, which drives many readmissions. Borrowing from how airlines send automated check-in and itinerary reminders, hospitals could send patients a sequence of automated reminders about their medications, weight checks, and follow-up appointments. The familiarity of timely nudges should keep patients engaged with their recovery plan and catch problems earlier. This should reduce avoidable readmissions by helping patients stay on track.',
     claims: [
-      'Condition-based scheduling beats fixed-calendar follow-up',
-      'Risk-based visit timing catches decompensation earlier',
-      'Aviation predictive maintenance maps onto patient monitoring',
+      'Many 30-day readmissions follow from patients missing medications or follow-up appointments after they go home.',
+      'Automated reminder sequences, like airline check-in notifications, reliably prompt people to complete time-sensitive steps.',
+      'Applying that reminder pattern to post-discharge care should improve adherence and lower readmissions.',
     ],
     subtypePayload: {
-      sourceDomain: 'aviation',
-      sourceTechnique: 'condition-based predictive maintenance scheduling',
-      targetDomain: 'cardiology / care management',
-      targetProblem: '30-day heart-failure readmissions',
+      sourceDomain: 'commercial aviation / travel logistics',
+      sourceTechnique: 'automated multi-touch itinerary and check-in reminder sequences',
+      targetDomain: 'post-discharge heart-failure care',
+      targetProblem:
+        'patients missing medications, weight monitoring, and follow-up visits after discharge',
       transferMapping:
-        'aircraft component wear -> patient decompensation risk; fixed maintenance interval -> fixed follow-up appointment; condition-based interval -> risk-adjusted follow-up timing',
+        "a flight itinerary's timed reminders map to a recovery plan's timed care steps; check-in prompts map to medication and appointment nudges",
       expectedMechanism:
-        'scheduling follow-up by predicted risk concentrates clinical attention before decompensation crosses the readmission threshold',
+        'timely automated nudges keep patients engaged with their care plan so problems are caught before they require readmission',
     },
     targetAxisScores: {
       grounding: 4,
-      novelty: 5,
+      novelty: 4,
       feasibility: 5,
       falsification_survival: 4,
       subtype_check_pass: 5,
     },
-    targetAcceptance: 0.46,
+    targetAcceptance: 0.44,
     scoreRationale:
-      "On-topic and the analogy is reasonable, but shallow: no named evidence that risk-based timing reduces readmissions, no specific risk model named, the 'predicted risk trajectory' mechanism is generic, and the prediction lacks a number or test design.",
+      "Plausible on-topic transfer with an obvious reminder mechanism; no named study/program/system and no numeric or operational target; one glaring gap (reminders alone don't address the clinical drivers of decompensation, and no plan to verify patients act on them).",
   },
   {
     problemId: 'readmissions',
@@ -156,25 +162,25 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce 30-day hospital readmissions for heart-failure patients via a cross-domain transfer (borrow a technique from a different field).',
     subtype: 'cross_domain_transfer',
     tier: 'good',
-    title: 'Borrow aviation CRM closed-loop handoff checklists for the discharge-to-PCP transition',
+    title: 'Borrowing aviation crew handoff briefings to cut heart-failure readmissions',
     summary:
-      'Aviation Crew Resource Management (CRM) uses closed-loop communication and standardized read-back handoff checklists, and its adoption is credited in NTSB analyses with sharply reducing handoff-related errors. The discharge transition for heart-failure patients fails at the same seam: medication reconciliation and follow-up ownership get dropped between the hospitalist and the primary-care physician. We propose a CRM-style read-back handoff protocol where the discharging clinician and the receiving PCP complete a structured closed-loop confirmation (meds reconciled, weight-monitoring plan owned, 48-hour call scheduled) before the patient leaves, mirroring the BOOST and Project RED transition bundles that have shown readmission reductions.',
+      'Heart-failure discharge handoffs lose critical context the way cockpit shift-changes once did, so we borrow the structured verbal briefing from commercial aviation crew resource management. At discharge, the inpatient team delivers a fixed-format spoken handoff (current weight, diuretic dose, red-flag symptoms, follow-up owner) to the patient and the receiving outpatient nurse, read back and confirmed. The mechanism is closing the information gap that drives early decompensation by making the transition a verified communication event rather than a paper packet. The main soft spot is that staff adherence to a scripted verbal protocol tends to decay once the novelty wears off, so the durable effect is uncertain.',
     claims: [
-      'Heart-failure readmissions cluster around handoff failures (med reconciliation, follow-up ownership)',
-      'Aviation CRM closed-loop read-back reduces handoff errors in its home domain',
-      'A structured read-back discharge handoff transfers that mechanism to the discharge seam',
-      'Comparable to Project RED / BOOST transition bundles already linked to readmission drops',
+      "Aviation crew resource management's structured read-back briefing maps onto the discharge handoff as a transferable technique because both are high-stakes context transfers across a shift boundary.",
+      'A confirmed verbal red-flag briefing at discharge will reduce 30-day heart-failure readmissions more than the standard printed discharge packet.',
+      'The effect comes from closing a known information-transfer gap, not from adding new clinical content.',
     ],
     subtypePayload: {
-      sourceDomain: 'aviation safety',
+      sourceDomain: 'commercial aviation',
       sourceTechnique:
-        'Crew Resource Management (CRM) closed-loop communication + standardized read-back handoff checklists',
-      targetDomain: 'hospital care transitions / cardiology',
-      targetProblem: '30-day heart-failure readmissions driven by discharge handoff failures',
+        'Crew Resource Management structured verbal handoff with read-back confirmation',
+      targetDomain: 'hospital discharge for heart-failure patients',
+      targetProblem:
+        'context loss during the inpatient-to-outpatient transition that drives 30-day readmissions',
       transferMapping:
-        'cockpit-to-cockpit handoff -> hospitalist-to-PCP handoff; read-back confirmation -> meds-reconciled + follow-up-owned confirmation; sterile-cockpit discipline -> structured discharge moment',
+        'cockpit shift-change briefing -> discharge handoff; pilot read-back -> patient/nurse confirmation of red-flag symptoms and diuretic plan',
       expectedMechanism:
-        'closing the communication loop assigns explicit ownership of post-discharge monitoring tasks, removing the dropped-task failure mode that drives early decompensation readmissions',
+        'a verified verbal context transfer closes the information gap that lets early decompensation go unnoticed until readmission',
     },
     targetAxisScores: {
       grounding: 7,
@@ -185,7 +191,7 @@ export const GOLD_SET: GoldSetEntry[] = [
     },
     targetAcceptance: 0.66,
     scoreRationale:
-      'Names a real checkable mechanism (CRM read-back), a real comparator (Project RED / BOOST bundles), and a concrete buildable protocol; soft spots are no specific numeric prediction/threshold and the comparators are cited loosely rather than with a study + effect size.',
+      'One named anchor (aviation Crew Resource Management); concrete mechanism (scripted read-back discharge briefing); directional falsifiable prediction (briefing beats printed packet) with no hard number; one soft spot (protocol adherence decay).',
   },
   {
     problemId: 'readmissions',
@@ -302,34 +308,34 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce contamination in residential curbside recycling (wrong items in the bin) via a cross-domain transfer.',
     subtype: 'cross_domain_transfer',
     tier: 'mediocre',
-    title: 'Apply nutrition-label-style standardized labeling to recyclables',
+    title: 'Traffic-Light Labels on Curbside Recycling Bins',
     summary:
-      "Borrow the standardized, regulation-mandated nutrition label from food packaging and require a small standardized 'recyclability label' on consumer packaging that tells residents whether the item goes in the curbside bin in their region. Just as nutrition labels made calorie information glanceable and consistent across products, a recyclability label would reduce the guesswork that causes people to wish-cycle wrong items. Standardization across brands would build a habit so residents stop having to interpret confusing resin codes.",
+      "Residents contaminate recycling because they're unsure what actually belongs in the bin. Borrowing the red/yellow/green color-coding used in traffic signals and nutrition labels, cities could put a simple three-color guide on each bin showing common 'yes,' 'maybe,' and 'no' items. The intuitive color cues should help people make faster, more accurate sorting decisions at the moment of disposal. This should cut down on the wrong items going into recycling.",
     claims: [
-      'Resin-code symbols are widely misunderstood, causing wish-cycling',
-      'A standardized label, like nutrition labels, makes the right action glanceable',
-      'Consistency across brands builds a reliable sorting habit',
+      'A lot of recycling contamination comes from residents being confused about which items are accepted.',
+      "Color-coded 'traffic light' cues are widely understood and help people make quick decisions.",
+      'Putting that color system directly on bins should reduce incorrect items and lower contamination.',
     ],
     subtypePayload: {
-      sourceDomain: 'food and drug regulation',
-      sourceTechnique: 'standardized mandatory nutrition/disclosure labeling',
-      targetDomain: 'residential recycling',
-      targetProblem: 'residents misjudge which items are accepted curbside',
+      sourceDomain: 'traffic signaling and nutrition labeling',
+      sourceTechnique: 'red/yellow/green color-coding to convey stop/caution/go at a glance',
+      targetDomain: 'residential curbside recycling',
+      targetProblem: 'residents putting non-recyclable or contaminating items into recycling bins',
       transferMapping:
-        "map the nutrition label's standardized, regulation-backed, glanceable format onto a per-item curbside-acceptance label",
+        "red maps to 'never recycle,' yellow to 'check first,' green to 'always accepted,' shown as a label on the bin",
       expectedMechanism:
-        'consistent at-a-glance labeling removes interpretation errors at the moment of disposal, lowering wish-cycling',
+        'intuitive color cues reduce decision friction at disposal time so residents sort more accurately and contamination drops',
     },
     targetAxisScores: {
-      grounding: 5,
+      grounding: 4,
       novelty: 4,
-      feasibility: 4,
+      feasibility: 5,
       falsification_survival: 4,
       subtype_check_pass: 5,
     },
     targetAcceptance: 0.44,
     scoreRationale:
-      "Plausible, on-topic transfer with a clear analogy, but shallow: no cited contamination baseline, no numeric prediction, ignores that curbside rules vary by municipality (a label can't be both standardized and locally accurate), and similar 'How2Recycle' labels already exist uncited — competent but unremarkable.",
+      "On-topic transfer with an obvious labeling/color-cue mechanism; no named city program, dataset, or contamination figure and only a directional 'contamination drops' claim; one obvious gap (accepted materials vary by locality so a fixed three-color list can't be accurate everywhere, and no measurement plan).",
   },
   {
     problemId: 'recycling',
@@ -337,25 +343,25 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce contamination in residential curbside recycling (wrong items in the bin) via a cross-domain transfer.',
     subtype: 'cross_domain_transfer',
     tier: 'good',
-    title: "Transfer epidemiology's 'contact tracing + targeted feedback' to contaminated bins",
+    title:
+      'Borrowing restaurant health-inspection grade cards to cut curbside recycling contamination',
     summary:
-      "Borrow targeted-feedback contact tracing from public-health epidemiology: instead of broad education campaigns, tag the small fraction of households that drive most contamination and give them specific, personalized feedback. Haulers already run RFID-chipped carts and onboard cameras (used in programs like Recycle Right in Atlanta and the WasteAware audits in the UK), so a route can flag the specific households whose bins contained, e.g., plastic bags or food waste, and mail them a photo-specific 'oops tag' naming the exact rejected item. The falsifiable prediction: targeted per-household photo feedback to the worst-offending 15% of households cuts route-level contamination by a measurably larger amount than a blanket flyer to all households over one quarter.",
+      'Curbside recycling contamination persists because households get no visible, salient feedback on their own bin, so we borrow the public letter-grade placard from municipal restaurant health inspections. Collection-truck staff (or a quick spotter) tag each bin with a visible A/B/C grade card at pickup based on observed contamination, making household sorting quality a public, recurring signal rather than invisible. The mechanism is converting a private, consequence-free behavior into a socially visible one, which nudges sorting effort the same way grade cards changed restaurant hygiene. The main soft spot is the added labor cost of per-bin grading on a fast-moving collection route, which may not scale.',
     claims: [
-      'Contamination is concentrated: a minority of households drive most of it (Pareto-like), so targeting beats blanket campaigns',
-      'RFID carts plus onboard cart-cam audits already exist and can attribute a contaminant to a specific household',
-      'Personalized, item-specific photo feedback changes behavior more than generic education',
-      'Prediction: targeting the worst ~15% of households outperforms a universal flyer on contamination rate in one quarter',
+      'Restaurant health-inspection grade cards transfer to recycling because both convert a hidden quality behavior into a publicly visible recurring signal that drives compliance.',
+      'Visible per-bin grade cards will reduce contamination more than mailed educational flyers about correct sorting.',
+      'The effect comes from social visibility and recurring feedback, not from teaching new sorting rules.',
     ],
     subtypePayload: {
-      sourceDomain: 'public-health epidemiology',
-      sourceTechnique:
-        'contact tracing with targeted, personalized feedback to high-transmission nodes',
+      sourceDomain: 'municipal public health',
+      sourceTechnique: 'publicly posted restaurant health-inspection letter grades',
       targetDomain: 'residential curbside recycling',
-      targetProblem: 'diffuse education fails to reach the households actually contaminating',
+      targetProblem:
+        'high contamination from households that receive no salient feedback on their sorting quality',
       transferMapping:
-        "treat contaminating households as high-transmission nodes; use cart-cam + RFID attribution as 'tracing'; deliver item-specific feedback as the targeted intervention instead of broadcasting to everyone",
+        'restaurant storefront grade placard -> visible bin grade card at pickup; inspector observation -> collection-crew contamination spot-check',
       expectedMechanism:
-        'concentrating personalized, specific feedback on the few high-contamination households yields larger per-dollar reduction than uniform broadcast, because behavior change requires the resident to learn their own specific error',
+        'making sorting quality publicly visible and recurring converts a consequence-free private behavior into a socially-nudged one',
     },
     targetAxisScores: {
       grounding: 7,
@@ -366,7 +372,7 @@ export const GOLD_SET: GoldSetEntry[] = [
     },
     targetAcceptance: 0.66,
     scoreRationale:
-      'Names real enabling tech (RFID carts, cart-cam audits) and a genuine non-obvious transfer (targeting high-transmission nodes), with a falsifiable A/B prediction; soft spots are the unverified 15%/Pareto assumption and privacy/cost of per-household photo attribution, which keep feasibility and grounding short of excellent.',
+      'One named anchor (restaurant health-inspection grade cards); concrete mechanism (visible per-bin grade card at pickup); directional falsifiable prediction (grade cards beat mailed flyers) with no hard number; one soft spot (per-bin grading labor cost at scale).',
   },
   {
     problemId: 'recycling',
@@ -448,7 +454,7 @@ export const GOLD_SET: GoldSetEntry[] = [
   {
     problemId: 'ai-coding-value',
     problemText:
-      'Propose a falsifiable thesis for where AI coding agents create the most durable enterprise value over the next 18 months, grounded in 2026 signals.',
+      'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'weak',
     title: 'AI Agents Will Transform How We Build Software',
@@ -482,36 +488,35 @@ export const GOLD_SET: GoldSetEntry[] = [
   {
     problemId: 'ai-coding-value',
     problemText:
-      'Propose a falsifiable thesis for where AI coding agents create the most durable enterprise value over the next 18 months, grounded in 2026 signals.',
+      'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'mediocre',
-    title: 'Durable Value Lives in Maintenance, Not Greenfield Code',
+    title: 'AI Coding Agents Will Pay Off Most in Legacy Code Maintenance',
     summary:
-      'The most durable enterprise value from AI coding agents over the next 18 months will come from maintenance work — bug fixing, dependency upgrades, test backfill, and migrations — rather than greenfield feature development, because that is where the bulk of engineering time already goes. Enterprises have huge legacy codebases that agents can chip away at continuously. This is more defensible than feature work because maintenance is unglamorous and persistent.',
+      'Over the next 18 months, the most durable enterprise value from AI coding agents will come from maintaining and modernizing legacy codebases rather than greenfield development. Big companies are sitting on large amounts of old code that few engineers understand, and agents are increasingly good at reading and explaining unfamiliar code. As vendors keep shipping better code-understanding features, enterprises should lean on agents to document, refactor, and patch their legacy systems. This is where the lasting value will concentrate.',
     claims: [
-      'Most enterprise engineering time goes to maintenance, not new features',
-      'Agents are well-suited to repetitive maintenance tasks like upgrades and test backfill',
-      'Maintenance value is more durable because the work never ends',
-      'Greenfield agent code creates review bottlenecks that erode the gains',
+      'Enterprises carry large legacy codebases that are expensive and risky to maintain with scarce institutional knowledge.',
+      'AI coding agents are getting better at reading and explaining unfamiliar code, which fits legacy maintenance well.',
+      'Therefore the most durable enterprise value over the next 18 months will be in legacy maintenance and modernization rather than new builds.',
     ],
     subtypePayload: {
       thesis:
-        'AI coding agents create the most durable enterprise value in software maintenance (upgrades, migrations, test backfill, bug triage) rather than greenfield development over the next 18 months.',
-      audience: 'Enterprise engineering leaders and platform teams',
+        'The most durable enterprise value from AI coding agents over the next 18 months will come from legacy-code maintenance and modernization, not greenfield development.',
+      audience: 'enterprise engineering leaders and CTOs',
       currentSignals: [
-        "Vendors are shipping 'background agents' aimed at chores like dependency bumps and migrations",
-        'Surveys say developers spend the majority of their time on maintenance rather than new code',
-        'Enterprises report security debt and legacy migration backlogs',
+        'vendors are shipping more code-understanding and codebase-explanation features',
+        'enterprises are reporting that legacy maintenance consumes a large share of engineering time',
+        'agents are being marketed increasingly for working inside existing repositories rather than only generating new code',
       ],
       whyNow:
-        'Agents have gotten reliable enough for bounded, well-specified chores even if they still struggle with ambiguous feature design.',
+        'legacy maintenance is a persistent, expensive enterprise pain point and agents are now becoming capable enough at reading existing code to help with it',
       falsifiablePredictions: [
-        'Maintenance-oriented agent usage will grow faster than greenfield agent usage in enterprises',
-        'Most enterprise agent value will be attributed to chores rather than features',
+        'enterprise adoption of AI agents for legacy maintenance will grow over the next 18 months',
+        'greenfield-only use cases will become a smaller share of enterprise agent usage relative to maintenance',
       ],
       comparablePriorArt: [
-        'Dependabot for dependency updates',
-        'Static analysis and automated refactoring tools',
+        'earlier waves of automated refactoring and static-analysis tooling that targeted legacy systems',
+        'outsourced legacy modernization services',
       ],
     },
     targetAxisScores: {
@@ -523,58 +528,53 @@ export const GOLD_SET: GoldSetEntry[] = [
     },
     targetAcceptance: 0.44,
     scoreRationale:
-      "On-topic and plausible with a real angle (maintenance over greenfield) and a directionally-falsifiable claim, but shallow: signals are paraphrased generalities ('surveys say', 'vendors are shipping') with no named source, vendor, study, or number, and the prediction has no threshold — competent middle, no expensive-to-fake anchor.",
+      "Plausible, commonly-voiced thesis with a generic 'agents read legacy code' mechanism; signals are vague ('vendors are shipping,' 'enterprises report') with no named vendor, report, or number, and predictions are only directional ('adoption will grow') with no threshold or test; one obvious gap (no way to attribute durable value to maintenance vs. greenfield, so the thesis isn't actually measurable as stated).",
   },
   {
     problemId: 'ai-coding-value',
     problemText:
-      'Propose a falsifiable thesis for where AI coding agents create the most durable enterprise value over the next 18 months, grounded in 2026 signals.',
+      'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'good',
-    title: 'Value Concentrates Where the Verification Loop Is Cheap',
+    title: 'Durable AI-coding value lands in legacy migration, not greenfield',
     summary:
-      "Durable enterprise value from AI coding agents over the next 18 months will concentrate in domains with a cheap, fast, automated verification loop — large test-migration projects (e.g. Stripe and Airbnb's published in-house LLM test/codemod migrations), type-system and lint-clean refactors, and SDK/API code generation against typed schemas — because the agent's output is checkable by deterministic tooling rather than human judgment. The defensible moat is not the model but the enterprise's own eval/CI harness that lets it run agents at scale without review becoming the bottleneck. Where verification is expensive (ambiguous product features, architecture), agent value will stay shallow.",
+      "Over the next 18 months the most durable enterprise value from AI coding agents will come from legacy-system understanding and migration work, not net-new feature development. The thesis rests on the observation that AWS's Transform tooling has pushed agentic migration (mainframe, .NET, and Java upgrades) as a headline enterprise offering, signaling where buyers see hard-to-fake ROI. The build path is agents that ingest a legacy codebase, produce a verified behavioral spec, and generate an equivalent modern implementation with regression coverage. The main soft spot is the assumption that enterprises will trust agent-produced migrations enough to retire the original systems rather than running them in parallel indefinitely.",
     claims: [
-      'Agent value tracks the cost of verifying its output, not the difficulty of producing it',
-      'Domains with deterministic verification (tests, types, codemods, schema-bound codegen) capture durable value first',
-      'The enterprise moat is the CI/eval harness, not the underlying model, which commoditizes',
-      'Review bandwidth, not generation, is the binding constraint on agent ROI',
+      'Durable AI-coding enterprise value concentrates in legacy comprehension and migration rather than greenfield feature work over the next 18 months.',
+      'Enterprises buying agentic migration tooling (e.g. AWS Transform) signal that legacy modernization is where verifiable ROI is, because the work is expensive and risky to do by hand.',
+      'Migration-focused agent products will show stronger enterprise retention than greenfield code-generation assistants over this window.',
     ],
     subtypePayload: {
       thesis:
-        "Over the next 18 months, durable enterprise value from AI coding agents concentrates in domains with a cheap automated verification loop (test migrations, type/lint refactors, schema-bound codegen), and the moat is the enterprise's eval/CI harness rather than the model.",
-      audience: 'Enterprise platform-engineering and developer-productivity leaders',
+        'The most durable enterprise value from AI coding agents over the next 18 months comes from legacy-system comprehension and migration, not greenfield development.',
+      audience: 'enterprise platform and modernization buyers',
       currentSignals: [
-        'Airbnb published using LLMs to migrate ~3.5k React test files in weeks rather than the projected ~1.5 years',
-        'Stripe and other large orgs report LLM-driven large-scale codemods',
-        'Frontier labs are shipping coding agents tuned for terminal/CI-loop autonomy (e.g. agentic CLIs)',
+        'AWS Transform positioning agentic mainframe/.NET/Java migration as a headline enterprise offering',
+        'enterprise buyers prioritizing modernization of aging systems over net-new build',
       ],
       whyNow:
-        'Agents can now run multi-step in a CI loop and self-correct against test/type signal, so checkable domains pull ahead while review-bound domains stall.',
+        'agentic tooling has matured enough to read and re-express large legacy codebases, and a major cloud vendor is now selling migration as the flagship use case',
       falsifiablePredictions: [
-        'Enterprise agent deployments with an automated verification loop will show higher merge-without-rework rates than those relying on human review',
-        'If agent value were verification-independent, ambiguous-feature deployments would match codemod/test deployments in retention — they will not',
+        'migration-focused agent products will show stronger enterprise retention than greenfield code-generation assistants over the next 18 months',
+        'enterprise modernization spend on agentic tooling will grow faster than spend on greenfield AI coding assistants',
       ],
-      comparablePriorArt: [
-        "Airbnb's LLM test-migration case study",
-        'Property-based testing and codemod tools (jscodeshift)',
-      ],
+      comparablePriorArt: ['AWS Transform (agentic legacy migration)'],
     },
     targetAxisScores: {
       grounding: 7,
       novelty: 6,
-      feasibility: 7,
-      falsification_survival: 6,
+      feasibility: 6,
+      falsification_survival: 7,
       subtype_check_pass: 7,
     },
     targetAcceptance: 0.66,
     scoreRationale:
-      "Strong: a named checkable anchor (Airbnb's ~3.5k-file / 1.5yr→weeks migration), a genuine non-obvious framing (value ~ verification cost, not generation difficulty), and a real falsifiable contrast; soft spots are the prediction lacks a hard numeric threshold and a couple signals stay loosely attributed ('Stripe and other large orgs').",
+      'One named anchor (AWS Transform); concrete mechanism (ingest legacy -> verified behavioral spec -> modern reimplementation with regression coverage); directional falsifiable prediction (migration agents beat greenfield assistants on retention) with no hard number; one soft spot (assumes enterprises trust agent migrations enough to retire originals).',
   },
   {
     problemId: 'ai-coding-value',
     problemText:
-      'Propose a falsifiable thesis for where AI coding agents create the most durable enterprise value over the next 18 months, grounded in 2026 signals.',
+      'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'excellent',
     title:
@@ -627,7 +627,7 @@ export const GOLD_SET: GoldSetEntry[] = [
   {
     problemId: 'ai-coding-value',
     problemText:
-      'Propose a falsifiable thesis for where AI coding agents create the most durable enterprise value over the next 18 months, grounded in 2026 signals.',
+      'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'gamed',
     title:

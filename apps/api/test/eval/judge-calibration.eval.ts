@@ -10,7 +10,13 @@ import {
 import { DEFAULT_MODEL_REGISTRY } from '../../src/config/model-registry.config';
 import { runComparativeJudge } from '../../src/verifier/judge/comparative-judge';
 import { GOLD_SET, goldCandidateIdea, goldProblemIds } from './gold-set/gold-set';
-import { computeDiscrimination, meansInBand, passesGate, type ScoredEntry } from './discrimination';
+import {
+  averageRuns,
+  computeDiscrimination,
+  meansInBand,
+  passesGate,
+  type ScoredEntry,
+} from './discrimination';
 import { JUDGE_AXIS_CRITERIA_V4 } from './criteria-v4';
 
 /**
@@ -73,6 +79,21 @@ async function scoreCorpus(gateway: ModelGateway, criteriaSource?: string): Prom
   return scored;
 }
 
+/** K live runs averaged per candidate (env DOPPL_EVAL_RUNS, default 3) — kills the judge's run-to-run noise
+ *  so the gate verdict is reproducible. */
+const EVAL_RUNS = Math.max(1, Math.floor(Number(process.env.DOPPL_EVAL_RUNS ?? 3)) || 3);
+
+async function scoreCorpusAveraged(
+  gateway: ModelGateway,
+  criteriaSource?: string,
+): Promise<ScoredEntry[]> {
+  const runs: ScoredEntry[][] = [];
+  for (let i = 0; i < EVAL_RUNS; i += 1) {
+    runs.push(await scoreCorpus(gateway, criteriaSource));
+  }
+  return averageRuns(runs);
+}
+
 function logReport(label: string, scored: ScoredEntry[]): void {
   const report = computeDiscrimination(scored);
   const gate = passesGate(report);
@@ -90,7 +111,7 @@ function logReport(label: string, scored: ScoredEntry[]): void {
     })
     .join('\n');
   console.log(
-    `\n[judge-calibration ${label}] scored=${scored.length}/15\n` +
+    `\n[judge-calibration ${label}] (avg of ${EVAL_RUNS} run${EVAL_RUNS === 1 ? '' : 's'}) scored=${scored.length}/15\n` +
       `${tierLines}\n` +
       `  spread=${report.spread?.toFixed(3)} minGap=${report.minGap?.toFixed(3)} ` +
       `monotone=${report.monotone} gamedBelowMediocre=${report.gamedBelowMediocre} ` +
@@ -103,23 +124,31 @@ function logReport(label: string, scored: ScoredEntry[]): void {
 describe.skipIf(!process.env.OPENROUTER_API_KEY)(
   'judge-calibration — LIVE held-out judge over the gold set',
   () => {
-    test('baseline_mvp3_is_characterized_not_asserted_to_pass', async () => {
-      const scored = await scoreCorpus(liveGateway());
-      logReport('mvp-3 BASELINE', scored);
-      // BASELINE: we capture mvp-3's behavior; it is EXPECTED to fail discrimination (flat ~0.53). The only
-      // hard assertion is that the run actually produced scores (most candidates judged, not all rejected).
-      expect(scored.length).toBeGreaterThanOrEqual(12);
-    }, 180_000);
+    test(
+      'baseline_mvp3_is_characterized_not_asserted_to_pass',
+      async () => {
+        const scored = await scoreCorpusAveraged(liveGateway());
+        logReport('mvp-3 BASELINE', scored);
+        // BASELINE: we capture mvp-3's behavior; it is EXPECTED to fail discrimination (flat). The only hard
+        // assertion is that the run actually produced scores for every candidate (none silently dropped).
+        expect(scored.length).toBe(15);
+      },
+      EVAL_RUNS * 90_000,
+    );
 
     // J3 — the DRAFT v4 criteria injected via the Slice-Js `criteriaSource` seam (default NOT flipped). v4
-    // is EXPECTED to pass the discrimination gate; this is the AFTER to the mvp-3 baseline's BEFORE. If it
-    // fails, the failures name which gate check (spread / monotone / gamed leak) so the criteria can be tuned.
-    test('v4_criteria_pass_the_discrimination_gate', async () => {
-      const scored = await scoreCorpus(liveGateway(), JUDGE_AXIS_CRITERIA_V4);
-      logReport('v4 (Slice-Js injected, default NOT flipped)', scored);
-      const gate = passesGate(computeDiscrimination(scored));
-      expect(gate.failures).toEqual([]);
-      expect(gate.pass).toBe(true);
-    }, 180_000);
+    // is EXPECTED to pass the robust discrimination gate (averaged over K runs; range-overlap separability).
+    // This is the AFTER to the mvp-3 baseline's BEFORE. If it fails, the failures name which gate check.
+    test(
+      'v4_criteria_pass_the_discrimination_gate',
+      async () => {
+        const scored = await scoreCorpusAveraged(liveGateway(), JUDGE_AXIS_CRITERIA_V4);
+        logReport('v4 (Slice-Js injected, default NOT flipped)', scored);
+        const gate = passesGate(computeDiscrimination(scored));
+        expect(gate.failures).toEqual([]);
+        expect(gate.pass).toBe(true);
+      },
+      EVAL_RUNS * 90_000,
+    );
   },
 );
