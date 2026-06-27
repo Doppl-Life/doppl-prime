@@ -10,6 +10,7 @@ import type { RunEventEnvelope } from '../data/contracts';
 import type { EventSourceLike, SseStream } from '../data/sseStream';
 import {
   buildBloomRunConfig,
+  canBuildBloomRunConfig,
   DEFAULT_BLOOM_GROW_FORM,
   updateBloomGrowFormFromMarkdown,
 } from './outerBloomRunConfig';
@@ -594,6 +595,7 @@ function BloomGrowPanel({
 }) {
   const [form, setForm] = useState<BloomGrowForm>(() => bloomGrowFormFromIsland(selectedIsland));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const formIsRunnable = canBuildBloomRunConfig(form);
 
   const update = <Key extends keyof BloomGrowForm>(key: Key, value: BloomGrowForm[Key]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -607,6 +609,7 @@ function BloomGrowPanel({
   };
 
   const submit = () => {
+    if (busy || !formIsRunnable) return;
     const result = buildBloomRunConfig(form);
     if (!result.ok) {
       setErrors(result.errors);
@@ -640,11 +643,39 @@ function BloomGrowPanel({
           <span style={fieldLabel}>Case study file</span>
           <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleFile} />
         </label>
-        {selectedIsland !== null && (
-          <Button variant="secondary" glyph="↺" onClick={() => setForm(bloomGrowFormFromIsland(selectedIsland))}>
-            Use selected bloom
+        <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+          {selectedIsland !== null && (
+            <Button
+              variant="secondary"
+              glyph="↺"
+              onClick={() => {
+                setErrors({});
+                setForm(bloomGrowFormFromIsland(selectedIsland));
+              }}
+            >
+              Fill from selected map node
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            glyph="▶"
+            onClick={submit}
+            disabled={busy || !formIsRunnable}
+            aria-disabled={busy || !formIsRunnable}
+            title={
+              formIsRunnable
+                ? 'Start a kernel run from this bloom seed'
+                : 'Add a title and seed material before starting a bloom run'
+            }
+          >
+            {busy ? 'Starting bloom...' : 'Run bloom'}
           </Button>
-        )}
+          {!formIsRunnable && (
+            <span style={{ color: 'var(--fg-muted)', fontSize: 'var(--text-caption)' }}>
+              Add a title and seed material to enable Run bloom.
+            </span>
+          )}
+        </div>
         <label>
           <span style={fieldLabel}>Title</span>
           <input
@@ -733,9 +764,6 @@ function BloomGrowPanel({
           <NumberField label="Tool calls" value={form.maxToolCalls} onChange={(value) => update('maxToolCalls', value)} />
         </div>
         {launchState.kind === 'error' && <FieldError>{launchState.message}</FieldError>}
-        <Button variant="primary" glyph="▶" onClick={submit} disabled={busy}>
-          {busy ? 'Starting bloom...' : 'Run bloom'}
-        </Button>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { RunConfig } from '../../../src/data/contracts';
 import {
   DEFAULT_BLOOM_GROW_FORM,
   buildBloomRunConfig,
+  canBuildBloomRunConfig,
   parseCaseStudyMarkdown,
   updateBloomGrowFormFromMarkdown,
 } from '../../../src/routes/outerBloomRunConfig';
@@ -85,6 +86,25 @@ The situation it grows from.
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors.seedText).toBeTruthy();
+  });
+
+  it('reports whether the sidebar has enough essential info to enable Run bloom', () => {
+    expect(canBuildBloomRunConfig(DEFAULT_BLOOM_GROW_FORM)).toBe(false);
+    expect(
+      canBuildBloomRunConfig({
+        ...DEFAULT_BLOOM_GROW_FORM,
+        title: 'The Swim-Up Boarding',
+        seedText: 'A yacht intrusion case with an unguarded waterline perimeter.',
+      }),
+    ).toBe(true);
+    expect(
+      canBuildBloomRunConfig({
+        ...DEFAULT_BLOOM_GROW_FORM,
+        title: 'The Swim-Up Boarding',
+        seedText: 'A yacht intrusion case.',
+        energyBudget: 0,
+      }),
+    ).toBe(false);
   });
 
   it('updates the grow form from uploaded markdown without losing selected controls', () => {

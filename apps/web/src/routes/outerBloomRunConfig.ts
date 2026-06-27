@@ -81,15 +81,7 @@ export function buildBloomRunConfig(
   form: BloomGrowForm,
   opts: { rngSeed?: number } = {},
 ): BloomRunConfigResult {
-  const errors: Record<string, string> = {};
-  if (form.seedText.trim().length === 0) errors.seedText = 'Add a case study seed or upload markdown.';
-  if (form.title.trim().length === 0) errors.title = 'Add a case study title.';
-  if (form.generateCount < 1) errors.generateCount = 'Generate count must be at least 1.';
-  if (form.maxSpawnDepth < 1) errors.maxSpawnDepth = 'Spawn depth must be at least 1.';
-  if (form.maxGenerations < 1) errors.maxGenerations = 'Max generations must be at least 1.';
-  if (form.energyBudget < 1) errors.energyBudget = 'Energy budget must be at least 1.';
-  if (form.maxToolCalls < 1) errors.maxToolCalls = 'Tool-call cap must be at least 1.';
-  if (form.wallClockMinutes < 1) errors.wallClockMinutes = 'Wall-clock cap must be at least 1 minute.';
+  const errors = bloomGrowFormErrors(form);
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   const config: RunConfig = {
@@ -120,6 +112,23 @@ export function buildBloomRunConfig(
     return { ok: false, errors };
   }
   return { ok: true, config: parsed.data };
+}
+
+export function canBuildBloomRunConfig(form: BloomGrowForm): boolean {
+  return Object.keys(bloomGrowFormErrors(form)).length === 0;
+}
+
+function bloomGrowFormErrors(form: BloomGrowForm): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (form.seedText.trim().length === 0) errors.seedText = 'Add a case study seed or upload markdown.';
+  if (form.title.trim().length === 0) errors.title = 'Add a case study title.';
+  if (form.generateCount < 1) errors.generateCount = 'Population must be at least 1.';
+  if (form.maxSpawnDepth < 1) errors.maxSpawnDepth = 'Spawn depth must be at least 1.';
+  if (form.maxGenerations < 1) errors.maxGenerations = 'Depth must be at least 1.';
+  if (form.energyBudget < 1) errors.energyBudget = 'Energy budget must be at least 1.';
+  if (form.maxToolCalls < 1) errors.maxToolCalls = 'Tool-call cap must be at least 1.';
+  if (form.wallClockMinutes < 1) errors.wallClockMinutes = 'Wall-clock cap must be at least 1 minute.';
+  return errors;
 }
 
 function buildKernelSeed(form: BloomGrowForm): string {

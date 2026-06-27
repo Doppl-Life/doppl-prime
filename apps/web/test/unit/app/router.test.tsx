@@ -170,6 +170,24 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(await screen.findByText(/run_outer_live/i)).toBeTruthy();
   });
 
+  it('test_bloom_grow_tab_disables_run_until_required_seed_info_exists', async () => {
+    const client = fakeClient();
+    renderAt('/bloom', client);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
+    expect(await screen.findByRole('button', { name: /fill from selected map node/i })).toBeTruthy();
+    const runButton = screen.getByRole('button', { name: /run bloom/i }) as HTMLButtonElement;
+    expect(runButton.disabled).toBe(false);
+
+    fireEvent.change(screen.getByLabelText(/title/i), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText(/seed material/i), { target: { value: '' } });
+    expect(runButton.disabled).toBe(true);
+    expect(screen.getByText(/add a title and seed material to enable run bloom/i)).toBeTruthy();
+
+    fireEvent.click(runButton);
+    expect(client.startRun).not.toHaveBeenCalled();
+  });
+
   // spec(route-table completeness): an unknown path redirects to the bloom root.
   it('test_unknown_route_redirects_home', async () => {
     renderAt('/totally/unknown/path');
