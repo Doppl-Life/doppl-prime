@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
   waitFor,
 } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
@@ -659,6 +660,12 @@ describe("App", () => {
 
   it("formats compressed problem recovery fields as cards, emphasis, and lists", async () => {
     const problemFixture: CalibratorIndex = structuredClone(fixture);
+    problemFixture.cases[0].problem_recoveries[1].node_id =
+      "liquidity-bridge-via-mobility-backed-bonds-d3b01a15";
+    problemFixture.cases[0].problem_recoveries[1].problem_recovery_id =
+      "liquidity-bridge-via-mobility-backed-bonds-d3b01a15";
+    problemFixture.cases[0].problem_recoveries[1].title =
+      "Liquidity Bridge via Mobility-Backed Bonds";
     problemFixture.cases[0].problem_recoveries[1].body = [
       "# Liquidity Bridge via Mobility-Backed Bonds",
       "",
@@ -682,7 +689,7 @@ describe("App", () => {
     );
 
     render(<App />);
-    await waitForReviewWorkspace();
+    await waitForReviewWorkspace("Liquidity Bridge via Mobility-Backed Bonds");
 
     expect(
       screen.getByRole("heading", { name: "Surface complaint" }),
@@ -696,8 +703,12 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Actual problem:" }),
     ).toBeInTheDocument();
+    const actualProblemSection = screen
+      .getByRole("heading", { name: "Actual problem:" })
+      .closest("section");
+    expect(actualProblemSection).not.toBeNull();
     expect(
-      screen.getByText(
+      within(actualProblemSection as HTMLElement).getByText(
         /Municipalities Face A Timing Mismatch Between Revenue Collapse/i,
       ),
     ).toBeInTheDocument();
@@ -715,6 +726,11 @@ describe("App", () => {
     expect(screen.getByText("Credit Rating Agencies")).toBeInTheDocument();
     expect(screen.getByText("AV Investors")).toBeInTheDocument();
     expect(screen.getByText("Bondholders")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Which cash-flow forecast would show the gap between collapsing legacy revenue and future mobility-backed repayment/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows trace but keeps discovery collapsed until opened", async () => {

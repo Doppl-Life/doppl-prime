@@ -17,6 +17,7 @@ import {
   type GitHubAgardenIndexConfig,
 } from "./githubAgardenIndex";
 import { AgoraApp } from "./Agora";
+import { skinValidationQuestion } from "./skinValidationQuestions";
 
 type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
@@ -533,6 +534,51 @@ function isGeneratedListLabel(label: string): boolean {
   return /^(Implications|Opportunities|Sprouts|Skin in the Game)$/i.test(label);
 }
 
+function generatedListClassName(label: string): string {
+  const normalized = label.toLowerCase();
+  if (normalized === "skin in the game")
+    return "generated-list generated-list-emphasis skin-list";
+  if (normalized === "implications" || normalized === "opportunities")
+    return "generated-list generated-list-emphasis";
+  return "generated-list";
+}
+
+function GeneratedList({
+  artifactId,
+  label,
+  items,
+}: {
+  artifactId?: string;
+  label: string;
+  items: string[];
+}) {
+  const isSkinList = /^Skin in the Game$/i.test(label);
+  return (
+    <section className={generatedListClassName(label)}>
+      <h5>{label}:</h5>
+      <ul>
+        {items.map((item) => {
+          const itemLabel = sentenceCaseHeading(item);
+          const question = isSkinList
+            ? skinValidationQuestion(artifactId, item)
+            : null;
+          return (
+            <li key={item}>
+              <span className="generated-list-item-label">{itemLabel}</span>
+              {question ? (
+                <span className="skin-validation-question">
+                  {" "}
+                  - "{question}"
+                </span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function labeledBlock(block: string): LabeledMarkdownBlock | null {
   const labels = [
     "Implications",
@@ -599,7 +645,13 @@ function supplementalMarkdown(baseText: string, candidateText: string): string {
   return uniqueBlocks.join("\n\n");
 }
 
-function MarkdownBlock({ text }: { text: string }) {
+function MarkdownBlock({
+  text,
+  artifactId,
+}: {
+  text: string;
+  artifactId?: string;
+}) {
   const blocks = markdownBlocks(text);
   const renderedBlocks = [];
   for (let index = 0; index < blocks.length; index += 1) {
@@ -664,17 +716,12 @@ function MarkdownBlock({ text }: { text: string }) {
       generatedListItems(nextBlock).length > 0
     ) {
       renderedBlocks.push(
-        <section
-          className="generated-list"
+        <GeneratedList
+          artifactId={artifactId}
+          items={generatedListItems(nextBlock)}
           key={`${block}-${nextBlock}`.slice(0, 120)}
-        >
-          <h5>{label}:</h5>
-          <ul>
-            {generatedListItems(nextBlock).map((item) => (
-              <li key={item}>{sentenceCaseHeading(item)}</li>
-            ))}
-          </ul>
-        </section>,
+          label={label}
+        />,
       );
       index += 1;
       continue;
@@ -715,14 +762,12 @@ function MarkdownBlock({ text }: { text: string }) {
     }
     if (labeled?.kind === "list") {
       renderedBlocks.push(
-        <section className="generated-list" key={key}>
-          <h5>{labeled.label}:</h5>
-          <ul>
-            {labeled.items.map((item) => (
-              <li key={item}>{sentenceCaseHeading(item)}</li>
-            ))}
-          </ul>
-        </section>,
+        <GeneratedList
+          artifactId={artifactId}
+          items={labeled.items}
+          key={key}
+          label={labeled.label}
+        />,
       );
       continue;
     }
@@ -768,7 +813,13 @@ function MarkdownBlock({ text }: { text: string }) {
   return <div className="markdown-block">{renderedBlocks}</div>;
 }
 
-function ArtifactMarkdownBlock({ text }: { text: string }) {
+function ArtifactMarkdownBlock({
+  text,
+  artifactId,
+}: {
+  text: string;
+  artifactId?: string;
+}) {
   const { trace, discovery, body } = splitArtifactMarkdown(text);
   const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
 
@@ -781,7 +832,7 @@ function ArtifactMarkdownBlock({ text }: { text: string }) {
       {trace ? (
         <section className="artifact-context-section">
           <h3>Trace</h3>
-          <MarkdownBlock text={trace} />
+          <MarkdownBlock artifactId={artifactId} text={trace} />
         </section>
       ) : null}
       {discovery ? (
@@ -796,12 +847,12 @@ function ArtifactMarkdownBlock({ text }: { text: string }) {
           </button>
           {isDiscoveryOpen ? (
             <div className="artifact-context-section">
-              <MarkdownBlock text={discovery} />
+              <MarkdownBlock artifactId={artifactId} text={discovery} />
             </div>
           ) : null}
         </section>
       ) : null}
-      <MarkdownBlock text={body} />
+      <MarkdownBlock artifactId={artifactId} text={body} />
     </>
   );
 }
@@ -943,6 +994,13 @@ function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
 function artifactTitle(artifact: ReviewArtifact | null): string {
   if (!artifact) return "No artifact selected";
   return artifact.title;
+}
+
+function artifactNodeId(artifact: ReviewArtifact | null): string | undefined {
+  if (!artifact) return undefined;
+  if (artifact.node_id) return artifact.node_id;
+  if ("problem_recovery_id" in artifact) return artifact.problem_recovery_id;
+  return artifact.solution_id;
 }
 
 function hostedRatingsEndpoint(): string {
@@ -1687,7 +1745,10 @@ export function App() {
           </p>
           <h2>{activeTitle}</h2>
           {activeReviewArtifact ? (
-            <ArtifactMarkdownBlock text={activeReviewArtifact.body} />
+            <ArtifactMarkdownBlock
+              artifactId={artifactNodeId(activeReviewArtifact)}
+              text={activeReviewArtifact.body}
+            />
           ) : null}
         </article>
 

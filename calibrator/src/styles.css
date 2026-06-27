@@ -749,6 +749,56 @@ textarea {
   padding-left: 2px;
 }
 
+.generated-list-item-label {
+  color: #dbe6f7;
+  font-weight: 800;
+}
+
+.generated-list-emphasis {
+  background: rgba(24, 32, 47, 0.5);
+  border: 1px solid rgba(90, 169, 255, 0.18);
+  border-radius: 8px;
+  margin: 18px 0;
+  padding: 14px 16px;
+}
+
+.generated-list-emphasis h5 {
+  color: var(--teal-bright);
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: 0;
+  margin-bottom: 10px;
+}
+
+.generated-list-emphasis ul {
+  gap: 11px;
+  padding-left: 24px;
+}
+
+.generated-list-emphasis li {
+  color: #f1f6ff;
+  font-size: 16px;
+  line-height: 1.48;
+}
+
+.skin-list {
+  border-color: rgba(64, 224, 208, 0.34);
+}
+
+.skin-list li {
+  color: #f7fbff;
+  display: list-item;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.skin-validation-question {
+  color: #aebbd0;
+  display: inline;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .generated-list li::marker {
   color: #7e8da6;
 }
@@ -876,7 +926,7 @@ textarea {
   gap: 10px;
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-  padding: 10px 12px 24px;
+  padding: 10px 12px 72px;
 }
 
 .rating-dock > * {
@@ -1108,7 +1158,7 @@ textarea {
 
   .rating-dock {
     grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
-    padding: 12px 14px 26px;
+    padding: 12px 14px 78px;
   }
 
   .rating-dock .session-fields {
@@ -1245,7 +1295,7 @@ textarea {
     align-items: center;
     gap: 6px 8px;
     grid-template-columns: minmax(0, 1fr) minmax(120px, 0.78fr);
-    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    padding: 6px 10px calc(18px + env(safe-area-inset-bottom));
   }
 
   .rating-dock .session-fields {
