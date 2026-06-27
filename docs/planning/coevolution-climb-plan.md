@@ -578,8 +578,8 @@ Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; 
   sign-off · `loadJudgeCriteria` + `buildJudgeInstruction`/`buildComparativeJudgeInstruction` threaded through
   `runJudge`/`runComparativeJudge`/`verify-seam`/`composeRuntime` · 11 new tests, 974 unit green · own PR
 - [x] **J0** Gold-set corpus (D9) + thresholds (D10) SIGNED OFF (first pass, 2026-06-27) → `docs/planning/phase-j-gold-set-draft.md`. (D7/D12 still default to criteria-only-first.)
-- [~] **J1** Convert the signed-off gold set → typed fixture `apps/api/test/eval/gold-set/` (15 candidates, 3 problems × 5 tiers) + a well-formedness test — also the (#2) frozen reference distribution · **NEXT**
-- [ ] **J2** `judge-calibration.eval.ts` discrimination harness + keyless mirror; baseline on mvp-3
+- [x] **J1** Typed fixture `apps/api/test/eval/gold-set/gold-set.ts` (15 entries, subtype-discriminated, `goldCandidateIdea` constructor) + well-formedness test — also the (#2) frozen reference distribution
+- [~] **J2** Discrimination metrics + keyless mirror DONE (`test/eval/discrimination.ts` — pool-by-tier, monotone/spread/gap/gamed-below-mediocre gate; the gold targets PASS, a flat dist FAILS = non-vacuous). LIVE `judge-calibration.eval.ts` harness ready (key-gated, out of preflight). **NEXT (paid op):** run the mvp-3 baseline to capture the "before" · 987 unit green
 - [ ] **J3** Author v4 (#4) `JUDGE_AXIS_CRITERIA` (re-anchor + sub-criteria + anti-cheap clause); inject via the Js `criteriaSource` seam (default NOT flipped)
 - [ ] **J4** Discrimination metric passes + all reward-hacking probes (P1–P5) below mediocre floor
 - [ ] **J4b** (if criteria-spread short of ~0.55) add the (#3) min-dominated `computeAcceptanceMetric`; re-run probes (D12)
