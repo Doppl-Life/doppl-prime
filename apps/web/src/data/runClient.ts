@@ -125,6 +125,18 @@ export const RunSummary = z.object({
   runId: z.string(),
   status: z.string().nullable(),
   sequenceThrough: z.number(),
+  // Enriched run-summary fields (the Runs table). All OPTIONAL so an older api (pre-enrichment) still
+  // parses; the current api always sends them. createdAt/problem/finalIdea* are nullable (a run may have
+  // no winner / no recorded creation time); the counts default to 0 in the view when absent.
+  createdAt: z.string().nullable().optional(),
+  problem: z.string().nullable().optional(),
+  finalIdeaTitle: z.string().nullable().optional(),
+  finalIdeaSummary: z.string().nullable().optional(),
+  generations: z.number().optional(),
+  candidates: z.number().optional(),
+  reproductions: z.number().optional(),
+  culls: z.number().optional(),
+  mutations: z.number().optional(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;
 const RunSummariesResponse = z.object({ runs: z.array(RunSummary) });

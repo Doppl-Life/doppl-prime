@@ -87,18 +87,23 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_live'));
   });
 
-  // spec(nav): a completed card → Replay /runs/:id/replay + Final idea /runs/:id/final.
-  it('test_replay_and_final_navigate', async () => {
+  // spec(nav): a completed run's Replay action → /runs/:id/replay. (The final idea is a table COLUMN now,
+  // not a separate button — its summary shows inline.)
+  it('test_replay_navigates', async () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
     fireEvent.click(await screen.findByRole('button', { name: /replay/i }));
     await waitFor(() =>
       expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/replay'),
     );
-    cleanup();
+  });
 
-    renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) }));
-    fireEvent.click(await screen.findByRole('button', { name: /final idea/i }));
-    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/final'));
+  // spec(nav): clicking a run's id opens its primary view (completed → replay).
+  it('test_clicking_run_id_opens_run', async () => {
+    renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
+    fireEvent.click(await screen.findByRole('button', { name: /open run run_done/i }));
+    await waitFor(() =>
+      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/replay'),
+    );
   });
 
   // spec(status-derived action set): a failed run offers Replay (partial), no Final idea.

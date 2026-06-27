@@ -6,6 +6,8 @@ import {
   buildLineageGraph,
   buildReplaySummary,
   buildResearchNotes,
+  buildRunSummary,
+  type RunSummaryItem,
 } from '../projections';
 import { listRunIds } from '../projections/run-list';
 import { serializeEnvelope } from './_support/serializeEnvelope';
@@ -23,16 +25,24 @@ export interface RunReadRoutesDeps {
 }
 
 export function registerRunReadRoutes(app: FastifyInstance, deps: RunReadRoutesDeps): void {
-  // GET /runs — list runs (id + current-state summary) via the demo listRunIds reader.
+  // GET /runs — the enriched run list backing the Runs table: per run the status + selected winner +
+  // creation time + problem + activity counts (buildRunSummary), sorted newest-first (createdAt desc, a
+  // run missing a creation time sorts last). Rebuild-on-read over the same per-run readByRun the status
+  // summary already used (no extra DB cost); read-only (rule #2).
   app.get('/runs', async () => {
     const ids = await listRunIds(deps.db);
-    const runs: Array<{ runId: string; status: string | null; sequenceThrough: number }> = [];
+    const runs: RunSummaryItem[] = [];
     for (const id of ids) {
       const events = await deps.store.readByRun(id);
       if (events.length === 0) continue;
-      const { state, sequenceThrough } = buildCurrentState(events);
-      runs.push({ runId: id, status: state.runs[id]?.status ?? null, sequenceThrough });
+      runs.push(buildRunSummary(events));
     }
+    runs.sort((a, b) => {
+      if (a.createdAt === b.createdAt) return 0;
+      if (a.createdAt === null) return 1;
+      if (b.createdAt === null) return -1;
+      return a.createdAt < b.createdAt ? 1 : -1; // descending: newest first
+    });
     return { runs };
   });
 
