@@ -49,3 +49,10 @@ export const OuterBloomProjection = z.object({
   }),
 });
 export type OuterBloomProjection = z.infer<typeof OuterBloomProjection>;
+
+export const DeleteOuterBloomNodeResult = z.object({
+  nodeId: z.string(),
+  deleted: z.number(),
+  nodeIds: z.array(z.string()),
+});
+export type DeleteOuterBloomNodeResult = z.infer<typeof DeleteOuterBloomNodeResult>;

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { eq, inArray } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
 import { outerBloomArtifacts } from '../event-store/schema';
@@ -30,9 +31,66 @@ export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomR
     }
     return buildOuterBloom(islands);
   });
+
+  app.delete('/bloom/nodes/:id', async (request, reply) => {
+    const nodeId = (request.params as { id: string }).id;
+    const [root] = await deps.db
+      .select()
+      .from(outerBloomArtifacts)
+      .where(eq(outerBloomArtifacts.id, nodeId))
+      .limit(1);
+
+    if (root === undefined) {
+      return reply.status(404).send({
+        error: 'outer_bloom_node_not_found',
+        message: 'Only imported outer bloom artifacts can be deleted from this testing endpoint.',
+        nodeId,
+      });
+    }
+
+    const rows = await deps.db
+      .select()
+      .from(outerBloomArtifacts)
+      .where(eq(outerBloomArtifacts.runId, root.runId));
+    const nodeIds = collectOuterBloomSubtreeIds(nodeId, rows);
+    if (nodeIds.length > 0) {
+      await deps.db.delete(outerBloomArtifacts).where(inArray(outerBloomArtifacts.id, nodeIds));
+    }
+
+    return reply.send({ nodeId, deleted: nodeIds.length, nodeIds });
+  });
 }
 
 type ImportedOuterBloomRow = typeof outerBloomArtifacts.$inferSelect;
+
+export function collectOuterBloomSubtreeIds(
+  rootId: string,
+  rows: readonly Pick<ImportedOuterBloomRow, 'id' | 'parentId'>[],
+): string[] {
+  const childrenByParent = new Map<string, string[]>();
+  for (const row of rows) {
+    if (row.parentId === null) continue;
+    childrenByParent.set(row.parentId, [...(childrenByParent.get(row.parentId) ?? []), row.id]);
+  }
+
+  const found = rows.some((row) => row.id === rootId);
+  if (!found) return [];
+
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  const stack = [rootId];
+  while (stack.length > 0) {
+    const id = stack.pop() as string;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ordered.push(id);
+    const children = childrenByParent.get(id) ?? [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      stack.push(children[index] as string);
+    }
+  }
+  return ordered;
+}
 
 async function readImportedOuterBloom(db: NodePgDatabase): Promise<OuterBloomIsland[]> {
   const rows = await db
@@ -49,7 +107,10 @@ async function readImportedOuterBloom(db: NodePgDatabase): Promise<OuterBloomIsl
   return [...byRun.entries()].map(([runId, runRows]) => importedRowsToIsland(runId, runRows));
 }
 
-function importedRowsToIsland(runId: string, rows: readonly ImportedOuterBloomRow[]): OuterBloomIsland {
+function importedRowsToIsland(
+  runId: string,
+  rows: readonly ImportedOuterBloomRow[],
+): OuterBloomIsland {
   const nodes = rows.map(importedRowToNode);
   const edges = nodes
     .filter((node) => node.parentId !== null)

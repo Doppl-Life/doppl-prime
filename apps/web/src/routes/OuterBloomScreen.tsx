@@ -35,6 +35,9 @@ type LaunchState =
   | { readonly kind: 'streaming'; readonly runId: string }
   | { readonly kind: 'error'; readonly message: string };
 
+const DELETE_CONFIRM_CLICKS = 5;
+const DELETE_CONFIRM_WINDOW_MS = 1800;
+
 interface LayoutNode extends OuterBloomNode {
   x: number;
   y: number;
@@ -301,10 +304,16 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     setReloadKey((key) => key + 1);
   };
 
+  const handleDeleteNode = async (node: OuterBloomNode) => {
+    await runClient.deleteOuterBloomNode(node.id);
+    setSelectedId(null);
+    setReloadKey((key) => key + 1);
+  };
+
   if (state.kind === 'loading') {
     return (
       <main style={{ padding: 'var(--space-5)' }}>
-        <LoadingState shape="card" label="Loading bloom…" />
+        <LoadingState shape="card" label="Loading Agarden..." />
       </main>
     );
   }
@@ -313,7 +322,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     return (
       <main style={{ padding: 'var(--space-5)' }}>
         <ErrorState
-          title="Failed to load outer bloom"
+          title="Failed to load Agarden"
           detail="GET /bloom failed"
           onRetry={() => setReloadKey((key) => key + 1)}
         />
@@ -324,20 +333,22 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const visibleBloom = filterBloom(state.bloom, stageFilter, scoreFilter, query);
   const allNodes = state.bloom.islands.flatMap((island) => island.nodes);
   const selected =
-    allNodes.find((node) => node.id === selectedId) ??
-    state.bloom.islands[0]?.nodes[0] ??
-    null;
+    allNodes.find((node) => node.id === selectedId) ?? state.bloom.islands[0]?.nodes[0] ?? null;
   const selectedIsland =
     state.bloom.islands.find((island) => island.nodes.some((node) => node.id === selected?.id)) ??
     null;
 
   return (
-    <main aria-label="Outer bloom view" style={shell}>
+    <main aria-label="Agarden view" style={shell}>
       <header className="outer-bloom-header" style={header}>
         <div>
-          <h1 style={title}>Bloom Map</h1>
+          <h1 style={title}>Agarden</h1>
         </div>
-        <div className="outer-bloom-compact-meta" style={compactBloomMeta} aria-label="Bloom totals">
+        <div
+          className="outer-bloom-compact-meta"
+          style={compactBloomMeta}
+          aria-label="Agarden totals"
+        >
           <span>
             <span style={compactMetaStrong}>{state.bloom.totals.runs}</span> runs
           </span>
@@ -360,15 +371,18 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
         <section style={{ padding: 'var(--space-5)' }}>
           <EmptyState
             icon="◌"
-            title="No bloom islands yet"
-            description="Start a run and this view will flower from the persisted event log."
+            title="No Agarden artifacts yet"
+            description="Start a run and this view will grow from the persisted event log."
           />
         </section>
       ) : (
         <section className="outer-bloom-body" style={body}>
-          <aside style={panel} aria-label="Bloom control rail">
+          <aside style={panel} aria-label="Agarden control rail">
             <div style={sidebarTabs}>
-              <SidebarTab active={sidebarMode === 'browse'} onClick={() => setSidebarMode('browse')}>
+              <SidebarTab
+                active={sidebarMode === 'browse'}
+                onClick={() => setSidebarMode('browse')}
+              >
                 Browse
               </SidebarTab>
               <SidebarTab active={sidebarMode === 'grow'} onClick={() => setSidebarMode('grow')}>
@@ -412,7 +426,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
             <ProofBoard island={selectedIsland} selected={selected} />
           </div>
 
-          <Inspector node={selected} island={selectedIsland} />
+          <Inspector node={selected} island={selectedIsland} onDeleteNode={handleDeleteNode} />
         </section>
       )}
     </main>
@@ -450,12 +464,21 @@ function BloomLibrary({
   onQueryChange: (query: string) => void;
   onSelect: (id: string) => void;
 }) {
-  const visibleCount = visibleBloom.islands.reduce((count, island) => count + island.nodes.length, 0);
+  const visibleCount = visibleBloom.islands.reduce(
+    (count, island) => count + island.nodes.length,
+    0,
+  );
   return (
-    <div aria-label="Bloom library">
+    <div aria-label="Agarden library">
       <div style={panelHeader}>
         <h2 style={panelTitle}>Library</h2>
-        <p style={{ margin: 'var(--space-2) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+        <p
+          style={{
+            margin: 'var(--space-2) 0 0',
+            color: 'var(--fg-muted)',
+            fontSize: 'var(--text-body-sm)',
+          }}
+        >
           {visibleCount} of {bloom.totals.nodes} outer artifacts visible
         </p>
       </div>
@@ -471,7 +494,13 @@ function BloomLibrary({
         </label>
         <div>
           <span style={fieldLabel}>Stage</span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 'var(--space-2)',
+            }}
+          >
             {stageFilterOptions.map((option) => (
               <button
                 key={option.value}
@@ -486,7 +515,13 @@ function BloomLibrary({
         </div>
         <div>
           <span style={fieldLabel}>Signal</span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 'var(--space-2)',
+            }}
+          >
             {scoreFilterOptions.map((option) => (
               <button
                 key={option.value}
@@ -531,10 +566,9 @@ function BloomLibrary({
                 type="button"
                 style={{
                   ...islandButton,
-                  borderColor:
-                    island.nodes.some((node) => node.id === selectedId)
-                      ? 'var(--accent)'
-                      : 'var(--border-subtle)',
+                  borderColor: island.nodes.some((node) => node.id === selectedId)
+                    ? 'var(--accent)'
+                    : 'var(--border-subtle)',
                 }}
                 onClick={() => onSelect(caseStudy?.id ?? island.nodes[0]?.id ?? island.runId)}
               >
@@ -544,32 +578,30 @@ function BloomLibrary({
                   {countStage(island, 'doppl')} Doppls
                 </span>
               </button>
-              {listedNodes
-                .slice(0, 8)
-                .map((node) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => onSelect(node.id)}
-                    style={{
-                      textAlign: 'left',
-                      border: 'thin solid',
-                      borderColor: node.id === selectedId ? 'var(--accent)' : 'transparent',
-                      borderRadius: 'var(--radius-sm)',
-                      background: node.id === selectedId ? 'var(--bg-surface-2)' : 'transparent',
-                      color: 'var(--fg-default)',
-                      padding: 'var(--space-2)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span style={{ ...fieldLabel, marginBottom: 2, color: colorForBloomNode(node) }}>
-                      {labelForStage(node.stage)}
-                    </span>
-                    <span style={{ display: 'block', fontSize: 'var(--text-body-sm)' }}>
-                      {truncate(node.label, 42)}
-                    </span>
-                  </button>
-                ))}
+              {listedNodes.slice(0, 8).map((node) => (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => onSelect(node.id)}
+                  style={{
+                    textAlign: 'left',
+                    border: 'thin solid',
+                    borderColor: node.id === selectedId ? 'var(--accent)' : 'transparent',
+                    borderRadius: 'var(--radius-sm)',
+                    background: node.id === selectedId ? 'var(--bg-surface-2)' : 'transparent',
+                    color: 'var(--fg-default)',
+                    padding: 'var(--space-2)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ ...fieldLabel, marginBottom: 2, color: colorForBloomNode(node) }}>
+                    {labelForStage(node.stage)}
+                  </span>
+                  <span style={{ display: 'block', fontSize: 'var(--text-body-sm)' }}>
+                    {truncate(node.label, 42)}
+                  </span>
+                </button>
+              ))}
             </div>
           );
         })}
@@ -658,17 +690,27 @@ function BloomGrowPanel({
   const busy = launchState.kind === 'starting';
 
   return (
-    <div aria-label="Grow bloom" style={{ display: 'grid', gap: 'var(--space-3)' }}>
+    <div aria-label="Grow Agarden" style={{ display: 'grid', gap: 'var(--space-3)' }}>
       <div style={panelHeader}>
         <h2 style={panelTitle}>Grow</h2>
-        <p style={{ margin: 'var(--space-2) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
-          Start a kernel run and watch the bloom update from the event log.
+        <p
+          style={{
+            margin: 'var(--space-2) 0 0',
+            color: 'var(--fg-muted)',
+            fontSize: 'var(--text-body-sm)',
+          }}
+        >
+          Start a kernel run and watch Agarden update from the event log.
         </p>
       </div>
       <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
         <label>
           <span style={fieldLabel}>Case study file</span>
-          <input type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={handleFile} />
+          <input
+            type="file"
+            accept=".md,.markdown,.txt,text/markdown,text/plain"
+            onChange={handleFile}
+          />
         </label>
         <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
           {selectedIsland !== null && (
@@ -691,15 +733,15 @@ function BloomGrowPanel({
             aria-disabled={busy || !formIsRunnable}
             title={
               formIsRunnable
-                ? 'Start a kernel run from this bloom seed'
-                : 'Add a title and seed material before starting a bloom run'
+                ? 'Start a kernel run from this Agarden seed'
+                : 'Add a title and seed material before starting an Agarden run'
             }
           >
-            {busy ? 'Starting bloom...' : 'Run bloom'}
+            {busy ? 'Starting Agarden...' : 'Run Agarden'}
           </Button>
           {!formIsRunnable && (
             <span style={{ color: 'var(--fg-muted)', fontSize: 'var(--text-caption)' }}>
-              Add a title and seed material to enable Run bloom.
+              Add a title and seed material to enable Run Agarden.
             </span>
           )}
         </div>
@@ -779,16 +821,38 @@ function BloomGrowPanel({
             })}
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'var(--space-2)' }}>
-          <NumberField label="Population" value={form.generateCount} onChange={(value) => update('generateCount', value)} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 'var(--space-2)',
+          }}
+        >
+          <NumberField
+            label="Population"
+            value={form.generateCount}
+            onChange={(value) => update('generateCount', value)}
+          />
           <NumberField
             label="Spawn depth"
             value={form.maxSpawnDepth}
             onChange={(value) => update('maxSpawnDepth', value)}
           />
-          <NumberField label="Depth" value={form.maxGenerations} onChange={(value) => update('maxGenerations', value)} />
-          <NumberField label="Energy" value={form.energyBudget} onChange={(value) => update('energyBudget', value)} />
-          <NumberField label="Tool calls" value={form.maxToolCalls} onChange={(value) => update('maxToolCalls', value)} />
+          <NumberField
+            label="Depth"
+            value={form.maxGenerations}
+            onChange={(value) => update('maxGenerations', value)}
+          />
+          <NumberField
+            label="Energy"
+            value={form.energyBudget}
+            onChange={(value) => update('energyBudget', value)}
+          />
+          <NumberField
+            label="Tool calls"
+            value={form.maxToolCalls}
+            onChange={(value) => update('maxToolCalls', value)}
+          />
         </div>
         {launchState.kind === 'error' && <FieldError>{launchState.message}</FieldError>}
       </div>
@@ -857,7 +921,9 @@ function NumberField({
 
 function FieldError({ children }: { children: string }) {
   return (
-    <span style={{ color: 'var(--danger)', fontSize: 'var(--text-caption)', fontWeight: 700 }}>{children}</span>
+    <span style={{ color: 'var(--danger)', fontSize: 'var(--text-caption)', fontWeight: 700 }}>
+      {children}
+    </span>
   );
 }
 
@@ -879,7 +945,7 @@ function LiveRunSummary({
         background: 'var(--bg-surface-2)',
       }}
     >
-      <span style={fieldLabel}>Live bloom</span>
+      <span style={fieldLabel}>Live Agarden</span>
       <strong style={{ display: 'block' }}>
         {launchState.kind === 'starting'
           ? 'Starting run'
@@ -994,7 +1060,8 @@ function BloomGraph({
   const nodeActivationAt = (clientX: number, clientY: number): BloomNodeActivation | null => {
     const element = document.elementFromPoint(clientX, clientY);
     const nodeElement = element?.closest<SVGGElement>('[data-bloom-node-id]');
-    if (nodeElement === undefined || nodeElement === null || !svgRef.current?.contains(nodeElement)) return null;
+    if (nodeElement === undefined || nodeElement === null || !svgRef.current?.contains(nodeElement))
+      return null;
     const { bloomNodeId, bloomRunId } = nodeElement.dataset;
     if (bloomNodeId === undefined || bloomRunId === undefined) return null;
     return { nodeId: bloomNodeId, runId: bloomRunId, timestamp: window.performance.now() };
@@ -1061,8 +1128,8 @@ function BloomGraph({
     onSelect(activation.nodeId);
   };
   const panBy = (direction: 'left' | 'right' | 'up' | 'down') => {
-    const stepX = layout.bounds.width * 0.1 / zoom;
-    const stepY = layout.bounds.height * 0.1 / zoom;
+    const stepX = (layout.bounds.width * 0.1) / zoom;
+    const stepY = (layout.bounds.height * 0.1) / zoom;
     setPan((current) => ({
       x: current.x + (direction === 'left' ? -stepX : direction === 'right' ? stepX : 0),
       y: current.y + (direction === 'up' ? -stepY : direction === 'down' ? stepY : 0),
@@ -1081,13 +1148,13 @@ function BloomGraph({
   };
 
   return (
-    <section className="outer-bloom-graph-panel" style={graphPanel} aria-label="Radial bloom graph">
+    <section className="outer-bloom-graph-panel" style={graphPanel} aria-label="Agarden graph">
       <svg
         ref={svgRef}
         className="outer-bloom-svg"
         viewBox={viewBox}
         role="img"
-        aria-label="Radial bloom of runs"
+        aria-label="Agarden map of runs"
         style={{ ...svgStyle, cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
@@ -1185,7 +1252,9 @@ function BloomGraph({
                 r={node.radius}
                 fill={fill}
                 filter={isSelected ? 'url(#bloom-glow)' : undefined}
-                stroke={isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'}
+                stroke={
+                  isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'
+                }
                 strokeWidth={isSelected ? 3 : 1.2}
               />
               {node.status === 'selected' && (
@@ -1233,7 +1302,7 @@ function BloomGraph({
             borderRadius: '999px',
             background: 'color-mix(in srgb, var(--bg-surface) 86%, transparent)',
           }}
-          aria-label="Bloom zoom controls"
+          aria-label="Agarden zoom controls"
         >
           <GraphControl label="Zoom out" onClick={() => zoomBy(-0.2)}>
             -
@@ -1244,7 +1313,11 @@ function BloomGraph({
           <GraphControl label="Zoom in" onClick={() => zoomBy(0.2)}>
             +
           </GraphControl>
-          <GraphControl label="Focus selected artifact" disabled={selected === null} onClick={focusSelected}>
+          <GraphControl
+            label="Focus selected artifact"
+            disabled={selected === null}
+            onClick={focusSelected}
+          >
             Focus
           </GraphControl>
         </div>
@@ -1258,7 +1331,7 @@ function BloomGraph({
             borderRadius: 'var(--radius-md)',
             background: 'color-mix(in srgb, var(--bg-surface) 86%, transparent)',
           }}
-          aria-label="Bloom pan controls"
+          aria-label="Agarden pan controls"
         >
           <span />
           <GraphControl label="Pan up" onClick={() => panBy('up')}>
@@ -1359,12 +1432,18 @@ function ProofBoard({
   selected: OuterBloomNode | null;
 }) {
   const nodes = island?.nodes ?? [];
-  const selectedCount = nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length;
-  const rejectedCount = nodes.filter((node) => ['rejected', 'culled', 'invalid'].includes(node.status)).length;
-  const scoredCount = nodes.filter((node) => node.score !== null || node.judgeAcceptance !== null).length;
+  const selectedCount = nodes.filter(
+    (node) => node.stage === 'doppl' && node.status === 'selected',
+  ).length;
+  const rejectedCount = nodes.filter((node) =>
+    ['rejected', 'culled', 'invalid'].includes(node.status),
+  ).length;
+  const scoredCount = nodes.filter(
+    (node) => node.score !== null || node.judgeAcceptance !== null,
+  ).length;
   const sequenceThrough = island?.sequenceThrough ?? 0;
   return (
-    <section style={panel} aria-label="Bloom proof board">
+    <section style={panel} aria-label="Agarden proof board">
       <div
         className="outer-bloom-proof-content"
         style={{
@@ -1377,9 +1456,15 @@ function ProofBoard({
       >
         <div>
           <h2 style={panelTitle}>Proof Board</h2>
-          <p style={{ margin: 'var(--space-1) 0 0', color: 'var(--fg-muted)', fontSize: 'var(--text-body-sm)' }}>
+          <p
+            style={{
+              margin: 'var(--space-1) 0 0',
+              color: 'var(--fg-muted)',
+              fontSize: 'var(--text-body-sm)',
+            }}
+          >
             {selected === null
-              ? 'Select an artifact to inspect its local bloom evidence.'
+              ? 'Select an artifact to inspect its local Agarden evidence.'
               : `${labelForStage(selected.stage)} selected from ${island?.status ?? 'unknown'} island`}
           </p>
         </div>
@@ -1405,20 +1490,22 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 function Inspector({
   node,
   island,
+  onDeleteNode,
 }: {
   node: OuterBloomNode | null;
   island: OuterBloomIsland | null;
+  onDeleteNode: (node: OuterBloomNode) => Promise<void>;
 }) {
   const children = island?.nodes.filter((childNode) => childNode.parentId === node?.id) ?? [];
   const lineage = node === null || island === null ? [] : lineageForNode(node, island.nodes);
   return (
-    <aside style={panel} aria-label="Bloom inspector">
+    <aside style={panel} aria-label="Agarden inspector">
       <div style={panelHeader}>
         <h2 style={panelTitle}>Inspector</h2>
       </div>
       {node === null ? (
         <div style={inspectorBody}>
-          <p style={{ color: 'var(--fg-muted)' }}>Select a bloom node to inspect it.</p>
+          <p style={{ color: 'var(--fg-muted)' }}>Select an Agarden node to inspect it.</p>
         </div>
       ) : (
         <div style={inspectorBody}>
@@ -1437,7 +1524,9 @@ function Inspector({
             <Metric label="children" value={String(children.length)} />
           </div>
           {lineage.length > 1 && (
-            <div style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+            <div
+              style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}
+            >
               <h3 style={panelTitle}>Lineage</h3>
               <ol
                 style={{
@@ -1450,7 +1539,9 @@ function Inspector({
               >
                 {lineage.map((lineageNode) => (
                   <li key={lineageNode.id}>
-                    <span style={{ color: colorForBloomNode(lineageNode) }}>{labelForStage(lineageNode.stage)}</span>
+                    <span style={{ color: colorForBloomNode(lineageNode) }}>
+                      {labelForStage(lineageNode.stage)}
+                    </span>
                     {' · '}
                     {truncate(lineageNode.label, 52)}
                   </li>
@@ -1459,7 +1550,9 @@ function Inspector({
             </div>
           )}
           {children.length > 0 && (
-            <div style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+            <div
+              style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}
+            >
               <h3 style={panelTitle}>Children</h3>
               <div style={{ display: 'grid', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                 {children.slice(0, 5).map((child) => (
@@ -1486,9 +1579,105 @@ function Inspector({
               Open inner run
             </Button>
           )}
+          <DeleteBloomNodeButton node={node} onDeleteNode={onDeleteNode} />
         </div>
       )}
     </aside>
+  );
+}
+
+function DeleteBloomNodeButton({
+  node,
+  onDeleteNode,
+}: {
+  node: OuterBloomNode;
+  onDeleteNode: (node: OuterBloomNode) => Promise<void>;
+}) {
+  const [clicks, setClicks] = useState(0);
+  const [lastClickAt, setLastClickAt] = useState(0);
+  const [status, setStatus] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setClicks(0);
+    setLastClickAt(0);
+    setStatus(null);
+    setPending(false);
+  }, [node.id]);
+
+  useEffect(() => {
+    if (clicks === 0 || pending) return;
+    const timeout = window.setTimeout(() => {
+      setClicks(0);
+      setLastClickAt(0);
+    }, DELETE_CONFIRM_WINDOW_MS);
+    return () => window.clearTimeout(timeout);
+  }, [clicks, pending]);
+
+  const handleClick = async () => {
+    if (pending) return;
+    const now = Date.now();
+    const nextClicks =
+      lastClickAt > 0 && now - lastClickAt <= DELETE_CONFIRM_WINDOW_MS ? clicks + 1 : 1;
+    setClicks(nextClicks);
+    setLastClickAt(now);
+    setStatus(null);
+
+    if (nextClicks < DELETE_CONFIRM_CLICKS) return;
+
+    setPending(true);
+    try {
+      await onDeleteNode(node);
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? 'Could not delete this node. It may be a live run projection rather than an imported Agarden artifact.'
+          : 'Could not delete this node.',
+      );
+      setPending(false);
+      setClicks(0);
+      setLastClickAt(0);
+    }
+  };
+
+  const progress = Math.min(clicks / DELETE_CONFIRM_CLICKS, 1);
+  const label =
+    clicks === 0
+      ? 'Delete node'
+      : clicks < DELETE_CONFIRM_CLICKS
+        ? `Delete node ${clicks}/${DELETE_CONFIRM_CLICKS}`
+        : 'Deleting...';
+
+  return (
+    <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
+      <Button
+        variant="secondary"
+        size="sm"
+        glyph="x"
+        disabled={pending}
+        onClick={handleClick}
+        aria-label={`Delete ${node.label} and descendants after ${DELETE_CONFIRM_CLICKS} quick clicks`}
+        style={{
+          color: progress > 0 ? 'var(--danger)' : 'var(--fg-muted)',
+          border: `thin solid rgba(255, 92, 92, ${0.35 + progress * 0.55})`,
+          background: `rgba(255, 92, 92, ${0.04 + progress * 0.18})`,
+        }}
+      >
+        {label}
+      </Button>
+      <span style={{ color: 'var(--fg-muted)', fontSize: 'var(--text-caption)', lineHeight: 1.35 }}>
+        {pending
+          ? 'Deleting selected subtree...'
+          : clicks > 0
+            ? 'Keep clicking quickly to confirm.'
+            : 'Testing only: removes this node and its children from imported Agarden data.'}
+      </span>
+      {status !== null && (
+        <span style={{ color: 'var(--danger)', fontSize: 'var(--text-caption)', lineHeight: 1.35 }}>
+          {status}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1529,7 +1718,8 @@ function layoutBloom(bloom: OuterBloomProjection) {
     const rootNodes = explicitRoots.length > 0 ? explicitRoots : island.nodes.slice(0, 1);
 
     rootNodes.forEach((node, rootIndex) => {
-      const rootSpread = rootNodes.length === 1 ? 0 : (rootIndex - (rootNodes.length - 1) / 2) * 0.34;
+      const rootSpread =
+        rootNodes.length === 1 ? 0 : (rootIndex - (rootNodes.length - 1) / 2) * 0.34;
       const rootAngle = branchAngle + rootSpread;
       const rootOffset =
         islandCount === 1
@@ -1603,7 +1793,8 @@ function placeChildren({
       : parent.stage === 'problem_recovery'
         ? Math.PI * 0.95
         : Math.PI * 0.78;
-  const spread = children.length === 1 ? 0 : Math.min(stageSpread, Math.PI * 0.2 * (children.length - 1));
+  const spread =
+    children.length === 1 ? 0 : Math.min(stageSpread, Math.PI * 0.2 * (children.length - 1));
   const distance =
     parent.stage === 'case_study'
       ? 196
@@ -1613,7 +1804,8 @@ function placeChildren({
 
   children.forEach((child, index) => {
     if (placed.has(child.id)) return;
-    const offset = children.length === 1 ? 0 : -spread / 2 + (spread * index) / (children.length - 1);
+    const offset =
+      children.length === 1 ? 0 : -spread / 2 + (spread * index) / (children.length - 1);
     const angle = baseAngle + offset + deterministicWobble(child.id, 0.08);
     const lobe = deterministicWobble(`${child.id}:lobe`, 18);
     const layoutNode = {
@@ -1674,7 +1866,8 @@ function edgePath(edge: LayoutEdge): string {
 }
 
 function edgeStroke(edge: LayoutEdge): string {
-  if (edge.type === 'recovered') return 'color-mix(in srgb, var(--subtype-zeitgeist) 58%, var(--fg-faint))';
+  if (edge.type === 'recovered')
+    return 'color-mix(in srgb, var(--subtype-zeitgeist) 58%, var(--fg-faint))';
   if (edge.type === 'solved_by') return 'color-mix(in srgb, var(--accent) 52%, var(--fg-faint))';
   return 'var(--fg-faint)';
 }
@@ -1725,9 +1918,16 @@ function labelForStage(stage: OuterBloomNode['stage']): string {
   return 'doppl';
 }
 
-function labelPlacement(node: LayoutNode): { dx: number; dy: number; anchor: 'start' | 'middle'; max: number } {
-  if (node.stage === 'case_study') return { dx: 0, dy: -node.radius - 14, anchor: 'middle', max: 32 };
-  if (node.stage === 'problem_recovery') return { dx: 0, dy: node.radius + 24, anchor: 'middle', max: 34 };
+function labelPlacement(node: LayoutNode): {
+  dx: number;
+  dy: number;
+  anchor: 'start' | 'middle';
+  max: number;
+} {
+  if (node.stage === 'case_study')
+    return { dx: 0, dy: -node.radius - 14, anchor: 'middle', max: 32 };
+  if (node.stage === 'problem_recovery')
+    return { dx: 0, dy: node.radius + 24, anchor: 'middle', max: 34 };
   return { dx: 0, dy: node.radius + 22, anchor: 'middle', max: 28 };
 }
 
@@ -1833,7 +2033,9 @@ function filterBloom(
       }
 
       const nodes = island.nodes.filter((node) => keepIds.has(node.id));
-      const edges = island.edges.filter((edge) => keepIds.has(edge.source) && keepIds.has(edge.target));
+      const edges = island.edges.filter(
+        (edge) => keepIds.has(edge.source) && keepIds.has(edge.target),
+      );
       return { ...island, nodes, edges };
     })
     .filter((island): island is OuterBloomIsland => island !== null);
@@ -1853,7 +2055,9 @@ function scoreFilterMatches(node: OuterBloomNode, filter: ScoreFilter): boolean 
 function sortLibraryNodes(nodes: readonly OuterBloomNode[], sortMode: SortMode): OuterBloomNode[] {
   const sorted = [...nodes];
   if (sortMode === 'strongest') {
-    return sorted.sort((a, b) => (normalizedNodeStrength(b) ?? -1) - (normalizedNodeStrength(a) ?? -1));
+    return sorted.sort(
+      (a, b) => (normalizedNodeStrength(b) ?? -1) - (normalizedNodeStrength(a) ?? -1),
+    );
   }
   if (sortMode === 'selected') {
     return sorted.sort((a, b) => Number(b.status === 'selected') - Number(a.status === 'selected'));
@@ -1889,12 +2093,14 @@ function buildVisibleProjection(islands: readonly OuterBloomIsland[]): OuterBloo
     0,
   );
   const problemRecoveries = islands.reduce(
-    (count, island) => count + island.nodes.filter((node) => node.stage === 'problem_recovery').length,
+    (count, island) =>
+      count + island.nodes.filter((node) => node.stage === 'problem_recovery').length,
     0,
   );
   const selected = islands.reduce(
     (count, island) =>
-      count + island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length,
+      count +
+      island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length,
     0,
   );
   return {
@@ -1924,7 +2130,10 @@ function ancestrySet(selected: LayoutNode, nodes: readonly LayoutNode[]): Set<st
   return ids;
 }
 
-function lineageForNode(selected: OuterBloomNode, nodes: readonly OuterBloomNode[]): OuterBloomNode[] {
+function lineageForNode(
+  selected: OuterBloomNode,
+  nodes: readonly OuterBloomNode[],
+): OuterBloomNode[] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const lineage: OuterBloomNode[] = [];
   let cursor: OuterBloomNode | undefined = selected;
@@ -1935,7 +2144,11 @@ function lineageForNode(selected: OuterBloomNode, nodes: readonly OuterBloomNode
   return lineage.reverse();
 }
 
-function haloOpacityForNode(node: OuterBloomNode, isSelected: boolean, isPathNode: boolean): number {
+function haloOpacityForNode(
+  node: OuterBloomNode,
+  isSelected: boolean,
+  isPathNode: boolean,
+): number {
   if (isSelected) return 0.98;
   if (isPathNode) return 0.62;
   const score = node.score ?? node.judgeAcceptance ?? 0;

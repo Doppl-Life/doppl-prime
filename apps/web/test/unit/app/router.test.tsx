@@ -143,7 +143,14 @@ const bloomProjectionWithCompletedNode: OuterBloomProjection = {
           agenomeId: 'agn-live',
         },
       ],
-      edges: [{ id: 'case-live->problem-live', source: 'case-live', target: 'problem-live', type: 'recovered' }],
+      edges: [
+        {
+          id: 'case-live->problem-live',
+          source: 'case-live',
+          target: 'problem-live',
+          type: 'recovered',
+        },
+      ],
     },
   ],
   totals: { runs: 1, nodes: 2, problemRecoveries: 1, doppls: 0, selected: 1 },
@@ -174,6 +181,9 @@ function fakeClient(): RunClient {
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
     getOuterBloom: vi.fn(() => Promise.resolve(bloomProjection)),
+    deleteOuterBloomNode: vi.fn(() =>
+      Promise.resolve({ nodeId: 'case', deleted: 1, nodeIds: ['case'] }),
+    ),
     getModelRouteOverrides: vi.fn(() => Promise.resolve({})),
   } as unknown as RunClient;
 }
@@ -209,22 +219,35 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(await screen.findByText('REPLAY')).toBeTruthy();
   });
 
-  // spec(§12): / renders the outer bloom map, not a run observatory. The run-list remains at /runs-home.
-  it('test_route_root_shows_bloom', async () => {
+  // spec(§12): / renders the S0 runs home. The outer Agarden map is mounted at /agarden.
+  it('test_route_root_shows_runs_home', async () => {
     const { client } = renderAt('/');
-    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: /runs/i })).toBeTruthy();
+    expect(await screen.findByText(/no runs yet/i)).toBeTruthy();
+    expect(client.getRunHealth).not.toHaveBeenCalled();
+  });
+
+  it('test_route_agarden_shows_outer_map', async () => {
+    const { client } = renderAt('/agarden');
+    expect(await screen.findByRole('heading', { name: /agarden/i })).toBeTruthy();
     expect((await screen.findAllByText("When the Crashes Don't Come")).length).toBeGreaterThan(0);
     expect(client.getRunHealth).not.toHaveBeenCalled();
+  });
+
+  it('test_route_bloom_redirects_to_agarden_for_compatibility', async () => {
+    renderAt('/bloom');
+    expect(await screen.findByRole('heading', { name: /agarden/i })).toBeTruthy();
+    expect(screen.getByTestId('loc').textContent).toBe('/agarden');
   });
 
   it('test_bloom_grow_tab_starts_run_with_existing_runconfig_contract', async () => {
     const client = fakeClient();
     client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
-    renderAt('/bloom', client);
+    renderAt('/agarden', client);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
-    expect(await screen.findByLabelText('Grow bloom')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /run bloom/i }));
+    expect(await screen.findByLabelText('Grow Agarden')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /run agarden/i }));
 
     await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
     const [config, options] = vi.mocked(client.startRun).mock.calls[0]!;
@@ -244,17 +267,19 @@ describe('app router — route table + nav wiring (FV.1)', () => {
 
   it('test_bloom_grow_tab_disables_run_until_required_seed_info_exists', async () => {
     const client = fakeClient();
-    renderAt('/bloom', client);
+    renderAt('/agarden', client);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
-    expect(await screen.findByRole('button', { name: /fill from selected map node/i })).toBeTruthy();
-    const runButton = screen.getByRole('button', { name: /run bloom/i }) as HTMLButtonElement;
+    expect(
+      await screen.findByRole('button', { name: /fill from selected map node/i }),
+    ).toBeTruthy();
+    const runButton = screen.getByRole('button', { name: /run agarden/i }) as HTMLButtonElement;
     expect(runButton.disabled).toBe(false);
 
     fireEvent.change(screen.getByLabelText(/title/i), { target: { value: '' } });
     fireEvent.change(screen.getByLabelText(/seed material/i), { target: { value: '' } });
     expect(runButton.disabled).toBe(true);
-    expect(screen.getByText(/add a title and seed material to enable run bloom/i)).toBeTruthy();
+    expect(screen.getByText(/add a title and seed material to enable run agarden/i)).toBeTruthy();
 
     fireEvent.click(runButton);
     expect(client.startRun).not.toHaveBeenCalled();
@@ -270,10 +295,10 @@ describe('app router — route table + nav wiring (FV.1)', () => {
       .mockResolvedValue(bloomProjectionWithCompletedNode)
       .mockResolvedValueOnce(bloomProjection)
       .mockResolvedValueOnce(bloomProjectionWithCompletedNode);
-    renderAt('/bloom', client);
+    renderAt('/agarden', client);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
-    fireEvent.click(await screen.findByRole('button', { name: /run bloom/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /run agarden/i }));
 
     await waitFor(() => expect(CapturingEventSource.instances.length).toBe(1));
     CapturingEventSource.instances[0]!.emit({
@@ -297,20 +322,40 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     const client = fakeClient();
     client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
     client.getOuterBloom = vi.fn().mockResolvedValue(bloomProjection);
-    renderAt('/bloom', client);
+    renderAt('/agarden', client);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
-    fireEvent.click(await screen.findByRole('button', { name: /run bloom/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /run agarden/i }));
     await waitFor(() => expect(CapturingEventSource.instances.length).toBe(1));
     expect(client.getOuterBloom).toHaveBeenCalledTimes(2);
 
     await waitFor(() => expect(client.getOuterBloom).toHaveBeenCalledTimes(3), { timeout: 3400 });
   }, 5000);
 
-  // spec(route-table completeness): an unknown path redirects to the bloom root.
+  it('test_bloom_inspector_requires_five_quick_clicks_to_delete_selected_node', async () => {
+    const client = fakeClient();
+    client.deleteOuterBloomNode = vi.fn(() =>
+      Promise.resolve({ nodeId: 'case', deleted: 1, nodeIds: ['case'] }),
+    );
+    renderAt('/agarden', client);
+
+    const deleteButton = await screen.findByRole('button', {
+      name: /delete when the crashes don't come and descendants/i,
+    });
+    fireEvent.click(deleteButton);
+    fireEvent.click(deleteButton);
+    fireEvent.click(deleteButton);
+    fireEvent.click(deleteButton);
+    expect(client.deleteOuterBloomNode).not.toHaveBeenCalled();
+
+    fireEvent.click(deleteButton);
+    await waitFor(() => expect(client.deleteOuterBloomNode).toHaveBeenCalledWith('case'));
+  });
+
+  // spec(route-table completeness): an unknown path redirects to the runs home.
   it('test_unknown_route_redirects_home', async () => {
     renderAt('/totally/unknown/path');
-    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: /runs/i })).toBeTruthy();
     expect(screen.getByTestId('loc').textContent).toBe('/');
   });
 
@@ -326,11 +371,12 @@ describe('app router — route table + nav wiring (FV.1)', () => {
   // spec(§12): the AppShell global chrome (◆ Doppl wordmark + theme toggle) renders on EVERY route.
   it('test_app_shell_chrome_on_every_route', async () => {
     renderAt('/');
-    expect(await screen.findByRole('heading', { name: /bloom map/i })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: /runs/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /doppl/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /theme/i })).toBeTruthy();
     cleanup();
     renderAt('/runs/run_1');
+    expect(await screen.findByRole('link', { name: /agarden/i })).toBeTruthy();
     expect(screen.getByRole('link', { name: /doppl/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /theme/i })).toBeTruthy();
   });

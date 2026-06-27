@@ -59,12 +59,13 @@ const navLinkActive: CSSProperties = {
 
 export function AppShell() {
   // Organism/Knowledge are per-run views — only meaningful when we're actually viewing a run.
+  // Agarden is a global outer artifact view, but showing it here gives run-view users the same
+  // top-level switchboard without changing the inner Organism/Knowledge routes.
   // On the runs list / launcher / etc. they'd be context-less and confusing, so we hide them.
   // NavLink (vs Link) highlights the active tab so repeat clicks read as no-ops, not page reloads.
   const runMatch = useMatch('/runs/:id/*');
   const runId = runMatch?.params.id;
-  const styleFn = ({ isActive }: { isActive: boolean }) =>
-    isActive ? navLinkActive : navLinkBase;
+  const styleFn = ({ isActive }: { isActive: boolean }) => (isActive ? navLinkActive : navLinkBase);
 
   return (
     <div style={shell}>
@@ -82,6 +83,9 @@ export function AppShell() {
             </NavLink>
             <NavLink to={`/runs/${runId}/knowledge`} style={styleFn}>
               Knowledge
+            </NavLink>
+            <NavLink to="/agarden" style={styleFn}>
+              Agarden
             </NavLink>
           </nav>
         )}

@@ -102,9 +102,7 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
   it('test_clicking_run_id_opens_run', async () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
     fireEvent.click(await screen.findByRole('button', { name: /open run run_done/i }));
-    await waitFor(() =>
-      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done'),
-    );
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done'));
   });
 
   // spec(status-derived action set): a failed run offers Replay (partial), no Final idea.
@@ -125,5 +123,12 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([])) }));
     fireEvent.click(await screen.findByRole('button', { name: /new run/i }));
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/launch'));
+  });
+
+  // spec(outer-view entry): the Agarden CTA → /agarden.
+  it('test_agarden_cta_navigates_to_outer_view', async () => {
+    renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([])) }));
+    fireEvent.click(await screen.findByRole('button', { name: /agarden/i }));
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/agarden'));
   });
 });

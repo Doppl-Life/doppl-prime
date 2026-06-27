@@ -1,8 +1,10 @@
-# Outer Bloom View Tasks
+# Agarden Outer View Tasks
 
 Working branch: `dalton-outer-view`
 
-Goal: build the production outer Doppl view inspired by Michael's experiment spike while staying compatible with the merged kernel runtime. The outer view shows chosen case studies, problem recoveries, and Doppls/solutions as a bloom of durable outer artifacts. Inner-run mechanics such as generated candidates, agenomes, mutagens, energy allocation, and per-generation selection belong in the inner view unless surfaced as summarized proof.
+User-facing name: **Agarden**. Keep legacy `/bloom` API/internal identifiers only where they preserve compatibility with existing projection code.
+
+Goal: build the production outer Doppl view inspired by Michael's experiment spike while staying compatible with the merged kernel runtime. The outer view shows chosen case studies, problem recoveries, and Doppls/solutions as a garden of durable outer artifacts. Inner-run mechanics such as generated candidates, agenomes, mutagens, energy allocation, and per-generation selection belong in the inner view unless surfaced as summarized proof.
 
 Top priority: make the bloom view an operator surface that can start a real outer run and show it growing in real time. Static browsing remains important because it gives users an immediate useful map, but the app's main value is live bloom kickoff, observation, and replay.
 
@@ -22,11 +24,11 @@ Current UX priority: optimize the desktop/laptop bloom workspace first. Mobile s
 
 - [x] Create `dalton-outer-view` from `origin/main`.
 - [x] Add `GET /bloom` API projection.
-- [x] Add `/bloom` web route.
+- [x] Add `/agarden` web route, with `/bloom` retained as a compatibility redirect.
 - [x] Render first radial bloom scaffold.
 - [x] Use outer terminology in UI: case study, problem recovery, Doppl.
 - [x] Avoid people's names and implementation handoff language in app copy.
-- [x] Verify local route at `http://localhost:5173/bloom`.
+- [x] Verify local route at `http://localhost:5173/agarden`.
 - [x] Push branch to `origin/dalton-outer-view`.
 
 ## Reference App: `michael/experiment-spike`
