@@ -3,8 +3,9 @@ import type { RunEventRow } from '../../event-store';
 import type { KillPlanSummary } from '../caps/killSwitch';
 import { canTransitionRun, RUN_TERMINALS } from '../state/runStateMachine';
 import {
-  bestScoredSurvivor,
+  bestScoredSurvivors,
   buildPartialTerminalSummary,
+  scoredSurvivors,
   type PartialTerminalSummary,
 } from './partialSummary';
 
@@ -36,6 +37,10 @@ export interface ClassifyRunTerminalInput {
   readonly killSummary?: KillPlanSummary;
   /** Set by the P3.13 boot caller for a crash-detected non-terminal run → failed{crash}. */
   readonly crashed?: boolean;
+  /** Islands pivot A2 — the max winners to crown (kernel cap, rule #1). Default {@link DEFAULT_MAX_WINNERS}. */
+  readonly maxWinners?: number;
+  /** Islands pivot A2 — judge-acceptance crowning floor (rule #1). Default {@link DEFAULT_ACCEPTANCE_FLOOR}. */
+  readonly acceptanceFloor?: number;
 }
 
 export interface RunTerminalVerdict {
@@ -44,9 +49,19 @@ export interface RunTerminalVerdict {
   /** The single terminal event to append, or `null` when the run is already terminal (no-op — rule #2). */
   readonly terminalEvent: RunEventType | null;
   readonly reason?: string;
+  /** The top winner's candidateId = `finalIdeaRefs[0]` (preserved for existing single-winner consumers). */
   readonly finalIdeaRef?: string;
+  /** Islands pivot A2 — the crowned winners (top-N, ≤ maxWinners). Empty when survivors exist but none clear
+   *  the acceptance floor (a valid "island with no doppel"). Rides the generic run.completed payload (§107). */
+  readonly finalIdeaRefs?: string[];
   readonly partialSummary?: PartialTerminalSummary;
 }
+
+/** Default max winners — 1 keeps behavior byte-identical (single winner) while the finalIdeaRefs[] machinery
+ *  ships; the last Increment-A slice flips this to 2 once the projections + UI render N doppels. Rule #1 cap. */
+export const DEFAULT_MAX_WINNERS = 1;
+/** Default crowning floor — 0 excludes nothing (every scored survivor is eligible). Rule #1 cap. */
+export const DEFAULT_ACCEPTANCE_FLOOR = 0;
 
 /** The killSwitch `reasonFor` value for an energyBudget breach — the mid-flight "score already-verified" case. */
 const ENERGY_EXHAUSTION_REASON = 'cap_breach:energyBudget';
@@ -100,6 +115,7 @@ function terminalVerdict(
   extra: {
     reason?: string;
     finalIdeaRef?: string;
+    finalIdeaRefs?: string[];
     partialSummary?: PartialTerminalSummary;
   } = {},
 ): RunTerminalVerdict {
@@ -108,6 +124,7 @@ function terminalVerdict(
     terminalEvent: TERMINAL_EVENT[status],
     ...(extra.reason !== undefined ? { reason: extra.reason } : {}),
     ...(extra.finalIdeaRef !== undefined ? { finalIdeaRef: extra.finalIdeaRef } : {}),
+    ...(extra.finalIdeaRefs !== undefined ? { finalIdeaRefs: extra.finalIdeaRefs } : {}),
     ...(extra.partialSummary !== undefined ? { partialSummary: extra.partialSummary } : {}),
   };
 }
@@ -119,6 +136,8 @@ function terminalVerdict(
  */
 export function classifyRunTerminal(input: ClassifyRunTerminalInput): RunTerminalVerdict {
   const { log, killSummary, crashed } = input;
+  const maxWinners = input.maxWinners ?? DEFAULT_MAX_WINNERS;
+  const acceptanceFloor = input.acceptanceFloor ?? DEFAULT_ACCEPTANCE_FLOOR;
 
   // 1. Already at a REAL terminal (run.completed/failed/stopped/cancelled) → no-op. The operator-stop /
   //    non-energy cap-breach / wall-clock kill path pre-emits these in `executeKillAndDrain`, so re-running
@@ -148,15 +167,23 @@ export function classifyRunTerminal(input: ClassifyRunTerminalInput): RunTermina
     }
   }
 
-  // 4. The §3 scored-survivor rule — completed iff any scored survivor exists (the best-so-far is the final
-  //    idea), else failed{no_scored_survivor}. The energy-exhaustion path lands here (score already-verified).
-  const best = bestScoredSurvivor(log);
-  if (best !== null) {
-    return terminalVerdict('completed', { finalIdeaRef: best.candidateId });
+  // 4. The §3 scored-survivor rule — completed iff any scored survivor exists, else failed{no_scored_survivor}
+  //    (the energy-exhaustion path lands here, score already-verified). Islands pivot A2: crown the top-N
+  //    survivors (≤ maxWinners) clearing the acceptance floor as finalIdeaRefs[]; finalIdeaRef = the top one
+  //    (preserved). Survivors exist but none clear the floor → completed{finalIdeaRefs:[]} (island, no doppel).
+  const survivors = scoredSurvivors(log);
+  if (survivors.length === 0) {
+    return terminalVerdict('failed', {
+      reason: 'no_scored_survivor',
+      partialSummary: buildPartialTerminalSummary(log, killSummary),
+    });
   }
-  return terminalVerdict('failed', {
-    reason: 'no_scored_survivor',
-    partialSummary: buildPartialTerminalSummary(log, killSummary),
+  const finalIdeaRefs = bestScoredSurvivors(log, maxWinners, acceptanceFloor).map(
+    (winner) => winner.candidateId,
+  );
+  return terminalVerdict('completed', {
+    finalIdeaRefs,
+    ...(finalIdeaRefs.length > 0 ? { finalIdeaRef: finalIdeaRefs[0] } : {}),
   });
 }
 

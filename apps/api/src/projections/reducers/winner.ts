@@ -19,28 +19,36 @@ import type { CurrentState } from './state';
  * types + `./state` (rule #7 — no provider/IO).
  */
 
-/** Read a non-empty string `finalIdeaRef` from a (validated, JSON-plain) `run.completed` payload, or null. */
-function finalIdeaRef(payload: unknown): string | null {
-  if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
-    const ref = (payload as Record<string, unknown>).finalIdeaRef;
-    if (typeof ref === 'string' && ref.length > 0) {
-      return ref;
-    }
+/**
+ * The winner candidateIds from a (validated, JSON-plain) `run.completed` payload. Islands pivot A2: prefer
+ * `finalIdeaRefs` (the top-N winners) when present + a non-empty array of non-empty strings; otherwise fall
+ * back to the singular `finalIdeaRef` as a one-element list (backward compat — old fixtures + the byte-
+ * identical single-winner default). An empty `finalIdeaRefs:[]` (survivors existed but none cleared the
+ * crowning floor) → no winners. Returns [] when neither is present.
+ */
+function winnerRefs(payload: unknown): string[] {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return [];
+  const record = payload as Record<string, unknown>;
+  const refs = record.finalIdeaRefs;
+  if (Array.isArray(refs)) {
+    return refs.filter((r): r is string => typeof r === 'string' && r.length > 0);
   }
-  return null;
+  const single = record.finalIdeaRef;
+  return typeof single === 'string' && single.length > 0 ? [single] : [];
 }
 
 export function winnerReducer(state: CurrentState, event: RunEventRow): CurrentState {
   if (event.type !== 'run.completed') return state;
-  const ref = finalIdeaRef(event.payload);
-  if (ref === null) return state;
-  const existing = state.candidateIdeas[ref];
-  if (existing === undefined) return state;
-  return {
-    ...state,
-    candidateIdeas: {
-      ...state.candidateIdeas,
-      [ref]: { ...existing, status: 'selected' } as CandidateIdea,
-    },
-  };
+  const refs = winnerRefs(event.payload);
+  if (refs.length === 0) return state;
+  // SET each crowned candidate 'selected' (idempotent re-fold; copy-on-first-write). A ref to a
+  // non-materialized candidate is a defensive no-op (mirrors the entities.ts existing===undefined guard).
+  let candidateIdeas = state.candidateIdeas;
+  for (const ref of refs) {
+    const existing = candidateIdeas[ref];
+    if (existing === undefined) continue;
+    if (candidateIdeas === state.candidateIdeas) candidateIdeas = { ...candidateIdeas };
+    candidateIdeas[ref] = { ...existing, status: 'selected' } as CandidateIdea;
+  }
+  return candidateIdeas === state.candidateIdeas ? state : { ...state, candidateIdeas };
 }
