@@ -117,7 +117,14 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
   });
-  registerOuterBloomRoutes(app, { store: deps.store, db: deps.db, newId: deps.newId });
+  registerOuterBloomRoutes(app, {
+    store: deps.store,
+    db: deps.db,
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    modelRouteOverrideAllowlist: deps.modelRouteOverrideAllowlist ?? {},
+    newId: deps.newId,
+    ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
+  });
   registerOuterCampaignRoutes(app, {
     store: deps.store,
     db: deps.db,

@@ -279,10 +279,12 @@ inner runs finish and produce promoted outer artifacts.
   - [x] Persist a promoted `problem_recovery` child of the root case study when a child run completes.
   - [x] Store source run/candidate/sequence proof.
   - [ ] Add API tests and a dedicated campaign worker/stream so this is not only projection-time sync.
-- [ ] **L5: Launch the next child run from promoted problem recovery.**
-  - Build a second `RunConfig` with Doppl/divergent instructions.
-  - Persist child-run relationship.
-  - Start the inner run once the first promotion lands.
+- [~] **L5: Launch the next child run from promoted problem recovery.**
+  - [x] Build a second `RunConfig` with Doppl/divergent instructions.
+  - [x] Persist child-run relationship.
+  - [x] Start the inner run once the first promotion lands.
+  - [x] Make the planner idempotent by checking for an existing Doppl child run under the promoted recovery.
+  - [ ] Add Postgres integration coverage for case-study campaign -> promoted recovery -> Doppl child run.
 - [ ] **L6: Promote Doppl winner(s).**
   - Compile each promoted winner through the MarkScript `doppl` shape.
   - Persist Doppl children under the selected problem recovery.

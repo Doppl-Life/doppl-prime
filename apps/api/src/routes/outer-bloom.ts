@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { eq, inArray } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import type { RunConfig } from '@doppl/contracts';
 import type { EventStore } from '../event-store';
 import {
   outerBloomArtifacts,
@@ -9,6 +10,7 @@ import {
   outerCampaignArtifacts,
   outerCampaigns,
 } from '../event-store/schema';
+import type { ModelRouteOverrideAllowlist } from '../model-gateway/model-route-override';
 import { syncOuterCampaignPromotions } from '../outer-campaigns/promotion';
 import {
   buildOuterBloom,
@@ -22,6 +24,9 @@ export interface OuterBloomRoutesDeps {
   store: EventStore;
   db: NodePgDatabase;
   newId: () => string;
+  defaultConfig: RunConfig;
+  modelRouteOverrideAllowlist: ModelRouteOverrideAllowlist;
+  onRunConfigured?: (runId: string) => void;
 }
 
 export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomRoutesDeps): void {
