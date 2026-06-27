@@ -1199,6 +1199,49 @@ describe('runGenerationLoop — P5.11 nextPopulation successor-threading hook', 
     expect(seen[0]!.log.some((r) => r.type === 'agenome.reproduced')).toBe(true);
   });
 
+  // REGRESSION (HG2 finding B) — with the ratchet ON (`hallOfFameCarry > 0`) the loop breeds against the
+  // reigning CHAMPION even after it has DRIFTED OUT of the active population (it is from an earlier
+  // generation). The loop must hand successor-threading the champion-INCLUSIVE parent set (`reproduceParents`,
+  // not the bare `eligibleParents`) as the reconstruction pool — otherwise `applyReproduction` can't resolve a
+  // champion-bred offspring's parent, throws, and the worker silently ORPHANS the run (the live "hang"). Here:
+  // gen-0's champion is forced out of the population by the threading hook returning a fresh gen-1 population,
+  // so by gen-1 the champion is no longer eligible; the hook must still receive it in its parent pool.
+  test('test_ratchet_champion_passed_to_threading_pool_after_drift', async () => {
+    const FRESH_GEN1: Agenome = {
+      ...validAgenome,
+      id: 'fresh_gen1',
+      generationId: 'run_loop-gen1',
+      status: 'seeded',
+    };
+    const calls: { gen: string; parentGenerationIds: string[] }[] = [];
+    let returnedFresh = false;
+    const capturing = (args: NextPopulationArgs): readonly Agenome[] => {
+      calls.push({
+        gen: args.completedGenerationId,
+        parentGenerationIds: args.eligibleParents.map((a) => a.generationId),
+      });
+      if (!returnedFresh) {
+        returnedFresh = true; // gen-0 → gen-1: replace the population so the gen-0 champion drifts out.
+        return [FRESH_GEN1];
+      }
+      return args.prevPopulation;
+    };
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({
+        eventStore: fake.store,
+        caps: { maxGenerations: 3, maxPopulation: 2 }, // hallOfFameCarry defaults to 1 (Phase A) via loadConfig
+        nextPopulation: capturing,
+      }),
+    );
+    // The gen-1 threading call: its parent pool must include the CHAMPION (a gen-0 agenome) even though gen-1's
+    // only eligible survivor is the fresh gen-1 agenome. Without the fix the pool is just ['run_loop-gen1'].
+    const gen1Call = calls.find((c) => c.gen === 'run_loop-gen1');
+    expect(gen1Call).toBeDefined();
+    expect(gen1Call!.parentGenerationIds).toContain('run_loop-gen1'); // the live survivor
+    expect(gen1Call!.parentGenerationIds).toContain('run_loop-gen0'); // the drifted champion (the fix)
+  });
+
   // spec(§5/§8) — an empty hook population is NOT fabricated into agenomes: the next generation produces
   // zero candidates → the existing `< minSurvival` path drives generation_failed.
   test('test_empty_hook_population_drives_generation_failed', async () => {

@@ -975,6 +975,20 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
     // (the same shortened lifecycle the zero-survivors path already uses, a legal P3.2 transition). Strictly
     // LESS work + LESS spend → no cap/energy relaxation (rule #1/#8); the run-terminal verdict reads the
     // scored survivors, not offspring, so the final idea is unaffected.
+    // Wave 1 Step 1 (the RATCHET — hall-of-fame carry) — the champion-inclusive parent set reproduction
+    // breeds against, HOISTED so the SAME set also seeds successor-threading's reconstruction pool below.
+    // The ratchet can breed an offspring whose parent is the reigning champion AFTER it has drifted out of
+    // THIS generation's `eligibleParents` (the champion is from an earlier generation); successor-threading
+    // rebuilds each child by resolving its parent from the pool it is handed, so that pool MUST include the
+    // champion — otherwise `applyReproduction` throws "parent not found in pool" and the worker silently
+    // orphans the run (the crash the ratchet default-on exposes; verified live). `hallOfFameCarry === 0`
+    // → returns `eligibleParents` unchanged (byte-identical to the pre-ratchet path).
+    const reproduceParents = withChampionParent(
+      eligibleParents,
+      championAgenome,
+      config.hallOfFameCarry,
+    );
+
     const willRunNextGeneration = enforceCap('maxGenerations', g + 1, 1, caps).allowed;
     if (willRunNextGeneration) {
       // BUG 1 (run 6b714273) — the KERNEL computes the reproduction offspring spawn budget (rule #1): a HINT
@@ -994,16 +1008,6 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
         caps.maxPopulation,
         Math.min(caps.maxPopulation, energyHeadroom),
       ).effectiveSpawns;
-
-      // Wave 1 Step 1 (the RATCHET — hall-of-fame carry) — when enabled, ALWAYS breed against the reigning
-      // champion, even if its re-rolled candidate was culled THIS generation (the live "reaches 0.744 then
-      // loses it" bounce: the peak lineage is dropped from the eligible set and reproduction mean-reverts off
-      // the weaker survivors). Pure decision (`withChampionParent`); `hallOfFameCarry === 0` → byte-identical.
-      const reproduceParents = withChampionParent(
-        eligibleParents,
-        championAgenome,
-        config.hallOfFameCarry,
-      );
 
       // Reproduce phase — marker on entry, then delegate with the LIVE outcome source (rule #7). Degenerate
       // reproduction (<2 eligible parents) → mutation_only; ≥2 → fusion. The seam records the mode.
@@ -1060,7 +1064,11 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       const threaded = await deps.nextPopulation({
         prevPopulation: population,
         completedGenerationId: generationId,
-        eligibleParents,
+        // The champion-INCLUSIVE parent set (not the bare `eligibleParents`) — it is the reconstruction pool
+        // successor-threading resolves each offspring's parent from, so a child bred from the ratchet champion
+        // (absent from this gen's eligible set) is reconstructable. For elitism the champion is dropped (it has
+        // no scored candidate this generation), so the carried-elite set is unchanged.
+        eligibleParents: reproduceParents,
         log: postReproduceLog,
         maxPopulation: caps.maxPopulation,
       });
