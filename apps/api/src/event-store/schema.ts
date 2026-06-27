@@ -197,3 +197,25 @@ export const outerBloomArtifacts = pgTable(
     index('outer_bloom_artifacts_stage_idx').on(t.stage),
   ],
 );
+
+/**
+ * Testing/operator suppressions for projection-derived Agarden nodes.
+ *
+ * Imported artifacts can be removed from `outer_bloom_artifacts`, but live Agarden nodes are derived from
+ * append-only `run_events`. This table is the reversible read-model tombstone layer: it hides a node root
+ * and its current/future descendants from `GET /bloom` without mutating authoritative kernel history.
+ */
+export const outerBloomHiddenNodes = pgTable(
+  'outer_bloom_hidden_nodes',
+  {
+    id: text('id').primaryKey(),
+    runId: text('run_id').notNull(),
+    nodeId: text('node_id').notNull(),
+    hiddenAt: timestamp('hidden_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('outer_bloom_hidden_nodes_run_id_node_id_key').on(t.runId, t.nodeId),
+    index('outer_bloom_hidden_nodes_run_id_idx').on(t.runId),
+    index('outer_bloom_hidden_nodes_node_id_idx').on(t.nodeId),
+  ],
+);

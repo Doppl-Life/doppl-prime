@@ -1629,11 +1629,7 @@ function DeleteBloomNodeButton({
     try {
       await onDeleteNode(node);
     } catch (error) {
-      setStatus(
-        error instanceof Error
-          ? 'Could not delete this node. It may be a live run projection rather than an imported Agarden artifact.'
-          : 'Could not delete this node.',
-      );
+      setStatus(error instanceof Error ? error.message : 'Could not delete this node.');
       setPending(false);
       setClicks(0);
       setLastClickAt(0);
@@ -1670,7 +1666,7 @@ function DeleteBloomNodeButton({
           ? 'Deleting selected subtree...'
           : clicks > 0
             ? 'Keep clicking quickly to confirm.'
-            : 'Testing only: removes this node and its children from imported Agarden data.'}
+            : 'Testing only: removes imported artifacts or hides live projection subtrees.'}
       </span>
       {status !== null && (
         <span style={{ color: 'var(--danger)', fontSize: 'var(--text-caption)', lineHeight: 1.35 }}>

@@ -54,5 +54,6 @@ export const DeleteOuterBloomNodeResult = z.object({
   nodeId: z.string(),
   deleted: z.number(),
   nodeIds: z.array(z.string()),
+  mode: z.enum(['deleted', 'hidden']).optional(),
 });
 export type DeleteOuterBloomNodeResult = z.infer<typeof DeleteOuterBloomNodeResult>;

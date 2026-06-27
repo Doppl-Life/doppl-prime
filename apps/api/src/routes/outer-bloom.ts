@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { eq, inArray } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
-import { outerBloomArtifacts } from '../event-store/schema';
+import { outerBloomArtifacts, outerBloomHiddenNodes } from '../event-store/schema';
 import {
   buildOuterBloom,
   buildOuterBloomForRun,
@@ -18,7 +19,12 @@ export interface OuterBloomRoutesDeps {
 
 export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomRoutesDeps): void {
   app.get('/bloom', async () => {
-    const imported = await readImportedOuterBloom(deps.db);
+    const hiddenByRun = await readHiddenOuterBloomNodeIds(deps.db);
+    const imported = (await readImportedOuterBloom(deps.db))
+      .map((island) =>
+        filterOuterBloomIslandByHiddenRoots(island, hiddenByRun.get(island.runId) ?? new Set()),
+      )
+      .filter((island): island is OuterBloomIsland => island !== null);
     const importedRunIds = new Set(imported.map((island) => island.runId));
 
     const ids = await listRunIds(deps.db);
@@ -27,7 +33,11 @@ export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomR
       if (importedRunIds.has(id)) continue;
       const events = await deps.store.readByRun(id);
       if (events.length === 0) continue;
-      islands.push(buildOuterBloomForRun(events));
+      const island = filterOuterBloomIslandByHiddenRoots(
+        buildOuterBloomForRun(events),
+        hiddenByRun.get(id) ?? new Set(),
+      );
+      if (island !== null) islands.push(island);
     }
     return buildOuterBloom(islands);
   });
@@ -41,11 +51,15 @@ export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomR
       .limit(1);
 
     if (root === undefined) {
-      return reply.status(404).send({
-        error: 'outer_bloom_node_not_found',
-        message: 'Only imported outer bloom artifacts can be deleted from this testing endpoint.',
-        nodeId,
-      });
+      const liveDelete = await hideLiveOuterBloomSubtree(deps, nodeId);
+      if (liveDelete === null) {
+        return reply.status(404).send({
+          error: 'outer_bloom_node_not_found',
+          message: 'No imported or live Agarden projection node matched this id.',
+          nodeId,
+        });
+      }
+      return reply.send(liveDelete);
     }
 
     const rows = await deps.db
@@ -57,11 +71,12 @@ export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomR
       await deps.db.delete(outerBloomArtifacts).where(inArray(outerBloomArtifacts.id, nodeIds));
     }
 
-    return reply.send({ nodeId, deleted: nodeIds.length, nodeIds });
+    return reply.send({ nodeId, deleted: nodeIds.length, nodeIds, mode: 'deleted' });
   });
 }
 
 type ImportedOuterBloomRow = typeof outerBloomArtifacts.$inferSelect;
+type HiddenOuterBloomRow = typeof outerBloomHiddenNodes.$inferSelect;
 
 export function collectOuterBloomSubtreeIds(
   rootId: string,
@@ -90,6 +105,74 @@ export function collectOuterBloomSubtreeIds(
     }
   }
   return ordered;
+}
+
+export function filterOuterBloomIslandByHiddenRoots(
+  island: OuterBloomIsland,
+  hiddenRootIds: ReadonlySet<string>,
+): OuterBloomIsland | null {
+  if (hiddenRootIds.size === 0) return island;
+
+  const hidden = new Set<string>();
+  for (const rootId of hiddenRootIds) {
+    for (const id of collectOuterBloomSubtreeIds(rootId, island.nodes)) {
+      hidden.add(id);
+    }
+  }
+  if (hidden.size === 0) return island;
+
+  const nodes = island.nodes.filter((node) => !hidden.has(node.id));
+  if (nodes.length === 0) return null;
+  const visibleNodeIds = new Set(nodes.map((node) => node.id));
+  const edges = island.edges.filter(
+    (edge) => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target),
+  );
+  return { ...island, nodes, edges };
+}
+
+async function hideLiveOuterBloomSubtree(
+  deps: OuterBloomRoutesDeps,
+  nodeId: string,
+): Promise<{ nodeId: string; deleted: number; nodeIds: string[]; mode: 'hidden' } | null> {
+  const importedRunIds = new Set(
+    (await readImportedOuterBloom(deps.db)).map((island) => island.runId),
+  );
+  const ids = await listRunIds(deps.db);
+  for (const runId of ids) {
+    if (importedRunIds.has(runId)) continue;
+    const events = await deps.store.readByRun(runId);
+    if (events.length === 0) continue;
+    const island = buildOuterBloomForRun(events);
+    const nodeIds = collectOuterBloomSubtreeIds(nodeId, island.nodes);
+    if (nodeIds.length === 0) continue;
+
+    await deps.db
+      .insert(outerBloomHiddenNodes)
+      .values(
+        nodeIds.map((hiddenNodeId) => ({
+          id: randomUUID(),
+          runId,
+          nodeId: hiddenNodeId,
+        })),
+      )
+      .onConflictDoNothing({
+        target: [outerBloomHiddenNodes.runId, outerBloomHiddenNodes.nodeId],
+      });
+
+    return { nodeId, deleted: nodeIds.length, nodeIds, mode: 'hidden' };
+  }
+  return null;
+}
+
+async function readHiddenOuterBloomNodeIds(db: NodePgDatabase): Promise<Map<string, Set<string>>> {
+  const rows: HiddenOuterBloomRow[] = await db.select().from(outerBloomHiddenNodes);
+  const byRun = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const existing = byRun.get(row.runId) ?? new Set<string>();
+    existing.add(row.nodeId);
+    byRun.set(row.runId, existing);
+  }
+  return byRun;
 }
 
 async function readImportedOuterBloom(db: NodePgDatabase): Promise<OuterBloomIsland[]> {
