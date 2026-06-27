@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - calibration
       - dalton-outer-view
     paths:
       - "published/**"
@@ -75,6 +74,8 @@ jobs:
           cp pages-artifact/index.html pages-artifact/agarden/index.html
           mkdir -p pages-artifact/bloom
           cp pages-artifact/index.html pages-artifact/bloom/index.html
+          mkdir -p pages-artifact/runs/when-the-crashes-dont-come-575845a4/knowledge
+          cp pages-artifact/index.html pages-artifact/runs/when-the-crashes-dont-come-575845a4/knowledge/index.html
           cp pages-artifact/index.html pages-artifact/404.html
           cp -R calibration-branch/published/calibrator pages-artifact/calibrator
           touch pages-artifact/.nojekyll

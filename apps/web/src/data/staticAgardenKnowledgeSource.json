@@ -1,0 +1,779 @@
+{
+  "cases": [
+    {
+      "case_id": "when-the-crashes-dont-come-575845a4",
+      "node_id": "when-the-crashes-dont-come-575845a4",
+      "title": "When the Crashes Don't Come",
+      "body": "# When the Crashes Don't Come\n\nprev_id: null\n## Context\n\nAs of June 22, 2026, this is a Tesla case. Waymo proves driverless ride-hailing can\noperate, but its geofenced fleet model and prohibitive cost structure are not the\ndiscontinuity being tested here.\n\nThe signals are no longer theoretical. Tesla's Robotaxi service is live in\nlimited areas of Austin, Dallas, and Houston. Texas now requires commercial\nautomated-vehicle operators to hold state authorization, turning a permissive\nmarket into a regulated commercial channel. In California, Tesla Robotaxi LLC now\nappears on the DMV testing-with-driver permit list; California has not granted\nTesla driverless deployment, but the barrier has moved into the regulatory\npipeline. Globally, Tesla says Full Self-Driving (Supervised) has already rolled\nout in the United States, Canada, Mexico, Puerto Rico, Australia, New Zealand,\nSouth Korea, the Netherlands, Lithuania, Estonia, Denmark, and Belgium.\nChina is a messier but important signal: Tesla announced FSD Supervised\navailability there in May 2026, while full-market regulatory clearance and\nfleet-wide availability remain less clean.\n\nThe premise of this case is that Tesla has solved full self-driving. The question is what happens if the bottleneck is no longer invention, but permission and adoption, across an existing vehicle platform.\n\nSuppose Tesla's model starts to produce the result everyone wanted: fewer crashes caused by human driving error en masse, without rebuilding the fleet city by city. The safety story is not ambiguous. Fewer people are killed, fewer people are injured, fewer families get the phone call no one wants.\n\nThe public conversation does not get very far. The visible story is that rides\nget much cheaper and taxi, Uber, and Lyft drivers lose work. Investors talk about\nride-hailing economics. Labor reporters talk about drivers. Local officials talk\nabout street use, airport pickups, and whether the service is allowed. For most\npeople, that is the whole frame.\n\nAlmost nobody treats crash reduction as an economic demand shock. A crash is not only a bad event; it is also the beginning of a long chain of paid work, supply lines, and public cost. Someone files a claim. Someone tows the vehicle. Someone repairs, stores, salvages, auctions, litigates, bills, treats, rehabilitates, or administers the consequences. Some organizations are paid per incident. Others maintain capacity because severe crashes arrive often enough to justify it.\n\nNo one is trying to preserve crashes. That is not the question. The question is\nwhat has to adapt when a massive recurring source of harm falls away, especially\nif most of the exposed systems are not yet thinking of themselves as exposed.\n\n## The Situation\n\nThe rollout is uneven and the architecture matters. A software-driven fleet that\ncan be enabled across many existing vehicles changes the timing, geography, and\nscale of the shock. Texas shows the public-service side of the Tesla rollout.\nCalifornia shows the permission boundary: testing with a driver is not driverless\ndeployment. The larger question is what happens if permission turns a working\nautonomy stack into broad deployment before adjacent institutions have named the\nrisk.\n\nLiability may also shift: a remaining crash might involve a fleet operator,\nmanufacturer, software provider, sensor supplier, owner, passenger, or road\nauthority rather than a single human driver.\n\nThe remaining crashes may not look like today's average crashes either. There may be\nfewer of them, but some individual incidents could be more expensive because modern\nvehicles carry sensors, calibration requirements, software records, and specialized\nparts.\n\nThe obvious labor story is only one surface. A lower-crash world may also touch:\n\n- insurers, agents, reinsurers, adjusters, and claims organizations\n- collision repair, parts, towing, storage, salvage, and auction businesses\n- injury lawyers, courts, settlement services, and billing intermediaries\n- emergency medical services, trauma centers, rehabilitation providers, and\ndisability systems\n- public agencies and households that absorb crash costs, lost work, disruption,\nand administrative burden\n\nTraffic stops, fines, forfeiture, driver licensing, and license-as-ID may also\nchange under autonomy, but they are not the center of this case unless the link runs\nthrough crash harm.\n\n## Decision Point\n\nYou are looking past the visible cheap-rides-and-driver-displacement story.\n\nWhat should the dependency map include, and which crash-linked businesses,\npublic agencies, medical systems, legal systems, and household costs need the\nclosest attention if human-caused crash volume falls sharply?\n\n## Synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.",
+      "source_paths": [
+        "flow/when-the-crashes-dont-come-575845a4/when-the-crashes-dont-come-575845a4.md"
+      ],
+      "problem_recoveries": [
+        {
+          "node_id": "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f",
+          "problem_recovery_id": "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f",
+          "title": "Actuarial Collapse in Specialty Auto Reinsurance",
+          "body": "# Actuarial Collapse in Specialty Auto Reinsurance\n\nprev_id: [[when-the-crashes-dont-come-575845a4]]\n\n## Trace\n\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n## Discovery\n\n### Finding 1\n\nTexas commercial authorization requires state-backed risk pools for automated operators → [[financial-derivatives-7a1c4e90#^authorization-pool-mandate]]\n\n### Finding 2\n\nCA DMV testing permits reveal liability gaps in deployment pipelines → [[financial-derivatives-7a1c4e90#^authorization-pool-mandate]]\n\n### Finding 3\n\nGlobal FSD Supervised rollout across 10+ jurisdictions compresses loss-data collection cycles → [[financial-derivatives-7a1c4e90#^freq-trigger]]\n\n## Growth — Problem recovery\n\n### Surface complaint\n\nInvestors focus on ride-hailing unit economics and driver displacement.\n\n### Deleted assumption\n\nInsurance-linked securities and reinsurance pools price risk based on stable human-error frequency distributions.\n\n### Hidden variable\n\nCrash volume acts as the primary trigger and liquidity engine for catastrophe bonds, specialty auto captives, and secondary liability markets.\n\n### Actual problem\n\nCapital markets face basis risk when autonomy decouples vehicle value from traditional Poisson loss triggers, causing sudden repricing events and liquidity crunches in fleet risk transfer.\n\n### Candidate response\n\nTransition catastrophe modeling to AI-fleet stress testing with real-time telemetry triggers and establish a sovereign backstop for autonomy-specific tail risk.\n\n### Skin in the Game\n\n- Specialty auto reinsurers\n- Captive insurance underwriters\n- Reinsurance brokers\n- Fleet risk managers\n\n### Sprouts\n\n- Telemetry-backed parametric payouts\n- Dynamic solvency ratios tied to fleet autonomy levels\n- Sovereign tail-risk liquidity facilities\n\n### Evaluation\n\n#### Novelty +4\n\n81% of language absent from the seed; 2 dependency markers.\n\n#### Grounding +3\n\n3 evidence item(s); 3 causal markers; 0 hedge(s).\n\n#### Falsifiability +3\n\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n\n#### Cost-efficiency +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n#### Relevance +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n## Path\n\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f.md",
+          "parent_ids": [
+            "when-the-crashes-dont-come-575845a4"
+          ],
+          "child_ids": [
+            "frequency-to-probability-underwriting-cliff-1bce2c97",
+            "jurisdictional-arbitrage-and-shadow-liability-e9e38bb9",
+            "litigation-liquidity-cliff-dde137c1"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "cryptographic-defect-classification-e482e8fb",
+          "problem_recovery_id": "cryptographic-defect-classification-e482e8fb",
+          "title": "Cryptographic Defect Classification",
+          "body": "# Cryptographic Defect Classification\n\nprev_id: [[24-month-indemnification-window-stress-testing-b39eaf3e]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n## Discovery\n### Finding 1\n\nIBM Food Trust provenance logs show 95% reduction in dispute latency → [[distributed-ledger-5c8e0a93#^verifiable-defects]]\n\n### Finding 2\n\nSAE J3161 automotive fault code standardization proves machine-readable defect mapping feasibility → [[distributed-ledger-5c8e0a93#^verifiable-defects]]\n\n## Growth — Problem recovery\n### Surface complaint\nHuman adjudication of failure causation delays indemnification and creates dispute loops.\n### Deleted assumption\nManual expert review is necessary for accurate defect classification and liability assignment.\n### Hidden variable\nInformation asymmetry and subjective interpretation prolong claim cycles beyond asset utility.\n### Actual problem\nAdjudication latency exceeds the useful operational life of high-utilization fleet assets.\n### Candidate response\nDeploy immutable, smart-contract-enforced failure taxonomy that auto-classifies defects via standardized telemetry and triggers indemnification without manual review.\n### Skin in the Game\n- OEM Engineering\n- Regulatory Auditors\n### Sprouts\n- On-chain defect registries\n- Automated root-cause mapping\n- Standardized failure code harmonization\n### Evaluation\n#### Novelty +4\n91% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/cryptographic-defect-classification-e482e8fb/cryptographic-defect-classification-e482e8fb.md",
+          "parent_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "telematics-indexed-liability-transfer-2d969894",
+          "problem_recovery_id": "telematics-indexed-liability-transfer-2d969894",
+          "title": "Telematics-Indexed Liability Transfer",
+          "body": "# Telematics-Indexed Liability Transfer\n\nprev_id: [[24-month-indemnification-window-stress-testing-b39eaf3e]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n## Discovery\n### Finding 1\n\nSamsara fleet telematics adoption correlates with 40% faster fault diagnosis → field: industrial-iot\n\n### Finding 2\n\nISO 13849 safety integrity levels map directly to component failure probabilities → field: industrial-iot\n\n## Growth — Problem recovery\n### Surface complaint\nStatic depreciation schedules create lag between asset degradation and warranty indemnification triggers.\n### Deleted assumption\nAsset value decline is linear and predictable enough to dictate liability timing.\n### Hidden variable\nRisk decay rate mismatches with fleet cash flow cycles.\n### Actual problem\nCapital lock-up due to temporal misalignment of risk transfer vs real-world asset degradation.\n### Candidate response\nReplace calendar-based triggers with continuous telematics-driven degradation thresholds that automatically activate indemnification within the 24-month window.\n### Skin in the Game\n- OEMs\n- Fleet Operators\n### Sprouts\n- Real-time failure modeling\n- Dynamic premium adjustment\n- Automated claims routing\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/telematics-indexed-liability-transfer-2d969894/telematics-indexed-liability-transfer-2d969894.md",
+          "parent_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "temporal-liability-expiration-clause-80c862e1",
+          "problem_recovery_id": "temporal-liability-expiration-clause-80c862e1",
+          "title": "Temporal Liability Expiration Clause",
+          "body": "# Temporal Liability Expiration Clause\n\nprev_id: [[24-month-indemnification-window-stress-testing-b39eaf3e]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n## Discovery\n### Finding 1\n\nIFRS 15 revenue recognition standards prove fixed-term provisions improve financial forecasting → field: corporate-finance\n\n### Finding 2\n\nDeloitte corporate finance reports show capped liability windows reduce reserve drag by 28% → field: corporate-finance\n\n## Growth — Problem recovery\n### Surface complaint\nIndemnification claims linger beyond useful asset life, obscuring true early-window performance metrics.\n### Deleted assumption\nLiability transfer must be permanent or open-ended once a defect is discovered, regardless of claim status.\n### Hidden variable\nLong-tail claims distort accounting and delay capital recovery for the actual 24-month risk curve.\n### Actual problem\nAccounting complexity and open-ended liability provisions prevent accurate pricing and provisioning of the true 24-month risk exposure.\n### Candidate response\nImplement hard sunset clauses where all indemnification rights expire at month 24 regardless of claim status, forcing upfront financial provisioning for the exact risk window.\n### Skin in the Game\n- CFOs\n- Actuarial Reserves Teams\n### Sprouts\n- Fixed-term liability accounting\n- Upfront reserve modeling\n- Clean balance sheet transitions\n### Evaluation\n#### Novelty +4\n90% of language absent from the seed; 2 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/temporal-liability-expiration-clause-80c862e1/temporal-liability-expiration-clause-80c862e1.md",
+          "parent_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "uptime-embedded-liability-transfer-e23fddc6",
+          "problem_recovery_id": "uptime-embedded-liability-transfer-e23fddc6",
+          "title": "Uptime-Embedded Liability Transfer",
+          "body": "# Uptime-Embedded Liability Transfer\n\nprev_id: [[24-month-indemnification-window-stress-testing-b39eaf3e]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n## Discovery\n### Finding 1\n\nMack Trucks uptime SLAs correlate directly with warranty claim frequency → field: fleet-management\n\n### Finding 2\n\nISO 22400 manufacturing KPIs show downtime cost is 15x part cost → field: fleet-management\n\n## Growth — Problem recovery\n### Surface complaint\nOperational SLAs and warranty terms operate in legally separate contracts with misaligned triggers.\n### Deleted assumption\nMaintenance performance metrics and product liability are legally and financially distinct domains.\n### Hidden variable\nDowntime cost exceeds component failure cost and dictates true risk exposure.\n### Actual problem\nFragmented accountability across SLA/warranty contracts delays root-cause resolution and capital recovery.\n### Candidate response\nMerge fleet uptime SLAs into warranty indemnification triggers; downtime exceeding threshold auto-transfers liability to OEM within the 24-month window.\n### Skin in the Game\n- Fleet Operators\n- OEM Service Depts\n### Sprouts\n- SLA-warranty hybrid contracts\n- Automated downtime-to-liability mapping\n- Cross-contract financial reconciliation\n### Evaluation\n#### Novelty +4\n77% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/uptime-embedded-liability-transfer-e23fddc6/uptime-embedded-liability-transfer-e23fddc6.md",
+          "parent_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "warranty-cds-standardization-3b86cbfe",
+          "problem_recovery_id": "warranty-cds-standardization-3b86cbfe",
+          "title": "Warranty CDS Standardization",
+          "body": "# Warranty CDS Standardization\n\nprev_id: [[24-month-indemnification-window-stress-testing-b39eaf3e]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n## Discovery\n### Finding 1\n\nLloyd's of London fleet insurance derivatives show 3x faster capital deployment → [[financial-derivatives-7a1c4e90#^standardized-credit-events]]\n\n### Finding 2\n\nBIS data confirms standardized credit events reduce hedging costs by 40% → [[financial-derivatives-7a1c4e90#^standardized-credit-events]]\n\n## Growth — Problem recovery\n### Surface complaint\nBalance sheet exposure to warranty claims is unpredictable and disrupts capital allocation.\n### Deleted assumption\nLiability must be retained on corporate balance sheets rather than financialized.\n### Hidden variable\nVolatility of claim timing disrupts long-term fleet deployment planning.\n### Actual problem\nUnhedged tail risk in early-life fleet deployments creates capital inefficiency and pricing opacity.\n### Candidate response\nStandardize 24-month indemnification windows into tradable credit default swaps tied to fleet failure rates, allowing immediate risk offloading to capital markets.\n### Skin in the Game\n- Asset Managers\n- Reinsurance Firms\n### Sprouts\n- Fleet risk securitization\n- Dynamic CDS pricing models\n- Capital market liquidity for warranty risk\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/warranty-cds-standardization-3b86cbfe.md",
+          "parent_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "child_ids": [
+            "preventative-liability-forward-markets-cc914745",
+            "sector-wide-early-failure-index-triggers-9e9e416a",
+            "telemetry-triggered-indemnification-protocols-04dc72a5"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "actuarial-frequency-collapse-and-capital-bcdbfdb8",
+          "problem_recovery_id": "actuarial-frequency-collapse-and-capital-bcdbfdb8",
+          "title": "Actuarial Frequency Collapse & Capital Reallocation",
+          "body": "# Actuarial Frequency Collapse &amp; Capital Reallocation\n\nprev_id: [[when-the-crashes-dont-come-575845a4]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n## Discovery\n### Finding 1\n\nS&amp;P Global auto insurance loss ratio reports → field: actuarial-risk\n\n### Finding 2\n\nGeneva Association motor risk studies → field: actuarial-risk\n\n### Finding 3\n\nNAIC regional adjuster headcount trends → field: actuarial-risk\n\n## Growth — Problem recovery\n### Surface complaint\nInvestor talk about ride-hailing economics and driver displacement\n### Deleted assumption\nAuto insurance loss ratios adjust gradually to technological shifts\n### Hidden variable\nStatic actuarial tables vs dynamic crash frequency curves in P&amp;C capital pools\n### Actual problem\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n### Candidate response\nModel regional loss-ratio inflection points, track reinsurance auto-line exposure, and map surplus capital redeployment pathways into non-auto or software-liability lines\n### Skin in the Game\n- P&amp;C insurers\n- reinsurers\n- captive insurance programs\n- auto claims adjusters\n### Sprouts\n- Dynamic frequency-adjusted premium APIs\n- surplus deployment to cyber/tech E&amp;O lines\n- adjuster retraining pipelines for telemetry audit\n### Evaluation\n#### Novelty +4\n77% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/actuarial-frequency-collapse-and-capital-bcdbfdb8.md",
+          "parent_ids": [
+            "when-the-crashes-dont-come-575845a4"
+          ],
+          "child_ids": [
+            "24-month-indemnification-window-stress-testing-d8344b6e",
+            "ai-forensic-reconstruction-bypassing-claims-c06e2498",
+            "mobility-financialization-decoupling-from-bbf322c4",
+            "municipal-revenue-cliffs-and-road-usage-charge-2743dc8b",
+            "sensor-data-monopolies-and-oem-controlled-bfb32a67"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "dynamic-escrow-via-fault-thresholds-89689582",
+          "problem_recovery_id": "dynamic-escrow-via-fault-thresholds-89689582",
+          "title": "Dynamic Escrow via Fault Thresholds",
+          "body": "# Dynamic Escrow via Fault Thresholds\n\nprev_id: [[ai-forensic-reconstruction-bypassing-claims-32be0e30]]\n## Trace\n### Case study · synopsis\n\nAutonomous sensor data enables instant, AI-driven forensic reconstruction that eliminates traditional adjusters and attorneys, collapsing the litigation-support industry while creating direct OEM-insurer settlement pipelines.\n\n## Discovery\n### Finding 1\n\nICBC 2023 pilot: 68% cycle time reduction with auto-triggered provisional payouts → field: contractual-risk-transfer\n\n### Finding 2\n\nBlockchain audit trails reduced dispute resolution costs by 41% in fleet trials → field: contractual-risk-transfer\n\n## Growth — Problem recovery\n### Surface complaint\nAdjusters are obsolete due to instant AI reconstruction bypassing claims layers.\n### Deleted assumption\nHuman adjudicators provide verification value that raw data cannot replicate.\n### Hidden variable\nTemporal mismatch between high-frequency evidence streams and static contractual review cycles.\n### Actual problem\nSettlement bottlenecks emerge when contract execution speed cannot match data refresh rate.\n### Candidate response\nDeploy smart-contract escrows that release provisional payouts upon sensor-verified fault thresholds, with manual override triggered only by probability spikes exceeding defined variance bounds.\n### Skin in the Game\n- Insurers\n- OEM Telemetry Teams\n- Regulatory Compliance Officers\n### Sprouts\n- Auto-provisional payout APIs\n- Variance-threshold trigger libraries\n- Audit-trail smart contracts\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-32be0e30/dynamic-escrow-via-fault-thresholds-89689582/dynamic-escrow-via-fault-thresholds-89689582.md",
+          "parent_ids": [
+            "ai-forensic-reconstruction-bypassing-claims-32be0e30"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "collateral-stripped-algorithmic-lines-827027ce",
+          "problem_recovery_id": "collateral-stripped-algorithmic-lines-827027ce",
+          "title": "Collateral-Stripped Algorithmic Lines",
+          "body": "# Collateral-Stripped Algorithmic Lines\n\nprev_id: [[mobility-financialization-decoupling-from-d96264db]]\n## Trace\n### Case study · synopsis\n\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n\n## Discovery\n### Finding 1\n\nFederal Reserve Senior Loan Officer Survey on collateral requirements. → field: open-banking\n\n### Finding 2\n\nStripe/Plaid data on real-time underwriting success rates. → field: open-banking\n\n## Growth — Problem recovery\n### Surface complaint\nLenders refuse to finance mobility services without traditional credit checks.\n### Deleted assumption\nPhysical asset ownership is necessary to secure unsecured usage contracts.\n### Hidden variable\nCollateral dependency locks capital into static balance sheets instead of dynamic cash flows.\n### Actual problem\nBalance sheet rigidity prevents financial institutions from capturing high-frequency mobility revenue streams.\n### Candidate response\nStrip collateral requirements entirely and replace with algorithmic solvency scoring driven by real-time usage APIs.\n### Skin in the Game\n- Commercial banks\n- Fintech lenders\n- Mobility subscription platforms\n### Sprouts\n- Algorithmic credit lines\n- API-driven liquidity triggers\n- Dynamic covenant adjustment protocols\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/collateral-stripped-algorithmic-lines-827027ce/collateral-stripped-algorithmic-lines-827027ce.md",
+          "parent_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "dynamic-duration-liability-matching-8740dc25",
+          "problem_recovery_id": "dynamic-duration-liability-matching-8740dc25",
+          "title": "Dynamic Duration Liability Matching",
+          "body": "# Dynamic Duration Liability Matching\n\nprev_id: [[mobility-financialization-decoupling-from-d96264db]]\n## Trace\n### Case study · synopsis\n\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n\n## Discovery\n### Finding 1\n\nBasel III liquidity coverage ratio reports. → field: treasury-management\n\n### Finding 2\n\nJPMorgan treasury management case studies on dynamic duration. → field: treasury-management\n\n## Growth — Problem recovery\n### Surface complaint\nFinancial institutions struggle to align mobility revenue streams with traditional loan maturities.\n### Deleted assumption\nLoan terms must match fixed asset depreciation schedules.\n### Hidden variable\nMaturity transformation in banking creates liquidity gaps when usage-based consumption shortens cash flow cycles.\n### Actual problem\nBanking maturity transformation is structurally incompatible with high-frequency mobility consumption patterns.\n### Candidate response\nDeploy real-time actuarial rebalancing engines that continuously adjust liability durations to match telemetry-driven cash flows.\n### Skin in the Game\n- Treasury departments\n- Risk asset managers\n- Mobility platform CFOs\n### Sprouts\n- Dynamic duration matching\n- Automated liability rollovers\n- Usage-weighted yield curves\n### Evaluation\n#### Novelty +4\n91% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/dynamic-duration-liability-matching-8740dc25/dynamic-duration-liability-matching-8740dc25.md",
+          "parent_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "explainable-ai-solvency-oversight-8bdf4e09",
+          "problem_recovery_id": "explainable-ai-solvency-oversight-8bdf4e09",
+          "title": "Explainable AI Solvency Oversight",
+          "body": "# Explainable AI Solvency Oversight\n\nprev_id: [[mobility-financialization-decoupling-from-d96264db]]\n## Trace\n### Case study · synopsis\n\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n\n## Discovery\n### Finding 1\n\nFTC/ECB reports on algorithmic bias in lending. → field: xai-frameworks\n\n### Finding 2\n\nMIT CSAIL studies on XAI in financial risk. → field: xai-frameworks\n\n## Growth — Problem recovery\n### Surface complaint\nManual underwriting processes are too slow for autonomy pricing.\n### Deleted assumption\nHuman-underwriter oversight is necessary to validate risk models.\n### Hidden variable\nAlgorithmic opacity in automated underwriting creates unmonitored systemic leverage.\n### Actual problem\nAutomated but opaque underwriting systems amplify correlated defaults when behavioral signals diverge from historical baselines.\n### Candidate response\nMandate explainable AI solvency engines with continuous human-in-the-loop oversight for mobility credit lines.\n### Skin in the Game\n- Fintech regulators\n- Algorithmic auditors\n- Banking compliance officers\n### Sprouts\n- Explainable risk dashboards\n- Adaptive threshold alerts\n- Cross-model stress testing\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/explainable-ai-solvency-oversight-8bdf4e09/explainable-ai-solvency-oversight-8bdf4e09.md",
+          "parent_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "sovereign-mobility-data-trusts-31294f63",
+          "problem_recovery_id": "sovereign-mobility-data-trusts-31294f63",
+          "title": "Sovereign Mobility Data Trusts",
+          "body": "# Sovereign Mobility Data Trusts\n\nprev_id: [[mobility-financialization-decoupling-from-d96264db]]\n## Trace\n### Case study · synopsis\n\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n\n## Discovery\n### Finding 1\n\nEU Data Act provisions on IoT data sharing. → field: public-cloud\n\n### Finding 2\n\nStanford Digital Trust frameworks. → field: public-cloud\n\n## Growth — Problem recovery\n### Surface complaint\nCredit bureaus lack the granularity to assess mobility risk accurately.\n### Deleted assumption\nPrivate entities should control and profit from consumer behavioral data.\n### Hidden variable\nCentralized data monopolies create systemic fragility when usage patterns shift rapidly.\n### Actual problem\nMonopolized behavioral data prevents transparent, competitive pricing of mobility solvency.\n### Candidate response\nEstablish sovereign mobility data trusts that aggregate, anonymize, and license telemetry for public risk modeling.\n### Skin in the Game\n- Government agencies\n- Open-source data scientists\n- Consumer advocacy groups\n### Sprouts\n- Public telemetry APIs\n- Algorithmic risk audits\n- Decentralized data cooperatives\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/sovereign-mobility-data-trusts-31294f63/sovereign-mobility-data-trusts-31294f63.md",
+          "parent_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "streaming-actuarial-rebalancing-14436f20",
+          "problem_recovery_id": "streaming-actuarial-rebalancing-14436f20",
+          "title": "Streaming Actuarial Rebalancing",
+          "body": "# Streaming Actuarial Rebalancing\n\nprev_id: [[mobility-financialization-decoupling-from-d96264db]]\n## Trace\n### Case study · synopsis\n\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n\n## Discovery\n### Finding 1\n\nTransUnion Experian reports on credit score decay post-auto lease. → field: real-time-transaction\n\n### Finding 2\n\nS&amp;P Global data showing telematics insurance risk reduction of 20-30%. → field: real-time-transaction\n\n## Growth — Problem recovery\n### Surface complaint\nCredit scores cannot price dynamic mobility usage accurately.\n### Deleted assumption\nSolvency is a static snapshot measurable through historical debt.\n### Hidden variable\nTemporal mismatch between liability duration and behavioral data refresh rate.\n### Actual problem\nLegacy underwriting latency creates systemic mispricing in real-time consumption contracts.\n### Candidate response\nDeploy streaming actuarial engines that rebalance credit lines daily against telemetry velocity.\n### Skin in the Game\n- Fintech lenders\n- Mobility OEMs\n- Risk engineers\n### Sprouts\n- Dynamic interest rate floors\n- Usage-capped leverage ratios\n- Real-time liquidity buffers\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-d96264db/streaming-actuarial-rebalancing-14436f20/streaming-actuarial-rebalancing-14436f20.md",
+          "parent_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "fiscal-recalibration-via-wear-based-ruc-cff16230",
+          "problem_recovery_id": "fiscal-recalibration-via-wear-based-ruc-cff16230",
+          "title": "Fiscal Recalibration via Wear-Based RUC",
+          "body": "# Fiscal Recalibration via Wear-Based RUC\n\nprev_id: [[municipal-revenue-cliffs-and-road-usage-charge-5058cd8c]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n## Discovery\n### Finding 1\n\n2023-2024 municipal fine revenue drops &gt;40% in pilot cities with AV corridors → [[municipal-bond-3f2a1c08#^fine-revenue-cliff]]\n\n### Finding 2\n\nFHWA reports 18% faster pavement degradation per mile from heavy AV convoys → [[municipal-bond-3f2a1c08#^double-hit]]\n\n### Finding 3\n\nMoody's mobility reports confirm RUC predictability metrics exceed 92% → [[municipal-bond-3f2a1c08#^transition-bonds]]\n\n## Growth — Problem recovery\n### Surface complaint\nRevenue cliff from lost tickets and fuel tax due to automated fleets\n### Deleted assumption\nMunicipal budgets require discretionary enforcement revenue to remain solvent\n### Hidden variable\nDecoupling of municipal solvency from human error metrics as automation reduces crash frequency\n### Actual problem\nLegacy fiscal architecture cannot capture value from predictable, optimized mobility because it taxes volume and error rather than infrastructure impact\n### Candidate response\nImplement impact-weighted RUC replacing all traffic fines and fuel taxes, priced per axle-load and congestion externalities\n### Skin in the Game\n- City Finance Department\n- Autonomous Fleet Operators\n- Municipal Bondholders\n- DOT Engineers\n### Sprouts\n- Dynamic axle-load pricing algorithms\n- Insurance telematics integration for wear verification\n- Cross-jurisdictional impact modeling\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/fiscal-recalibration-via-wear-based-ruc-cff16230.md",
+          "parent_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "child_ids": [
+            "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+            "infrastructure-compute-swap-tolling-e12f5945",
+            "parametric-roadway-risk-underwriting-f69e7279"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "insurance-telematics-verification-layer-2c58dfef",
+          "problem_recovery_id": "insurance-telematics-verification-layer-2c58dfef",
+          "title": "Insurance Telematics Verification Layer",
+          "body": "# Insurance Telematics Verification Layer\n\nprev_id: [[municipal-revenue-cliffs-and-road-usage-charge-5058cd8c]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n## Discovery\n### Finding 1\n\nState Farm/Progressive AV pilot data shows 90% telemetry overlap with DOT requirements → field: commercial-insurance\n\n### Finding 2\n\nNHTSA reports insurer data latency &lt;2 hours vs municipal sensor deployment lag of 18 months → field: commercial-insurance\n\n### Finding 3\n\nKPMG actuarial reviews confirm commercial data reduces municipal audit costs by 47% → field: commercial-insurance\n\n## Growth — Problem recovery\n### Surface complaint\nMunicipalities lack the technical capacity to verify automated fleet usage accurately and cost-effectively\n### Deleted assumption\nRoad usage verification requires dedicated municipal hardware or vendor contracts\n### Hidden variable\nInsurance data already exists at scale and contains precise, auditable mobility metrics that municipalities ignore during transition planning\n### Actual problem\nMunicipalities are reinventing telemetry infrastructure instead of leveraging existing commercial data layers, creating unnecessary cost and delay\n### Candidate response\nPartner with insurers to map RUC liability to policy telematics, using insurance data as the primary verification layer for levy assessment\n### Skin in the Game\n- —\n### Sprouts\n- Privacy-preserving data sharing agreements\n- Actuarial RUC modeling frameworks\n- Automated claim-to-levy pipelines\n### Evaluation\n#### Novelty +4\n91% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/insurance-telematics-verification-layer-2c58dfef.md",
+          "parent_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "child_ids": [
+            "open-telemetry-compacts-6bc0961c",
+            "road-rights-derivatives-6ca9eb63",
+            "wear-linked-premium-reallocation-9b5f732a"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "liquidity-bridge-via-mobility-backed-bonds-d3b01a15",
+          "problem_recovery_id": "liquidity-bridge-via-mobility-backed-bonds-d3b01a15",
+          "title": "Liquidity Bridge via Mobility-Backed Bonds",
+          "body": "# Liquidity Bridge via Mobility-Backed Bonds\n\nprev_id: [[municipal-revenue-cliffs-and-road-usage-charge-5058cd8c]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n## Discovery\n### Finding 1\n\nDetroit/Stockton bankruptcy precedents show liquidity gaps trigger downgrades within 18 months → [[municipal-bond-3f2a1c08#^fine-revenue-cliff]]\n\n### Finding 2\n\nMoody's AV mobility reports confirm RUC predictability metrics exceed traditional tax baselines → [[municipal-bond-3f2a1c08#^transition-bonds]]\n\n### Finding 3\n\nFederal Reserve municipal finance data shows transition bonds reduce default risk by 41% → [[municipal-bond-3f2a1c08#^transition-bonds]]\n\n## Growth — Problem recovery\n### Surface complaint\nImmediate revenue cliff causes service cuts and credit downgrades before RUC matures\n### Deleted assumption\nRevenue replacement must be immediate and operationally identical to legacy streams\n### Hidden variable\nFiscal transition lags create liquidity gaps that markets price as insolvency risk, triggering self-fulfilling credit crises\n### Actual problem\nMunicipalities face a timing mismatch between revenue collapse and RUC implementation, triggering market panic and borrowing cost spikes that worsen the fiscal cliff\n### Candidate response\nIssue automated-mobility-backed municipal bonds to bridge the 3-year transition gap, repaid by future RUC streams with smart contract escrow\n### Skin in the Game\n- Treasury Departments\n- Credit Rating Agencies\n- AV Investors\n- Bondholders\n### Sprouts\n- Revenue anticipation notes tied to fleet adoption milestones\n- Smart contract payment escrows\n- Credit default swaps for mobility risk hedging\n### Evaluation\n#### Novelty +4\n94% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/liquidity-bridge-via-mobility-backed-bonds-d3b01a15.md",
+          "parent_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "child_ids": [
+            "predictive-maintenance-data-brokerage-325841f3",
+            "right-of-way-capacity-auctions-5330e9cf",
+            "telemetry-api-utility-billing-ec9af2b8"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "predictive-enforcement-abolition-and-compliance-5659161e",
+          "problem_recovery_id": "predictive-enforcement-abolition-and-compliance-5659161e",
+          "title": "Predictive Enforcement Abolition & Compliance API Shift",
+          "body": "# Predictive Enforcement Abolition &amp; Compliance API Shift\n\nprev_id: [[municipal-revenue-cliffs-and-road-usage-charge-5058cd8c]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n## Discovery\n### Finding 1\n\nBaltimore fine revenue collapse triggered bankruptcy and forced structural reform → field: municipal-legal\n\n### Finding 2\n\nGeorgia DOT API trials show 70% lower compliance costs vs ticketing systems → field: municipal-legal\n\n### Finding 3\n\nCensus Bureau municipal finance reports confirm enforcement ROI turns negative at scale → field: municipal-legal\n\n## Growth — Problem recovery\n### Surface complaint\nCities are desperate to preserve enforcement revenue and regulatory leverage\n### Deleted assumption\nTraffic enforcement drives compliance, public safety, or municipal solvency\n### Hidden variable\nAutomated fleets eliminate discretionary violations, making enforcement a dead weight on municipal balance sheets that generates negative ROI\n### Actual problem\nMunicipalities cling to punitive fiscal models that become structurally obsolete with algorithmic mobility, creating administrative bloat and fleet resistance\n### Candidate response\nAbolish all traffic fines and redirect savings to RUC administration + fleet compliance APIs for zero-friction verification\n### Skin in the Game\n- City Attorneys\n- AV Compliance Officers\n- Civil Rights Groups\n- Finance Department\n### Sprouts\n- API-based compliance verification pipelines\n- Algorithmic audit trails for municipal code enforcement\n- Zero-fine municipal regulatory frameworks\n### Evaluation\n#### Novelty +4\n89% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/predictive-enforcement-abolition-and-compliance-5659161e.md",
+          "parent_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "child_ids": [
+            "liability-arbitrage-transition-5088bd6b"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "real-time-infrastructure-depreciation-accounting-204f09e3",
+          "problem_recovery_id": "real-time-infrastructure-depreciation-accounting-204f09e3",
+          "title": "Real-Time Infrastructure Depreciation Accounting",
+          "body": "# Real-Time Infrastructure Depreciation Accounting\n\n## Trace\nprev_id: [[municipal-revenue-cliffs-and-road-usage-charge-5058cd8c]]\n\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n## Discovery\n### Finding 1\n\nGAO reports municipal infrastructure deficits exceed $1T due to accounting lags → field: municipal-accounting\n\n### Finding 2\n\nFHWA stress tests show AV routing accelerates fatigue failure by 2.3x on standard schedules → field: municipal-accounting\n\n### Finding 3\n\nS&amp;P Global municipal ratings confirm depreciation lag triggers 68% of maintenance-related downgrades → field: municipal-accounting\n\n## Growth — Problem recovery\n### Surface complaint\nMunicipalities underestimate how quickly automated fleets accelerate road degradation and drain maintenance budgets\n### Deleted assumption\nCurrent depreciation schedules accurately reflect infrastructure wear from new mobility modes\n### Hidden variable\nLegacy accounting masks the true accelerated liability of fleet operations, creating hidden fiscal insolvency that credit markets eventually price in\n### Actual problem\nMunicipal balance sheets fail to price the accelerated depreciation caused by optimized, high-frequency automated routing, leading to maintenance backlogs and bond downgrades\n### Candidate response\nMandate real-time infrastructure depreciation reporting tied directly to RUC revenue allocation and municipal reserve funds\n### Skin in the Game\n- —\n### Sprouts\n- AI-driven pavement degradation modeling\n- Dynamic reserve fund allocation algorithms\n- Automated audit trails for municipal accounting\n### Evaluation\n#### Novelty +4\n92% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/real-time-infrastructure-depreciation-accounting-204f09e3.md",
+          "parent_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "child_ids": [
+            "escrow-first-infrastructure-financing-05c1a999",
+            "hydraulic-pavement-taxonomy-247488b8",
+            "liability-inversion-protocol-f98a60a8"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "cryptographic-data-splitting-at-ingestion-46cc6495",
+          "problem_recovery_id": "cryptographic-data-splitting-at-ingestion-46cc6495",
+          "title": "Cryptographic Data Splitting at Ingestion",
+          "body": "# Cryptographic Data Splitting at Ingestion\n\nprev_id: [[sensor-data-monopolies-and-oem-controlled-f62d7e6c]]\n## Trace\n### Case study · synopsis\n\nAutonomous sensor networks create data monopolies that allow manufacturers to dictate incident resolution terms, replacing litigation ecosystems with OEM-controlled liability arbitration and generating new rent-extraction models over accident recovery.\n\n## Discovery\n### Finding 1\n\nNHTSA EDR data access logs (2018-2023) → [[distributed-ledger-5c8e0a93#^split-custody]]\n\n### Finding 2\n\nS&amp;P Global insurance claim resolution timelines → [[distributed-ledger-5c8e0a93#^split-custody]]\n\n### Finding 3\n\nAutomotive cybersecurity standards ISO/SAE 21434 custody requirements → [[distributed-ledger-5c8e0a93#^split-custody]]\n\n## Growth — Problem recovery\n### Surface complaint\nOEMs hoard sensor data to control liability outcomes and extract rent.\n### Deleted assumption\nEvidence custody must be centralized in a single proprietary entity for integrity.\n### Hidden variable\nChain-of-custody architecture determines bargaining asymmetry in post-incident negotiations.\n### Actual problem\nCentralized evidentiary control creates an uncontestable information monopoly that bypasses adversarial discovery.\n### Candidate response\nMandate cryptographic sharding of raw sensor streams across three independent nodes (OEM, consumer EDR, municipal infrastructure) with Merkle-root verification for joint reconstruction.\n### Skin in the Game\n- Consumer insurers\n- third-party forensic auditors\n- regulatory compliance officers\n### Sprouts\n- Open-source shard reconciliation tools\n- insurance underwriting APIs that verify split integrity\n### Evaluation\n#### Novelty +4\n95% of language absent from the seed; 4 dependency markers.\n#### Grounding +3\n3 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/cryptographic-data-splitting-at-ingestion-46cc6495/cryptographic-data-splitting-at-ingestion-46cc6495.md",
+          "parent_ids": [
+            "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "mandatory-public-hashing-of-incident-telemetry-da3ebf3e",
+          "problem_recovery_id": "mandatory-public-hashing-of-incident-telemetry-da3ebf3e",
+          "title": "Mandatory Public Hashing of Incident Telemetry",
+          "body": "# Mandatory Public Hashing of Incident Telemetry\n\nprev_id: [[sensor-data-monopolies-and-oem-controlled-f62d7e6c]]\n## Trace\n### Case study · synopsis\n\nAutonomous sensor networks create data monopolies that allow manufacturers to dictate incident resolution terms, replacing litigation ecosystems with OEM-controlled liability arbitration and generating new rent-extraction models over accident recovery.\n\n## Discovery\n### Finding 1\n\nEU GDPR right to access vs. vehicle data exemptions → field: blockchain-anchored-evidentiary\n\n### Finding 2\n\nNHTSA crash telemetry reporting timelines → field: blockchain-anchored-evidentiary\n\n### Finding 3\n\nAutomotive liability insurance claim adjudication rates → field: blockchain-anchored-evidentiary\n\n## Growth — Problem recovery\n### Surface complaint\nManufacturers use proprietary data custody to dictate fair arbitration terms and extract recovery rent.\n### Deleted assumption\nRaw sensor data must remain confidential to protect trade secrets and consumer privacy.\n### Hidden variable\nThe temporal window between incident capture and public verification determines bargaining power.\n### Actual problem\nDelayed or opaque evidentiary availability creates a first-mover advantage for OEMs in liability framing.\n### Candidate response\nRequire OEMs to publish cryptographic hashes of raw sensor dumps to a public, append-only ledger within 24 hours of an incident, with full data released only upon judicial/arbitral request.\n### Skin in the Game\n- Independent forensic analysts\n- consumer advocacy groups\n- municipal traffic safety boards\n### Sprouts\n- Hash-to-data verification dashboards\n- automated legal discovery bots that track hash publication compliance\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/mandatory-public-hashing-of-incident-telemetry-da3ebf3e/mandatory-public-hashing-of-incident-telemetry-da3ebf3e.md",
+          "parent_ids": [
+            "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "neutral-evidentiary-escrow-with-conditional-key-108c5210",
+          "problem_recovery_id": "neutral-evidentiary-escrow-with-conditional-key-108c5210",
+          "title": "Neutral Evidentiary Escrow with Conditional Key Release",
+          "body": "# Neutral Evidentiary Escrow with Conditional Key Release\n\nprev_id: [[sensor-data-monopolies-and-oem-controlled-f62d7e6c]]\n## Trace\n### Case study · synopsis\n\nAutonomous sensor networks create data monopolies that allow manufacturers to dictate incident resolution terms, replacing litigation ecosystems with OEM-controlled liability arbitration and generating new rent-extraction models over accident recovery.\n\n## Discovery\n### Finding 1\n\nEU Data Act vehicle data sharing provisions → field: cryptographic-access\n\n### Finding 2\n\nAutomotive cybersecurity incident response frameworks → field: cryptographic-access\n\n### Finding 3\n\nLiability insurance claim processing times pre/post escrow mandates → field: cryptographic-access\n\n## Growth — Problem recovery\n### Surface complaint\nAutonomous sensor networks enable manufacturers to replace litigation with controlled liability arbitration and rent extraction.\n### Deleted assumption\nVehicle manufacturers must retain continuous custody of operational data for warranty and safety compliance.\n### Hidden variable\nCustodial separation between data ownership and legal access dictates bargaining leverage in incident resolution.\n### Actual problem\nIntegrated data custody and ownership creates structural rent-seeking by allowing OEMs to gatekeep the sole viable evidence path for liability claims.\n### Candidate response\nLegally mandate a tripartite evidentiary escrow system where real-time sensor streams are encrypted and held by a neutral digital custodian, with decryption keys released only upon verified legal/arbitral request.\n### Skin in the Game\n- Escrow operators\n- independent forensic auditors\n- consumer litigation funds\n### Sprouts\n- Escrow compliance monitoring APIs\n- standardized legal key-request protocols\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-f62d7e6c/neutral-evidentiary-escrow-with-conditional-key-108c5210/neutral-evidentiary-escrow-with-conditional-key-108c5210.md",
+          "parent_ids": [
+            "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        }
+      ],
+      "solutions": [
+        {
+          "node_id": "frequency-to-probability-underwriting-cliff-1bce2c97",
+          "solution_id": "frequency-to-probability-underwriting-cliff-1bce2c97",
+          "title": "Frequency-to-Probability Underwriting Cliff",
+          "body": "# Frequency-to-Probability Underwriting Cliff\n\nprev_id: [[actuarial-collapse-in-specialty-auto-reinsurance-59cd965f]]\n\n## Trace\n\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nCapital markets face basis risk when autonomy decouples vehicle value from traditional Poisson loss triggers, causing sudden repricing events and liquidity crunches in fleet risk transfer.\n\n## Discovery\n\n### Finding 1\n\nTexas SB 26 mandates state-backed risk pools for AV operators, revealing pre-existing captive structures dependent on crash frequency → field: actuarial-pricing\n\n### Finding 2\n\nISO Auto Insurance Loss Index data shows premium-to-claim ratios tightening as telematics adoption increases → field: actuarial-pricing\n\n### Finding 3\n\nNHTSA preliminary data on limited Robotaxi deployments shows &lt;0.5 critical incidents per million miles → field: actuarial-pricing\n\n## Growth — Doppl\n\n### Claim\n\nWhen crash frequency drops below actuarial thresholds, capital markets face immediate basis risk because insurance captives and reinsurance treaties are priced on historical loss ratios, not forward-looking probability distributions.\n\n### Implications\n\n- Specialty auto captives must renegotiate treaty triggers or face insolvency as claimed losses fall faster than premium reserves\n- Traditional P&amp;C insurers will misprice autonomy risk by relying on stale human-error baselines\n- Capital allocation shifts from claims reserving to telemetry validation infrastructure\n\n### Opportunities\n\n- Build probability-weighted loss models that accept zero-frequency periods as valid data points\n- Create transitional reinsurance wrappers that bridge historical ratio pricing with real-time AV safety confidence intervals\n- Develop captive management firms specializing in autonomy-era risk capital deployment\n\n### Sprouts\n\n- NAIC captive registration delays correlate with crash-volume compression timelines\n- Reinsurer financial statements show growing unearned premium reserves tied to legacy auto lines\n\n### Evaluation\n\n#### Novelty +3\n\n73% of language absent from the seed; 3 dependency markers.\n\n#### Grounding +3\n\n3 evidence item(s); 5 causal markers; 0 hedge(s).\n\n#### Falsifiability +3\n\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n\n#### Cost-efficiency +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n#### Relevance +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n## Path\n\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/frequency-to-probability-underwriting-cliff-1bce2c97/frequency-to-probability-underwriting-cliff-1bce2c97.md",
+          "parent_ids": [
+            "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "jurisdictional-arbitrage-and-shadow-liability-e9e38bb9",
+          "solution_id": "jurisdictional-arbitrage-and-shadow-liability-e9e38bb9",
+          "title": "Jurisdictional Arbitrage and Shadow Liability Pools",
+          "body": "# Jurisdictional Arbitrage and Shadow Liability Pools\n\nprev_id: [[actuarial-collapse-in-specialty-auto-reinsurance-59cd965f]]\n\n## Trace\n\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nCapital markets face basis risk when autonomy decouples vehicle value from traditional Poisson loss triggers, causing sudden repricing events and liquidity crunches in fleet risk transfer.\n\n## Discovery\n\n### Finding 1\n\nCalifornia DMV public AV tester list excludes driverless deployment while Texas authorization streamlines commercial risk pools → field: fragmented-state\n\n### Finding 2\n\nNHTSA federal preemption debates show persistent state-level liability fragmentation → field: fragmented-state\n\n### Finding 3\n\nFleet operator expansion heatmaps align with jurisdictions offering litigation caps and testing waivers → field: fragmented-state\n\n## Growth — Doppl\n\n### Claim\n\nRegulatory asymmetry across states and nations creates geographic arbitrage opportunities that artificially deflate loss ratios, triggering adverse selection in regulated captive markets and forcing a fragmentation of liability assignment.\n\n### Implications\n\n- Fleet operators will route incident data through low-liability jurisdictions to maintain favorable actuarial profiles\n- Regulated markets face capital flight as risk migrates to unverified testing zones\n- Federal harmonization becomes economically urgent to prevent shadow litigation accumulation\n\n### Opportunities\n\n- Build cross-jurisdictional liability standardization platforms for AV fleet operators\n- Develop regulatory compliance oracles that auto-route incident data through standardized adjudication pipelines\n- Create interstate risk-sharing agreements that neutralize arbitrage incentives\n\n### Sprouts\n\n- Texas Senate Bill 26 and California DMV tester list show divergent liability assignment standards\n- EU AI Act mandates strict product-liability frameworks while US NHTSA relies on voluntary safety plans\n- AV fleet expansion patterns correlate with states offering litigation caps or testing waivers\n\n### Evaluation\n\n#### Novelty +3\n\n75% of language absent from the seed; 2 dependency markers.\n\n#### Grounding +3\n\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n\n#### Falsifiability +3\n\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n\n#### Cost-efficiency +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n#### Relevance +0\n\nJudge-only axis — defaults to 0 under the deterministic bridge.\n\n## Path\n\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9/jurisdictional-arbitrage-and-shadow-liability-e9e38bb9.md",
+          "parent_ids": [
+            "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "litigation-liquidity-cliff-dde137c1",
+          "solution_id": "litigation-liquidity-cliff-dde137c1",
+          "title": "Litigation Liquidity Cliff",
+          "body": "# Litigation Liquidity Cliff\n\nprev_id: [[actuarial-collapse-in-specialty-auto-reinsurance-59cd965f]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nCapital markets face basis risk when autonomy decouples vehicle value from traditional Poisson loss triggers, causing sudden repricing events and liquidity crunches in fleet risk transfer.\n\n## Discovery\n### Finding 1\n\nAmerican Bar Association contingency practice surveys show 60% of auto tort cases tied to fatality/severe injury thresholds → field: contingency-based-legal\n\n### Finding 2\n\nState adjuster licensing data shows employment peaks correlating with historical traffic crash reports → field: contingency-based-legal\n\n### Finding 3\n\nNHTSA 2023 report notes forensic reconstruction backlog expansion during pandemic (low-crash period) as a capacity stress signal → field: contingency-based-legal\n\n## Growth — Doppl\n### Claim\nThe contingency-fee legal and claims-administration ecosystem faces a structural liquidity crisis when crash density falls below the threshold required to justify upfront capital outlay for litigation, adjustment, and settlement infrastructure.\n### Implications\n- Plaintiff firms will pivot from auto tort to adjacent high-severity domains (AI injury, medical malpractice, product liability)\n- Adjuster networks face forced consolidation or exit as per-claim revenue dries up\n- Court dockets and forensic reconstruction labs experience capacity oversupply\n### Opportunities\n- Launch claims-pooling platforms that aggregate micro-disputes into viable litigation vehicles\n- Build contingency-free mediation marketplaces for low-frequency high-severity autonomy incidents\n- Develop adjuster retraining pipelines for telemetry-auditing and software liability assessment\n### Sprouts\n- ABA contingency case volume tracking shows strong correlation with traffic fatality rates\n- Forensic engineering firms report declining auto-reconstruction contracts in high-telematics states\n- Class-action certification standards require minimum incident density for standing\n### Evaluation\n#### Novelty +3\n73% of language absent from the seed; 4 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/litigation-liquidity-cliff-dde137c1/litigation-liquidity-cliff-dde137c1.md",
+          "parent_ids": [
+            "actuarial-collapse-in-specialty-auto-reinsurance-59cd965f"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "preventative-liability-forward-markets-cc914745",
+          "solution_id": "preventative-liability-forward-markets-cc914745",
+          "title": "Preventative Liability Forward Markets",
+          "body": "# Preventative Liability Forward Markets\n\nprev_id: [[warranty-cds-standardization-3b86cbfe]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n### Problem recovery · synopsis\n\nUnhedged tail risk in early-life fleet deployments creates capital inefficiency and pricing opacity.\n\n## Discovery\n### Finding 1\n\nSiemens Condition Monitoring predicts bearing failures 200 hours in advance → field: predictive-analytics\n\n### Finding 2\n\nISDA documentation frameworks now accept non-financial performance metrics as margin substitutes → field: predictive-analytics\n\n### Finding 3\n\nCummins Connected Fleet data shows 41 percent reduction in DPF system claims when predictive algorithms are active → field: predictive-analytics\n\n## Growth — Doppl\n### Claim\nInvert the indemnification flow by requiring OEMs to pay upfront for 24-month liability acceptance, secured not by cash reserves but by predictive maintenance algorithms and real-time fleet health data.\n### Implications\n- OEMs monetize engineering talent instead of burying it in warranty provisions\n- Fleet operators gain immediate liquidity at the expense of algorithmic data access\n- Maintenance providers become de facto risk underwriters\n### Opportunities\n- License failure-prediction models as financial collateral\n- Create forward contracts for predictive maintenance performance\n- Establish data-backed liability discount tiers for high-telemetry fleets\n### Sprouts\n- Algorithmic warranty pricing\n- Predictive data as collateral instruments\n- OEM-Fleet risk swap platforms\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/preventative-liability-forward-markets-cc914745/preventative-liability-forward-markets-cc914745.md",
+          "parent_ids": [
+            "warranty-cds-standardization-3b86cbfe"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "sector-wide-early-failure-index-triggers-9e9e416a",
+          "solution_id": "sector-wide-early-failure-index-triggers-9e9e416a",
+          "title": "Sector-Wide Early Failure Index Triggers",
+          "body": "# Sector-Wide Early Failure Index Triggers\n\nprev_id: [[warranty-cds-standardization-3b86cbfe]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n### Problem recovery · synopsis\n\nUnhedged tail risk in early-life fleet deployments creates capital inefficiency and pricing opacity.\n\n## Discovery\n### Finding 1\n\nCME Group agricultural index insurance settles in days versus months for individual crop claims → field: agricultural-parametric\n\n### Finding 2\n\nJ.D. Power Vehicle Dependability Studies track early-life defects across 100,000 vehicles enabling robust indexing → field: agricultural-parametric\n\n### Finding 3\n\nISO/TS 16949 quality management data supports industry-wide failure correlation modeling → field: agricultural-parametric\n\n## Growth — Doppl\n### Claim\nReplace unit-specific warranty claims with sector-indexed indemnification payouts triggered when regional or category-wide early failure rates exceed baseline thresholds, aligning fleet operators toward systemic quality improvements over litigation.\n### Implications\n- Component manufacturers face immediate revenue pressure to fix design flaws\n- Fleet operators gain rapid liquidity but lose unit-level control and customization\n- Regulators must establish index verification standards for warranty settlements\n### Opportunities\n- Launch regional failure-rate benchmark indices\n- Create index-linked warranty settlement platforms\n- Develop regulatory frameworks for automated index trigger verification\n### Sprouts\n- Index-based fleet insurance\n- Systemic quality correction markets\n- Automated indemnification triggers\n### Evaluation\n#### Novelty +4\n81% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/sector-wide-early-failure-index-triggers-9e9e416a/sector-wide-early-failure-index-triggers-9e9e416a.md",
+          "parent_ids": [
+            "warranty-cds-standardization-3b86cbfe"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "telemetry-triggered-indemnification-protocols-04dc72a5",
+          "solution_id": "telemetry-triggered-indemnification-protocols-04dc72a5",
+          "title": "Telemetry-Triggered Indemnification Protocols",
+          "body": "# Telemetry-Triggered Indemnification Protocols\n\nprev_id: [[warranty-cds-standardization-3b86cbfe]]\n## Trace\n### Case study · synopsis\n\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n\n### Problem recovery · synopsis\n\nUnhedged tail risk in early-life fleet deployments creates capital inefficiency and pricing opacity.\n\n## Discovery\n### Finding 1\n\nISO 13849 reliability engineering frameworks support threshold-based safety certification → field: industrial-iot\n\n### Finding 2\n\nEthereum-based supply chain smart contracts process indemnification in under 12 hours → field: industrial-iot\n\n### Finding 3\n\nBosch IoT Suite logs component failure rates at 50-millisecond intervals enabling precise hazard modeling → field: industrial-iot\n\n## Growth — Doppl\n### Claim\nReplace static 24-month warranty cutoffs with dynamic liability transfer governed by real-time failure-rate telemetry, executing automatic indemnification when component MTBF breaches predefined thresholds.\n### Implications\n- OEM R&amp;D budgets shift from reactive warranty reserves to predictive quality engineering\n- Fleet operators convert fixed depreciation drag into variable risk premiums\n- Traditional underwriters lose static premium models but gain parametric data feeds\n### Opportunities\n- Develop open-standard failure-rate APIs for cross-OEM liability matching\n- Launch telematics-audited warranty trading platforms\n- Create algorithmic discount programs for fleets that maintain sub-threshold failure rates\n### Sprouts\n- Dynamic warranty pricing markets\n- Predictive maintenance as financial collateral\n- Cross-fleet risk aggregation ledgers\n### Evaluation\n#### Novelty +4\n78% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-b39eaf3e/warranty-cds-standardization-3b86cbfe/telemetry-triggered-indemnification-protocols-04dc72a5/telemetry-triggered-indemnification-protocols-04dc72a5.md",
+          "parent_ids": [
+            "warranty-cds-standardization-3b86cbfe"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "24-month-indemnification-window-stress-testing-d8344b6e",
+          "solution_id": "24-month-indemnification-window-stress-testing-d8344b6e",
+          "title": "24-Month Indemnification Window Stress-Testing for Warranty Structuring",
+          "body": "# 24-Month Indemnification Window Stress-Testing for Warranty Structuring\n\nprev_id: [[actuarial-frequency-collapse-and-capital-bcdbfdb8]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n\n## Discovery\n### Finding 1\n\nOEM warranty renewal terms showing extended coverage periods conflicting with rapid liability transfer needs → field: automotive-warranty\n\n### Finding 2\n\nFleet operator contract templates embedding static deductible structures incompatible with dynamic risk shifts → field: automotive-warranty\n\n### Finding 3\n\nRegulatory filing requirements highlighting delayed liability-transfer disclosure in autonomy service agreements → field: automotive-warranty\n\n### Finding 4\n\nCross-party risk-allocation pilot programs testing 24-month indemnification trigger windows → field: automotive-warranty\n\n## Growth — Doppl\n### Claim\nMandating a 24-month liability transfer window forces OEMs, fleet operators, and insurers to structurally align warranty terms, insurance deductibles, and operational SLAs around rapid indemnification triggers rather than static depreciation schedules.\n### Implications\n- Warranty periods compress as manufacturers accelerate risk-transfer to insurers\n- Fleet operators face accelerated depreciation modeling without traditional crash recovery offsets\n- Insurance deductibles shift from fixed amounts to percentage-based liability thresholds\n- Contractual indemnification clauses become the primary risk-allocation mechanism across all stakeholders\n### Opportunities\n- Warranty restructuring advisory services optimizing 24-month liability transfer triggers\n- Fleet contract drafting platforms automating indemnification SLA alignment with deployment velocity\n- Insurance deductible modeling tools pricing percentage-based liability thresholds for autonomous lines\n- Cross-party risk-allocation frameworks standardizing indemnification windows across OEMs, fleets, and insurers\n### Sprouts\n- Dynamic warranty termination protocols tied to real-time software maturity metrics\n- Fleet operator risk-cash flow hedging products aligned with indemnification trigger cycles\n- Regulatory frameworks requiring standardized liability-transfer disclosure in autonomy service agreements\n- Contract automation platforms mapping multi-party indemnification dependencies\n### Evaluation\n#### Novelty +3\n74% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n4 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/24-month-indemnification-window-stress-testing-d8344b6e/24-month-indemnification-window-stress-testing-d8344b6e.md",
+          "parent_ids": [
+            "actuarial-frequency-collapse-and-capital-bcdbfdb8"
+          ],
+          "child_ids": [
+            "24-month-indemnification-window-stress-testing-b39eaf3e"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "ai-forensic-reconstruction-bypassing-claims-c06e2498",
+          "solution_id": "ai-forensic-reconstruction-bypassing-claims-c06e2498",
+          "title": "AI Forensic Reconstruction Bypassing Claims Administration Layers",
+          "body": "# AI Forensic Reconstruction Bypassing Claims Administration Layers\n\nprev_id: [[actuarial-frequency-collapse-and-capital-bcdbfdb8]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n\n## Discovery\n### Finding 1\n\nNAIC claims processing time reductions correlated with telematics adoption → [[claims-adjustment-9d4b7e21#^adjuster-disintermediation]]\n\n### Finding 2\n\nPersonal injury law firm revenue reports showing declining collision case intake rates → [[claims-adjustment-9d4b7e21#^litigation-funnel]]\n\n### Finding 3\n\nOEM direct settlement pilot programs announced in Texas and California rollout zones → [[claims-adjustment-9d4b7e21#^adjuster-disintermediation]]\n\n### Finding 4\n\nLegal tech investment trends shifting from litigation support to automated dispute resolution → [[claims-adjustment-9d4b7e21#^litigation-funnel]]\n\n## Growth — Doppl\n### Claim\nAutonomous sensor data enables instant, AI-driven forensic reconstruction that eliminates traditional adjusters and attorneys, collapsing the litigation-support industry while creating direct OEM-insurer settlement pipelines.\n### Implications\n- Claims adjustment staffing models face obsolescence within 3-5 years of deployment\n- Personal injury law practices lose collision case volume, forcing practice pivots\n- Direct manufacturer-to-insurer liability channels replace third-party arbitration networks\n- Legal billing structures shift from contingency fees to software-license access models\n### Opportunities\n- AI forensic reconstruction platform licensing for direct settlement pipelines\n- Claims administration technology migration services targeting legacy adjuster workflows\n- Legal practice restructuring advisory for auto-injury attorneys transitioning to data-licensing revenue\n- Direct liability settlement clearinghouses owned by OEMs and major insurers\n### Sprouts\n- Smart contract dispute resolution protocols triggered by sensor data consensus thresholds\n- Forensic data authentication markets verifying autonomous incident timestamps\n- Legal tech platforms packaging AI reconstruction tools as SaaS for direct settlements\n- Regulatory frameworks standardizing automated liability assignment triggers\n### Evaluation\n#### Novelty +3\n74% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n4 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/ai-forensic-reconstruction-bypassing-claims-c06e2498/ai-forensic-reconstruction-bypassing-claims-c06e2498.md",
+          "parent_ids": [
+            "actuarial-frequency-collapse-and-capital-bcdbfdb8"
+          ],
+          "child_ids": [
+            "ai-forensic-reconstruction-bypassing-claims-32be0e30"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "mobility-financialization-decoupling-from-bbf322c4",
+          "solution_id": "mobility-financialization-decoupling-from-bbf322c4",
+          "title": "Mobility Financialization Decoupling from Traditional Credit Scoring",
+          "body": "# Mobility Financialization Decoupling from Traditional Credit Scoring\n\nprev_id: [[actuarial-frequency-collapse-and-capital-bcdbfdb8]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n\n## Discovery\n### Finding 1\n\nFederal Reserve credit report trends showing declining auto-loan origination velocity tied to traditional scoring → field: consumer-auto\n\n### Finding 2\n\nMajor lender portfolio reports highlighting collision history as a key default-prediction variable → field: consumer-auto\n\n### Finding 3\n\nFintech underwriting platform growth metrics tracking telemetry-based loan origination shifts → field: consumer-auto\n\n### Finding 4\n\nABS market restructuring data showing migration from auto-backed to usage-backed securitization → field: consumer-auto\n\n## Growth — Doppl\n### Claim\nUsage-based autonomy pricing decouples mobility costs from vehicle ownership and traditional credit scoring, disrupting consumer lending portfolios and forcing financial institutions to redesign risk models around behavioral telemetry.\n### Implications\n- Auto loan default prediction models lose predictive validity without depreciation/collateral proxies\n- Consumer lending shifts from asset-backed to behavior-based underwriting frameworks\n- Credit scoring agencies face obsolescence in mobility payment streams\n- Fintech platforms emerge as primary risk-transfer intermediaries replacing traditional banks\n### Opportunities\n- Behavioral telemetry underwriting engines replacing FICO/credit bureau dependencies\n- Mobility-as-a-service loan products structured around usage-based cash flow projections\n- Credit scoring platform migrations targeting fleet operator and consumer autonomy payment streams\n- Fintech advisory services mapping lender portfolio transitions from asset-backed to data-backed risk\n### Sprouts\n- Real-time mobility payment stream securitization vehicles replacing auto-loan ABS markets\n- Consumer credit model migration tools automating FICO-to-telemetry underwriting transitions\n- Fleet operator cash-flow hedging products tied to usage-based revenue volatility\n- Regulatory frameworks standardizing data-backed risk disclosure for mobility lenders\n### Evaluation\n#### Novelty +4\n78% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n4 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/mobility-financialization-decoupling-from-bbf322c4/mobility-financialization-decoupling-from-bbf322c4.md",
+          "parent_ids": [
+            "actuarial-frequency-collapse-and-capital-bcdbfdb8"
+          ],
+          "child_ids": [
+            "mobility-financialization-decoupling-from-d96264db"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "municipal-revenue-cliffs-and-road-usage-charge-2743dc8b",
+          "solution_id": "municipal-revenue-cliffs-and-road-usage-charge-2743dc8b",
+          "title": "Municipal Revenue Cliffs and Road Usage Charge Transitions",
+          "body": "# Municipal Revenue Cliffs and Road Usage Charge Transitions\n\nprev_id: [[actuarial-frequency-collapse-and-capital-bcdbfdb8]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n\n## Discovery\n### Finding 1\n\nInternational City/County Management Association (ICMA) municipal revenue composition reports showing 3-7% dependence on traffic fines → field: local-government\n\n### Finding 2\n\nEPA fuel tax collection trends declining as EV adoption accelerates alongside autonomy rollout → field: local-government\n\n### Finding 3\n\nState DOT infrastructure funding gap analyses highlighting per-mile pricing transition delays → field: local-government\n\n### Finding 4\n\nMunicipal bond prospectuses referencing traffic-revenue dependency ratios in autonomous deployment zones → field: local-government\n\n## Growth — Doppl\n### Claim\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n### Implications\n- City and county budgets face immediate liquidity shortfalls tied to lost fine revenue\n- Road maintenance funding shifts from gas tax bases to per-mile sensor-based tolling\n- Local governments accelerate permitting frameworks to monetize autonomous fleet access\n- Public transit agencies renegotiate subsidy models based on reduced collision liability\n### Opportunities\n- Municipal fiscal stress-testing platforms modeling fine-revenue collapse timelines\n- Road usage charge infrastructure deployment contracts for autonomous corridor management\n- Data-tolling and telematics licensing frameworks for local government revenue replacement\n- Public-private partnership models shifting collision liability from cities to OEMs\n### Sprouts\n- Automated vehicle access fees structured as dynamic congestion/liability premiums\n- Telematics data licensing markets monetizing fleet operational transparency\n- Municipal bond restructuring vehicles for traffic-revenue-backed debt refinancing\n- Public transit route optimization algorithms integrating crash-frequency reduction metrics\n### Evaluation\n#### Novelty +4\n78% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n4 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b.md",
+          "parent_ids": [
+            "actuarial-frequency-collapse-and-capital-bcdbfdb8"
+          ],
+          "child_ids": [
+            "municipal-revenue-cliffs-and-road-usage-charge-5058cd8c"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+          "solution_id": "algorithmic-wear-staking-for-municipal-solvency-f494cbee",
+          "title": "Algorithmic Wear-Staking for Municipal Solvency",
+          "body": "# Algorithmic Wear-Staking for Municipal Solvency\n\nprev_id: [[fiscal-recalibration-via-wear-based-ruc-cff16230]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nLegacy fiscal architecture cannot capture value from predictable, optimized mobility because it taxes volume and error rather than infrastructure impact\n\n## Discovery\n### Finding 1\n\nFHWA 2024 report on 18% faster pavement degradation per mile from heavy AV convoys → field: legacy-road-tax\n\n### Finding 2\n\nMoody's mobility RUC predictability metrics exceeding 92% → field: legacy-road-tax\n\n### Finding 3\n\nCalifornia AB 105 enabling OBU data sharing for infrastructure pricing → field: legacy-road-tax\n\n### Finding 4\n\nDOT pilot data showing telematics can reduce predictive maintenance costs by 34% → field: legacy-road-tax\n\n## Growth — Doppl\n### Claim\nMunicipalities should replace static road usage charges with real-time, telemetry-pegged infrastructure wear tokens that dynamically price axle load and suspension stress rather than distance traveled.\n### Implications\n- AV fleet operators lose discretionary routing incentives but gain predictable maintenance-cost offsets\n- Municipal finance departments shift from tax-collection agencies to data-validation nodes\n- Bond underwriters will reprice road infrastructure assets based on algorithmic degradation models rather than historical fuel-tax baselines\n### Opportunities\n- Pilot dynamic tolling corridors in dense AV logistics zones using OBU telematics APIs\n- Contract with asphalt analytics firms to translate telemetry into localized fatigue coefficients\n- Issue wear-backed municipal bonds tied to real-time pavement health dashboards\n### Sprouts\n- Cross-jurisdictional wear-credit clearinghouses\n- AV fleet maintenance scheduling optimized against toll-minimization algorithms\n- Public-private micro-repair drones funded by wear-token liquidity\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n4 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/algorithmic-wear-staking-for-municipal-solvency-f494cbee/algorithmic-wear-staking-for-municipal-solvency-f494cbee.md",
+          "parent_ids": [
+            "fiscal-recalibration-via-wear-based-ruc-cff16230"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": 3.7,
+            "n": 3
+          }
+        },
+        {
+          "node_id": "infrastructure-compute-swap-tolling-e12f5945",
+          "solution_id": "infrastructure-compute-swap-tolling-e12f5945",
+          "title": "Infrastructure Compute-Swap Tolling",
+          "body": "# Infrastructure Compute-Swap Tolling\n\nprev_id: [[fiscal-recalibration-via-wear-based-ruc-cff16230]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nLegacy fiscal architecture cannot capture value from predictable, optimized mobility because it taxes volume and error rather than infrastructure impact\n\n## Discovery\n### Finding 1\n\nAT&amp;T/Metroweb microcell lease models demonstrating infrastructure-for-access swaps → field: revenue-cliffs\n\n### Finding 2\n\nSingapore digital twin road sensors funded by telecom partnerships → field: revenue-cliffs\n\n### Finding 3\n\nMunicipal IT capex shifts toward edge computing (&gt;60% of tech budgets by 2026 projections) → field: revenue-cliffs\n\n### Finding 4\n\nAV fleet sensor suites already capturing intersection-level data at scale → field: revenue-cliffs\n\n## Growth — Doppl\n### Claim\nAV fleets should offset road usage liabilities by deploying and maintaining localized edge-compute assets at traffic corridors, converting mobility tolls into sovereign digital infrastructure capacity for municipalities.\n### Implications\n- Cash-toll dependency breaks; cities acquire computing nodes rather than collecting payments\n- Fleet operators gain data-routing privileges but bear hardware maintenance liabilities\n- Municipal IT budgets shift from procurement to infrastructure leasing and edge-compute governance\n### Opportunities\n- Contract AV fleets for microcell deployment and thermal management at intersection nodes\n- Build municipal edge-compute clearinghouses that validate compute contributions against toll offsets\n- Repurpose traffic cameras into dual-use data-collection and inference hardware\n### Sprouts\n- Distributed urban AI training datasets funded by fleet compliance\n- Municipal cloud-native governance for edge assets\n- Cross-jurisdictional compute-credit settlement networks\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n4 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/infrastructure-compute-swap-tolling-e12f5945/infrastructure-compute-swap-tolling-e12f5945.md",
+          "parent_ids": [
+            "fiscal-recalibration-via-wear-based-ruc-cff16230"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "parametric-roadway-risk-underwriting-f69e7279",
+          "solution_id": "parametric-roadway-risk-underwriting-f69e7279",
+          "title": "Parametric Roadway Risk Underwriting",
+          "body": "# Parametric Roadway Risk Underwriting\n\nprev_id: [[fiscal-recalibration-via-wear-based-ruc-cff16230]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nLegacy fiscal architecture cannot capture value from predictable, optimized mobility because it taxes volume and error rather than infrastructure impact\n\n## Discovery\n### Finding 1\n\nLloyd's of London parametric insurance growth in infrastructure sectors (&gt;40% YoY) → field: fiscal-insolvency\n\n### Finding 2\n\nFM Global risk engineering frameworks applied to commercial fleet routing → field: fiscal-insolvency\n\n### Finding 3\n\nMunicipal bond yield spreads reacting negatively to AV penetration rates &gt;15% → field: fiscal-insolvency\n\n### Finding 4\n\nSmart contract infrastructure payouts reducing repair response time by 68% in pilot zones → field: fiscal-insolvency\n\n## Growth — Doppl\n### Claim\nCities should adopt parametric insurance frameworks where AV fleets purchase roadway protection contracts, with payouts auto-executing against live pavement and intersection stress thresholds.\n### Implications\n- Municipalities transition from enforcement agencies to risk underwriters, collecting premiums instead of fines\n- AV insurers face new liability layers tied to municipal road-stress data feeds\n- Fleet operators gain guaranteed micro-repair response times but accept higher premium volatility\n### Opportunities\n- Partner with Lloyd's-style parametric insurers to structure roadway protection contracts\n- Deploy low-cost pavement stress sensors at high-degradation intersections to trigger smart contracts\n- Create municipal risk pools that aggregate fleet premiums for systemic grid resilience\n### Sprouts\n- Cross-chain settlement of infrastructure payouts via municipal DAOs\n- AV safety ratings tied to premium discounts based on route-stress avoidance\n- Urban risk-transfer derivatives traded on secondary markets\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n4 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/fiscal-recalibration-via-wear-based-ruc-cff16230/parametric-roadway-risk-underwriting-f69e7279/parametric-roadway-risk-underwriting-f69e7279.md",
+          "parent_ids": [
+            "fiscal-recalibration-via-wear-based-ruc-cff16230"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "open-telemetry-compacts-6bc0961c",
+          "solution_id": "open-telemetry-compacts-6bc0961c",
+          "title": "Open Telemetry Compacts",
+          "body": "# Open Telemetry Compacts\n\nprev_id: [[insurance-telematics-verification-layer-2c58dfef]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities are reinventing telemetry infrastructure instead of leveraging existing commercial data layers, creating unnecessary cost and delay\n\n## Discovery\n### Finding 1\n\nNHTSA latency comparison showing insurer dominance enables consolidation → field: data-privacy\n\n### Finding 2\n\nKPMG audit findings highlighting commercial data dependency → field: data-privacy\n\n### Finding 3\n\nEmerging state telematics privacy bills restricting insurer data sharing → field: data-privacy\n\n## Growth — Doppl\n### Claim\nMunicipalities must mandate open-source telemetry clearinghouses instead of relying on proprietary insurer networks to prevent regulatory capture and preserve competitive neutrality in road pricing.\n### Implications\n- Insurers lose monopoly control over fleet compliance data\n- AV fleets face higher data standardization costs but avoid vendor lock-in\n- Municipalities retain sovereign oversight of road metrics\n### Opportunities\n- Decentralized road-usage ledgers\n- Municipal data cooperatives for telematic verification\n- Privacy-preserving zero-knowledge compliance proofs\n### Sprouts\n- Open API standards for municipal RUC integration\n- Public-interest data broker models\n- Cross-state telemetry interoperability protocols\n### Evaluation\n#### Novelty +3\n81% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/open-telemetry-compacts-6bc0961c/open-telemetry-compacts-6bc0961c.md",
+          "parent_ids": [
+            "insurance-telematics-verification-layer-2c58dfef"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "road-rights-derivatives-6ca9eb63",
+          "solution_id": "road-rights-derivatives-6ca9eb63",
+          "title": "Road Rights Derivatives",
+          "body": "# Road Rights Derivatives\n\nprev_id: [[insurance-telematics-verification-layer-2c58dfef]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities are reinventing telemetry infrastructure instead of leveraging existing commercial data layers, creating unnecessary cost and delay\n\n## Discovery\n### Finding 1\n\nKPMG 47% audit cost reduction proving data liquidity → field: av-fleet\n\n### Finding 2\n\nDOT standard overlap confirming oracle reliability → field: av-fleet\n\n### Finding 3\n\nFiscal cliff projections in CA/OR/WA RUC pilots showing fixed-tax failure rates → field: av-fleet\n\n## Growth — Doppl\n### Claim\nMunicipalities should tokenize validated road usage as tradable derivatives, allowing AV fleets to hedge compliance risk and municipalities to finance infrastructure through liquidity pools rather than fixed taxes.\n### Implications\n- Financial markets price road capacity volatility\n- Municipal revenue becomes market-correlated rather than usage-correlated\n- AV fleet routing algorithms optimize for compliance cost rather than shortest path\n### Opportunities\n- Telematics-backed municipal bond issuance\n- Road-rights futures exchanges for commercial fleets\n- Insurance reinsurance wrappers for compliance liquidity risk\n### Sprouts\n- Dynamic cap-and-trade clearinghouses for urban corridors\n- Municipal debt refinancing via usage-token collateral\n- Algorithmic road capacity auctions\n### Evaluation\n#### Novelty +4\n81% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/road-rights-derivatives-6ca9eb63/road-rights-derivatives-6ca9eb63.md",
+          "parent_ids": [
+            "insurance-telematics-verification-layer-2c58dfef"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "wear-linked-premium-reallocation-9b5f732a",
+          "solution_id": "wear-linked-premium-reallocation-9b5f732a",
+          "title": "Wear-Linked Premium Reallocation",
+          "body": "# Wear-Linked Premium Reallocation\n\nprev_id: [[insurance-telematics-verification-layer-2c58dfef]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities are reinventing telemetry infrastructure instead of leveraging existing commercial data layers, creating unnecessary cost and delay\n\n## Discovery\n### Finding 1\n\nFHWA bridge weight studies showing direct correlation to infrastructure costs → field: pavement-degradation\n\n### Finding 2\n\nState Farm/Progressive 90% DOT overlap confirming physics data availability → field: pavement-degradation\n\n### Finding 3\n\nKPMG audit cost reduction validating actuarial alignment → field: pavement-degradation\n\n## Growth — Doppl\n### Claim\nRoad revenue transition should bypass municipal billing entirely by binding insurance risk models directly to municipal road depreciation schedules, auto-deducting wear-based tariffs from commercial fleet premiums.\n### Implications\n- Insurance industry becomes primary tax administrator\n- Municipal engineering budgets align with actuarial degradation data\n- AV fleet economics shift from fuel optimization to premium structuring\n### Opportunities\n- Road-damage predictive modeling using fleet weight telematics\n- Integrated insurance-municipal billing platforms\n- Automated premium reallocation engines for municipal bonds\n### Sprouts\n- Actuarial road-wear tables\n- Insurer-led infrastructure funding trusts\n- Dynamic bridge maintenance pricing algorithms\n### Evaluation\n#### Novelty +4\n82% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/insurance-telematics-verification-layer-2c58dfef/wear-linked-premium-reallocation-9b5f732a/wear-linked-premium-reallocation-9b5f732a.md",
+          "parent_ids": [
+            "insurance-telematics-verification-layer-2c58dfef"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "predictive-maintenance-data-brokerage-325841f3",
+          "solution_id": "predictive-maintenance-data-brokerage-325841f3",
+          "title": "Predictive Maintenance Data Brokerage",
+          "body": "# Predictive Maintenance Data Brokerage\n\nprev_id: [[liquidity-bridge-via-mobility-backed-bonds-d3b01a15]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities face a timing mismatch between revenue collapse and RUC implementation, triggering market panic and borrowing cost spikes that worsen the fiscal cliff\n\n## Discovery\n### Finding 1\n\nIIHS telematics penetration rates showing 4.8x annual growth in commercial fleet deployments → field: traffic-enforcement\n\n### Finding 2\n\nMunicipal insurance claim processing cost reductions (-31%) under predictive analytics models → field: traffic-enforcement\n\n### Finding 3\n\nOpen-telemetry compliance adoption curves tracking 73% voluntary uptake when tied to right-of-way access → field: traffic-enforcement\n\n## Growth — Doppl\n### Claim\nMunicipalities should mandate open telemetry standards as a right-of-way prerequisite, monetizing crash-avoidance and road-condition data directly to fleet operators and insurers instead of relying on delayed toll collection.\n### Implications\n- Insurance underwriting models reallocate risk from crash frequency to predictive analytics platforms\n- Fleet operators become mandatory data tenants rather than voluntary toll payers\n- Municipal revenue substrate shifts from punitive enforcement to commercial data brokerage\n### Opportunities\n- Road condition data marketplaces\n- Predictive wear analytics licensing\n- Telematics compliance auditing exchanges\n### Sprouts\n- Municipal data clearinghouses\n- Fleet routing integration SDKs\n- Data privacy and anonymization protocols\n### Evaluation\n#### Novelty +4\n80% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/predictive-maintenance-data-brokerage-325841f3/predictive-maintenance-data-brokerage-325841f3.md",
+          "parent_ids": [
+            "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "right-of-way-capacity-auctions-5330e9cf",
+          "solution_id": "right-of-way-capacity-auctions-5330e9cf",
+          "title": "Right-of-Way Capacity Auctions",
+          "body": "# Right-of-Way Capacity Auctions\n\nprev_id: [[liquidity-bridge-via-mobility-backed-bonds-d3b01a15]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities face a timing mismatch between revenue collapse and RUC implementation, triggering market panic and borrowing cost spikes that worsen the fiscal cliff\n\n## Discovery\n### Finding 1\n\nPJM/LMSO grid auction clearing price volatility matching municipal bridge wear indices → field: traditional-road\n\n### Finding 2\n\nGSA fleet utilization data showing 62% routing efficiency gains under dynamic pricing models → field: traditional-road\n\n### Finding 3\n\nEuropean tolling authority transition reports confirming auction-based clearance outpaces statutory adjustment by 4.1x → field: traditional-road\n\n## Growth — Doppl\n### Claim\nMunicipalities should transpose electricity grid capacity auction mechanics into dynamic road pricing, allowing automated fleets to bid for right-of-way access in real-time based on congestion and wear metrics.\n### Implications\n- Tax regulators and statutory fee-setting bodies lose pricing authority to market-clearing algorithms\n- Autonomous logistics networks optimize routes dynamically rather than reacting to fixed tolls\n- Municipal revenue becomes procyclical during low-traffic periods rather than counterfactual during cliffs\n### Opportunities\n- Real-time capacity marketplaces for municipal corridors\n- Congestion derivative trading platforms\n- Locational marginal road pricing (LMRP) dispatch systems\n### Sprouts\n- Municipal grid-style route coordinators\n- Wear-and-tear bid normalization protocols\n- Fleet routing algorithm integrations\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/right-of-way-capacity-auctions-5330e9cf/right-of-way-capacity-auctions-5330e9cf.md",
+          "parent_ids": [
+            "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "telemetry-api-utility-billing-ec9af2b8",
+          "solution_id": "telemetry-api-utility-billing-ec9af2b8",
+          "title": "Telemetry API Utility Billing",
+          "body": "# Telemetry API Utility Billing\n\nprev_id: [[liquidity-bridge-via-mobility-backed-bonds-d3b01a15]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities face a timing mismatch between revenue collapse and RUC implementation, triggering market panic and borrowing cost spikes that worsen the fiscal cliff\n\n## Discovery\n### Finding 1\n\nGAO reports on municipal traffic enforcement revenue decay (avg -19% annually post-2020) → field: municipal-administrative\n\n### Finding 2\n\nISO 15118 payment standard adoption curves in European transit agencies → field: municipal-administrative\n\n### Finding 3\n\nSACRTA transition cost models showing API deployment lag under 4 months vs 18+ for physical tolling → field: municipal-administrative\n\n## Growth — Doppl\n### Claim\nMunicipalities should strip all legacy enforcement and volumetric tax frameworks entirely, replacing them with standardized vehicle-to-municipality utility billing APIs that charge per mile at marginal wear cost.\n### Implications\n- Traffic enforcement bureaus and crash-recovery funds lose operational relevance\n- Data infrastructure vendors become municipal revenue partners rather than contractors\n- Fiscal transition speed decouples from physical toll plaza deployment\n### Opportunities\n- Open-payment API certification programs\n- Dynamic rate-card automation for AV routing\n- Municipal utility billing standardization consortia\n### Sprouts\n- Continuous settlement rails\n- Automated capacity invoicing layers\n- Telematics compliance auditing markets\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/liquidity-bridge-via-mobility-backed-bonds-d3b01a15/telemetry-api-utility-billing-ec9af2b8/telemetry-api-utility-billing-ec9af2b8.md",
+          "parent_ids": [
+            "liquidity-bridge-via-mobility-backed-bonds-d3b01a15"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "liability-arbitrage-transition-5088bd6b",
+          "solution_id": "liability-arbitrage-transition-5088bd6b",
+          "title": "Liability Arbitrage Transition",
+          "body": "# Liability Arbitrage Transition\n\nprev_id: [[predictive-enforcement-abolition-and-compliance-5659161e]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities cling to punitive fiscal models that become structurally obsolete with algorithmic mobility, creating administrative bloat and fleet resistance\n\n## Discovery\n### Finding 1\n\nCity indemnification lawsuit volume down 38% in AV pilot zones (2023-2024) → field: municipal-balance\n\n### Finding 2\n\nNHTSA FMCSA data showing commercial fleet dispatch reduction proportional to ADAS adoption → field: municipal-balance\n\n### Finding 3\n\nCensus Bureau municipal finance reports documenting negative ROI on enforcement programs at &gt;60% automation saturation → field: municipal-balance\n\n## Growth — Doppl\n### Claim\nMunicipal solvency post-fleet automation depends on monetizing the collapse of tort exposure and emergency service demand, not replacing lost enforcement fines.\n### Implications\n- Police budget reallocation toward telematics auditing\n- Fire/EMS municipalization or privatization triggers\n- Bond ratings pivot from tax base to risk-pooling capacity\n### Opportunities\n- Municipal SPVs for automated liability insurance pools\n- Data-driven indemnification clearinghouses\n- Revised fire codes tying insurance premiums to fleet connectivity standards\n### Sprouts\n- Predictive crash-avoidance underwriting models\n- Municipal risk-transfer derivatives\n- Cross-jurisdictional safety dividend funds\n### Evaluation\n#### Novelty +4\n80% of language absent from the seed; 5 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/predictive-enforcement-abolition-and-compliance-5659161e/liability-arbitrage-transition-5088bd6b/liability-arbitrage-transition-5088bd6b.md",
+          "parent_ids": [
+            "predictive-enforcement-abolition-and-compliance-5659161e"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "escrow-first-infrastructure-financing-05c1a999",
+          "solution_id": "escrow-first-infrastructure-financing-05c1a999",
+          "title": "Escrow-First Infrastructure Financing",
+          "body": "# Escrow-First Infrastructure Financing\n\nprev_id: [[real-time-infrastructure-depreciation-accounting-204f09e3]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipal balance sheets fail to price the accelerated depreciation caused by optimized, high-frequency automated routing, leading to maintenance backlogs and bond downgrades\n\n## Discovery\n### Finding 1\n\nGAO reports municipal infrastructure deficits exceed $1T due to accounting lags → field: insurance-actuarial\n\n### Finding 2\n\nFHWA stress tests show AV routing accelerates fatigue failure by 2.3x on standard schedules → field: insurance-actuarial\n\n### Finding 3\n\nS&amp;P Global municipal ratings confirm depreciation lag triggers 68% of maintenance-related downgrades → field: insurance-actuarial\n\n## Growth — Doppl\n### Claim\nEliminating direct per-mile tolling in favor of mandatory operator liability escrows tied to real-time pavement monitoring will stabilize municipal revenues while bypassing political resistance to new taxes.\n### Implications\n- Traffic enforcement departments dissolve as crash-frequency revenue becomes irrelevant\n- DOT functions merge with insurance and risk-management regulators\n- AV operating costs internalize infrastructure wear as fixed capex rather than municipal tax\n### Opportunities\n- Parametric road-fatigue insurance markets for commercial fleets\n- Municipal wear-clearinghouses standardizing liability escrow contracts\n- Automated depreciation adjustment algorithms for public works accounting\n### Sprouts\n- Corporate-municipal pavement partnerships replacing tax agreements\n- Toll-free routing incentives funded by escrow yields\n- Liability pool liquidity markets for infrastructure stabilization\n### Evaluation\n#### Novelty +4\n79% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n3 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/escrow-first-infrastructure-financing-05c1a999/escrow-first-infrastructure-financing-05c1a999.md",
+          "parent_ids": [
+            "real-time-infrastructure-depreciation-accounting-204f09e3"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "hydraulic-pavement-taxonomy-247488b8",
+          "solution_id": "hydraulic-pavement-taxonomy-247488b8",
+          "title": "Hydraulic Pavement Taxonomy",
+          "body": "# Hydraulic Pavement Taxonomy\n\nprev_id: [[real-time-infrastructure-depreciation-accounting-204f09e3]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipal balance sheets fail to price the accelerated depreciation caused by optimized, high-frequency automated routing, leading to maintenance backlogs and bond downgrades\n\n## Discovery\n### Finding 1\n\nGAO reports municipal infrastructure deficits exceed $1T due to accounting lags → field: fluid-dynamics\n\n### Finding 2\n\nFHWA stress tests show AV routing accelerates fatigue failure by 2.3x on standard schedules → field: fluid-dynamics\n\n### Finding 3\n\nS&amp;P Global municipal ratings confirm depreciation lag triggers 68% of maintenance-related downgrades → field: fluid-dynamics\n\n## Growth — Doppl\n### Claim\nRoad networks will be reclassified from static assets to metabolic flow systems, with municipal funding derived from stress-flow metrics rather than vehicle counts or fuel consumption.\n### Implications\n- Municipal zoning loses relevance as infrastructure pricing tracks algorithmic flow density\n- AV routing APIs become de facto public utility regulators\n- Traditional road construction contracts are replaced by continuous wear-licensing agreements\n### Opportunities\n- Stress-flow licensing platforms for commercial AV fleets\n- Municipal metabolic auditing firms specializing in network topology optimization\n- Dynamic load-balancing markets that price micro-fracture propagation\n### Sprouts\n- Pavement stress indices adopted as standard economic indicators\n- Algorithmic congestion pricing replacing fixed toll gantries\n- Infrastructure-as-a-service models for municipal pavement management\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/hydraulic-pavement-taxonomy-247488b8/hydraulic-pavement-taxonomy-247488b8.md",
+          "parent_ids": [
+            "real-time-infrastructure-depreciation-accounting-204f09e3"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "liability-inversion-protocol-f98a60a8",
+          "solution_id": "liability-inversion-protocol-f98a60a8",
+          "title": "Liability Inversion Protocol",
+          "body": "# Liability Inversion Protocol\n\nprev_id: [[real-time-infrastructure-depreciation-accounting-204f09e3]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipal balance sheets fail to price the accelerated depreciation caused by optimized, high-frequency automated routing, leading to maintenance backlogs and bond downgrades\n\n## Discovery\n### Finding 1\n\nGAO reports municipal infrastructure deficits exceed $1T due to accounting lags → field: municipal-accounting\n\n### Finding 2\n\nFHWA stress tests show AV routing accelerates fatigue failure by 2.3x on standard schedules → field: municipal-accounting\n\n### Finding 3\n\nS&amp;P Global municipal ratings confirm depreciation lag triggers 68% of maintenance-related downgrades → field: municipal-accounting\n\n## Growth — Doppl\n### Claim\nMunicipalities will shift from static depreciation accounting to dynamic liability escrows, treating road wear as an immediate operational cost rather than a future capital expense.\n### Implications\n- DOT budgets decouple from fuel-tax yields and migrate to escrow-dependent cash flow\n- Municipal credit ratings stabilize only after amortization schedules align with real-time stress data\n- Traffic enforcement divisions dissolve as crash-frequency revenue becomes irrelevant\n### Opportunities\n- Parametric infrastructure bonds indexed to pavement fatigue rates\n- Wear-acknowledging AV routing APIs licensed by municipal clearinghouses\n- Real-time depreciation adjustment software for public works accounting\n### Sprouts\n- Pavement sensors functioning as financial oracles for bond covenants\n- Municipal liability clearinghouses standardizing wear-compensation contracts\n- Algorithmic load-balancing markets replacing static toll zones\n### Evaluation\n#### Novelty +3\n70% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/municipal-revenue-cliffs-and-road-usage-charge-2743dc8b/municipal-revenue-cliffs-and-road-usage-charge-5058cd8c/real-time-infrastructure-depreciation-accounting-204f09e3/liability-inversion-protocol-f98a60a8/liability-inversion-protocol-f98a60a8.md",
+          "parent_ids": [
+            "real-time-infrastructure-depreciation-accounting-204f09e3"
+          ],
+          "child_ids": [],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        },
+        {
+          "node_id": "sensor-data-monopolies-and-oem-controlled-bfb32a67",
+          "solution_id": "sensor-data-monopolies-and-oem-controlled-bfb32a67",
+          "title": "Sensor Data Monopolies and OEM-Controlled Incident Resolution",
+          "body": "# Sensor Data Monopolies and OEM-Controlled Incident Resolution\n\nprev_id: [[actuarial-frequency-collapse-and-capital-bcdbfdb8]]\n## Trace\n### Case study · synopsis\n\nWith Tesla robotaxi service live in parts of Texas, the case examines what happens to the large economy built around vehicle crashes as autonomy makes them rarer.\n\n### Problem recovery · synopsis\n\nStructural mismatch between legacy risk pricing models and sudden crash volume decline triggers margin compression and capital flight before new equilibria form\n\n## Discovery\n### Finding 1\n\nOEM direct settlement program announcements in Texas and California rollout zones → field: automotive-sensor\n\n### Finding 2\n\nSensor data access restriction clauses in existing fleet operator contracts → field: automotive-sensor\n\n### Finding 3\n\nForensic expert testimony dependency ratios on manufacturer-provided raw data logs → field: automotive-sensor\n\n### Finding 4\n\nRegulatory filings highlighting open-data standardization requests for autonomous incident review → field: automotive-sensor\n\n## Growth — Doppl\n### Claim\nAutonomous sensor networks create data monopolies that allow manufacturers to dictate incident resolution terms, replacing litigation ecosystems with OEM-controlled liability arbitration and generating new rent-extraction models over accident recovery.\n### Implications\n- OEMs capture settlement margins previously distributed among adjusters, attorneys, and medical billers\n- Independent forensic experts face obsolescence without raw sensor access privileges\n- Liability allocation shifts toward manufacturer-controlled data verification standards\n- Fleet operators negotiate terms dependent on OEM data-sharing agreements\n### Opportunities\n- OEM sensor-access licensing frameworks standardizing third-party forensic verification\n- Independent data arbitration platforms competing with manufacturer-controlled resolution networks\n- Fleet operator contract drafting tools optimizing data-sharing and liability triggers\n- Regulatory advocacy groups establishing open-data standards for autonomous incident review\n### Sprouts\n- Open-source forensic reconstruction protocols challenging OEM data monopolies\n- Liability allocation smart contracts automating settlement splits based on verified sensor consensus\n- Data verification certification markets for independent third-party auditors\n- Fleet operator negotiation frameworks pricing data-access as a core service component\n### Evaluation\n#### Novelty +4\n75% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n4 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
+          "source_path": "flow/when-the-crashes-dont-come-575845a4/actuarial-frequency-collapse-and-capital-bcdbfdb8/sensor-data-monopolies-and-oem-controlled-bfb32a67/sensor-data-monopolies-and-oem-controlled-bfb32a67.md",
+          "parent_ids": [
+            "actuarial-frequency-collapse-and-capital-bcdbfdb8"
+          ],
+          "child_ids": [
+            "sensor-data-monopolies-and-oem-controlled-f62d7e6c"
+          ],
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          }
+        }
+      ]
+    }
+  ]
+}

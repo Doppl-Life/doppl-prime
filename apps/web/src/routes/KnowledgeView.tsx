@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import type { RunClient } from '../data/runClient';
 import type { KnowledgeGraph as KnowledgeGraphData } from '../data/knowledge';
+import { loadStaticKnowledgeGraph } from '../data/staticKnowledge';
 import { KnowledgeGraph } from '../knowledge/KnowledgeGraph';
 
 /**
@@ -17,6 +18,8 @@ export interface KnowledgeViewProps {
   runClient: RunClient;
   /** Poll cadence (ms) to re-fetch the growing graph. Default 4s; 0 disables (tests). */
   refreshMs?: number;
+  /** Static fallback for hosted demo pages where the Postgres API is intentionally absent. */
+  staticKnowledgeLoader?: (runId: string) => Promise<KnowledgeGraphData | null>;
 }
 
 const DEFAULT_REFRESH_MS = 4000;
@@ -73,6 +76,7 @@ export function KnowledgeView({
   runId,
   runClient,
   refreshMs = DEFAULT_REFRESH_MS,
+  staticKnowledgeLoader = loadStaticKnowledgeGraph,
 }: KnowledgeViewProps) {
   const [graph, setGraph] = useState<KnowledgeGraphData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +93,20 @@ export function KnowledgeView({
         })
         .catch((cause: unknown) => {
           if (!active) return;
-          setError(cause instanceof Error ? cause.message : 'failed to load the knowledge graph');
+          staticKnowledgeLoader(runId)
+            .then((fallback) => {
+              if (!active) return;
+              if (fallback !== null) {
+                setGraph(fallback);
+                setError(null);
+                return;
+              }
+              setError(cause instanceof Error ? cause.message : 'failed to load the knowledge graph');
+            })
+            .catch(() => {
+              if (!active) return;
+              setError(cause instanceof Error ? cause.message : 'failed to load the knowledge graph');
+            });
         });
     };
     fetchGraph();
@@ -98,7 +115,7 @@ export function KnowledgeView({
       active = false;
       if (interval !== undefined) clearInterval(interval);
     };
-  }, [runId, runClient, refreshMs]);
+  }, [runId, runClient, refreshMs, staticKnowledgeLoader]);
 
   return (
     <div style={shell}>
