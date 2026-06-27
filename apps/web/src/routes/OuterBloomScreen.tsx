@@ -34,6 +34,16 @@ type LaunchState =
   | { readonly kind: 'starting' }
   | { readonly kind: 'streaming'; readonly runId: string }
   | { readonly kind: 'error'; readonly message: string };
+type BloomReplayState =
+  | { readonly kind: 'idle' }
+  | {
+      readonly kind: 'running';
+      readonly token: number;
+      readonly islandRunId: string;
+      readonly visibleIds: ReadonlySet<string>;
+      readonly processingIds: ReadonlySet<string>;
+      readonly revealedAt: ReadonlyMap<string, number>;
+    };
 
 const DELETE_CONFIRM_CLICKS = 5;
 const DELETE_CONFIRM_WINDOW_MS = 1800;
@@ -94,6 +104,9 @@ interface BloomNodeActivation {
 }
 
 const LIVE_BLOOM_REFRESH_MS = 2500;
+const BLOOM_REPLAY_MIN_DELAY_MS = 10_000;
+const BLOOM_REPLAY_MAX_DELAY_MS = 20_000;
+const WHEN_CRASHES_ROOT_ID = 'when-the-crashes-dont-come-575845a4';
 
 const shell: CSSProperties = {
   minHeight: 'calc(100vh - 56px)',
@@ -116,6 +129,22 @@ const title: CSSProperties = {
   fontSize: 'clamp(1.15rem, 1.8vw, 1.55rem)',
   lineHeight: 1.05,
   letterSpacing: 0,
+};
+const titleRow: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--space-3)',
+};
+const runReplayButton: CSSProperties = {
+  minHeight: 34,
+  border: 'thin solid var(--accent)',
+  borderRadius: '999px',
+  background: 'color-mix(in srgb, var(--accent) 84%, var(--bg-surface))',
+  color: 'var(--bg-base)',
+  padding: '0 var(--space-3)',
+  fontWeight: 800,
+  cursor: 'pointer',
+  boxShadow: 'var(--glow-active)',
 };
 const statLabel: CSSProperties = {
   display: 'block',
@@ -256,7 +285,10 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [launchState, setLaunchState] = useState<LaunchState>({ kind: 'idle' });
   const [liveEvents, setLiveEvents] = useState<RunEventEnvelope[]>([]);
+  const [replayState, setReplayState] = useState<BloomReplayState>({ kind: 'idle' });
   const liveNodeCountsRef = useRef<Map<string, number>>(new Map());
+  const replayTimersRef = useRef<number[]>([]);
+  const replayTokenRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -325,6 +357,103 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     setReloadKey((key) => key + 1);
   };
 
+  const clearReplayTimers = () => {
+    for (const timer of replayTimersRef.current) window.clearTimeout(timer);
+    replayTimersRef.current = [];
+  };
+
+  const scheduleReplayNode = (
+    island: OuterBloomIsland,
+    nodeId: string,
+    token: number,
+    delay = randomReplayDelayMs(),
+  ) => {
+    const timer = window.setTimeout(() => {
+      const children = childrenForReplayNode(island, nodeId);
+      const childrenWithChildren = children.filter(
+        (child) => childrenForReplayNode(island, child.id).length > 0,
+      );
+      setReplayState((current) => {
+        if (
+          current.kind !== 'running' ||
+          current.token !== token ||
+          current.islandRunId !== island.runId ||
+          !current.processingIds.has(nodeId)
+        ) {
+          return current;
+        }
+
+        const visibleIds = new Set(current.visibleIds);
+        const processingIds = new Set(current.processingIds);
+        const revealedAt = new Map(current.revealedAt);
+        processingIds.delete(nodeId);
+
+        const now = window.performance.now();
+        for (const child of children) {
+          visibleIds.add(child.id);
+          if (!revealedAt.has(child.id)) revealedAt.set(child.id, now);
+        }
+        for (const child of childrenWithChildren) {
+          processingIds.add(child.id);
+        }
+
+        return {
+          kind: 'running',
+          token,
+          islandRunId: island.runId,
+          visibleIds,
+          processingIds,
+          revealedAt,
+        };
+      });
+
+      for (const child of childrenWithChildren) {
+        scheduleReplayNode(island, child.id, token);
+      }
+    }, delay);
+
+    replayTimersRef.current.push(timer);
+  };
+
+  const startBloomReplay = (bloom: OuterBloomProjection) => {
+    const island = replayIslandForBloom(bloom);
+    if (island === null) return;
+    const root = replayRootForIsland(island);
+    if (root === null) return;
+
+    clearReplayTimers();
+    const token = replayTokenRef.current + 1;
+    replayTokenRef.current = token;
+    const hasChildren = childrenForReplayNode(island, root.id).length > 0;
+    const processingIds = hasChildren ? new Set([root.id]) : new Set<string>();
+    setSelectedId(root.id);
+    setReplayState({
+      kind: 'running',
+      token,
+      islandRunId: island.runId,
+      visibleIds: new Set([root.id]),
+      processingIds,
+      revealedAt: new Map([[root.id, window.performance.now()]]),
+    });
+    if (hasChildren) scheduleReplayNode(island, root.id, token);
+  };
+
+  useEffect(() => {
+    return () => clearReplayTimers();
+  }, []);
+
+  useEffect(() => {
+    if (replayState.kind !== 'running' || replayState.processingIds.size > 0) return;
+    const timer = window.setTimeout(() => {
+      setReplayState((current) =>
+        current.kind === 'running' && current.token === replayState.token
+          ? { kind: 'idle' }
+          : current,
+      );
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [replayState]);
+
   if (state.kind === 'loading') {
     return (
       <main style={{ padding: 'var(--space-5)' }}>
@@ -356,8 +485,16 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   return (
     <main aria-label="Agarden view" style={shell}>
       <header className="outer-bloom-header" style={header}>
-        <div>
+        <div style={titleRow}>
           <h1 style={title}>Agarden</h1>
+          <button
+            type="button"
+            style={runReplayButton}
+            onClick={() => startBloomReplay(state.bloom)}
+            title="Replay how the current Agarden graph grows from the origin case study"
+          >
+            {replayState.kind === 'running' ? 'Restart Run' : 'Run'}
+          </button>
         </div>
         <div
           className="outer-bloom-compact-meta"
@@ -434,8 +571,9 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
 
           <div style={centerColumn}>
             <BloomGraph
-              bloom={visibleBloom}
+              bloom={replayState.kind === 'running' ? state.bloom : visibleBloom}
               selectedId={selected?.id ?? null}
+              replayState={replayState}
               onSelect={setSelectedId}
             />
             <ProofBoard island={selectedIsland} selected={selected} />
@@ -1017,17 +1155,72 @@ function uniqueNonEmpty(values: readonly (string | undefined)[]): string[] {
   return result;
 }
 
+function replayIslandForBloom(bloom: OuterBloomProjection): OuterBloomIsland | null {
+  return (
+    bloom.islands.find((island) =>
+      island.nodes.some(
+        (node) =>
+          node.id === WHEN_CRASHES_ROOT_ID ||
+          node.label.toLowerCase() === "when the crashes don't come",
+      ),
+    ) ??
+    bloom.islands[0] ??
+    null
+  );
+}
+
+function replayRootForIsland(island: OuterBloomIsland): OuterBloomNode | null {
+  return (
+    island.nodes.find((node) => node.id === WHEN_CRASHES_ROOT_ID) ??
+    island.nodes.find((node) => node.parentId === null) ??
+    island.nodes.find((node) => node.stage === 'case_study') ??
+    island.nodes[0] ??
+    null
+  );
+}
+
+function childrenForReplayNode(
+  island: OuterBloomIsland,
+  parentId: string,
+): readonly OuterBloomNode[] {
+  return island.nodes.filter((node) => node.parentId === parentId).sort(compareOuterBloomNodes);
+}
+
+function randomReplayDelayMs(): number {
+  return (
+    BLOOM_REPLAY_MIN_DELAY_MS +
+    Math.round(Math.random() * (BLOOM_REPLAY_MAX_DELAY_MS - BLOOM_REPLAY_MIN_DELAY_MS))
+  );
+}
+
 function BloomGraph({
   bloom,
   selectedId,
+  replayState,
   onSelect,
 }: {
   bloom: OuterBloomProjection;
   selectedId: string | null;
+  replayState: BloomReplayState;
   onSelect: (id: string) => void;
 }) {
   const [nodeOverrides, setNodeOverrides] = useState<Record<string, BloomNodePosition>>({});
   const layout = useMemo(() => layoutBloom(bloom, nodeOverrides), [bloom, nodeOverrides]);
+  const replayVisibleIds = replayState.kind === 'running' ? replayState.visibleIds : null;
+  const replayProcessingIds =
+    replayState.kind === 'running' ? replayState.processingIds : new Set<string>();
+  const replayRevealedAt =
+    replayState.kind === 'running' ? replayState.revealedAt : new Map<string, number>();
+  const renderedNodes =
+    replayVisibleIds === null
+      ? layout.nodes
+      : layout.nodes.filter((node) => replayVisibleIds.has(node.id));
+  const renderedEdges =
+    replayVisibleIds === null
+      ? layout.edges
+      : layout.edges.filter(
+          (edge) => replayVisibleIds.has(edge.source.id) && replayVisibleIds.has(edge.target.id),
+        );
   const selected = layout.nodes.find((node) => node.id === selectedId) ?? null;
   const selectedPath = selected === null ? new Set<string>() : ancestrySet(selected, layout.nodes);
   const [zoom, setZoom] = useState(1);
@@ -1255,7 +1448,7 @@ function BloomGraph({
           fill="transparent"
         />
 
-        {layout.edges.map((edge) => {
+        {renderedEdges.map((edge) => {
           const isPathEdge = selectedPath.has(edge.source.id) && selectedPath.has(edge.target.id);
           return (
             <path
@@ -1271,7 +1464,7 @@ function BloomGraph({
           );
         })}
 
-        {layout.nodes.map((node) => {
+        {renderedNodes.map((node) => {
           const isSelected = node.id === selected?.id;
           const isPathNode = selectedPath.has(node.id);
           const isDimmed = selected !== null && !isPathNode;
@@ -1279,6 +1472,8 @@ function BloomGraph({
           const label = labelPlacement(node);
           const showLabel = node.stage !== 'doppl' || isSelected || layout.nodes.length <= 3;
           const haloOpacity = haloOpacityForNode(node, isSelected, isPathNode);
+          const isProcessing = replayProcessingIds.has(node.id);
+          const revealedAt = replayRevealedAt.get(node.id);
           return (
             <g
               key={node.id}
@@ -1293,7 +1488,24 @@ function BloomGraph({
               }}
               style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
               opacity={isDimmed ? 0.84 : 1}
+              data-replay-processing={isProcessing ? 'true' : undefined}
             >
+              {isProcessing && (
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.radius * 3.8}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeWidth="2.2"
+                  strokeOpacity="0.72"
+                  style={{
+                    animation: 'doppl-map-pulse 1.6s var(--ease-in-out) infinite',
+                    transformBox: 'fill-box',
+                    transformOrigin: 'center',
+                  }}
+                />
+              )}
               <circle
                 cx={node.x}
                 cy={node.y}
@@ -1318,6 +1530,14 @@ function BloomGraph({
                 r={node.radius}
                 fill={fill}
                 filter={isSelected ? 'url(#bloom-glow)' : undefined}
+                style={{
+                  animation:
+                    replayState.kind === 'running' && revealedAt !== undefined
+                      ? 'doppl-map-pop 420ms var(--ease-out)'
+                      : undefined,
+                  transformBox: 'fill-box',
+                  transformOrigin: 'center',
+                }}
                 stroke={
                   isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'
                 }
