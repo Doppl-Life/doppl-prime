@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
 import {
+  buildCaseStudyGraph,
   buildCurrentState,
   buildLineageGraph,
   buildReplaySummary,
@@ -9,7 +10,7 @@ import {
   buildRunSummary,
   type RunSummaryItem,
 } from '../projections';
-import { listRunIds } from '../projections/run-list';
+import { listCaseStudyRunIds, listRunIds } from '../projections/run-list';
 import { serializeEnvelope } from './_support/serializeEnvelope';
 
 /**
@@ -44,6 +45,22 @@ export function registerRunReadRoutes(app: FastifyInstance, deps: RunReadRoutesD
       return a.createdAt < b.createdAt ? 1 : -1; // descending: newest first
     });
     return { runs };
+  });
+
+  // GET /case-studies/:id/graph — the Islands-pivot cross-run graph: a case study → its runs → each run's
+  // doppels (crowned winners), recovered by JOIN on the caseStudyId (A1). Composes N per-run current-state
+  // folds (never a mixed-run fold — LESSONS §51). Read-only (rule #2). An unknown / run-less caseStudyId
+  // returns a valid EMPTY graph (200, runs:[]) — a case study with no runs yet is a valid empty island, not
+  // a 404 (case studies are not yet first-class persisted entities — that lands in Increment B).
+  app.get('/case-studies/:id/graph', async (request) => {
+    const caseStudyId = (request.params as { id: string }).id;
+    const runIds = await listCaseStudyRunIds(deps.db, caseStudyId);
+    const runEventLists = [];
+    for (const id of runIds) {
+      const events = await deps.store.readByRun(id);
+      if (events.length > 0) runEventLists.push(events);
+    }
+    return buildCaseStudyGraph(caseStudyId, runEventLists);
   });
 
   // GET /runs/:id — the current-state projection.

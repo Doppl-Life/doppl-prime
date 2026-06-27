@@ -57,7 +57,7 @@ function truncate(text: string, max: number): string {
  * single line (some seeds are multi-paragraph briefs), reduced to the first sentence when that's a
  * reasonable length (the gist), and capped. So the list shows the problem itself, not "Problem: hospital…".
  */
-function problemTitle(seed: string): string {
+export function problemTitle(seed: string): string {
   const cleaned = seed
     .replace(/^\s*problem\s*:\s*/i, '') // drop a leading "Problem:" label
     .replace(/\s+/g, ' ') // collapse newlines/whitespace (multi-line seeds → one line)
