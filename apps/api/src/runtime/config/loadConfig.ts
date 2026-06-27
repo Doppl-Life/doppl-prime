@@ -13,7 +13,7 @@ import {
 } from './configSchema';
 import type { AppConfig } from './configSchema';
 import { projectEnvOverrides } from './envSchema';
-import { DEFAULT_SEED_SET, SeedAgenomeSet } from '../seed/seedAgenomes.config';
+import { SeedAgenomeSet, selectSeedSet } from '../seed/seedAgenomes.config';
 import { CostMapConfigSchema, DEFAULT_COST_MAP } from '../energy/costMap';
 import { parseMutationStrategy } from '../loop/mutagenStrategy';
 
@@ -116,10 +116,13 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     fileSources.problemSets ?? DEFAULT_PROBLEM_SETS,
   );
 
+  // HG1 ("give the climb room") — the boot seed baseline is selected by `DOPPL_SEED_PROFILE`
+  // (default → DEFAULT_SEED_SET = HEAD-identical; `weak` → WEAK_SEED_SET for a headroom-bearing climb).
+  // An explicit `fileSources.seedSet` still overrides the profile (file wins).
   const seedSet = validateSource(
     'seed-set',
     SeedAgenomeSet,
-    fileSources.seedSet ?? DEFAULT_SEED_SET,
+    fileSources.seedSet ?? selectSeedSet(env.DOPPL_SEED_PROFILE),
   );
 
   // EXPERIMENT — the mutagen-dynamics strategy under test (env-gated; garbage/absent → fusion_only = HEAD).
