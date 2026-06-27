@@ -1342,6 +1342,10 @@ describe('runGenerationLoop (FB.3 — operators shape the generation framing)', 
     const operators: GenerationOperator[] = ['polymath', 'first_principles'];
     const config = {
       ...base,
+      // Pin fusion_only to isolate the RUN-LEVEL operator threading path (FB.3's subject). Under the default
+      // `adaptive`/lens strategy the per-agenome heritable lens (seed personaWeights `lens.*`) takes precedence
+      // over run-level operators — that override is a separate feature with its own coverage.
+      mutationStrategy: 'fusion_only' as const,
       runConfig: {
         ...base.runConfig,
         seed: PROBLEM,
