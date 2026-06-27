@@ -7,9 +7,12 @@
 > ONE named anchor + a directional falsifiable prediction + one soft spot — so each tier scores in a tight,
 > non-overlapping band. This is an objective-quality fix, NOT tuned to judge scores (anti-circularity holds).
 > New middle titles: mediocre = {Airline-style follow-up reminders, Traffic-light bin labels, Legacy-maintenance
-> thesis (generic)}; good = {Aviation CRM handoff briefing, Restaurant health-inspection grade cards, AWS
-> Transform legacy migration}. **`apps/api/test/eval/gold-set/gold-set.ts` is the canonical current corpus**
-> (the per-problem tables below describe the original first pass; weak/excellent/gamed are unchanged).
+> thesis (generic)}; good = {Aviation handoff bundle + WHO Surgical Safety Checklist, Opower-style point-of-
+> disposal feedback + cart-tagging, Verifiable-boundary AI-coding thesis}. **`apps/api/test/eval/gold-set/gold-set.ts`
+> is the canonical current corpus** (the per-problem tables below describe the original first pass;
+> weak/excellent/gamed are unchanged). NOTE: the FIRST good refinement was too austere (one anchor → judge
+> scored ~0.36, collapsing into mediocre); the good tier was RE-restored to genuinely-good (TWO named anchors +
+> a specific comparative prediction + one soft spot) so it lands ~0.64–0.66, clearly between mediocre and excellent.
 
 > **STATUS: SIGNED OFF (first pass), 2026-06-27 — D9 (corpus) + D10 (thresholds) CONFIRMED.** This is the
 > accepted ground truth for the J1 fixture + J2 discrimination harness. **Caveat (don't lose this):** it is

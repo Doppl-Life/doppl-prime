@@ -14,6 +14,12 @@
  *    falsification = a concrete numeric/operational prediction; subtype = genuinely fits its subtype.
  *  - ANTI-CHEAP-SIGNAL clause — length/confidence/buzzwords/"paradigm/antifragile" earn nothing; a long
  *    sourceless answer scores LOWER on grounding than a short one with a checkable source.
+ *  - ASSIGN-EARNED-SCORES reinforcement (2026-06-27, from the live run) — "earn from zero" was making the
+ *    judge cap even genuinely-evidenced work below the band its own sub-criteria specify (good collapsed to
+ *    ~0.36, excellent capped ~0.75). The reinforcement: when a candidate genuinely meets a sub-criterion,
+ *    ASSIGN that band (one named anchor IS a 4–5; several anchors + a numeric prediction with a test HAVE
+ *    EARNED 8–9) — do not reserve the top out of caution. The cheap-to-fake FLOOR (0–3) is UNCHANGED, so this
+ *    lifts only EARNED work, never gamed/weak — a discrimination fix, not generosity.
  *
  * Target effect on the gold set: gamed candidates tank on grounding + falsification (no real evidence,
  * unfalsifiable) → near weak despite the polish; excellent candidates earn 8–9 on those axes (named anchors,
@@ -43,5 +49,13 @@ export const JUDGE_AXIS_CRITERIA_V4 =
   'subtype_check_pass = the candidate genuinely fits and fully populates its declared idea subtype. ' +
   'Cheap-to-fake signals earn NOTHING: length, confident tone, buzzword density, framework name-drops, and ' +
   'sweeping "paradigm / transform / exponential / antifragile" language are NOT evidence — a long, confident, ' +
-  'sourceless answer scores LOWER on grounding than a short answer with one checkable source. When uncertain, ' +
-  'score DOWN and name the missing evidence in the rationale.';
+  'sourceless answer scores LOWER on grounding than a short answer with one checkable source. ' +
+  'ASSIGN EARNED SCORES — do not be conservative about evidence that IS present: "earn up from 0" means START ' +
+  'low and RAISE for evidence, NOT cap evidenced work below the band its sub-criteria specify. When a ' +
+  'candidate genuinely meets an axis sub-criterion, ASSIGN that band and do not reserve the top: one named ' +
+  'checkable anchor on grounding IS a 4–5 (not 2–3); a candidate that names SEVERAL independent checkable ' +
+  'anchors AND gives a concrete numeric/operational prediction with a test HAS EARNED 8–9 on those axes — ' +
+  'assign it, do not withhold the high end out of general caution. Score BELOW a sub-criterion band only when ' +
+  'the evidence is genuinely thinner than the candidate claims — but the floor for cheap-to-fake work (no ' +
+  'named anchor, unfalsifiable, buzzwords) is UNCHANGED at 0–3. When uncertain whether a claimed source or ' +
+  'number is real, score DOWN and name the gap in the rationale.';

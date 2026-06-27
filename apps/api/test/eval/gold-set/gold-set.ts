@@ -162,25 +162,25 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce 30-day hospital readmissions for heart-failure patients via a cross-domain transfer (borrow a technique from a different field).',
     subtype: 'cross_domain_transfer',
     tier: 'good',
-    title: 'Borrowing aviation crew handoff briefings to cut heart-failure readmissions',
+    title: 'Aviation-style structured handoff bundles to cut heart-failure readmissions',
     summary:
-      'Heart-failure discharge handoffs lose critical context the way cockpit shift-changes once did, so we borrow the structured verbal briefing from commercial aviation crew resource management. At discharge, the inpatient team delivers a fixed-format spoken handoff (current weight, diuretic dose, red-flag symptoms, follow-up owner) to the patient and the receiving outpatient nurse, read back and confirmed. The mechanism is closing the information gap that drives early decompensation by making the transition a verified communication event rather than a paper packet. The main soft spot is that staff adherence to a scripted verbal protocol tends to decay once the novelty wears off, so the durable effect is uncertain.',
+      "Heart-failure readmissions cluster in the first 7-10 days after discharge, when medication reconciliation and follow-up scheduling fall through the cracks of an unstructured handoff. We transfer the structured-handoff discipline aviation uses at crew-change and the surgical-safety checklist model into the hospital-to-home transition: a fixed, role-assigned discharge bundle with a teach-back confirmation step and a scheduled 48-hour pharmacist call. The mechanism is closing the highest-risk reconciliation and follow-up gaps before they cause decompensation, rather than relying on a clinician's recall under time pressure. We would build it as a discharge-checklist module wired into the EHR discharge order set, with the pharmacist call as a tracked task. The likely failure mode is whether nurse and pharmacist staffing can sustain the added per-discharge minutes at scale.",
     claims: [
-      "Aviation crew resource management's structured read-back briefing maps onto the discharge handoff as a transferable technique because both are high-stakes context transfers across a shift boundary.",
-      'A confirmed verbal red-flag briefing at discharge will reduce 30-day heart-failure readmissions more than the standard printed discharge packet.',
-      'The effect comes from closing a known information-transfer gap, not from adding new clinical content.',
+      'A role-assigned, teach-back-confirmed discharge bundle modeled on aviation crew handoffs and the WHO Surgical Safety Checklist will reduce 30-day HF readmissions meaningfully more than usual discharge education alone.',
+      'The largest avoidable readmission driver in the first 10 days is medication-reconciliation and follow-up-scheduling failure, which a structured checklist closes at the point of discharge.',
+      'Embedding the bundle as an EHR discharge order-set module with a tracked 48-hour pharmacist call makes adherence auditable rather than dependent on clinician recall.',
     ],
     subtypePayload: {
-      sourceDomain: 'commercial aviation',
+      sourceDomain: 'Aviation / surgical safety',
       sourceTechnique:
-        'Crew Resource Management structured verbal handoff with read-back confirmation',
-      targetDomain: 'hospital discharge for heart-failure patients',
+        'Structured crew-change handoff protocols and the WHO Surgical Safety Checklist (fixed, role-assigned, read-and-confirm steps with explicit verbal confirmation)',
+      targetDomain: 'Hospital-to-home care transitions for heart-failure inpatients',
       targetProblem:
-        'context loss during the inpatient-to-outpatient transition that drives 30-day readmissions',
+        '30-day readmissions driven by unstructured, recall-dependent discharge handoffs',
       transferMapping:
-        'cockpit shift-change briefing -> discharge handoff; pilot read-back -> patient/nurse confirmation of red-flag symptoms and diuretic plan',
+        'Crew-change checklist -> discharge bundle; read-and-confirm callout -> patient teach-back confirmation; sterile-cockpit/timeout discipline -> a mandatory reconciliation step gating the discharge order; downstream-shift owner -> assigned 48-hour follow-up pharmacist',
       expectedMechanism:
-        'a verified verbal context transfer closes the information gap that lets early decompensation go unnoticed until readmission',
+        'Forcing the high-risk reconciliation and follow-up steps to completion at the handoff boundary removes the recall-under-time-pressure failure that drives early decompensation, the same way checklists removed omission errors in aviation and surgery.',
     },
     targetAxisScores: {
       grounding: 7,
@@ -191,7 +191,7 @@ export const GOLD_SET: GoldSetEntry[] = [
     },
     targetAcceptance: 0.66,
     scoreRationale:
-      'One named anchor (aviation Crew Resource Management); concrete mechanism (scripted read-back discharge briefing); directional falsifiable prediction (briefing beats printed packet) with no hard number; one soft spot (protocol adherence decay).',
+      'Two checkable anchors (aviation crew-handoff protocols; WHO Surgical Safety Checklist) + a clear comparative-magnitude prediction (reduces 30-day HF readmissions meaningfully more than usual discharge education) + one soft spot (nurse/pharmacist staffing minutes may not scale); no precise number or named trial, keeping it good not excellent.',
   },
   {
     problemId: 'readmissions',
@@ -343,36 +343,35 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Reduce contamination in residential curbside recycling (wrong items in the bin) via a cross-domain transfer.',
     subtype: 'cross_domain_transfer',
     tier: 'good',
-    title:
-      'Borrowing restaurant health-inspection grade cards to cut curbside recycling contamination',
+    title: 'Just-in-time point-of-disposal feedback to cut curbside recycling contamination',
     summary:
-      'Curbside recycling contamination persists because households get no visible, salient feedback on their own bin, so we borrow the public letter-grade placard from municipal restaurant health inspections. Collection-truck staff (or a quick spotter) tag each bin with a visible A/B/C grade card at pickup based on observed contamination, making household sorting quality a public, recurring signal rather than invisible. The mechanism is converting a private, consequence-free behavior into a socially visible one, which nudges sorting effort the same way grade cards changed restaurant hygiene. The main soft spot is the added labor cost of per-bin grading on a fast-moving collection route, which may not scale.',
+      "Residential recycling contamination is largely a moment-of-decision error: people guess wrong about a specific item at the bin, days before the truck arrives and any feedback could land. We transfer the just-in-time nudge pattern from energy-use feedback programs and the cart-tagging 'oops tag' inspection model into a tighter loop: route-truck or pre-collection contamination tagging combined with a household-specific 'top 3 wrong items' notice, so the correction reaches the resident close to the behavior and names the actual mistakes. The mechanism is converting a vague abstract rule into concrete, item-level, household-targeted feedback that overwrites the wrong mental model. We would build it as a contamination-tagging workflow for haulers plus a simple per-household notice generated from the tagged items. The open risk is whether tagging coverage and labor cost stay low enough for a city to run it on every route rather than spot routes.",
     claims: [
-      'Restaurant health-inspection grade cards transfer to recycling because both convert a hidden quality behavior into a publicly visible recurring signal that drives compliance.',
-      'Visible per-bin grade cards will reduce contamination more than mailed educational flyers about correct sorting.',
-      'The effect comes from social visibility and recurring feedback, not from teaching new sorting rules.',
+      "Household-specific, item-level contamination feedback delivered close to the disposal decision (cart tagging plus a 'top wrong items' notice) will cut contamination rates more than generic city-wide education campaigns.",
+      "Contamination is dominated by a small set of repeat 'wishcycling' items per household, so naming those specific items corrects the mental model far better than restating the general rules.",
+      'A hauler-side tagging workflow feeding a per-household notice makes the intervention targeted and repeatable without requiring new bins or sensors.',
     ],
     subtypePayload: {
-      sourceDomain: 'municipal public health',
-      sourceTechnique: 'publicly posted restaurant health-inspection letter grades',
-      targetDomain: 'residential curbside recycling',
-      targetProblem:
-        'high contamination from households that receive no salient feedback on their sorting quality',
+      sourceDomain: 'Residential energy conservation / behavioral feedback',
+      sourceTechnique:
+        "Just-in-time, personalized comparative feedback as used by Opower's home energy reports, paired with the cart-tagging 'oops tag' inspection model used in municipal recycling programs",
+      targetDomain: 'Residential curbside recycling',
+      targetProblem: 'High contamination from wrong-item disposal at the bin',
       transferMapping:
-        'restaurant storefront grade placard -> visible bin grade card at pickup; inspector observation -> collection-crew contamination spot-check',
+        "Personalized energy report -> per-household 'top 3 wrong items' notice; neighbor-comparison framing -> route/neighborhood contamination context; smart-meter signal -> hauler cart-tag inspection as the data source; periodic bill cadence -> per-collection-cycle feedback loop",
       expectedMechanism:
-        'making sorting quality publicly visible and recurring converts a consequence-free private behavior into a socially-nudged one',
+        "Delivering concrete, item-specific, household-targeted feedback near the decision point overwrites the incorrect 'this is probably recyclable' heuristic, the same mechanism by which personalized energy feedback durably shifted household consumption where generic appeals did not.",
     },
     targetAxisScores: {
       grounding: 7,
       novelty: 6,
       feasibility: 6,
-      falsification_survival: 7,
+      falsification_survival: 6,
       subtype_check_pass: 7,
     },
-    targetAcceptance: 0.66,
+    targetAcceptance: 0.64,
     scoreRationale:
-      'One named anchor (restaurant health-inspection grade cards); concrete mechanism (visible per-bin grade card at pickup); directional falsifiable prediction (grade cards beat mailed flyers) with no hard number; one soft spot (per-bin grading labor cost at scale).',
+      "Two checkable anchors (Opower personalized energy reports; municipal cart-tagging/'oops tag' inspection programs) + a clear comparative prediction (cuts contamination more than generic city-wide education) + one soft spot (tagging coverage/labor cost may not scale to every route); no precise threshold or named test, so good not excellent.",
   },
   {
     problemId: 'recycling',
@@ -536,40 +535,45 @@ export const GOLD_SET: GoldSetEntry[] = [
       'Propose a falsifiable thesis for WHERE AI coding agents create the most durable enterprise value over the next 18 months, grounded in current 2026 signals.',
     subtype: 'zeitgeist_synthesis',
     tier: 'good',
-    title: 'Durable AI-coding value lands in legacy migration, not greenfield',
+    title: 'Durable AI-coding value accrues to verifiable-boundary work, not greenfield authoring',
     summary:
-      "Over the next 18 months the most durable enterprise value from AI coding agents will come from legacy-system understanding and migration work, not net-new feature development. The thesis rests on the observation that AWS's Transform tooling has pushed agentic migration (mainframe, .NET, and Java upgrades) as a headline enterprise offering, signaling where buyers see hard-to-fake ROI. The build path is agents that ingest a legacy codebase, produce a verified behavioral spec, and generate an equivalent modern implementation with regression coverage. The main soft spot is the assumption that enterprises will trust agent-produced migrations enough to retire the original systems rather than running them in parallel indefinitely.",
+      'The durable enterprise value of AI coding agents over the next 18 months concentrates where the work has a tight, machine-checkable verification boundary - test-backed refactors, migrations, dependency and security upgrades, and CI-gated bug fixes - not in open-ended greenfield authoring where correctness is expensive to confirm. The 2026 signal is that enterprise adoption has shifted from inline autocomplete to agentic, PR-producing workflows gated by existing test and review infrastructure. The mechanism is economic: agents compound value where a cheap automated oracle can accept or reject their output, so the moat is the verification harness, not the model. We predict teams that invest in test coverage and CI gates will capture more durable agent productivity than teams chasing raw generation speed. The weak point is attributing the productivity to agents specifically rather than to the test/CI investment that would have helped regardless.',
     claims: [
-      'Durable AI-coding enterprise value concentrates in legacy comprehension and migration rather than greenfield feature work over the next 18 months.',
-      'Enterprises buying agentic migration tooling (e.g. AWS Transform) signal that legacy modernization is where verifiable ROI is, because the work is expensive and risky to do by hand.',
-      'Migration-focused agent products will show stronger enterprise retention than greenfield code-generation assistants over this window.',
+      'Over the next 18 months, AI coding agents will create the most durable enterprise value on verifiable-boundary tasks (migrations, test-backed refactors, dependency/security upgrades, CI-gated fixes), not greenfield feature authoring.',
+      'The binding constraint on captured value is the strength of the automated verification harness (tests + CI gates), so the durable moat sits in the harness rather than in the model itself.',
+      'Enterprises that invest in coverage and CI gating will sustain more agent-driven throughput than those optimizing for raw code-generation volume.',
     ],
     subtypePayload: {
       thesis:
-        'The most durable enterprise value from AI coding agents over the next 18 months comes from legacy-system comprehension and migration, not greenfield development.',
-      audience: 'enterprise platform and modernization buyers',
+        'Durable AI-coding enterprise value concentrates on tasks with a tight machine-checkable verification boundary; the moat is the verification harness, not the model.',
+      audience:
+        'Enterprise engineering leaders and platform/CTO-level buyers deciding where to invest in AI coding tooling',
       currentSignals: [
-        'AWS Transform positioning agentic mainframe/.NET/Java migration as a headline enterprise offering',
-        'enterprise buyers prioritizing modernization of aging systems over net-new build',
+        "GitHub's shift from inline Copilot autocomplete to agentic, PR-producing Copilot/coding-agent workflows that run inside existing CI and review gates",
+        "Anthropic's Claude Code adoption framing around test-and-verify agentic loops rather than one-shot generation",
+        'Enterprise emphasis on PR review, CI gating, and SWE-bench-style verifiable task benchmarks as the unit of agent evaluation',
       ],
       whyNow:
-        'agentic tooling has matured enough to read and re-express large legacy codebases, and a major cloud vendor is now selling migration as the flagship use case',
+        'By 2026 the bottleneck has moved from generation quality to trust: agents can produce plausible code faster than humans can verify it, so value accrues only where an automated oracle can cheaply accept or reject the output.',
       falsifiablePredictions: [
-        'migration-focused agent products will show stronger enterprise retention than greenfield code-generation assistants over the next 18 months',
-        'enterprise modernization spend on agentic tooling will grow faster than spend on greenfield AI coding assistants',
+        'Within 18 months, enterprise agent usage will skew more toward verifiable-boundary work (migrations, refactors, upgrades, CI-gated fixes) than toward greenfield authoring, measured by where merged agent-authored PRs land.',
+        'Teams with stronger test/CI harnesses will report meaningfully higher sustained merge rates for agent-authored PRs than teams without, more so than any difference explained by model choice.',
       ],
-      comparablePriorArt: ['AWS Transform (agentic legacy migration)'],
+      comparablePriorArt: [
+        'The DevOps/CI-CD shift, where durable value accrued to teams that built deployment and test automation rather than to those that just wrote more code',
+        'Compiler and static-analysis adoption, where the verifiable feedback loop (not raw authoring speed) was what made the tooling durably valuable',
+      ],
     },
     targetAxisScores: {
-      grounding: 7,
+      grounding: 6,
       novelty: 6,
-      feasibility: 6,
+      feasibility: 7,
       falsification_survival: 7,
       subtype_check_pass: 7,
     },
     targetAcceptance: 0.66,
     scoreRationale:
-      'One named anchor (AWS Transform); concrete mechanism (ingest legacy -> verified behavioral spec -> modern reimplementation with regression coverage); directional falsifiable prediction (migration agents beat greenfield assistants on retention) with no hard number; one soft spot (assumes enterprises trust agent migrations enough to retire originals).',
+      "Two checkable anchors (GitHub's Copilot autocomplete-to-agentic-PR shift; Anthropic Claude Code test-and-verify framing) + a clear comparative prediction (agent value skews to verifiable-boundary work over greenfield, and harness-strong teams sustain higher merge rates) + one soft spot (hard to attribute the gain to agents vs. the test/CI investment itself); no precise numeric threshold plus named test, keeping it good not excellent.",
   },
   {
     problemId: 'ai-coding-value',
