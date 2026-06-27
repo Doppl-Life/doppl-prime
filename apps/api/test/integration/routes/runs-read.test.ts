@@ -55,6 +55,19 @@ async function seedRun(runId: string): Promise<void> {
   await store.append(ev(runId, 7, 'run.completed'));
 }
 
+/** Islands pivot A3 — a run tagged to a case study (caseStudyId on run.configured) that crowns one doppel. */
+async function seedCaseStudyRun(runId: string, caseStudyId: string): Promise<void> {
+  await store.append(
+    ev(runId, 0, 'run.configured', { payload: { seed: `scn-${runId}`, caseStudyId, rngSeed: 1 } }),
+  );
+  await store.append(ev(runId, 1, 'candidate.created', { payload: validCandidateIdeaCrossDomain }));
+  await store.append(
+    ev(runId, 2, 'run.completed', {
+      payload: { from: 'running', to: 'completed', finalIdeaRefs: ['cand_1'] },
+    }),
+  );
+}
+
 function makeApp() {
   return buildServer({
     store,
@@ -110,6 +123,42 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
         const cur = runs[i]!.createdAt;
         if (prev !== null && cur !== null) expect(prev >= cur).toBe(true);
       }
+    } finally {
+      await app.close();
+    }
+  });
+
+  // Islands pivot A3 — GET /case-studies/:id/graph groups the runs that carry the caseStudyId (JOIN on the
+  // run.configured payload) and each run's doppels; runs of OTHER case studies are excluded.
+  test('test_get_case_study_graph_groups_runs_and_doppels', async () => {
+    await seedCaseStudyRun('cs-run-1', 'cs_demo');
+    await seedCaseStudyRun('cs-run-2', 'cs_demo');
+    await seedCaseStudyRun('cs-other', 'cs_unrelated');
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/case-studies/cs_demo/graph' });
+      expect(res.statusCode).toBe(200);
+      const graph = res.json() as {
+        caseStudyId: string;
+        runs: { runId: string; doppels: { candidateId: string }[] }[];
+      };
+      expect(graph.caseStudyId).toBe('cs_demo');
+      expect(graph.runs.map((r) => r.runId).sort()).toEqual(['cs-run-1', 'cs-run-2']); // not cs-other
+      expect(graph.runs.every((r) => r.doppels.length === 1)).toBe(true); // each crowned one doppel
+    } finally {
+      await app.close();
+    }
+  });
+
+  // An unknown / run-less caseStudyId → a valid EMPTY graph (200, runs:[]), not a 404.
+  test('test_get_case_study_graph_unknown_id_empty', async () => {
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'GET', url: '/case-studies/cs_nonexistent/graph' });
+      expect(res.statusCode).toBe(200);
+      expect((res.json() as { runs: unknown[] }).runs).toEqual([]);
     } finally {
       await app.close();
     }

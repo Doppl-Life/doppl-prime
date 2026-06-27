@@ -53,6 +53,62 @@ describe('winnerReducer — marks the run.completed finalIdeaRef candidate selec
     expect(state.candidateIdeas['cand_1']?.status).toBe('selected');
   });
 
+  // Islands pivot A2 — multi-winner: run.completed.finalIdeaRefs[] marks EACH crowned candidate 'selected'.
+  test('test_finalIdeaRefs_marks_all_winners_selected', () => {
+    const { state } = buildCurrentState([
+      makeRow('candidate.created', { runId: 'run_1', sequence: 0, payload: scoredCandidate }),
+      makeRow('candidate.created', {
+        runId: 'run_1',
+        sequence: 1,
+        payload: { ...validCandidateIdeaCrossDomain, id: 'cand_2', status: 'scored' },
+      }),
+      makeRow('run.completed', {
+        runId: 'run_1',
+        sequence: 2,
+        payload: { from: 'running', to: 'completed', finalIdeaRefs: ['cand_1', 'cand_2'] },
+      }),
+    ]);
+    expect(state.candidateIdeas['cand_1']?.status).toBe('selected');
+    expect(state.candidateIdeas['cand_2']?.status).toBe('selected');
+  });
+
+  // finalIdeaRefs[] (the multi-winner field) is PREFERRED over the singular finalIdeaRef when both are present.
+  test('test_finalIdeaRefs_preferred_over_singular', () => {
+    const { state } = buildCurrentState([
+      makeRow('candidate.created', { runId: 'run_1', sequence: 0, payload: scoredCandidate }),
+      makeRow('candidate.created', {
+        runId: 'run_1',
+        sequence: 1,
+        payload: { ...validCandidateIdeaCrossDomain, id: 'cand_2', status: 'scored' },
+      }),
+      makeRow('run.completed', {
+        runId: 'run_1',
+        sequence: 2,
+        payload: {
+          from: 'running',
+          to: 'completed',
+          finalIdeaRef: 'cand_1',
+          finalIdeaRefs: ['cand_2'],
+        },
+      }),
+    ]);
+    expect(state.candidateIdeas['cand_2']?.status).toBe('selected');
+    expect(state.candidateIdeas['cand_1']?.status).toBe('scored'); // array preferred → cand_1 not crowned
+  });
+
+  // An empty finalIdeaRefs:[] (survivors existed but none cleared the crowning floor) marks NO winner.
+  test('test_empty_finalIdeaRefs_marks_no_winner', () => {
+    const { state } = buildCurrentState([
+      makeRow('candidate.created', { runId: 'run_1', sequence: 0, payload: scoredCandidate }),
+      makeRow('run.completed', {
+        runId: 'run_1',
+        sequence: 1,
+        payload: { from: 'running', to: 'completed', finalIdeaRefs: [] },
+      }),
+    ]);
+    expect(Object.values(state.candidateIdeas).some((c) => c.status === 'selected')).toBe(false);
+  });
+
   // rule #6 / §3 — no fabrication: a run.completed with no finalIdeaRef marks no winner (the PD.7
   // terminal zero-survivors path stays honest).
   test('test_no_finalIdeaRef_marks_no_winner', () => {

@@ -1109,6 +1109,7 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       to: verdict.status,
       ...(verdict.reason !== undefined ? { reason: verdict.reason } : {}),
       ...(verdict.finalIdeaRef !== undefined ? { finalIdeaRef: verdict.finalIdeaRef } : {}),
+      ...(verdict.finalIdeaRefs !== undefined ? { finalIdeaRefs: verdict.finalIdeaRefs } : {}),
       ...(verdict.partialSummary !== undefined ? { partialSummary: verdict.partialSummary } : {}),
     });
   }

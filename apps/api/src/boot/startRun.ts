@@ -7,6 +7,25 @@ import { runWorker } from '../runtime';
 import { composeRunWorkerDeps } from './composeRuntime';
 
 /**
+ * extractRunConfig — reconstruct the strict `RunConfig` from a `run.configured` payload, TOLERATING extra
+ * run-level metadata keys the payload may carry alongside the config (Islands pivot Increment A: the route
+ * rides `caseStudyId` on the generic run.configured payload, §107, zero contract bump). `RunConfig` is a
+ * strict object, so a raw `safeParse` of the whole payload would REJECT the extra key; instead we pick only
+ * `RunConfig`'s own fields before parsing. Generic over any future run-level metadata. Pure. Returns
+ * `undefined` when the payload isn't an object or the picked fields don't form a valid RunConfig.
+ */
+export function extractRunConfig(payload: unknown): RunConfig | undefined {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
+  const record = payload as Record<string, unknown>;
+  const configFields: Record<string, unknown> = {};
+  for (const key of Object.keys(RunConfig.shape)) {
+    if (key in record) configFields[key] = record[key];
+  }
+  const parsed = RunConfig.safeParse(configFields);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/**
  * readRecordedConfig — read the operator's RECORDED `RunConfig` from the run's authoritative
  * `run.configured` event (the route appended the validated config there). Returns `undefined` when absent
  * or unparseable → the caller falls back to the boot config (defensive; the worker's idempotency already
@@ -19,8 +38,7 @@ async function readRecordedConfig(
   const rows = await store.readByRun(runId);
   const configured = rows.find((row) => row.type === 'run.configured');
   if (configured === undefined) return undefined;
-  const parsed = RunConfig.safeParse(configured.payload);
-  return parsed.success ? parsed.data : undefined;
+  return extractRunConfig(configured.payload);
 }
 
 /**
