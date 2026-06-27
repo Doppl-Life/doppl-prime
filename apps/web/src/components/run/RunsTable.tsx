@@ -63,7 +63,7 @@ const table: CSSProperties = {
 };
 /** Column widths (% — token-exempt geometry): accent rail · # · id · time · problem · final idea ·
  *  status · candidate meter · activity · action. Problem + Final idea keep the lion's share. */
-const COLS: readonly string[] = ['1%', '3%', '9%', '8%', '23%', '23%', '11%', '13%', '4%', '5%'];
+const COLS: readonly string[] = ['1%', '3%', '8%', '7%', '22%', '22%', '10%', '12%', '8%', '7%'];
 const COL_COUNT = COLS.length;
 
 const th: CSSProperties = {
@@ -131,10 +131,12 @@ const meterTrack: CSSProperties = {
   overflow: 'hidden',
 };
 const activityCell: CSSProperties = {
-  ...tdNum,
-  whiteSpace: 'nowrap',
+  ...td,
+  fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-mono)',
   color: 'var(--fg-faint)',
+  whiteSpace: 'nowrap',
+  letterSpacing: '0.04em',
 };
 
 function maxCandidates(runs: readonly RunSummary[]): number {
@@ -169,7 +171,7 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
           <th style={th} title="generations completed · candidates created">
             Progress
           </th>
-          <th style={thRight} title="reproductions · culls · mutations">
+          <th style={th} title="reproductions · culls · mutations">
             Activity
           </th>
           <th style={th}>Action</th>
