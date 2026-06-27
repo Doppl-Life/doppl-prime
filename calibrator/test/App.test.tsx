@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,13 +46,13 @@ const fixture: CalibratorIndex = {
         },
         {
           case_id: "fsd-accident-economy",
-          problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+          problem_recovery_id:
+            "dalton-fsd-accident-economy-001__problem_recovery",
           title: "Crash-Volume Revenue Dependency",
           source_type: "kernel",
           source_status: "imported",
           kernel: "dalton",
-          body:
-            "# Imported recovered problem body\n\nTRACE ### CASE STUDY · SYNOPSIS\n\nFTC reports on algorithmic bias <span class=\"arrow\"-> field: xai-frameworks</span>\n\nGROWTH — PROBLEM RECOVERY ### CLAIM MANUAL UNDERWRITING IS TOO SLOW\n\nThe recovered problem is visible.",
+          body: '# Imported recovered problem body\n\nTRACE ### CASE STUDY · SYNOPSIS\n\nFTC reports on algorithmic bias <span class="arrow"-> field: xai-frameworks</span>\n\nGROWTH — PROBLEM RECOVERY ### CLAIM MANUAL UNDERWRITING IS TOO SLOW\n\nThe recovered problem is visible.',
           human_ratings: [],
         },
       ],
@@ -107,7 +113,9 @@ const fixture: CalibratorIndex = {
   ],
 };
 
-async function waitForReviewWorkspace(name = "Crash-Volume Revenue Dependency") {
+async function waitForReviewWorkspace(
+  name = "Crash-Volume Revenue Dependency",
+) {
   return screen.findByRole("heading", { name });
 }
 
@@ -115,7 +123,10 @@ describe("App", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "/calibrator/");
     window.localStorage.clear();
-    window.localStorage.setItem("doppl-calibrator-reviewer-email", "dalton.dinderman@challenger.gauntletai.com");
+    window.localStorage.setItem(
+      "doppl-calibrator-reviewer-email",
+      "dalton.dinderman@challenger.gauntletai.com",
+    );
     delete window.DOPPL_CALIBRATOR_CONFIG;
     vi.stubGlobal(
       "fetch",
@@ -127,7 +138,8 @@ describe("App", () => {
           return new Response(
             JSON.stringify({
               ratingId: "rating_test",
-              relativePath: "calibration-vault/cases/fsd-accident-economy/ratings/rating_test.md",
+              relativePath:
+                "calibration-vault/cases/fsd-accident-economy/ratings/rating_test.md",
             }),
             { status: 201 },
           );
@@ -145,15 +157,24 @@ describe("App", () => {
 
   it("renders the hidden Agora route without reviewer login", async () => {
     window.localStorage.clear();
-    window.history.pushState({}, "", `${window.location.origin}/calibrator/agora/`);
+    window.history.pushState(
+      {},
+      "",
+      `${window.location.origin}/calibrator/agora/`,
+    );
     const agoraFixture: CalibratorIndex = structuredClone(fixture);
-    agoraFixture.cases[0].problem_recoveries[1].scores = { judge: 1, human: 4, n: 2 };
+    agoraFixture.cases[0].problem_recoveries[1].scores = {
+      judge: 1,
+      human: 4,
+      n: 2,
+    };
     agoraFixture.cases[0].problem_recoveries[1].human_ratings = [
       {
         rating_id: "rating_agora_1",
         rating_target: "problem_recovery",
         case_id: "fsd-accident-economy",
-        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        problem_recovery_id:
+          "dalton-fsd-accident-economy-001__problem_recovery",
         score: 4,
         reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
         submitted_at: "2026-06-25T12:00:00.000Z",
@@ -164,7 +185,8 @@ describe("App", () => {
         rating_id: "rating_agora_2",
         rating_target: "problem_recovery",
         case_id: "fsd-accident-economy",
-        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        problem_recovery_id:
+          "dalton-fsd-accident-economy-001__problem_recovery",
         score: 5,
         reviewer_email: "cody.clayton@challenger.gauntletai.com",
         submitted_at: "2026-06-25T12:01:00.000Z",
@@ -172,11 +194,14 @@ describe("App", () => {
         body: "",
       },
     ];
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(agoraFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(agoraFixture), { status: 200 });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
 
@@ -184,7 +209,9 @@ describe("App", () => {
     expect(await screen.findByText("Score map")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Agora" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Crash-Volume Revenue Dependency").length).toBeGreaterThan(1);
+    expect(
+      screen.getAllByText("Crash-Volume Revenue Dependency").length,
+    ).toBeGreaterThan(1);
     expect(screen.getAllByText("Judge missed").length).toBeGreaterThan(1);
     expect(screen.getByText("Human ratings")).toBeInTheDocument();
     expect(screen.getByText("Comparison table")).toBeInTheDocument();
@@ -194,40 +221,89 @@ describe("App", () => {
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Problem recoveries" })).toHaveClass("active");
-    expect(screen.getByText(/Rate how useful this problem recovery is for understanding or solving the case/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Problem recoveries" }),
+    ).toHaveClass("active");
+    expect(
+      screen.getByText(
+        /Rate how useful this problem recovery is for understanding or solving the case/,
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("Choose a case")).toBeInTheDocument();
     expect(screen.getByText("Read the problem recovery")).toBeInTheDocument();
-    expect(screen.getByText("Score usefulness from -5 to +5")).toBeInTheDocument();
-    expect(screen.getByText("Problem recoveries are judged on whether they frame the important hidden problem clearly and usefully.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Score usefulness from -5 to +5"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Problem recoveries are judged on whether they frame the important hidden problem clearly and usefully.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("-5 misleading")).toBeInTheDocument();
     expect(screen.getByText("0 neutral")).toBeInTheDocument();
     expect(screen.getByText("+5 highly useful")).toBeInTheDocument();
-    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
-    expect(screen.getByLabelText("Problem recovery")).not.toHaveTextContent("Accident-Economy Transition Ledger");
-    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
-    expect(screen.getByLabelText("Doppl")).toHaveTextContent("Accident-Economy Transition Ledger");
-    expect(screen.getByLabelText("Doppl")).not.toHaveTextContent("Crash Substrate Exposure Map");
-    expect(screen.getByText(/Rate how useful this doppl is for understanding or solving the case/)).toBeInTheDocument();
-    expect(screen.getByText("Read the doppl")).toBeInTheDocument();
-    expect(screen.getByText("Doppls are judged on whether they offer a useful finding, implication, or solution path.")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Problem recoveries" }));
-    expect(screen.getByLabelText("Case study: When the Crashes Don't Come")).toHaveTextContent(
-      "Case Study: When the Crashes Don't Come",
+    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent(
+      "Crash-Volume Revenue Dependency",
     );
+    expect(screen.getByLabelText("Problem recovery")).not.toHaveTextContent(
+      "Accident-Economy Transition Ledger",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
+    expect(screen.getByLabelText("Doppl")).toHaveTextContent(
+      "Accident-Economy Transition Ledger",
+    );
+    expect(screen.getByLabelText("Doppl")).not.toHaveTextContent(
+      "Crash Substrate Exposure Map",
+    );
+    expect(
+      screen.getByText(
+        /Rate how useful this doppl is for understanding or solving the case/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Read the doppl")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Doppls are judged on whether they offer a useful finding, implication, or solution path.",
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Problem recoveries" }),
+    );
+    expect(
+      screen.getByLabelText("Case study: When the Crashes Don't Come"),
+    ).toHaveTextContent("When the Crashes Don't Come");
+    expect(
+      screen.getByLabelText("Case study: When the Crashes Don't Come"),
+    ).not.toHaveTextContent("Case Study:");
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Include audit artifacts")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Current review status")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Include audit artifacts"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Current review status"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Vault")).not.toBeInTheDocument();
     expect(screen.queryByText("1 case")).not.toBeInTheDocument();
-    expect(screen.queryByText("Seeded representative artifact.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Seeded representative artifact."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("investigate")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Notes")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Next unrated" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Calibrator" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Next unrated" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Calibrator" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    ).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    expect(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    ).toBeEnabled();
   });
 
   it("focuses the reading surface on only the selected artifact", async () => {
@@ -235,102 +311,137 @@ describe("App", () => {
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.queryByText("Parent Problem Recovery")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Crash-Volume Revenue Dependency" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
-    expect(screen.queryByText("The recovered problem is visible.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Parent Problem Recovery"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Crash-Volume Revenue Dependency",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Accident-Economy Transition Ledger",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("The recovered problem is visible."),
+    ).not.toBeInTheDocument();
   });
 
   it("summarizes an aGarden-backed index by rateable cases only", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") {
-        return new Response(
-          JSON.stringify({
-            ...fixture,
-            source_kind: "agarden",
-            cases: [
-              ...fixture.cases,
-              {
-                case_id: "houston-baggage-claim-complaints-57251c2c",
-                title: "Houston Baggage Claim Complaints",
-                visibility: "internal",
-                source_paths: [],
-                body: "# Houston",
-                problem: { body: "# Context", source: "agarden" },
-                problem_recoveries: [],
-                solutions: [],
-              },
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response(
+            JSON.stringify({
+              ...fixture,
+              source_kind: "agarden",
+              cases: [
+                ...fixture.cases,
+                {
+                  case_id: "houston-baggage-claim-complaints-57251c2c",
+                  title: "Houston Baggage Claim Complaints",
+                  visibility: "internal",
+                  source_paths: [],
+                  body: "# Houston",
+                  problem: { body: "# Context", source: "agarden" },
+                  problem_recoveries: [],
+                  solutions: [],
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     expect(screen.queryByText("aGarden")).not.toBeInTheDocument();
     expect(screen.queryByText("1 case")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
+    expect(screen.getByLabelText("Case study")).not.toHaveTextContent(
+      "Houston Baggage Claim Complaints",
+    );
   });
 
   it("hides empty aGarden cases so reviewers only see rateable work", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") {
-        return new Response(
-          JSON.stringify({
-            ...fixture,
-            source_kind: "agarden",
-            cases: [
-              {
-                case_id: "houston-baggage-claim-complaints-57251c2c",
-                title: "Houston Baggage Claim Complaints",
-                visibility: "internal",
-                source_paths: [],
-                body: "# Houston",
-                problem: { body: "# Context", source: "agarden" },
-                problem_recoveries: [],
-                solutions: [],
-              },
-              ...fixture.cases,
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response(
+            JSON.stringify({
+              ...fixture,
+              source_kind: "agarden",
+              cases: [
+                {
+                  case_id: "houston-baggage-claim-complaints-57251c2c",
+                  title: "Houston Baggage Claim Complaints",
+                  visibility: "internal",
+                  source_paths: [],
+                  body: "# Houston",
+                  problem: { body: "# Context", source: "agarden" },
+                  problem_recoveries: [],
+                  solutions: [],
+                },
+                ...fixture.cases,
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
-    expect(screen.getByLabelText("Case study")).toHaveValue("fsd-accident-economy");
-    expect(screen.getByLabelText("Case study")).not.toHaveTextContent("Houston Baggage Claim Complaints");
-    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent("Crash-Volume Revenue Dependency");
+    expect(screen.getByLabelText("Case study")).toHaveValue(
+      "fsd-accident-economy",
+    );
+    expect(screen.getByLabelText("Case study")).not.toHaveTextContent(
+      "Houston Baggage Claim Complaints",
+    );
+    expect(screen.getByLabelText("Problem recovery")).toHaveTextContent(
+      "Crash-Volume Revenue Dependency",
+    );
   });
 
   it("gates the calibrator behind a valid reviewer email", async () => {
     window.localStorage.clear();
     render(<App />);
     const reviewerInput = await screen.findByLabelText("Reviewer email");
-    expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Matching reviewers"),
+    ).not.toBeInTheDocument();
     await userEvent.type(reviewerInput, "melissa");
-    expect(screen.queryByLabelText("Matching reviewers")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Matching reviewers"),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByLabelText("Reviewer email")).toBeInTheDocument();
-    expect(screen.getByText("Enter a valid email address to continue.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Enter a valid email address to continue."),
+    ).toBeInTheDocument();
     await userEvent.clear(reviewerInput);
     await userEvent.type(reviewerInput, "outside@example.com");
-    expect(screen.queryByText("Enter a valid email address to continue.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Enter a valid email address to continue."),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
   });
 
   it("loads the previously selected rater from local storage", async () => {
-    window.localStorage.setItem("doppl-calibrator-reviewer-email", "cody.clayton@challenger.gauntletai.com");
+    window.localStorage.setItem(
+      "doppl-calibrator-reviewer-email",
+      "cody.clayton@challenger.gauntletai.com",
+    );
     render(<App />);
     await waitForReviewWorkspace();
     expect(screen.queryByLabelText("Reviewer email")).not.toBeInTheDocument();
@@ -341,14 +452,30 @@ describe("App", () => {
   it("moves to the next unrated artifact after a successful submit", async () => {
     render(<App />);
     await waitForReviewWorkspace();
-    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
     });
-    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Doppl")).toHaveValue("dalton-fsd-accident-economy-001__solution");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", {
+          name: "Accident-Economy Transition Ledger",
+        }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("heading", {
+        name: "Accident-Economy Transition Ledger",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Doppl")).toHaveValue(
+      "dalton-fsd-accident-economy-001__solution",
+    );
   });
 
   it("shows the selected reviewer's existing rating and skips items they already rated", async () => {
@@ -358,7 +485,8 @@ describe("App", () => {
         rating_id: "rating_dalton_pr",
         rating_target: "problem_recovery",
         case_id: "fsd-accident-economy",
-        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        problem_recovery_id:
+          "dalton-fsd-accident-economy-001__problem_recovery",
         score: 3,
         reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
         submitted_at: "2026-06-24T12:00:00.000Z",
@@ -366,35 +494,63 @@ describe("App", () => {
         body: "Useful.",
       },
     ];
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(personalizedFixture), { status: 200 });
-      if (url === "/api/ratings") return new Response(JSON.stringify({ ratingId: "rating_test" }), { status: 201 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(personalizedFixture), {
+            status: 200,
+          });
+        if (url === "/api/ratings")
+          return new Response(JSON.stringify({ ratingId: "rating_test" }), {
+            status: 201,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
 
-    expect(screen.getByText("Your current rating for this item is +3.")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "3" } });
-    await userEvent.click(screen.getByRole("button", { name: "Update problem recovery rating" }));
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Your current rating for this item is +3."),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "3" },
     });
-    expect(screen.getByRole("heading", { name: "Accident-Economy Transition Ledger" })).toBeInTheDocument();
-    expect(screen.getByText("You have not rated this item yet.")).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Update problem recovery rating" }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", {
+          name: "Accident-Economy Transition Ledger",
+        }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("heading", {
+        name: "Accident-Economy Transition Ledger",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("You have not rated this item yet."),
+    ).toBeInTheDocument();
   });
 
   it("clears a hydrated score when switching to a reviewer who has not rated the artifact", async () => {
-    window.localStorage.setItem("doppl-calibrator-reviewer-email", "cody.clayton@challenger.gauntletai.com");
+    window.localStorage.setItem(
+      "doppl-calibrator-reviewer-email",
+      "cody.clayton@challenger.gauntletai.com",
+    );
     const personalizedFixture: CalibratorIndex = structuredClone(fixture);
     personalizedFixture.cases[0].problem_recoveries[1].human_ratings = [
       {
         rating_id: "rating_dalton_pr",
         rating_target: "problem_recovery",
         case_id: "fsd-accident-economy",
-        problem_recovery_id: "dalton-fsd-accident-economy-001__problem_recovery",
+        problem_recovery_id:
+          "dalton-fsd-accident-economy-001__problem_recovery",
         score: 3,
         reviewer_email: "dalton.dinderman@challenger.gauntletai.com",
         submitted_at: "2026-06-24T12:00:00.000Z",
@@ -402,28 +558,45 @@ describe("App", () => {
         body: "Useful.",
       },
     ];
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(personalizedFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(personalizedFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
-    expect(screen.getByText("You have not rated this item yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("You have not rated this item yet."),
+    ).toBeInTheDocument();
     expect(screen.getByText("No score selected")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    ).toBeDisabled();
   });
 
   it("formats compressed aGarden artifact markdown as readable sections", async () => {
     render(<App />);
     await waitForReviewWorkspace();
-    expect(screen.getByRole("button", { name: "Trace" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("FTC reports on algorithmic bias -> field: xai-frameworks")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Trace" }));
-    expect(screen.queryByRole("heading", { name: "Growth — Problem recovery" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Claim Manual Underwriting Is Too Slow" })).toBeInTheDocument();
-    expect(screen.getByText("FTC reports on algorithmic bias -> field: xai-frameworks")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Trace" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Growth — Problem recovery" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Claim Manual Underwriting Is Too Slow",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "FTC reports on algorithmic bias -> field: xai-frameworks",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/span class/)).not.toBeInTheDocument();
     for (const heading of screen.getAllByRole("heading")) {
       expect(heading.textContent).not.toContain("#");
@@ -450,28 +623,149 @@ describe("App", () => {
       "Novelty +4 78% of language absent from the seed.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(listFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(listFixture), { status: 200 });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByRole("heading", { name: "Implications:" })).toBeInTheDocument();
     expect(
-      screen.getByText("Auto Loan Default Prediction Models Lose Predictive Validity Without Depreciation/Collateral Proxies"),
+      screen.getByRole("heading", { name: "Implications:" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Consumer Lending Shifts From Asset-Backed To Behavior-Based Underwriting Frameworks"),
+      screen.getByText(
+        "Auto Loan Default Prediction Models Lose Predictive Validity Without Depreciation/Collateral Proxies",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Opportunities:" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Sprouts:" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Consumer Lending Shifts From Asset-Backed To Behavior-Based Underwriting Frameworks",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Opportunities:" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sprouts:" }),
+    ).toBeInTheDocument();
   });
 
-  it("shows judge evaluation behind a collapsed toggle", async () => {
+  it("formats compressed problem recovery fields as cards, emphasis, and lists", async () => {
+    const problemFixture: CalibratorIndex = structuredClone(fixture);
+    problemFixture.cases[0].problem_recoveries[1].body = [
+      "# Liquidity Bridge via Mobility-Backed Bonds",
+      "",
+      "## Growth — Problem Recovery",
+      "",
+      "Surface Complaint Immediate Revenue Cliff Causes Service Cuts And Credit Downgrades Before Ruc Matures Deleted Assumption Revenue Replacement Must Be Immediate And Operationally Identical To Legacy Streams Hidden Variable Fiscal Transition Lags Create Liquidity Gaps That Markets Price As Insolvency Risk, Triggering Self-Fulfilling Credit Crises Actual Problem Municipalities Face A Timing Mismatch Between Revenue Collapse And Ruc Implementation, Triggering Market Panic And Borrowing Cost Spikes That Worsen The Fiscal Cliff Candidate Response Issue Automated-Mobility-Backed Municipal Bonds To Bridge The 3-Year Transition Gap, Repaid By Future Ruc Streams With Smart Contract Escrow",
+      "",
+      "Candidate Response",
+      "This standalone candidate response should also stay hidden.",
+      "",
+      "Skin In The Game - Treasury Departments - Credit Rating Agencies - Av Investors - Bondholders Sprouts - Revenue Anticipation Notes Tied To Fleet Adoption Milestones - Smart Contract Payment Escrows - Credit Default Swaps For Mobility Risk Hedging",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(problemFixture), { status: 200 });
+        return new Response("not found", { status: 404 });
+      },
+    );
+
+    render(<App />);
+    await waitForReviewWorkspace();
+
+    expect(
+      screen.getByRole("heading", { name: "Surface complaint" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Deleted assumption" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Hidden variable" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Actual problem:" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Municipalities Face A Timing Mismatch Between Revenue Collapse/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Candidate Response/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Automated-Mobility-Backed Municipal Bonds/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/standalone candidate response/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Skin in the Game:" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Treasury Departments")).toBeInTheDocument();
+    expect(screen.getByText("Credit Rating Agencies")).toBeInTheDocument();
+    expect(screen.getByText("AV Investors")).toBeInTheDocument();
+    expect(screen.getByText("Bondholders")).toBeInTheDocument();
+  });
+
+  it("shows trace but keeps discovery collapsed until opened", async () => {
+    const discoveryFixture: CalibratorIndex = structuredClone(fixture);
+    discoveryFixture.cases[0].problem_recoveries[1].body = [
+      "# Crash-Volume Revenue Dependency",
+      "",
+      "TRACE",
+      "Case study · Synopsis",
+      "",
+      "Crash frequency anchors the visible economics.",
+      "",
+      "DISCOVERY",
+      "Finding 1",
+      "",
+      "Hidden discovery evidence should start collapsed.",
+      "",
+      "GROWTH — PROBLEM RECOVERY",
+      "",
+      "Actual Problem Crash revenue dependence creates transition risk.",
+    ].join("\n");
+
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(discoveryFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
+
+    render(<App />);
+    await waitForReviewWorkspace();
+
+    expect(
+      screen.getByText("Crash frequency anchors the visible economics."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Hidden discovery evidence should start collapsed."),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Discovery +" }));
+
+    expect(
+      screen.getByText("Hidden discovery evidence should start collapsed."),
+    ).toBeInTheDocument();
+  });
+
+  it("removes judge evaluation from the review surface", async () => {
     const evaluationFixture: CalibratorIndex = structuredClone(fixture);
     evaluationFixture.cases[0].solutions[0].body = [
       "# Mobility Financialization",
@@ -483,24 +777,34 @@ describe("App", () => {
       "Novelty +4 78% of language absent from the seed.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("Novelty +4 78% of language absent from the seed.")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
-    expect(screen.getByText("Novelty +4 78% of language absent from the seed.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Novelty +4 78% of language absent from the seed."),
+    ).not.toBeInTheDocument();
   });
 
   it("hides judge evaluation entirely for ordinary reviewers", async () => {
-    window.localStorage.setItem("doppl-calibrator-reviewer-email", "adam.foosaner@challenger.gauntletai.com");
+    window.localStorage.setItem(
+      "doppl-calibrator-reviewer-email",
+      "adam.foosaner@challenger.gauntletai.com",
+    );
     const evaluationFixture: CalibratorIndex = structuredClone(fixture);
     evaluationFixture.cases[0].solutions[0].body = [
       "# Mobility Financialization",
@@ -512,18 +816,27 @@ describe("App", () => {
       "Novelty +4 78% of language absent from the seed.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.queryByRole("button", { name: "Judge evaluation" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Novelty +4 78% of language absent from the seed.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Novelty +4 78% of language absent from the seed."),
+    ).not.toBeInTheDocument();
   });
 
   it("collapses plain generated Evaluation labels by default", async () => {
@@ -543,19 +856,32 @@ describe("App", () => {
       "73% of language absent from the seed; 3 dependency markers.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByText("Specialty Auto Captives Must Renegotiate Treaty Triggers Or Face Insolvency")).toBeInTheDocument();
-    expect(screen.getByText("Traditional P&C Insurers Will Misprice Autonomy Risk")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.getByText(
+        "Specialty Auto Captives Must Renegotiate Treaty Triggers Or Face Insolvency",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Traditional P&C Insurers Will Misprice Autonomy Risk"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Novelty +3")).not.toBeInTheDocument();
   });
 
@@ -578,23 +904,34 @@ describe("App", () => {
       "next: null",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByText(/Implications - Dot Budgets Decouple From Fuel-Tax Yields/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/70% of language absent from the seed/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Dot Budgets Decouple From Fuel-Tax Yields"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/70% of language absent from the seed/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("next: null")).not.toBeInTheDocument();
   });
 
-  it("resets judge evaluation to collapsed when switching artifacts", async () => {
+  it("keeps judge evaluation hidden when switching artifacts", async () => {
     const evaluationFixture: CalibratorIndex = structuredClone(fixture);
     evaluationFixture.cases[0].solutions[0].body = [
       "# Liability Inversion Protocol",
@@ -618,24 +955,42 @@ describe("App", () => {
       "Second hidden evaluation.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
-    await userEvent.click(screen.getByRole("button", { name: "Judge evaluation" }));
 
-    expect(screen.getByText(/First Hidden Evaluation/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/First Hidden Evaluation/),
+    ).not.toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "cody-accident-economy-map");
+    await userEvent.selectOptions(
+      screen.getByLabelText("Doppl"),
+      "cody-accident-economy-map",
+    );
 
-    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/First Hidden Evaluation/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Second Hidden Evaluation/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/First Hidden Evaluation/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Second Hidden Evaluation/),
+    ).not.toBeInTheDocument();
   });
 
   it("collapses inline generated Evaluation labels by default", async () => {
@@ -650,19 +1005,32 @@ describe("App", () => {
       "Evaluation Novelty +4 82% Of Language Absent From The Seed; 0 Dependency Markers. Grounding +3 3 Evidence Item(s); 1 Causal Markers; 0 Hedge(s). Falsifiability +3 Bridged From The Falsifiability Measurement (checkable Markers, Claims, Evidence). Cost-Efficiency +0 Judge-Only Axis — Defaults To 0 Under The Deterministic Bridge. Relevance +0 Judge-Only Axis — Defaults To 0 Under The Deterministic Bridge.",
     ].join("\n");
 
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(evaluationFixture), { status: 200 });
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(evaluationFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
 
-    expect(screen.getByText("Real-Time Mobility Payment Stream Securitization Vehicles Replacing Auto-Loan Abs Markets")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Judge evaluation" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/82% Of Language Absent From The Seed/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Real-Time Mobility Payment Stream Securitization Vehicles Replacing Auto-Loan Abs Markets",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Judge evaluation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/82% Of Language Absent From The Seed/i),
+    ).not.toBeInTheDocument();
   });
 
   it("hydrates hosted ratings from the public aGarden ledger and switches to update mode", async () => {
@@ -671,91 +1039,115 @@ describe("App", () => {
       ratingsLedgerUrl: "https://raw.example.test/ratings-ledger.json",
       requiresAccessCode: false,
     };
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response("not found", { status: 404 });
-      if (url.startsWith("calibration-index.json")) return new Response(JSON.stringify(fixture), { status: 200 });
-      if (url.startsWith("https://raw.example.test/ratings-ledger.json")) {
-        return new Response(
-          JSON.stringify([
-            {
-              node_id: "dalton-fsd-accident-economy-001__problem_recovery",
-              ratings: [
-                {
-                  rater_id: "dalton.dinderman@challenger.gauntletai.com",
-                  score: -2,
-                  rate_date: "2026-06-25T16:00:00.000Z",
-                },
-              ],
-            },
-          ]),
-          { status: 200 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response("not found", { status: 404 });
+        if (url.startsWith("calibration-index.json"))
+          return new Response(JSON.stringify(fixture), { status: 200 });
+        if (url.startsWith("https://raw.example.test/ratings-ledger.json")) {
+          return new Response(
+            JSON.stringify([
+              {
+                node_id: "dalton-fsd-accident-economy-001__problem_recovery",
+                ratings: [
+                  {
+                    rater_id: "dalton.dinderman@challenger.gauntletai.com",
+                    score: -2,
+                    rate_date: "2026-06-25T16:00:00.000Z",
+                  },
+                ],
+              },
+            ]),
+            { status: 200 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
-    expect(screen.getByText("Your current rating for this item is -2.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Your current rating for this item is -2."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("-2");
-    expect(screen.getByRole("button", { name: "Update problem recovery rating" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Update problem recovery rating" }),
+    ).toBeInTheDocument();
   });
 
   it("does not show discovery context paragraphs in the rating workspace", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") {
-        return new Response(
-          JSON.stringify({
-            ...fixture,
-            cases: [
-              {
-                ...fixture.cases[0],
-                body: "# Case\n\nShared paragraph.\n\nCase-only paragraph.",
-                problem: { body: "Shared paragraph.\n\nProblem-only paragraph.", source: "case-study" },
-              },
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response(
+            JSON.stringify({
+              ...fixture,
+              cases: [
+                {
+                  ...fixture.cases[0],
+                  body: "# Case\n\nShared paragraph.\n\nCase-only paragraph.",
+                  problem: {
+                    body: "Shared paragraph.\n\nProblem-only paragraph.",
+                    source: "case-study",
+                  },
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     expect(screen.queryByText("Shared paragraph.")).not.toBeInTheDocument();
-    expect(screen.queryByText("Problem-only paragraph.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Problem-only paragraph."),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show case study context sections in the rating workspace", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") {
-        return new Response(
-          JSON.stringify({
-            ...fixture,
-            cases: [
-              {
-                ...fixture.cases[0],
-                body:
-                  "# When the Crashes Don't Come\n\n## Context\n\nContext body.\n\n## The Situation\n\nSituation body.\n\n## Decision Point\n\nDecision body.\n\n## Synopsis\n\nSynopsis body.",
-              },
-            ],
-          }),
-          { status: 200 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response(
+            JSON.stringify({
+              ...fixture,
+              cases: [
+                {
+                  ...fixture.cases[0],
+                  body: "# When the Crashes Don't Come\n\n## Context\n\nContext body.\n\n## The Situation\n\nSituation body.\n\n## Decision Point\n\nDecision body.\n\n## Synopsis\n\nSynopsis body.",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
-    expect(screen.queryByRole("button", { name: "Context" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "The Situation" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Decision Point" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Synopsis" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Context" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "The Situation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Decision Point" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Synopsis" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Context body.")).not.toBeInTheDocument();
   });
 
@@ -768,8 +1160,12 @@ describe("App", () => {
       screen.getByLabelText("Doppl"),
       "dalton-fsd-accident-economy-001__solution",
     );
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit doppl rating" }));
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit doppl rating" }),
+    );
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/ratings",
@@ -789,9 +1185,15 @@ describe("App", () => {
       screen.getByLabelText("Problem recovery"),
       "dalton-fsd-accident-economy-001__problem_recovery",
     );
-    expect(screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+    expect(
+      screen.getByRole("heading", { name: "Crash-Volume Revenue Dependency" }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/ratings",
@@ -804,7 +1206,9 @@ describe("App", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/ratings",
       expect.objectContaining({
-        body: expect.stringContaining('"problem_recovery_id":"dalton-fsd-accident-economy-001__problem_recovery"'),
+        body: expect.stringContaining(
+          '"problem_recovery_id":"dalton-fsd-accident-economy-001__problem_recovery"',
+        ),
       }),
     );
   });
@@ -843,22 +1247,33 @@ describe("App", () => {
         },
       ],
     };
-    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input.toString();
-      if (url === "/api/index") return new Response(JSON.stringify(agardenFixture), { status: 200 });
-      if (url === "/api/ratings" && init?.method === "POST") {
-        return new Response(
-          JSON.stringify({ ratingId: "node-pr:dalton", relativePath: "ratings-ledger.json", scores: { human: 4, n: 1 } }),
-          { status: 201 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+    fetchMock.mockImplementation(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(agardenFixture), { status: 200 });
+        if (url === "/api/ratings" && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              ratingId: "node-pr:dalton",
+              relativePath: "ratings-ledger.json",
+              scores: { human: 4, n: 1 },
+            }),
+            { status: 201 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace("Problem Recovery");
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -877,16 +1292,18 @@ describe("App", () => {
   });
 
   it("falls back to the static index in read-only preview mode", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: string | URL | Request) => {
-      const url = input.toString();
-      if (url === "/api/index") {
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response("not found", { status: 404 });
+        }
+        if (url.startsWith("calibration-index.json")) {
+          return new Response(JSON.stringify(fixture), { status: 200 });
+        }
         return new Response("not found", { status: 404 });
-      }
-      if (url.startsWith("calibration-index.json")) {
-        return new Response(JSON.stringify(fixture), { status: 200 });
-      }
-      return new Response("not found", { status: 404 });
-    });
+      },
+    );
 
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
@@ -895,9 +1312,17 @@ describe("App", () => {
       screen.getByLabelText("Doppl"),
       "dalton-fsd-accident-economy-001__solution",
     );
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit doppl rating" })).toBeDisabled();
-    expect(screen.getByText("Rating writes require the local dev server or hosted ratings API.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    expect(
+      screen.getByRole("button", { name: "Submit doppl rating" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Rating writes require the local dev server or hosted ratings API.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("submits through the hosted ratings endpoint without a reviewer access code when configured", async () => {
@@ -906,31 +1331,40 @@ describe("App", () => {
       requiresAccessCode: false,
     };
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input.toString();
-      if (url === "/api/index") {
+    fetchMock.mockImplementation(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response("not found", { status: 404 });
+        }
+        if (url.startsWith("calibration-index.json")) {
+          return new Response(JSON.stringify(fixture), { status: 200 });
+        }
+        if (
+          url === "https://ratings.example.test/api/agarden/ratings" &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              ratingId: "hosted-rating",
+              relativePath: "ratings-ledger.json",
+            }),
+            { status: 201 },
+          );
+        }
         return new Response("not found", { status: 404 });
-      }
-      if (url.startsWith("calibration-index.json")) {
-        return new Response(JSON.stringify(fixture), { status: 200 });
-      }
-      if (url === "https://ratings.example.test/api/agarden/ratings" && init?.method === "POST") {
-        return new Response(
-          JSON.stringify({
-            ratingId: "hosted-rating",
-            relativePath: "ratings-ledger.json",
-          }),
-          { status: 201 },
-        );
-      }
-      return new Response("not found", { status: 404 });
-    });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
     expect(screen.queryByLabelText("Access code")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -944,7 +1378,9 @@ describe("App", () => {
       "https://ratings.example.test/api/agarden/ratings",
       expect.objectContaining({
         method: "POST",
-        headers: expect.not.objectContaining({ authorization: expect.any(String) }),
+        headers: expect.not.objectContaining({
+          authorization: expect.any(String),
+        }),
       }),
     );
   });
@@ -955,28 +1391,48 @@ describe("App", () => {
       requiresAccessCode: true,
     };
     const fetchMock = vi.mocked(fetch);
-    fetchMock.mockImplementation(async (input: string | URL | Request, init?: RequestInit) => {
-      const url = input.toString();
-      if (url === "/api/index") {
+    fetchMock.mockImplementation(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response("not found", { status: 404 });
+        }
+        if (url.startsWith("calibration-index.json")) {
+          return new Response(JSON.stringify(fixture), { status: 200 });
+        }
+        if (
+          url === "https://ratings.example.test/api/agarden/ratings" &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              ratingId: "hosted-rating",
+              relativePath: "ratings-ledger.json",
+            }),
+            {
+              status: 201,
+            },
+          );
+        }
         return new Response("not found", { status: 404 });
-      }
-      if (url.startsWith("calibration-index.json")) {
-        return new Response(JSON.stringify(fixture), { status: 200 });
-      }
-      if (url === "https://ratings.example.test/api/agarden/ratings" && init?.method === "POST") {
-        return new Response(JSON.stringify({ ratingId: "hosted-rating", relativePath: "ratings-ledger.json" }), {
-          status: 201,
-        });
-      }
-      return new Response("not found", { status: 404 });
-    });
+      },
+    );
 
     render(<App />);
     await waitForReviewWorkspace();
-    fireEvent.change(screen.getByLabelText(/Score/), { target: { value: "4" } });
-    expect(screen.getByRole("button", { name: "Submit problem recovery rating" })).toBeDisabled();
-    await userEvent.type(screen.getByLabelText("Access code"), "review-session-secret");
-    await userEvent.click(screen.getByRole("button", { name: "Submit problem recovery rating" }));
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "4" },
+    });
+    expect(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    ).toBeDisabled();
+    await userEvent.type(
+      screen.getByLabelText("Access code"),
+      "review-session-secret",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -990,7 +1446,9 @@ describe("App", () => {
       "https://ratings.example.test/api/agarden/ratings",
       expect.objectContaining({
         method: "POST",
-        headers: expect.objectContaining({ authorization: "Bearer review-session-secret" }),
+        headers: expect.objectContaining({
+          authorization: "Bearer review-session-secret",
+        }),
       }),
     );
   });
@@ -999,24 +1457,41 @@ describe("App", () => {
     render(<App />);
     await waitForReviewWorkspace();
     await userEvent.click(screen.getByRole("button", { name: "Doppls" }));
-    await userEvent.selectOptions(screen.getByLabelText("Doppl"), "dalton-fsd-accident-economy-001__solution");
-    expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
-    expect(screen.queryByLabelText("Comparison set provenance")).not.toBeInTheDocument();
+    await userEvent.selectOptions(
+      screen.getByLabelText("Doppl"),
+      "dalton-fsd-accident-economy-001__solution",
+    );
+    expect(
+      (await screen.findAllByText("Accident-Economy Transition Ledger")).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.queryByLabelText("Comparison set provenance"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Show source details +" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show source details +" }),
+    );
     expect(screen.getByText("source status")).toBeInTheDocument();
     expect(screen.getByText("imported")).toBeInTheDocument();
-    expect(screen.queryByText("Audit-only artifacts are visible for provenance but are not rateable.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Audit-only artifacts are visible for provenance but are not rateable.",
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps artifact labels visible without blind review mode", async () => {
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: "Doppls" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Doppls" }),
+    );
     await userEvent.selectOptions(
       await screen.findByLabelText("Doppl"),
       "dalton-fsd-accident-economy-001__solution",
     );
-    expect((await screen.findAllByText("Accident-Economy Transition Ledger")).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText("Accident-Economy Transition Ledger")).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByLabelText("Blind")).not.toBeInTheDocument();
     expect(screen.queryByText("Doppl A")).not.toBeInTheDocument();
     expect(screen.queryByText("source status")).not.toBeInTheDocument();

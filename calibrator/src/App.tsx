@@ -12,7 +12,10 @@ import {
   type ReviewArtifact,
 } from "./reviewability";
 import { isAllowedRater, normalizeRaterEmail } from "./raters";
-import { readGitHubAgardenIndex, type GitHubAgardenIndexConfig } from "./githubAgardenIndex";
+import {
+  readGitHubAgardenIndex,
+  type GitHubAgardenIndexConfig,
+} from "./githubAgardenIndex";
 import { AgoraApp } from "./Agora";
 
 type RatingTarget = "problem_recovery" | "solution";
@@ -20,15 +23,12 @@ const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
 const ACCESS_CODE_STORAGE_KEY = "doppl-calibrator-access-code";
 const LOCAL_RATINGS_ENDPOINT = "/api/ratings";
 type ReviewQueueItem =
-  | { target: "problem_recovery"; id: string; artifact: CalibratorProblemRecovery }
+  | {
+      target: "problem_recovery";
+      id: string;
+      artifact: CalibratorProblemRecovery;
+    }
   | { target: "solution"; id: string; artifact: CalibratorSolution };
-
-const JUDGE_EVALUATION_RATERS = new Set([
-  "dalton.dinderman@challenger.gauntletai.com",
-  "cody.clayton@challenger.gauntletai.com",
-  "melissa.hargis@challenger.gauntletai.com",
-  "michael.habermas@challenger.gauntletai.com",
-]);
 
 declare global {
   interface Window {
@@ -64,13 +64,22 @@ function scoreLabel(score: number): string {
 }
 
 function ratingReviewerEmail(rating: CalibratorRating): string {
-  return normalizeRaterEmail(rating.reviewer_email ?? rating.reviewer_name ?? "");
+  return normalizeRaterEmail(
+    rating.reviewer_email ?? rating.reviewer_name ?? "",
+  );
 }
 
-function reviewerRating(artifact: ReviewArtifact | null, reviewerEmail: string): CalibratorRating | null {
+function reviewerRating(
+  artifact: ReviewArtifact | null,
+  reviewerEmail: string,
+): CalibratorRating | null {
   const normalizedReviewer = normalizeRaterEmail(reviewerEmail);
   if (!artifact || !normalizedReviewer) return null;
-  return artifact.human_ratings.find((rating) => ratingReviewerEmail(rating) === normalizedReviewer) ?? null;
+  return (
+    artifact.human_ratings.find(
+      (rating) => ratingReviewerEmail(rating) === normalizedReviewer,
+    ) ?? null
+  );
 }
 
 function ratingFromLedger(
@@ -98,11 +107,15 @@ function scoresFromRatings(
   ratings: CalibratorRating[],
 ): ReviewArtifact["scores"] {
   if (ratings.length === 0) return previousScores;
-  const human = ratings.reduce((sum, rating) => sum + rating.score, 0) / ratings.length;
+  const human =
+    ratings.reduce((sum, rating) => sum + rating.score, 0) / ratings.length;
   return { ...(previousScores ?? {}), human, n: ratings.length };
 }
 
-function applyRatingsLedger(index: CalibratorIndex, ledger: AgardenLedgerEntry[]): CalibratorIndex {
+function applyRatingsLedger(
+  index: CalibratorIndex,
+  ledger: AgardenLedgerEntry[],
+): CalibratorIndex {
   const byNode = new Map(ledger.map((entry) => [entry.node_id, entry]));
   return {
     ...index,
@@ -113,9 +126,18 @@ function applyRatingsLedger(index: CalibratorIndex, ledger: AgardenLedgerEntry[]
         const entry = byNode.get(nodeId);
         if (!entry) return artifact;
         const human_ratings = entry.ratings.map((rating) =>
-          ratingFromLedger(caseItem.case_id, nodeId, "problem_recovery", rating),
+          ratingFromLedger(
+            caseItem.case_id,
+            nodeId,
+            "problem_recovery",
+            rating,
+          ),
         );
-        return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+        return {
+          ...artifact,
+          human_ratings,
+          scores: scoresFromRatings(artifact.scores, human_ratings),
+        };
       }),
       solutions: caseItem.solutions.map((artifact) => {
         const nodeId = artifact.node_id ?? artifact.solution_id;
@@ -124,15 +146,24 @@ function applyRatingsLedger(index: CalibratorIndex, ledger: AgardenLedgerEntry[]
         const human_ratings = entry.ratings.map((rating) =>
           ratingFromLedger(caseItem.case_id, nodeId, "solution", rating),
         );
-        return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+        return {
+          ...artifact,
+          human_ratings,
+          scores: scoresFromRatings(artifact.scores, human_ratings),
+        };
       }),
     })),
   };
 }
 
-function upsertRating(ratings: CalibratorRating[], nextRating: CalibratorRating): CalibratorRating[] {
+function upsertRating(
+  ratings: CalibratorRating[],
+  nextRating: CalibratorRating,
+): CalibratorRating[] {
   const reviewer = ratingReviewerEmail(nextRating);
-  const withoutPrevious = ratings.filter((rating) => ratingReviewerEmail(rating) !== reviewer);
+  const withoutPrevious = ratings.filter(
+    (rating) => ratingReviewerEmail(rating) !== reviewer,
+  );
   return [...withoutPrevious, nextRating];
 }
 
@@ -145,11 +176,16 @@ function applySubmittedRating(input: {
   reviewerEmail: string;
   submittedAt: string;
 }): CalibratorIndex {
-  const nextRating = ratingFromLedger(input.caseId, input.nodeId, input.target, {
-    rater_id: normalizeRaterEmail(input.reviewerEmail),
-    score: input.score,
-    rate_date: input.submittedAt,
-  });
+  const nextRating = ratingFromLedger(
+    input.caseId,
+    input.nodeId,
+    input.target,
+    {
+      rater_id: normalizeRaterEmail(input.reviewerEmail),
+      score: input.score,
+      rate_date: input.submittedAt,
+    },
+  );
   return {
     ...input.index,
     cases: input.index.cases.map((caseItem) => {
@@ -158,31 +194,55 @@ function applySubmittedRating(input: {
         ...caseItem,
         problem_recoveries: caseItem.problem_recoveries.map((artifact) => {
           const nodeId = artifact.node_id ?? artifact.problem_recovery_id;
-          if (input.target !== "problem_recovery" || nodeId !== input.nodeId) return artifact;
-          const human_ratings = upsertRating(artifact.human_ratings, nextRating);
-          return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+          if (input.target !== "problem_recovery" || nodeId !== input.nodeId)
+            return artifact;
+          const human_ratings = upsertRating(
+            artifact.human_ratings,
+            nextRating,
+          );
+          return {
+            ...artifact,
+            human_ratings,
+            scores: scoresFromRatings(artifact.scores, human_ratings),
+          };
         }),
         solutions: caseItem.solutions.map((artifact) => {
           const nodeId = artifact.node_id ?? artifact.solution_id;
-          if (input.target !== "solution" || nodeId !== input.nodeId) return artifact;
-          const human_ratings = upsertRating(artifact.human_ratings, nextRating);
-          return { ...artifact, human_ratings, scores: scoresFromRatings(artifact.scores, human_ratings) };
+          if (input.target !== "solution" || nodeId !== input.nodeId)
+            return artifact;
+          const human_ratings = upsertRating(
+            artifact.human_ratings,
+            nextRating,
+          );
+          return {
+            ...artifact,
+            human_ratings,
+            scores: scoresFromRatings(artifact.scores, human_ratings),
+          };
         }),
       };
     }),
   };
 }
 
-function firstRateableProblemRecovery(caseItem: CalibratorIndex["cases"][number]) {
-  return caseItem.problem_recoveries.find((artifact) => reviewMode(artifact) === "primary");
+function firstRateableProblemRecovery(
+  caseItem: CalibratorIndex["cases"][number],
+) {
+  return caseItem.problem_recoveries.find(
+    (artifact) => reviewMode(artifact) === "primary",
+  );
 }
 
 function firstRateableSolution(caseItem: CalibratorIndex["cases"][number]) {
-  return caseItem.solutions.find((artifact) => reviewMode(artifact) === "primary");
+  return caseItem.solutions.find(
+    (artifact) => reviewMode(artifact) === "primary",
+  );
 }
 
 function problemRecoveryNodeKey(recovery: CalibratorProblemRecovery): string[] {
-  return [recovery.node_id, recovery.problem_recovery_id].filter(Boolean) as string[];
+  return [recovery.node_id, recovery.problem_recovery_id].filter(
+    Boolean,
+  ) as string[];
 }
 
 function findParentProblemRecovery(
@@ -197,18 +257,26 @@ function findParentProblemRecovery(
     );
     if (parent) return parent;
   }
-  return recoveries.find((recovery) => reviewMode(recovery) === "primary") ?? recoveries[0] ?? null;
+  return (
+    recoveries.find((recovery) => reviewMode(recovery) === "primary") ??
+    recoveries[0] ??
+    null
+  );
 }
 
 function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
-  return Boolean(firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem));
+  return Boolean(
+    firstRateableProblemRecovery(caseItem) || firstRateableSolution(caseItem),
+  );
 }
 
 function firstReviewableCase(index: CalibratorIndex) {
   return index.cases.find(hasRateableArtifacts);
 }
 
-function reviewQueueForCase(caseItem: CalibratorIndex["cases"][number] | null): ReviewQueueItem[] {
+function reviewQueueForCase(
+  caseItem: CalibratorIndex["cases"][number] | null,
+): ReviewQueueItem[] {
   if (!caseItem) return [];
   const problemRecoveryItems: ReviewQueueItem[] = caseItem.problem_recoveries
     .filter((artifact) => reviewMode(artifact) === "primary")
@@ -234,18 +302,17 @@ function findNextUnratedItem(
   reviewerEmail: string,
 ): ReviewQueueItem | null {
   if (queue.length === 0 || !reviewerEmail) return null;
-  const currentIndex = queue.findIndex((item) => item.target === currentTarget && item.id === currentId);
+  const currentIndex = queue.findIndex(
+    (item) => item.target === currentTarget && item.id === currentId,
+  );
   const start = currentIndex >= 0 ? currentIndex + 1 : 0;
   for (let offset = 0; offset < queue.length; offset += 1) {
     const candidate = queue[(start + offset) % queue.length];
-    if (candidate.target === currentTarget && candidate.id === currentId) continue;
+    if (candidate.target === currentTarget && candidate.id === currentId)
+      continue;
     if (!reviewerRating(candidate.artifact, reviewerEmail)) return candidate;
   }
   return null;
-}
-
-function canSeeJudgeEvaluation(reviewerEmail: string): boolean {
-  return JUDGE_EVALUATION_RATERS.has(normalizeRaterEmail(reviewerEmail));
 }
 
 function displayMarkdown(text: string): string {
@@ -259,9 +326,14 @@ function displayMarkdown(text: string): string {
       "$1## $2\n\n$3",
     )
     .replace(/\s+(#{2,4}\s+)/g, "\n\n$1")
-    .replace(/^(TRACE|DISCOVERY|EVALUATION|PATH NEXT|GROWTH\s*[—-]\s*(?:PROBLEM RECOVERY|DOPPL))[ \t]*$/gim, "## $1")
+    .replace(
+      /^(TRACE|DISCOVERY|EVALUATION|PATH NEXT|GROWTH\s*[—-]\s*(?:PROBLEM RECOVERY|DOPPL))[ \t]*$/gim,
+      "## $1",
+    )
     .replace(/\n{3,}/g, "\n\n");
-  const lines = normalized.split("\n").filter((line) => !/^prev(_id)?:\s*/.test(line.trim()));
+  const lines = normalized
+    .split("\n")
+    .filter((line) => !/^prev(_id)?:\s*/.test(line.trim()));
   const firstContentIndex = lines.findIndex((line) => line.trim());
   if (firstContentIndex >= 0 && /^#\s+/.test(lines[firstContentIndex])) {
     lines.splice(firstContentIndex, 1);
@@ -269,21 +341,31 @@ function displayMarkdown(text: string): string {
   return lines.join("\n").trim();
 }
 
-function splitEvaluationMarkdown(text: string): { main: string; evaluation: string } {
+function splitEvaluationMarkdown(text: string): {
+  main: string;
+  evaluation: string;
+} {
   const normalized = displayMarkdown(text);
   const headingMatch = normalized.match(/\n#{2,4}\s+Evaluation\s*\n/i);
   if (headingMatch?.index !== undefined) {
     const main = normalized.slice(0, headingMatch.index).trim();
-    const evaluation = normalized.slice(headingMatch.index + headingMatch[0].length).trim();
+    const evaluation = normalized
+      .slice(headingMatch.index + headingMatch[0].length)
+      .trim();
     return { main, evaluation };
   }
 
   const lines = normalized.split("\n");
-  const plainEvaluationIndex = lines.findIndex((line) => /^Evaluation$/i.test(line.trim()));
+  const plainEvaluationIndex = lines.findIndex((line) =>
+    /^Evaluation$/i.test(line.trim()),
+  );
   if (plainEvaluationIndex >= 0) {
     return {
       main: lines.slice(0, plainEvaluationIndex).join("\n").trim(),
-      evaluation: lines.slice(plainEvaluationIndex + 1).join("\n").trim(),
+      evaluation: lines
+        .slice(plainEvaluationIndex + 1)
+        .join("\n")
+        .trim(),
     };
   }
 
@@ -300,7 +382,9 @@ function splitEvaluationMarkdown(text: string): { main: string; evaluation: stri
   }
 
   const start = lines.findIndex((line) =>
-    /^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(line.trim()),
+    /^(Novelty|Grounding|Falsifiability|Cost-Efficiency|Cost Efficiency|Relevance)\s+[+-]?\d/i.test(
+      line.trim(),
+    ),
   );
   if (start < 0) return { main: normalized, evaluation: "" };
 
@@ -365,7 +449,11 @@ function cleanHeading(text: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase()
-    .replace(/(^|[\s·/—-])([a-z])/g, (_match, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`)
+    .replace(
+      /(^|[\s·/—-])([a-z])/g,
+      (_match, prefix: string, letter: string) =>
+        `${prefix}${letter.toUpperCase()}`,
+    )
     .replace(/\bcase study\b/gi, "Case study")
     .replace(/\bsynopsis\b/gi, "Synopsis")
     .replace(/\bfinding\b/gi, "Finding")
@@ -397,7 +485,10 @@ function sentenceCaseHeading(value: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/[A-Za-z][A-Za-z0-9]*/g, (word) => {
-      if (/^(AI|API|AV|EV|FICO|OEM|RUC|XAI|FTC|ECB|CSAIL|NHTSA|MIT)$/i.test(word)) return word.toUpperCase();
+      if (
+        /^(AI|API|AV|EV|FICO|OEM|RUC|XAI|FTC|ECB|CSAIL|NHTSA|MIT)$/i.test(word)
+      )
+        return word.toUpperCase();
       return `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}`;
     });
 }
@@ -410,9 +501,17 @@ function comparableText(text: string): string {
 }
 
 function markdownBlocks(text: string): string[] {
+  const labeledFieldPattern =
+    /(?<!#)\s+(?=(Surface Complaint|Deleted Assumption|Hidden Variable|Actual Problem|Candidate Response|Skin In The Game|Skin in the Game|Implications|Opportunities|Sprouts|Claim)\b)/g;
   return displayMarkdown(text)
+    .replace(labeledFieldPattern, "\n\n")
     .split(/\n{2,}/)
-    .flatMap((block) => block.replace(/\s+(#{2,4}\s+)/g, "\n\n$1").split(/\n{2,}/))
+    .flatMap((block) =>
+      block
+        .replace(/\s+(#{2,4}\s+)/g, "\n\n$1")
+        .replace(/^(#{2,4}\s+[^\n]+)\n+/gm, "$1\n\n")
+        .split(/\n{2,}/),
+    )
     .map((block) => block.trim())
     .filter(Boolean);
 }
@@ -425,11 +524,16 @@ function generatedListItems(text: string): string[] {
     .filter(Boolean);
 }
 
-function labeledBlock(block: string):
-  | { label: string; items: string[]; list: true }
-  | { label: string; body: string; list: false }
-  | null {
-  const listLabels = new Set(["Implications", "Opportunities", "Sprouts", "Skin in the Game"]);
+type LabeledMarkdownBlock =
+  | { label: string; kind: "list"; items: string[] }
+  | { label: string; kind: "body"; body: string }
+  | { label: string; kind: "hidden" };
+
+function isGeneratedListLabel(label: string): boolean {
+  return /^(Implications|Opportunities|Sprouts|Skin in the Game)$/i.test(label);
+}
+
+function labeledBlock(block: string): LabeledMarkdownBlock | null {
   const labels = [
     "Implications",
     "Opportunities",
@@ -443,21 +547,51 @@ function labeledBlock(block: string):
     "Candidate response",
   ];
   for (const label of labels) {
-    const pattern = new RegExp(`^${label.replace(/\s+/g, "\\s+")}(?:\\s*[-:]\\s*|\\s+)([\\s\\S]+)$`, "i");
+    const pattern = new RegExp(
+      `^${label.replace(/\s+/g, "\\s+")}(?:\\s*[-:]\\s*|\\s+)([\\s\\S]+)$`,
+      "i",
+    );
     const match = block.match(pattern);
     if (!match) continue;
+    if (/^candidate response$/i.test(label)) {
+      return { label, kind: "hidden" };
+    }
     const body = renderInlineText(match[1]);
     const parts = generatedListItems(body);
-    if (listLabels.has(label) && parts.length > 0) {
-      return { label, items: parts, list: true };
+    if (isGeneratedListLabel(label) && parts.length > 0) {
+      return { label, items: parts, kind: "list" };
     }
-    return { label, body, list: false };
+    return { label, body, kind: "body" };
   }
   return null;
 }
 
+function classNameForGeneratedField(label: string): string {
+  const normalized = label.toLowerCase();
+  if (normalized === "actual problem")
+    return "generated-field actual-problem-field";
+  if (normalized === "claim") return "generated-field claim-field";
+  return "generated-field";
+}
+
+function isProblemFrameLabel(label: string): boolean {
+  return /^(Surface complaint|Deleted assumption|Hidden variable)$/i.test(
+    label,
+  );
+}
+
+function isProminentFieldLabel(label: string): boolean {
+  return /^(Claim|Actual problem)$/i.test(label);
+}
+
+function isHiddenFieldLabel(label: string): boolean {
+  return /^Candidate response$/i.test(label);
+}
+
 function supplementalMarkdown(baseText: string, candidateText: string): string {
-  const baseBlocks = new Set(markdownBlocks(baseText).map(comparableText).filter(Boolean));
+  const baseBlocks = new Set(
+    markdownBlocks(baseText).map(comparableText).filter(Boolean),
+  );
   const uniqueBlocks = markdownBlocks(candidateText).filter((block) => {
     const comparable = comparableText(block);
     return comparable && !baseBlocks.has(comparable);
@@ -468,15 +602,72 @@ function supplementalMarkdown(baseText: string, candidateText: string): string {
 function MarkdownBlock({ text }: { text: string }) {
   const blocks = markdownBlocks(text);
   const renderedBlocks = [];
-  const listLabels = new Set(["Implications", "Opportunities", "Sprouts", "Skin in the Game"]);
   for (let index = 0; index < blocks.length; index += 1) {
     const block = blocks[index];
     const heading = block.match(/^#{2,4}\s+(.+)$/);
-    const label = heading ? cleanHeading(heading[1]) : "";
+    const plainLabel = isHiddenFieldLabel(cleanHeading(block))
+      ? cleanHeading(block)
+      : "";
+    const label = heading ? cleanHeading(heading[1]) : plainLabel;
     const nextBlock = blocks[index + 1] ?? "";
-    if (listLabels.has(label) && nextBlock && generatedListItems(nextBlock).length > 0) {
+    if (isHiddenFieldLabel(label)) {
+      index += nextBlock ? 1 : 0;
+      continue;
+    }
+    if (
+      (isProblemFrameLabel(label) || isProminentFieldLabel(label)) &&
+      nextBlock
+    ) {
+      if (isProblemFrameLabel(label)) {
+        const frameFields: { label: string; body: string }[] = [
+          { label, body: nextBlock },
+        ];
+        let lookahead = index + 2;
+        while (lookahead + 1 < blocks.length) {
+          const nextHeading = blocks[lookahead].match(/^#{2,4}\s+(.+)$/);
+          const nextLabel = nextHeading ? cleanHeading(nextHeading[1]) : "";
+          if (!isProblemFrameLabel(nextLabel)) break;
+          frameFields.push({ label: nextLabel, body: blocks[lookahead + 1] });
+          lookahead += 2;
+        }
+        renderedBlocks.push(
+          <section
+            className="problem-frame-grid"
+            key={`${block}-${nextBlock}`.slice(0, 120)}
+          >
+            {frameFields.map((field) => (
+              <article className="problem-frame-card" key={field.label}>
+                <h5>{field.label}</h5>
+                <p>{renderInlineText(field.body)}</p>
+              </article>
+            ))}
+          </section>,
+        );
+        index = lookahead - 1;
+        continue;
+      }
       renderedBlocks.push(
-        <section className="generated-list" key={`${block}-${nextBlock}`.slice(0, 120)}>
+        <section
+          className={classNameForGeneratedField(label)}
+          key={`${block}-${nextBlock}`.slice(0, 120)}
+        >
+          <h5>{label}:</h5>
+          <p>{renderInlineText(nextBlock)}</p>
+        </section>,
+      );
+      index += 1;
+      continue;
+    }
+    if (
+      isGeneratedListLabel(label) &&
+      nextBlock &&
+      generatedListItems(nextBlock).length > 0
+    ) {
+      renderedBlocks.push(
+        <section
+          className="generated-list"
+          key={`${block}-${nextBlock}`.slice(0, 120)}
+        >
           <h5>{label}:</h5>
           <ul>
             {generatedListItems(nextBlock).map((item) => (
@@ -491,7 +682,38 @@ function MarkdownBlock({ text }: { text: string }) {
 
     const key = block.slice(0, 80);
     const labeled = labeledBlock(block);
-    if (labeled?.list) {
+    if (labeled?.kind === "hidden") {
+      continue;
+    }
+    if (labeled?.kind === "body" && isProblemFrameLabel(labeled.label)) {
+      const frameFields: { label: string; body: string }[] = [
+        { label: labeled.label, body: labeled.body },
+      ];
+      let lookahead = index + 1;
+      while (lookahead < blocks.length) {
+        const nextLabeled = labeledBlock(blocks[lookahead]);
+        if (
+          nextLabeled?.kind !== "body" ||
+          !isProblemFrameLabel(nextLabeled.label)
+        )
+          break;
+        frameFields.push({ label: nextLabeled.label, body: nextLabeled.body });
+        lookahead += 1;
+      }
+      renderedBlocks.push(
+        <section className="problem-frame-grid" key={key}>
+          {frameFields.map((field) => (
+            <article className="problem-frame-card" key={field.label}>
+              <h5>{field.label}</h5>
+              <p>{renderInlineText(field.body)}</p>
+            </article>
+          ))}
+        </section>,
+      );
+      index = lookahead - 1;
+      continue;
+    }
+    if (labeled?.kind === "list") {
       renderedBlocks.push(
         <section className="generated-list" key={key}>
           <h5>{labeled.label}:</h5>
@@ -504,9 +726,12 @@ function MarkdownBlock({ text }: { text: string }) {
       );
       continue;
     }
-    if (labeled) {
+    if (labeled?.kind === "body") {
       renderedBlocks.push(
-        <section className="generated-field" key={key}>
+        <section
+          className={classNameForGeneratedField(labeled.label)}
+          key={key}
+        >
           <h5>{labeled.label}:</h5>
           <p>{renderInlineText(labeled.body)}</p>
         </section>,
@@ -529,7 +754,9 @@ function MarkdownBlock({ text }: { text: string }) {
       renderedBlocks.push(
         <ol key={key}>
           {block.split("\n").map((line) => (
-            <li key={line}>{renderInlineText(line.replace(/^\d+\.\s*/, ""))}</li>
+            <li key={line}>
+              {renderInlineText(line.replace(/^\d+\.\s*/, ""))}
+            </li>
           ))}
         </ol>,
       );
@@ -538,63 +765,43 @@ function MarkdownBlock({ text }: { text: string }) {
     renderedBlocks.push(<p key={key}>{renderInlineText(block)}</p>);
   }
 
-  return (
-    <div className="markdown-block">
-      {renderedBlocks}
-    </div>
-  );
+  return <div className="markdown-block">{renderedBlocks}</div>;
 }
 
-function ArtifactMarkdownBlock({
-  artifactKey,
-  text,
-  showEvaluation,
-}: {
-  artifactKey: string;
-  text: string;
-  showEvaluation: boolean;
-}) {
-  const [evaluationOpen, setEvaluationOpen] = useState(false);
-  const [traceOpen, setTraceOpen] = useState(false);
-  const [discoveryOpen, setDiscoveryOpen] = useState(false);
-  const { trace, discovery, body, evaluation } = splitArtifactMarkdown(text);
+function ArtifactMarkdownBlock({ text }: { text: string }) {
+  const { trace, discovery, body } = splitArtifactMarkdown(text);
+  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
 
   useEffect(() => {
-    setEvaluationOpen(false);
-    setTraceOpen(false);
-    setDiscoveryOpen(false);
-  }, [artifactKey]);
+    setIsDiscoveryOpen(false);
+  }, [text]);
 
   return (
     <>
       {trace ? (
-        <section className="artifact-disclosure">
-          <button type="button" aria-expanded={traceOpen} onClick={() => setTraceOpen((open) => !open)}>
-            <span>Trace</span>
-            <span aria-hidden="true">{traceOpen ? "-" : "+"}</span>
-          </button>
-          {traceOpen ? <MarkdownBlock text={trace} /> : null}
+        <section className="artifact-context-section">
+          <h3>Trace</h3>
+          <MarkdownBlock text={trace} />
         </section>
       ) : null}
       {discovery ? (
-        <section className="artifact-disclosure">
-          <button type="button" aria-expanded={discoveryOpen} onClick={() => setDiscoveryOpen((open) => !open)}>
+        <section className="artifact-context-disclosure">
+          <button
+            aria-expanded={isDiscoveryOpen}
+            onClick={() => setIsDiscoveryOpen((open) => !open)}
+            type="button"
+          >
             <span>Discovery</span>
-            <span aria-hidden="true">{discoveryOpen ? "-" : "+"}</span>
+            <span>{isDiscoveryOpen ? "-" : "+"}</span>
           </button>
-          {discoveryOpen ? <MarkdownBlock text={discovery} /> : null}
+          {isDiscoveryOpen ? (
+            <div className="artifact-context-section">
+              <MarkdownBlock text={discovery} />
+            </div>
+          ) : null}
         </section>
       ) : null}
       <MarkdownBlock text={body} />
-      {showEvaluation && evaluation ? (
-        <section className="evaluation-disclosure">
-          <button type="button" aria-expanded={evaluationOpen} onClick={() => setEvaluationOpen((open) => !open)}>
-            <span>Judge evaluation</span>
-            <span aria-hidden="true">{evaluationOpen ? "-" : "+"}</span>
-          </button>
-          {evaluationOpen ? <MarkdownBlock text={evaluation} /> : null}
-        </section>
-      ) : null}
     </>
   );
 }
@@ -675,9 +882,20 @@ function CaseStudyBlock({
 function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
   const fields = [
     ["source status", artifact.source_status],
-    ["comparison", "comparison_set_id" in artifact ? artifact.comparison_set_id : undefined],
-    ["input hash", "comparison_input_hash" in artifact ? artifact.comparison_input_hash : undefined],
-    ["source mapping", artifact.source_mapping_version ?? artifact.adapter_version],
+    [
+      "comparison",
+      "comparison_set_id" in artifact ? artifact.comparison_set_id : undefined,
+    ],
+    [
+      "input hash",
+      "comparison_input_hash" in artifact
+        ? artifact.comparison_input_hash
+        : undefined,
+    ],
+    [
+      "source mapping",
+      artifact.source_mapping_version ?? artifact.adapter_version,
+    ],
     ["kernel", artifact.kernel],
     ["class", "output_class" in artifact ? artifact.output_class : undefined],
     ["phase", "phase" in artifact ? artifact.phase : undefined],
@@ -685,12 +903,29 @@ function KernelMeta({ artifact }: { artifact: ReviewArtifact }) {
     ["branch", artifact.source_branch ?? artifact.branch],
     ["commit", artifact.source_commit],
     ["run", artifact.run_id],
-    ["run artifact", "run_artifact_id" in artifact ? artifact.run_artifact_id : undefined],
-    ["generation", "generation_id" in artifact ? artifact.generation_id : undefined],
+    [
+      "run artifact",
+      "run_artifact_id" in artifact ? artifact.run_artifact_id : undefined,
+    ],
+    [
+      "generation",
+      "generation_id" in artifact ? artifact.generation_id : undefined,
+    ],
     ["agenome", "agenome_id" in artifact ? artifact.agenome_id : undefined],
-    ["candidate", "candidate_id" in artifact ? artifact.candidate_id : undefined],
-    ["judge", "judge_score" in artifact ? artifact.judge_score?.toString() : undefined],
-    ["fitness", "fitness_score" in artifact ? artifact.fitness_score?.toString() : undefined],
+    [
+      "candidate",
+      "candidate_id" in artifact ? artifact.candidate_id : undefined,
+    ],
+    [
+      "judge",
+      "judge_score" in artifact ? artifact.judge_score?.toString() : undefined,
+    ],
+    [
+      "fitness",
+      "fitness_score" in artifact
+        ? artifact.fitness_score?.toString()
+        : undefined,
+    ],
   ].filter(([, value]) => value);
 
   return (
@@ -744,8 +979,12 @@ export function App() {
   const isAgoraRoute = /\/agora\/?$/.test(window.location.pathname);
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
-  const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<string | null>(null);
-  const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null);
+  const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<
+    string | null
+  >(null);
+  const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(
+    null,
+  );
   const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
@@ -775,13 +1014,18 @@ export function App() {
   const lastScoreReviewer = useRef("");
   const lastScoreWasHydrated = useRef(false);
 
-  async function mergeHostedRatingsLedger(data: CalibratorIndex): Promise<CalibratorIndex> {
+  async function mergeHostedRatingsLedger(
+    data: CalibratorIndex,
+  ): Promise<CalibratorIndex> {
     const ledgerUrl = hostedRatingsLedgerUrl();
     if (!ledgerUrl) return data;
     try {
-      const response = await fetch(`${ledgerUrl}${ledgerUrl.includes("?") ? "&" : "?"}v=${Date.now()}`, {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        `${ledgerUrl}${ledgerUrl.includes("?") ? "&" : "?"}v=${Date.now()}`,
+        {
+          cache: "no-store",
+        },
+      );
       if (!response.ok) return data;
       const ledger = (await response.json()) as AgardenLedgerEntry[];
       if (!Array.isArray(ledger)) return data;
@@ -797,7 +1041,9 @@ export function App() {
       if (apiResponse.ok) {
         setIsWritable(true);
         setRatingsEndpoint(LOCAL_RATINGS_ENDPOINT);
-        return mergeHostedRatingsLedger((await apiResponse.json()) as CalibratorIndex);
+        return mergeHostedRatingsLedger(
+          (await apiResponse.json()) as CalibratorIndex,
+        );
       }
     } catch {
       // Static previews do not expose the local Vite write API.
@@ -810,16 +1056,27 @@ export function App() {
     const githubConfig = hostedAgardenConfig();
     if (githubConfig) {
       try {
-        return mergeHostedRatingsLedger(await readGitHubAgardenIndex(githubConfig));
+        return mergeHostedRatingsLedger(
+          await readGitHubAgardenIndex(githubConfig),
+        );
       } catch (err) {
-        console.warn("Falling back to static calibration index after GitHub aGarden read failed.", err);
+        console.warn(
+          "Falling back to static calibration index after GitHub aGarden read failed.",
+          err,
+        );
       }
     }
 
-    const staticIndexPath = isAgoraRoute ? "../calibration-index.json" : "calibration-index.json";
-    const staticResponse = await fetch(`${staticIndexPath}?v=${Date.now()}`, { cache: "no-store" });
+    const staticIndexPath = isAgoraRoute
+      ? "../calibration-index.json"
+      : "calibration-index.json";
+    const staticResponse = await fetch(`${staticIndexPath}?v=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!staticResponse.ok) throw new Error("Failed to load vault index");
-    return mergeHostedRatingsLedger((await staticResponse.json()) as CalibratorIndex);
+    return mergeHostedRatingsLedger(
+      (await staticResponse.json()) as CalibratorIndex,
+    );
   }
 
   useEffect(() => {
@@ -828,23 +1085,33 @@ export function App() {
         setIndex(data);
         const firstCase = firstReviewableCase(data);
         if (firstCase) {
-          const firstPrimaryProblemRecovery = firstRateableProblemRecovery(firstCase);
+          const firstPrimaryProblemRecovery =
+            firstRateableProblemRecovery(firstCase);
           const firstPrimarySolution = firstRateableSolution(firstCase);
           setSelectedCaseId(firstCase.case_id);
-          setSelectedProblemRecoveryId(firstPrimaryProblemRecovery?.problem_recovery_id ?? null);
+          setSelectedProblemRecoveryId(
+            firstPrimaryProblemRecovery?.problem_recovery_id ?? null,
+          );
           setSelectedSolutionId(firstPrimarySolution?.solution_id ?? null);
-          setRatingTarget(firstPrimaryProblemRecovery ? "problem_recovery" : "solution");
+          setRatingTarget(
+            firstPrimaryProblemRecovery ? "problem_recovery" : "solution",
+          );
         }
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Failed to load vault index");
+        setError(
+          err instanceof Error ? err.message : "Failed to load vault index",
+        );
       });
   }, []);
 
   useEffect(() => {
     function updateViewportHeight() {
       const height = window.visualViewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--calibrator-vh", `${height}px`);
+      document.documentElement.style.setProperty(
+        "--calibrator-vh",
+        `${height}px`,
+      );
     }
 
     updateViewportHeight();
@@ -852,37 +1119,64 @@ export function App() {
     window.visualViewport?.addEventListener("scroll", updateViewportHeight);
     window.addEventListener("resize", updateViewportHeight);
     return () => {
-      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
-      window.visualViewport?.removeEventListener("scroll", updateViewportHeight);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateViewportHeight,
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        updateViewportHeight,
+      );
       window.removeEventListener("resize", updateViewportHeight);
     };
   }, []);
 
   const selectedCase = useMemo(
-    () => index?.cases.filter(hasRateableArtifacts).find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
+    () =>
+      index?.cases
+        .filter(hasRateableArtifacts)
+        .find((caseItem) => caseItem.case_id === selectedCaseId) ?? null,
     [index, selectedCaseId],
   );
-  const reviewableCases = useMemo(() => index?.cases.filter(hasRateableArtifacts) ?? [], [index]);
-  const allProblemRecoveries = useMemo(() => selectedCase?.problem_recoveries ?? [], [selectedCase]);
-  const allSolutions = useMemo(() => selectedCase?.solutions ?? [], [selectedCase]);
+  const reviewableCases = useMemo(
+    () => index?.cases.filter(hasRateableArtifacts) ?? [],
+    [index],
+  );
+  const allProblemRecoveries = useMemo(
+    () => selectedCase?.problem_recoveries ?? [],
+    [selectedCase],
+  );
+  const allSolutions = useMemo(
+    () => selectedCase?.solutions ?? [],
+    [selectedCase],
+  );
   const visibleSolutions = useMemo(() => {
     if (!selectedCase) return [];
-    return allSolutions.filter((artifact) => reviewMode(artifact) === "primary");
+    return allSolutions.filter(
+      (artifact) => reviewMode(artifact) === "primary",
+    );
   }, [allSolutions, selectedCase]);
   const selectedSolution = useMemo(
     () =>
-      visibleSolutions.find((solution) => solution.solution_id === selectedSolutionId) ??
+      visibleSolutions.find(
+        (solution) => solution.solution_id === selectedSolutionId,
+      ) ??
       visibleSolutions[0] ??
       null,
     [visibleSolutions, selectedSolutionId],
   );
   const visibleProblemRecoveries = useMemo(() => {
     if (!selectedCase) return [];
-    return allProblemRecoveries.filter((artifact) => reviewMode(artifact) === "primary");
+    return allProblemRecoveries.filter(
+      (artifact) => reviewMode(artifact) === "primary",
+    );
   }, [allProblemRecoveries, selectedCase]);
   const selectedProblemRecovery = useMemo(
     () =>
-      visibleProblemRecoveries.find((recovery) => recovery.problem_recovery_id === selectedProblemRecoveryId) ??
+      visibleProblemRecoveries.find(
+        (recovery) =>
+          recovery.problem_recovery_id === selectedProblemRecoveryId,
+      ) ??
       visibleProblemRecoveries[0] ??
       null,
     [visibleProblemRecoveries, selectedProblemRecoveryId],
@@ -891,9 +1185,12 @@ export function App() {
     return reviewQueueForCase(selectedCase);
   }, [selectedCase]);
   const activeReviewArtifact =
-    ratingTarget === "problem_recovery" ? selectedProblemRecovery : selectedSolution;
+    ratingTarget === "problem_recovery"
+      ? selectedProblemRecovery
+      : selectedSolution;
   const activeTitle = artifactTitle(activeReviewArtifact);
-  const ratingObjectLabel = ratingTarget === "problem_recovery" ? "problem recovery" : "doppl";
+  const ratingObjectLabel =
+    ratingTarget === "problem_recovery" ? "problem recovery" : "doppl";
   const ratingQuestion =
     ratingTarget === "problem_recovery"
       ? "Does this identify the right problem in the case?"
@@ -905,33 +1202,53 @@ export function App() {
   const activeIsSubmittable = canSubmitRating(activeReviewArtifact);
   const normalizedReviewerEmail = normalizeRaterEmail(reviewerEmail);
   const reviewerIsAllowed = isAllowedRater(reviewerEmail);
-  const activeReviewerRating = reviewerRating(activeReviewArtifact, normalizedReviewerEmail);
+  const activeReviewerRating = reviewerRating(
+    activeReviewArtifact,
+    normalizedReviewerEmail,
+  );
   const activeArtifactValue =
     ratingTarget === "problem_recovery"
-      ? selectedProblemRecovery?.problem_recovery_id ?? ""
-      : selectedSolution?.solution_id ?? "";
+      ? (selectedProblemRecovery?.problem_recovery_id ?? "")
+      : (selectedSolution?.solution_id ?? "");
   const selectedComparisonSet = useMemo(() => {
     const comparisonSetId = selectedSolution?.comparison_set_id;
     if (!comparisonSetId) return null;
-    return (index?.comparison_sets ?? []).find((set) => set.comparison_set_id === comparisonSetId) ?? null;
+    return (
+      (index?.comparison_sets ?? []).find(
+        (set) => set.comparison_set_id === comparisonSetId,
+      ) ?? null
+    );
   }, [index?.comparison_sets, selectedSolution?.comparison_set_id]);
 
   useEffect(() => {
     if (!selectedCase) return;
 
-    const nextProblemRecovery = visibleProblemRecoveries[0]?.problem_recovery_id ?? null;
+    const nextProblemRecovery =
+      visibleProblemRecoveries[0]?.problem_recovery_id ?? null;
     const nextSolution = visibleSolutions[0]?.solution_id ?? null;
 
     if (
       selectedProblemRecoveryId &&
-      !visibleProblemRecoveries.some((artifact) => artifact.problem_recovery_id === selectedProblemRecoveryId)
+      !visibleProblemRecoveries.some(
+        (artifact) =>
+          artifact.problem_recovery_id === selectedProblemRecoveryId,
+      )
     ) {
       setSelectedProblemRecoveryId(nextProblemRecovery);
     }
-    if (selectedSolutionId && !visibleSolutions.some((artifact) => artifact.solution_id === selectedSolutionId)) {
+    if (
+      selectedSolutionId &&
+      !visibleSolutions.some(
+        (artifact) => artifact.solution_id === selectedSolutionId,
+      )
+    ) {
       setSelectedSolutionId(nextSolution);
     }
-    if (ratingTarget === "problem_recovery" && !nextProblemRecovery && nextSolution) {
+    if (
+      ratingTarget === "problem_recovery" &&
+      !nextProblemRecovery &&
+      nextSolution
+    ) {
       setRatingTarget("solution");
     }
     if (ratingTarget === "solution" && !nextSolution && nextProblemRecovery) {
@@ -949,7 +1266,8 @@ export function App() {
   useEffect(() => {
     const artifactScoreKey = `${ratingTarget}:${activeArtifactValue}`;
     const artifactChanged = lastScoreArtifactKey.current !== artifactScoreKey;
-    const reviewerChanged = lastScoreReviewer.current !== normalizedReviewerEmail;
+    const reviewerChanged =
+      lastScoreReviewer.current !== normalizedReviewerEmail;
     const previousScoreWasHydrated = lastScoreWasHydrated.current;
 
     lastScoreArtifactKey.current = artifactScoreKey;
@@ -981,17 +1299,22 @@ export function App() {
   ]);
 
   async function submitRating() {
-    if (!index || !selectedCase || !activeReviewArtifact || score === null) return;
+    if (!index || !selectedCase || !activeReviewArtifact || score === null)
+      return;
     if (!reviewerIsAllowed) {
       setError("Enter a valid reviewer email before submitting.");
       return;
     }
     if (!activeIsSubmittable) {
-      setError("This artifact is audit-only. Inspect it for provenance, but rate imported or live run outputs.");
+      setError(
+        "This artifact is audit-only. Inspect it for provenance, but rate imported or live run outputs.",
+      );
       return;
     }
     if (!isWritable || !ratingsEndpoint) {
-      setError("Static preview is read-only until a hosted ratings API is configured.");
+      setError(
+        "Static preview is read-only until a hosted ratings API is configured.",
+      );
       return;
     }
     if (requiresAccessCode && !accessCode.trim()) {
@@ -1013,16 +1336,23 @@ export function App() {
         body: JSON.stringify({
           case_id: selectedCase.case_id,
           rating_target: ratingTarget,
-          solution_id: ratingTarget === "solution" ? selectedSolution?.solution_id : undefined,
+          solution_id:
+            ratingTarget === "solution"
+              ? selectedSolution?.solution_id
+              : undefined,
           problem_recovery_id:
-            ratingTarget === "problem_recovery" ? selectedProblemRecovery?.problem_recovery_id : undefined,
+            ratingTarget === "problem_recovery"
+              ? selectedProblemRecovery?.problem_recovery_id
+              : undefined,
           node_id: activeReviewArtifact.node_id,
           score,
           notes: "",
           reviewer_email: normalizeRaterEmail(reviewerEmail),
         }),
       });
-      const body = (await response.json()) as Partial<RatingSubmitResponse> & { error?: string };
+      const body = (await response.json()) as Partial<RatingSubmitResponse> & {
+        error?: string;
+      };
       if (!response.ok) {
         setError(body.error ?? "Rating submission failed");
         return;
@@ -1045,7 +1375,9 @@ export function App() {
       setIndex(refreshed);
       setSavedPath(body.relativePath ?? "");
       const refreshedCase =
-        refreshed.cases.filter(hasRateableArtifacts).find((caseItem) => caseItem.case_id === selectedCase.case_id) ??
+        refreshed.cases
+          .filter(hasRateableArtifacts)
+          .find((caseItem) => caseItem.case_id === selectedCase.case_id) ??
         null;
       const nextItem = findNextUnratedItem(
         reviewQueueForCase(refreshedCase),
@@ -1079,7 +1411,10 @@ export function App() {
     setLoginEmail("");
     setLoginError("");
     try {
-      window.localStorage.setItem(REVIEWER_STORAGE_KEY, normalizeRaterEmail(value));
+      window.localStorage.setItem(
+        REVIEWER_STORAGE_KEY,
+        normalizeRaterEmail(value),
+      );
     } catch {
       // Local storage is a convenience only; rating validation remains server-side.
     }
@@ -1161,7 +1496,9 @@ export function App() {
           <div>
             <p className="eyebrow">Doppl Life</p>
             <h1>Calibrator</h1>
-            <p className="login-copy">Enter your email so your ratings can be saved to the ledger.</p>
+            <p className="login-copy">
+              Enter your email so your ratings can be saved to the ledger.
+            </p>
           </div>
           <label className="field login-field">
             <span>Reviewer email</span>
@@ -1209,13 +1546,23 @@ export function App() {
           <select
             value={selectedCaseId}
             onChange={(event) => {
-              const nextCase = reviewableCases.find((item) => item.case_id === event.target.value);
-              const nextPrimaryProblemRecovery = nextCase ? firstRateableProblemRecovery(nextCase) : undefined;
-              const nextPrimarySolution = nextCase ? firstRateableSolution(nextCase) : undefined;
+              const nextCase = reviewableCases.find(
+                (item) => item.case_id === event.target.value,
+              );
+              const nextPrimaryProblemRecovery = nextCase
+                ? firstRateableProblemRecovery(nextCase)
+                : undefined;
+              const nextPrimarySolution = nextCase
+                ? firstRateableSolution(nextCase)
+                : undefined;
               setSelectedCaseId(event.target.value);
-              setSelectedProblemRecoveryId(nextPrimaryProblemRecovery?.problem_recovery_id ?? null);
+              setSelectedProblemRecoveryId(
+                nextPrimaryProblemRecovery?.problem_recovery_id ?? null,
+              );
               setSelectedSolutionId(nextPrimarySolution?.solution_id ?? null);
-              setRatingTarget(nextPrimaryProblemRecovery ? "problem_recovery" : "solution");
+              setRatingTarget(
+                nextPrimaryProblemRecovery ? "problem_recovery" : "solution",
+              );
               setSavedPath("");
               setSourceDetailsOpen(false);
             }}
@@ -1256,10 +1603,16 @@ export function App() {
 
         <div className="artifact-control">
           <div className="artifact-select-header">
-            <span>{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</span>
+            <span>
+              {ratingTarget === "problem_recovery"
+                ? "Problem recovery"
+                : "Doppl"}
+            </span>
           </div>
           <select
-            aria-label={ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}
+            aria-label={
+              ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"
+            }
             value={activeArtifactValue}
             onChange={(event) => {
               if (ratingTarget === "problem_recovery") {
@@ -1273,29 +1626,44 @@ export function App() {
           >
             {ratingTarget === "problem_recovery"
               ? visibleProblemRecoveries.map((recovery) => (
-                  <option key={recovery.problem_recovery_id} value={recovery.problem_recovery_id}>
+                  <option
+                    key={recovery.problem_recovery_id}
+                    value={recovery.problem_recovery_id}
+                  >
                     {recovery.title}
                   </option>
                 ))
               : visibleSolutions.map((solution) => (
-                  <option key={solution.solution_id} value={solution.solution_id}>
+                  <option
+                    key={solution.solution_id}
+                    value={solution.solution_id}
+                  >
                     {solution.title}
                   </option>
                 ))}
           </select>
         </div>
 
-        <button className="logout-button" type="button" onClick={logoutReviewer} aria-label="Log out">
+        <button
+          className="logout-button"
+          type="button"
+          onClick={logoutReviewer}
+          aria-label="Log out"
+        >
           <span aria-hidden="true">Log out</span>
         </button>
       </section>
 
-      <section className="trace-surface" aria-label="Case and selected artifact review">
+      <section
+        className="trace-surface"
+        aria-label="Case and selected artifact review"
+      >
         <section className="review-guide" aria-label="Rating instructions">
           <div className="guide-rubric">
             <p className="trace-label">Rating guide</p>
             <p>
-              Rate how useful this {ratingObjectLabel} is for understanding or solving the case. {ratingQuestion}
+              Rate how useful this {ratingObjectLabel} is for understanding or
+              solving the case. {ratingQuestion}
             </p>
           </div>
           <ol className="guide-steps" aria-label="Rating steps">
@@ -1306,31 +1674,42 @@ export function App() {
           <p className="mode-explainer">{ratingModeDescription}</p>
         </section>
 
-        <div className="case-study-heading" aria-label={`Case study: ${selectedCase.title}`}>
-          <span>Case Study:</span> {selectedCase.title}
+        <div
+          className="case-study-heading"
+          aria-label={`Case study: ${selectedCase.title}`}
+        >
+          {selectedCase.title}
         </div>
 
         <article className="trace-step selected-step">
-          <p className="trace-label">{ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}</p>
+          <p className="trace-label">
+            {ratingTarget === "problem_recovery" ? "Problem recovery" : "Doppl"}
+          </p>
           <h2>{activeTitle}</h2>
           {activeReviewArtifact ? (
-            <ArtifactMarkdownBlock
-              artifactKey={`${ratingTarget}:${activeArtifactValue}`}
-              text={activeReviewArtifact.body}
-              showEvaluation={canSeeJudgeEvaluation(normalizedReviewerEmail)}
-            />
+            <ArtifactMarkdownBlock text={activeReviewArtifact.body} />
           ) : null}
         </article>
 
         <section className="source-disclosure">
-          <button type="button" onClick={() => setSourceDetailsOpen((open) => !open)}>
-            <span>{sourceDetailsOpen ? "Hide source details" : "Show source details"}</span>
+          <button
+            type="button"
+            onClick={() => setSourceDetailsOpen((open) => !open)}
+          >
+            <span>
+              {sourceDetailsOpen
+                ? "Hide source details"
+                : "Show source details"}
+            </span>
             <span>{sourceDetailsOpen ? "-" : "+"}</span>
           </button>
           {sourceDetailsOpen && activeReviewArtifact ? (
             <div>
               {selectedComparisonSet && ratingTarget === "solution" ? (
-                <section className="comparison-banner" aria-label="Comparison set provenance">
+                <section
+                  className="comparison-banner"
+                  aria-label="Comparison set provenance"
+                >
                   <div>
                     <p className="eyebrow">Comparison Set</p>
                     <h3>{selectedComparisonSet.title}</h3>
@@ -1353,7 +1732,9 @@ export function App() {
               ) : null}
               <KernelMeta artifact={activeReviewArtifact} />
               {activeReviewArtifact.adapter_notes ? (
-                <p className="adapter-note">{activeReviewArtifact.adapter_notes}</p>
+                <p className="adapter-note">
+                  {activeReviewArtifact.adapter_notes}
+                </p>
               ) : null}
             </div>
           ) : null}
@@ -1363,24 +1744,26 @@ export function App() {
       <footer className="rating-dock" aria-label="Rating controls">
         {requiresAccessCode ? (
           <div className="session-fields">
-          {requiresAccessCode ? (
-            <label className="field access-code-field">
-              <span>Access code</span>
-              <input
-                type="password"
-                value={accessCode}
-                onChange={(event) => updateAccessCode(event.target.value)}
-                autoComplete="current-password"
-                placeholder="Session code"
-              />
-            </label>
-          ) : null}
+            {requiresAccessCode ? (
+              <label className="field access-code-field">
+                <span>Access code</span>
+                <input
+                  type="password"
+                  value={accessCode}
+                  onChange={(event) => updateAccessCode(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Session code"
+                />
+              </label>
+            ) : null}
           </div>
         ) : null}
         <div className="slider-row">
           <label htmlFor="score-slider">
             <span>Score</span>
-            <strong>{score === null ? "No score selected" : scoreLabel(score)}</strong>
+            <strong>
+              {score === null ? "No score selected" : scoreLabel(score)}
+            </strong>
           </label>
           <input
             id="score-slider"
@@ -1438,10 +1821,16 @@ export function App() {
           {isSubmitting
             ? "Saving..."
             : `${activeReviewerRating ? "Update" : "Submit"} ${
-                ratingTarget === "problem_recovery" ? "problem recovery" : "doppl"
+                ratingTarget === "problem_recovery"
+                  ? "problem recovery"
+                  : "doppl"
               } rating`}
         </button>
-        {!isWritable ? <p className="mode-note">Rating writes require the local dev server or hosted ratings API.</p> : null}
+        {!isWritable ? (
+          <p className="mode-note">
+            Rating writes require the local dev server or hosted ratings API.
+          </p>
+        ) : null}
         {error ? (
           <p role="alert" className="error">
             {error}
