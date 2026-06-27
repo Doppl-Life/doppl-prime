@@ -85,6 +85,26 @@ describe('buildRunSummary', () => {
     expect(s.mutations).toBe(1);
   });
 
+  it('surfaces caseStudyId from run.configured when present, null when absent (Islands pivot A)', () => {
+    // Absent (the rich log carries no caseStudyId) → null, byte-identical to pre-pivot behavior.
+    expect(buildRunSummary(richRunLog()).caseStudyId).toBeNull();
+    // Present → surfaced verbatim (the join key the cross-run case-study graph groups on).
+    const log = richRunLog().map((e) =>
+      e.type === 'run.configured'
+        ? row({
+            ...e,
+            type: 'run.configured',
+            payload: {
+              seed: 'Problem: smooth ER patient flow',
+              rngSeed: 1,
+              caseStudyId: 'cs_er_flow',
+            },
+          })
+        : e,
+    );
+    expect(buildRunSummary(log).caseStudyId).toBe('cs_er_flow');
+  });
+
   it('strips the "Problem:" label and reduces a verbose seed to its first-sentence title', () => {
     const verbose =
       'Problem:\nHospital ERs overflow during surges. Propose a cross-domain transfer, grounded in a proven technique, to smooth patient flow.';

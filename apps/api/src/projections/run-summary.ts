@@ -23,6 +23,13 @@ export interface RunSummaryItem {
   readonly createdAt: string | null;
   /** The per-run problem statement (`run.configured.seed`), truncated; null if absent. */
   readonly problem: string | null;
+  /**
+   * The case study this run is an execution OF (`run.configured.caseStudyId`), or null. Many runs can share
+   * one caseStudyId (re-run the same scenario → new runId, same caseStudyId) — the join key the cross-run
+   * case-study graph groups on. Islands pivot Increment A: rides the generic run.configured payload (zero
+   * contract bump, §107); formalized into RunConfig in Increment B.
+   */
+  readonly caseStudyId: string | null;
   /** The selected winner's title + a truncated summary, or null when no winner (in-progress/failed). */
   readonly finalIdeaTitle: string | null;
   readonly finalIdeaSummary: string | null;
@@ -91,6 +98,7 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
   // The creation time + problem from `run.configured` (the route appends it at POST /runs).
   const configured = events.find((e) => e.type === 'run.configured');
   const seed = configured ? stringField(configured.payload, 'seed') : null;
+  const caseStudyId = configured ? stringField(configured.payload, 'caseStudyId') : null;
 
   const winnerId = winner?.id ?? null;
   let generations = 0;
@@ -154,6 +162,7 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
     sequenceThrough,
     createdAt: configured ? configured.occurredAt.toISOString() : null,
     problem: seed !== null ? problemTitle(seed) : null,
+    caseStudyId,
     finalIdeaTitle: winner?.title ?? null,
     finalIdeaSummary: winner ? truncate(winner.summary, SUMMARY_MAX) : null,
     generations,

@@ -6,6 +6,7 @@ import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CURRENT_SCHEMA_VERSION } from '@doppl/contracts';
 import { createEventStore, type EventStore } from '../../../src/event-store';
 import { buildServer, DEFAULT_RUN_CONFIG } from '../../../src/server';
+import { extractRunConfig } from '../../../src/boot/startRun';
 
 /**
  * P6.6 — REST write path + Fastify bootstrap (integration, testcontainers/real PG + Fastify inject).
@@ -72,6 +73,43 @@ describe('POST /runs + /runs/:id/stop — REST write path (spec §11/§14/§15)'
       const { runId } = res.json() as { runId: string };
       expect(runId).toBeTruthy();
       expect(await countType(runId, 'run.configured')).toBe(1);
+    } finally {
+      await app.close();
+    }
+  });
+
+  // Islands pivot Increment A — caseStudyId rides the run.configured payload (zero contract bump, §107). It
+  // is stripped from the body BEFORE the strict validateRunConfig (so the run still validates → 201), and the
+  // run is still reconstructable (extractRunConfig tolerates the extra key). Absent → byte-identical payload.
+  test('test_post_runs_caseStudyId_rides_run_configured_payload', async () => {
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/runs',
+        payload: { ...validBody, caseStudyId: 'cs_er_flow' },
+      });
+      expect(res.statusCode).toBe(201); // caseStudyId did NOT trip the strict config validation
+      const { runId } = res.json() as { runId: string };
+      const configured = (await store.readByRun(runId)).find((e) => e.type === 'run.configured');
+      const payload = configured!.payload as Record<string, unknown>;
+      expect(payload.caseStudyId).toBe('cs_er_flow'); // persisted as the join key
+      expect(payload.seed).toBe('scenario-x'); // the config still rode along
+      expect(extractRunConfig(payload)).not.toBeUndefined(); // run still reconstructable
+    } finally {
+      await app.close();
+    }
+  });
+
+  test('test_post_runs_without_caseStudyId_omits_the_key', async () => {
+    const app = makeApp();
+    await app.ready();
+    try {
+      const res = await app.inject({ method: 'POST', url: '/runs', payload: validBody });
+      const { runId } = res.json() as { runId: string };
+      const configured = (await store.readByRun(runId)).find((e) => e.type === 'run.configured');
+      expect(configured!.payload).not.toHaveProperty('caseStudyId');
     } finally {
       await app.close();
     }
