@@ -76,15 +76,27 @@ async function scoreCorpus(gateway: ModelGateway, criteriaSource?: string): Prom
 function logReport(label: string, scored: ScoredEntry[]): void {
   const report = computeDiscrimination(scored);
   const gate = passesGate(report);
+  // Per-tier mean [min–max] + each problem's score, so a within-tier outlier (the candidate driving the band)
+  // is visible at a glance — that is what diagnoses a within-tier-band failure.
+  const tierLines = (['weak', 'mediocre', 'good', 'excellent', 'gamed'] as const)
+    .map((t) => {
+      const s = report.tierStats[t];
+      if (s === undefined) return `    ${t.padEnd(9)} —`;
+      const members = scored
+        .filter((e) => e.tier === t)
+        .map((e) => `${e.problemId} ${e.acceptance.toFixed(2)}`)
+        .join(', ');
+      return `    ${t.padEnd(9)} mean ${s.mean.toFixed(3)} [${s.min.toFixed(2)}–${s.max.toFixed(2)}]  (${members})`;
+    })
+    .join('\n');
   console.log(
     `\n[judge-calibration ${label}] scored=${scored.length}/15\n` +
-      `  tier means: ${(['weak', 'mediocre', 'good', 'excellent', 'gamed'] as const)
-        .map((t) => `${t}=${report.tierStats[t]?.mean?.toFixed(3) ?? '—'}`)
-        .join('  ')}\n` +
+      `${tierLines}\n` +
       `  spread=${report.spread?.toFixed(3)} minGap=${report.minGap?.toFixed(3)} ` +
-      `monotone=${report.monotone} gamedBelowMediocre=${report.gamedBelowMediocre}\n` +
+      `monotone=${report.monotone} gamedBelowMediocre=${report.gamedBelowMediocre} ` +
+      `maxWithinTierBand=${report.maxWithinTierBand?.toFixed(3)}\n` +
       `  meansInBand=${JSON.stringify(meansInBand(report))}\n` +
-      `  GATE: ${gate.pass ? 'PASS' : 'FAIL'} ${gate.failures.length ? '— ' + gate.failures.join('; ') : ''}`,
+      `  GATE: ${gate.pass ? 'PASS' : 'FAIL'}${gate.failures.length ? ' — ' + gate.failures.join('; ') : ''}`,
   );
 }
 
