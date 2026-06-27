@@ -349,18 +349,28 @@ function concurrencyProbeGateway(): { gateway: GenerationGateway; peak: () => nu
 
 describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', () => {
   test('happy_path_drives_full_generation_lifecycle', async () => {
-    // spec(§3/§5): one generation emits the kernel lifecycle + markers in order: started → verifying →
-    // scoring → reproducing → completed (the operation-start markers appended on phase ENTRY).
+    // spec(§3/§5): a NON-FINAL generation emits the kernel lifecycle + markers in order: started → verifying
+    // → scoring → reproducing → completed (the operation-start markers appended on phase ENTRY). The FINAL
+    // generation omits the reproduce phase (no successor to seed) → started → verifying → scoring → completed.
     const fake = makeFakeEventStore();
     await runGenerationLoop(
-      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
     );
-    const kernelLifecycle = fake.appendedTypes().filter((t) => t.startsWith('generation.'));
-    expect(kernelLifecycle).toEqual([
+    const lifecycleOf = (gen: string) =>
+      fake.rows
+        .filter((r) => r.type.startsWith('generation.') && r.generationId === gen)
+        .map((r) => r.type);
+    expect(lifecycleOf('run_loop-gen0')).toEqual([
       'generation.started',
       'generation.verifying',
       'generation.scoring',
       'generation.reproducing',
+      'generation.completed',
+    ]);
+    expect(lifecycleOf('run_loop-gen1')).toEqual([
+      'generation.started',
+      'generation.verifying',
+      'generation.scoring',
       'generation.completed',
     ]);
   });
@@ -419,10 +429,11 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
   test('operation_markers_are_generic_no_debit', async () => {
     // spec(§4): the 3 markers are appended on phase entry + NONE is in HIGH_TRAFFIC_PAYLOAD_MAP (generic
     // payload). Markers carry no energy debit themselves — energy.spent is emitted only for productive
-    // spends (llm/spawn/tool, 10d), NEVER narrowed to/triggered by an operation-start marker.
+    // spends (llm/spawn/tool, 10d), NEVER narrowed to/triggered by an operation-start marker. maxGenerations:2
+    // so the non-final gen0 emits the reproducing marker (the final gen skips reproduction).
     const fake = makeFakeEventStore();
     await runGenerationLoop(
-      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
     );
     const markers: RunEventType[] = [
       'generation.verifying',
@@ -453,9 +464,10 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
   test('loop_consumes_seam_events_never_authors_them', async () => {
     // spec(§5)/option-b/rule #9: with APPENDING seams the seam events are present; the loop's OWN appends
     // exclude every seam-owned type; and the loop reads the log back (readByRun) to consume them as DATA.
+    // maxGenerations:2 so the non-final gen0 runs the reproduce seam (the final gen skips reproduction).
     const fake = makeFakeEventStore();
     await runGenerationLoop(
-      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 1 } }),
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 1 } }),
     );
     const seamPresent = fake.types().filter((t) => SEAM_OWNED.includes(t));
     expect(seamPresent).toContain('critic.reviewed');
@@ -487,6 +499,38 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
     expect(fake.appendedTypes().filter((t) => t === 'generation.completed')).toHaveLength(3);
   });
 
+  test('reproduction_skipped_on_final_generation', async () => {
+    // spec(§5/§8) — reproduction (and the successor-population threading it feeds) exists SOLELY to seed the
+    // NEXT generation. The FINAL generation has no successor, so the loop must NOT run the reproduce seam on
+    // it — otherwise it breeds offspring agenomes (agenome.reproduced/fused) that never generate a candidate,
+    // leaving phantom lineage nodes "after the final generation." A 2-generation run reproduces on gen0
+    // (non-final) but not on gen1 (final); both generations still complete.
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
+    );
+    const generationsOf = (type: RunEventType) =>
+      fake.rows.filter((r) => r.type === type).map((r) => r.generationId);
+    // the reproduce seam fired on gen0 only (the seam's agenome.reproduced + the loop's reproducing marker).
+    expect(generationsOf('agenome.reproduced')).toEqual(['run_loop-gen0']);
+    expect(generationsOf('generation.reproducing')).toEqual(['run_loop-gen0']);
+    // both generations still reach completed (the final gen takes scoring → completed, the zero-successor path).
+    expect(fake.appendedTypes().filter((t) => t === 'generation.completed')).toHaveLength(2);
+  });
+
+  test('single_generation_run_does_not_reproduce', async () => {
+    // The degenerate case of the same rule: maxGenerations:1 → the only generation IS the final one → no
+    // reproduction at all. The generation still completes with scored survivors, so a final idea is still
+    // resolvable (the run-terminal classifier reads the scored survivors, not offspring).
+    const fake = makeFakeEventStore();
+    await runGenerationLoop(
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+    );
+    expect(fake.appendedTypes()).not.toContain('agenome.reproduced');
+    expect(fake.appendedTypes()).not.toContain('generation.reproducing');
+    expect(fake.appendedTypes()).toContain('generation.completed');
+  });
+
   test('illegal_transition_rejected_by_guard', async () => {
     // spec(§3)/rule #2 + P3.2: the loop validates each transition through canTransitionGeneration; a forced
     // out-of-lifecycle transition throws (never a forced append). A legal one returns the target status.
@@ -503,9 +547,10 @@ describe('runGenerationLoop (P3.10b — happy-path generation-loop skeleton)', (
   test('rng_outcomes_persisted_on_reproduction', async () => {
     // spec(rule #7 / P3.6): the loop constructs the LIVE outcome source and passes it to the reproduce
     // seam, so the drawn RNG outcomes are recorded into the agenome.mutated payload (replay-faithful).
+    // maxGenerations:2 so the non-final gen0 reproduces (the final gen skips reproduction).
     const fake = makeFakeEventStore();
     await runGenerationLoop(
-      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
     );
     const mutated = fake.rows.find((r) => r.type === 'agenome.mutated');
     expect(mutated).toBeDefined();
@@ -595,6 +640,8 @@ describe('runGenerationLoop (P3.10c — generation-loop edges)', () => {
   test('single_survivor_reproduces_mutation_only', async () => {
     // spec(§8): exactly 1 eligible parent → the reproduce seam is invoked in mutation_only mode; the
     // resulting agenome.reproduced carries mode:'mutation_only' (the loop hints the mode, the seam records).
+    // maxGenerations:2 so the non-final gen0 reproduces (the final gen skips reproduction); the first
+    // agenome.reproduced is gen0's, in mutation_only mode (its single survivor).
     const fake = makeFakeEventStore();
     await runGenerationLoop(
       makeDeps({
@@ -604,7 +651,7 @@ describe('runGenerationLoop (P3.10c — generation-loop edges)', () => {
           score: makeScoreSeam({ surviveCount: 1 }),
           reproduce: appendingReproduce,
         },
-        caps: { maxGenerations: 1, maxPopulation: 2 },
+        caps: { maxGenerations: 2, maxPopulation: 2 },
       }),
     );
     expect(fake.appendedTypes()).toContain('generation.reproducing');
@@ -669,11 +716,16 @@ describe('runGenerationLoop (P3.10c — generation-loop edges)', () => {
   test('happy_path_unaffected', async () => {
     // regression: all accepted, ≥1 survivor, ≥2 eligible parents → the full lifecycle drives with NO
     // degraded/failed branch (the edges are additive; the verifying marker carries no degraded flag).
+    // maxGenerations:2 so the non-final gen0 shows the full reproducing lifecycle (the final gen skips it).
     const fake = makeFakeEventStore();
     await runGenerationLoop(
-      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 1, maxPopulation: 2 } }),
+      makeDeps({ eventStore: fake.store, caps: { maxGenerations: 2, maxPopulation: 2 } }),
     );
-    expect(fake.appendedTypes().filter((t) => t.startsWith('generation.'))).toEqual([
+    expect(
+      fake.rows
+        .filter((r) => r.type.startsWith('generation.') && r.generationId === 'run_loop-gen0')
+        .map((r) => r.type),
+    ).toEqual([
       'generation.started',
       'generation.verifying',
       'generation.scoring',
@@ -1123,15 +1175,16 @@ describe('runGenerationLoop — P5.11 nextPopulation successor-threading hook', 
     expect(gen1).toEqual(new Set(['sentinel_agn_1', 'sentinel_agn_2']));
   });
 
-  // spec(§8) — the hook is called once per completed generation with the context a reconstruct-children
-  // impl (W3b) needs: completedGenerationId + eligibleParents + the post-reproduce log + maxPopulation.
+  // spec(§8) — the hook is called once per NON-FINAL completed generation (a generation with a successor to
+  // seed) with the context a reconstruct-children impl (W3b) needs: completedGenerationId + eligibleParents +
+  // the post-reproduce log + maxPopulation. maxGenerations:2 → exactly one non-final gen (gen0) calls it.
   test('test_hook_receives_completed_generation_context', async () => {
     const seen: NextPopulationArgs[] = [];
     const fake = makeFakeEventStore();
     await runGenerationLoop(
       makeDeps({
         eventStore: fake.store,
-        caps: { maxGenerations: 1, maxPopulation: 2 },
+        caps: { maxGenerations: 2, maxPopulation: 2 },
         nextPopulation: (args) => {
           seen.push(args);
           return args.prevPopulation; // no change — isolate the context assertion.
@@ -1854,12 +1907,13 @@ describe('runGenerationLoop — rule #1 in-loop cap + kill enforcement (run 6b71
     const fake = makeFakeEventStore();
     // perSpawn = 50 (DEFAULT_COST_MAP). gen-0 spawns 2 agenomes (2×50=100) + 2 llm debits, etc. Set a small
     // energyBudget so the remaining-energy headroom at reproduction permits FEWER than maxPopulation(=8)
-    // offspring — the budget the loop passes must reflect that headroom, not the raw cap.
+    // offspring — the budget the loop passes must reflect that headroom, not the raw cap. maxGenerations:2 so
+    // gen0 (non-final) runs the reproduce seam (the final gen skips it); the spy observes gen0's budget.
     await runGenerationLoop(
       makeDeps({
         eventStore: fake.store,
         seams: { verify: appendingVerify, score: appendingScore, reproduce: spyReproduce },
-        caps: { maxGenerations: 1, maxPopulation: 8, energyBudget: 300 },
+        caps: { maxGenerations: 2, maxPopulation: 8, energyBudget: 300 },
       }),
     );
     expect(observedBudget).toBeDefined();
