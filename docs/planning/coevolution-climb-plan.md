@@ -14,12 +14,15 @@
 
 ## 0. RESUME POINTER (update this every session)
 
-- **Status:** PLAN AUTHORED. Build started on Phase A.
+- **Status:** PLAN AUTHORED. **Phase A code-complete + green (A1+A2+A3); awaiting PR/merge.**
 - **Date authored:** 2026-06-27.
 - **Branch/PR state:** work lands to `main` via GitHub PRs (NEVER `git push origin main`; the team uses PRs —
-  branch off `main` → push branch → `gh pr create --base main` → user merges). Ask before any push.
-- **Where we are:** Phase A in progress (see §10 tracker). Next concrete action: §7 Phase-A Slice A1 (the
-  honest gate + adaptive default flip), TDD'd in `apps/api`.
+  branch off `main` → push branch → `gh pr create --base main` → user merges). Ask before any push. **Active
+  branch: `feature/coevolution-phase-a-honest-gate` (off `main`); A1 = `41afe08`, A2+A3 next commit. NOT pushed.**
+- **Where we are:** Phase A (A1 honest gate + adaptive default; A2 judge-keyed elitism; A3 ratchet-on) all
+  implemented + full apps/api preflight green (956 unit + 199 integration). Next: PR Phase A → merge → then
+  Decision D1 (headroom) gates whether/how to proceed to Phase B/C. The ceiling caveat (§3.4) is the live
+  strategic question.
 - **Driver:** user/Michael makes the load-bearing calls (default cadence, eliteCount, headroom/problem choice).
 
 ---
@@ -312,10 +315,14 @@ note-region tag + directed-repair bias (C2), the `coupled` strategy enum member 
 ## 10. PROGRESS TRACKER (the resume checklist — update every session)
 
 Phase A — Honest, non-regressive dynamics
-- [ ] **A1** Honest gate + `adaptive` default flip (convergence.ts + reproduce-seam.ts + mutagenStrategy.ts)
-- [ ] **A2** Judge-keyed elitism + champion ranking (successor-threading.ts + championLedger.ts; D4)
-- [ ] **A3** Ratchet on by default (`DOPPL_HALL_OF_FAME_CARRY` 0→1)
-- [ ] **A-validate** preflight green · replay-equivalence pinned · demo e2e green · `/eval` bounce check · PR merged
+- [x] **A1** Honest gate + `adaptive` default flip (convergence.ts + reproduce-seam.ts + mutagenStrategy.ts) — `41afe08`
+- [x] **A2** Judge-keyed elitism (`rankEligibleByFitness` judge-keyed, total fallback; exported + unit-pinned).
+  NOTE: champion ratchet (`reigningChampion`) left **total-keyed** per D4 (it feeds the surfaced winner via
+  `bestScoredSurvivor`); judge-keying it is deferred (entangled with surfacing — see D4).
+- [x] **A3** Ratchet on by default (`DOPPL_HALL_OF_FAME_CARRY` 0→1, clamped to maxPopulation)
+- [x] **A-validate** full apps/api preflight green (956 unit + 199 integration); demo e2e green; replay covered by
+  the existing recorded-run replay tests (now exercising the adaptive+ratchet path). `/eval` bounce check =
+  pending a live run. **Remaining: open the Phase-A PR (ask first).**
 
 Phase B — Cultural mirror
 - [ ] **B1** `trailEntropy(notes)` pure primitive + floor (selection/knowledge) · PR merged

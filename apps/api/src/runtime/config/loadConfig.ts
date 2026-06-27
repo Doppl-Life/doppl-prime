@@ -160,10 +160,12 @@ function parseEliteCount(raw: string | undefined, maxPopulation: number): number
 }
 
 /** Parse `DOPPL_HALL_OF_FAME_CARRY` → a non-negative integer clamped to `maxPopulation`; absent/garbage/
- *  negative → 0 (the ratchet is OFF = HEAD-identical). An explicit `> 0` enables the champion carry. */
+ *  negative → 1 (the ratchet is ON by default — Phase A / #6: always breed against the reigning champion so
+ *  the per-generation peak is held, the live-validated 0.030→0.006 drop reduction). An explicit `0` disables
+ *  it (the control). A PARENT only — never raises the offspring count (rule #1). */
 function parseHallOfFameCarry(raw: string | undefined, maxPopulation: number): number {
-  if (raw === undefined || raw.trim() === '') return 0;
+  if (raw === undefined || raw.trim() === '') return Math.min(1, maxPopulation);
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0) return 0;
+  if (!Number.isInteger(n) || n < 0) return Math.min(1, maxPopulation);
   return Math.min(n, maxPopulation);
 }
