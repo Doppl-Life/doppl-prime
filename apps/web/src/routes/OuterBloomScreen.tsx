@@ -64,11 +64,19 @@ interface BloomPan {
   y: number;
 }
 
+interface BloomNodePosition {
+  x: number;
+  y: number;
+}
+
 interface BloomDragState {
   pointerId: number;
+  mode: 'pan' | 'node';
+  nodeId?: string;
   startClientX: number;
   startClientY: number;
   startPan: BloomPan;
+  startNode?: BloomNodePosition;
   moved: boolean;
 }
 
@@ -1011,7 +1019,8 @@ function BloomGraph({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const layout = useMemo(() => layoutBloom(bloom), [bloom]);
+  const [nodeOverrides, setNodeOverrides] = useState<Record<string, BloomNodePosition>>({});
+  const layout = useMemo(() => layoutBloom(bloom, nodeOverrides), [bloom, nodeOverrides]);
   const selected = layout.nodes.find((node) => node.id === selectedId) ?? null;
   const selectedPath = selected === null ? new Set<string>() : ancestrySet(selected, layout.nodes);
   const [zoom, setZoom] = useState(1);
@@ -1028,6 +1037,17 @@ function BloomGraph({
     setZoom(1);
     setPan({ x: 0, y: 0 });
   }, [layout.bounds.minX, layout.bounds.minY, layout.bounds.width, layout.bounds.height]);
+
+  useEffect(() => {
+    const liveIds = new Set(bloom.islands.flatMap((island) => island.nodes.map((node) => node.id)));
+    setNodeOverrides((current) => {
+      const next: Record<string, BloomNodePosition> = {};
+      for (const [id, position] of Object.entries(current)) {
+        if (liveIds.has(id)) next[id] = position;
+      }
+      return Object.keys(next).length === Object.keys(current).length ? current : next;
+    });
+  }, [bloom]);
 
   const zoomBy = (delta: number) => {
     setZoom((current) => clampZoom(current + delta));
@@ -1084,14 +1104,26 @@ function BloomGraph({
   };
   const handlePointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (event.button !== 0) return;
+    const activation = nodeActivationAt(event.clientX, event.clientY);
+    const dragNode =
+      activation === null
+        ? null
+        : (layout.nodes.find((node) => node.id === activation.nodeId) ?? null);
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragStateRef.current = {
+    const nextDragState: BloomDragState = {
       pointerId: event.pointerId,
+      mode: dragNode === null ? 'pan' : 'node',
       startClientX: event.clientX,
       startClientY: event.clientY,
       startPan: pan,
       moved: false,
     };
+    if (dragNode !== null) {
+      nextDragState.nodeId = dragNode.id;
+      nextDragState.startNode = { x: dragNode.x, y: dragNode.y };
+      onSelect(dragNode.id);
+    }
+    dragStateRef.current = nextDragState;
     setIsDragging(true);
   };
   const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
@@ -1107,6 +1139,19 @@ function BloomGraph({
     if (Math.abs(dx) + Math.abs(dy) > 4) {
       drag.moved = true;
       suppressNodeClickRef.current = true;
+    }
+
+    if (drag.mode === 'node' && drag.nodeId !== undefined && drag.startNode !== undefined) {
+      const worldDx = (dx / rect.width) * visibleBounds.width;
+      const worldDy = (dy / rect.height) * visibleBounds.height;
+      setNodeOverrides((current) => ({
+        ...current,
+        [drag.nodeId as string]: {
+          x: drag.startNode!.x + worldDx,
+          y: drag.startNode!.y + worldDy,
+        },
+      }));
+      return;
     }
 
     setPan({
@@ -1398,6 +1443,7 @@ function BloomGraph({
         <span style={{ color: 'var(--subtype-zeitgeist)' }}>problem recovery</span>
         <span style={{ color: 'var(--accent)' }}>doppl</span>
         <span style={{ color: 'var(--success)' }}>selected</span>
+        <span>drag nodes to arrange</span>
       </div>
     </section>
   );
@@ -1710,9 +1756,12 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function layoutBloom(bloom: OuterBloomProjection) {
+function layoutBloom(
+  bloom: OuterBloomProjection,
+  nodeOverrides: Record<string, BloomNodePosition> = {},
+) {
   const islandCount = Math.max(1, bloom.islands.length);
-  const islandRadius = islandCount === 1 ? 0 : Math.max(460, islandCount * 124);
+  const islandRadius = islandCount === 1 ? 0 : Math.max(560, islandCount * 154);
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
 
@@ -1724,19 +1773,15 @@ function layoutBloom(bloom: OuterBloomProjection) {
     };
     const placed = new Map<string, LayoutNode>();
     const childrenByParent = childrenIndex(island);
-    const branchAngle = islandCount === 1 ? 0 : islandAngle;
 
     const explicitRoots = island.nodes.filter((node) => node.parentId === null);
     const rootNodes = explicitRoots.length > 0 ? explicitRoots : island.nodes.slice(0, 1);
 
     rootNodes.forEach((node, rootIndex) => {
-      const rootSpread =
-        rootNodes.length === 1 ? 0 : (rootIndex - (rootNodes.length - 1) / 2) * 0.34;
-      const rootAngle = branchAngle + rootSpread;
-      const rootOffset =
-        islandCount === 1
-          ? { x: -220, y: (rootIndex - (rootNodes.length - 1) / 2) * 92 }
-          : { x: -Math.cos(rootAngle) * 58, y: -Math.sin(rootAngle) * 58 };
+      const rootOffset = {
+        x: rootNodes.length === 1 ? 0 : Math.cos((Math.PI * 2 * rootIndex) / rootNodes.length) * 82,
+        y: rootNodes.length === 1 ? 0 : Math.sin((Math.PI * 2 * rootIndex) / rootNodes.length) * 82,
+      };
       const layoutNode = {
         ...node,
         x: center.x + rootOffset.x,
@@ -1747,12 +1792,14 @@ function layoutBloom(bloom: OuterBloomProjection) {
       nodes.push(layoutNode);
       placed.set(node.id, layoutNode);
       placeChildren({
+        root: layoutNode,
         parent: layoutNode,
         childrenByParent,
         placed,
         nodes,
         islandIndex,
-        baseAngle: rootAngle,
+        startAngle: -Math.PI,
+        endAngle: Math.PI,
         depth: 1,
       });
     });
@@ -1765,6 +1812,15 @@ function layoutBloom(bloom: OuterBloomProjection) {
       }
     }
   });
+
+  relaxBloomLayout(nodes, edges);
+  for (const node of nodes) {
+    const override = nodeOverrides[node.id];
+    if (override !== undefined) {
+      node.x = override.x;
+      node.y = override.y;
+    }
+  }
 
   const bounds = boundsFor(nodes);
   return { nodes, edges, bounds };
@@ -1780,65 +1836,181 @@ function childrenIndex(island: OuterBloomIsland): Map<string, OuterBloomNode[]> 
 }
 
 function placeChildren({
+  root,
   parent,
   childrenByParent,
   placed,
   nodes,
   islandIndex,
-  baseAngle,
+  startAngle,
+  endAngle,
   depth,
 }: {
+  root: LayoutNode;
   parent: LayoutNode;
   childrenByParent: Map<string, OuterBloomNode[]>;
   placed: Map<string, LayoutNode>;
   nodes: LayoutNode[];
   islandIndex: number;
-  baseAngle: number;
+  startAngle: number;
+  endAngle: number;
   depth: number;
 }) {
-  const children = childrenByParent.get(parent.id) ?? [];
+  const children = [...(childrenByParent.get(parent.id) ?? [])].sort(compareOuterBloomNodes);
   if (children.length === 0) return;
 
-  const stageSpread =
-    parent.stage === 'case_study'
-      ? Math.PI * 0.18
-      : parent.stage === 'problem_recovery'
-        ? Math.PI * 0.95
-        : Math.PI * 0.78;
-  const spread =
-    children.length === 1 ? 0 : Math.min(stageSpread, Math.PI * 0.2 * (children.length - 1));
+  const sector = endAngle - startAngle;
+  const weights = children.map((child) => subtreeWeight(child, childrenByParent));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
   const distance =
     parent.stage === 'case_study'
-      ? 196
+      ? 218 + Math.min(56, children.length * 8)
       : parent.stage === 'problem_recovery'
-        ? 168
-        : 126 + Math.min(56, depth * 12);
+        ? 178
+        : 136 + Math.min(52, depth * 10);
 
+  let cursor = startAngle;
   children.forEach((child, index) => {
     if (placed.has(child.id)) return;
-    const offset =
-      children.length === 1 ? 0 : -spread / 2 + (spread * index) / (children.length - 1);
-    const angle = baseAngle + offset + deterministicWobble(child.id, 0.08);
-    const lobe = deterministicWobble(`${child.id}:lobe`, 18);
+    const childSector = (sector * (weights[index] ?? 1)) / totalWeight;
+    const rawAngle = cursor + childSector / 2;
+    cursor += childSector;
+    const angle = normalizeAngle(rawAngle + deterministicWobble(child.id, 0.045));
+    const radialJitter = deterministicWobble(`${child.id}:radius`, 24);
+    const parentPull = parent.stage === 'case_study' ? root : parent;
+    const anchorDistance =
+      parent.stage === 'case_study' ? distance + radialJitter : distance + radialJitter * 0.55;
     const layoutNode = {
       ...child,
-      x: parent.x + Math.cos(angle) * (distance + lobe),
-      y: parent.y + Math.sin(angle) * (distance + lobe),
+      x:
+        parentPull.x + Math.cos(angle) * (anchorDistance + depth * 42) + (parent.x - root.x) * 0.18,
+      y:
+        parentPull.y + Math.sin(angle) * (anchorDistance + depth * 42) + (parent.y - root.y) * 0.18,
       radius: radiusForNode(child),
       islandIndex,
     };
     nodes.push(layoutNode);
     placed.set(child.id, layoutNode);
     placeChildren({
+      root,
       parent: layoutNode,
       childrenByParent,
       placed,
       nodes,
       islandIndex,
-      baseAngle: angle,
+      startAngle: rawAngle - childSector / 2,
+      endAngle: rawAngle + childSector / 2,
       depth: depth + 1,
     });
   });
+}
+
+function relaxBloomLayout(nodes: LayoutNode[], edges: LayoutEdge[]) {
+  if (nodes.length < 2) return;
+  const anchors = new Map(nodes.map((node) => [node.id, { x: node.x, y: node.y }]));
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const velocities = new Map(nodes.map((node) => [node.id, { x: 0, y: 0 }]));
+  const iterations = Math.min(150, 70 + nodes.length * 2);
+
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const alpha = 1 - iteration / iterations;
+    for (let index = 0; index < nodes.length; index += 1) {
+      const a = nodes[index];
+      if (a === undefined) continue;
+      const va = velocities.get(a.id)!;
+      const anchor = anchors.get(a.id)!;
+      va.x += (anchor.x - a.x) * 0.008 * alpha;
+      va.y += (anchor.y - a.y) * 0.008 * alpha;
+
+      for (let otherIndex = index + 1; otherIndex < nodes.length; otherIndex += 1) {
+        const b = nodes[otherIndex];
+        if (b === undefined) continue;
+        const vb = velocities.get(b.id)!;
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let distance = Math.hypot(dx, dy);
+        if (distance < 0.001) {
+          dx = deterministicWobble(`${a.id}:${b.id}:x`, 1) || 0.5;
+          dy = deterministicWobble(`${a.id}:${b.id}:y`, 1) || -0.5;
+          distance = Math.hypot(dx, dy);
+        }
+        const minDistance =
+          a.radius +
+          b.radius +
+          (a.islandIndex === b.islandIndex ? 72 : 118) +
+          (a.stage === 'case_study' || b.stage === 'case_study' ? 26 : 0);
+        if (distance >= minDistance) continue;
+        const push = ((minDistance - distance) / minDistance) * 5.8 * alpha;
+        const ux = dx / distance;
+        const uy = dy / distance;
+        va.x += ux * push;
+        va.y += uy * push;
+        vb.x -= ux * push;
+        vb.y -= uy * push;
+      }
+    }
+
+    for (const edge of edges) {
+      const source = byId.get(edge.source.id);
+      const target = byId.get(edge.target.id);
+      if (source === undefined || target === undefined) continue;
+      const sourceVelocity = velocities.get(source.id)!;
+      const targetVelocity = velocities.get(target.id)!;
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      const desired =
+        source.stage === 'case_study' ? 238 : source.stage === 'problem_recovery' ? 184 : 156;
+      const spring = ((distance - desired) / distance) * 0.026 * alpha;
+      const fx = dx * spring;
+      const fy = dy * spring;
+      sourceVelocity.x += fx;
+      sourceVelocity.y += fy;
+      targetVelocity.x -= fx;
+      targetVelocity.y -= fy;
+    }
+
+    for (const node of nodes) {
+      const velocity = velocities.get(node.id)!;
+      node.x += velocity.x;
+      node.y += velocity.y;
+      velocity.x *= 0.72;
+      velocity.y *= 0.72;
+    }
+  }
+}
+
+function subtreeWeight(
+  node: OuterBloomNode,
+  childrenByParent: Map<string, OuterBloomNode[]>,
+): number {
+  const children = childrenByParent.get(node.id) ?? [];
+  if (children.length === 0) return 1;
+  return 1 + children.reduce((sum, child) => sum + subtreeWeight(child, childrenByParent), 0);
+}
+
+function compareOuterBloomNodes(a: OuterBloomNode, b: OuterBloomNode): number {
+  if (a.stage !== b.stage) return stageOrder(a.stage) - stageOrder(b.stage);
+  if (a.generationIndex !== b.generationIndex) {
+    return (
+      (a.generationIndex ?? Number.MAX_SAFE_INTEGER) -
+      (b.generationIndex ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
+  return a.id.localeCompare(b.id);
+}
+
+function stageOrder(stage: OuterBloomNode['stage']): number {
+  if (stage === 'case_study') return 0;
+  if (stage === 'problem_recovery') return 1;
+  return 2;
+}
+
+function normalizeAngle(angle: number): number {
+  let current = angle;
+  while (current <= -Math.PI) current += Math.PI * 2;
+  while (current > Math.PI) current -= Math.PI * 2;
+  return current;
 }
 
 function boundsFor(nodes: readonly LayoutNode[]) {

@@ -169,6 +169,11 @@ Recommended sequencing:
   - The bloom now follows the active run: when `/bloom` exposes new nodes for the streamed run, the
     selection moves to the newest meaningful outer artifact (selected Doppl, Doppl, problem recovery,
     then case-study root).
+  - The Agarden graph now uses an experiment-spike-inspired radial force layout: each case-study island
+    allocates its descendants across the full 360-degree bloom, then applies bounded collision pressure,
+    link springs, and stable anchor gravity so nodes mostly do not overlap.
+  - Nodes can be click-dragged in the map to make local arrangements while retaining existing pan/zoom and
+    double-click inner-run opening.
   - Animate new nodes from streamed/projection changes.
   - Distinguish:
     - configured/starting
