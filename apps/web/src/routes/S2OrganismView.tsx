@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { isRunTerminal } from '../components/run/runControl';
-import type { LineageGraphProjection } from '../data/contracts';
 import type { RunClient } from '../data/runClient';
 import type { EventSourceLike, SseStream, SseStreamOptions } from '../data/sseStream';
 import type { RunStore } from '../state/runStore';
@@ -489,9 +488,4 @@ export function S2OrganismView({
       )}
     </main>
   );
-}
-
-/** A pre-lineage placeholder projection so the CENTER pane mounts before the first fetch resolves. */
-function emptyLineage(runId: string): LineageGraphProjection {
-  return { runId, nodes: [], edges: [], sequenceThrough: 0 };
 }
