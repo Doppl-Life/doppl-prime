@@ -136,6 +136,8 @@ function buildKernelSeed(form: BloomGrowForm): string {
     `Title: ${form.title.trim()}`,
     `Mode: ${modeLabel(form.generationMode)}`,
     `Direction: ${form.direction}`,
+    '',
+    stageBrief(form.generationMode),
   ];
   if (form.synopsis.trim().length > 0) lines.push(`Synopsis: ${form.synopsis.trim()}`);
   lines.push('', form.seedText.trim());
@@ -146,6 +148,29 @@ function modeLabel(mode: BloomGrowthMode): string {
   if (mode === 'recover_problem') return 'recover problem';
   if (mode === 'grow_doppl') return 'grow Doppl';
   return 'campaign';
+}
+
+function stageBrief(mode: BloomGrowthMode): string {
+  if (mode === 'recover_problem') {
+    return [
+      'Stage task: recover the important underlying problem exposed by this case study.',
+      'Generate recovered-problem candidates, not implementation proposals.',
+      'Each candidate should identify the surface complaint, deleted assumption, hidden variable, actual problem, affected operators, and testable signals that prove the problem is real.',
+      'Prefer grounded, convergent framing over speculative solution design.',
+    ].join('\n');
+  }
+  if (mode === 'grow_doppl') {
+    return [
+      'Stage task: produce Doppls, meaning solution/findings candidates against the selected recovered problem.',
+      'Each candidate should make a clear claim, implications, opportunities, sprouts, and proof signals.',
+      'Prefer novel, divergent mechanisms while staying tied to the parent problem.',
+    ].join('\n');
+  }
+  return [
+    'Stage task: run an outer Agarden campaign.',
+    'First recover strong problem structures from the case study, then grow Doppls against the selected recovered problems.',
+    'Keep every output traceable to the case-study evidence and parent artifact.',
+  ].join('\n');
 }
 
 function biasForDirection(direction: BloomGrowthDirection, mode: BloomGrowthMode): number {

@@ -66,6 +66,8 @@ The situation it grows from.
     if (!result.ok) return;
     expect(result.config.seed).toContain('Title: When The Crashes Do Not Come');
     expect(result.config.seed).toContain('Mode: recover problem');
+    expect(result.config.seed).toContain('Generate recovered-problem candidates');
+    expect(result.config.seed).toContain('not implementation proposals');
     expect(result.config.generationBias).toBe(-0.65);
     expect(result.config.generationOperators).toEqual(['first_principles', 'polymath']);
     expect(result.config.rngSeed).toBe(123);
@@ -78,6 +80,26 @@ The situation it grows from.
       wallClockTimeoutMs: 540000,
     });
     expect(RunConfig.safeParse(result.config).success).toBe(true);
+  });
+
+  it('frames grow-Doppl launches as solution/findings work against a recovered problem', () => {
+    const result = buildBloomRunConfig(
+      {
+        ...DEFAULT_BLOOM_GROW_FORM,
+        title: 'Liability Recovery',
+        seedText: 'Parent problem: crash disappearance breaks insurance pricing.',
+        generationMode: 'grow_doppl',
+        direction: 'auto',
+      },
+      { rngSeed: 456 },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.config.seed).toContain('Mode: grow Doppl');
+    expect(result.config.seed).toContain('produce Doppls');
+    expect(result.config.seed).toContain('against the selected recovered problem');
+    expect(result.config.generationBias).toBe(0.45);
   });
 
   it('rejects empty grow requests before POST /runs', () => {
