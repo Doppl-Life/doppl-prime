@@ -81,3 +81,78 @@ export const DEFAULT_SEED_SET: SeedAgenomeSet = [
     spawnBudget: 1,
   },
 ];
+
+/**
+ * `WEAK_SEED_SET` — the "give the climb room" baseline (coevolution-climb-plan §3.4 / HG1). The demo problem
+ * is ceiling-bound: with `DEFAULT_SEED_SET`, gen 0 already produces ~0.69-tier answers against a ~0.74 judge
+ * cap, so there is almost no headroom for evolution to *visibly* climb. These personas are deliberately WEAK
+ * — hurried, conventional, low-novelty, low-rigor — so gen 0 scores low (~0.4) and the run shows a real
+ * 0.4 → 0.7+ trajectory that exercises the Phase-A dynamics (honest gate + judge-keyed elitism + ratchet)
+ * AND the eventual coupling. The weakness is in CONTENT QUALITY only — every persona still produces a valid
+ * candidate (the climb comes from fusion synthesizing better system prompts + directed-repair toward the
+ * judge's weak axes + mutation drift). Distinct weak ANGLES so fusion has diverse material to combine. No
+ * `lens.*` weights → under the `adaptive`/`mutate_lens` strategies these fall back to the run-level operators
+ * (they don't ideate through a strong heritable lens, which would defeat the point). Selected at boot via
+ * `DOPPL_SEED_PROFILE=weak`; `fileSources.seedSet` still overrides (explicit wins). Shape-identical to
+ * `DEFAULT_SEED_SET` (boot-validated by the same `SeedAgenomeSet`).
+ */
+export const WEAK_SEED_SET: SeedAgenomeSet = [
+  {
+    systemPrompt:
+      'You are a hurried generalist. Give the first obvious, conventional answer that comes to mind and ' +
+      'keep it short and surface-level. Do not dig into mechanisms, cite evidence, or reach for novelty.',
+    personaWeights: { rigor: 0.2, novelty: 0.1 },
+    toolPermissions: [],
+    decompositionPolicy: 'breadth-first',
+    spawnBudget: 2,
+  },
+  {
+    systemPrompt:
+      'You are a buzzword optimist. Propose a trendy-sounding solution using fashionable terms, without a ' +
+      'concrete mechanism or any falsifiable prediction. Confidence over substance.',
+    personaWeights: { novelty: 0.3, feasibility: 0.1 },
+    toolPermissions: [],
+    decompositionPolicy: 'breadth-first',
+    spawnBudget: 2,
+  },
+  {
+    systemPrompt:
+      'You are a cautious incrementalist. Suggest a small, safe, unoriginal tweak to the status quo. Avoid ' +
+      'bold, cross-domain, or speculative ideas; prefer the most expected option.',
+    personaWeights: { feasibility: 0.3, novelty: 0.1 },
+    toolPermissions: [],
+    decompositionPolicy: 'depth-first',
+    spawnBudget: 1,
+  },
+  {
+    systemPrompt:
+      'You are a vague summarizer. Restate the problem and gesture at a generic direction without a ' +
+      'specific, testable proposal or a clear executable check.',
+    personaWeights: { rigor: 0.15, feasibility: 0.2 },
+    toolPermissions: [],
+    decompositionPolicy: 'depth-first',
+    spawnBudget: 1,
+  },
+];
+
+/**
+ * The boot seed-profile registry — the closed set of authored gen-0 baselines, selectable via
+ * `DOPPL_SEED_PROFILE`. `default` is the production roster; `weak` is the headroom/demo baseline (HG1).
+ */
+export const SEED_PROFILES = {
+  default: DEFAULT_SEED_SET,
+  weak: WEAK_SEED_SET,
+} as const;
+export type SeedProfile = keyof typeof SEED_PROFILES;
+
+/**
+ * Select the boot seed set by `DOPPL_SEED_PROFILE` (own-property lookup over the closed registry — an
+ * unknown/absent/garbage profile → `DEFAULT_SEED_SET`, the production baseline = HEAD-identical). The boot
+ * `fileSources.seedSet` (if present) still overrides this in `loadConfig` (explicit file wins). Pure.
+ */
+export function selectSeedSet(profile: string | undefined): SeedAgenomeSet {
+  if (profile !== undefined && Object.prototype.hasOwnProperty.call(SEED_PROFILES, profile)) {
+    return SEED_PROFILES[profile as SeedProfile];
+  }
+  return DEFAULT_SEED_SET;
+}
