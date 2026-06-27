@@ -97,13 +97,12 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
     );
   });
 
-  // spec(nav): clicking a row lands on /runs/:id (the organism view). The terminal state renders
-  // there with a "Replay this run" affordance — users don't have to know the /replay URL pattern.
+  // spec(nav): clicking a run's id opens its primary view (completed → replay).
   it('test_clicking_run_id_opens_run', async () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
     fireEvent.click(await screen.findByRole('button', { name: /open run run_done/i }));
     await waitFor(() =>
-      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done'),
+      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/replay'),
     );
   });
 
