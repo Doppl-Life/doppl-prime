@@ -536,11 +536,15 @@ explicit sign-off):**
 - **D8 — also A/B a stronger `final_judge` MODEL?** Real but second-order (a weak model central-tendency-clusters
   regardless of instruction); adds cost/latency/non-determinism. *Recommendation: instruction fix FIRST, then
   optional measured A/B; keep it excluded from per-run overrides (rule #6).* *Status: OPEN.*
-- **D9 — gold-set size/coverage.** ≥3 distinct problems × {weak,mediocre,good,excellent} + a gamed tier is the
-  floor. Hand-author more before calibrating, or seed 3 and expand? *Status: OPEN — needs Michael's corpus.*
-- **D10 — target thresholds (Michael's numbers, not mine).** Confirm: excellent ≈0.85+, weak ≈0.2–0.35, min
-  inter-tier gap ≈0.08, spread ≥~0.55, gamed strictly below mediocre. These are the human-labeled ground truth
-  the whole gate rests on. *Status: OPEN — BLOCKS the gold set.*
+- **D9 — gold-set size/coverage.** *Status: RESOLVED (first pass, signed off 2026-06-27).* 3 problems across
+  distinct domains × 5 tiers (weak/mediocre/good/excellent/**gamed**) = 15 candidates: `readmissions` (CDT,
+  healthcare ops), `recycling` (CDT, urban-environment), `ai-coding-value` (Zeit, tech-strategy). The full set
+  lives in `docs/planning/phase-j-gold-set-draft.md`. Expandable later; a deeper human-authoring pass before the
+  flip would strengthen it (it is human-RATIFIED, not deeply human-authored — see that doc's caveat).
+- **D10 — target thresholds.** *Status: CONFIRMED (first pass, signed off 2026-06-27).* weak 0.18–0.28 ·
+  mediocre 0.40–0.50 · good 0.58–0.68 · excellent 0.82–0.90 · **gamed strictly < mediocre (~0.24–0.34)**; min
+  inter-tier gap ≈0.08, spread (excellent−weak) ≥~0.55. The drafted set hits all of these (spread 0.64, gaps
+  ~0.20, gamed below floor). Full table + per-candidate scores: `docs/planning/phase-j-gold-set-draft.md`.
 - **D11 — does the discriminate-not-be-generous gate satisfy D1's original "no judge shortcut" prohibition?**
   This plan argues recalibration is now safe BECAUSE of the discrimination gate + reward-hacking probe tier (it
   makes the judge HARDER to game, not easier). *Recommendation: accept — the prohibition's intent (don't lift
@@ -573,8 +577,8 @@ Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; 
 - [x] **Js** Criteria-injection seam (`criteriaSource`, default byte-identical) — behavior-preserving, NO
   sign-off · `loadJudgeCriteria` + `buildJudgeInstruction`/`buildComparativeJudgeInstruction` threaded through
   `runJudge`/`runComparativeJudge`/`verify-seam`/`composeRuntime` · 11 new tests, 974 unit green · own PR
-- [ ] **J0** Michael: gold-set target thresholds (D10) + corpus problems (D9) + criteria-vs-exemplar (D7) + D12 (criteria-only vs +aggregation)
-- [ ] **J1** Build the human-labeled gold set `apps/api/test/eval/gold-set/` (≥3 problems × tiers + gamed) — also the (#2) frozen reference distribution
+- [x] **J0** Gold-set corpus (D9) + thresholds (D10) SIGNED OFF (first pass, 2026-06-27) → `docs/planning/phase-j-gold-set-draft.md`. (D7/D12 still default to criteria-only-first.)
+- [~] **J1** Convert the signed-off gold set → typed fixture `apps/api/test/eval/gold-set/` (15 candidates, 3 problems × 5 tiers) + a well-formedness test — also the (#2) frozen reference distribution · **NEXT**
 - [ ] **J2** `judge-calibration.eval.ts` discrimination harness + keyless mirror; baseline on mvp-3
 - [ ] **J3** Author v4 (#4) `JUDGE_AXIS_CRITERIA` (re-anchor + sub-criteria + anti-cheap clause); inject via the Js `criteriaSource` seam (default NOT flipped)
 - [ ] **J4** Discrimination metric passes + all reward-hacking probes (P1–P5) below mediocre floor
