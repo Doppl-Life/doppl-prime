@@ -104,6 +104,37 @@ describe('RunsTable', () => {
     expect(onOpen).toHaveBeenCalledWith('r3', 'completed');
   });
 
+  it('fires onSort when a sortable column header is clicked', () => {
+    const onSort = vi.fn();
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1' })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+        onSort={onSort}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /sort by progress/i }));
+    expect(onSort).toHaveBeenCalledWith('cands');
+  });
+
+  it('omits the day-group header when rendered flat (grouped=false)', () => {
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1', createdAt: '2026-06-26T10:00:00.000Z' })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+        grouped={false}
+      />,
+    );
+    // The row is still there…
+    expect(screen.getByRole('button', { name: /open run r1/i })).toBeTruthy();
+    // …but no Today/Yesterday/date bucket header is rendered.
+    expect(screen.queryByText(/today|yesterday/i)).toBeNull();
+  });
+
   it('styling uses var() tokens — no raw hex / no raw px', () => {
     const files = readdirSync(RUN_DIR).filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
     for (const f of files) {

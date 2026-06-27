@@ -7,8 +7,12 @@ import {
   failedBeforeGenerating,
   filterRuns,
   groupRunsByDay,
+  isDefaultSort,
+  nextSort,
   normalize,
   relativeTime,
+  runFitness,
+  sortRuns,
   timeOfDay,
 } from '../../../../src/components/run/runsSummary';
 
@@ -109,5 +113,57 @@ describe('runsSummary', () => {
     expect(normalize(0, 0)).toBe(0); // no capacity → empty, never NaN/Infinity
     expect(normalize(40, 80)).toBe(0.5);
     expect(normalize(200, 80)).toBe(1); // clamped to 1
+  });
+
+  it('runFitness prefers the winner, falls back to the last generation, else null', () => {
+    expect(runFitness(run({ winnerFitness: 0.8, fitnessByGeneration: [0.3, 0.5] }))).toBe(0.8);
+    expect(runFitness(run({ winnerFitness: null, fitnessByGeneration: [0.3, 0.6] }))).toBe(0.6);
+    expect(runFitness(run({ winnerFitness: null, fitnessByGeneration: [] }))).toBeNull();
+  });
+
+  it('nextSort toggles direction on the active key and adopts a default dir on a new key', () => {
+    expect(nextSort({ key: 'time', dir: 'desc' }, 'time')).toEqual({ key: 'time', dir: 'asc' });
+    expect(nextSort({ key: 'time', dir: 'asc' }, 'time')).toEqual({ key: 'time', dir: 'desc' });
+    expect(nextSort({ key: 'time', dir: 'desc' }, 'problem')).toEqual({
+      key: 'problem',
+      dir: 'asc',
+    }); // text defaults ascending
+    expect(nextSort({ key: 'time', dir: 'desc' }, 'cands')).toEqual({ key: 'cands', dir: 'desc' });
+  });
+
+  it('isDefaultSort recognizes only the natural newest-first order', () => {
+    expect(isDefaultSort({ key: 'time', dir: 'desc' })).toBe(true);
+    expect(isDefaultSort({ key: 'time', dir: 'asc' })).toBe(false);
+    expect(isDefaultSort({ key: 'cands', dir: 'desc' })).toBe(false);
+  });
+
+  it('sortRuns orders by the chosen key + direction without mutating the input', () => {
+    const runs = [
+      run({ runId: 'a', candidates: 20, problem: 'Banana', createdAt: '2026-06-25T10:00:00.000Z' }),
+      run({ runId: 'b', candidates: 76, problem: 'Apple', createdAt: '2026-06-27T10:00:00.000Z' }),
+      run({ runId: 'c', candidates: 51, problem: 'Cherry', createdAt: '2026-06-26T10:00:00.000Z' }),
+    ];
+    const frozen = JSON.stringify(runs);
+    expect(sortRuns(runs, { key: 'cands', dir: 'desc' }).map((r) => r.runId)).toEqual([
+      'b',
+      'c',
+      'a',
+    ]);
+    expect(sortRuns(runs, { key: 'cands', dir: 'asc' }).map((r) => r.runId)).toEqual([
+      'a',
+      'c',
+      'b',
+    ]);
+    expect(sortRuns(runs, { key: 'problem', dir: 'asc' }).map((r) => r.runId)).toEqual([
+      'b',
+      'a',
+      'c',
+    ]);
+    expect(sortRuns(runs, { key: 'time', dir: 'desc' }).map((r) => r.runId)).toEqual([
+      'b',
+      'c',
+      'a',
+    ]);
+    expect(JSON.stringify(runs)).toBe(frozen); // input untouched (sorts a copy)
   });
 });

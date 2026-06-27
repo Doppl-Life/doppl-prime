@@ -3,7 +3,8 @@ import type { CSSProperties, MouseEvent } from 'react';
 import { Button, StatusBadge } from '../ds';
 import { resolveStatus } from '../core/status-map';
 import type { RunSummary } from '../../data/runClient';
-import { failedBeforeGenerating, groupRunsByDay, timeOfDay } from './runsSummary';
+import { DEFAULT_SORT, failedBeforeGenerating, groupRunsByDay, timeOfDay } from './runsSummary';
+import type { RunGroup, SortKey, SortState } from './runsSummary';
 import { Sparkline } from './Sparkline';
 
 /**
@@ -21,6 +22,11 @@ export interface RunsTableProps {
   onOpen: (runId: string, status: string | null) => void;
   onReplay: (runId: string) => void;
   onOpenLive: (runId: string) => void;
+  /** Current sort + a click handler for the sortable headers. Defaults to the natural newest-first order. */
+  sort?: SortState;
+  onSort?: (key: SortKey) => void;
+  /** Day-group the rows (the default newest-first view). A non-default sort renders a flat list. */
+  grouped?: boolean;
 }
 
 interface ActionSet {
@@ -72,6 +78,19 @@ const th: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 const thRight: CSSProperties = { ...th, textAlign: 'right' };
+const sortBtn: CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 'var(--space-1)',
+};
+const sortArrow: CSSProperties = { fontSize: 'var(--text-mono)', color: 'var(--accent)' };
 const td: CSSProperties = {
   padding: 'var(--space-2) var(--space-3)',
   borderBottom: 'thin solid var(--border-subtle)',
@@ -144,13 +163,49 @@ const fitVal: CSSProperties = {
   textAlign: 'right',
 };
 
-export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps) {
+export function RunsTable({
+  runs,
+  onOpen,
+  onReplay,
+  onOpenLive,
+  sort = DEFAULT_SORT,
+  onSort,
+  grouped = true,
+}: RunsTableProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const stop = (cb: () => void) => (e: MouseEvent) => {
     e.stopPropagation();
     cb();
   };
-  const groups = groupRunsByDay(runs);
+  const groups: RunGroup[] = grouped
+    ? groupRunsByDay(runs)
+    : [{ label: '', rows: runs.map((run, i) => ({ run, index: i + 1 })) }];
+
+  const sortableTh = (label: string, key: SortKey, align: 'left' | 'right' = 'left') => {
+    const active = sort.key === key;
+    const ariaSort: 'ascending' | 'descending' | 'none' = active
+      ? sort.dir === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : 'none';
+    return (
+      <th style={align === 'right' ? thRight : th} aria-sort={ariaSort}>
+        <button
+          type="button"
+          style={sortBtn}
+          onClick={() => onSort?.(key)}
+          aria-label={`Sort by ${label}`}
+        >
+          {label}
+          {active && (
+            <span style={sortArrow} aria-hidden="true">
+              {sort.dir === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </button>
+      </th>
+    );
+  };
 
   return (
     <table style={table}>
@@ -164,13 +219,11 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
           <th style={th} aria-hidden="true" />
           <th style={thRight}>#</th>
           <th style={th}>Run</th>
-          <th style={th}>Time</th>
-          <th style={th}>Problem</th>
+          {sortableTh('Time', 'time')}
+          {sortableTh('Problem', 'problem')}
           <th style={th}>Final idea</th>
-          <th style={th}>Status</th>
-          <th style={th} title="generations completed · candidates created">
-            Progress
-          </th>
+          {sortableTh('Status', 'status')}
+          {sortableTh('Progress', 'cands')}
           <th style={th} title="reproductions · culls · mutations">
             Activity
           </th>
@@ -217,11 +270,13 @@ function RunGroupRows({
 }) {
   return (
     <>
-      <tr>
-        <td style={groupHeaderTd} colSpan={COL_COUNT}>
-          {label}
-        </td>
-      </tr>
+      {label !== '' && (
+        <tr>
+          <td style={groupHeaderTd} colSpan={COL_COUNT}>
+            {label}
+          </td>
+        </tr>
+      )}
       {rows.map(({ run, index }) => {
         const actions = actionsFor(run.status);
         const spec = resolveStatus('run', run.status ?? 'unknown');

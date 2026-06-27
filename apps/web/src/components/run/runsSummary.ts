@@ -160,3 +160,53 @@ export function normalize(value: number, max: number): number {
   if (max <= 0) return 0;
   return Math.max(0, Math.min(1, value / max));
 }
+
+/** The fitness the row reports — the winner's score, else the last generation's best, else null. */
+export function runFitness(run: RunSummary): number | null {
+  if (run.winnerFitness !== null && run.winnerFitness !== undefined) return run.winnerFitness;
+  const series = run.fitnessByGeneration ?? [];
+  return series.length > 0 ? (series[series.length - 1] as number) : null;
+}
+
+export type SortKey = 'time' | 'problem' | 'status' | 'cands' | 'gens' | 'fitness';
+export interface SortState {
+  readonly key: SortKey;
+  readonly dir: 'asc' | 'desc';
+}
+/** The list's natural order: newest first (matches the backend + the day grouping). */
+export const DEFAULT_SORT: SortState = { key: 'time', dir: 'desc' };
+export function isDefaultSort(sort: SortState): boolean {
+  return sort.key === DEFAULT_SORT.key && sort.dir === DEFAULT_SORT.dir;
+}
+/** Toggle direction when re-selecting the active key; otherwise adopt the key's sensible default dir. */
+export function nextSort(current: SortState, key: SortKey): SortState {
+  if (current.key === key) return { key, dir: current.dir === 'asc' ? 'desc' : 'asc' };
+  return { key, dir: key === 'problem' ? 'asc' : 'desc' };
+}
+
+function compareBy(key: SortKey, a: RunSummary, b: RunSummary): number {
+  switch (key) {
+    case 'problem':
+      return (a.problem ?? '').localeCompare(b.problem ?? '');
+    case 'status':
+      return (a.status ?? '').localeCompare(b.status ?? '');
+    case 'cands':
+      return (a.candidates ?? 0) - (b.candidates ?? 0);
+    case 'gens':
+      return (a.generations ?? 0) - (b.generations ?? 0);
+    case 'fitness':
+      return (runFitness(a) ?? -1) - (runFitness(b) ?? -1);
+    case 'time':
+    default: {
+      const av = a.createdAt ?? '';
+      const bv = b.createdAt ?? '';
+      return av < bv ? -1 : av > bv ? 1 : 0;
+    }
+  }
+}
+
+/** Stable sort over a copy; `dir` flips the comparator. Default (time desc) preserves backend order. */
+export function sortRuns(runs: readonly RunSummary[], sort: SortState): readonly RunSummary[] {
+  const factor = sort.dir === 'asc' ? 1 : -1;
+  return [...runs].sort((a, b) => factor * compareBy(sort.key, a, b));
+}
