@@ -7,11 +7,12 @@ import {
 } from '../../../../src/runtime/loop/mutagenStrategy';
 
 describe('mutagenStrategy (experiment)', () => {
-  it('parses the strategy enum + falls back to fusion_only on garbage', () => {
+  it('parses the strategy enum + falls back to the default (adaptive) on garbage', () => {
     expect(parseMutationStrategy('adaptive')).toBe('adaptive');
     expect(parseMutationStrategy('mutate_lens')).toBe('mutate_lens');
-    expect(parseMutationStrategy(undefined)).toBe('fusion_only');
-    expect(parseMutationStrategy('nonsense')).toBe('fusion_only');
+    expect(parseMutationStrategy('fusion_only')).toBe('fusion_only'); // explicit control still selectable
+    expect(parseMutationStrategy(undefined)).toBe('adaptive'); // Phase A: mutation ON by default
+    expect(parseMutationStrategy('nonsense')).toBe('adaptive');
   });
 
   it('fusion_only never mutates; others split r/K + escalate capabilities', () => {

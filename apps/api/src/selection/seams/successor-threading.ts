@@ -72,19 +72,27 @@ function rehome(child: Agenome, nextGenerationId: string, caps: RunCaps): Agenom
 
 /**
  * Rank the eligible parents by their BEST candidate fitness in the just-completed generation (descending;
- * tie-break agenome id ascending — deterministic). PURE over the persisted log: `fitness.scored.total`
- * keyed back to its producing agenome via `candidate.created` (rule #7 — read the recorded outcome, never
- * recompute; replay reconstructs the identical order). Scoped to `completedGenerationId` so elitism keeps
- * THIS generation's best — a genome that stopped performing isn't retained on a stale historical peak. A
- * parent with no scored candidate this generation is dropped (no fitness basis — never an elite).
+ * tie-break agenome id ascending — deterministic). PURE over the persisted log, keyed back to its producing
+ * agenome via `candidate.created` (rule #7 — read the recorded outcome, never recompute; replay reconstructs
+ * the identical order). Scoped to `completedGenerationId` so elitism keeps THIS generation's best — a genome
+ * that stopped performing isn't retained on a stale historical peak. A parent with no scored candidate this
+ * generation is dropped (no fitness basis — never an elite).
+ *
+ * JUDGE-KEYED (Phase A / #6) — the rank key is the persisted `components.judge_acceptance` (the un-hackable
+ * held-out-judge signal, rule #6), NOT the blended `total` (~31% agent-visible critic/novelty). So elitism
+ * preserves the genome the JUDGE rewards, never a high-`total` decoy that gamed the agent-visible components —
+ * the breeding-pool analog of the honest gate (convergence.ts). Falls back to `total` for any candidate whose
+ * fitness carries no judge component (the judge-degrade path); both live on [0,1] so the key stays scale-safe.
+ * The SURFACED/terminal winner is unaffected — it is selected separately by `total` (the official fitness).
+ * Exported for unit pinning.
  */
-function rankEligibleByFitness(
+export function rankEligibleByFitness(
   eligibleParents: readonly Agenome[],
   completedGenerationId: string,
   log: readonly RunEventRow[],
 ): Agenome[] {
   const candidateAgenome = new Map<string, string>(); // candidateId → agenomeId (this generation)
-  const bestByCandidate = new Map<string, number>(); // candidateId → best fitness.total
+  const bestByCandidate = new Map<string, number>(); // candidateId → best judge-keyed rank score
   for (const row of log) {
     if (row.generationId !== completedGenerationId) continue;
     if (row.type === 'candidate.created') {
@@ -93,9 +101,11 @@ function rankEligibleByFitness(
     } else if (row.type === 'fitness.scored' && row.candidateId !== null) {
       const parsed = FitnessScore.safeParse(row.payload);
       if (!parsed.success) continue;
+      // #6 — rank by the judge component (honest), fall back to total when the judge degraded (absent).
+      const rankScore = parsed.data.components.judge_acceptance ?? parsed.data.total;
       const prev = bestByCandidate.get(row.candidateId);
-      if (prev === undefined || parsed.data.total > prev) {
-        bestByCandidate.set(row.candidateId, parsed.data.total);
+      if (prev === undefined || rankScore > prev) {
+        bestByCandidate.set(row.candidateId, rankScore);
       }
     }
   }

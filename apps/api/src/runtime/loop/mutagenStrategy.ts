@@ -28,7 +28,11 @@ export const MUTATION_STRATEGIES = [
 ] as const;
 export type MutationStrategy = (typeof MUTATION_STRATEGIES)[number];
 
-export const DEFAULT_MUTATION_STRATEGY: MutationStrategy = 'fusion_only';
+// Phase A (coevolution-climb-plan §7-A1) — the default is `adaptive`: mutation is ON for all runs, and the
+// bidirectional controller steers the explore/exploit (r/K) balance per generation. The exploit trigger is
+// the HONEST GATE (judge-acceptance windowed, convergence.ts) so committing to a lineage reads the un-hackable
+// signal, not the blended `total`. `fusion_only` remains the explicit control (mutation off) via env override.
+export const DEFAULT_MUTATION_STRATEGY: MutationStrategy = 'adaptive';
 
 export function parseMutationStrategy(raw: string | undefined): MutationStrategy {
   return MUTATION_STRATEGIES.includes(raw as MutationStrategy)
