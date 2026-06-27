@@ -1,25 +1,29 @@
 import { describe, expect, test } from 'vitest';
-import { JUDGE_AXIS_CRITERIA, loadJudgeCriteria } from '../../src/verifier/judge/judge-core';
+import {
+  JUDGE_AXIS_CRITERIA,
+  JUDGE_AXIS_CRITERIA_MVP3_BASELINE,
+  loadJudgeCriteria,
+} from '../../src/verifier/judge/judge-core';
 import { buildJudgeInstruction } from '../../src/verifier/judge/judge-call';
 import { buildComparativeJudgeInstruction } from '../../src/verifier/judge/comparative-judge';
-import { JUDGE_AXIS_CRITERIA_V4 } from './criteria-v4';
 
 /**
- * Phase J — J3: the DRAFT v4 criteria is well-formed + injectable, AND the live default is UNTOUCHED. KEYLESS
- * (no provider). The behavioral effect of v4 is a LIVE eval (judge-calibration.eval.ts), not a unit assertion
- * — these tests pin only that v4 is a valid alternate the Slice-Js seam can carry, and that authoring it did
- * NOT flip the default (rule #6 — the flip is the separate J7 sign-off gate).
+ * Phase J — POST-FLIP (operator-delegated 2026-06-27, rule #6): the live default judge criteria is now the
+ * recalibrated final-judge-v4 (earn-from-zero). KEYLESS — the behavioral effect was validated by the live
+ * `judge-calibration.eval.ts` (spread 0.26→0.57, gamed crushed, monotone); these tests pin only the FLIP: the
+ * live default carries the v4 design into both judge instruction paths and has dropped the mvp-3 "anchor at
+ * 5–6" text, while the retained {@link JUDGE_AXIS_CRITERIA_MVP3_BASELINE} (eval before-baseline) still has it.
  */
 
-describe('v4 criteria — valid + injectable (Slice-Js seam)', () => {
-  test('test_loadJudgeCriteria_accepts_v4', () => {
-    expect(loadJudgeCriteria(JUDGE_AXIS_CRITERIA_V4)).toBe(JUDGE_AXIS_CRITERIA_V4);
+describe('the live default judge criteria IS the recalibrated v4 (Phase J flip)', () => {
+  test('test_live_default_is_loadable', () => {
+    expect(loadJudgeCriteria(JUDGE_AXIS_CRITERIA)).toBe(JUDGE_AXIS_CRITERIA);
   });
 
-  test('test_v4_carries_its_design_into_both_instruction_paths', () => {
+  test('test_live_default_carries_the_v4_design_into_both_instruction_paths', () => {
     for (const inst of [
-      buildJudgeInstruction(JUDGE_AXIS_CRITERIA_V4),
-      buildComparativeJudgeInstruction(JUDGE_AXIS_CRITERIA_V4),
+      buildJudgeInstruction(JUDGE_AXIS_CRITERIA),
+      buildComparativeJudgeInstruction(JUDGE_AXIS_CRITERIA),
     ]) {
       expect(inst).toContain('held-out final judge'); // the fixed framing is preserved
       expect(inst).toContain('EARNING UP FROM 0'); // earn-from-zero anchoring
@@ -27,17 +31,12 @@ describe('v4 criteria — valid + injectable (Slice-Js seam)', () => {
       expect(inst).toContain('Cheap-to-fake signals earn NOTHING'); // the anti-cheap-signal clause
     }
   });
-});
 
-describe('v4 criteria — the default is NOT flipped (rule #6; flip is J7)', () => {
-  test('test_v4_differs_from_the_default', () => {
-    expect(JUDGE_AXIS_CRITERIA_V4).not.toBe(JUDGE_AXIS_CRITERIA);
-  });
-
-  test('test_default_still_has_the_mvp3_anchor_and_v4_does_not', () => {
-    // The live default is still mvp-3 (composeRuntime wires JUDGE_AXIS_CRITERIA); v4 drops the anchor-at-5–6
-    // instruction that flattened the scores.
-    expect(JUDGE_AXIS_CRITERIA).toContain('anchor a typical idea at 5');
-    expect(JUDGE_AXIS_CRITERIA_V4).not.toContain('anchor a typical idea at 5');
+  test('test_flip_dropped_the_mvp3_anchor_baseline_retains_it', () => {
+    // The live default no longer carries the flattening "anchor a typical idea at 5–6"; the retained mvp-3
+    // baseline (used only by the eval to characterize the BEFORE) still does.
+    expect(JUDGE_AXIS_CRITERIA).not.toContain('anchor a typical idea at 5');
+    expect(JUDGE_AXIS_CRITERIA_MVP3_BASELINE).toContain('anchor a typical idea at 5');
+    expect(JUDGE_AXIS_CRITERIA).not.toBe(JUDGE_AXIS_CRITERIA_MVP3_BASELINE);
   });
 });

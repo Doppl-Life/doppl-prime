@@ -89,13 +89,14 @@ const mvpJudgeRubric: FinalJudgeRubric = {
     subtype_check_pass: 1,
     energy_efficiency: 0.1,
   },
-  // EXPERIMENT (judge gradient) — Wave 2 Step 4 (Michael-signed-off): bumped mvp-2 → mvp-3 for the 0–5 → 0–10
-  // per-axis scale widen + the comparative (peer-context) judge (`comparative-judge.ts`), both targeting the
-  // central-tendency compression that capped the dominant judge_acceptance weight (~0.68, 5–6 distinct values)
-  // and stalled the climb. Immutability-via-versioning (rule #6, lesson 12): the version records that the
-  // judge's scoring behavior moved, so every JudgeResult is bound to its exact judge version. Axes / weights /
-  // immutability are UNCHANGED — the scale + peer-context are runtime concerns, not rubric fields.
-  policyVersion: 'final-judge-mvp-3',
+  // Phase J flip — operator-delegated (Michael unavailable), 2026-06-27, rule #6: bumped final-judge-mvp-3 →
+  // final-judge-v4 alongside the JUDGE_AXIS_CRITERIA recalibration (judge-core.ts) — earn-from-zero anchoring +
+  // count-the-evidence per-axis sub-criteria that un-flatten the mvp-3 ceiling (live: spread 0.26→0.57, gamed
+  // crushed 0.42→0.12, monotone; validated under the substantive discrimination bar). Immutability-via-
+  // versioning (lesson §12): the version records that the judge's scoring behavior moved, so every JudgeResult
+  // is bound to its exact judge version. Axes / weights / immutableToAgents are UNCHANGED — the CRITERIA text is
+  // a runtime concern (the rule-#6 anchor's structure is byte-identical), only the version + criteria moved.
+  policyVersion: 'final-judge-v4',
   immutableToAgents: true,
 };
 

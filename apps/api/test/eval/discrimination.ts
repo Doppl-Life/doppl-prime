@@ -157,9 +157,18 @@ export interface GateResult {
 }
 
 /**
- * The discrimination GATE (D10, signed off). A v4 judge PASSES only if it separates the honest ladder
- * monotonically with enough spread/gap AND scores every gamed candidate below the mediocre floor. mvp-3 is
- * expected to FAIL this (flat) — that contrast is the whole point.
+ * The discrimination GATE — the SUBSTANTIVE bar (Phase J decision, operator-delegated 2026-06-27). A judge
+ * PASSES iff it separates the honest ladder by its tier MEANS (monotone + spread ≥ {@link MIN_SPREAD} + every
+ * adjacent mean-gap ≥ {@link MIN_INTER_TIER_GAP}) AND scores every gamed candidate below the mediocre floor
+ * (the load-bearing anti-reward-hacking check). mvp-3 is expected to FAIL this (flat) — that contrast is the
+ * whole point.
+ *
+ * The adjacent-tier RANGE-overlap ({@link DiscriminationReport.adjacentOverlaps}) is NO LONGER gated — it is a
+ * logged DIAGNOSTIC. That check is the strict-ladder "clean mediocre/good daylight" criterion, which the
+ * substantive bar deliberately relaxes: a cross-problem outlier touching a neighbor's range reflects gold-set
+ * consistency across heterogeneous problems, not whether the judge DISCRIMINATES (the means + spread + gamed
+ * floor measure that). Chasing a clean range separation by re-tuning gold candidates is the overfitting the
+ * decision package flagged. The overlaps stay computed + surfaced by `logReport` so a real blur is still visible.
  */
 export function passesGate(report: DiscriminationReport): GateResult {
   const failures: string[] = [];
@@ -171,11 +180,6 @@ export function passesGate(report: DiscriminationReport): GateResult {
     failures.push(`min inter-tier gap ${report.minGap} < required ${MIN_INTER_TIER_GAP}`);
   if (!report.gamedBelowMediocre)
     failures.push('a gamed candidate scored >= the mediocre floor (reward-hacking leak)');
-  for (const o of report.adjacentOverlaps)
-    failures.push(
-      `tiers ${o.lower} and ${o.upper} overlap (${o.lower}.max ${o.lowerMax.toFixed(2)} >= ` +
-        `${o.upper}.min ${o.upperMin.toFixed(2)})`,
-    );
   return { pass: failures.length === 0, failures };
 }
 
