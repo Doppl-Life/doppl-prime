@@ -173,7 +173,8 @@ Recommended sequencing:
     allocates its descendants across the full 360-degree bloom, then applies bounded collision pressure,
     link springs, and stable anchor gravity so nodes mostly do not overlap.
   - Nodes can be click-dragged in the map to make local arrangements while retaining existing pan/zoom and
-    double-click inner-run opening.
+    double-click inner-run opening. Dragging a node also tugs direct and second-hop connected nodes, matching
+    the experiment-spike spring-physics feel without making the React map nondeterministic.
   - Animate new nodes from streamed/projection changes.
   - Distinguish:
     - configured/starting

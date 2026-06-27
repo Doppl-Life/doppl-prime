@@ -69,6 +69,12 @@ interface BloomNodePosition {
   y: number;
 }
 
+interface BloomDragInfluence {
+  id: string;
+  start: BloomNodePosition;
+  strength: number;
+}
+
 interface BloomDragState {
   pointerId: number;
   mode: 'pan' | 'node';
@@ -77,6 +83,7 @@ interface BloomDragState {
   startClientY: number;
   startPan: BloomPan;
   startNode?: BloomNodePosition;
+  influences?: BloomDragInfluence[];
   moved: boolean;
 }
 
@@ -1121,6 +1128,7 @@ function BloomGraph({
     if (dragNode !== null) {
       nextDragState.nodeId = dragNode.id;
       nextDragState.startNode = { x: dragNode.x, y: dragNode.y };
+      nextDragState.influences = dragInfluencesForNode(layout, dragNode.id);
       onSelect(dragNode.id);
     }
     dragStateRef.current = nextDragState;
@@ -1146,10 +1154,7 @@ function BloomGraph({
       const worldDy = (dy / rect.height) * visibleBounds.height;
       setNodeOverrides((current) => ({
         ...current,
-        [drag.nodeId as string]: {
-          x: drag.startNode!.x + worldDx,
-          y: drag.startNode!.y + worldDy,
-        },
+        ...dragInfluenceOverrides(drag.influences ?? [], worldDx, worldDy),
       }));
       return;
     }
@@ -1484,6 +1489,52 @@ function GraphControl({
       {children}
     </button>
   );
+}
+
+function dragInfluencesForNode(
+  layout: ReturnType<typeof layoutBloom>,
+  nodeId: string,
+): BloomDragInfluence[] {
+  const nodeById = new Map(layout.nodes.map((node) => [node.id, node]));
+  const adjacency = new Map<string, Set<string>>();
+  for (const node of layout.nodes) adjacency.set(node.id, new Set());
+  for (const edge of layout.edges) {
+    adjacency.get(edge.source.id)?.add(edge.target.id);
+    adjacency.get(edge.target.id)?.add(edge.source.id);
+  }
+
+  const influences = new Map<string, number>([[nodeId, 1]]);
+  const direct = adjacency.get(nodeId) ?? new Set<string>();
+  for (const id of direct) influences.set(id, Math.max(influences.get(id) ?? 0, 0.34));
+  for (const id of direct) {
+    for (const secondHop of adjacency.get(id) ?? []) {
+      if (secondHop === nodeId) continue;
+      influences.set(secondHop, Math.max(influences.get(secondHop) ?? 0, 0.13));
+    }
+  }
+
+  return [...influences.entries()]
+    .map(([id, strength]) => {
+      const node = nodeById.get(id);
+      if (node === undefined) return null;
+      return { id, strength, start: { x: node.x, y: node.y } };
+    })
+    .filter((influence): influence is BloomDragInfluence => influence !== null);
+}
+
+function dragInfluenceOverrides(
+  influences: readonly BloomDragInfluence[],
+  dx: number,
+  dy: number,
+): Record<string, BloomNodePosition> {
+  const overrides: Record<string, BloomNodePosition> = {};
+  for (const influence of influences) {
+    overrides[influence.id] = {
+      x: influence.start.x + dx * influence.strength,
+      y: influence.start.y + dy * influence.strength,
+    };
+  }
+  return overrides;
 }
 
 function ProofBoard({
