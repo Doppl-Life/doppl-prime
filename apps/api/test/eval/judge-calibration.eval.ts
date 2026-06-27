@@ -11,6 +11,7 @@ import { DEFAULT_MODEL_REGISTRY } from '../../src/config/model-registry.config';
 import { runComparativeJudge } from '../../src/verifier/judge/comparative-judge';
 import { GOLD_SET, goldCandidateIdea, goldProblemIds } from './gold-set/gold-set';
 import { computeDiscrimination, meansInBand, passesGate, type ScoredEntry } from './discrimination';
+import { JUDGE_AXIS_CRITERIA_V4 } from './criteria-v4';
 
 /**
  * Phase J — J2 LIVE discrimination harness (eval-tested, NOT a unit test; `.eval.ts` so the unit glob skips
@@ -98,11 +99,15 @@ describe.skipIf(!process.env.OPENROUTER_API_KEY)(
       expect(scored.length).toBeGreaterThanOrEqual(12);
     }, 180_000);
 
-    // J3 (after v4 criteria are authored): inject via the Slice-Js seam and ASSERT the gate passes.
-    // test('v4_passes_the_discrimination_gate', async () => {
-    //   const scored = await scoreCorpus(liveGateway(), JUDGE_AXIS_CRITERIA_V4);
-    //   logReport('v4', scored);
-    //   expect(passesGate(computeDiscrimination(scored)).pass).toBe(true);
-    // }, 180_000);
+    // J3 — the DRAFT v4 criteria injected via the Slice-Js `criteriaSource` seam (default NOT flipped). v4
+    // is EXPECTED to pass the discrimination gate; this is the AFTER to the mvp-3 baseline's BEFORE. If it
+    // fails, the failures name which gate check (spread / monotone / gamed leak) so the criteria can be tuned.
+    test('v4_criteria_pass_the_discrimination_gate', async () => {
+      const scored = await scoreCorpus(liveGateway(), JUDGE_AXIS_CRITERIA_V4);
+      logReport('v4 (Slice-Js injected, default NOT flipped)', scored);
+      const gate = passesGate(computeDiscrimination(scored));
+      expect(gate.failures).toEqual([]);
+      expect(gate.pass).toBe(true);
+    }, 180_000);
   },
 );
