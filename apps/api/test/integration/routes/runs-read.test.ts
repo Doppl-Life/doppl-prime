@@ -76,8 +76,9 @@ afterAll(async () => {
 });
 
 describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
-  // §11 — GET /runs lists appended runs (id + current-state summary). Positive guard.
-  test('test_get_runs_lists_runs', async () => {
+  // §11 — GET /runs lists appended runs ENRICHED (status + problem + createdAt + activity counts), sorted
+  // newest-first. Backs the Runs table.
+  test('test_get_runs_lists_enriched_runs_newest_first', async () => {
     await seedRun('read-list-a');
     await seedRun('read-list-b');
     const app = makeApp();
@@ -85,9 +86,30 @@ describe('GET /runs* + /model-routes — read surface (spec §11/§9)', () => {
     try {
       const res = await app.inject({ method: 'GET', url: '/runs' });
       expect(res.statusCode).toBe(200);
-      const ids = (res.json() as { runs: { runId: string }[] }).runs.map((r) => r.runId);
-      expect(ids).toContain('read-list-a');
-      expect(ids).toContain('read-list-b');
+      type Item = {
+        runId: string;
+        status: string | null;
+        problem: string | null;
+        createdAt: string | null;
+        finalIdeaTitle: string | null;
+        candidates: number;
+        generations: number;
+      };
+      const runs = (res.json() as { runs: Item[] }).runs;
+      const a = runs.find((r) => r.runId === 'read-list-a');
+      expect(a).toBeDefined();
+      expect(a!.status).toBe('completed');
+      expect(a!.problem).toBe('scn-read-list-a'); // the run.configured seed
+      expect(typeof a!.createdAt).toBe('string');
+      expect(a!.candidates).toBe(1); // one candidate.created in seedRun
+      expect(a!.generations).toBe(0); // seedRun has generation.started but no generation.completed
+      expect(a!.finalIdeaTitle).toBeNull(); // seedRun's run.completed carries no finalIdeaRef → no winner
+      // sorted newest-first: createdAt descending (ties allowed across same-ms appends).
+      for (let i = 1; i < runs.length; i += 1) {
+        const prev = runs[i - 1]!.createdAt;
+        const cur = runs[i]!.createdAt;
+        if (prev !== null && cur !== null) expect(prev >= cur).toBe(true);
+      }
     } finally {
       await app.close();
     }
