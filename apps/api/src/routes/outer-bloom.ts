@@ -3,7 +3,13 @@ import type { FastifyInstance } from 'fastify';
 import { eq, inArray } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { EventStore } from '../event-store';
-import { outerBloomArtifacts, outerBloomHiddenNodes } from '../event-store/schema';
+import {
+  outerBloomArtifacts,
+  outerBloomHiddenNodes,
+  outerCampaignArtifacts,
+  outerCampaigns,
+} from '../event-store/schema';
+import { syncOuterCampaignPromotions } from '../outer-campaigns/promotion';
 import {
   buildOuterBloom,
   buildOuterBloomForRun,
@@ -15,22 +21,28 @@ import { listRunIds } from '../projections/run-list';
 export interface OuterBloomRoutesDeps {
   store: EventStore;
   db: NodePgDatabase;
+  newId: () => string;
 }
 
 export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomRoutesDeps): void {
   app.get('/bloom', async () => {
+    await syncOuterCampaignPromotions(deps);
     const hiddenByRun = await readHiddenOuterBloomNodeIds(deps.db);
+    const campaignBloom = await readCampaignOuterBloom(deps.db);
     const imported = (await readImportedOuterBloom(deps.db))
       .map((island) =>
         filterOuterBloomIslandByHiddenRoots(island, hiddenByRun.get(island.runId) ?? new Set()),
       )
       .filter((island): island is OuterBloomIsland => island !== null);
-    const importedRunIds = new Set(imported.map((island) => island.runId));
+    const runIdsProjectedByFirstClassOuterState = new Set([
+      ...imported.map((island) => island.runId),
+      ...campaignBloom.sourceRunIds,
+    ]);
 
     const ids = await listRunIds(deps.db);
-    const islands = [...imported];
+    const islands = [...campaignBloom.islands, ...imported];
     for (const id of ids) {
-      if (importedRunIds.has(id)) continue;
+      if (runIdsProjectedByFirstClassOuterState.has(id)) continue;
       const events = await deps.store.readByRun(id);
       if (events.length === 0) continue;
       const island = filterOuterBloomIslandByHiddenRoots(
@@ -77,6 +89,8 @@ export function registerOuterBloomRoutes(app: FastifyInstance, deps: OuterBloomR
 
 type ImportedOuterBloomRow = typeof outerBloomArtifacts.$inferSelect;
 type HiddenOuterBloomRow = typeof outerBloomHiddenNodes.$inferSelect;
+type CampaignOuterArtifactRow = typeof outerCampaignArtifacts.$inferSelect;
+type CampaignRow = typeof outerCampaigns.$inferSelect;
 
 export function collectOuterBloomSubtreeIds(
   rootId: string,
@@ -188,6 +202,81 @@ async function readImportedOuterBloom(db: NodePgDatabase): Promise<OuterBloomIsl
   }
 
   return [...byRun.entries()].map(([runId, runRows]) => importedRowsToIsland(runId, runRows));
+}
+
+async function readCampaignOuterBloom(
+  db: NodePgDatabase,
+): Promise<{ islands: OuterBloomIsland[]; sourceRunIds: Set<string> }> {
+  const campaigns: CampaignRow[] = await db.select().from(outerCampaigns);
+  if (campaigns.length === 0) return { islands: [], sourceRunIds: new Set() };
+
+  const artifacts: CampaignOuterArtifactRow[] = await db
+    .select()
+    .from(outerCampaignArtifacts)
+    .orderBy(outerCampaignArtifacts.campaignId, outerCampaignArtifacts.createdAt);
+
+  const byCampaign = new Map<string, CampaignOuterArtifactRow[]>();
+  const sourceRunIds = new Set<string>();
+  for (const row of artifacts) {
+    byCampaign.set(row.campaignId, [...(byCampaign.get(row.campaignId) ?? []), row]);
+    if (row.sourceRunId !== null) sourceRunIds.add(row.sourceRunId);
+  }
+
+  const islands = campaigns
+    .map((campaign) => campaignRowsToIsland(campaign, byCampaign.get(campaign.id) ?? []))
+    .filter((island): island is OuterBloomIsland => island !== null);
+  return { islands, sourceRunIds };
+}
+
+function campaignRowsToIsland(
+  campaign: CampaignRow,
+  rows: readonly CampaignOuterArtifactRow[],
+): OuterBloomIsland | null {
+  if (rows.length === 0) return null;
+  const nodes = rows.map(campaignArtifactRowToNode);
+  const edges = nodes
+    .filter((node) => node.parentId !== null)
+    .map((node) => ({
+      id: `${node.parentId}->${node.id}`,
+      source: node.parentId as string,
+      target: node.id,
+      type:
+        node.stage === 'problem_recovery'
+          ? 'recovered'
+          : node.stage === 'case_study'
+            ? 'reseeded'
+            : 'solved_by',
+    }));
+  const maxSequence = Math.max(
+    0,
+    ...rows.map((row) => row.sourceSequenceThrough ?? 0),
+  );
+  return {
+    runId: campaign.id,
+    seed: campaign.synopsis || campaign.title,
+    status: campaign.status,
+    sequenceThrough: maxSequence,
+    nodes,
+    edges,
+  };
+}
+
+function campaignArtifactRowToNode(row: CampaignOuterArtifactRow): OuterBloomNode {
+  return {
+    id: row.id,
+    runId: row.sourceRunId ?? row.campaignId,
+    stage: row.stage === 'case_study' || row.stage === 'problem_recovery' ? row.stage : 'doppl',
+    label: row.label,
+    summary: row.summary,
+    status: row.status,
+    parentId: row.parentArtifactId,
+    generationIndex: null,
+    score: row.score,
+    novelty: row.novelty,
+    judgeAcceptance: row.judgeAcceptance,
+    sourceId: row.sourceCandidateId ?? row.sourceRunId,
+    agenomeId: null,
+  };
 }
 
 function importedRowsToIsland(

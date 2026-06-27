@@ -219,3 +219,91 @@ export const outerBloomHiddenNodes = pgTable(
     index('outer_bloom_hidden_nodes_node_id_idx').on(t.nodeId),
   ],
 );
+
+/**
+ * Server-owned outer campaign state — the durable bridge between the Agarden operator surface and the
+ * append-only inner run log. These tables are intentionally API-local while the inner/outer contract is
+ * still being proven: kernel mechanics remain authoritative in `run_events`, and promoted outer artifacts
+ * carry source-run pointers for audit/open-inner-run behavior.
+ */
+export const outerCampaigns = pgTable(
+  'outer_campaigns',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    synopsis: text('synopsis').notNull(),
+    status: text('status').notNull(),
+    rootArtifactId: text('root_artifact_id').notNull(),
+    settings: jsonb('settings').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('outer_campaigns_status_idx').on(t.status)],
+);
+
+export const outerCampaignArtifacts = pgTable(
+  'outer_campaign_artifacts',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id').notNull(),
+    stage: text('stage').notNull(),
+    label: text('label').notNull(),
+    summary: text('summary').notNull(),
+    body: text('body').notNull(),
+    status: text('status').notNull(),
+    parentArtifactId: text('parent_artifact_id'),
+    sourceRunId: text('source_run_id'),
+    sourceCandidateId: text('source_candidate_id'),
+    sourceSequenceThrough: integer('source_sequence_through'),
+    score: doublePrecision('score'),
+    novelty: doublePrecision('novelty'),
+    judgeAcceptance: doublePrecision('judge_acceptance'),
+    artifactPath: text('artifact_path').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('outer_campaign_artifacts_campaign_id_idx').on(t.campaignId),
+    index('outer_campaign_artifacts_parent_id_idx').on(t.parentArtifactId),
+    index('outer_campaign_artifacts_stage_idx').on(t.stage),
+    index('outer_campaign_artifacts_source_run_id_idx').on(t.sourceRunId),
+  ],
+);
+
+export const outerCampaignChildRuns = pgTable(
+  'outer_campaign_child_runs',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id').notNull(),
+    runId: text('run_id').notNull(),
+    stage: text('stage').notNull(),
+    parentArtifactId: text('parent_artifact_id').notNull(),
+    status: text('status').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('outer_campaign_child_runs_run_id_key').on(t.runId),
+    index('outer_campaign_child_runs_campaign_id_idx').on(t.campaignId),
+    index('outer_campaign_child_runs_parent_id_idx').on(t.parentArtifactId),
+  ],
+);
+
+export const outerPromotionDecisions = pgTable(
+  'outer_promotion_decisions',
+  {
+    id: text('id').primaryKey(),
+    campaignId: text('campaign_id').notNull(),
+    childRunId: text('child_run_id').notNull(),
+    artifactId: text('artifact_id').notNull(),
+    sourceCandidateId: text('source_candidate_id'),
+    reason: text('reason').notNull(),
+    proof: jsonb('proof').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('outer_promotion_decisions_campaign_id_idx').on(t.campaignId),
+    index('outer_promotion_decisions_child_run_id_idx').on(t.childRunId),
+    index('outer_promotion_decisions_artifact_id_idx').on(t.artifactId),
+  ],
+);

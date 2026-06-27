@@ -677,12 +677,28 @@ function BloomGrowPanel({
     setErrors({});
     onLaunchState({ kind: 'starting' });
     runClient
-      .startRun(result.config, { idempotencyKey: `outer-bloom-${crypto.randomUUID()}` })
-      .then(onStarted)
+      .startOuterCampaign(
+        {
+          title: form.title,
+          synopsis: form.synopsis,
+          seedText: form.seedText,
+          generationMode: form.generationMode,
+          direction: form.direction,
+          runConfig: result.config,
+        },
+        { idempotencyKey: `outer-campaign-${crypto.randomUUID()}` },
+      )
+      .then((campaign) => {
+        const runId = campaign.activeRunIds[0];
+        if (runId === undefined) {
+          throw new Error('Campaign started without an active inner run.');
+        }
+        onStarted({ runId });
+      })
       .catch((error: unknown) => {
         onLaunchState({
           kind: 'error',
-          message: error instanceof Error ? error.message : 'Failed to start bloom run.',
+          message: error instanceof Error ? error.message : 'Failed to start Agarden campaign.',
         });
       });
   };

@@ -13,6 +13,7 @@ import { registerCapMaximaRoutes } from './routes/cap-maxima';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
 import { registerOuterBloomRoutes } from './routes/outer-bloom';
+import { registerOuterCampaignRoutes } from './routes/outer-campaigns';
 import type { EventBridgeOptions } from './sse/event-bridge';
 import { DEFAULT_CAPS, type ProblemSets } from './runtime/config/configSchema';
 
@@ -116,7 +117,15 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
   });
-  registerOuterBloomRoutes(app, { store: deps.store, db: deps.db });
+  registerOuterBloomRoutes(app, { store: deps.store, db: deps.db, newId: deps.newId });
+  registerOuterCampaignRoutes(app, {
+    store: deps.store,
+    db: deps.db,
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    modelRouteOverrideAllowlist: deps.modelRouteOverrideAllowlist ?? {},
+    newId: deps.newId,
+    ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
+  });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   registerProblemSetsRoutes(app, { problemSets: deps.problemSets ?? [] });
   registerDemoLadderRoutes(app, {

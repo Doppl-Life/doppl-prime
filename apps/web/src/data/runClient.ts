@@ -98,6 +98,11 @@ export interface RunClient {
   getCapMaxima(): Promise<RunCaps>;
   /** GET /bloom — read-only outer-view projection over all known runs. */
   getOuterBloom(): Promise<OuterBloomProjectionType>;
+  /** POST /outer-campaigns — start an Agarden campaign and its first source inner run. */
+  startOuterCampaign(
+    request: StartOuterCampaignRequest,
+    opts?: { idempotencyKey?: string },
+  ): Promise<StartOuterCampaignResult>;
   /** DELETE /bloom/nodes/:id — testing/admin bridge: delete an imported outer artifact subtree. */
   deleteOuterBloomNode(nodeId: string): Promise<DeleteOuterBloomNodeResultType>;
   /**
@@ -179,6 +184,23 @@ export const StopRunResult = z.object({
 });
 export type StopRunResult = z.infer<typeof StopRunResult>;
 
+export const StartOuterCampaignRequest = z.object({
+  title: z.string(),
+  synopsis: z.string(),
+  seedText: z.string(),
+  generationMode: z.enum(['recover_problem', 'grow_doppl', 'campaign']),
+  direction: z.enum(['auto', 'converge', 'diverge']),
+  runConfig: z.unknown(),
+});
+export type StartOuterCampaignRequest = z.infer<typeof StartOuterCampaignRequest>;
+
+export const StartOuterCampaignResult = z.object({
+  campaignId: z.string(),
+  rootArtifactId: z.string(),
+  activeRunIds: z.array(z.string()),
+});
+export type StartOuterCampaignResult = z.infer<typeof StartOuterCampaignResult>;
+
 export function createRunClient(options: RunClientOptions): RunClient {
   const { baseUrl } = options;
   const doFetch: FetchLike = options.fetch ?? ((url, init) => fetch(url, init));
@@ -241,6 +263,8 @@ export function createRunClient(options: RunClientOptions): RunClient {
       (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
     getCapMaxima: async () => (await getJson('/config/caps', CapMaximaResponse)).caps,
     getOuterBloom: () => getJson('/bloom', OuterBloomProjection),
+    startOuterCampaign: (request, opts) =>
+      getJson('/outer-campaigns', StartOuterCampaignResult, postInit(request, opts?.idempotencyKey)),
     deleteOuterBloomNode: (nodeId) =>
       getJson(`/bloom/nodes/${enc(nodeId)}`, DeleteOuterBloomNodeResult, { method: 'DELETE' }),
     getModelRouteOverrides: async () =>

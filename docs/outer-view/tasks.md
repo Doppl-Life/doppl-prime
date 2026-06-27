@@ -237,6 +237,60 @@ Target production model:
 
 Recommended implementation tasks:
 
+### Localhost Integrated Vertical Slice Checklist
+
+This is the concrete task list for the current integration goal: from `http://localhost:5173/agarden`,
+launch a case-study run, watch the inner organism run at `/runs/:runId`, and watch the Agarden map grow as
+inner runs finish and produce promoted outer artifacts.
+
+- [ ] **L0: Keep the task tracker current.**
+  - Record implementation decisions in this file as they land.
+  - Keep the branch-only rule explicit: work on `dalton-outer-view`, never `main`.
+  - Reconciliation doc: `docs/outer-view/agarden-kernel-reconciliation.md`.
+  - Orchestration architecture doc: `docs/outer-view/inner-outer-orchestration-plan.md`.
+- [x] **L1: Add API-local outer campaign persistence.**
+  - Add durable tables for campaigns, campaign artifacts, artifact links, child runs, and promotion decisions.
+  - Keep these API-local until the inner/outer contract is proven; do not change frozen run event contracts yet.
+  - Make the schema replay-friendly and idempotent enough for localhost restarts.
+- [x] **L2: Add campaign start endpoint.**
+  - Add `POST /outer-campaigns`.
+  - Accept the current Agarden grow payload plus the already-built `RunConfig`.
+  - Persist the root `case_study` artifact first.
+  - Launch the first child inner run through the existing run worker path.
+  - Return `{ campaignId, rootArtifactId, activeRunIds }`.
+- [x] **L3: Show campaign roots in `/bloom`.**
+  - Make `/bloom` read campaign artifacts as first-class outer nodes.
+  - Continue showing imported aGarden artifacts and legacy live-run adapter as fallbacks.
+  - Include source run IDs so "open inner run" works for promoted nodes.
+- [~] **L4: Promote first child-run winner into a `problem_recovery`.**
+  - Compile the winner through the MarkScript node contract before persisting it as an outer artifact.
+  - Do not persist raw `CandidateIdea` text as an Agarden node; it is source material, not the artifact.
+  - [x] Watch/read terminal inner run state opportunistically during `/bloom` projection.
+  - [x] Select the top final idea from the inner projection (`run.completed.finalIdeaRef`, fallback best scored survivor).
+  - [x] Persist a promoted `problem_recovery` child of the root case study when a child run completes.
+  - [x] Store source run/candidate/sequence proof.
+  - [ ] Add API tests and a dedicated campaign worker/stream so this is not only projection-time sync.
+- [ ] **L5: Launch the next child run from promoted problem recovery.**
+  - Build a second `RunConfig` with Doppl/divergent instructions.
+  - Persist child-run relationship.
+  - Start the inner run once the first promotion lands.
+- [ ] **L6: Promote Doppl winner(s).**
+  - Compile each promoted winner through the MarkScript `doppl` shape.
+  - Persist Doppl children under the selected problem recovery.
+  - Make the outer map follow the newest promoted artifact.
+- [ ] **L7: Wire live campaign refresh.**
+  - Add campaign polling or SSE aggregate stream.
+  - Show child-run status and promotion events in the Agarden live panel.
+  - Recover the active campaign after refresh.
+- [ ] **L8: Stop/delete/replay behavior.**
+  - Stop current child run/campaign cleanly.
+  - Support deleting test campaign nodes/subtrees.
+  - Ensure a browser refresh reconstructs the map from Postgres.
+- [ ] **L9: No-spend verification.**
+  - Add API tests with fake child runs/projections.
+  - Add web tests for campaign launch and map appearance.
+  - Smoke locally with recorded/fake gateway before trying live model runs.
+
 - [ ] **R0.6-A: Contract inventory and compatibility decision.**
   - Inventory current frozen contracts: `RunConfig`, `RunEventType`, high-traffic payload map, projection
     reducers, and `outer_bloom_artifacts`.
@@ -291,12 +345,19 @@ Recommended implementation tasks:
     - Reseed leaves
   - Do not implement traversal in browser-only state; it must be replayable.
 
-- [ ] **R0.6-E: Promote child-run winners into outer artifacts.**
-  - Watch child run terminal events (`run.completed`, generation completion, selected/winner projection).
-  - Read current-state projection for the child run.
-  - Select the top outputs according to the outer stage's `keep` policy.
-  - Persist promoted `problem_recovery` or `doppl` artifacts with parent links.
-  - Store source run/candidate/event sequence pointers so every bloom node can be audited.
+- [~] **R0.6-E: Promote child-run winners into outer artifacts.**
+  - [x] Add a MarkScript compiler/adapter from inner kernel winner projection to Agarden node markdown:
+    - case studies: frontmatter + `## Context` + `## Synopsis`
+    - problem recoveries: frontmatter + `## Trace` + `## Discovery` + `## Growth — Problem recovery` + `## Path`
+    - Doppls: frontmatter + `## Trace` + `## Discovery` + `## Growth — Doppl` + `## Path`
+  - [x] Treat MarkScript as the display/export contract for Agarden artifacts; the inner candidate/final idea is
+    only the source projection.
+  - [x] Watch child run terminal events (`run.completed`, `run.failed`, `run.stopped`, `run.cancelled`).
+  - [x] Read current-state projection for the child run.
+  - [~] Select the top outputs according to the outer stage's `keep` policy.
+    - Current slice promotes the single selected/final winner.
+  - [x] Persist promoted `problem_recovery` or `doppl` artifacts with parent links.
+  - [x] Store source run/candidate/event sequence pointers so every bloom node can be audited.
   - Record rejected/non-promoted output counts for proof board summaries without cluttering the outer graph.
 
 - [ ] **R0.6-F: Add campaign worker/orchestrator loop.**
