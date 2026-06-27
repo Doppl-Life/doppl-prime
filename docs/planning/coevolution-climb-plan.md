@@ -14,9 +14,12 @@
 
 ## 0. RESUME POINTER (update this every session)
 
-- **Status:** **Path A COMPLETE (3 PRs open); HG2 headroom check DONE → the JUDGE is the binding ceiling, not
-  the algorithm. STRATEGIC PIVOT (Michael, 2026-06-27): build Phase B/C AND recalibrate the judge (mvp-3 → v4)
-  to create real headroom, plus a dynamically-intelligent diverge→converge anneal.** Plan + handoff written;
+- **Status (2026-06-27, session 014):** **ALL on `main` (PRs #15–#26). Phase J BUILT + LIVE-VALIDATED behind the
+  Js seam — NOTHING flipped.** v4 un-flattened the judge (spread 0.26→0.55) + crushed gamed (0.42→0.09), at the
+  judge's natural ceiling. **NEXT = Michael's calibration-policy decision + flip sign-off
+  (`docs/planning/phase-j-v4-decision-package.md`), then BUILD Phase B → Phase C.** Full handoff =
+  `docs/sessions/014-2026-06-27-*.md`. _(Prior: Path A complete; HG2 → judge is the binding ceiling; pivot to
+  recalibrate the judge + Phase B/C.)_ Plan + handoff written;
   next session resumes here.
 - **Date:** 2026-06-27.
 - **Branch/PR state:** PR-only to `main` (NEVER `git push origin main`; branch → push → `gh pr create --base
@@ -586,9 +589,18 @@ Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; 
   BASELINE flat (spread 0.27, FAIL)**; **v4 broke the plateau** (spread ~0.55, monotone, gamed crushed to
   ~0.11 — the recalibration works). The only v4 miss was within-tier overlap in the FUZZY MIDDLE → fixed by the
   middle-tier refinement (below), not by tuning v4 (no overfitting). 996 unit green.
-- [~] **J3** v4 criteria DRAFTED — `test/eval/criteria-v4.ts` (`JUDGE_AXIS_CRITERIA_V4`: earn-from-zero bands + per-axis count-the-evidence sub-criteria + anti-cheap-signal clause), wired into the live harness via the Js `criteriaSource` seam (default NOT flipped); keyless test pins it's valid/injectable + the default is untouched. **Needs the paid live run to measure (+ Michael's review of the criteria TEXT before any flip).**
-- [ ] **J4** Discrimination metric passes + all reward-hacking probes (P1–P5) below mediocre floor
-- [ ] **J4b** (if criteria-spread short of ~0.55) add the (#3) min-dominated `computeAcceptanceMetric`; re-run probes (D12)
+- [x] **J3** v4 criteria DRAFTED + reinforced + **LIVE-VALIDATED** — `test/eval/criteria-v4.ts` (earn-from-zero
+  bands + per-axis count-the-evidence sub-criteria + anti-cheap-signal clause + the assign-earned-scores
+  reinforcement #26). **v4 un-flattened the judge** (spread 0.26→0.55) and **crushed gamed** (0.42→0.09); it
+  reached the judge model's natural ceiling (excellent caps ~0.72, weak floors ~0.17 → max spread ~0.55).
+  Behind the Js seam (default NOT flipped). Gold middle tiers refined for consistency (mediocre #25; good
+  re-restored to genuinely-rich this session).
+- [→] **J-DECISION (Michael owns — `docs/planning/phase-j-v4-decision-package.md`):** strict 4-tier ladder vs
+  substantive validation (D-a) · spread threshold 0.55 vs ~0.50 to match the judge's real range (D-b) · review
+  the v4 criteria TEXT (D-c) · the flip sign-off (D-d). **Rec: accept substantive + spread 0.50 → v4 passes;
+  then flip.** Nothing flipped yet.
+- [ ] **J4** (hardening) full reward-hacking probes P1–P5 — the gamed tier (crushed to 0.09) covers the spirit; the explicit suite is a TODO
+- [ ] **J4b** (#3) min-dominated `computeAcceptanceMetric` — NOT needed (criteria alone achieved discrimination); only if Michael wants a different validation (D12)
 - [ ] **J5** Contract-immutability tests green UNEDITED; re-record 6 `final-judge-mvp-3` fixtures at v4; preflight + replay green
 - [ ] **J6** Live HG2 re-check (climbable band, both ends) → package 5 artifacts → **Michael sign-off**
 - [ ] **J7** Flip `DEFAULT_JUDGE_RUBRIC.policyVersion` → v4 (separate final solo commit) · PR merged
