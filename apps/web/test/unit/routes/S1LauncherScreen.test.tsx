@@ -25,6 +25,7 @@ function fakeClient(over: Partial<RunClient> = {}): RunClient {
   return {
     getProblemSets: vi.fn(() => Promise.resolve(PROBLEM_SETS)),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: static ceiling'))),
+    getModelRouteOverrides: vi.fn(() => Promise.resolve({})),
     startRun: vi.fn(() => Promise.resolve(STARTED)),
     ...over,
   } as unknown as RunClient;

@@ -71,6 +71,7 @@ function fakeClient(): RunClient {
     startDemoRun: vi.fn(() => Promise.resolve({ runId: 'run_demo' })),
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
+    getModelRouteOverrides: vi.fn(() => Promise.resolve({})),
   } as unknown as RunClient;
 }
 

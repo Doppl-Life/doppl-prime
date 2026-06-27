@@ -9,6 +9,7 @@ import { assembleSuccessor, type SuccessorParent } from '../successor';
 import {
   adaptiveMutationFraction,
   isFitnessImproving,
+  judgeImprovingFromLog,
   noveltySpread,
   DEFAULT_ADAPTIVE_PARAMS,
 } from '../reproduction/convergence';
@@ -200,11 +201,18 @@ export function createReproduceSeam(deps: ReproduceSeamDeps): ReproduceSeam {
           }
         }
       }
-      const improving = isFitnessImproving(
-        bestByGenIndex,
-        currentGenIndex,
-        DEFAULT_ADAPTIVE_PARAMS.improveEpsilon,
+      // HONEST GATE (#3) — commit to exploit ONLY when the held-out judge component improves over a window
+      // (the un-hackable signal, rule #6), NOT when the blended `total` ticks up (~31% agent-visible critic/
+      // novelty → a decoy peak the judge never blessed). Falls back to the total-based trigger ONLY when no
+      // generation carries a judge_acceptance component (full judge-degrade) so the controller never freezes.
+      const judgeImproving = judgeImprovingFromLog(
+        scoredEvents,
+        generationId,
+        DEFAULT_ADAPTIVE_PARAMS,
       );
+      const improving =
+        judgeImproving ??
+        isFitnessImproving(bestByGenIndex, currentGenIndex, DEFAULT_ADAPTIVE_PARAMS.improveEpsilon);
       mutationFraction = adaptiveMutationFraction(noveltySpread(vectors), improving);
     }
     // assembleSuccessor runs allocate (caps-clamped, rule #1) → reproduce per slot (fusion/mutation_only/

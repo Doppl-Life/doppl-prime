@@ -4,7 +4,7 @@
 
 ## What Doppl is (10-second version)
 
-An agent-evolution runtime you **watch**. A human seeds a run; a population of agent genomes ("agenomes") generate candidate ideas; an adversarial critic council + a held-out judge + objective checks score them; weak lineages are culled; strong ones **fuse** (two parents) and mutate into later generations that **measurably beat** earlier ones. The product is the *process* — *"it's not the agent, it's the kernel that breeds the agents."* The UI must make a digital ecosystem getting smarter in real time **legible, unforgettable, and defensible** — in a 10-minute showcase.
+An agental-evolution runtime you **watch**. A human seeds a run; a population of agent genomes ("agenomes") generate candidate ideas; an adversarial critic council + a held-out judge + objective checks score them; weak lineages are culled; strong ones **fuse** (two parents) and mutate into later generations that **measurably beat** earlier ones. The product is the *process* — *"it's not the agent, it's the kernel that breeds the agents."* The UI must make a digital ecosystem getting smarter in real time **legible, unforgettable, and defensible** — in a 10-minute showcase.
 
 ## How to use this package
 

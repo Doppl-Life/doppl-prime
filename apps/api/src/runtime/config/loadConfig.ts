@@ -13,7 +13,7 @@ import {
 } from './configSchema';
 import type { AppConfig } from './configSchema';
 import { projectEnvOverrides } from './envSchema';
-import { DEFAULT_SEED_SET, SeedAgenomeSet } from '../seed/seedAgenomes.config';
+import { SeedAgenomeSet, selectSeedSet } from '../seed/seedAgenomes.config';
 import { CostMapConfigSchema, DEFAULT_COST_MAP } from '../energy/costMap';
 import { parseMutationStrategy } from '../loop/mutagenStrategy';
 
@@ -116,10 +116,13 @@ export function loadConfig({ env, fileSources }: LoadConfigInput): AppConfig {
     fileSources.problemSets ?? DEFAULT_PROBLEM_SETS,
   );
 
+  // HG1 ("give the climb room") — the boot seed baseline is selected by `DOPPL_SEED_PROFILE`
+  // (default → DEFAULT_SEED_SET = HEAD-identical; `weak` → WEAK_SEED_SET for a headroom-bearing climb).
+  // An explicit `fileSources.seedSet` still overrides the profile (file wins).
   const seedSet = validateSource(
     'seed-set',
     SeedAgenomeSet,
-    fileSources.seedSet ?? DEFAULT_SEED_SET,
+    fileSources.seedSet ?? selectSeedSet(env.DOPPL_SEED_PROFILE),
   );
 
   // EXPERIMENT — the mutagen-dynamics strategy under test (env-gated; garbage/absent → fusion_only = HEAD).
@@ -160,10 +163,12 @@ function parseEliteCount(raw: string | undefined, maxPopulation: number): number
 }
 
 /** Parse `DOPPL_HALL_OF_FAME_CARRY` → a non-negative integer clamped to `maxPopulation`; absent/garbage/
- *  negative → 0 (the ratchet is OFF = HEAD-identical). An explicit `> 0` enables the champion carry. */
+ *  negative → 1 (the ratchet is ON by default — Phase A / #6: always breed against the reigning champion so
+ *  the per-generation peak is held, the live-validated 0.030→0.006 drop reduction). An explicit `0` disables
+ *  it (the control). A PARENT only — never raises the offspring count (rule #1). */
 function parseHallOfFameCarry(raw: string | undefined, maxPopulation: number): number {
-  if (raw === undefined || raw.trim() === '') return 0;
+  if (raw === undefined || raw.trim() === '') return Math.min(1, maxPopulation);
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0) return 0;
+  if (!Number.isInteger(n) || n < 0) return Math.min(1, maxPopulation);
   return Math.min(n, maxPopulation);
 }

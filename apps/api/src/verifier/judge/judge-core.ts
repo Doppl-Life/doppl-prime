@@ -81,6 +81,28 @@ export const JUDGE_AXIS_CRITERIA =
   'test (not unfalsifiable or trivially true); subtype_check_pass = actually fits its declared idea subtype.';
 
 /**
+ * Phase J — Slice Js: validate a judge-CRITERIA source and return the trusted criteria string, or throw a
+ * field-identifying error (mirrors {@link loadJudgeRubric}'s load discipline for the rubric — §40). The
+ * criteria is the per-axis 0–10 calibration text composed into the trusted judge instruction; it defaults to
+ * the frozen {@link JUDGE_AXIS_CRITERIA} const (agent-unwritable, rule #6). Making it injectable lets a v4
+ * criteria be exercised WITHOUT flipping the default (the `rubricSource` pattern applied to criteria — the
+ * existing rubric seam can't reach it because criteria is a runner const, not a rubric field). An injected
+ * alternate must still be a real NON-EMPTY string — undefined/empty/non-string is rejected so a missing
+ * source can never silently blank the judge's calibration. Pure; no IO (the boot layer owns the source).
+ */
+export function loadJudgeCriteria(source: unknown): string {
+  if (typeof source !== 'string') {
+    throw new Error(
+      `Invalid judge criteria — must be a string (got ${source === null ? 'null' : typeof source})`,
+    );
+  }
+  if (source.trim().length === 0) {
+    throw new Error('Invalid judge criteria — must be a non-empty string');
+  }
+  return source;
+}
+
+/**
  * Deterministically compute the weighted acceptance metric from the per-axis scores × the rubric weights.
  * Iterates the rubric's AXES only, so a non-axis weight (e.g. the §8 energy-efficiency tiebreak, which
  * selection applies from energy data) is excluded here. No `Math.random`/`Date.now` — replay recomputes the

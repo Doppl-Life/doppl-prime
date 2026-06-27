@@ -66,3 +66,8 @@ scaffold/
 
 # ---- Code-intelligence index (CodeGraph MCP) — local, never tracked ----
 .codegraph/
+.gstack/
+
+# ---- Generated docs site + stray images (local artifacts) ----
+docs/learn-site/
+image.png

@@ -1,6 +1,5 @@
 import { useState, useSyncExternalStore } from 'react';
 import type { CSSProperties } from 'react';
-import { StatusBadge } from '../core/StatusBadge';
 import type { RunClient, StopRunResult } from '../../data/runClient';
 import type { RunStore } from '../../state/runStore';
 import { deriveStopControlState, selectRunStatus } from './runControl';
@@ -75,8 +74,6 @@ export function StopControl({ runId, store, runClient, onStopped }: StopControlP
   };
 
   const errId = `stop-${runId}-err`;
-  // The status-map `run` domain keys are unprefixed (`stopped`/`completed`/`failed`); strip `run.`.
-  const bareStatus = control.terminalStatus?.split('.')[1];
 
   return (
     <section aria-label="Run stop control" style={{ display: 'grid', gap: 'var(--space-2)' }}>
@@ -89,9 +86,6 @@ export function StopControl({ runId, store, runClient, onStopped }: StopControlP
       >
         {control.label}
       </button>
-      {control.phase === 'terminal' && bareStatus && (
-        <StatusBadge domain="run" status={bareStatus} />
-      )}
       {errored && (
         <span id={errId} role="alert" style={errorText}>
           Failed to stop the run — retry.

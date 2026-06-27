@@ -9,11 +9,22 @@ import type { GenerationOperator, RunCaps } from '../../data/contracts';
  * ceiling (overrides may only LOWER within maxima).
  */
 
+/**
+ * Recorded-only RunConfig fields the launcher NO LONGER exposes as editable knobs — they don't affect a run:
+ * the model is selected by the boot registry (+ the per-run `modelRouteOverride` picker), and the scoring
+ * policy + held-out judge rubric are rule-#6 BOOT IMMUTABLES (immutable to runs — the anti-reward-hacking
+ * anchor). `buildRunConfig` records these accurate constants so `run.configured` isn't misleading (the old
+ * editable default was a wrong `scoring-v1`). The display strings mirror the apps/api boot values:
+ * `DEFAULT_SCORING_POLICY.version` ('mvp-2') and the held-out judge `rubric.ts` policyVersion.
+ */
+export const RECORDED_MODEL_PROFILE = 'mvp-openrouter';
+export const RECORDED_SCORING_POLICY_VERSION = 'mvp-2';
+/** The held-out judge rubric version (display-only — rule #6 immutable, not run-settable). */
+export const HELD_OUT_JUDGE_VERSION = 'final-judge-mvp-3';
+
 export interface RunConfigFormValues {
   seed: string;
   rngSeed: number;
-  modelProfile: string;
-  scoringPolicyVersion: string;
   enabledSubtypes: { cross_domain_transfer: boolean; zeitgeist_synthesis: boolean };
   /**
    * FV.3 — the FB run-controls (FB.0–FB.4). `operators` = the selected mutagen ideation skills (closed
@@ -23,6 +34,14 @@ export interface RunConfigFormValues {
    */
   operators: GenerationOperator[];
   generationBias: number;
+  /**
+   * FB.2 — the per-run model-route override: a generation-role → `{provider, modelId}` map (only the roles
+   * the operator overrode; empty = use the boot models). The picker offers only allowlisted targets (GET
+   * /config/model-route-overrides); buildRunConfig threads it ADDITIVELY (omitted when empty). `final_judge`
+   * is never settable (rule #6). The API re-validates against the frozen allowlist (422 on a non-permitted
+   * entry) and the kernel overlay re-clamps — this is convenience + defense-in-depth, never the authority.
+   */
+  modelRouteOverride: Record<string, { provider: string; modelId: string }>;
   caps: {
     maxPopulation: number;
     maxGenerations: number;
@@ -55,11 +74,10 @@ export const CAP_CEILING: RunConfigFormValues['caps'] = {
 export const DEFAULT_FORM: RunConfigFormValues = {
   seed: '',
   rngSeed: 42,
-  modelProfile: 'mvp-openrouter',
-  scoringPolicyVersion: 'scoring-v1',
   enabledSubtypes: { cross_domain_transfer: true, zeitgeist_synthesis: true },
   operators: [],
   generationBias: 0,
+  modelRouteOverride: {},
   caps: {
     maxPopulation: 18,
     maxGenerations: 5,
@@ -127,14 +145,21 @@ export function buildRunConfig(form: RunConfigFormValues): RunConfig {
     seed: form.seed,
     enabledSubtypes,
     caps,
-    modelProfile: form.modelProfile,
-    scoringPolicyVersion: form.scoringPolicyVersion,
+    // Recorded-only constants (the contract requires both fields, but neither is a run lever — see above).
+    modelProfile: RECORDED_MODEL_PROFILE,
+    scoringPolicyVersion: RECORDED_SCORING_POLICY_VERSION,
     rngSeed: form.rngSeed,
     // FV.3 — thread the FB run-controls ADDITIVELY: operators only when ≥1 selected (the contract requires
     // min 1 when present), and the dial only when ENGAGED (non-neutral) — so a default run stays byte-
     // identical to the pre-FB.0 RunConfig and the recorded value is the one the operator actually set.
     ...(form.operators.length > 0 ? { generationOperators: form.operators } : {}),
     ...(form.generationBias !== 0 ? { generationBias: form.generationBias } : {}),
+    // FB.2 — thread the per-run model-route override only when ≥1 role is overridden (omitted otherwise →
+    // byte-identical to a no-override run). The cast crosses to the frozen contract's role-keyed shape;
+    // RunConfig.safeParse (validateForm) rejects an invalid role key, and the API re-validates the allowlist.
+    ...(Object.keys(form.modelRouteOverride).length > 0
+      ? { modelRouteOverride: form.modelRouteOverride as RunConfig['modelRouteOverride'] }
+      : {}),
   };
 }
 

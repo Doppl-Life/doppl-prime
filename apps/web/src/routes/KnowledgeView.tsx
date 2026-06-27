@@ -21,12 +21,30 @@ export interface KnowledgeViewProps {
 
 const DEFAULT_REFRESH_MS = 4000;
 
+// App-header height — mirror S2OrganismView so the Knowledge view also fills below the nav exactly.
+const APP_HEADER_H = 'calc(var(--space-3) + var(--space-3) + var(--text-h3-lh))';
+const shell: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-3)',
+  padding: 'var(--space-5) var(--space-4) var(--space-4)',
+  height: `calc(100vh - ${APP_HEADER_H})`,
+  minHeight: 0,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
+};
 const header: CSSProperties = {
   display: 'flex',
   alignItems: 'baseline',
   justifyContent: 'space-between',
   gap: 'var(--space-3)',
-  marginBottom: 'var(--space-3)',
+  flexShrink: 0,
+};
+const graphRegion: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
 };
 const title: CSSProperties = {
   fontFamily: 'var(--font-ui)',
@@ -83,7 +101,7 @@ export function KnowledgeView({
   }, [runId, runClient, refreshMs]);
 
   return (
-    <div>
+    <div style={shell}>
       <div style={header}>
         <div>
           <div style={title}>Knowledge evolution</div>
@@ -94,13 +112,15 @@ export function KnowledgeView({
         </Link>
       </div>
 
-      {error !== null && graph === null && (
-        <div role="alert" style={message}>
-          Could not load the knowledge graph: {error}
-        </div>
-      )}
-      {graph === null && error === null && <div style={message}>Loading research…</div>}
-      {graph !== null && <KnowledgeGraph graph={graph} />}
+      <div style={graphRegion}>
+        {error !== null && graph === null && (
+          <div role="alert" style={message}>
+            Could not load the knowledge graph: {error}
+          </div>
+        )}
+        {graph === null && error === null && <div style={message}>Loading research…</div>}
+        {graph !== null && <KnowledgeGraph graph={graph} />}
+      </div>
     </div>
   );
 }

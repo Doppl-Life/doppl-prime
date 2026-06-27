@@ -37,6 +37,24 @@ const section: CSSProperties = {
   color: 'var(--fg-default)',
 };
 const heading: CSSProperties = { fontSize: 'var(--text-h2)', margin: 0 };
+// Prominent "WINNING IDEA" pill — replaces the small SELECTED badge when this candidate is the
+// kernel-marked winner, so the inspector's identity is immediately legible.
+const winnerPill: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 'var(--space-2)',
+  alignSelf: 'flex-start',
+  padding: 'var(--space-1) var(--space-3)',
+  background: 'var(--accent-soft)',
+  border: 'thin solid var(--status-selected)',
+  borderRadius: 'var(--radius-full)',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'var(--status-selected)',
+};
 const fieldLabel: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
@@ -151,9 +169,19 @@ export function CandidateInspector({ runId, candidateId, runClient }: CandidateI
 
   return (
     <section aria-label="Candidate inspector" style={section}>
+      {candidate.status === 'selected' && (
+        <span style={winnerPill} aria-label="Winning idea">
+          <span aria-hidden="true">♔</span>
+          Winning idea
+        </span>
+      )}
       <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
         <h2 style={heading}>{candidate.title}</h2>
-        <StatusBadge domain="candidate" status={candidate.status} />
+        {candidate.status !== 'selected' && (
+          <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <StatusBadge domain="candidate" status={candidate.status} />
+          </span>
+        )}
       </header>
       <span style={fieldLabel}>{candidate.subtype}</span>
       <p style={{ margin: 0 }}>{candidate.summary}</p>

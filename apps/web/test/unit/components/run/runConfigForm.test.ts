@@ -116,6 +116,17 @@ describe('runConfigForm — form→RunConfig mapping + cap-max guard', () => {
     expect(config.enabledSubtypes).toContain('cross_domain_transfer');
     expect(RunConfig.safeParse(config).success).toBe(true);
   });
+
+  // The launcher no longer exposes editable Model profile / Scoring policy version knobs (they're inert —
+  // the model is the boot registry / modelRouteOverride, and scoring + judge are rule-#6 boot immutables).
+  // buildRunConfig records ACCURATE constants instead of the old misleading `scoring-v1`.
+  it('records accurate fixed constants for the no-longer-editable scoring/model fields', () => {
+    const config = buildRunConfig(validForm());
+    expect(config.scoringPolicyVersion).toBe('mvp-2'); // the real boot version (was a misleading 'scoring-v1')
+    expect(typeof config.modelProfile).toBe('string');
+    expect(config.modelProfile.length).toBeGreaterThan(0);
+    expect(RunConfig.safeParse(config).success).toBe(true);
+  });
 });
 
 // FV.3 — the launcher wires the FB run-controls (FB.0–FB.4) into the RunConfig. The form carries the
@@ -144,6 +155,20 @@ describe('runConfigForm — FB run-controls (FV.3 launcher wiring)', () => {
     // a neutral 0 dial → OMITTED (byte-identical to a no-dial run; the engaged value is what's recorded).
     const neutral = buildRunConfig({ ...validForm(), generationBias: 0 });
     expect(neutral.generationBias).toBeUndefined();
+  });
+
+  it('test_model_route_override_threaded_when_set_omitted_when_empty', () => {
+    const withOverride = buildRunConfig({
+      ...validForm(),
+      modelRouteOverride: { population_generator: { provider: 'ollama', modelId: 'llama3.1' } },
+    });
+    expect(withOverride.modelRouteOverride).toEqual({
+      population_generator: { provider: 'ollama', modelId: 'llama3.1' },
+    });
+    expect(RunConfig.safeParse(withOverride).success).toBe(true);
+    // no role overridden → the field is OMITTED (byte-identical to a no-override run).
+    const noOverride = buildRunConfig({ ...validForm(), modelRouteOverride: {} });
+    expect(noOverride.modelRouteOverride).toBeUndefined();
   });
 
   it('test_fb_controls_default_to_a_clean_baseline', () => {

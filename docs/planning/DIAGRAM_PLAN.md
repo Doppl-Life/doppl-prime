@@ -8,7 +8,7 @@ Source PRD: `Doppl_Capstone_Proposal.pdf`
 
 Purpose:
 
-Show Doppl as a complete agent-evolution system: operator and reviewers observe a live/replayable run, the backend controls a custom evolution kernel, Postgres records authoritative events, model providers are accessed through a gateway, Langfuse provides trace observability, and graph analysis remains derived.
+Show Doppl as a complete agental-evolution system: operator and reviewers observe a live/replayable run, the backend controls a custom evolution kernel, Postgres records authoritative events, model providers are accessed through a gateway, Langfuse provides trace observability, and graph analysis remains derived.
 
 Must show:
 

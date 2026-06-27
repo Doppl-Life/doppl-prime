@@ -7,6 +7,7 @@ import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
 import { MemoryRouter } from 'react-router-dom';
 import { S2OrganismView } from '../../../src/routes/S2OrganismView';
+import { __clearObservatoryCache } from '../../../src/routes/useRunObservatory';
 import { createRunStore } from '../../../src/state/runStore';
 import type { RunClient } from '../../../src/data/runClient';
 import type { EventSourceLike, SseStream, SseStreamOptions } from '../../../src/data/sseStream';
@@ -37,7 +38,10 @@ beforeAll(() => {
     })) as unknown as typeof matchMedia;
   }
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  __clearObservatoryCache(); // module-level cache survives between tests; reset so prior runId state doesn't leak.
+});
 
 const lineage: LineageGraphProjection = {
   runId: 'run_1',
@@ -109,13 +113,28 @@ function captureStream() {
   return { make, close, fire: (env: RunEventEnvelope) => captured?.onEvent(env) };
 }
 
+// The winner banner above the canvas now also contains the winning candidate's label ("Winner"),
+// so `findByText('Winner')` is ambiguous. Pick the match whose ancestor is a React Flow node
+// (i.e., the in-graph candidate node, not the banner button which sits outside the graph).
+async function findWinningGraphNode(): Promise<HTMLElement> {
+  // Wait until at least one React Flow node has rendered, then resolve the in-graph "Winner" text.
+  await screen.findByText('Agenome 0'); // a non-ambiguous lineage node — proxies "graph mounted"
+  const matches = screen.getAllByText('Winner');
+  for (const el of matches) {
+    const node = el.closest('.react-flow__node');
+    if (node instanceof HTMLElement) return node;
+  }
+  throw new Error('no .react-flow__node ancestor for "Winner" — banner-only match');
+}
+
 describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
-  // spec(§12): the shell renders a LEFT rail, a CENTER (LineageGraph), and a RIGHT drawer region.
+  // spec(§12): the shell renders a LEFT rail and a CENTER (LineageGraph) by default; the RIGHT
+  // inspector drawer mounts on demand when a node is selected (test_inspector_swaps_and_closes).
   it('test_three_pane_layout_renders', async () => {
     renderView('live');
     expect(screen.getByLabelText(/organism left rail/i)).toBeTruthy(); // LEFT
     await screen.findByLabelText(/lineage graph/i); // CENTER (reused LineageGraph)
-    expect(screen.getByLabelText(/inspector/i)).toBeTruthy(); // RIGHT drawer region
+    expect(screen.queryByLabelText(/^inspector$/i)).toBeNull(); // RIGHT — unmounted until a click
   });
 
   // spec(§12 PD.20): an SSE envelope → the debounced lineage re-fetch; a terminal event forces an
@@ -165,13 +184,12 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(await screen.findByText('agn_0')).toBeTruthy(); // the agenome roster row
   });
 
-  // spec(§12): the inspector drawer renders its empty placeholder by default (no node selected; FV.5
-  // wires node-click → content).
+  // spec(§12): the inspector drawer is unmounted by default (no node selected); FV.5 wires
+  // node-click → content. The pre-selection state is a hidden third column, not a placeholder.
   it('test_inspector_drawer_empty_default', async () => {
     renderView('live');
-    // match the drawer's unique placeholder phrase — `/select a node/i` alone also matches React
-    // Flow's built-in a11y live-region text ("Press enter or space to select a node…").
-    expect(screen.getByText(/inspect its details/i)).toBeTruthy();
+    expect(screen.queryByTestId('inspector-drawer')).toBeNull();
+    expect(screen.queryByLabelText(/^inspector$/i)).toBeNull();
   });
 
   // spec(§10/§12, rule #7): /runs/:id/replay renders the observatory in REPLAY mode (banner) —
@@ -211,13 +229,16 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   // ticker "live" affordance; a replay render shows "replaying" (same pure selectors, no live calls).
   it('test_s2_mounts_telemetry_live_and_replay', async () => {
     renderView('live');
-    expect(await screen.findByText('Activity')).toBeTruthy(); // ActivityTicker title
-    expect(screen.getByText('live')).toBeTruthy(); // ticker live affordance (banner is "● LIVE")
+    // Always-visible telemetry above the tabs.
     expect(screen.getAllByText(/in-flight/i).length).toBeGreaterThan(0); // HealthIndicator phrase
     expect(screen.getByText('doppl_energy')).toBeTruthy(); // RunEnergyGauge unit label
+    // Activity is now behind a tab — switch to it to confirm the live affordance.
+    fireEvent.click(screen.getByRole('tab', { name: /activity/i }));
+    expect(await screen.findByText('live')).toBeTruthy(); // ticker live affordance
 
     cleanup();
     renderView('replay');
+    fireEvent.click(screen.getByRole('tab', { name: /activity/i }));
     expect(await screen.findByText('replaying')).toBeTruthy(); // ticker replay affordance
   });
 
@@ -250,6 +271,8 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   it('test_scrub_rewinds_fold_derived_panels', async () => {
     const client = clientWithEvents(replayEvents);
     renderView('replay', client);
+    // ActivityTicker is behind the Activity tab — switch to it before asserting its rows.
+    fireEvent.click(screen.getByRole('tab', { name: /activity/i }));
     await screen.findByText('#5'); // full run: the ticker shows the last event row
     fireEvent.change(screen.getByLabelText(/replay step/i), { target: { value: '2' } });
     expect(screen.queryByText('#5')).toBeNull(); // rewound past it
@@ -260,6 +283,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   it('test_scrubber_defaults_to_full_run', async () => {
     const client = clientWithEvents(replayEvents);
     renderView('replay', client);
+    fireEvent.click(screen.getByRole('tab', { name: /activity/i }));
     await screen.findByText('#5');
     expect(screen.getByText(/step 5 of 5/i)).toBeTruthy(); // default = max index (5 of 5)
   });
@@ -268,6 +292,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   it('test_scrub_no_refetch_no_provider', async () => {
     const client = clientWithEvents(replayEvents);
     renderView('replay', client);
+    fireEvent.click(screen.getByRole('tab', { name: /activity/i }));
     await screen.findByText('#5');
     const getEvents = client.getEvents as ReturnType<typeof vi.fn>;
     const before = getEvents.mock.calls.length;
@@ -282,7 +307,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   // breakdown + critic gauntlet + subtype checks (the detail that left the decluttered graph).
   it('test_candidate_click_opens_candidate_inspector', async () => {
     renderView('live');
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy(); // getCandidate loaded
     expect(screen.getByLabelText('Candidate fitness breakdown')).toBeTruthy();
     expect(screen.getByLabelText(/no reviews yet/i)).toBeTruthy(); // critic gauntlet mounted
@@ -301,17 +326,17 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   it('test_node_click_read_only', async () => {
     const client = fakeClient();
     renderView('live', client);
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     await screen.findByLabelText('Candidate inspector');
     expect(client.startRun).not.toHaveBeenCalled();
     expect(client.stopRun).not.toHaveBeenCalled();
     expect(client.startDemoRun).not.toHaveBeenCalled();
   });
 
-  // spec(drawer UX): selecting a different node swaps content; Close returns to the placeholder.
+  // spec(drawer UX): selecting a different node swaps content; Close unmounts the drawer entirely.
   it('test_inspector_swaps_and_closes', async () => {
     renderView('live');
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy();
 
     fireEvent.click((await screen.findByText('Agenome 0')).closest('.react-flow__node')!);
@@ -319,7 +344,8 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(screen.queryByLabelText('Candidate inspector')).toBeNull(); // candidate content gone
 
     fireEvent.click(screen.getByLabelText('Close inspector'));
-    expect(screen.getByText(/inspect its details/i)).toBeTruthy(); // back to the placeholder
+    expect(screen.queryByTestId('inspector-drawer')).toBeNull(); // drawer unmounted
+    expect(screen.queryByLabelText('Agenome inspector')).toBeNull();
   });
 
   // spec(_adherence, DS rule 3/5): the new shell/roster/drawer/hook files use var(--token) only — no

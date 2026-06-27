@@ -11,6 +11,7 @@ import {
   emitJudgeReviewed,
   JUDGE_AXIS_CRITERIA,
   JudgeModelOutput,
+  loadJudgeCriteria,
   type JudgeRunContext,
 } from './judge-core';
 import type { ModelGateway } from '../../model-gateway';
@@ -46,6 +47,12 @@ export interface RunJudgeParams {
    * re-validated through {@link loadJudgeRubric} (defense-in-depth).
    */
   rubricSource?: unknown;
+  /**
+   * The judge-CRITERIA source (Phase J Slice Js) — defaults to the frozen {@link JUDGE_AXIS_CRITERIA} const
+   * (agent-unwritable, rule #6). Injectable so a v4 criteria can be exercised WITHOUT flipping the default,
+   * mirroring {@link rubricSource}. Always re-validated through {@link loadJudgeCriteria}.
+   */
+  criteriaSource?: unknown;
 }
 
 // EXPERIMENT (judge gradient) — the 0–5 instruction let the judge model cluster every axis at 3–4 (central-
@@ -55,18 +62,25 @@ export interface RunJudgeParams {
 // DIFFERENTIATES. Rule #6 intact: still the immutable held-out anchor (loaded from the frozen const,
 // runner-computed acceptance, agent-unwritable); recorded via the bumped rubric policyVersion (mvp-3). Rule
 // #5 intact: candidate-INDEPENDENT trusted system text. The peer-comparative variant is `comparative-judge.ts`.
-const JUDGE_INSTRUCTION =
-  'You are the held-out final judge — the strict quality bar the organism cannot move. Score the candidate ' +
-  'idea on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
-  'subtype_check_pass), each as an INTEGER 0–10. ' +
-  JUDGE_AXIS_CRITERIA +
-  ' Also return a `rationales` object with one concise line per axis naming the specific weakness that ' +
-  'capped that score. The rationale only EXPLAINS your score — it does not change it. Return only the ' +
-  'per-axis scores and rationales — you do not decide acceptance, select winners, or alter the rubric.';
+// Phase J Slice Js: the single-judge instruction is now BUILT from the (injectable) criteria rather than a
+// module const, so a v4 criteria threads in via `criteriaSource` while the default stays byte-identical. The
+// fixed framing around `criteria` is candidate-INDEPENDENT trusted system text (rule #5), unchanged.
+export function buildJudgeInstruction(criteria: string): string {
+  return (
+    'You are the held-out final judge — the strict quality bar the organism cannot move. Score the candidate ' +
+    'idea on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
+    'subtype_check_pass), each as an INTEGER 0–10. ' +
+    criteria +
+    ' Also return a `rationales` object with one concise line per axis naming the specific weakness that ' +
+    'capped that score. The rationale only EXPLAINS your score — it does not change it. Return only the ' +
+    'per-axis scores and rationales — you do not decide acceptance, select winners, or alter the rubric.'
+  );
+}
 
 export async function runJudge(params: RunJudgeParams): Promise<JudgeResult | null> {
   const { gateway, store, candidate, runContext } = params;
   const rubricSource = params.rubricSource ?? DEFAULT_JUDGE_RUBRIC;
+  const criteria = loadJudgeCriteria(params.criteriaSource ?? JUDGE_AXIS_CRITERIA);
 
   // 1. Load the rubric ONLY via loadJudgeRubric from the immutable source (no agent-writable path).
   const rubric = loadJudgeRubric(rubricSource);
@@ -77,7 +91,7 @@ export async function runJudge(params: RunJudgeParams): Promise<JudgeResult | nu
   // 3. Build the judge request ONLY via the isolation seam (candidate as sentinel-wrapped DATA), final_judge role.
   const request = assembleIsolatedRequest({
     role: 'final_judge',
-    instruction: JUDGE_INSTRUCTION,
+    instruction: buildJudgeInstruction(criteria),
     candidate: serializeCandidate(candidate),
     schema: JudgeModelOutput,
   });

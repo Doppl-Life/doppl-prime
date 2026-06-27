@@ -6,7 +6,7 @@ Source PRD: `Doppl_Capstone_Proposal.pdf`
 
 ### Product In One Sentence
 
-[locked decision] Doppl is an experimental agent-evolution system that starts from a seed prompt, runs a bounded population of agent-genomes through adversarial evaluation, selection, fusion, and mutation, and visibly demonstrates later generations producing stronger, more verifiable ideas than earlier ones.
+[locked decision] Doppl is an experimental agental-evolution system that starts from a seed prompt, runs a bounded population of agent-genomes through adversarial evaluation, selection, fusion, and mutation, and visibly demonstrates later generations producing stronger, more verifiable ideas than earlier ones.
 
 ### What The Product Is
 

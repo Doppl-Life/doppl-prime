@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This folder defines Doppl through prototype PRDs: small, testable proof surfaces that each make one part of the full agent-evolution organism obvious. The current live prototype suite proves five surfaces already: energy metabolism, critic council, fusion lab, run trace viewer, and spend/yield ledger. The remaining PRDs describe the next prototype surfaces needed to prove the whole Doppl loop.
+This folder defines Doppl through prototype PRDs: small, testable proof surfaces that each make one part of the full agental-evolution organism obvious. The current live prototype suite proves five surfaces already: energy metabolism, critic council, fusion lab, run trace viewer, and spend/yield ledger. The remaining PRDs describe the next prototype surfaces needed to prove the whole Doppl loop.
 
 The architecture remains binding. These PRDs do not replace `ARCHITECTURE.md`; they translate it into visible product proof moments.
 

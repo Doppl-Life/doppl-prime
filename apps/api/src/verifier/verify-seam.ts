@@ -51,6 +51,8 @@ export interface VerifySeamDeps {
   readonly config: AppConfig;
   /** Held-out judge rubric SOURCE — defaults inside `runJudge` to the immutable `DEFAULT_JUDGE_RUBRIC`. */
   readonly rubricSource?: unknown;
+  /** Held-out judge CRITERIA SOURCE — defaults inside the judge to the frozen `JUDGE_AXIS_CRITERIA` (Slice Js). */
+  readonly criteriaSource?: unknown;
   /** Active critic-set size K — defaults inside `selectCriticMandates` to `DEFAULT_ACTIVE_CRITIC_COUNT`. */
   readonly activeCount?: number;
   /** Max candidates verified concurrently (default `DEFAULT_VERIFY_CONCURRENCY`). Energy-free → safe. */
@@ -148,6 +150,7 @@ export function createVerifySeam(deps: VerifySeamDeps): VerifySeam {
       candidates,
       runContext: { runId: ctx.runId, generationId: ctx.generationId },
       ...(deps.rubricSource !== undefined ? { rubricSource: deps.rubricSource } : {}),
+      ...(deps.criteriaSource !== undefined ? { criteriaSource: deps.criteriaSource } : {}),
     });
   };
 }

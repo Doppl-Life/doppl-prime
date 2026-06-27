@@ -13,6 +13,7 @@ import {
   emitJudgeReviewed,
   JUDGE_AXIS_CRITERIA,
   judgeAxisFields,
+  loadJudgeCriteria,
   type JudgeRunContext,
 } from './judge-core';
 import type { ModelGateway } from '../../model-gateway';
@@ -46,19 +47,23 @@ const ComparativeJudgeModelOutput = z.object({
   candidates: z.array(z.object({ ref: z.string(), ...judgeAxisFields })),
 });
 
-// The comparative instruction shares the rubric CRITERIA byte-identically with the single judge (same
-// `final-judge-mvp-3` rubric application); only the framing differs (score EACH candidate, key by ref). The
-// ISOLATION_COMPARATIVE_FRAMING (added by the seam) carries the "score independently, peers differentiate
-// not inflate" mandate (the FLOOR). Candidate-INDEPENDENT trusted text (rule #5).
-const COMPARATIVE_JUDGE_INSTRUCTION =
-  'You are the held-out final judge — the strict quality bar the organism cannot move. Score EACH candidate ' +
-  'idea below on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
-  'subtype_check_pass), each as an INTEGER 0–10. ' +
-  JUDGE_AXIS_CRITERIA +
-  ' For EACH candidate also return a `rationales` object with one concise line per axis naming the specific ' +
-  'weakness that capped that score. The rationale only EXPLAINS your score — it does not change it. Return ' +
-  'one result object per candidate in a `candidates` array, each with its `ref` id and the five per-axis ' +
-  'scores — you do not decide acceptance, select winners, or alter the rubric.';
+// Phase J Slice Js: built from the (injectable) criteria — same byte-identical default, threadable v4. The
+// comparative instruction shares the rubric CRITERIA byte-identically with the single judge (same rubric
+// application); only the framing differs (score EACH candidate, key by ref). ISOLATION_COMPARATIVE_FRAMING
+// (added by the seam) carries the "score independently, peers differentiate not inflate" FLOOR mandate.
+// Candidate-INDEPENDENT trusted text (rule #5).
+export function buildComparativeJudgeInstruction(criteria: string): string {
+  return (
+    'You are the held-out final judge — the strict quality bar the organism cannot move. Score EACH candidate ' +
+    'idea below on each of the five fixed rubric axes (grounding, novelty, feasibility, falsification_survival, ' +
+    'subtype_check_pass), each as an INTEGER 0–10. ' +
+    criteria +
+    ' For EACH candidate also return a `rationales` object with one concise line per axis naming the specific ' +
+    'weakness that capped that score. The rationale only EXPLAINS your score — it does not change it. Return ' +
+    'one result object per candidate in a `candidates` array, each with its `ref` id and the five per-axis ' +
+    'scores — you do not decide acceptance, select winners, or alter the rubric.'
+  );
+}
 
 export interface RunComparativeJudgeParams {
   gateway: ModelGateway;
@@ -69,6 +74,8 @@ export interface RunComparativeJudgeParams {
   runContext: { runId: string; generationId: string };
   /** The rubric SOURCE — defaults to the immutable {@link DEFAULT_JUDGE_RUBRIC} (re-validated; rule #6). */
   rubricSource?: unknown;
+  /** The CRITERIA source (Phase J Slice Js) — defaults to the frozen `JUDGE_AXIS_CRITERIA` (re-validated). */
+  criteriaSource?: unknown;
 }
 
 /** candidateId → its JudgeResult (or null when that candidate's judge output was rejected / unmatched). */
@@ -84,6 +91,8 @@ export async function runComparativeJudge(
 ): Promise<ComparativeJudgeResults> {
   const { gateway, store, candidates, runContext } = params;
   const rubricSource = params.rubricSource ?? DEFAULT_JUDGE_RUBRIC;
+  const criteriaSource = params.criteriaSource ?? JUDGE_AXIS_CRITERIA;
+  const criteria = loadJudgeCriteria(criteriaSource);
   const results: ComparativeJudgeResults = new Map();
 
   if (candidates.length === 0) {
@@ -107,6 +116,7 @@ export async function runComparativeJudge(
       candidate: candidates[0]!,
       runContext: contextFor(0),
       rubricSource,
+      criteriaSource,
     });
     results.set(candidates[0]!.id, single);
     return results;
@@ -120,7 +130,7 @@ export async function runComparativeJudge(
   // 3. ONE comparative gateway call — all candidates as sentinel-wrapped DATA blobs via the multi-blob seam.
   const request = assembleIsolatedComparativeRequest({
     role: 'final_judge',
-    instruction: COMPARATIVE_JUDGE_INSTRUCTION,
+    instruction: buildComparativeJudgeInstruction(criteria),
     candidates: candidates.map((candidate, index) => ({
       ref: refOf(index),
       text: serializeCandidate(candidate),

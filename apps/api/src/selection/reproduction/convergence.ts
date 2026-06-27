@@ -1,3 +1,6 @@
+import { FitnessScore } from '@doppl/contracts';
+import type { RunEventRow } from '../../event-store';
+
 /**
  * EXPERIMENT (mutagen-dynamics, adaptive controller / E2→E3) — the population CONVERGENCE measure + the
  * FITNESS-AWARE bidirectional mutation-fraction controller. Both PURE (rule #7: computed from the persisted
@@ -24,6 +27,13 @@ export interface AdaptiveParams {
   readonly recoveryFraction: number;
   /** Min best-fitness gain (gen over gen) that counts as "improving" (noise margin). */
   readonly improveEpsilon: number;
+  /**
+   * HONEST GATE (#3) — the look-back window (in generations) for the judge-acceptance exploit trigger. The
+   * controller commits to exploit only when this generation's best judge_acceptance beats the BEST over the
+   * prior `exploitWindow` generations (not just the immediately-prior gen), so a single-generation judge dip
+   * or noise spike can't flip the whole population into exploit on a decoy peak. 1 = the old single-step check.
+   */
+  readonly exploitWindow: number;
   /** Clamp bounds — the fraction never leaves [min, max]. */
   readonly min: number;
   readonly max: number;
@@ -36,6 +46,7 @@ export const DEFAULT_ADAPTIVE_PARAMS: AdaptiveParams = {
   diversityFloor: 0.26,
   recoveryFraction: 0.55,
   improveEpsilon: 0.005,
+  exploitWindow: 2,
   min: 0.05,
   max: 0.7,
 };
@@ -102,4 +113,73 @@ export function isFitnessImproving(
   const prev = bestByGenIndex.get(currentGenIndex - 1);
   if (current === undefined || prev === undefined) return false;
   return current > prev + epsilon;
+}
+
+/**
+ * HONEST GATE (#3) — is the HELD-OUT JUDGE acceptance improving across generations? Pure over
+ * `(genIndex, bestJudgeAcceptance)` pairs. Unlike {@link isFitnessImproving} (which reads the blended
+ * `total`, ~31% agent-visible), this reads ONLY the persisted `judge_acceptance` component — the signal
+ * agents cannot game (rule #6) — so a noisy uptick in critic/novelty can't trip exploit on a decoy peak.
+ * "Improving" = the current generation's best beats the BEST over the prior `window` generations by
+ * `epsilon` (a window, not a single step — so a one-generation dip-then-recover isn't read as a climb).
+ * No current value or no prior-window baseline → `false` (explore by default, mirroring isFitnessImproving).
+ */
+export function isJudgeAcceptanceImproving(
+  bestJudgeByGenIndex: ReadonlyMap<number, number>,
+  currentGenIndex: number,
+  epsilon: number,
+  window: number,
+): boolean {
+  const current = bestJudgeByGenIndex.get(currentGenIndex);
+  if (current === undefined) return false;
+  let priorBest = -Infinity;
+  for (let g = currentGenIndex - 1; g >= currentGenIndex - window && g >= 0; g -= 1) {
+    const v = bestJudgeByGenIndex.get(g);
+    if (v !== undefined && v > priorBest) priorBest = v;
+  }
+  if (priorBest === -Infinity) return false; // no baseline in the window → explore by default
+  return current > priorBest + epsilon;
+}
+
+/**
+ * HONEST GATE (#3) — fold the persisted log into the windowed judge-acceptance exploit signal for the
+ * reproduce seam. Reads each generation's BEST `fitness.scored.components.judge_acceptance` keyed by the
+ * `generation.started.index`, then asks {@link isJudgeAcceptanceImproving} for the current generation.
+ *
+ * Returns `null` when NO generation carries a `judge_acceptance` component (the full judge-degrade path) —
+ * the caller then FALLS BACK to the total-based {@link isFitnessImproving} so the controller never silently
+ * freezes. Pure over the persisted log (rule #7): no provider/clock/RNG; replay re-derives the identical
+ * decision, which is itself recorded downstream in `ReproductionEvent.mode`.
+ */
+export function judgeImprovingFromLog(
+  scoredEvents: readonly RunEventRow[],
+  generationId: string,
+  params: AdaptiveParams = DEFAULT_ADAPTIVE_PARAMS,
+): boolean | null {
+  const genIndex = new Map<string, number>();
+  for (const row of scoredEvents) {
+    if (row.type !== 'generation.started') continue;
+    const idx = (row.payload as { index?: unknown }).index;
+    if (typeof idx === 'number' && row.generationId !== null) genIndex.set(row.generationId, idx);
+  }
+  const bestJudgeByGenIndex = new Map<number, number>();
+  for (const row of scoredEvents) {
+    if (row.type !== 'fitness.scored' || row.generationId === null) continue;
+    const idx = genIndex.get(row.generationId);
+    if (idx === undefined) continue;
+    const parsed = FitnessScore.safeParse(row.payload);
+    if (!parsed.success) continue;
+    const judge = parsed.data.components.judge_acceptance;
+    if (typeof judge !== 'number') continue;
+    const prev = bestJudgeByGenIndex.get(idx);
+    if (prev === undefined || judge > prev) bestJudgeByGenIndex.set(idx, judge);
+  }
+  if (bestJudgeByGenIndex.size === 0) return null; // no judge signal anywhere → caller falls back to total
+  const currentGenIndex = genIndex.get(generationId) ?? 0;
+  return isJudgeAcceptanceImproving(
+    bestJudgeByGenIndex,
+    currentGenIndex,
+    params.improveEpsilon,
+    params.exploitWindow,
+  );
 }
