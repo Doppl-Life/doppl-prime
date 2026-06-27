@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent, WheelEvent } from 'react';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import type { RunClient } from '../data/runClient';
 import type { OuterBloomIsland, OuterBloomNode, OuterBloomProjection } from '../data/outerBloom';
@@ -41,6 +41,20 @@ interface BloomBounds {
 interface BloomPan {
   x: number;
   y: number;
+}
+
+interface BloomDragState {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startPan: BloomPan;
+  moved: boolean;
+}
+
+interface BloomNodeActivation {
+  nodeId: string;
+  runId: string;
+  timestamp: number;
 }
 
 const shell: CSSProperties = {
@@ -466,6 +480,11 @@ function BloomGraph({
   const selectedPath = selected === null ? new Set<string>() : ancestrySet(selected, layout.nodes);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<BloomPan>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const dragStateRef = useRef<BloomDragState | null>(null);
+  const suppressNodeClickRef = useRef(false);
+  const lastActivationRef = useRef<BloomNodeActivation | null>(null);
   const visibleBounds = scaledBounds(layout.bounds, zoom, pan);
   const viewBox = `${visibleBounds.minX} ${visibleBounds.minY} ${visibleBounds.width} ${visibleBounds.height}`;
 
@@ -475,7 +494,117 @@ function BloomGraph({
   }, [layout.bounds.minX, layout.bounds.minY, layout.bounds.width, layout.bounds.height]);
 
   const zoomBy = (delta: number) => {
-    setZoom((current) => Math.max(0.62, Math.min(2.8, Number((current + delta).toFixed(2)))));
+    setZoom((current) => clampZoom(current + delta));
+  };
+  const zoomAt = (clientX: number, clientY: number, delta: number) => {
+    const svg = svgRef.current;
+    if (svg === null) {
+      zoomBy(delta);
+      return;
+    }
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      zoomBy(delta);
+      return;
+    }
+
+    setZoom((currentZoom) => {
+      const nextZoom = clampZoom(currentZoom + delta);
+      if (nextZoom === currentZoom) return currentZoom;
+
+      const currentBounds = scaledBounds(layout.bounds, currentZoom, pan);
+      const xRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const yRatio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+      const cursorWorldX = currentBounds.minX + currentBounds.width * xRatio;
+      const cursorWorldY = currentBounds.minY + currentBounds.height * yRatio;
+      const nextWidth = layout.bounds.width / nextZoom;
+      const nextHeight = layout.bounds.height / nextZoom;
+      const layoutCenterX = layout.bounds.minX + layout.bounds.width / 2;
+      const layoutCenterY = layout.bounds.minY + layout.bounds.height / 2;
+      const nextCenterX = cursorWorldX - (xRatio - 0.5) * nextWidth;
+      const nextCenterY = cursorWorldY - (yRatio - 0.5) * nextHeight;
+
+      setPan({
+        x: nextCenterX - layoutCenterX,
+        y: nextCenterY - layoutCenterY,
+      });
+      return nextZoom;
+    });
+  };
+  const handleWheel = (event: WheelEvent<SVGSVGElement>) => {
+    event.preventDefault();
+    const wheelScale = event.deltaMode === 1 ? 0.18 : 0.0024;
+    const delta = Math.max(-0.34, Math.min(0.34, -event.deltaY * wheelScale));
+    zoomAt(event.clientX, event.clientY, delta);
+  };
+  const nodeActivationAt = (clientX: number, clientY: number): BloomNodeActivation | null => {
+    const element = document.elementFromPoint(clientX, clientY);
+    const nodeElement = element?.closest<SVGGElement>('[data-bloom-node-id]');
+    if (nodeElement === undefined || nodeElement === null || !svgRef.current?.contains(nodeElement)) return null;
+    const { bloomNodeId, bloomRunId } = nodeElement.dataset;
+    if (bloomNodeId === undefined || bloomRunId === undefined) return null;
+    return { nodeId: bloomNodeId, runId: bloomRunId, timestamp: window.performance.now() };
+  };
+  const handlePointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    if (event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startPan: pan,
+      moved: false,
+    };
+    setIsDragging(true);
+  };
+  const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const drag = dragStateRef.current;
+    if (drag === null || drag.pointerId !== event.pointerId) return;
+    const svg = svgRef.current;
+    if (svg === null) return;
+    const rect = svg.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const dx = event.clientX - drag.startClientX;
+    const dy = event.clientY - drag.startClientY;
+    if (Math.abs(dx) + Math.abs(dy) > 4) {
+      drag.moved = true;
+      suppressNodeClickRef.current = true;
+    }
+
+    setPan({
+      x: drag.startPan.x - (dx / rect.width) * visibleBounds.width,
+      y: drag.startPan.y - (dy / rect.height) * visibleBounds.height,
+    });
+  };
+  const finishDrag = (event: PointerEvent<SVGSVGElement>) => {
+    const drag = dragStateRef.current;
+    if (drag === null || drag.pointerId !== event.pointerId) return;
+    dragStateRef.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (drag.moved) {
+      window.setTimeout(() => {
+        suppressNodeClickRef.current = false;
+      }, 80);
+      return;
+    }
+
+    const activation = nodeActivationAt(event.clientX, event.clientY);
+    if (activation === null) return;
+    const previous = lastActivationRef.current;
+    lastActivationRef.current = activation;
+    if (
+      previous !== null &&
+      previous.nodeId === activation.nodeId &&
+      activation.timestamp - previous.timestamp < 360
+    ) {
+      openInnerRun(activation.runId);
+      return;
+    }
+    onSelect(activation.nodeId);
   };
   const panBy = (direction: 'left' | 'right' | 'up' | 'down') => {
     const stepX = layout.bounds.width * 0.1 / zoom;
@@ -500,11 +629,21 @@ function BloomGraph({
   return (
     <section className="outer-bloom-graph-panel" style={graphPanel} aria-label="Radial bloom graph">
       <svg
+        ref={svgRef}
         className="outer-bloom-svg"
         viewBox={viewBox}
         role="img"
         aria-label="Radial bloom of runs"
-        style={svgStyle}
+        style={{ ...svgStyle, cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
+        onLostPointerCapture={() => {
+          dragStateRef.current = null;
+          setIsDragging(false);
+        }}
       >
         <defs>
           <radialGradient id="bloom-halo" cx="50%" cy="50%" r="50%">
@@ -538,7 +677,7 @@ function BloomGraph({
               fill="none"
               stroke={isPathEdge ? 'var(--accent)' : edgeStroke(edge)}
               strokeWidth={isPathEdge ? 3.2 : edge.type === 'recovered' ? 1.8 : 1.15}
-              strokeOpacity={selected === null ? 0.42 : isPathEdge ? 0.9 : 0.15}
+              strokeOpacity={selected === null ? 0.46 : isPathEdge ? 0.9 : 0.28}
               strokeDasharray={edge.type === 'descended' ? '7 7' : undefined}
               strokeLinecap="round"
             />
@@ -558,13 +697,15 @@ function BloomGraph({
               key={node.id}
               role="button"
               tabIndex={0}
+              data-bloom-node-id={node.id}
+              data-bloom-run-id={node.runId}
               aria-label={node.label}
-              onClick={() => onSelect(node.id)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
+                if (event.key === 'Enter' && event.metaKey) openInnerRun(node.runId);
               }}
-              style={{ cursor: 'pointer' }}
-              opacity={isDimmed ? 0.28 : 1}
+              style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
+              opacity={isDimmed ? 0.84 : 1}
             >
               <circle
                 cx={node.x}
@@ -887,7 +1028,7 @@ function Inspector({
             </div>
           )}
           {node.sourceId !== null && (
-            <Button variant="secondary" glyph="↗" onClick={() => window.open(`/runs/${node.runId}`, '_self')}>
+            <Button variant="secondary" glyph="↗" onClick={() => openInnerRun(node.runId)}>
               Open inner run
             </Button>
           )}
@@ -1095,6 +1236,17 @@ function scaledBounds(bounds: BloomBounds, zoom: number, pan: BloomPan): BloomBo
     width,
     height,
   };
+}
+
+function clampZoom(value: number): number {
+  return Math.max(0.62, Math.min(2.8, Number(value.toFixed(2))));
+}
+
+function openInnerRun(runId: string): void {
+  const base = import.meta.env.BASE_URL.endsWith('/')
+    ? import.meta.env.BASE_URL
+    : `${import.meta.env.BASE_URL}/`;
+  window.location.assign(`${base}runs/${encodeURIComponent(runId)}`);
 }
 
 function radiusForNode(node: OuterBloomNode): number {
