@@ -1,0 +1,44 @@
+/* Clickable-affordance hover states. Inline `style` props can't carry `:hover`, so any element that
+   wants a hover/active cue picks up a class here. Tokens only. */
+
+/* The S2 winning-idea banner — brighten the border + slide the trailing arrow on hover so it reads
+   as a button rather than a static label. */
+.winner-banner {
+  transition:
+    background var(--motion-base) var(--ease-out),
+    border-color var(--motion-base) var(--ease-out);
+}
+.winner-banner:hover,
+.winner-banner:focus-visible {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  outline: none;
+}
+.winner-banner .winner-arrow {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+.winner-banner:hover .winner-arrow,
+.winner-banner:focus-visible .winner-arrow {
+  transform: translateX(var(--space-1));
+}
+
+/* React Flow lineage nodes — by default RF gives the canvas a grab cursor; individual nodes that
+   carry an onClick deserve a pointer cursor + a subtle outline on hover so users know they're
+   interactive. (`fill` on the path is handled per-node-type already; we only nudge the cursor + a
+   focusable outline.) */
+.react-flow__node {
+  cursor: pointer;
+  transition: filter var(--motion-base) var(--ease-out);
+}
+.react-flow__node:hover {
+  filter: brightness(1.15);
+}
+
+/* Inspector-drawer close button — icon-only `×` that brightens + gets a subtle background on hover,
+   so it reads as a button affordance without competing visually with the "Inspector" heading. */
+.inspector-close:hover,
+.inspector-close:focus-visible {
+  color: var(--fg-default);
+  background: var(--bg-surface-2);
+  outline: none;
+}

@@ -7,6 +7,7 @@ import { validCandidateIdeaCrossDomain } from '@doppl/contracts';
 import type { LineageGraphProjection, RunEventEnvelope } from '@doppl/contracts';
 import { MemoryRouter } from 'react-router-dom';
 import { S2OrganismView } from '../../../src/routes/S2OrganismView';
+import { __clearObservatoryCache } from '../../../src/routes/useRunObservatory';
 import { createRunStore } from '../../../src/state/runStore';
 import type { RunClient } from '../../../src/data/runClient';
 import type { EventSourceLike, SseStream, SseStreamOptions } from '../../../src/data/sseStream';
@@ -37,7 +38,10 @@ beforeAll(() => {
     })) as unknown as typeof matchMedia;
   }
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  __clearObservatoryCache(); // module-level cache survives between tests; reset so prior runId state doesn't leak.
+});
 
 const lineage: LineageGraphProjection = {
   runId: 'run_1',
@@ -107,6 +111,20 @@ function captureStream() {
     return { lastEventId: () => null, close };
   };
   return { make, close, fire: (env: RunEventEnvelope) => captured?.onEvent(env) };
+}
+
+// The winner banner above the canvas now also contains the winning candidate's label ("Winner"),
+// so `findByText('Winner')` is ambiguous. Pick the match whose ancestor is a React Flow node
+// (i.e., the in-graph candidate node, not the banner button which sits outside the graph).
+async function findWinningGraphNode(): Promise<HTMLElement> {
+  // Wait until at least one React Flow node has rendered, then resolve the in-graph "Winner" text.
+  await screen.findByText('Agenome 0'); // a non-ambiguous lineage node — proxies "graph mounted"
+  const matches = screen.getAllByText('Winner');
+  for (const el of matches) {
+    const node = el.closest('.react-flow__node');
+    if (node instanceof HTMLElement) return node;
+  }
+  throw new Error('no .react-flow__node ancestor for "Winner" — banner-only match');
 }
 
 describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
@@ -289,7 +307,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   // breakdown + critic gauntlet + subtype checks (the detail that left the decluttered graph).
   it('test_candidate_click_opens_candidate_inspector', async () => {
     renderView('live');
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy(); // getCandidate loaded
     expect(screen.getByLabelText('Candidate fitness breakdown')).toBeTruthy();
     expect(screen.getByLabelText(/no reviews yet/i)).toBeTruthy(); // critic gauntlet mounted
@@ -308,7 +326,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   it('test_node_click_read_only', async () => {
     const client = fakeClient();
     renderView('live', client);
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     await screen.findByLabelText('Candidate inspector');
     expect(client.startRun).not.toHaveBeenCalled();
     expect(client.stopRun).not.toHaveBeenCalled();
@@ -318,7 +336,7 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
   // spec(drawer UX): selecting a different node swaps content; Close unmounts the drawer entirely.
   it('test_inspector_swaps_and_closes', async () => {
     renderView('live');
-    fireEvent.click((await screen.findByText('Winner')).closest('.react-flow__node')!);
+    fireEvent.click(await findWinningGraphNode());
     expect(await screen.findByLabelText('Candidate inspector')).toBeTruthy();
 
     fireEvent.click((await screen.findByText('Agenome 0')).closest('.react-flow__node')!);

@@ -82,6 +82,11 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
             nodesConnectable={false}
             fitView
             minZoom={0.1}
+            // Viewport culling — RF skips DOM mount for off-screen nodes. Cuts work from O(N) to
+            // O(visible) and unblocks the main thread on 1000+ node runs (Chrome's "Page
+            // Unresponsive" prompt). Only-render-visible costs a hair of re-render on pan/zoom but
+            // wins big on initial paint for large lineages.
+            onlyRenderVisibleElements
             proOptions={{ hideAttribution: true }}
             onNodeClick={(_, node) => {
               const data = node.data as LineageNodeData;

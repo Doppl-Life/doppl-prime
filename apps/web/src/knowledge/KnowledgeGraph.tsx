@@ -23,10 +23,13 @@ export interface KnowledgeGraphProps {
 }
 
 const section: CSSProperties = {
-  display: 'grid',
+  display: 'flex',
+  flexDirection: 'column',
   gap: 'var(--space-3)',
   fontFamily: 'var(--font-ui)',
   color: 'var(--fg-default)',
+  height: '100%',
+  minHeight: 0,
 };
 const summary: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -35,7 +38,8 @@ const summary: CSSProperties = {
 };
 const graphWrap: CSSProperties = {
   width: '100%',
-  height: '70vh',
+  flex: 1,
+  minHeight: 0,
   border: 'thin solid var(--border-subtle)',
   borderRadius: 'var(--radius-md)',
   background: 'var(--bg-surface)',
