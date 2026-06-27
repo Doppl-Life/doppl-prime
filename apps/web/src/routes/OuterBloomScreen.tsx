@@ -101,8 +101,10 @@ interface BloomDragState {
 interface BloomNodeActivation {
   nodeId: string;
   runId: string;
-  timestamp: number;
 }
+
+const AGARDEN_RUN_CONTEXT_STORAGE_KEY = 'doppl.agarden.selectedRunId';
+const AGARDEN_RUN_CONTEXT_EVENT = 'doppl:agarden-run-context';
 
 const LIVE_BLOOM_REFRESH_MS = 2500;
 const BLOOM_REPLAY_ROOT_DELAY_RANGE_MS = [4_000, 6_000] as const;
@@ -350,6 +352,14 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
       setSelectedId(newestNode.id);
     }
   }, [launchState, selectedId, state]);
+
+  useEffect(() => {
+    if (state.kind !== 'ready') return;
+    const allNodes = state.bloom.islands.flatMap((island) => island.nodes);
+    const selected =
+      allNodes.find((node) => node.id === selectedId) ?? state.bloom.islands[0]?.nodes[0] ?? null;
+    if (selected !== null) publishAgardenRunContext(selected.runId);
+  }, [selectedId, state]);
 
   const handleStarted = (run: StartRunResult) => {
     setLaunchState({ kind: 'streaming', runId: run.runId });
@@ -1259,7 +1269,6 @@ function BloomGraph({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStateRef = useRef<BloomDragState | null>(null);
   const suppressNodeClickRef = useRef(false);
-  const lastActivationRef = useRef<BloomNodeActivation | null>(null);
   const visibleBounds = scaledBounds(layout.bounds, zoom, pan);
   const viewBox = `${visibleBounds.minX} ${visibleBounds.minY} ${visibleBounds.width} ${visibleBounds.height}`;
 
@@ -1330,7 +1339,7 @@ function BloomGraph({
       return null;
     const { bloomNodeId, bloomRunId } = nodeElement.dataset;
     if (bloomNodeId === undefined || bloomRunId === undefined) return null;
-    return { nodeId: bloomNodeId, runId: bloomRunId, timestamp: window.performance.now() };
+    return { nodeId: bloomNodeId, runId: bloomRunId };
   };
   const handlePointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (event.button !== 0) return;
@@ -1404,16 +1413,6 @@ function BloomGraph({
 
     const activation = nodeActivationAt(event.clientX, event.clientY);
     if (activation === null) return;
-    const previous = lastActivationRef.current;
-    lastActivationRef.current = activation;
-    if (
-      previous !== null &&
-      previous.nodeId === activation.nodeId &&
-      activation.timestamp - previous.timestamp < 360
-    ) {
-      openInnerRun(activation.runId);
-      return;
-    }
     onSelect(activation.nodeId);
   };
   const panBy = (direction: 'left' | 'right' | 'up' | 'down') => {
@@ -2397,6 +2396,15 @@ function openInnerRun(runId: string): void {
     ? import.meta.env.BASE_URL
     : `${import.meta.env.BASE_URL}/`;
   window.location.assign(`${base}runs/${encodeURIComponent(runId)}`);
+}
+
+function publishAgardenRunContext(runId: string): void {
+  try {
+    window.localStorage.setItem(AGARDEN_RUN_CONTEXT_STORAGE_KEY, runId);
+  } catch {
+    // Navigation still works from the inspector button; the shell menu just will not persist.
+  }
+  window.dispatchEvent(new CustomEvent(AGARDEN_RUN_CONTEXT_EVENT, { detail: { runId } }));
 }
 
 function radiusForNode(node: OuterBloomNode): number {
