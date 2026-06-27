@@ -174,6 +174,7 @@ function fakeClient(): RunClient {
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
     getOuterBloom: vi.fn(() => Promise.resolve(bloomProjection)),
+    getModelRouteOverrides: vi.fn(() => Promise.resolve({})),
   } as unknown as RunClient;
 }
 

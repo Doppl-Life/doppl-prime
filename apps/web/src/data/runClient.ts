@@ -95,6 +95,13 @@ export interface RunClient {
   getCapMaxima(): Promise<RunCaps>;
   /** GET /bloom — read-only outer-view projection over all known runs. */
   getOuterBloom(): Promise<OuterBloomProjectionType>;
+  /**
+   * GET /config/model-route-overrides (FB.2) — the per-run model-route override ALLOWLIST: which
+   * `{provider, modelId}` a run may override each generation role TO (`final_judge` is never present —
+   * rule #6). The RunConfigPanel's model picker reads it so it only offers permitted targets. WEB-LOCAL
+   * shape (no frozen contract); the POST /runs validation + kernel overlay stay the real enforcers.
+   */
+  getModelRouteOverrides(): Promise<ModelRouteOverrideAllowlist>;
 }
 
 const RunEventEnvelopeArray = z.array(RunEventEnvelope);
@@ -103,6 +110,15 @@ const ModelRouteArray = z.array(ModelRoute);
 // PD.18 — GET /config/caps returns `{ caps }` (the frozen RunCaps, served read-only); the client unwraps
 // `.caps`. WEB-LOCAL wrapper (not an Appendix-A model); the caps value reuses the frozen RunCaps schema.
 const CapMaximaResponse = z.object({ caps: RunCaps });
+
+// FB.2 — GET /config/model-route-overrides returns `{ allowlist }`: the per-role list of permitted override
+// `{provider, modelId}` targets (a generation-role-keyed record; `final_judge` is never present — rule #6).
+// WEB-LOCAL + forward-tolerant (an api with more roles/models never rejects); the picker reads it to offer
+// only permitted models. The kernel-bound overlay + the POST /runs 422 stay the real enforcers (rule #1).
+const ModelRouteOverrideEntry = z.object({ provider: z.string(), modelId: z.string() });
+export const ModelRouteOverrideAllowlist = z.record(z.string(), z.array(ModelRouteOverrideEntry));
+export type ModelRouteOverrideAllowlist = z.infer<typeof ModelRouteOverrideAllowlist>;
+const ModelRouteOverridesResponse = z.object({ allowlist: ModelRouteOverrideAllowlist });
 
 // PD.15 — WEB-LOCAL response shapes for the API's real REST wrappers (the PD.14 Finding fix, option C).
 // These are web data-client types, NOT Appendix-A models (the dashboard defines no frozen contract).
@@ -113,6 +129,18 @@ export const RunSummary = z.object({
   runId: z.string(),
   status: z.string().nullable(),
   sequenceThrough: z.number(),
+  // Enriched run-summary fields (the Runs table). All OPTIONAL so an older api (pre-enrichment) still
+  // parses; the current api always sends them. createdAt/problem/finalIdea* are nullable (a run may have
+  // no winner / no recorded creation time); the counts default to 0 in the view when absent.
+  createdAt: z.string().nullable().optional(),
+  problem: z.string().nullable().optional(),
+  finalIdeaTitle: z.string().nullable().optional(),
+  finalIdeaSummary: z.string().nullable().optional(),
+  generations: z.number().optional(),
+  candidates: z.number().optional(),
+  reproductions: z.number().optional(),
+  culls: z.number().optional(),
+  mutations: z.number().optional(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;
 const RunSummariesResponse = z.object({ runs: z.array(RunSummary) });
@@ -208,5 +236,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
       (await getJson('/demo/fallback-ladder', FallbackLadderResponse)).rungs,
     getCapMaxima: async () => (await getJson('/config/caps', CapMaximaResponse)).caps,
     getOuterBloom: () => getJson('/bloom', OuterBloomProjection),
+    getModelRouteOverrides: async () =>
+      (await getJson('/config/model-route-overrides', ModelRouteOverridesResponse)).allowlist,
   };
 }

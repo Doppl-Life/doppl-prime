@@ -10,6 +10,8 @@
 @import './tokens/elevation.css';
 @import './tokens/motion.css';
 @import './tokens/base.css';
+@import './reactflow-controls.css';
+@import './clickable-affordance.css';
 
 @media (max-width: 1180px) {
   .outer-bloom-header {

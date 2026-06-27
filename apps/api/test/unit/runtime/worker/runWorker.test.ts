@@ -292,11 +292,13 @@ describe('runWorker (P3.12 — in-process single-active-run worker)', () => {
   // spec(§5/§8) P5.11 — the worker FORWARDS its optional `nextPopulation` dep to the generation loop
   // (additive, mirrors the operatorStop/onIteration conditional-spread forwarding) → the W3b boot root
   // can inject the successor-threading impl. Observed via the fake hook being called by the driven loop.
+  // maxGenerations:2 so the loop has a NON-FINAL generation that threads a successor (the final gen skips it).
   test('test_runWorker_forwards_nextPopulation', async () => {
     const fake = makeFakeStore([configuredEvent('run_w')]);
     let calls = 0;
     await runWorker(
       makeDeps(fake.store, {
+        caps: { maxGenerations: 2, maxPopulation: 2 },
         nextPopulation: (args) => {
           calls += 1;
           return args.prevPopulation;

@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
-import { RunCard } from '../components/run/RunCard';
+import { RunsTable } from '../components/run/RunsTable';
 import { useRunClient } from '../data/RunClientProvider';
 import type { RunSummary } from '../data/runClient';
 
 /**
- * RunsHomeScreen (FV.2, S0) — the `/` home: listRuns → a grid of machine-truth-minimal RunCards
- * (StatusBadge + runId + sequenceThrough; no fabricated richness — RunSummary carries none), with
- * status-derived per-card actions (Open live / Replay / Final idea) wired to the router, a New Run
- * CTA → /launch, and the DS Empty/Loading/Error states (never a blank screen, DS rule 5). Read-only
- * over listRuns (rule #2); nav via useNavigate. The dedicated rich cards are a future enrichment TODO.
+ * RunsHomeScreen (FV.2, S0) — the `/` home: listRuns → a date-sorted RunsTable (one row per run with its
+ * metadata — date, problem, final idea, status, and reproduction/cull/mutation activity — plus a Replay /
+ * Open-live action). The backend serves the enriched RunSummary sorted newest-first. A New Run CTA →
+ * /launch, and the DS Empty/Loading/Error states (never a blank screen, DS rule 5). Read-only over
+ * listRuns (rule #2); nav via useNavigate.
  */
 type LoadState =
   | { readonly kind: 'loading' }
@@ -31,11 +31,6 @@ const headerRow: CSSProperties = {
   gap: 'var(--space-4)',
 };
 const title: CSSProperties = { fontSize: 'var(--text-h2)', margin: 0 };
-const grid: CSSProperties = {
-  display: 'grid',
-  gap: 'var(--space-4)',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-};
 
 export function RunsHomeScreen() {
   const runClient = useRunClient();
@@ -57,6 +52,11 @@ export function RunsHomeScreen() {
 
   const newRun = () => navigate('/launch');
   const reload = () => setReloadKey((k) => k + 1);
+  // Default destination when clicking a row: ALWAYS land on the run's organism view (`/runs/:id`)
+  // — a completed run still renders its terminal projection there, with a "Replay" affordance to
+  // switch into replay mode on demand. (The explicit Replay column button in the table still routes
+  // straight to /runs/:id/replay for users who want to skip the intermediate hop.)
+  const openCard = (id: string, _status: string | null) => navigate(`/runs/${id}`);
 
   return (
     <main aria-label="Doppl runs home" style={shell}>
@@ -87,17 +87,12 @@ export function RunsHomeScreen() {
       )}
 
       {state.kind === 'ready' && state.runs.length > 0 && (
-        <div style={grid}>
-          {state.runs.map((run) => (
-            <RunCard
-              key={run.runId}
-              run={run}
-              onOpenLive={(id) => navigate(`/runs/${id}`)}
-              onReplay={(id) => navigate(`/runs/${id}/replay`)}
-              onFinal={(id) => navigate(`/runs/${id}/final`)}
-            />
-          ))}
-        </div>
+        <RunsTable
+          runs={state.runs}
+          onOpen={openCard}
+          onReplay={(id) => navigate(`/runs/${id}/replay`)}
+          onOpenLive={(id) => navigate(`/runs/${id}`)}
+        />
       )}
     </main>
   );

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Link, Outlet, useMatch } from 'react-router-dom';
+import { Link, NavLink, Outlet, useMatch } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 
 /**
@@ -43,18 +43,29 @@ const bannerSlot: CSSProperties = {
   alignItems: 'center',
 };
 const runNav: CSSProperties = { display: 'inline-flex', gap: 'var(--space-3)' };
-const navLink: CSSProperties = {
+const navLinkBase: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-label)',
   color: 'var(--accent)',
   textDecoration: 'none',
+  padding: 'var(--space-1) var(--space-2)',
+  borderRadius: 'var(--radius-sm)',
+};
+const navLinkActive: CSSProperties = {
+  ...navLinkBase,
+  background: 'var(--accent-soft)',
+  color: 'var(--fg-default)',
 };
 
 export function AppShell() {
-  // When viewing a specific run (any /runs/:id sub-route), surface a contextual nav between the
-  // organism view and its knowledge-evolution graph. Absent on the home / launch routes.
+  // Organism/Knowledge are per-run views — only meaningful when we're actually viewing a run.
+  // On the runs list / launcher / etc. they'd be context-less and confusing, so we hide them.
+  // NavLink (vs Link) highlights the active tab so repeat clicks read as no-ops, not page reloads.
   const runMatch = useMatch('/runs/:id/*');
   const runId = runMatch?.params.id;
+  const styleFn = ({ isActive }: { isActive: boolean }) =>
+    isActive ? navLinkActive : navLinkBase;
+
   return (
     <div style={shell}>
       <header style={chrome}>
@@ -66,12 +77,12 @@ export function AppShell() {
         </Link>
         {runId !== undefined && runId !== '' && (
           <nav style={runNav} aria-label="Run views">
-            <Link to={`/runs/${runId}`} style={navLink}>
+            <NavLink to={`/runs/${runId}`} end style={styleFn}>
               Organism
-            </Link>
-            <Link to={`/runs/${runId}/knowledge`} style={navLink}>
+            </NavLink>
+            <NavLink to={`/runs/${runId}/knowledge`} style={styleFn}>
               Knowledge
-            </Link>
+            </NavLink>
           </nav>
         )}
         {/* Reserved ModeBanner slot — filled by the dedicated S2 organism view (FV.4). */}

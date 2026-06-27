@@ -6,6 +6,7 @@ import type { ModelRouteOverrideAllowlist } from './model-gateway/model-route-ov
 import { registerRunRoutes } from './routes/runs';
 import { registerRunReadRoutes } from './routes/runs-read';
 import { registerModelRoutes } from './routes/model-routes';
+import { registerModelRouteOverridesRoutes } from './routes/model-route-overrides';
 import { registerProblemSetsRoutes } from './routes/problem-sets';
 import { registerDemoLadderRoutes } from './routes/demo-ladder';
 import { registerCapMaximaRoutes } from './routes/cap-maxima';
@@ -125,6 +126,12 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
   // PD.18 — serve the validated cap maxima (defaultConfig.caps) so the RunConfigPanel clamps to the
   // REAL ceiling (fixing the cap-default 422). Read-only; overCapField stays the sole cap authority.
   registerCapMaximaRoutes(app, { defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG });
+  // FB.2 — serve the per-run model-route override ALLOWLIST so the RunConfigPanel's model picker only
+  // offers permitted targets (final_judge excluded, rule #6). Read-only; the POST /runs validation +
+  // the kernel-bound overlay stay the real enforcers (rule #1).
+  registerModelRouteOverridesRoutes(app, {
+    allowlist: deps.modelRouteOverrideAllowlist ?? {},
+  });
   return app;
 }
 

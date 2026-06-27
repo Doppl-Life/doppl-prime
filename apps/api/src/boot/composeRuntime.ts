@@ -14,6 +14,7 @@ import { createToolOrchestratingGateway } from './toolOrchestrator';
 import { createKnowledgeRetriever } from './knowledgeRetriever';
 import { createVerifySeam } from '../verifier/verify-seam';
 import { DEFAULT_JUDGE_RUBRIC } from '../verifier/judge/rubric';
+import { JUDGE_AXIS_CRITERIA } from '../verifier/judge/judge-core';
 import {
   createReproduceSeam,
   createScoreSeam,
@@ -183,6 +184,9 @@ export function composeRunWorkerDeps(input: ComposeRuntimeInput): RunWorkerDeps 
     config,
     // rule #6 single-source — the held-out judge produces JudgeResult under THIS exact rubric.
     rubricSource: DEFAULT_JUDGE_RUBRIC,
+    // Phase J Slice Js — explicit default criteria source (= the frozen const; behavior-preserving). A v4
+    // criteria would be swapped in HERE (under sign-off), without touching the judge runners.
+    criteriaSource: JUDGE_AXIS_CRITERIA,
     // Wave 1, Step 2 — run ALL 5 critic mandates every generation (no K=3 rotation), so critic_scores is
     // measured over the same axes each generation (no cross-gen "moving measuring stick") AND the two
     // previously-rotated-out mandates (falsification / subtype_specific) always review. Critics debit no

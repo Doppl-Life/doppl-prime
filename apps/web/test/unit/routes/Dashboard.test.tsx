@@ -71,6 +71,8 @@ function fakeClient(): RunClient {
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     // PD.18 — RunConfigPanel fetches the cap maxima on mount; reject → static-fallback (no state update).
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
+    // FB.2 — RunConfigPanel fetches the model-override allowlist on mount; empty → no picker rendered.
+    getModelRouteOverrides: vi.fn(() => Promise.resolve({})),
   } as unknown as RunClient;
 }
 

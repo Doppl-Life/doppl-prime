@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { GenerationOperator } from '../../data/contracts';
-import type { RunClient, StartRunResult } from '../../data/runClient';
+import type { ModelRouteOverrideAllowlist, RunClient, StartRunResult } from '../../data/runClient';
 import {
   CAP_CEILING,
   DEFAULT_FORM,
+  HELD_OUT_JUDGE_VERSION,
+  RECORDED_SCORING_POLICY_VERSION,
   capCeilingFromRunCaps,
   clampCapsToCeiling,
   validateForm,
@@ -22,7 +24,7 @@ import {
  * submission (validate-on-submit — accessible, says WHY). The persistent mount is the P7.14 shell.
  */
 export interface RunConfigPanelProps {
-  runClient: Pick<RunClient, 'startRun' | 'getCapMaxima'>;
+  runClient: Pick<RunClient, 'startRun' | 'getCapMaxima' | 'getModelRouteOverrides'>;
   onStarted?: (run: StartRunResult) => void;
   initialValues?: RunConfigFormValues;
 }
@@ -60,6 +62,11 @@ const errorText: CSSProperties = {
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--text-caption)',
 };
+const fixedLine: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
+};
 
 export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfigPanelProps) {
   const [form, setForm] = useState<RunConfigFormValues>(initialValues ?? DEFAULT_FORM);
@@ -71,6 +78,10 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
   // fetch lowers it to the REAL maxima + clamps the current form caps. A fetch failure keeps the static
   // fallback (never blocks the form). The kernel/route stays the sole cap authority (rule #1).
   const [ceiling, setCeiling] = useState<RunConfigFormValues['caps']>(CAP_CEILING);
+  // FB.2 — the per-role model-override allowlist (GET /config/model-route-overrides). Empty until fetched /
+  // on fetch failure → no picker shown (the run simply uses the boot models). final_judge is never present
+  // (rule #6). The picker offers only these targets; the API + kernel overlay re-validate (rule #1).
+  const [modelAllowlist, setModelAllowlist] = useState<ModelRouteOverrideAllowlist>({});
 
   useEffect(() => {
     let active = true;
@@ -83,6 +94,19 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
         setForm((f) => ({ ...f, caps: clampCapsToCeiling(f.caps, fetched) }));
       })
       .catch(() => undefined); // keep the static CAP_CEILING fallback
+    return () => {
+      active = false;
+    };
+  }, [runClient]);
+
+  useEffect(() => {
+    let active = true;
+    runClient
+      .getModelRouteOverrides()
+      .then((allowlist) => {
+        if (active) setModelAllowlist(allowlist);
+      })
+      .catch(() => undefined); // no picker if the allowlist isn't available
     return () => {
       active = false;
     };
@@ -109,6 +133,20 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
     }));
   const setBias = (value: number) =>
     setForm((f) => ({ ...f, generationBias: Math.max(-1, Math.min(1, value)) }));
+  // FB.2 — set/clear a role's model override. '' (boot default) DELETES the role from the override map so a
+  // default selection omits it entirely (byte-identical baseline). The value encodes `provider::modelId`
+  // (split on the FIRST `::` — a modelId may itself contain a slash but never `::`).
+  const setModelOverride = (role: string, value: string) =>
+    setForm((f) => {
+      const next = { ...f.modelRouteOverride };
+      if (value === '') {
+        delete next[role];
+      } else {
+        const sep = value.indexOf('::');
+        next[role] = { provider: value.slice(0, sep), modelId: value.slice(sep + 2) };
+      }
+      return { ...f, modelRouteOverride: next };
+    });
   const biasLabel =
     form.generationBias > 0
       ? `diverge +${form.generationBias.toFixed(1)}`
@@ -237,6 +275,10 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
           aria-label="Generation diverge converge dial"
           aria-valuetext={biasLabel}
         />
+        <span style={fixedLine}>
+          Also steers in-run retrieval — converge follows prior agents&rsquo; research (near),
+          diverge strikes out from it (far).
+        </span>
       </div>
 
       {CAP_FIELDS.map(({ key, label }) => (
@@ -263,28 +305,46 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
         </div>
       ))}
 
-      <div style={field}>
-        <label htmlFor="rc-model" style={labelText}>
-          Model profile
-        </label>
-        <input
-          id="rc-model"
-          value={form.modelProfile}
-          onChange={(e) => setForm((f) => ({ ...f, modelProfile: e.target.value }))}
-          style={control}
-        />
-      </div>
+      {/* FB.2 — the model-override picker: per overridable GENERATION role, pick an allowlisted
+          {provider, modelId} or "Boot default" (no override). final_judge is NEVER offered (rule #6 — the
+          held-out judge model is not run-swappable). Only renders for the fetched allowlist roles. */}
+      {Object.entries(modelAllowlist).map(([role, entries]) => {
+        const current = form.modelRouteOverride[role];
+        const value = current ? `${current.provider}::${current.modelId}` : '';
+        return (
+          <div key={role} style={field}>
+            <label htmlFor={`rc-model-${role}`} style={labelText}>
+              {role} model
+            </label>
+            <select
+              id={`rc-model-${role}`}
+              value={value}
+              onChange={(e) => setModelOverride(role, e.target.value)}
+              style={control}
+            >
+              <option value="">Boot default</option>
+              {entries.map((entry) => (
+                <option
+                  key={`${entry.provider}::${entry.modelId}`}
+                  value={`${entry.provider}::${entry.modelId}`}
+                >
+                  {entry.provider} · {entry.modelId}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      })}
 
+      {/* The scoring policy + held-out judge are rule-#6 BOOT IMMUTABLES — not run-settable (the fitness
+          floor the organism can't move, anti-reward-hacking). Shown READ-ONLY so the operator sees the
+          anchor instead of an editable knob that did nothing. */}
       <div style={field}>
-        <label htmlFor="rc-scoring" style={labelText}>
-          Scoring policy version
-        </label>
-        <input
-          id="rc-scoring"
-          value={form.scoringPolicyVersion}
-          onChange={(e) => setForm((f) => ({ ...f, scoringPolicyVersion: e.target.value }))}
-          style={control}
-        />
+        <span style={labelText}>Scoring + held-out judge — fixed (anti-reward-hacking)</span>
+        <span style={fixedLine}>
+          scoring {RECORDED_SCORING_POLICY_VERSION} · judge {HELD_OUT_JUDGE_VERSION} — immutable to
+          runs (rule #6)
+        </span>
       </div>
 
       <div style={field}>

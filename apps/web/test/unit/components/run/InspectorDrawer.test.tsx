@@ -6,14 +6,14 @@ import { InspectorDrawer } from '../../../../src/components/run/InspectorDrawer'
 afterEach(() => cleanup());
 
 describe('InspectorDrawer — right-pane inspector slot (FV.4; content = FV.5)', () => {
-  // spec(§12 / FV.5 slot): closed (selectedId null) → an empty placeholder, never blank; opened
-  // (selectedId set) → the panel + a close affordance whose click calls onClose; children (FV.5
-  // content) render when provided.
+  // spec(§12 / FV.5 slot): closed (selectedId null) → the drawer unmounts entirely so the parent
+  // grid can collapse its third column; opened (selectedId set) → the panel + a close affordance
+  // whose click calls onClose; children (FV.5 content) render when provided.
   it('test_inspector_drawer_empty_then_open_close', () => {
     const onClose = vi.fn();
-    const { rerender } = render(<InspectorDrawer selectedId={null} onClose={onClose} />);
-    // closed → empty placeholder (honest, not blank); no close button.
-    expect(screen.getByText(/select a node/i)).toBeTruthy();
+    const { container, rerender } = render(<InspectorDrawer selectedId={null} onClose={onClose} />);
+    // closed → unmounted; no aside, no close button.
+    expect(container.querySelector('aside')).toBeNull();
     expect(screen.queryByRole('button', { name: /close/i })).toBeNull();
 
     // opened → close affordance present; clicking it calls onClose.

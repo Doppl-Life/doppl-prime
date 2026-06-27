@@ -42,6 +42,34 @@ function fakeStartClient() {
       // PD.18 — default to a failed maxima fetch → the static CAP_CEILING fallback (keeps these tests'
       // ceiling behavior unchanged + no mount state-update). The clamp test injects a resolving one.
       getCapMaxima: () => Promise.reject(new Error('test: no maxima')),
+      // FB.2 — default to an empty allowlist → no model picker rendered (existing tests unchanged). The
+      // picker test injects a sample allowlist.
+      getModelRouteOverrides: () => Promise.resolve({}),
+    },
+    calls,
+  };
+}
+
+// FB.2 — a sample override allowlist for the picker test (final_judge ABSENT — rule #6).
+const SAMPLE_ALLOWLIST = {
+  population_generator: [
+    { provider: 'openrouter', modelId: 'openai/gpt-4o-mini' },
+    { provider: 'ollama', modelId: 'llama3.1' },
+  ],
+  fusion_synthesis: [{ provider: 'ollama', modelId: 'llama3.1' }],
+};
+
+/** A start client whose model-override allowlist resolves to {@link SAMPLE_ALLOWLIST} (so the picker renders). */
+function allowlistClient() {
+  const calls: { config: RunConfig; opts: { idempotencyKey?: string } | undefined }[] = [];
+  return {
+    client: {
+      startRun: (config: RunConfig, opts?: { idempotencyKey?: string }) => {
+        calls.push({ config, opts });
+        return Promise.resolve(STARTED);
+      },
+      getCapMaxima: () => Promise.reject(new Error('test: no maxima')),
+      getModelRouteOverrides: () => Promise.resolve(SAMPLE_ALLOWLIST),
     },
     calls,
   };
@@ -70,6 +98,7 @@ describe('RunConfigPanel — operator run-config panel', () => {
     const client = {
       startRun: () => Promise.resolve(STARTED),
       getCapMaxima: () => Promise.resolve(LOW_MAXIMA),
+      getModelRouteOverrides: () => Promise.resolve({}),
     };
     render(<RunConfigPanel runClient={client} />);
     const pop = (await screen.findByLabelText(/population/i)) as HTMLInputElement;
@@ -84,6 +113,7 @@ describe('RunConfigPanel — operator run-config panel', () => {
     const client = {
       startRun: () => Promise.resolve(STARTED),
       getCapMaxima: () => Promise.reject(new Error('network')),
+      getModelRouteOverrides: () => Promise.resolve({}),
     };
     render(<RunConfigPanel runClient={client} />);
     const pop = (await screen.findByLabelText(/population/i)) as HTMLInputElement;
@@ -128,6 +158,55 @@ describe('RunConfigPanel — operator run-config panel', () => {
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.config.generationOperators).toBeUndefined();
     expect(calls[0]?.config.generationBias).toBeUndefined();
+  });
+
+  // FB.2 — the model-override picker offers one select per allowlisted GENERATION role (NEVER final_judge,
+  // rule #6) and threads a chosen {provider, modelId} into the started RunConfig.
+  it('test_model_override_picker_offers_allowlist_roles_and_threads_a_selection', async () => {
+    const { client, calls } = allowlistClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    const popModel = (await screen.findByLabelText(
+      /population_generator model/i,
+    )) as HTMLSelectElement;
+    expect(screen.getByLabelText(/fusion_synthesis model/i)).toBeTruthy(); // both overridable roles offered
+    expect(screen.queryByLabelText(/final_judge/i)).toBeNull(); // rule #6 — never offered
+    fireEvent.change(popModel, { target: { value: 'ollama::llama3.1' } });
+    fireEvent.click(screen.getByRole('button', { name: /start/i }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.config.modelRouteOverride).toEqual({
+      population_generator: { provider: 'ollama', modelId: 'llama3.1' },
+    });
+  });
+
+  // FB.2 — an untouched picker (Boot default) omits the override entirely (byte-identical baseline).
+  it('test_model_override_boot_default_omits_the_override', async () => {
+    const { client, calls } = allowlistClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    await screen.findByLabelText(/population_generator model/i); // wait for the picker to mount
+    fireEvent.click(screen.getByRole('button', { name: /start/i }));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.config.modelRouteOverride).toBeUndefined();
+  });
+
+  // the inert Model profile + Scoring policy version inputs are removed; a read-only line names the real
+  // rule-#6 immutables instead (scoring mvp-2 · judge final-judge-mvp-3) so the operator can't mistake them
+  // for editable knobs.
+  it('drops the inert model/scoring inputs and shows a read-only fixed line', () => {
+    const { client } = fakeStartClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    expect(screen.queryByLabelText(/model profile/i)).toBeNull();
+    expect(screen.queryByLabelText(/scoring policy version/i)).toBeNull();
+    expect(screen.getByText(/mvp-2/i)).toBeTruthy();
+    expect(screen.getByText(/final-judge-mvp-3/i)).toBeTruthy();
+  });
+
+  // the dial's help text documents its second effect: it ALSO steers in-run retrieval (converge → follow
+  // prior research / near; diverge → avoid it / far).
+  it('documents that the dial also steers in-run retrieval', () => {
+    const { client } = fakeStartClient();
+    render(<RunConfigPanel runClient={client} initialValues={validForm()} />);
+    expect(screen.getByText(/in-run retrieval/i)).toBeTruthy();
+    expect(screen.getByText(/near.*far|converge.*diverge/i)).toBeTruthy();
   });
 
   // spec(_adherence): no raw hex / no raw px in the component (tokens via var() only).

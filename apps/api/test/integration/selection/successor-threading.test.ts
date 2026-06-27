@@ -140,6 +140,9 @@ async function seedScoredCandidate(
       id: `fit-${candidateId}`,
       candidateId,
       total,
+      // Elitism is JUDGE-KEYED (#6): rank by components.judge_acceptance, not total. These tests seed the
+      // judge component to TRACK the intended fitness so their ranking assertions hold under judge-keying.
+      components: { ...validFitnessScore.components, judge_acceptance: total },
     } as unknown as Record<string, unknown>,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   });

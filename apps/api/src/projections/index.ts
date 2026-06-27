@@ -14,4 +14,5 @@ export * from './research-notes';
 export * from './replay-reader';
 export * from './replay-summary';
 export * from './run-list';
+export * from './run-summary';
 export * from './run-health';
