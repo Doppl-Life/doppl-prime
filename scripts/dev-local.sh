@@ -32,6 +32,13 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
   exit 1
 fi
 
+# An empty DOPPL_FIXTURE_DIR= line in .env defeats the code's module-relative default (it uses
+# `?? DEFAULT`, and "" is not nullish), breaking the replay seed. Normalize empty → absolute default.
+# (tsx --env-file only fills UNSET vars, so exporting it here wins over the empty .env value.)
+if [[ -z "${DOPPL_FIXTURE_DIR:-}" ]]; then
+  export DOPPL_FIXTURE_DIR="$ROOT/fixtures/replay"
+fi
+
 # --- parse DATABASE_URL with Node's URL parser (robust; node is always present) -----
 eval "$(node -e '
   const u = new URL(process.env.DATABASE_URL);
