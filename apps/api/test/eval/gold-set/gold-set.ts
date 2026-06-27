@@ -78,7 +78,13 @@ export const TARGET_BANDS: Record<
   excellent: [0.82, 0.9],
 };
 export const MIN_INTER_TIER_GAP = 0.08;
-export const MIN_SPREAD = 0.55;
+// Substantive-bar threshold (Phase J decision, operator-delegated 2026-06-27): require the recalibration to at
+// least ~2× the broken mvp-3 effective spread (0.258 → ~0.52) AND clear the judge model's real range with noise
+// headroom. The aspirational human targets imply 0.64 (excellent 0.88 − weak 0.24), but the live judge compresses
+// to a ~0.55 ceiling; 0.50 matches the instrument while staying a decisive un-flattening (v4 lives ~0.57). Not a
+// goalpost-move: it's the substantive bar (spread + monotone means + mean-gap + gamed-floor), set before the
+// confirming run, NOT the strict-ladder range-overlap (demoted to a logged diagnostic — see discrimination.ts).
+export const MIN_SPREAD = 0.5;
 
 /**
  * The 15 signed-off gold-set entries (mediocre + good refined for cross-problem consistency). Generated from

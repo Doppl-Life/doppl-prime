@@ -63,12 +63,60 @@ export const JudgeModelOutput = z.object(judgeAxisFields);
 export type JudgeModelOutput = z.infer<typeof JudgeModelOutput>;
 
 /**
- * The shared rubric-application CRITERIA — the 0–10 calibration anchors + skeptical-critic mandate +
- * full-range/differentiate mandate + per-axis meaning. Single-sourced so the single and comparative judge
- * apply BYTE-IDENTICAL criteria under `final-judge-mvp-3` (a drift would be a rule-#6 scoring difference).
- * Candidate-INDEPENDENT (rule #5): it names no candidate and is composed into the trusted system message.
+ * The shared rubric-application CRITERIA — the per-axis EARN-FROM-ZERO anchors + count-the-evidence
+ * sub-criteria + anti-cheap-signal clause + assign-earned-scores reinforcement. Single-sourced so the single
+ * and comparative judge apply BYTE-IDENTICAL criteria under `final-judge-v4` (a drift would be a rule-#6
+ * scoring difference). Candidate-INDEPENDENT (rule #5): it names no candidate and is composed into the trusted
+ * system message.
+ *
+ * Phase J flip (operator-delegated, 2026-06-27): this is the recalibrated v4 criteria, promoted from the
+ * test/eval candidate after the substantive-bar validation (live: spread 0.26→0.57, gamed crushed 0.42→0.12,
+ * monotone). It REPLACED the prior mvp-3 "anchor a typical idea at 5–6" text that flattened every axis to ~0.53
+ * (the HG2 ceiling). The pre-flip mvp-3 text is retained below as {@link JUDGE_AXIS_CRITERIA_MVP3_BASELINE}
+ * ONLY for the eval's before-characterization (never boot-loaded). `policyVersion` bumped mvp-3 → final-judge-v4
+ * in `rubric.ts` the same change (immutability-via-versioning, rule #6 / lesson §12).
  */
 export const JUDGE_AXIS_CRITERIA =
+  'Score each axis by EARNING UP FROM 0: start low and raise an axis ONLY for specific, expensive-to-fake ' +
+  'evidence the candidate actually provides — never for confident tone, ambition, or intent. The scale: ' +
+  '0 = the axis is absent or fails outright; 1–3 = weak, a clear named flaw dominates (vague, generic, or ' +
+  'unsupported); 4–5 = competent but SHALLOW — plausible and on-topic but missing the named evidence or ' +
+  'concrete test the axis demands (this is where a TYPICAL idea lands; do NOT drift it up to 5–6); 6–7 = ' +
+  'solid — real named evidence and a concrete mechanism or prediction, with one or two soft spots; 8–9 = ' +
+  'strong AND independently checkable on this axis — reachable for genuinely good work, NOT reserved for the ' +
+  'rare; 10 = a skeptical critic could not materially improve this axis. USE THE FULL RANGE and DIFFERENTIATE ' +
+  'the candidates from one another. Set each axis ONLY by its sub-criteria below — COUNT what is genuinely ' +
+  'present, give no credit for ambition: grounding = how many SPECIFIC, NAMED, checkable evidence anchors the ' +
+  'candidate cites (a named study, dataset, system, organization, or hard number a reader could go verify): ' +
+  'none, however confident the prose → 0–2; one solid anchor → 4–5; several independent checkable anchors → ' +
+  '8+. novelty = the transfer or thesis is BOTH non-obvious AND specific — it names the exact source ' +
+  'technique and the exact target mechanism; a well-known mapping, or a non-obvious one stated only in ' +
+  'generic terms → 0–4. feasibility = a CONCRETE buildable mechanism with current means, testable within one ' +
+  'iteration, that NAMES the build path; "leverage AI to…", "a holistic platform that…", or any mechanism ' +
+  'with no named path → 0–3. falsification_survival = states a CONCRETE falsifiable prediction with a number, ' +
+  'threshold, or operational test a real check could run, that would plausibly survive it; unfalsifiable, ' +
+  'hedged, or trivially-true claims → 0–3; a sharp numeric prediction with a named test → 8+. ' +
+  'subtype_check_pass = the candidate genuinely fits and fully populates its declared idea subtype. ' +
+  'Cheap-to-fake signals earn NOTHING: length, confident tone, buzzword density, framework name-drops, and ' +
+  'sweeping "paradigm / transform / exponential / antifragile" language are NOT evidence — a long, confident, ' +
+  'sourceless answer scores LOWER on grounding than a short answer with one checkable source. ' +
+  'ASSIGN EARNED SCORES — do not be conservative about evidence that IS present: "earn up from 0" means START ' +
+  'low and RAISE for evidence, NOT cap evidenced work below the band its sub-criteria specify. When a ' +
+  'candidate genuinely meets an axis sub-criterion, ASSIGN that band and do not reserve the top: one named ' +
+  'checkable anchor on grounding IS a 4–5 (not 2–3); a candidate that names SEVERAL independent checkable ' +
+  'anchors AND gives a concrete numeric/operational prediction with a test HAS EARNED 8–9 on those axes — ' +
+  'assign it, do not withhold the high end out of general caution. Score BELOW a sub-criterion band only when ' +
+  'the evidence is genuinely thinner than the candidate claims — but the floor for cheap-to-fake work (no ' +
+  'named anchor, unfalsifiable, buzzwords) is UNCHANGED at 0–3. When uncertain whether a claimed source or ' +
+  'number is real, score DOWN and name the gap in the rationale.';
+
+/**
+ * The PRE-FLIP mvp-3 criteria — retained ONLY as the eval's before-baseline (`judge-calibration.eval.ts`
+ * characterizes the flat mvp-3 distribution as the BEFORE). NOT boot-loaded; `composeRuntime` wires the live
+ * {@link JUDGE_AXIS_CRITERIA} (= final-judge-v4) above. Kept for provenance + the eval contrast; do not load
+ * this onto the live judge.
+ */
+export const JUDGE_AXIS_CRITERIA_MVP3_BASELINE =
   'Calibrate EVERY axis to this scale: 0 = absent/failed, 1–2 = poor, 3–4 = below average, ' +
   '5–6 = solid but unremarkable, 7–8 = strong, 9–10 = exceptional (genuinely rare). Be a SKEPTICAL critic, ' +
   'not a cheerleader: most ideas are average, so anchor a typical idea at 5–6, reserve 7–8 for clearly ' +

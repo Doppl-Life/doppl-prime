@@ -121,12 +121,12 @@ describe('loadJudgeRubric — immutable-anchor load + completeness enforcement (
         subtype_check_pass: 1,
         energy_efficiency: 0.1,
       },
-      // Wave 2 Step 4 (Michael-signed-off, rule #6): bumped final-judge-mvp-2 → final-judge-mvp-3 alongside
-      // the 0-5 → 0-10 per-axis scale widen + the comparative (peer-context) judge. Axes / weights /
-      // immutableToAgents are byte-identical — the SCALE is a runtime concern, not a rubric field — so this
-      // remains the immutable floor; only the version records that the judge's scoring behavior moved
+      // Phase J flip (operator-delegated 2026-06-27, rule #6): bumped final-judge-mvp-3 → final-judge-v4
+      // alongside the JUDGE_AXIS_CRITERIA earn-from-zero recalibration. Axes / weights / immutableToAgents are
+      // byte-identical — the CRITERIA text is a runtime concern, not a rubric field — so this remains the
+      // immutable floor; only the version records that the judge's scoring behavior moved
       // (immutability-via-versioning, lesson §12).
-      policyVersion: 'final-judge-mvp-3',
+      policyVersion: 'final-judge-v4',
       immutableToAgents: true,
     });
   });
