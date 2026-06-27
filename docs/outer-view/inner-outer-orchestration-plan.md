@@ -23,6 +23,30 @@ This must preserve separation of concerns. The outer view should not become a se
 | `MarkScript compiler` | Convert root inputs and selected inner winners into Agarden-displayable markdown nodes. | Change frozen kernel contracts or re-score candidates. |
 | `/bloom` read projection | Return current Agarden map state from imported artifacts, campaign artifacts, and fallback live projections. | Be the long-term hidden owner of orchestration side effects. |
 
+## Important Contract Finding: Problem Recovery Is Not Yet A Kernel Output Type
+
+As of this branch, the inner kernel's canonical generated object is still `CandidateIdea`.
+
+The relevant contract/runtime facts are:
+
+- `packages/contracts/src/domain/candidate-idea.ts` defines the generated unit as `CandidateIdea`.
+- `apps/api/src/runtime/loop/candidateContent.ts` derives the model-output schema from `CandidateIdea`.
+- `apps/api/src/runtime/loop/generationLoop.ts` appends `candidate.created`, scores candidates, and terminalizes runs with `run.completed.finalIdeaRef`.
+- There is no frozen `ProblemRecovery` contract and no separate `problem_recovery.created` event today.
+
+That means the current outer bridge is doing stage compilation:
+
+`selected CandidateIdea + childRun.stage -> problem_recovery or doppl MarkScript artifact`
+
+This is acceptable for the localhost vertical slice, but only if the child run is configured/prompted with the correct stage intent. Otherwise a `problem_recovery` artifact is just a generic selected candidate relabeled after the fact.
+
+Implementation implication:
+
+- The outer orchestrator owns **stage intent**.
+- The inner kernel owns **candidate generation/selection**.
+- The MarkScript compiler owns **Agarden display shape**.
+- The next correctness upgrade is to pass explicit stage framing into child runs so the same `CandidateIdea` contract can be used to generate recovered-problem candidates for `problem_recovery` runs and solution candidates for `doppl` runs.
+
 ## Current State
 
 Implemented so far:
@@ -34,6 +58,7 @@ Implemented so far:
 - `/bloom` reads campaign artifacts as first-class outer nodes.
 - `/bloom` currently performs an opportunistic promotion sync before returning the map.
 - The promotion sync detects terminal child runs, folds current state, finds the selected winner, compiles MarkScript, and persists a promoted outer artifact.
+- A shared inner-run start command now backs both ordinary run starts and outer campaign child-run starts, reducing validation/start drift.
 
 This is a useful localhost vertical slice, but it is not yet the final orchestration architecture.
 
@@ -114,8 +139,8 @@ The compiler should remain the only place that knows how to map `CandidateIdea`,
 ## Recommended Implementation Order
 
 1. Keep current local vertical slice intact.
-2. Extract shared inner-run start command from `POST /runs`.
-3. Update `POST /outer-campaigns` to use the shared command.
+2. Extract shared inner-run start command from `POST /runs`. **Done.**
+3. Update `POST /outer-campaigns` to use the shared command. **Done.**
 4. Move promotion sync into an explicit `outerCampaignOrchestrator` service.
 5. Add next-stage planning:
    - `problem_recovery` promotion starts a Doppl child run.

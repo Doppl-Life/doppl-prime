@@ -248,6 +248,10 @@ inner runs finish and produce promoted outer artifacts.
   - Keep the branch-only rule explicit: work on `dalton-outer-view`, never `main`.
   - Reconciliation doc: `docs/outer-view/agarden-kernel-reconciliation.md`.
   - Orchestration architecture doc: `docs/outer-view/inner-outer-orchestration-plan.md`.
+  - Contract finding: the inner kernel currently produces `CandidateIdea` winners, not a first-class
+    `ProblemRecovery` event/object. The outer campaign stage and MarkScript compiler currently compile
+    selected candidate winners into `problem_recovery` or `doppl` Agarden nodes. The next correctness step
+    is explicit stage framing for child runs.
 - [x] **L1: Add API-local outer campaign persistence.**
   - Add durable tables for campaigns, campaign artifacts, artifact links, child runs, and promotion decisions.
   - Keep these API-local until the inner/outer contract is proven; do not change frozen run event contracts yet.
@@ -258,6 +262,11 @@ inner runs finish and produce promoted outer artifacts.
   - Persist the root `case_study` artifact first.
   - Launch the first child inner run through the existing run worker path.
   - Return `{ campaignId, rootArtifactId, activeRunIds }`.
+- [x] **L2.5: Extract shared inner-run start command.**
+  - Shared API-internal command now owns `RunConfig` validation/defaulting, cap max enforcement,
+    model-route override enforcement, `run.configured` append, and the worker trigger.
+  - `POST /runs` and `POST /outer-campaigns` both call it; `/runs` still owns route-local idempotency and
+    active-run guarding.
 - [x] **L3: Show campaign roots in `/bloom`.**
   - Make `/bloom` read campaign artifacts as first-class outer nodes.
   - Continue showing imported aGarden artifacts and legacy live-run adapter as fallbacks.

@@ -1,12 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import {
-  CURRENT_SCHEMA_VERSION,
-  RunConfig as RunConfigSchema,
-  validateRunConfig,
-  type RunCaps,
-  type RunConfig,
-} from '@doppl/contracts';
+import { RunConfig as RunConfigSchema, type RunConfig } from '@doppl/contracts';
 import { z } from 'zod';
 import type { EventStore } from '../event-store';
 import {
@@ -14,12 +8,9 @@ import {
   outerCampaignChildRuns,
   outerCampaigns,
 } from '../event-store/schema';
-import { overCapField } from './runs';
-import {
-  modelRouteOverrideViolation,
-  type ModelRouteOverrideAllowlist,
-} from '../model-gateway/model-route-override';
+import { type ModelRouteOverrideAllowlist } from '../model-gateway/model-route-override';
 import { compileCaseStudyNode } from '../markscript/compiler';
+import { appendAndStartInnerRun, validateRunConfigForStart } from '../runs/start-inner-run';
 
 export interface OuterCampaignRoutesDeps {
   store: EventStore;
@@ -53,33 +44,12 @@ export function registerOuterCampaignRoutes(
     }
     const body = parsed.data;
 
-    let config: RunConfig;
-    try {
-      config = validateRunConfig({
-        defaults: deps.defaultConfig as unknown as Record<string, unknown>,
-        file: body.runConfig as unknown as Record<string, unknown>,
-        env: {},
-      });
-    } catch (error) {
-      return reply.status(400).send({ error: 'invalid_config', message: (error as Error).message });
-    }
-
-    const over = overCapField(config.caps, deps.defaultConfig.caps as RunCaps);
-    if (over !== null) {
-      return reply.status(422).send({ error: 'cap_override_exceeds_max', field: over });
-    }
-
-    if (config.modelRouteOverride !== undefined) {
-      const violation = modelRouteOverrideViolation(
-        config.modelRouteOverride,
-        deps.modelRouteOverrideAllowlist,
-      );
-      if (violation !== null) {
-        return reply
-          .status(422)
-          .send({ error: 'model_route_override_not_permitted', ...violation });
-      }
-    }
+    const validated = validateRunConfigForStart(
+      body.runConfig as unknown as Record<string, unknown>,
+      deps,
+    );
+    if (!validated.ok) return reply.status(validated.statusCode).send(validated.body);
+    const config: RunConfig = validated.config;
 
     const campaignId = deps.newId();
     const rootArtifactId = deps.newId();
@@ -136,15 +106,7 @@ export function registerOuterCampaignRoutes(
       });
     });
 
-    await deps.store.append({
-      id: deps.newId(),
-      runId: childRunId,
-      type: 'run.configured',
-      actor: 'operator',
-      payload: { ...config } as Record<string, unknown>,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-    });
-    deps.onRunConfigured?.(childRunId);
+    await appendAndStartInnerRun(config, deps, { runId: childRunId });
 
     return reply.status(201).send({
       campaignId,
