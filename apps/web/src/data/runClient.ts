@@ -137,6 +137,10 @@ export const RunSummary = z.object({
   reproductions: z.number().optional(),
   culls: z.number().optional(),
   mutations: z.number().optional(),
+  // Best candidate fitness per generation (the evolutionary climb the runs-table sparkline draws) and
+  // the selected winner's fitness. Optional so a pre-enrichment api still parses.
+  fitnessByGeneration: z.array(z.number()).optional(),
+  winnerFitness: z.number().nullable().optional(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;
 const RunSummariesResponse = z.object({ runs: z.array(RunSummary) });

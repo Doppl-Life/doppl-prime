@@ -32,6 +32,13 @@ export interface RunSummaryItem {
   readonly reproductions: number;
   readonly culls: number;
   readonly mutations: number;
+  /**
+   * Best candidate fitness per generation, in chronological generation order — the evolutionary climb
+   * the runs-table sparkline draws. Empty when the run produced no `fitness.scored` events.
+   */
+  readonly fitnessByGeneration: number[];
+  /** The selected winner's fitness (`fitness.scored.total` for the winning candidate), or null. */
+  readonly winnerFitness: number | null;
 }
 
 function truncate(text: string, max: number): string {
@@ -64,6 +71,14 @@ function stringField(payload: unknown, key: string): string | null {
   return null;
 }
 
+function numberField(payload: unknown, key: string): number | null {
+  if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
+    const value = (payload as Record<string, unknown>)[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return null;
+}
+
 export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem {
   const { state, sequenceThrough } = buildCurrentState(events);
   const runId = events[0]!.runId;
@@ -77,12 +92,21 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
   const configured = events.find((e) => e.type === 'run.configured');
   const seed = configured ? stringField(configured.payload, 'seed') : null;
 
+  const winnerId = winner?.id ?? null;
   let generations = 0;
   let candidates = 0;
   let reproductions = 0;
   let culls = 0;
   let mutations = 0;
+  // Best fitness per generation (the sparkline series). Generations are ordered by first appearance in
+  // the log (chronological); a generation contributes a point only once a candidate in it is scored.
+  const genOrder: string[] = [];
+  const bestFitnessByGen = new Map<string, number>();
+  let winnerFitness: number | null = null;
   for (const event of events) {
+    if (event.generationId !== null && !genOrder.includes(event.generationId)) {
+      genOrder.push(event.generationId);
+    }
     switch (event.type) {
       case 'generation.completed':
         generations += 1;
@@ -99,9 +123,29 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
       case 'agenome.mutated':
         mutations += 1;
         break;
+      case 'fitness.scored': {
+        const total = numberField(event.payload, 'total');
+        if (total !== null && event.generationId !== null) {
+          const prev = bestFitnessByGen.get(event.generationId);
+          if (prev === undefined || total > prev) bestFitnessByGen.set(event.generationId, total);
+        }
+        if (
+          total !== null &&
+          winnerId !== null &&
+          stringField(event.payload, 'candidateId') === winnerId
+        ) {
+          winnerFitness = total;
+        }
+        break;
+      }
       default:
         break;
     }
+  }
+  const fitnessByGeneration: number[] = [];
+  for (const gen of genOrder) {
+    const best = bestFitnessByGen.get(gen);
+    if (best !== undefined) fitnessByGeneration.push(best);
   }
 
   return {
@@ -117,5 +161,7 @@ export function buildRunSummary(events: readonly RunEventRow[]): RunSummaryItem 
     reproductions,
     culls,
     mutations,
+    fitnessByGeneration,
+    winnerFitness,
   };
 }

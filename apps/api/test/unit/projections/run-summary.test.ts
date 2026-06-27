@@ -132,5 +132,66 @@ describe('buildRunSummary', () => {
     expect(s.finalIdeaSummary).toBeNull();
     expect(s.candidates).toBe(1);
     expect(s.reproductions).toBe(0);
+    expect(s.fitnessByGeneration).toEqual([]);
+    expect(s.winnerFitness).toBeNull();
+  });
+
+  it('folds best fitness per generation (chronological) and the winner fitness', () => {
+    const score = (id: string, candidateId: string, total: number) => ({
+      id,
+      candidateId,
+      total,
+      components: {},
+      policyVersion: 'v1',
+      explanation: 'x',
+    });
+    const log = [
+      row({
+        type: 'run.configured',
+        sequence: 0,
+        occurredAt: new Date('2026-06-26T10:00:00Z'),
+        payload: { seed: 'P' },
+      }),
+      row({ type: 'run.started', sequence: 1, payload: { from: 'configured', to: 'running' } }),
+      row({
+        type: 'candidate.created',
+        sequence: 2,
+        generationId: 'genA',
+        candidateId: 'cand-win',
+        payload: { ...validCandidateIdeaCrossDomain, id: 'cand-win' },
+      }),
+      row({
+        type: 'fitness.scored',
+        sequence: 3,
+        generationId: 'genA',
+        candidateId: 'c1',
+        payload: score('f1', 'c1', 0.4),
+      }),
+      row({
+        type: 'fitness.scored',
+        sequence: 4,
+        generationId: 'genA',
+        candidateId: 'cand-win',
+        payload: score('f2', 'cand-win', 0.55),
+      }),
+      row({ type: 'generation.completed', sequence: 5, generationId: 'genA', payload: {} }),
+      row({
+        type: 'fitness.scored',
+        sequence: 6,
+        generationId: 'genB',
+        candidateId: 'c2',
+        payload: score('f3', 'c2', 0.72),
+      }),
+      row({ type: 'generation.completed', sequence: 7, generationId: 'genB', payload: {} }),
+      row({
+        type: 'run.completed',
+        sequence: 8,
+        generationId: 'genB',
+        payload: { finalIdeaRef: 'cand-win', from: 'running', to: 'completed' },
+      }),
+    ];
+    const s = buildRunSummary(log);
+    expect(s.fitnessByGeneration).toEqual([0.55, 0.72]); // best per generation, in order
+    expect(s.winnerFitness).toBe(0.55); // the selected candidate's own fitness
   });
 });

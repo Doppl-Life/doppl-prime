@@ -3,7 +3,8 @@ import type { CSSProperties, MouseEvent } from 'react';
 import { Button, StatusBadge } from '../ds';
 import { resolveStatus } from '../core/status-map';
 import type { RunSummary } from '../../data/runClient';
-import { failedBeforeGenerating, groupRunsByDay, normalize, timeOfDay } from './runsSummary';
+import { failedBeforeGenerating, groupRunsByDay, timeOfDay } from './runsSummary';
+import { Sparkline } from './Sparkline';
 
 /**
  * RunsTable (S0 Runs home) — the date-grouped runs table. Rows are bucketed under day headers
@@ -41,10 +42,6 @@ function actionsFor(status: string | null): ActionSet {
       return { openLive: false, replay: false };
   }
 }
-function isLive(status: string | null): boolean {
-  return status === 'running' || status === 'completing' || status === 'stopping';
-}
-
 const EM_DASH = '—';
 function shortId(id: string): string {
   return id.length > 10 ? `${id.slice(0, 8)}…` : id;
@@ -138,10 +135,14 @@ const activityCell: CSSProperties = {
   whiteSpace: 'nowrap',
   letterSpacing: '0.04em',
 };
-
-function maxCandidates(runs: readonly RunSummary[]): number {
-  return runs.reduce((m, r) => Math.max(m, r.candidates ?? 0), 0);
-}
+const sparkRow: CSSProperties = { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
+const fitVal: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-mono)',
+  color: 'var(--fg-muted)',
+  minWidth: '2.5rem',
+  textAlign: 'right',
+};
 
 export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps) {
   const [hovered, setHovered] = useState<string | null>(null);
@@ -150,7 +151,6 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
     cb();
   };
   const groups = groupRunsByDay(runs);
-  const capacity = maxCandidates(runs);
 
   return (
     <table style={table}>
@@ -183,7 +183,6 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
             key={group.label}
             label={group.label}
             rows={group.rows}
-            capacity={capacity}
             hovered={hovered}
             setHovered={setHovered}
             onOpen={onOpen}
@@ -200,7 +199,6 @@ export function RunsTable({ runs, onOpen, onReplay, onOpenLive }: RunsTableProps
 function RunGroupRows({
   label,
   rows,
-  capacity,
   hovered,
   setHovered,
   onOpen,
@@ -210,7 +208,6 @@ function RunGroupRows({
 }: {
   label: string;
   rows: ReturnType<typeof groupRunsByDay>[number]['rows'];
-  capacity: number;
   hovered: string | null;
   setHovered: (id: string | null) => void;
   onOpen: (runId: string, status: string | null) => void;
@@ -228,7 +225,6 @@ function RunGroupRows({
       {rows.map(({ run, index }) => {
         const actions = actionsFor(run.status);
         const spec = resolveStatus('run', run.status ?? 'unknown');
-        const live = isLive(run.status);
         const accentAnim = spec.pulse
           ? 'doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite'
           : undefined;
@@ -238,6 +234,9 @@ function RunGroupRows({
           background: isHovered ? 'var(--bg-surface)' : 'transparent',
         };
         const failedNoIdea = failedBeforeGenerating(run);
+        const fitness = run.fitnessByGeneration ?? [];
+        const lastFromSeries = fitness.length > 0 ? fitness[fitness.length - 1] : undefined;
+        const lastFit = run.winnerFitness ?? lastFromSeries ?? null;
         return (
           <tr
             key={run.runId}
@@ -297,22 +296,20 @@ function RunGroupRows({
                   <span data-testid={`run-cands-${run.runId}`}>{run.candidates ?? 0}</span> cands
                 </span>
               </div>
-              <div
-                style={meterTrack}
-                role="img"
-                aria-label={`${run.candidates ?? 0} candidates across ${run.generations ?? 0} generations`}
-              >
-                <div
-                  style={{
-                    width: `${(normalize(run.candidates ?? 0, capacity) * 100).toFixed(0)}%`,
-                    height: '100%',
-                    borderRadius: 'var(--radius-full)',
-                    background: spec.colorToken,
-                    transition: 'width var(--motion-energy-drain-ms) var(--ease-out)',
-                    animation: live ? accentAnim : undefined,
-                  }}
-                />
-              </div>
+              {fitness.length > 0 ? (
+                <div style={sparkRow}>
+                  <Sparkline
+                    values={fitness}
+                    color={spec.colorToken}
+                    ariaLabel={`best fitness across ${fitness.length} generation${
+                      fitness.length === 1 ? '' : 's'
+                    }, latest ${lastFit !== null ? lastFit.toFixed(2) : 'unavailable'}`}
+                  />
+                  {lastFit !== null && <span style={fitVal}>{lastFit.toFixed(2)}</span>}
+                </div>
+              ) : (
+                <div style={meterTrack} aria-hidden="true" />
+              )}
             </td>
             <td
               style={activityCell}
