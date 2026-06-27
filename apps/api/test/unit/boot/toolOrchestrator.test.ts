@@ -210,6 +210,36 @@ describe('createToolOrchestratingGateway (TU.5)', () => {
     expect(sys.content).not.toContain(TOOL_USE_FRAMING);
   });
 
+  // rule #3 (least-privilege) — the offered research tools are gated to the GENERATING agenome's
+  // `toolPermissions` (supplied per-call by the loop). The HG2 finding: the full allowlist was offered to
+  // EVERY agenome regardless, so `[]`-permission weak seeds still researched.
+  it('rule #3 — offers NO tools to a []-permission agenome (and no research nudge)', async () => {
+    const { gateway, calls } = scriptedGateway([finalResponse({ idea: 'x' })]);
+    const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
+    await orch.generate(populationRequest, { toolBudget: 4, toolPermissions: [] });
+    expect(calls[0]!.tools ?? []).toEqual([]); // no tools offered → the agenome cannot research
+    const sys = calls[0]!.messages!.find((m) => m.role === 'system')!;
+    expect(sys.content).not.toContain(TOOL_USE_FRAMING); // and no tool-use nudge
+  });
+
+  it('rule #3 — offers ONLY the agenome-permitted research tools, filtering the rest', async () => {
+    const { gateway, calls } = scriptedGateway([finalResponse({ idea: 'x' })]);
+    const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
+    // 'retrieval' is not a research ToolName → maps to nothing; only the permitted web_search is offered.
+    await orch.generate(populationRequest, {
+      toolBudget: 4,
+      toolPermissions: ['retrieval', 'web_search'],
+    });
+    expect((calls[0]!.tools ?? []).map((t) => t.name)).toEqual(['web_search']);
+  });
+
+  it('offers the full allowlist when no toolPermissions are supplied (back-compat for non-loop callers)', async () => {
+    const { gateway, calls } = scriptedGateway([finalResponse({ idea: 'x' })]);
+    const orch = createToolOrchestratingGateway({ gateway, toolExecutorDeps: okSeams });
+    await orch.generate(populationRequest, { toolBudget: 4 }); // no toolPermissions → unchanged behaviour
+    expect((calls[0]!.tools ?? []).length).toBeGreaterThan(1);
+  });
+
   it('rule #1 — bounds model round-trips by maxTurns even if the model keeps calling tools', async () => {
     // the gateway ALWAYS returns a tool call; the orchestrator must still terminate (maxTurns) and return.
     const { gateway, calls } = scriptedGateway([

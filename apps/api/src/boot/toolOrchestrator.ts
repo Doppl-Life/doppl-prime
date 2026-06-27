@@ -118,10 +118,18 @@ export function createToolOrchestratingGateway(deps: ToolOrchestratorDeps): Gene
   return {
     async generate(request, opts): Promise<GenerateResult> {
       const toolBudget = opts?.toolBudget ?? deps.defaultToolBudget ?? DEFAULT_TOOL_BUDGET;
+      // TU.5 rule #3 (least-privilege) — offer ONLY the tools the GENERATING agenome is permitted (its
+      // `toolPermissions`, supplied per-call by the loop). Previously the full allowlist was offered to every
+      // agenome regardless of its permissions (the HG2 finding: `[]`-permission weak seeds still researched).
+      // ABSENT permissions → keep the default offered set (back-compat for non-loop callers); `[]` → no tools.
+      const offered =
+        opts?.toolPermissions === undefined
+          ? tools
+          : tools.filter((descriptor) => opts.toolPermissions!.includes(descriptor.name));
       const messages = initialMessages(request);
       // Research nudge (TRUSTED, rule #5/#6-safe): when tools WILL be offered, append the tool-use
       // instruction to the agent's system message so it researches before generating. Once, up front.
-      const willOfferTools = tools.length > 0 && toolBudget > 0 && maxTurns > 1;
+      const willOfferTools = offered.length > 0 && toolBudget > 0 && maxTurns > 1;
       if (willOfferTools && messages.length > 0 && messages[0]?.role === 'system') {
         messages[0] = { role: 'system', content: `${messages[0].content}\n\n${TOOL_USE_FRAMING}` };
       }
@@ -133,7 +141,7 @@ export function createToolOrchestratingGateway(deps: ToolOrchestratorDeps): Gene
         // turn (or once the budget is spent) we offer NONE, so the model MUST return the final candidate.
         const offerTools = toolCalls.length < toolBudget && turn < maxTurns - 1;
         response = await deps.gateway.call(
-          buildTurnRequest(request, messages, offerTools ? tools : undefined),
+          buildTurnRequest(request, messages, offerTools ? offered : undefined),
         );
 
         const requests = response.toolCallRequests ?? [];

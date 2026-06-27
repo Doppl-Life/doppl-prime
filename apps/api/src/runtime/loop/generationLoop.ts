@@ -184,6 +184,14 @@ export interface GenerateOptions {
    * cap its tool executions to this; the kernel additionally backstops it (the inline relay gate +
    * detectKill fold). A pass-through gateway ignores it. */
   readonly toolBudget?: number;
+  /**
+   * TU.5 rule #3 (least-privilege) — the GENERATING agenome's `toolPermissions`. A tool-orchestrating gateway
+   * offers ONLY the research tools whose name appears here (so an agenome with `[]` is offered no tools and
+   * cannot research). The loop supplies it per agenome; a pass-through gateway ignores it. ABSENT → the
+   * gateway keeps its default offered set (back-compat for non-loop callers) — the loop always supplies it,
+   * so production generation is permission-gated.
+   */
+  readonly toolPermissions?: readonly string[];
 }
 
 /** The runtime-local generation gateway port (composes the frozen ModelGateway; no vendor type, rule #9). */
@@ -711,6 +719,10 @@ export async function runGenerationLoop(deps: GenerationLoopDeps): Promise<Gener
       // relay gate de-conflicts the actual count.
       const { response, toolCalls, attemptFailures } = await gateway.generate(populationRequest, {
         toolBudget: Math.max(0, caps.maxToolCalls - toolCallsConsumed),
+        // TU.5 rule #3 — gate the offered research tools to THIS agenome's permissions (a `[]`-permission
+        // agenome is offered none → it cannot research; honours the per-agenome toolPermissions the gateway
+        // previously ignored, so e.g. the weak seed profile actually starts tool-less).
+        toolPermissions: agenome.toolPermissions,
       });
       for (const toolCall of toolCalls ?? []) {
         // rule #1 — RESERVE a maxToolCalls slot BEFORE relaying/debiting this tool call (the un-bypassable
