@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - calibration
       - dalton-outer-view
     paths:
+      - "published/**"
       - "apps/web/**"
       - "packages/**"
       - "package.json"
@@ -30,23 +32,17 @@ jobs:
     env:
       OUTER_BLOOM_API_BASE: ${{ vars.OUTER_BLOOM_API_BASE }}
     steps:
-      - name: Checkout outer view branch
-        uses: actions/checkout@v4
-        with:
-          path: doppl-prime
-
-      - name: Checkout published calibrator
+      - name: Checkout calibration branch
         uses: actions/checkout@v4
         with:
           ref: calibration
           path: calibration-branch
 
-      - name: Require public API base
-        run: |
-          if [ -z "${OUTER_BLOOM_API_BASE}" ]; then
-            echo "::error::Set repository variable OUTER_BLOOM_API_BASE to the public API origin that serves /bloom."
-            exit 1
-          fi
+      - name: Checkout Agarden branch
+        uses: actions/checkout@v4
+        with:
+          ref: dalton-outer-view
+          path: agarden-branch
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -58,14 +54,14 @@ jobs:
         with:
           node-version: "22"
           cache: pnpm
-          cache-dependency-path: doppl-prime/pnpm-lock.yaml
+          cache-dependency-path: agarden-branch/pnpm-lock.yaml
 
-      - name: Install dependencies
-        working-directory: doppl-prime
+      - name: Install Agarden dependencies
+        working-directory: agarden-branch
         run: pnpm install --frozen-lockfile
 
-      - name: Build outer view
-        working-directory: doppl-prime
+      - name: Build Agarden app
+        working-directory: agarden-branch
         env:
           VITE_API_BASE: ${{ env.OUTER_BLOOM_API_BASE }}
           VITE_BASE_PATH: /doppl-prime/
@@ -73,13 +69,15 @@ jobs:
 
       - name: Compose Pages artifact
         run: |
-          mkdir -p doppl-prime/published
-          cp -R doppl-prime/apps/web/dist/. doppl-prime/published/
-          mkdir -p doppl-prime/published/bloom
-          cp doppl-prime/published/index.html doppl-prime/published/bloom/index.html
-          cp doppl-prime/published/index.html doppl-prime/published/404.html
-          cp -R calibration-branch/published/calibrator doppl-prime/published/calibrator
-          touch doppl-prime/published/.nojekyll
+          mkdir -p pages-artifact
+          cp -R agarden-branch/apps/web/dist/. pages-artifact/
+          mkdir -p pages-artifact/agarden
+          cp pages-artifact/index.html pages-artifact/agarden/index.html
+          mkdir -p pages-artifact/bloom
+          cp pages-artifact/index.html pages-artifact/bloom/index.html
+          cp pages-artifact/index.html pages-artifact/404.html
+          cp -R calibration-branch/published/calibrator pages-artifact/calibrator
+          touch pages-artifact/.nojekyll
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -89,7 +87,7 @@ jobs:
       - name: Upload published preview
         uses: actions/upload-pages-artifact@v3
         with:
-          path: doppl-prime/published
+          path: pages-artifact
 
       - name: Deploy to GitHub Pages
         id: deployment
