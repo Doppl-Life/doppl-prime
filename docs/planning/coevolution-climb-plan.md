@@ -14,17 +14,42 @@
 
 ## 0. RESUME POINTER (update this every session)
 
-- **Status:** PLAN AUTHORED. **Phase A code-complete + green (A1+A2+A3); awaiting PR/merge.**
-- **Date authored:** 2026-06-27.
-- **Branch/PR state:** work lands to `main` via GitHub PRs (NEVER `git push origin main`; the team uses PRs —
-  branch off `main` → push branch → `gh pr create --base main` → user merges). Ask before any push. **Active
-  branch: `feature/coevolution-phase-a-honest-gate` (off `main`); A1 = `41afe08`, A2+A3 next commit. NOT pushed.**
-- **Where we are:** Phase A code-complete + green; **PR #15 open to `main`** (awaiting merge). D1 DECIDED:
-  weak-seed demo + harder-problem `/eval`. **Next concrete step (the "Headroom Gate" — must pass before Phase
-  B/C): (1) build the weak-seed capability ("give the climb room"), (2) run a live headroom check on a weak
-  seed with the Phase-A stack to confirm the bounce shrinks AND a real climb exists to couple for.** Only if
-  the climb is real do we proceed to Phase B/C. See §6 "Headroom Gate" + §8.
-- **Driver:** user/Michael makes the load-bearing calls (default cadence, eliteCount, headroom/problem choice).
+- **Status:** **Path A COMPLETE (3 PRs open); HG2 headroom check DONE → the JUDGE is the binding ceiling, not
+  the algorithm. STRATEGIC PIVOT (Michael, 2026-06-27): build Phase B/C AND recalibrate the judge (mvp-3 → v4)
+  to create real headroom, plus a dynamically-intelligent diverge→converge anneal.** Plan + handoff written;
+  next session resumes here.
+- **Date:** 2026-06-27.
+- **Branch/PR state:** PR-only to `main` (NEVER `git push origin main`; branch → push → `gh pr create --base
+  main` → user merges; ask before any push). **OPEN PRs (Path A — MERGE THESE FIRST): #15** (Phase A: honest
+  gate + judge-keyed elitism + ratchet-on + the ratchet-crash fix `7376625`), **#16** (HG1 weak-seed profile),
+  **#17** (Finding A: tool-permission gating). All green. Local throwaway branch `experiment/hg2-rerun` =
+  main+#15+#16+#17 (used for the HG2 re-run; NOT pushed). The plan-doc + handoff edits this session ride
+  whatever branch they were committed on — fold onto `main` once #15 merges.
+- **Where we are / NEXT (the new roadmap, §6):** (0) merge #15/#16/#17. (1) **Phase J — Judge recalibration
+  mvp-3 → v4** (the rule-#6 enabler that creates headroom; comprehensive design in §7-J + the gold-set gate +
+  Michael sign-off). (2) **Phase B** (cultural mirror, `trailEntropy`). (3) **Phase C** (the coupled controller
+  #1+#2 PLUS the diverge→converge anneal — now climbs the recalibrated judge). B/C are no longer "gated on a
+  headroom check" — the headroom is created by Phase J.
+- **CHOSEN v4 COMPOSITION (2026-06-27, user-approved after a judge-engine research fan-out):** v4 = **(#4)
+  earn-from-zero re-anchored criteria** + **(#3) min-dominated aggregation** as the two discrimination knobs,
+  **(#2) gold set doubling as the frozen reference distribution** ("grade against the ghosts," not live peers —
+  floor-safe), framed by **(#1) floor/ladder split** (keep the absolute sum AS the un-gameable floor; grow the
+  discrimination signal beside it), with **(#6) judge score-VARIANCE across a generation** as the Phase-C
+  diverge→converge signal (converge when the judge can separate candidates, diverge when it can't — also fixes
+  the D5 noise/thrash risk). **#5 anchored tournament/Elo = research stretch lever.** Full design: §7-J.
+- **BUILD STARTED THIS SESSION (the unblocked prerequisite, rule-#6-clean):** **Slice Js — the criteria-injection
+  seam.** The research found `rubricSource` threads the rubric OBJECT but NOT `JUDGE_AXIS_CRITERIA` (a module
+  const), so v4 criteria can't be A/B'd through the existing seam. Js makes the criteria injectable (default =
+  the current exact string, byte-identical → no behavior change, no `policyVersion` bump, no fixture re-record).
+  Built off `main` (judge files are identical on main vs the experiment branch), TDD, its OWN clean PR. The
+  behavior-CHANGING v4 slices (criteria text, aggregation, version bump, default flip) stay GATED on Michael's
+  J0 inputs + sign-off.
+- **Why the pivot:** HG2 proved (two clean live runs) that even with the fixes + a tool-less weak seed + a hard
+  problem, the held-out JUDGE stays flat (~0.53) while the agent-visible total drifts — the judge can't
+  discriminate incremental quality, so there is no real climb to be had until the judge itself discriminates.
+  See §3.7 (HG2 result) + §3.4 (ceiling).
+- **Driver:** Michael owns the load-bearing calls — especially the rule-#6 judge-recalibration sign-off + the
+  gold-set target thresholds (§9 D7–D11).
 
 ---
 
@@ -153,6 +178,25 @@ climb on that problem.**
 
 ---
 
+### 3.7 The HG2 headroom check result (2026-06-27) — the judge is the ceiling
+Path A (the honest gate + judge-keyed elitism + ratchet, the weak-seed capability, the tool-permission fix)
+shipped, and the live headroom check ran twice:
+- **Run 1** (weak seed, ER problem) crashed/orphaned — surfaced **two real bugs** (now fixed): *Finding B*, the
+  ratchet bred the champion but successor-threading couldn't reconstruct it → silent orphan (PR #15 `7376625`);
+  *Finding A*, the tool orchestrator offered tools to every agenome regardless of `toolPermissions` → the `[]`
+  weak seeds still researched (PR #17). Trajectory before the crash: gen-0 0.69, total **declining**.
+- **Run 2** (tool-less weak seed, hard prediction-market problem, both fixes in): **completed cleanly, 0 tool
+  calls.** Total **climbed** 0.60 → 0.67 → 0.64 → 0.68, BUT the **held-out judge stayed FLAT ~0.53** the whole
+  run (best-judge per gen 0.52/0.54/0.56/0.54).
+
+**The verdict:** the total climb is in the **agent-visible** components (novelty/critic); the **judge — the
+un-hackable 46%-weight anchor — saw no quality improvement.** The weak persona doesn't even tank gen-0 much
+(0.60, not 0.40) because the model is competent on anything. So **the binding constraint is the judge's
+inability to discriminate incremental quality, not the evolutionary algorithm.** A coupling that climbs the
+total harder would still leave the judge flat. → This is what forces Phase J (judge recalibration) as the real
+enabler, and is why the original D1 corollary ("don't recalibrate the judge") is now overridden by Michael
+(§9 D11) — under a strict *discriminate-more-not-be-more-generous* gate.
+
 ## 4. The feature catalog (the 8 breakthroughs, dispositioned)
 
 Status legend: **BUILD** = on the roadmap now · **LEVER** = build only when evidence calls for it · **RESEARCH** = open problem, not a near-term ship.
@@ -203,47 +247,80 @@ Turn the existing machinery on and make it judge-honest. Three slices:
   byte-identically (rule #7); a recorded-gateway run shows the controller commits to exploit ONLY on a
   judge-component rise; PR merged to `main`.
 
-### Headroom Gate — "give the climb room" + the headroom check (BUILD after A; BLOCKS Phase B/C)
-The ceiling caveat (§3.4) means Phase B/C must NOT be built until we've shown a real climb exists to couple
-*for*. Two steps, in order:
-- **HG1 — Weak-seed capability ("give the climb room").** Author a `WEAK_SEED_SET` (agenome templates whose
-  personas produce deliberately low-effort/surface answers so gen 0 scores ~0.4, not ~0.69) and a boot
-  selector (`DOPPL_SEED_PROFILE=default|weak`, default → `DEFAULT_SEED_SET`). Seed set is a boot config
-  (`loadConfig` `fileSources.seedSet ?? DEFAULT_SEED_SET`), not per-run, so this is an env-gated preset. Pure,
-  TDD-able config; **no cost.** (A harder *problem* for the `/eval` bake-off is the sibling lever — pick a
-  problem the model is bad at on the first try; that's data/config, not code.)
-- **HG2 — The headroom check (LIVE — costs $, needs the OpenRouter key + user go).** Boot the worker with the
-  weak seed + Phase-A stack, run live (`DOPPL_GATEWAY=live`, small pop×gens, low energy cap) on the demo
-  problem (and/or the harder problem). **Pass criteria:** (a) gen-0 best fitness is genuinely low (~0.4), (b)
-  best fitness *climbs* materially over generations (a real 0.4→0.7+ trajectory, not a 0.05 bounce), (c) the
-  honest gate + ratchet visibly hold/grow the peak (peak-to-final drop small). **If it climbs → proceed to
-  Phase B/C. If it flat-lines → STOP; the coupling won't help, and the work is a demo-framing problem, not an
-  algorithm problem.** This is the cheap de-risk that decides the whole Phase B/C investment.
+### ✅ Headroom Gate — DONE (HG1 weak-seed + HG2 live check). Result: §3.7 — the judge is the ceiling.
+HG1 (`WEAK_SEED_SET` + `DOPPL_SEED_PROFILE`) shipped in PR #16. HG2 (two live runs) is done — see §3.7. It did
+NOT pass the original "weak seed creates headroom" criterion (gen-0 0.60, not 0.40; judge flat). But it did its
+job: it proved the **judge** is the binding ceiling, which reroutes the plan to Phase J rather than killing
+B/C. **Phase B/C are NO LONGER gated on a weak-seed headroom check** — the headroom is created by Phase J.
 
-### Phase B — The cultural mirror (BUILD after the Headroom Gate passes)
+### Phase J — Judge recalibration (mvp-3 → v4) — THE RULE-#6 ENABLER, BUILD FIRST (after merging Path A)
+Make the held-out judge **DISCRIMINATE** real quality with usable spread — *without* becoming more *generous*
+(generosity = reward-hacking by definition). This creates the headroom B/C then climbs. Full design + safe
+rollout + reward-hacking guard in **§7-J**.
+
+**The framing (#1 — floor/ladder split):** today the *one* `judge_acceptance` number is asked to be two
+contradictory things — the un-gameable **floor** (rule-#6 anchor, must not wobble) AND the sensitive **climb
+gradient** B/C steer on. A flat floor is *correct* for the first job and *useless* for the second. v4 keeps the
+absolute weighted sum AS the floor and sharpens the SAME signal's discrimination so it can also be the ladder.
+
+**Two discrimination knobs (user-approved composition, sequenced one-variable-at-a-time):**
+- **(#4) Earn-from-zero criteria** — recalibrate the ONE source string `JUDGE_AXIS_CRITERIA` (`judge-core.ts`,
+  composed into both judge paths): re-anchor the bands so the competent range spreads and the top is
+  *reachable-but-earned*, default LOW + earn each point with expensive-to-fake evidence, per-axis yes/no
+  sub-criteria, an anti-cheap-signal clause. Bump `policyVersion` mvp-3 → v4.
+- **(#3) Min-dominated aggregation** — change `computeAcceptanceMetric` from a flat equal-weight sum (where
+  3-and-7 averages identically to 5-and-5, washing out spread) to a min-dominated aggregate (e.g. a low-order
+  power-mean / `α·min + (1−α)·mean`) so a fatal weak axis can't be averaged away. Runner-owned math (rule-#6
+  permitted — the *agent* never touches it), **floor-PRESERVING** (a uniformly-weak generation scores even
+  LOWER, never higher). Ship **criteria-only v4 FIRST**, measure, then aggregation as a measured follow-on if
+  the criteria spread is insufficient — never both unmeasured at once on the anchor.
+
+**Prerequisite — Slice Js (criteria-injection seam, BUILD NOW, behavior-preserving, no sign-off):** `rubricSource`
+threads the rubric OBJECT but NOT the criteria string (a module const), so v4 criteria can't be A/B'd through it.
+Js makes `JUDGE_AXIS_CRITERIA` injectable (default = the current exact string, byte-identical), mirroring the
+existing `rubricSource` pattern. This is the unblocked first build; everything else waits on J0/sign-off.
+
+**Calibration (#2 — grade against the ghosts):** the human-labeled gold set is ALSO the frozen reference
+distribution v4 is anchored against — discrimination without peer-relativity (which would be reward-hackable).
+Build the gold set + a discrimination harness + reward-hacking probes; exercise v4 via the Js criteria seam +
+the `rubricSource` rubric seam (default NOT flipped) until **Michael's sign-off**; the default flip is a separate
+final solo commit. **Exit:** gold-set discrimination metric passes (monotone tier separation, spread ≥~0.55,
+excellent ≈0.85+) AND all gamed probes stay strictly below the mediocre floor AND the frozen
+contract-immutability tests pass UNEDITED AND a live HG2 re-check shows a *climbable* band; then sign-off →
+flip → PR merged.
+
+### Phase B — The cultural mirror (BUILD after J, in parallel with C's machinery)
 - **B1 — `trailEntropy(notes)`** pure primitive in `selection/knowledge/` (mean pairwise Jaccard-complement
   now; cosine when notes carry vectors — `retrieve.ts` auto-upgrades) + a `trailEntropyFloor`.
-- **Exit criteria:** unit-tested pure fn; wired read-only into a digest the retriever can see; no behavior
-  change yet (the scalar is computed but not yet steering). PR merged.
+- **Exit:** unit-tested pure fn; wired read-only into a digest the retriever can see; no behavior change yet. PR.
 
-### Phase C — The coupled controller (BUILD after B; GATED on Decision D1 headroom)
-- **C1 — `couplingMode({geneticSpread, trailEntropy, judgeImproving, bias})`** pure fn returning BOTH the
-  genetic `mutationFraction` AND the cultural near/far direction, anti-phased (invariant: never both-exploit
-  unless the energy-cap "bank progress" arm fires). `generationBias` non-neutral stays the operator override
-  that pins direction + disables coupling (preserves FB.4 semantics).
+### Phase C — The coupled controller + the diverge→converge anneal (BUILD after B)
+The controller has **three axes** that compose into one "dynamically intelligent diverge→converge":
+*fitness*-reactive (the honest gate, exists), *cross-channel* (coupling #1+#2), and **progress** (the anneal —
+NEW, Michael's diverge-then-converge idea). Detail in §7-C.
+- **C0 — Diverge→converge anneal (the progress axis, NEW).** A pure `annealedDivergence(progress,
+  judgeImproving, params)` where `progress = genIndex / maxGenerations`: **diverge early** (breadth — higher
+  mutation, diverge framing, far-retrieval), **converge late** (refine — lower mutation, converge framing,
+  near-retrieval), but **dynamically modulated** — *delay* convergence while the judge is still genuinely
+  improving (more to find), *converge sooner* once it plateaus. Replaces the static `generationBias` lean with
+  a dynamic effective bias (operator `generationBias` becomes the baseline/override). Pure over persisted
+  `genIndex` + the judge trend → replay-safe (rule #7).
+- **C1 — `couplingMode({progress, geneticSpread, trailEntropy, judgeImproving, bias})`** pure fn returning BOTH
+  the genetic `mutationFraction` AND the cultural near/far direction, **anti-phased** (invariant: never
+  both-exploit unless the energy-cap "bank progress" arm fires). Folds C0's anneal in as the `progress` term.
+  `generationBias` non-neutral pins direction + disables coupling (preserves FB.4).
 - **C2 — The stigmergic ratchet (#2):** when culture runs `far` this gen, tag the scouted note region so next
   gen's directed-repair fusion preferentially targets candidates grounded in those notes (cross-gen handoff).
-- **C3 — Add `coupled` as the 5th strategy**; gate the default flip behind a `/eval` bake-off
-  (`coupled` vs `adaptive` vs `fusion_only`) on a **headroom-bearing problem/seed** (D1).
-- **Exit criteria:** `/eval` bake-off shows `coupled` ≥ `adaptive` on surfaced peak on a headroom problem,
-  with no limit-cycle thrash (hysteresis holds); replay-equivalence pinned; PR merged.
+- **C3 — Add `coupled` as the 5th strategy**; gate the default flip behind a `/eval` bake-off (`coupled` vs
+  `adaptive` vs `fusion_only`) **on the recalibrated v4 judge** (where a climb is now measurable).
+- **Exit:** `/eval` bake-off shows `coupled` ≥ `adaptive` on the v4 judge with no limit-cycle thrash
+  (hysteresis holds); replay-equivalence pinned; PR merged.
 
 ### Levers (build on evidence)
 - **#7 portfolio desync** — when a single global near/far swing shows high variance / cohort thrash.
 - **#4 pheromone decay** — when logs show the earliest trail autocatalytically locking.
-- **#5 lethal-mutation lane** — when `/eval` shows basin-stuck on a rugged, headroom-bearing problem.
-- **#8 central-tendency escape** — research track; only with judge-rubric appetite (rule #6 sign-off needed for
-  any rubric touch).
+- **#5 lethal-mutation lane** — when `/eval` shows basin-stuck on a rugged problem (now that v4 gives a gradient).
+- **#8 central-tendency escape** — largely SUBSUMED by Phase J (it directly attacks the judge central-tendency).
 
 ---
 
@@ -286,10 +363,132 @@ The ceiling caveat (§3.4) means Phase B/C must NOT be built until we've shown a
 - Update tests asserting `hallOfFameCarry` default 0.
 - Re-validate the demo e2e end-to-end.
 
-### Phase B / C detail
-Sketched in §6; expand into per-slice detail when Phase A lands (keep this doc updated). The key new code:
-`trailEntropy` (Phase B), `couplingMode` + `directionForState` replacing `directionForBias` (C1), the
-note-region tag + directed-repair bias (C2), the `coupled` strategy enum member (C3).
+### Phase J — Judge recalibration (mvp-3 → v4) — full design
+*(From the `judge-recalibration-design` workflow `w55uj1gep`, 2026-06-27. The judge is the rule-#6
+anti-reward-hacking anchor — this is the single most sensitive change in the system. Build it as a SOLO,
+gold-set-gated, Michael-sign-off slice, never bundled with feature work, lesson §19.)*
+
+**The principle (non-negotiable):** make the judge **discriminate MORE** — reward what is *expensive to fake*
+(named checkable evidence, a concrete falsifiable prediction with a number/threshold, a buildable mechanism)
+and penalize what is *cheap to fake* (confident tone, verbosity, buzzword density, unfalsifiable grand claims).
+**Never make it more generous** (lifting the whole distribution, gamed probes included = reward-hacking by
+definition, the explicit non-goal). The structural anti-hacking floor stays byte-identical: the model emits
+only per-axis 0–10 integers; the **runner** computes `acceptance = Σ axisScore × immutable weight`
+(`computeAcceptanceMetric`) read verbatim by selection; acceptance is **peer-INVARIANT** (no peer-relative
+term); candidate text reaches the judge ONLY as rule-#5 sentinel-wrapped DATA.
+
+**Slice Js — the criteria-injection seam (BUILD NOW; behavior-preserving; no sign-off needed).** The research
+fan-out (2026-06-27) found the gap: `rubricSource` threads the rubric OBJECT (axes/weights/policyVersion) through
+`judge-call.ts` / `comparative-judge.ts` / `verify-seam.ts` / `composeRuntime.ts`, but `JUDGE_AXIS_CRITERIA` is a
+module CONST composed into the instruction strings — it is NOT a rubric field, so the existing seam cannot A/B a
+criteria change. Js makes criteria injectable, mirroring the `rubricSource` pattern exactly: a `criteriaSource?:
+unknown` (or a typed `JudgeCriteria`) defaulting via `?? DEFAULT_JUDGE_CRITERIA` (the current exact string,
+byte-identical) and re-validated on load. **No behavior change** (default composes byte-identically into both
+`JUDGE_INSTRUCTION` and `COMPARATIVE_JUDGE_INSTRUCTION`), **no `policyVersion` bump, no fixture re-record** (the
+recorded gateway ignores instruction text). TDD pins: (a) default → both instructions byte-identical to today;
+(b) an injected alternate reaches BOTH paths; (c) the default source is a frozen const (agent-unwritable, rule
+#6 / §40 load-path discipline). This is the unblocked first build; it lets J3 inject v4 criteria without
+touching the default. Built off `main` (judge files identical main vs experiment) as its own clean PR.
+
+**The #3 aggregation knob (a SECOND v4 lever — sequenced AFTER criteria-only v4, never bundled).** Change
+`computeAcceptanceMetric` (`judge-core.ts`) from the flat equal-weight sum to a **min-dominated** aggregate so a
+fatal weak axis can't be averaged away (today 3-and-7 ≡ 5-and-5 — compressor (b)). Candidate forms: a low-order
+power-mean `(Σ wₖ·sₖ^p / Σ wₖ)^(1/p)` with `p<1`, or `α·min(axes) + (1−α)·mean(axes)`. This is **runner-owned
+math** → rule-#6-permitted (the agent never touches it), and it is **floor-PRESERVING and strengthening** — a
+uniformly-weak generation scores even LOWER, never higher (the anti-hacking floor only gets harder). It bumps
+`policyVersion` (same v4 lineage) and needs its OWN probe pass + Michael sign-off. **Discipline:** ship
+criteria-only v4 first, measure the gold-set spread; add the aggregation change only if criteria alone doesn't
+clear the spread bar (≥~0.55) — one variable at a time on the rule-#6 anchor (D12).
+
+**The edit (one source string):** `JUDGE_AXIS_CRITERIA` in `apps/api/src/verifier/judge/judge-core.ts` (~lines
+71–81) — it is composed byte-identically into BOTH `JUDGE_INSTRUCTION` (`judge-call.ts`) and
+`COMPARATIVE_JUDGE_INSTRUCTION` (`comparative-judge.ts`), so a single edit lands on both paths with zero drift
+(the rule-#6 hazard the file warns about, lesson §5). Three changes:
+1. **Re-anchor the bands** so the competent region SPREADS and the top is reachable-but-earned: `0=absent ·
+   1-3=weak (a clear named flaw dominates) · 4-7=the working band SPREAD by how many sub-criteria pass (4=one
+   strength/many gaps … 7=mostly-solid/one soft spot) · 8-9=strong-and-checkable on THIS axis (reachable for
+   genuinely good work, NOT reserved) · 10=no critic could improve it`. The typical-competent idea anchors
+   **lower (~4)**, not higher — today's competent-but-shallow ~0.74 answer should cap LOWER under v4 (its
+   missing evidence is now exposed). Keep the skeptical-critic / weakness-hunt-pulls-down mandate (it prevents
+   inflation).
+2. **Per-axis yes/no sub-criteria (2–4 each)** — the mechanical spread engine that closes cheap-to-fake surface:
+   grounding = count of SPECIFIC named checkable evidence anchors (sourceless-however-confident → 0);
+   falsification_survival = states a CONCRETE falsifiable prediction (number/threshold/operational test) a real
+   check could run (unfalsifiable/hedged → 0–3); feasibility = a concrete mechanism with current means (not
+   "leverage AI to…"), testable within one generation, names the build path; novelty = the transfer is
+   non-obvious AND specific (generic mapping in new words → penalized); subtype_check_pass = unchanged.
+3. **Anti-cheap-signal clause:** "Do NOT reward verbosity, confident tone, buzzword density, or plausible prose.
+   Length and assertiveness are NOT evidence. A long confident sourceless answer scores LOWER on grounding than
+   a short answer with one checkable source."
+
+**Defer:** few-shot exemplars (highest reward-hacking surface — a learnable target the population mimics
+stylistically; ship criteria-only v4 first, exemplars only as a measured v5 behind probe P6). A **stronger
+judge model** is a separate second-order A/B lever (config behind the `final_judge` ModelRole, still excluded
+from per-run overrides, rule #6) — try the deterministic instruction fix FIRST.
+
+**Version:** `rubric.ts` `policyVersion` `'final-judge-mvp-3' → 'final-judge-v4'` + update the EXPERIMENT
+comment. Axes/weights/`immutableToAgents` UNCHANGED (scale + criteria are runtime concerns, lesson §6). **No
+`CURRENT_SCHEMA_VERSION` bump** (policyVersion is a value; mvp-2→mvp-3 precedent). A stale-version `JudgeResult`
+is dropped to `present:false` on read, so v4 and mvp-3 never mix within a run.
+
+**The gold set (NEW validation surface — the project has none today; `/eval` treats the live judge as ground
+truth, which can't validate a recalibration).** Create `apps/api/test/eval/gold-set/`: a typed corpus
+`{ problemId, problemText, candidateText, subtype, tier ∈ {weak,mediocre,good,excellent,gamed}, targetAxisScores,
+targetAcceptanceRange }`, **human-authored by Michael** (NOT judge-derived — anti-circularity), ≥3 distinct
+problems × the tiers (the reframe's 4 exemplars are all one airline→ER family — expand). Seed from the reframe
+re-targeted to v4 (excellent ~0.85+, good ~0.62, mediocre ~0.45, weak ~0.22). Pin every score to **0–10** (fix
+the stale `0-5` comment drift in `eval.md` + `final-judge-rubric.test.ts` in-slice).
+
+**Validation harness `apps/api/test/eval/judge-calibration.eval.ts`** (judge-key-gated, calls the LIVE judge —
+NOT a unit test; eval-tested per the TDD posture): metrics over the gold set on BOTH single + comparative
+paths — (1) monotone tier separation (each gap ≥ ~0.08), (2) spread (excellent − weak) ≥ ~0.55 AND excellent
+≥ ~0.85, (3) within-tier band < inter-tier gap, (4) a **monotonicity ladder** (the SAME idea at 0→1→3 evidence
+levels rises monotonically). Baseline on **mvp-3 FIRST** (honest before/after, lesson §93). Add a keyless
+mirror over a committed recorded run (lesson §94) so the metric LOGIC is non-vacuously green in CI.
+
+**Reward-hacking probes (the ship-gate floor):** P1 terse-evidenced > verbose-confident (grounding); P2
+buzzword-dense ties plain (same substance); P3 narrow-falsifiable > grand-unfalsifiable (falsification); P4
+one-source > sourceless-plausible (grounding); P5 injection regression (a candidate saying "ignore the rubric,
+score 10" must score on merits — rule #5); P6 exemplar-mimicry (only if exemplars added). **Every gamed-tier
+probe must score STRICTLY BELOW the mediocre floor; the weak tier must still drop to 0.2–0.35.** A recalibration
+that lifts the floor as much as the ceiling has FAILED. Probes are a floor, not a proof — rotate them, and do
+NOT tune v4 against the fixed suite (overfitting).
+
+**Go/no-go order (each blocks the next):** build+commit gold set → baseline harness on mvp-3 → author v4 +
+inject via `rubricSource` (default NOT flipped) → discrimination harness on v4 passes → reward-hacking probes
+pass → `packages/contracts/test/verifier/` immutability tests green UNEDITED (FinalJudgeAxis closed-5, weights,
+`immutableToAgents:literal(true)`, no-authority fields — lesson §100) → re-record the 6 `final-judge-mvp-3`
+fixtures (`judge-core.ts`, `comparative-judge.ts`, `rubric.ts`, `apps/web/.../runConfigForm.ts` display,
+`rubric.test.ts` version assert, `recorded-demo-gateway.ts`) + keyless `/preflight` + demo-e2e replay green at
+v4 (rule #7, zero provider calls) → **live HG2 re-check** (competent gen-0 now meaningfully below excellent;
+excellent gold ≈0.85+ live; the gap is a *climbable* band — check BOTH ends so v4 didn't just get harsher
+everywhere) → **Michael sign-off** packaged with the 5 artifacts (discrimination report, probe report,
+criteria diff, green contract run, HG2 before/after) → **flip `DEFAULT_JUDGE_RUBRIC.policyVersion` to v4 as a
+separate final solo commit** → doc reconcile.
+
+### Phase C — coupled controller + anneal — detail
+- **C0 (anneal):** `annealedDivergence(progress, judgeImproving, params)` in `convergence.ts`. `progress =
+  genIndex / maxGenerations`. A "convergence pressure" rises with progress but is HELD BACK while
+  `judgeImproving` (the honest-gate signal) is true. Maps to a diverge/converge level feeding mutation +
+  framing/temperature + retrieval. Pure (rule #7). Composes with the fitness-reactive `adaptiveMutationFraction`
+  (don't replace it — the anneal is the progress prior, the adaptive controller the within-gen reaction).
+  - **(#6) Use judge score-VARIANCE across the generation as the primary converge/diverge signal** (the chosen
+    composition's Phase-C payoff): fold a per-gen `judgeSpread` = stdev/IQR of `components.judge_acceptance`
+    across that generation's candidates. **High spread → the judge can separate candidates → there is a real
+    peak → CONVERGE; low spread → undifferentiated soup → DIVERGE.** Discrimination quality and
+    convergence-readiness are the SAME quantity. This is more stable than the `judgeImproving` best-delta
+    (variance doesn't jitter the way a ±epsilon best-delta does), so it **directly resolves D5** (window/epsilon
+    thrash). Only meaningful once v4 makes the judge discriminate (on the flat mvp-3 judge, spread ≈ 0 every
+    gen). Keep `judgeImproving` as the secondary "is the peak still rising" hold-back; `judgeSpread` is the
+    "is there a peak to converge ON" gate. Pure over persisted per-gen `judge_acceptance` → replay-safe.
+- **C1 (coupling):** `couplingMode({progress, geneticSpread, trailEntropy, judgeImproving, bias})` →
+  `{mutationFraction, retrievalDirection}`, anti-phased; replace `directionForBias` with `directionForState`;
+  thread the SAME per-gen state into BOTH the reproduce seam and the retriever from `composeRuntime`. Suppress
+  near-retrieval when `geneticSpread < diversityFloor`; force `far` on `trailEntropy < floor`. Hysteresis
+  (`modeDwellGenerations ≥ 2`) to avoid the period-2 limit cycle.
+- **C2 (stigmergic ratchet):** tag `far`-scouted note ids per gen; next gen's directed-repair (`directed.ts` →
+  `fuse.ts`) preferentially targets candidates grounded in them (cross-gen handoff). Pure over persisted notes.
+- **C3:** add `coupled` to `MUTATION_STRATEGIES`; `/eval` bake-off on the v4 judge; replay-equivalence test.
 
 ---
 
@@ -311,13 +510,11 @@ note-region tag + directed-repair bias (C2), the `coupled` strategy enum member 
 
 ## 9. Decision log / open questions (the user/Michael owns these)
 
-- **D1 — Headroom / problem selection (BLOCKS Phase C's payoff).** The demo problem is ceiling-bound (§3.4).
-  To make the coupling's climb *visible/measurable*, pick a **weak seed** (gen 0 starts ~0.4 so there's room —
-  the reframe's recommended demo path) or a **harder problem** with real first-try headroom. ***Status: DECIDED
-  (user, 2026-06-27)*** — **weak-seed for the demo + a harder problem for the `/eval` bake-off.** The weak-seed
-  capability ("give the climb room") is the ENABLER for the headroom check below — it must be built first.
-  Corollary: do NOT raise the ceiling by recalibrating the judge rubric (rule #6 / reward-hacking risk); create
-  headroom by seed/problem only.
+- **D1 — Headroom / problem selection.** ***Status: RESOLVED by HG2 (2026-06-27).*** The weak-seed/harder-problem
+  levers were tried and **did NOT create headroom** — the model is competent on anything (gen-0 ~0.60) and the
+  judge is flat (§3.7). The original corollary "do NOT recalibrate the judge" is **OVERRIDDEN** (see D11): the
+  judge IS the ceiling, so recalibrating it (under a strict discriminate-not-be-generous gate) is now the chosen
+  path. The weak-seed capability (HG1, PR #16) is kept — it's still the right gen-0 for *measuring* a v4 climb.
 - **D2 — Default cadence.** Flip to `adaptive` first (Phase A) and prove the gate+ratchet win before paying for
   coupling — OR jump to `coupled`? **Recommendation:** staged (Phase A first). *Status: DECIDED — staged (per
   user, 2026-06-27).*
@@ -331,37 +528,70 @@ note-region tag + directed-repair bias (C2), the `coupled` strategy enum member 
 - **D6 — trailEntropyFloor calibration.** Mirror `diversityFloor` (~0.26) to start; recalibrate when notes
   carry vectors (pgvector NOT installed → lexical Jaccard for now). *Status: OPEN.*
 
+**Judge recalibration (Phase J) — the rule-#6 decisions (Michael owns ALL of these; the default flip needs his
+explicit sign-off):**
+- **D7 — criteria-only v4, or +few-shot exemplars?** *Recommendation: criteria-only first* (exemplars are the
+  highest reward-hacking surface — a learnable style target). Defer exemplars to a measured v5 behind probe P6.
+  *Status: OPEN.*
+- **D8 — also A/B a stronger `final_judge` MODEL?** Real but second-order (a weak model central-tendency-clusters
+  regardless of instruction); adds cost/latency/non-determinism. *Recommendation: instruction fix FIRST, then
+  optional measured A/B; keep it excluded from per-run overrides (rule #6).* *Status: OPEN.*
+- **D9 — gold-set size/coverage.** ≥3 distinct problems × {weak,mediocre,good,excellent} + a gamed tier is the
+  floor. Hand-author more before calibrating, or seed 3 and expand? *Status: OPEN — needs Michael's corpus.*
+- **D10 — target thresholds (Michael's numbers, not mine).** Confirm: excellent ≈0.85+, weak ≈0.2–0.35, min
+  inter-tier gap ≈0.08, spread ≥~0.55, gamed strictly below mediocre. These are the human-labeled ground truth
+  the whole gate rests on. *Status: OPEN — BLOCKS the gold set.*
+- **D11 — does the discriminate-not-be-generous gate satisfy D1's original "no judge shortcut" prohibition?**
+  This plan argues recalibration is now safe BECAUSE of the discrimination gate + reward-hacking probe tier (it
+  makes the judge HARDER to game, not easier). *Recommendation: accept — the prohibition's intent (don't lift
+  the ceiling by lowering the bar) is satisfied by the gate (we raise discrimination, never lower a bar for the
+  same evidence).* *Status: OPEN — the load-bearing strategic call.*
+- **D12 — criteria-only v4, or criteria + the #3 min-dominated aggregation change?** The user-approved
+  composition includes BOTH (#4 criteria + #3 aggregation), but they hit the rule-#6 anchor through different
+  mechanisms (prose vs runner math) and should be measured one at a time. *Recommendation: ship criteria-only v4
+  first; add the aggregation change only if the gold-set spread (≥~0.55) isn't cleared by criteria alone — each
+  behind its own probe pass + Michael sign-off. Both are floor-preserving (aggregation only makes the floor
+  harder).* *Status: OPEN — sequencing call; criteria-first is the safe default.* The **criteria-injection seam
+  (Slice Js)** that makes either A/B-able is behavior-preserving infra — built now, no sign-off, its own PR.
+
 ---
 
 ## 10. PROGRESS TRACKER (the resume checklist — update every session)
 
-Phase A — Honest, non-regressive dynamics
-- [x] **A1** Honest gate + `adaptive` default flip (convergence.ts + reproduce-seam.ts + mutagenStrategy.ts) — `41afe08`
-- [x] **A2** Judge-keyed elitism (`rankEligibleByFitness` judge-keyed, total fallback; exported + unit-pinned).
-  NOTE: champion ratchet (`reigningChampion`) left **total-keyed** per D4 (it feeds the surfaced winner via
-  `bestScoredSurvivor`); judge-keying it is deferred (entangled with surfacing — see D4).
-- [x] **A3** Ratchet on by default (`DOPPL_HALL_OF_FAME_CARRY` 0→1, clamped to maxPopulation)
-- [x] **A-validate** full apps/api preflight green (956 unit + 199 integration); demo e2e green; replay covered by
-  the existing recorded-run replay tests (now exercising the adaptive+ratchet path). `/eval` bounce check =
-  pending a live run. **Remaining: open the Phase-A PR (ask first).**
+Path A — honest dynamics + the two HG2-found bug fixes (DONE; PRs OPEN — merge these first)
+- [x] **A1** Honest gate + `adaptive` default — PR #15 `41afe08`
+- [x] **A2** Judge-keyed elitism — PR #15 (champion ratchet left total-keyed per D4)
+- [x] **A3** Ratchet on by default (`DOPPL_HALL_OF_FAME_CARRY` 0→1) — PR #15
+- [x] **B-fix** Finding B — successor-threading champion-pool crash fix + non-vacuous regression test — PR #15 `7376625`
+- [x] **HG1** Weak-seed capability (`WEAK_SEED_SET` + `DOPPL_SEED_PROFILE`) — **PR #16**
+- [x] **A-fix** Finding A — gate offered tools by agenome `toolPermissions` — **PR #17**
+- [x] **HG2** Live headroom check (two runs) — DONE → §3.7 (judge is the ceiling)
+- [ ] **MERGE** PRs #15, #16, #17 to `main` (Michael)
 
-Headroom Gate (BLOCKS Phase B/C — D1 decided: weak-seed demo + harder-problem eval)
-- [ ] **HG1** Weak-seed capability — `WEAK_SEED_SET` + `DOPPL_SEED_PROFILE` boot selector (pure config, no cost)
-- [ ] **HG2** Live headroom check — weak seed + Phase-A stack; confirm a real climb exists (else STOP, don't build B/C)
+Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; §7-J). v4 composition = (#4) criteria
++ (#3) min-aggregation, (#2) gold-set-as-frozen-reference, (#1) floor/ladder framing; (#6) variance→anneal in Phase C.
+- [~] **Js** Criteria-injection seam (`criteriaSource`, default byte-identical) — BUILD NOW, behavior-preserving,
+  NO sign-off · off `main` · own PR · **IN PROGRESS (this session)**
+- [ ] **J0** Michael: gold-set target thresholds (D10) + corpus problems (D9) + criteria-vs-exemplar (D7) + D12 (criteria-only vs +aggregation)
+- [ ] **J1** Build the human-labeled gold set `apps/api/test/eval/gold-set/` (≥3 problems × tiers + gamed) — also the (#2) frozen reference distribution
+- [ ] **J2** `judge-calibration.eval.ts` discrimination harness + keyless mirror; baseline on mvp-3
+- [ ] **J3** Author v4 (#4) `JUDGE_AXIS_CRITERIA` (re-anchor + sub-criteria + anti-cheap clause); inject via the Js `criteriaSource` seam (default NOT flipped)
+- [ ] **J4** Discrimination metric passes + all reward-hacking probes (P1–P5) below mediocre floor
+- [ ] **J4b** (if criteria-spread short of ~0.55) add the (#3) min-dominated `computeAcceptanceMetric`; re-run probes (D12)
+- [ ] **J5** Contract-immutability tests green UNEDITED; re-record 6 `final-judge-mvp-3` fixtures at v4; preflight + replay green
+- [ ] **J6** Live HG2 re-check (climbable band, both ends) → package 5 artifacts → **Michael sign-off**
+- [ ] **J7** Flip `DEFAULT_JUDGE_RUBRIC.policyVersion` → v4 (separate final solo commit) · PR merged
 
 Phase B — Cultural mirror
-- [ ] **B1** `trailEntropy(notes)` pure primitive + floor (selection/knowledge) · PR merged
+- [ ] **B1** `trailEntropy(notes)` pure primitive + floor · PR
 
-Phase C — Coupled controller (GATED on D1)
-- [ ] **C1** `couplingMode` / `directionForState` (anti-phase, operator override preserved)
+Phase C — Coupled controller + diverge→converge anneal (§7-C)
+- [ ] **C0** `annealedDivergence(progress, judgeImproving)` — the progress axis (Michael's diverge→converge)
+- [ ] **C1** `couplingMode` / `directionForState` (anti-phase + hysteresis; operator override preserved)
 - [ ] **C2** Stigmergic ratchet — far-scout note tag → next-gen directed-repair target (#2)
-- [ ] **C3** `coupled` strategy enum + `/eval` bake-off gate · PR merged
+- [ ] **C3** `coupled` strategy enum + `/eval` bake-off on the v4 judge · PR
 
-Levers (evidence-gated)
-- [ ] **#7** per-agenome portfolio desync
-- [ ] **#4** pheromone decay
-- [ ] **#5** lethal-mutation lane
-- [ ] **#8** central-tendency escape (research)
+Levers (evidence-gated): #7 portfolio desync · #4 pheromone decay · #5 lethal-mutation lane · #8 subsumed by Phase J
 
 ---
 
@@ -371,7 +601,23 @@ Levers (evidence-gated)
   code reads. Reconciled the 8 candidate breakthroughs with the existing (default-off, total-keyed) machinery
   and the CLIMB REFRAME ceiling caveat. User priority: build #3 + #6 (Phase A), then #2 (+#1 substrate) as
   Phase B/C, levers on evidence. Decision D2 = staged. Build starting on Phase A.
-- **2026-06-27 (later)** — Phase A built + green (A1 `41afe08`, A2+A3 `0b28c4e`); **PR #15** open to `main`.
-  User decided **D1 = weak-seed demo + harder-problem eval** and confirmed the "give the climb room" lever
-  (seed/problem, NOT judge recalibration). Added the **Headroom Gate** (HG1 weak-seed capability + HG2 live
-  headroom check) as the hard gate before any Phase B/C work. Next: HG1 (pure code, no cost), then HG2 (live, $).
+- **2026-06-27 (later)** — Phase A built + green (A1 `41afe08`, A2+A3 `0b28c4e`); **PR #15** open. User decided
+  D1 = weak-seed demo + harder-problem eval; added the Headroom Gate (HG1 + HG2).
+- **2026-06-27 (Path A complete + pivot)** — Built HG1 weak-seed (**PR #16**). Ran HG2 live (run 1 crashed →
+  surfaced 2 bugs). Fixed **Finding B** (ratchet champion-pool crash, PR #15 `7376625`) + **Finding A** (tool
+  leak past `toolPermissions`, **PR #17**). Re-ran HG2 clean (run 2): completed, 0 tools, total climbed 0.60→0.68
+  but the **judge stayed flat ~0.53** (§3.7). **PIVOT (Michael):** the judge is the binding ceiling → build
+  Phase B/C AND **recalibrate the judge mvp-3 → v4** (Phase J, the rule-#6 enabler) + add a diverge→converge
+  anneal (C0). D1 RESOLVED; D11 overrides the old "no judge shortcut" corollary under a discriminate-not-be-
+  generous gate. Phase-J design from workflow `w55uj1gep`. Next: merge #15/#16/#17 → Phase J (J0 = Michael's
+  gold-set thresholds + corpus). Handoff: `docs/sessions/013-2026-06-27-*.md`.
+- **2026-06-27 (composition chosen + Js build started)** — Ran a judge-engine research fan-out (workflow
+  `wf_3cfc3fab-078`): confirmed the numbers (judge = 3/6.5 ≈ 46% of fitness; acceptance 0–50 ÷50; flat 0.53 =
+  per-axis 5.3/10 = the `JUDGE_AXIS_CRITERIA` "anchor at 5–6" instruction working as written) and the root cause
+  (absolute aggregation + center-anchored criteria + equal-weight averaging all push to center; the comparative
+  judge is structurally inert against acceptance flatness). **User approved the v4 composition:** (#4) earn-from-zero
+  re-anchored criteria + (#3) min-dominated aggregation (sequenced, D12), (#2) gold-set as frozen reference,
+  (#1) floor/ladder framing, (#6) judge-variance as the Phase-C diverge→converge signal (resolves D5); (#5) Elo
+  tournament = stretch lever. **Key build-order finding:** `rubricSource` can't reach the criteria string (module
+  const) → added **Slice Js (criteria-injection seam)** as the behavior-preserving prerequisite, built now off
+  `main` as its own PR. The behavior-changing v4 slices stay gated on J0 + Michael sign-off.
