@@ -75,7 +75,7 @@ describe('buildRunSummary', () => {
     expect(s.status).toBe('completed');
     expect(s.sequenceThrough).toBe(11);
     expect(s.createdAt).toBe('2026-06-26T10:00:00.000Z');
-    expect(s.problem).toContain('ER patient flow');
+    expect(s.problem).toBe('smooth ER patient flow'); // the "Problem:" label is stripped
     expect(s.finalIdeaTitle).toBe(WINNER.title);
     expect(s.finalIdeaSummary).toContain(WINNER.summary.slice(0, 16));
     expect(s.generations).toBe(2);
@@ -83,6 +83,19 @@ describe('buildRunSummary', () => {
     expect(s.reproductions).toBe(3);
     expect(s.culls).toBe(2);
     expect(s.mutations).toBe(1);
+  });
+
+  it('strips the "Problem:" label and reduces a verbose seed to its first-sentence title', () => {
+    const verbose =
+      'Problem:\nHospital ERs overflow during surges. Propose a cross-domain transfer, grounded in a proven technique, to smooth patient flow.';
+    const log = richRunLog().map((e) =>
+      e.type === 'run.configured'
+        ? row({ ...e, type: 'run.configured', payload: { seed: verbose } })
+        : e,
+    );
+    const s = buildRunSummary(log);
+    expect(s.problem).toBe('Hospital ERs overflow during surges.'); // label stripped + first sentence
+    expect(s.problem).not.toMatch(/^Problem:/i);
   });
 
   it('truncates a long problem (the list payload stays lean)', () => {
