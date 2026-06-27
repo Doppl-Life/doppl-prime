@@ -290,8 +290,12 @@ function RunGroupRows({
             </td>
             <td style={td}>
               <div style={meterLabelRow}>
-                <span data-testid={`run-gens-${run.runId}`}>{run.generations ?? 0}</span>
-                <span data-testid={`run-cands-${run.runId}`}>{run.candidates ?? 0}</span>
+                <span>
+                  <span data-testid={`run-gens-${run.runId}`}>{run.generations ?? 0}</span> gens
+                </span>
+                <span>
+                  <span data-testid={`run-cands-${run.runId}`}>{run.candidates ?? 0}</span> cands
+                </span>
               </div>
               <div
                 style={meterTrack}
