@@ -196,6 +196,164 @@ Important boundary:
 - The bloom UI can use experiment-spike labels like "Generate", "Keep", "Dial", "Campaign", and "Reseed",
   but those must map to kernel-enforced caps/config. The browser never becomes the cap authority.
 
+## Phase 0.6: Full Kernel-To-Outer Bloom Wiring
+
+What is true today:
+
+- `Run Bloom` now posts a real production `RunConfig` to `POST /runs`.
+- The API appends `run.configured`, starts the worker through `createStartRun`, and emits normal append-only
+  kernel events as generations run.
+- The bloom page streams `GET /runs/:runId/stream` and refreshes `/bloom`, so new run output can become
+  visible without a page reload.
+- `/bloom` currently uses two sources:
+  - imported durable outer artifacts in `outer_bloom_artifacts`
+  - a temporary adapter that projects inner `candidate.created` events into outer-looking Doppl nodes
+- That adapter is useful proof, but it is not the full outer process. It synthesizes one problem recovery
+  and treats inner candidates as Doppls. It does not yet express multiple chosen problem recoveries,
+  multiple selected Doppls per problem recovery, reseeded case-study islands, or a campaign's traversal
+  decisions as durable replayable outer state.
+
+Target production model:
+
+- The outer view should kick off an **outer bloom campaign**, not merely one inner run.
+- A campaign has a stable `campaignId`, a root case-study artifact, bounded run controls, and an event log
+  that can replay the whole bloom.
+- The campaign orchestrator launches one or more existing kernel runs as children:
+  - case study -> problem recovery run(s), usually convergent/grounded
+  - selected problem recovery -> Doppl run(s), usually divergent/novel
+  - selected Doppl leaf -> optional reseeded case-study island
+- Each child kernel run still owns inner mechanics: agenomes, mutagens, candidates, fitness, energy,
+  generation loops, and final winner selection.
+- The outer orchestrator promotes selected child-run outputs into first-class outer artifacts:
+  - `case_study`
+  - `problem_recovery`
+  - `doppl`
+- Promoted artifacts must carry durable parent-child links, source run IDs, source event sequences, selection
+  proof, and enough summary text for the bloom and inspector.
+- The UI should never expose "candidate" as the default outer vocabulary. Candidate/agenome details belong
+  behind an "open inner run" link or proof drawer.
+
+Recommended implementation tasks:
+
+- [ ] **R0.6-A: Contract inventory and compatibility decision.**
+  - Inventory current frozen contracts: `RunConfig`, `RunEventType`, high-traffic payload map, projection
+    reducers, and `outer_bloom_artifacts`.
+  - Decide whether first-class outer artifacts should be emitted as new frozen `RunEventType` members now,
+    or first shipped as API-local campaign tables while contract changes are coordinated.
+  - Preferred near-term path: add API-local `outer_campaigns` / `outer_artifacts` persistence first, then
+    graduate stable shapes into contracts once the other inner-view work is settled.
+
+- [ ] **R0.6-B: Define first-class outer persistence.**
+  - Add durable tables or event payloads for:
+    - `outer_campaign`
+    - `outer_artifact`
+    - `outer_artifact_link`
+    - `outer_campaign_child_run`
+    - optional `outer_promotion_decision`
+  - Required artifact fields:
+    - id
+    - campaignId
+    - stage: `case_study | problem_recovery | doppl`
+    - title/label
+    - summary/body markdown
+    - parentArtifactId
+    - sourceRunId
+    - sourceCandidateId or source output reference, when applicable
+    - sourceSequenceThrough
+    - status: pending/running/promoted/rejected/failed/selected
+    - judge/fitness/novelty/grounding proof snapshots
+    - created/updated timestamps
+
+- [ ] **R0.6-C: Implement server-side campaign start.**
+  - Add a route such as `POST /outer-campaigns` or `POST /bloom/runs`.
+  - Accept the current `BloomGrowForm`-equivalent payload and map it to one or more existing `RunConfig`
+    child runs.
+  - Persist the campaign and root case-study artifact before launching child runs.
+  - Return `{ campaignId, rootArtifactId, activeRunIds }`.
+  - Keep provider keys server-side and keep cap enforcement delegated to existing `POST /runs` validation.
+
+- [ ] **R0.6-D: Implement stage-specific child run planning.**
+  - For `case_study -> problem_recovery`, generate one or more child `RunConfig`s with convergent/grounded
+    bias and seed text that asks the kernel to recover the hidden/important problem.
+  - For `problem_recovery -> doppl`, generate child `RunConfig`s with divergent/novel bias and seed text
+    that asks the kernel to produce solutions/findings against the selected recovery.
+  - For `doppl -> reseeded case_study`, generate a new case-study artifact and optional child run only when
+    explicit campaign settings allow reseeding.
+  - Preserve experiment-spike controls:
+    - Generate
+    - Keep
+    - Depth
+    - Max nodes
+    - BFS/DFS
+    - Auto/converge/diverge schedule
+    - Reseed leaves
+  - Do not implement traversal in browser-only state; it must be replayable.
+
+- [ ] **R0.6-E: Promote child-run winners into outer artifacts.**
+  - Watch child run terminal events (`run.completed`, generation completion, selected/winner projection).
+  - Read current-state projection for the child run.
+  - Select the top outputs according to the outer stage's `keep` policy.
+  - Persist promoted `problem_recovery` or `doppl` artifacts with parent links.
+  - Store source run/candidate/event sequence pointers so every bloom node can be audited.
+  - Record rejected/non-promoted output counts for proof board summaries without cluttering the outer graph.
+
+- [ ] **R0.6-F: Add campaign worker/orchestrator loop.**
+  - Trigger next-stage child runs when promotion creates growable artifacts and campaign depth/node caps allow.
+  - Enforce campaign caps independently from per-run caps:
+    - max outer nodes
+    - max child runs
+    - max total energy/tool calls, when available
+    - max wall-clock time
+  - Support stop/kill for a campaign and all active child runs.
+  - Make the loop idempotent: if a process restarts, it can resume from persisted campaign/artifact state.
+
+- [ ] **R0.6-G: Upgrade `/bloom` projection to campaign-first.**
+  - Read promoted outer artifacts as the primary source of truth.
+  - Keep imported `outer_bloom_artifacts` and the inner-run adapter only as fallbacks/demo sources.
+  - Include projection metadata:
+    - campaign IDs
+    - source run IDs
+    - sequenceThrough/watermark
+    - freshness/staleness
+    - active child run IDs
+  - Preserve existing imported "When The Crashes Don't Come" map while live campaign artifacts are added.
+
+- [ ] **R0.6-H: Add aggregate streaming for live outer growth.**
+  - Provide a campaign stream such as `GET /outer-campaigns/:campaignId/stream`, or teach the bloom page to
+    subscribe to all active child run streams for a campaign.
+  - Emit/derive events for:
+    - campaign configured
+    - child run started
+    - artifact promoted
+    - next-stage queued
+    - campaign completed/failed/stopped
+  - Keep the current `/bloom` polling backstop until the aggregate stream is proven reliable.
+
+- [ ] **R0.6-I: Wire the bloom UI to campaigns.**
+  - `Run Bloom` should create a campaign, not just one run, once the new endpoint exists.
+  - The map should follow newly promoted outer artifacts.
+  - The live panel should show campaign progress and child-run progress without exposing inner candidate
+    mechanics by default.
+  - Double-clicking a promoted node should still open the inner run/proof source when present.
+
+- [ ] **R0.6-J: Tests and no-spend verification.**
+  - Add API tests with fake gateway/event store for:
+    - campaign start
+    - child run planning
+    - promotion from fake child run winner
+    - cap enforcement
+    - campaign stop/resume behavior
+  - Add projection tests for:
+    - case study -> multiple problem recoveries
+    - problem recovery -> multiple Doppls
+    - Doppl -> reseeded case-study island
+    - imported + campaign-backed artifacts coexisting
+  - Add web tests for:
+    - Run Bloom creates a campaign
+    - streamed artifact promotion appears in graph
+    - no "candidate" language leaks into default outer UI
+  - Use recorded/fake model gateways for CI and local smoke tests to avoid provider spend.
+
 ## Phase 1: Data Contract And Source Of Truth
 
 - [x] Project existing inner runtime outputs into an outer shape.
@@ -491,9 +649,12 @@ Recommended path: Option A for production, Option B for short-term teammate demo
 
 ## Near-Term Next Work
 
-1. Tighten the graph toward the experiment-spike radial bloom language.
-2. Add projection watermark/source metadata to `/bloom` and UI proof board.
-3. Draft/prepare first-class outer artifact event shapes for when the kernel supports them.
-4. Add knowledge/evidence overlay design using `GET /runs/:id/knowledge`.
-5. Improve inspector proof sections with source sequence, replay status, judge version, and artifact links.
-6. Decide GitHub Pages + hosted API deployment shape.
+1. Implement Phase 0.6-A/B: decide the first-class outer artifact persistence shape and add the migration.
+2. Implement Phase 0.6-C/D: create campaign start and stage-specific child-run planning.
+3. Implement Phase 0.6-E/F: promote child-run winners into durable outer artifacts and continue bounded
+   campaigns.
+4. Upgrade `/bloom` to campaign-first projection with imported/demo fallback.
+5. Add aggregate campaign streaming so the outer map grows from real promoted artifacts in real time.
+6. Tighten the graph toward the experiment-spike radial bloom language after the campaign data path is real.
+7. Add projection watermark/source metadata to `/bloom` and UI proof board.
+8. Decide GitHub Pages + hosted API deployment shape once the live campaign path is proven locally.
