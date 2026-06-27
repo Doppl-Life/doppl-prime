@@ -570,8 +570,9 @@ Path A — honest dynamics + the two HG2-found bug fixes (DONE; PRs OPEN — mer
 
 Phase J — Judge recalibration mvp-3 → v4 (rule #6; BUILD FIRST after merge; §7-J). v4 composition = (#4) criteria
 + (#3) min-aggregation, (#2) gold-set-as-frozen-reference, (#1) floor/ladder framing; (#6) variance→anneal in Phase C.
-- [~] **Js** Criteria-injection seam (`criteriaSource`, default byte-identical) — BUILD NOW, behavior-preserving,
-  NO sign-off · off `main` · own PR · **IN PROGRESS (this session)**
+- [x] **Js** Criteria-injection seam (`criteriaSource`, default byte-identical) — behavior-preserving, NO
+  sign-off · `loadJudgeCriteria` + `buildJudgeInstruction`/`buildComparativeJudgeInstruction` threaded through
+  `runJudge`/`runComparativeJudge`/`verify-seam`/`composeRuntime` · 11 new tests, 974 unit green · own PR
 - [ ] **J0** Michael: gold-set target thresholds (D10) + corpus problems (D9) + criteria-vs-exemplar (D7) + D12 (criteria-only vs +aggregation)
 - [ ] **J1** Build the human-labeled gold set `apps/api/test/eval/gold-set/` (≥3 problems × tiers + gamed) — also the (#2) frozen reference distribution
 - [ ] **J2** `judge-calibration.eval.ts` discrimination harness + keyless mirror; baseline on mvp-3
