@@ -47,6 +47,10 @@ export function S1LauncherScreen({ runClient, onStarted }: S1LauncherScreenProps
   // The seed the RunConfigPanel mounts with; picking a prepared problem prefills it (the panel keeps its own
   // editable copy thereafter). Keyed remount applies a fresh pick without fighting the panel's local edits.
   const [seed, setSeed] = useState<string>('');
+  // Islands pivot A4 — picking a prepared problem tags the run with that problem's id as its caseStudyId, so
+  // the run joins that case study's bloom (re-run the same problem → new run, same caseStudyId). A freeform
+  // seed leaves it undefined (an untagged one-off run).
+  const [caseStudyId, setCaseStudyId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +87,15 @@ export function S1LauncherScreen({ runClient, onStarted }: S1LauncherScreenProps
           }}
         >
           {problemSets.map((ps) => (
-            <button key={ps.id} type="button" style={pickBtn} onClick={() => setSeed(ps.prompt)}>
+            <button
+              key={ps.id}
+              type="button"
+              style={pickBtn}
+              onClick={() => {
+                setSeed(ps.prompt);
+                setCaseStudyId(ps.id);
+              }}
+            >
               {ps.title}
             </button>
           ))}
@@ -91,10 +103,11 @@ export function S1LauncherScreen({ runClient, onStarted }: S1LauncherScreenProps
       )}
 
       <RunConfigPanel
-        key={seed}
+        key={`${caseStudyId ?? 'freeform'}:${seed}`}
         runClient={runClient}
         onStarted={onStarted}
         initialValues={{ ...DEFAULT_FORM, seed }}
+        caseStudyId={caseStudyId}
       />
     </section>
   );

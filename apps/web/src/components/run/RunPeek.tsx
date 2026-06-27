@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import { resolveStatus } from '../core/status-map';
 import type { RunSummary } from '../../data/runClient';
 import { Sparkline } from './Sparkline';
@@ -61,6 +62,13 @@ const idRow: CSSProperties = {
   fontSize: 'var(--text-mono)',
   color: 'var(--fg-muted)',
   wordBreak: 'break-all',
+};
+const bloomLink: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-label)',
+  color: 'var(--accent)',
+  textDecoration: 'none',
+  fontWeight: 700,
 };
 
 function Stat({ value, name }: { value: number; name: string }) {
@@ -127,6 +135,14 @@ export function RunPeek({ run }: RunPeekProps) {
           <div style={label}>Run</div>
           <div style={idRow}>{run.runId}</div>
         </div>
+        {run.caseStudyId !== undefined && run.caseStudyId !== null && (
+          <div>
+            <div style={label}>Case study</div>
+            <Link to={`/case-studies/${run.caseStudyId}`} style={bloomLink}>
+              ✦ View bloom →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
