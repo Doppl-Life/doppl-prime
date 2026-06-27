@@ -1865,6 +1865,7 @@ function layoutBloom(
   });
 
   relaxBloomLayout(nodes, edges);
+  pushReseededCaseStudyChildrenOutward(nodes);
   for (const node of nodes) {
     const override = nodeOverrides[node.id];
     if (override !== undefined) {
@@ -1910,7 +1911,14 @@ function placeChildren({
   const children = [...(childrenByParent.get(parent.id) ?? [])].sort(compareOuterBloomNodes);
   if (children.length === 0) return;
 
-  const sector = endAngle - startAngle;
+  const sectorBounds = growthSectorForParent({
+    root,
+    parent,
+    startAngle,
+    endAngle,
+    childCount: children.length,
+  });
+  const sector = sectorBounds.endAngle - sectorBounds.startAngle;
   const weights = children.map((child) => subtreeWeight(child, childrenByParent));
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
   const distance =
@@ -1920,7 +1928,7 @@ function placeChildren({
         ? 178
         : 136 + Math.min(52, depth * 10);
 
-  let cursor = startAngle;
+  let cursor = sectorBounds.startAngle;
   children.forEach((child, index) => {
     if (placed.has(child.id)) return;
     const childSector = (sector * (weights[index] ?? 1)) / totalWeight;
@@ -1954,6 +1962,106 @@ function placeChildren({
       depth: depth + 1,
     });
   });
+}
+
+function growthSectorForParent({
+  root,
+  parent,
+  startAngle,
+  endAngle,
+  childCount,
+}: {
+  root: LayoutNode;
+  parent: LayoutNode;
+  startAngle: number;
+  endAngle: number;
+  childCount: number;
+}): { startAngle: number; endAngle: number } {
+  if (parent.id === root.id) return { startAngle, endAngle };
+
+  const outwardAngle = Math.atan2(parent.y - root.y, parent.x - root.x);
+  const inheritedWidth = Math.abs(endAngle - startAngle);
+  const width =
+    parent.stage === 'case_study'
+      ? Math.min(Math.PI * 0.9, Math.PI * 0.36 + childCount * 0.08)
+      : Math.min(Math.PI * 1.25, Math.max(Math.PI * 0.5, inheritedWidth * 0.82));
+
+  return {
+    startAngle: outwardAngle - width / 2,
+    endAngle: outwardAngle + width / 2,
+  };
+}
+
+function pushReseededCaseStudyChildrenOutward(nodes: LayoutNode[]) {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const rootsByIsland = new Map<number, LayoutNode>();
+  for (const node of nodes) {
+    if (node.parentId === null && !rootsByIsland.has(node.islandIndex)) {
+      rootsByIsland.set(node.islandIndex, node);
+    }
+  }
+
+  for (const parent of nodes) {
+    if (parent.stage !== 'case_study' || parent.parentId === null) continue;
+
+    const root = rootsByIsland.get(parent.islandIndex);
+    if (root === undefined) continue;
+
+    const outward = unitVector(parent.x - root.x, parent.y - root.y);
+    const children = nodes
+      .filter((node) => node.parentId === parent.id)
+      .sort(compareOuterBloomNodes);
+    if (children.length === 0) continue;
+
+    const perpendicular = { x: -outward.y, y: outward.x };
+    const minForward = 190 + Math.min(58, children.length * 10);
+    const lateralStep = 46;
+
+    children.forEach((child, index) => {
+      const childVector = { x: child.x - parent.x, y: child.y - parent.y };
+      const forward = childVector.x * outward.x + childVector.y * outward.y;
+      const currentLateral = childVector.x * perpendicular.x + childVector.y * perpendicular.y;
+      const desiredLateral =
+        children.length === 1 ? currentLateral : (index - (children.length - 1) / 2) * lateralStep;
+      const nextForward = Math.max(forward, minForward);
+      const nextLateral =
+        Math.abs(currentLateral) > Math.abs(desiredLateral) ? currentLateral : desiredLateral;
+
+      child.x = parent.x + outward.x * nextForward + perpendicular.x * nextLateral;
+      child.y = parent.y + outward.y * nextForward + perpendicular.y * nextLateral;
+
+      const descendantIds = new Set<string>();
+      collectDescendantIds(child.id, nodesById, nodes, descendantIds);
+      for (const descendantId of descendantIds) {
+        const descendant = nodesById.get(descendantId);
+        if (descendant === undefined) continue;
+        const descendantForward =
+          (descendant.x - child.x) * outward.x + (descendant.y - child.y) * outward.y;
+        if (descendantForward >= 0) continue;
+        descendant.x += outward.x * (Math.abs(descendantForward) + 36);
+        descendant.y += outward.y * (Math.abs(descendantForward) + 36);
+      }
+    });
+  }
+}
+
+function collectDescendantIds(
+  parentId: string,
+  nodesById: Map<string, LayoutNode>,
+  nodes: readonly LayoutNode[],
+  result: Set<string>,
+) {
+  for (const node of nodes) {
+    if (node.parentId !== parentId || result.has(node.id)) continue;
+    result.add(node.id);
+    if (nodesById.has(node.id)) collectDescendantIds(node.id, nodesById, nodes, result);
+  }
+}
+
+function unitVector(dx: number, dy: number): BloomNodePosition {
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return { x: 1, y: 0 };
+  return { x: dx / length, y: dy / length };
 }
 
 function relaxBloomLayout(nodes: LayoutNode[], edges: LayoutEdge[]) {
