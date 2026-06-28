@@ -1,4 +1,5 @@
 import type { RunEventEnvelope, RunEventType } from '../data/contracts';
+import { RUN_TERMINAL_TYPES } from '../components/run/runControl';
 
 /**
  * deriveInFlight — the PURE per-node in-flight derivation deferred from P7.2 (LESSONS §2). It folds the
@@ -107,7 +108,15 @@ export function deriveInFlight(events: readonly RunEventEnvelope[]): InFlightSta
     }
   }
 
+  // Once the run has TERMINATED (a run.completed/failed/stopped event is in this prefix), nothing is in
+  // flight — any operation whose completion event was never emitted (e.g. the sv2 judge review, or a
+  // start left unpaired when the run ended) is stale, NOT live. Clear the working set so finished runs
+  // don't show perpetual "working…". Replay-safe: scrubbing to a prefix BEFORE the terminal event still
+  // shows the in-flight state at that step; at/after it, the set is cleared.
+  const terminated = ordered.some((e) => RUN_TERMINAL_TYPES.has(e.type));
   const workingEntityIds = new Set<string>();
-  for (const entry of active.values()) workingEntityIds.add(entry.entityId);
+  if (!terminated) {
+    for (const entry of active.values()) workingEntityIds.add(entry.entityId);
+  }
   return { workingEntityIds, feed };
 }

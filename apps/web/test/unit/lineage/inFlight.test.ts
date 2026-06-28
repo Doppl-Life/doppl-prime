@@ -32,6 +32,16 @@ describe('deriveInFlight — pure op-start↔completion fold (the P7.2-deferred 
     expect(s.feed[0]).toMatchObject({ operation: 'judge', status: 'active' });
   });
 
+  // spec(§12): once the run has TERMINATED, nothing is in flight — an operation start left unpaired (no
+  // completion event was ever emitted) is stale, not live, so the working set is cleared (no perpetual
+  // "working…" on a finished run). Replay-safe: the terminal event must be present in the prefix.
+  it('test_inflight_cleared_when_run_terminated', () => {
+    const open = [makeEvent(1, 'critic.review_started', { candidateId: 'cand_0' })];
+    expect(deriveInFlight(open).workingEntityIds.has('cand_0')).toBe(true); // live: still working
+    const terminated = [...open, makeEvent(2, 'run.completed')];
+    expect(deriveInFlight(terminated).workingEntityIds.size).toBe(0); // run ended → nothing working
+  });
+
   // spec(§4 sequence sole ordering): the derivation is a pure fold over `sequence` — input array order
   // and `occurredAt` are irrelevant, so replay reproduces the identical liveness (no wall-clock).
   it('test_inflight_replay_equivalent', () => {

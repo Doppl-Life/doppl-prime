@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { isRunTerminal } from '../components/run/runControl';
@@ -237,6 +237,12 @@ const controlPlaceholder: CSSProperties = {
   borderRadius: 'var(--radius-md)',
   textAlign: 'center',
 };
+// Replay is a recorded run — there is no live run to stop, so the rail shows a quiet static indicator
+// instead of the live Stop button / "loading run state" gate (a recorded run can't be stopped).
+const recordedControl: CSSProperties = {
+  ...controlPlaceholder,
+  border: 'thin solid var(--border-subtle)',
+};
 // "Replay this run" link — shown in the rail when the live view has a terminalized run, so the
 // operator can switch into replay mode in one click without knowing the /replay URL pattern.
 const replayLink: CSSProperties = {
@@ -308,9 +314,14 @@ export function S2OrganismView({
   const totalSteps = obs.fold.events.length;
   const [scrubStep, setScrubStep] = useState<number | null>(null);
   const effectiveStep = scrubStep ?? totalSteps;
-  const panelEvents = isReplay
-    ? foldAtStep(obs.fold.events, effectiveStep).events
-    : obs.fold.events;
+  // MUST be memoized: `foldAtStep` returns a NEW array every call, so an unmemoized `panelEvents` would
+  // hand a fresh reference to deriveInFlight → a new working-set → a new `flow` → the layout effect re-runs
+  // setNodes → re-render → repeat. That infinite render loop freezes the tab ("Page Unresponsive"). Keyed
+  // on the actual inputs so the reference is stable between renders unless the fold or the scrub step moves.
+  const panelEvents = useMemo(
+    () => (isReplay ? foldAtStep(obs.fold.events, effectiveStep).events : obs.fold.events),
+    [isReplay, obs.fold.events, effectiveStep],
+  );
 
   // FV.6 live telemetry — PURE selectors over the (possibly step-rewound) fold + the health projection
   // (read-only, rule #9; replay-identical, rule #7). nowMs injected at render keeps the selectors pure.
@@ -334,6 +345,11 @@ export function S2OrganismView({
   // When the live view has a terminalized run, surface a "Replay this run" affordance in the rail
   // so the operator can switch into scrubable replay mode without having to know the URL pattern.
   const isTerminalRunStatus = obs.runStatus !== undefined && isRunTerminal(obs.runStatus);
+  // A SELECTED winner can only be set by the kernel on `run.completed` (the winner reducer reads
+  // `run.completed.finalIdeaRef`) — so a winner authoritatively proves the run finished, even when the
+  // client store hasn't folded the terminal event yet (resync lag). Trust it so the run never shows a
+  // live "Stop run" / "live" affordance once a winner exists.
+  const runIsComplete = isTerminalRunStatus || winner !== null;
 
   return (
     <main aria-label="Doppl organism view" style={shellStyle}>
@@ -349,22 +365,33 @@ export function S2OrganismView({
 
       <section aria-label="Organism left rail" style={{ ...leftRail, ...paneRow }}>
         <h3 style={railHeading}>Run controls</h3>
-        {/* Hold the Stop button until the store has folded enough events to know the run's status —
-            otherwise the default "active" state flashes a red Stop affordance for a completed run
-            and the operator briefly thinks they can stop it. */}
-        {obs.runStatus !== undefined ? (
+        {/* Replay is a recorded run → no live Stop control. In LIVE mode: a terminal store status (or a
+            winner, which proves run.completed) shows the StopControl's "Run completed" / a static
+            completed indicator; a known-active run shows the Stop button; otherwise hold for the status. */}
+        {isReplay ? (
+          <div style={recordedControl}>Recorded run · replay only</div>
+        ) : isTerminalRunStatus ? (
+          <StopControl runId={runId} store={obs.store} runClient={runClient} />
+        ) : runIsComplete ? (
+          <div style={recordedControl}>Run completed</div>
+        ) : obs.runStatus !== undefined ? (
           <StopControl runId={runId} store={obs.store} runClient={runClient} />
         ) : (
-          <div style={controlPlaceholder} aria-live="polite">
+          <div style={controlPlaceholder} aria-live="polite" aria-busy="true">
             Loading run state…
           </div>
         )}
-        {mode === 'live' && isTerminalRunStatus && (
+        {mode === 'live' && runIsComplete && (
           <Link to={`/runs/${runId}/replay`} style={replayLink}>
             <span aria-hidden="true">⏮</span> Replay this run
           </Link>
         )}
-        <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
+        {/* The health indicator is a LIVE-run liveness gauge (the continue-vs-switch cue). A terminalized
+            run's lifecycle is already shown by the ModeBanner pill + the run controls, so showing it here
+            too would be redundant (and it has no live signal to read) — hide it once the run is terminal. */}
+        {!runIsComplete && (
+          <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
+        )}
         <RunEnergyGauge spent={energy.spent} budget={energy.budget ?? 0} mode={mode} />
         <div style={tabsWrap}>
           <div role="tablist" aria-label="Left rail panels" style={tabHeader}>
@@ -405,8 +432,14 @@ export function S2OrganismView({
             )}
             {leftTab === 'activity' && (
               <div style={tickerWrap}>
-                {/* Tab button already says "Activity" — suppress the ticker's own duplicate heading. */}
-                <ActivityTicker events={tickerEvents} mode={mode} title="" />
+                {/* Tab button already says "Activity" — suppress the ticker's own duplicate heading.
+                    A terminalized live run isn't streaming → the ticker reads "ended", not "live". */}
+                <ActivityTicker
+                  events={tickerEvents}
+                  mode={mode}
+                  isTerminal={runIsComplete}
+                  title=""
+                />
               </div>
             )}
             {leftTab === 'fitness' && (
@@ -465,6 +498,10 @@ export function S2OrganismView({
               projection={obs.lineage}
               events={panelEvents}
               onNodeClick={(_id, dataRef, type) => obs.setSelectedNode({ dataRef, type })}
+              // The graph structure (lineage) loads before the (often large) event stream — keep the
+              // canvas loading overlay up until the events are in so it covers the WHOLE initial load.
+              // A lineage with nodes always has events, so an empty fold here means "still loading".
+              loading={obs.lineage.nodes.length > 0 && obs.fold.events.length === 0}
             />
           </>
         )}

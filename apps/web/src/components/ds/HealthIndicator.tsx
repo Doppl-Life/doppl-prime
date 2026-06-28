@@ -13,6 +13,9 @@ export interface HealthSummary {
   capsConsumed?: Record<string, number>;
 }
 
+// Live-liveness states, driven by last-event age (the continue-vs-switch-to-replay cue). This gauge is a
+// LIVE-run concept — a terminalized run's lifecycle is surfaced by the ModeBanner + run controls, and the
+// caller hides this indicator once the run ends, so there is no terminal state here.
 export type HealthStatus = 'healthy' | 'slowing' | 'slow' | 'degraded' | 'stalled';
 
 export interface HealthIndicatorProps {

@@ -21,6 +21,13 @@ const list: CSSProperties = {
   padding: 0,
   display: 'grid',
   gap: 'var(--space-2)',
+  // Fill the (flex-column) tab pane and scroll the roster INTERNALLY so a long population doesn't get
+  // clipped by the pane's `overflow: hidden` (the rail can't grow the page — cockpit containment).
+  // `minHeight: 0` unlocks the flex track; `alignContent: start` keeps rows top-aligned when short.
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  alignContent: 'start',
 };
 const row: CSSProperties = {
   display: 'grid',

@@ -199,7 +199,9 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
 
 describe('LineageGraph — React Flow lineage panel', () => {
   // spec(§10 watermark): the graph reflects the freshest projection; a stale (lower sequenceThrough)
-  // projection is NOT shown over a newer one.
+  // projection is NOT shown over a newer one. The summary counts the RENDERED backbone (flow.nodes —
+  // agenome/candidate/generation), NOT the full projection: multiNodeLineage's 5 nodes include a critic
+  // + a score node that lineageToFlow drops, so the displayed count is 3 (and 4 after a0→a1 is added).
   it('test_graph_updates_on_sequenceThrough_advance', async () => {
     const p2: LineageGraphProjection = {
       ...multiNodeLineage,
@@ -217,16 +219,34 @@ describe('LineageGraph — React Flow lineage panel', () => {
 
     const { rerender } = render(<LineageGraph projection={multiNodeLineage} />);
     const summary = () => screen.getByTestId('lineage-summary').textContent ?? '';
-    await waitFor(() => expect(summary()).toMatch(/5 nodes/));
-    expect(summary()).toMatch(/sequence 12/);
+    // The watermark is no longer user-visible; it's retained as a non-visible data- attribute.
+    const seq = () => screen.getByTestId('lineage-summary').getAttribute('data-sequence-through');
+    await waitFor(() => expect(summary()).toMatch(/3 nodes/)); // 5 projection nodes − critic − score
+    expect(summary()).toMatch(/1 generation\b/); // one generation header → singular
+    expect(seq()).toBe('12');
 
     rerender(<LineageGraph projection={p2} />); // newer watermark → applied
-    await waitFor(() => expect(summary()).toMatch(/6 nodes/));
-    expect(summary()).toMatch(/sequence 20/);
+    await waitFor(() => expect(summary()).toMatch(/4 nodes/)); // +1 agenome on the backbone
+    expect(seq()).toBe('20');
 
     rerender(<LineageGraph projection={stale} />); // stale watermark → NOT applied
-    await waitFor(() => expect(summary()).toMatch(/sequence 20/));
-    expect(summary()).toMatch(/6 nodes/); // still the newer view
+    await waitFor(() => expect(seq()).toBe('20')); // watermark held at the newer projection
+    expect(summary()).toMatch(/4 nodes/); // still the newer view
+  });
+
+  // spec(summary): the watermark is replaced by the run's generation depth (count of `generation` nodes),
+  // pluralized — a user-meaningful figure in place of the raw event-log counter.
+  it('test_summary_shows_generation_count', async () => {
+    const twoGenerations: LineageGraphProjection = {
+      ...multiNodeLineage,
+      nodes: [
+        ...multiNodeLineage.nodes,
+        { id: 'g1', type: 'generation', label: 'Generation 1', dataRef: 'gen_1', generationIndex: 1 },
+      ],
+    };
+    render(<LineageGraph projection={twoGenerations} />);
+    const summary = () => screen.getByTestId('lineage-summary').textContent ?? '';
+    await waitFor(() => expect(summary()).toMatch(/2 generations/)); // two generation headers → plural
   });
 
   // spec(FV.5a — the FV.4 carry-forward gap): clicking a flow node fires onNodeClick(nodeId, dataRef,

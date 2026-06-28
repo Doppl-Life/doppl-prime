@@ -4,23 +4,25 @@
    Calm, low-chroma chrome so the organism's status colors + energy glow are
    the only saturated things on screen. Status is NEVER color alone — color is
    the 4th redundant channel after shape + icon + label (see StatusBadge).
+   The neutral ramp carries a WARM (faded black-grey-brown) bias so the teal +
+   terracotta accents read like the warm-HUD reference, not a cold navy console.
    ========================================================================== */
 :root {
-  /* ---- Base / chrome (deep near-black, faint blue-violet bias) ---- */
-  --bg-void: #070a12; /* app backdrop behind everything (graph canvas) */
-  --bg-base: #0b0f1a; /* AppShell background */
-  --bg-surface: #111726; /* cards, panels */
-  --bg-surface-2: #18202f; /* raised surfaces, drawers */
-  --bg-overlay: #1e2738; /* popovers, tooltips, dropdowns */
-  --bg-scrim: rgba(4, 6, 12, 0.72); /* modal / drawer backdrop */
+  /* ---- Base / chrome (deep warm charcoal-brown, faint amber bias) ---- */
+  --bg-void: #0b0a08; /* app backdrop behind everything (graph canvas) */
+  --bg-base: #121110; /* AppShell background */
+  --bg-surface: #1a1815; /* cards, panels */
+  --bg-surface-2: #241f19; /* raised surfaces, drawers */
+  --bg-overlay: #2c2620; /* popovers, tooltips, dropdowns */
+  --bg-scrim: rgba(8, 6, 4, 0.72); /* modal / drawer backdrop */
 
-  --border-subtle: #1f2a3d; /* hairline dividers, card borders */
-  --border-strong: #33405a; /* emphasized edges, focus-adjacent */
+  --border-subtle: #2f2a23; /* hairline dividers, card borders */
+  --border-strong: #4a4339; /* emphasized edges, focus-adjacent */
 
-  --fg-default: #e6ecf7; /* primary text */
-  --fg-muted: #9aa7be; /* secondary / label text */
-  --fg-faint: #5c6880; /* disabled, ghosted, culled labels */
-  --fg-on-accent: #06080e; /* text on bright accent fills */
+  --fg-default: #ece7df; /* primary text — warm white */
+  --fg-muted: #aaa194; /* secondary / label text — warm grey */
+  --fg-faint: #6f655a; /* disabled, ghosted, culled labels */
+  --fg-on-accent: #0a0806; /* text on bright accent fills */
 
   /* ---- Brand / interactive accent: "living cyan" ----
      reserved for interactive + alive (active agenome, CTAs, focus) so it never
@@ -31,6 +33,15 @@
   --accent-soft: rgba(59, 227, 208, 0.14);
   --ring: #3be3d0;
 
+  /* ---- Secondary / contrast accent: "muted terracotta" (deep orange-red) ----
+     a warm, low-chroma counterweight to the cyan + navy. CHROME ONLY (section markers, secondary
+     actions, selected-option highlights) — never used as a status/graph color so it can't be mistaken
+     for the bright red danger, the deep-red culled, or the brighter orange mutation. */
+  --accent-2: #c75f45;
+  --accent-2-hover: #de7358;
+  --accent-2-press: #a44b34;
+  --accent-2-soft: rgba(199, 95, 69, 0.15);
+
   /* ---- Semantic feedback (non-status chrome) ---- */
   --info: #5aa9ff;
   --success: #3fd17a;
@@ -40,17 +51,17 @@
 
   /* ---- STATUS palette — colorblind-safe core (always paired w/ shape+icon+label) ---- */
   /* Agenome */
-  --status-seeded: #6b7790;
+  --status-seeded: #847a6c; /* warm neutral grey */
   --status-active: #3be3d0; /* cyan — pulsing */
-  --status-spent: #7e8aa3;
+  --status-spent: #978d7e; /* warm neutral grey */
   --status-eligible: #5aa9ff; /* blue — eligible_parent */
   --status-reproduced: #b98cff; /* violet — fused (two-parent) */
-  --status-mutated: #f4b650; /* amber — mutation shimmer */
+  --status-mutated: #ef7e45; /* orange — mutation; distinct from the winner's yellow-gold (--status-selected) */
   --status-failed: #f2545b; /* red — dashed */
   --status-culled: #b23b43; /* deep "sunk" red — killed by selection (distinct from the bright failed red) */
 
   /* Candidate */
-  --status-created: #9aa7be;
+  --status-created: #aaa194; /* warm neutral grey */
   --status-review: #3be3d0; /* under_review — pulsing */
   --status-checked: #5aa9ff;
   --status-scored: #7fb2ff;
@@ -61,7 +72,7 @@
   /* Check */
   --check-passed: #3fd17a; /* green */
   --check-failed: #f2545b; /* red */
-  --check-skipped: #7e8aa3; /* gray + reason */
+  --check-skipped: #978d7e; /* warm gray + reason */
 
   /* Run / generation health (HealthIndicator, RunHeader) */
   --health-healthy: #3fd17a;
@@ -74,7 +85,7 @@
                                       distinct from mutated amber to avoid collision */
 
   /* ---- Meters: length = truth, color only grades the fill ---- */
-  --meter-track: #1a2233;
+  --meter-track: #241f18;
   --fitness-low: #f2545b; /* 0.00–0.40 */
   --fitness-mid: #f4b650; /* 0.40–0.70 */
   --fitness-high: #3fd17a; /* 0.70–1.00 */
@@ -82,17 +93,17 @@
   --energy-full: #3be3d0;
   --energy-mid: #7fb2ff;
   --energy-low: #f4b650;
-  --energy-empty: #3a465e;
+  --energy-empty: #463f33;
 
   /* ---- Lineage edge colors (typed graph edges) ---- */
-  --edge-spawned: #5c6880;
+  --edge-spawned: #6f655a;
   --edge-produced: #3be3d0;
   --edge-reviewed: #5aa9ff;
   --edge-checked: #3fd17a;
   --edge-scored: #7fb2ff;
   --edge-culled: #c2454d; /* red — the cull edge, visible against the dark canvas */
   --edge-fused: #b98cff;
-  --edge-mutated: #f4b650;
+  --edge-mutated: #ef7e45;
   --edge-selected: #ffca3a;
 }
 
@@ -100,12 +111,12 @@
    status colors bumped to their most-saturated stops. Toggle via .hc on <html>. */
 .hc {
   --bg-base: #000000;
-  --bg-surface: #0a0a0a;
-  --bg-surface-2: #141414;
+  --bg-surface: #0b0a08;
+  --bg-surface-2: #161310;
   --fg-default: #ffffff;
-  --fg-muted: #d6deec;
-  --border-subtle: #4a5872;
-  --border-strong: #6b7c9a;
+  --fg-muted: #e4ddd1; /* warm */
+  --border-subtle: #5a5142; /* warm, still high-contrast */
+  --border-strong: #7e7361;
 }
 
 /* ==========================================================================
@@ -117,15 +128,17 @@
    only the chrome and the hue stops shift.
    ========================================================================== */
 :root.light {
-  /* base / chrome */
-  --bg-void: #e7ecf3;
-  --bg-base: #f4f6fa;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #eef2f8;
+  /* base / chrome — a clean, cool-neutral light. (Warm greige read as muddy tan on a bright page, so
+     light stays crisp; the warm grey-brown bias lives in the dark theme only.) A deeper grey page so
+     white cards pop, inputs a recessed grey on the card, and visible hairlines. */
+  --bg-void: #ccd5e6;
+  --bg-base: #d7dfee; /* page background — a touch darker with a navy hue so white cards lift more */
+  --bg-surface: #ffffff; /* cards / panels — crisp white, lifts off the page */
+  --bg-surface-2: #e8edf5; /* inputs, raised surfaces — recessed grey on a white card */
   --bg-overlay: #ffffff;
-  --bg-scrim: rgba(20, 28, 45, 0.38);
-  --border-subtle: #dce3ee;
-  --border-strong: #b7c2d6;
+  --bg-scrim: rgba(20, 28, 45, 0.42);
+  --border-subtle: #c7d2e2; /* visible hairline */
+  --border-strong: #97a7c0;
   --fg-default: #14203a;
   --fg-muted: #4a5870;
   --fg-faint: #8492ab;
@@ -136,6 +149,12 @@
   --accent-press: #0b8b7e;
   --accent-soft: rgba(15, 166, 151, 0.12);
   --ring: #0fa697;
+
+  /* secondary "muted terracotta" — deepened so it clears AA on white for chrome text/borders */
+  --accent-2: #b04a2f;
+  --accent-2-hover: #c45739;
+  --accent-2-press: #933a23;
+  --accent-2-soft: rgba(176, 74, 47, 0.12);
 
   /* semantic feedback (darkened for light bg) */
   --info: #2e72d6;
@@ -150,7 +169,7 @@
   --status-spent: #6e7a93;
   --status-eligible: #2e72d6; /* blue */
   --status-reproduced: #7c4deb; /* violet */
-  --status-mutated: #b5780c; /* amber */
+  --status-mutated: #c25d18; /* orange — distinct from the winner's gold (--status-selected) */
   --status-failed: #d7343b;
   --status-culled: #b23a41; /* deep "sunk" red — killed by selection (AA-legible on white) */
 
@@ -192,7 +211,7 @@
   --edge-scored: #3e72c9;
   --edge-culled: #c2454c; /* red — the cull edge */
   --edge-fused: #7c4deb;
-  --edge-mutated: #b5780c;
+  --edge-mutated: #c25d18;
   --edge-selected: #b07d08;
 
   /* depth: soft ink shadows; glows become crisp rings (halos muddy on white) */

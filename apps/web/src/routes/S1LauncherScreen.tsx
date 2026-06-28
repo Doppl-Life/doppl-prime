@@ -27,18 +27,33 @@ const heading: CSSProperties = {
 };
 const helpText: CSSProperties = {
   fontFamily: 'var(--font-ui)',
-  fontSize: 'var(--text-label)',
+  fontSize: 'var(--text-body)',
   color: 'var(--fg-muted)',
-  marginBottom: 'var(--space-3)',
+  margin: 0,
+  marginBottom: 'var(--space-5)',
+  maxWidth: '52rem',
 };
+const eyebrow: CSSProperties = {
+  fontFamily: 'var(--font-ui)',
+  fontSize: 'var(--text-label)',
+  fontWeight: 600,
+  // a quiet label heading — kept neutral white so it doesn't compete with the terracotta pills below.
+  color: 'var(--fg-default)',
+  letterSpacing: '0.04em',
+  margin: 0,
+  marginBottom: 'var(--space-2)',
+};
+// prepared-problem quick-picks are a SECONDARY action → honey-amber outline pill (teal stays the
+// primary Start CTA), giving the launch screen a clear warm/cool two-accent rhythm.
 const pickBtn: CSSProperties = {
   fontFamily: 'var(--font-ui)',
   fontSize: 'var(--text-label)',
-  color: 'var(--fg-default)',
-  background: 'var(--bg-surface)',
-  border: 'thin solid var(--border-subtle)',
-  borderRadius: 'var(--radius-sm)',
-  padding: 'var(--space-2) var(--space-3)',
+  fontWeight: 500,
+  color: 'var(--accent-2)',
+  background: 'var(--accent-2-soft)',
+  border: 'thin solid var(--accent-2)',
+  borderRadius: 'var(--radius-full)',
+  padding: 'var(--space-2) var(--space-4)',
   cursor: 'pointer',
 };
 
@@ -68,47 +83,52 @@ export function S1LauncherScreen({ runClient, onStarted }: S1LauncherScreenProps
   return (
     <section
       aria-label="Launch a run"
-      style={{ padding: 'var(--space-5)', color: 'var(--fg-default)' }}
+      style={{ padding: 'var(--space-6) var(--space-5)', color: 'var(--fg-default)' }}
     >
-      <h1 style={heading}>Launch a run</h1>
-      <p style={helpText}>
-        Start from a prepared problem, or write your own seed prompt below — then tune the mutagen
-        operators and the diverge/converge dial.
-      </p>
+      <div style={{ maxWidth: '64rem', margin: '0 auto' }}>
+        <h1 style={heading}>Launch a run</h1>
+        <p style={helpText}>
+          Doppl breeds candidate ideas against your problem under selection pressure. Start from a
+          prepared problem or write your own seed prompt, choose the kinds of idea to generate, then
+          tune the ideation lenses and how widely the swarm explores.
+        </p>
 
-      {problemSets.length > 0 && (
-        <div
-          aria-label="Prepared problems"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-2)',
-            marginBottom: 'var(--space-5)',
-          }}
-        >
-          {problemSets.map((ps) => (
-            <button
-              key={ps.id}
-              type="button"
-              style={pickBtn}
-              onClick={() => {
-                setSeed(ps.prompt);
-                setCaseStudyId(ps.id);
+        {problemSets.length > 0 && (
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <p style={eyebrow}>Start from a prepared problem</p>
+            <div
+              aria-label="Prepared problems"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 'var(--space-2)',
               }}
             >
-              {ps.title}
-            </button>
-          ))}
-        </div>
-      )}
+              {problemSets.map((ps) => (
+                <button
+                  key={ps.id}
+                  type="button"
+                  style={pickBtn}
+                  onClick={() => {
+                    setSeed(ps.prompt);
+                    setCaseStudyId(ps.id);
+                  }}
+                >
+                  {ps.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-      <RunConfigPanel
-        key={`${caseStudyId ?? 'freeform'}:${seed}`}
-        runClient={runClient}
-        onStarted={onStarted}
-        initialValues={{ ...DEFAULT_FORM, seed }}
-        caseStudyId={caseStudyId}
-      />
+        <RunConfigPanel
+          key={`${caseStudyId ?? 'freeform'}:${seed}`}
+          runClient={runClient}
+          onStarted={onStarted}
+          initialValues={{ ...DEFAULT_FORM, seed }}
+          caseStudyId={caseStudyId}
+        />
+      </div>
     </section>
   );
 }
