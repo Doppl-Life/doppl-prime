@@ -234,7 +234,7 @@ export function ActivityTicker({
               </span>
               {/* A two-line row: a #seq + relative-time meta line, then the FULL event text wrapping
                   below — so the narrow rail no longer truncates each event to "actor fu…". */}
-              <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: '2px' }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 'calc(var(--space-1) / 2)' }}>
                 <div
                   style={{
                     display: 'flex',
