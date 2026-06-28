@@ -10,24 +10,29 @@ done
 
 ## 3 · aGarden - The outside view
 
-This is the aGarden. What's growing behind me is real output. Every dot is an idea. Every line is a lineage — which idea came from which.
+> Slide (Run ahead of Time(?)), human transition to live view of the aGarden running.
 
-It starts with a single seed: one case study. From that seed the system spawns a population, generates candidates, and scores each one on two axes it never lets collapse into each other.
-
-*Novelty* — how far it reaches past what's already known.
-
-*Grounding* — how hard it lands on something true. The strong survive. They fuse, they mutate, they have offspring. The weak get culled. Generation after generation.
-
-The spine is simple. A case study becomes a recovered problem. A recovered problem becomes a doppl. And at each new step, the path points out of the system — back to you.
-
-"When the Crashes Don't Come" is an example of a zeitgeist shift - "What was true yesterday, that is Not true today, and Implies X for tomorrow." This is Malcolm Gladwell/Howard Moskowitz's Perfect Pepsi v the Perfect Pepsis.
+"When the Crashes Don't Come" is an example of a zeitgeist shift, the *unlock*. The pawn that frees the bishop.
+"What was true yesterday, that is Not true today, and Implies X for tomorrow?" This is Malcolm Gladwell/Howard Moskowitz's Perfect Pepsi v the Perfect Pepsis.
 
 Sometimes you need a *solution.*
-I have a friend in the superyacht world, told me a a problem one of his clients was having. A celebrity, a superyacht, paparazzi drones circling the deck trying to sell a scandal. Every obvious move is a worse problem than the photograph — shoot it down, jam it, and now you've got debris in a harbor and a felony. So Doppl recovers the real problem, which was never "defeat the drone." It was "make the footage worthless." And the actual fix is a song. A private cue over the yacht's speakers. It plays, everyone drifts inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem a solve it. Move on.
+I have a friend in the superyacht world, told me a problem one of his clients was having.
+A celebrity on his superyacht, paparazzi drones circling to sell a scandal, and wants to have his fun without his wife finding out. Every obvious move is as much a headache as the footage:
 
-And sometimes you don't get a solution. You get an *unlock.* "Self-driving works." That isn't an answer to a question — it's a key. It opens insurance. Freight. Policing. Municipal budgets. What land is even for. One understanding, and a hundred fields move at once. That's divergence.
+- Can't shoot it down, major liability issues
+- Can't jam it, because the rasberry can't tell the difference
+- Can't catch it, they have proximity sensors which trigger to automatically fly away with the footage
+- Don't want to disrupt the flow of the festivities
 
-That's the entire cold open you just sat through. That was Doppl — run ahead of time.
+So what do you do?
+
+Doppl's process is to seed the scenario, recover the real problem, and propose solutions.
+
+This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage — which idea came from which.
+The spine is simple. A case study becomes a recovered problem. A recovered problem becomes a doppl. And at each new step, the path points out of the system, back to you - the human in the loop.
+
+The real probem was never "defeat the drone." It was "make the footage worthless."
+And the actual fix - you can get it for a song. <The proximity mechanism> detects incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem a solve it. Move on.
 
 ## 4 · The inside view — the kernel
 

@@ -57,7 +57,7 @@ Each run produces a whole population of evolving idea organisms, or **Idearganis
 
 ## 5 · Why this was technically difficult
 
->  Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, , etc...
+> Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
 
 
 
