@@ -14,7 +14,7 @@ Drastic reduction in the cost per mile. Massive job loss in the ridehail and del
 
 But thats where they stop. The questions I'm not hearing are...
 
-<DD - title to first transition>What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
+What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
 
 Personal-injury lawyers. DUI defense. ER trauma units — nurses, paramedics. Admin all over.
 
@@ -77,7 +77,7 @@ That's the garden from above. Now the microscope.<DD - switch to inside view of 
 Here to talk about Doppl's inner workings is our own Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-<DD - on Cody fiinish, back to presentation, transition to Ideas are cheap>
+
 
 ## 5 · The Zero-to-One Mindset, Automated
 
@@ -89,7 +89,7 @@ They say ideas are cheap.
 
 *Let it sit.*
 
-What if we could massively increase the density of ideas in the world? <slight dark tone->What if we could *drown* in it?
+What if we could massively increase the density of ideas in the world? What if we could *drown* in it?
 Thats the world I want to swim in.
 
 Because its not just the idea. It's the *right* idea. The right *ideas*. Doppl Automates the Ideate — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
@@ -111,6 +111,8 @@ The Doppl is a doorway, not a destination. Behind every fix:
 
 - Implications: if this is true, what does that mean?
 - Opportunities: Now that I know the implications, what are the levels that I could possibly play at?<DD - switch to presentation, PSaaS>
+
+
 
 ## 7 · Implications & opportunity
 
