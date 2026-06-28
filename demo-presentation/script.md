@@ -16,7 +16,7 @@ But thats where they stop. The questions I'm not hearing are...
 
 What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
 
-Personal-injury lawyers. DUI defense. ER trauma units — nurses, paramedics. Admin all over.
+Personal-injury lawyers. DUI defense. Wrongful death, civil suits. ER trauma units — nurses, paramedics. Admin all over.
 
 What about the loss of probable cause and the traffic stop, when the entire pretext just falls away. Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets. What happens when reckless driving becomes...wreckless driving?
 

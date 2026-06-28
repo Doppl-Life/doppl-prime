@@ -516,6 +516,74 @@
       text-transform: uppercase;
     }
 
+    .wreckless-reveal {
+      position: absolute;
+      z-index: 6;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      gap: clamp(14px, 2.6vh, 30px);
+      padding: var(--safe-y) var(--safe-x);
+      background: rgba(6, 17, 15, 0.94);
+      backdrop-filter: blur(10px);
+    }
+
+    .wreckless-reveal.fragment {
+      transform: none;
+      transition-duration: 700ms;
+    }
+
+    .wreckless-lead {
+      margin: 0;
+      color: var(--bone-muted);
+      font: 600 clamp(11px, 0.9vw, 15px)/1 var(--mono);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .wreckless-word {
+      margin: 0;
+      font-size: clamp(46px, 7.5vw, 130px);
+      font-weight: 600;
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+    }
+
+    .wreckless-word.is-reckless {
+      color: var(--danger);
+    }
+
+    .wreckless-word.is-wreckless {
+      color: var(--bone);
+    }
+
+    .wreckless-word .w {
+      color: var(--signal);
+      text-shadow: 0 0 38px rgba(57, 230, 206, 0.55);
+    }
+
+    .wreckless-turn {
+      display: grid;
+      gap: clamp(14px, 2.6vh, 30px);
+    }
+
+    .wreckless-becomes {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--signal);
+      font: 600 clamp(11px, 0.9vw, 15px)/1 var(--mono);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .wreckless-becomes::before {
+      content: "↓";
+      font-size: 1.5em;
+      line-height: 0;
+      letter-spacing: 0;
+    }
+
     .zero {
       align-content: center;
       background: var(--bone);
@@ -1222,7 +1290,16 @@
           The national accident economy <strong>collapses</strong>
         </div>
 
-        <div class="doppl-reveal fragment" data-step="2">
+        <div class="wreckless-reveal fragment" data-step="2">
+          <p class="wreckless-lead">What happens when</p>
+          <p class="wreckless-word is-reckless">reckless driving</p>
+          <div class="wreckless-turn fragment" data-step="3">
+            <span class="wreckless-becomes" aria-hidden="true">becomes…</span>
+            <p class="wreckless-word is-wreckless"><span class="w">W</span>reckless driving?</p>
+          </div>
+        </div>
+
+        <div class="doppl-reveal fragment" data-step="4">
           <div>
             <p class="opening-kicker">Let me put Doppl on your radar</p>
             <h2 class="doppl-word">Doppl.</h2>
