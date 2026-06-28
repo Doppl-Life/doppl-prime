@@ -18,27 +18,19 @@ done
 
 ## 5 · The Zero-to-One Mindset, Automated
 
-So — say the hard part is solved. Here's the part nobody says out loud.
-
-They say ideas are cheap.
-
-*To the audience.* We say... could be cheaper.
-
-*Let it sit.*
-
-Because the thing the world actually venerates was never the idea. It's the zero-to-one mindset — the taste to know which idea is real, and the work to prove it out. *That* was supposed to be the rare part. We're automating it. Not the dreaming. The discipline.
-
-The marginal cost of a defensible idea, heading for zero.
+done
 
 ## 6 · The Human in the Loop
 
-Which leaves you exactly two jobs.
+> No slide. View of the Agora.
+> Talk about judgement calibration, problem-recovery validation, and play-at-your-level
 
-The pipeline does everything in the middle — the recovering, the generating, the scoring, the breeding. You keep the two ends. You *ask.* And you *act.*
+A key point of the Zero-to-One mindset is to get out of your head. Doppl helps you do just that.
+Once Doppl does the do, you gotta touch grass. You need to validate.
 
-That last arrow is the only one left with skin in the game. The machine did the thinking. It politely left you the consequence. And we treat that as a feature: at the two moments that matter — the recovered problem, and the finished doppl — it stops and nudges you toward a real move in the real world. It never pretends the stakes are its.
+With the Problem Recovery comes "Skin in the Game." Posits some 
 
-And the judgment — whether a given idea is *any good* — we don't keep that locked inside the machine either. This is the Agora. The team rates the doppls on a slider, from worthless to highly useful. The held-out judge calibrates against real human taste. The floor is fixed; the taste is crowdsourced.
+With the Doppl comes the Implications and Opportunities. We posit 
 
 ### Implications & Opportunity
 

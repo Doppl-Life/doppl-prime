@@ -18,16 +18,9 @@ done
 
 ## 5 · The Zero-to-One Mindset, Automated
 
+done
+
 ## 6 · The Human in the Loop
-
-The pipeline does everything between the question and the action.
-
-You keep two jobs. **Ask.** **Enact.**
-
-The machine took the research. It took the branching. It took the scoring. It politely left you the consequence — skin in the game on the last arrow. Your move.
-
-At problem recovery and at doppl, the system nudges toward real-world validation — not abstraction for its own sake. Judgment doesn't disappear into the model. The team calibrates through the **Agora** — human verdicts on what sprouted, what's worth keeping, what actually ships.
-
 
 ## 7 · Implications & Opportunity
 

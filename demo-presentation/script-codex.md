@@ -20,21 +20,9 @@ done
 
 ## 5 · The Zero-to-One Mindset, Automated
 
-They say ideas are cheap.
+done
 
-We say, "Could be cheaper."
-
-The founding myth treats the zero-to-one mindset as a rare spark inside a rare person.
-But the scarce thing is not the first idea.
-It is the discipline that turns a question into a defensible idea: recover the real problem, generate alternatives, test them against evidence, preserve the lineage, and expose the next action.
-
-Doppl operationalizes that discipline.
-We are automating the zero-to-one mindset.
-
-As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
-It becomes productive input.
-
-## The Human in the Loop
+## 6 · The Human in the Loop
 
 The pipeline does everything between the question and the action.
 

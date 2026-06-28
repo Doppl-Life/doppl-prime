@@ -73,35 +73,60 @@ And the actual fix - you can get it for a song. Passive RF detection flags incom
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
 
+> Switch to inside view of the running kernel.
+> Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
+
 That's the garden from above. Now the microscope.
 
 Here to talk about Doppl's inner workings is our own Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-## 5 · The Zero-to-One Mindset, automated
+<!-- <maybe a line for Cody> The held-out judge calibrates against real human taste. The floor is fixed; the taste is crowdsourced. -->
 
-> Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
+## 5 · The Zero-to-One Mindset, Automated
 
-## 6 · The human in the loop
+> Slide: Could be cheaper.
 
-> No slide. Start back at outer vieview of the Agora.
+They say ideas are cheap.
+
+*To the audience.* We say... could be cheaper.
+
+*Let it sit.*
+
+What if we could massively increase the density of ideas in the world? <slight dark tone->What if we could *drown* in it?
+Thats the world I want to swim in.
+
+Because its not just the idea. It's the *right* idea. The right *ideas*. Doppl Automates the Ideate — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
+It becomes a pre-solved solution-space, clustered and queried via vector database.
+
+## 6 · The Human in the Loop
+
+> No slide. View of the Agora.
 > Talk about judgement calibration, problem-recovery validation, and play-at-your-level
 
-## 7 · The zero-to-one mindset, automated
+A key point of the Zero-to-One mindset is to get out of your head. Doppl helps you do just that.
+Once Doppl does the do, you gotta touch grass. You need to validate.
 
-> slide?
+We do that with "Skin in the Game", and Implications and Opportunities.
 
+With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk, what you could ask about.
 
+The Doppl is a doorway, not a destination. Behind every fix:
+
+- Implications: if this is true, what does that mean?
+- Opportunities: Now that I know the implications, what are the levels that I could possibly play at?
 
 ## 8 · Implications & opportunity
 
-> slide?
+> Existing PSaaS slide.
 
+Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
+But that time is over. We're automating it. Now, it's a scalable, reproducible, and replayable process.
 
 ## 9 · Close - the Call to Action
 
-> Closing Slide: Same to similar as the initial title slide?
+> Existing Closing Slide
 
 So take Doppl and make it yours. Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.
 
-All You'll need...is a Great Question.
+All you'll *really* need...is a Great Question.
