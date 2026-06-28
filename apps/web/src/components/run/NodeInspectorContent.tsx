@@ -69,17 +69,21 @@ const scoreBadge: CSSProperties = {
   lineHeight: 1,
   color: 'var(--fg-on-accent)',
   background: 'var(--accent)',
-  borderRadius: 'var(--radius-md)',
-  padding: 'var(--space-2) var(--space-3)',
-  minWidth: '2.75rem',
+  borderRadius: 'var(--radius-sm)',
+  padding: 'var(--space-1) var(--space-2)',
+  minWidth: '2.25rem',
   justifyContent: 'center',
 };
-const scoreNum: CSSProperties = { fontSize: 'var(--text-h2)' };
-const scoreDenom: CSSProperties = { fontSize: 'var(--text-mono-sm)', opacity: 0.8 };
-const judgeAxisName: CSSProperties = { fontFamily: 'var(--font-mono)', fontWeight: 600 };
+const scoreNum: CSSProperties = { fontSize: 'var(--text-body)' };
+const scoreDenom: CSSProperties = { fontSize: 'var(--text-caption)', opacity: 0.8 };
+const judgeAxisName: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontWeight: 600,
+  fontSize: 'var(--text-label)',
+};
 const judgeRationale: CSSProperties = {
   color: 'var(--fg-muted)',
-  fontSize: 'var(--text-body)',
+  fontSize: 'var(--text-label)',
   marginTop: 'var(--space-1)',
 };
 // FV.5b — a scrollable raw-capture block (the persisted text is already scrubbed + truncated-with-marker).
