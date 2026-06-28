@@ -2509,6 +2509,17 @@ function normalizeAngle(angle: number): number {
 
 function boundsFor(nodes: readonly LayoutNode[]) {
   if (nodes.length === 0) return { minX: -400, minY: -300, width: 800, height: 600 };
+  if (nodes.length === 1) {
+    const node = nodes[0]!;
+    const width = 680;
+    const height = 460;
+    return {
+      minX: node.x - width / 2,
+      minY: node.y - height / 2,
+      width,
+      height,
+    };
+  }
   const pad = 112;
   const xs = nodes.map((node) => node.x);
   const ys = nodes.map((node) => node.y);

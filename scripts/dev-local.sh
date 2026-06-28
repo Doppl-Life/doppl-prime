@@ -18,6 +18,7 @@ CONTAINER="doppl-pg"
 PG_IMAGE="postgres:16"
 AGARDEN_REPO_URL="${AGARDEN_REPO_URL:-https://github.com/Doppl-Life/agarden.git}"
 AGARDEN_CACHE_DIR="${AGARDEN_CACHE_DIR:-$ROOT/.cache/agarden}"
+SIBLING_AGARDEN_FLOW_DIR="$ROOT/../agarden/flow"
 
 # --- verify local runtime -----------------------------------------------------------
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo unknown)"
@@ -113,6 +114,9 @@ fi
 if [[ "${DOPPL_AUTO_SEED_AGARDEN:-1}" != "0" ]]; then
   if [[ -n "${AGARDEN_FLOW_DIR:-}" ]]; then
     AGARDEN_FLOW_ROOT="$AGARDEN_FLOW_DIR"
+  elif [[ -d "$SIBLING_AGARDEN_FLOW_DIR" ]]; then
+    AGARDEN_FLOW_ROOT="$SIBLING_AGARDEN_FLOW_DIR"
+    echo "↻ Using sibling Agarden checkout at ../agarden/flow."
   else
     AGARDEN_FLOW_ROOT="$AGARDEN_CACHE_DIR/flow"
     if [[ -d "$AGARDEN_CACHE_DIR/.git" ]]; then
