@@ -9,6 +9,7 @@ import { layoutGraph } from './layout';
 import { deriveInFlight } from './inFlight';
 import { lineageNodeTypes } from './nodeTypes';
 import { LineageLegend } from './LineageLegend';
+import { LoadingState } from '../components/ds';
 
 /**
  * LineageGraph — the §12 dashboard centerpiece. Renders the storage-agnostic `LineageGraphProjection`
@@ -27,6 +28,9 @@ export interface LineageGraphProps {
   /** FV.5a — node-click → the inspector drawer (the FV.4 carry-forward gap). Fires with the clicked
    *  node's id, its dataRef (inspector/evidence link target), and its projection node type. */
   onNodeClick?: (nodeId: string, dataRef: string, nodeType: LineageNodeType) => void;
+  /** The run's events are still being fetched/folded (the graph structure is up but the panels are empty).
+   *  Keeps the canvas loading overlay up for the WHOLE initial load, not just the (fast) layout phase. */
+  loading?: boolean;
 }
 
 const section: CSSProperties = {
@@ -48,6 +52,7 @@ const summary: CSSProperties = {
   border: 'thin solid var(--border-subtle)',
 };
 const graphWrap: CSSProperties = {
+  position: 'relative', // anchors the layout-in-progress overlay
   width: '100%',
   flex: 1,
   minHeight: 0,
@@ -55,8 +60,22 @@ const graphWrap: CSSProperties = {
   borderRadius: 'var(--radius-md)',
   background: 'var(--bg-surface)',
 };
+// A full-canvas overlay shown while Dagre lays out a large graph (the nodes aren't mounted yet). It is
+// OPAQUE and captures pointer events, so the operator sees a clear "laying out…" state instead of a blank
+// grid, and can't click into an empty canvas (which would queue a flood of selections to fire once nodes
+// appear). Removed the instant the laid-out nodes render.
+const layoutOverlay: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'var(--bg-surface)',
+  borderRadius: 'var(--radius-md)',
+  zIndex: 5,
+};
 
-export function LineageGraph({ projection, events, onNodeClick }: LineageGraphProps) {
+export function LineageGraph({ projection, events, onNodeClick, loading }: LineageGraphProps) {
   // Track the freshest projection by `sequenceThrough` — a stale watermark never replaces a newer view.
   const [shown, setShown] = useState<LineageGraphProjection>(projection);
   useEffect(() => {
@@ -64,10 +83,11 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
   }, [projection]);
 
   const inflight = useMemo(() => deriveInFlight(events ?? []), [events]);
-  const flow = useMemo(
-    () => lineageToFlow(shown, inflight.workingEntityIds),
-    [shown, inflight.workingEntityIds],
-  );
+  // STRUCTURE-only flow: node positions + edges depend on the projection structure, NOT the transient
+  // in-flight working set. Keeping the working overlay OUT of this means a live/replay event stream (which
+  // flips working states thousands of times) does NOT re-trigger the expensive Dagre layout — the working
+  // flag is merged into the already-laid-out nodes below as a cheap O(N) data update.
+  const structuralFlow = useMemo(() => lineageToFlow(shown), [shown]);
   // Generation headers (`type: 'generation'`) are kept in the rendered graph; their count is the run's
   // generation depth — a figure that means something to the user (unlike the raw event-log watermark).
   const generationCount = useMemo(
@@ -76,10 +96,12 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
   );
   // Drawn edges: the breeding events (fusion + mutation) PLUS the short agenome→candidate provenance
   // connector. The `generation→agenome` spawned plumbing stays hidden (it produced a crossing hairball).
-  // The LAYOUT still receives the full edge set (`flow.edges`) so it can detangle by lineage.
   const renderedEdges = useMemo(
-    () => flow.edges.filter((e) => isRenderedEdge(e.data?.edgeType) || e.data?.winner === true),
-    [flow.edges],
+    () =>
+      structuralFlow.edges.filter(
+        (e) => isRenderedEdge(e.data?.edgeType) || e.data?.winner === true,
+      ),
+    [structuralFlow.edges],
   );
   // Trace-on-hover: hovering a NODE lights its incident lines (and an EDGE lights itself) while every
   // other edge fades — so a single breeding line is followable end-to-end through the crossings. With
@@ -110,17 +132,16 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
   // browser doesn't flag the tab as unresponsive on 1000+ node runs. We keep the previous laid-out
   // nodes visible while the new layout is being computed (no flash of empty graph). requestIdleCallback
   // when available, setTimeout(0) as the universal fallback.
-  const [nodes, setNodes] = useState<ReturnType<typeof layoutGraph>>([]);
-  const [layingOut, setLayingOut] = useState(false);
+  // Lay out the STRUCTURE only (re-runs when the projection structure changes, NOT on every event). The
+  // working overlay is merged afterwards so the stream doesn't thrash the layout.
+  const [laidOut, setLaidOut] = useState<ReturnType<typeof layoutGraph>>([]);
   useEffect(() => {
-    setLayingOut(true);
     let cancelled = false;
     const compute = () => {
       if (cancelled) return;
-      const laid = layoutGraph(flow.nodes, flow.edges);
+      const laid = layoutGraph(structuralFlow.nodes, structuralFlow.edges);
       if (cancelled) return;
-      setNodes(laid);
-      setLayingOut(false);
+      setLaidOut(laid);
     };
     const ric = (
       globalThis as unknown as {
@@ -142,7 +163,23 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [flow]);
+  }, [structuralFlow]);
+
+  // Merge the in-flight working flag into the laid-out nodes WITHOUT re-laying-out — a cheap O(N) pass that
+  // only allocates new node objects for nodes whose working state actually changed.
+  const nodes = useMemo(
+    () =>
+      laidOut.map((n) => {
+        const working = inflight.workingEntityIds.has(n.data.dataRef);
+        return n.data.working === working ? n : { ...n, data: { ...n.data, working } };
+      }),
+    [laidOut, inflight.workingEntityIds],
+  );
+
+  // The canvas is mid-load whenever there ARE nodes to place but none are laid out yet — this covers the
+  // whole window from mount (incl. a cache-fast entry from the home page) through the async Dagre layout.
+  // An empty projection (structuralFlow.nodes.length === 0) is genuinely empty, not loading.
+  const layoutPending = structuralFlow.nodes.length > 0 && laidOut.length === 0;
 
   return (
     <section aria-label="Lineage graph" style={section}>
@@ -187,9 +224,9 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
                 data-sequence-through={shown.sequenceThrough}
                 style={summary}
               >
-                {flow.nodes.length} nodes · {generationCount} generation
+                {structuralFlow.nodes.length} nodes · {generationCount} generation
                 {generationCount === 1 ? '' : 's'}
-                {layingOut && nodes.length === 0 && ' · laying out…'}
+                {layoutPending && ' · laying out…'}
               </div>
             </Panel>
             {/* Fixed-during-pan/zoom key so a non-expert can read the color-code + edge styles. */}
@@ -198,6 +235,18 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
             </Panel>
           </ReactFlow>
         </ReactFlowProvider>
+        {(layoutPending || loading === true) && (
+          <div style={layoutOverlay} role="status" aria-live="polite">
+            <LoadingState
+              shape="graph"
+              label={
+                layoutPending
+                  ? `Laying out ${structuralFlow.nodes.length.toLocaleString()} nodes…`
+                  : 'Loading run data…'
+              }
+            />
+          </div>
+        )}
       </div>
 
     </section>

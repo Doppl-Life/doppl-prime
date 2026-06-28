@@ -118,6 +118,21 @@ describe('ds/cards + observatory — composed panel vocabulary', () => {
     expect(stamps[29]?.textContent).toBe('#30');
   });
 
+  // spec: the header status reflects the stream — "live" while streaming, "ended" once the run is
+  // terminal (no longer streaming), "replaying" in replay mode.
+  it('test_activity_ticker_status_label', () => {
+    const events = [{ sequence: 1, type: 'energy.spent', phrase: 'evt 1' }];
+    const live = render(<ActivityTicker events={events} mode="live" />);
+    expect(live.getByText('live')).toBeTruthy();
+    live.unmount();
+    const ended = render(<ActivityTicker events={events} mode="live" isTerminal />);
+    expect(ended.getByText('ended')).toBeTruthy();
+    expect(ended.queryByText('live')).toBeNull();
+    ended.unmount();
+    const replay = render(<ActivityTicker events={events} mode="replay" isTerminal />);
+    expect(replay.getByText('replaying')).toBeTruthy(); // replay wins over terminal
+  });
+
   // Soft DOM cap: an explicit small maxRows keeps the LAST N (newest) events, still ascending.
   it('test_activity_ticker_soft_cap_keeps_newest_ascending', () => {
     const events = Array.from({ length: 10 }, (_, i) => ({

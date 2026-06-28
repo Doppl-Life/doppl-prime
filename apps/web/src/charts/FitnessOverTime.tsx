@@ -46,6 +46,7 @@ const legend: CSSProperties = {
   padding: 0,
   display: 'flex',
   flexWrap: 'wrap',
+  justifyContent: 'center',
   gap: 'var(--space-3)',
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',

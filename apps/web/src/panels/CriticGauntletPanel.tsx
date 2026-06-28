@@ -35,11 +35,12 @@ const empty: CSSProperties = {
   color: 'var(--fg-muted)',
   padding: 'var(--space-4)',
 };
+// Match the candidate inspector's section labels (CandidateInspector `fieldLabel`): mono, caption-sized,
+// muted, normal weight — so the critic mandate headers read as the same kind of label.
 const mandateHead: CSSProperties = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-label)',
-  fontWeight: 600,
-  color: 'var(--fg-default)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
 };
 const notReviewed: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -56,6 +57,9 @@ const reviewCard: CSSProperties = {
 };
 const track: CSSProperties = {
   height: 'var(--space-2)',
+  // Narrower than full width, centered, with breathing room above/below.
+  width: '92%',
+  margin: 'var(--space-2) auto',
   background: 'var(--meter-track)',
   borderRadius: 'var(--radius-full)',
   overflow: 'hidden',
