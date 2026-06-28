@@ -219,6 +219,59 @@ describe("App", () => {
     expect(screen.getAllByText("+3.5").length).toBeGreaterThan(1);
   });
 
+  it("prefers The Rock Star's Drone Problem when it is present in the index", async () => {
+    const preferredFixture: CalibratorIndex = structuredClone(fixture);
+    preferredFixture.cases = [
+      {
+        case_id: "jack-drone-privacy-fd080117",
+        title: "The Rock Star's Drone Problem",
+        visibility: "internal",
+        source_paths: [],
+        body: "# The Rock Star's Drone Problem",
+        problem: {
+          body: "# The Rock Star's Drone Problem",
+          source: "case-study",
+        },
+        problem_recoveries: [
+          {
+            case_id: "jack-drone-privacy-fd080117",
+            problem_recovery_id:
+              "the-asset-is-the-photograph-not-the-drone-9b2e71c4",
+            node_id: "the-asset-is-the-photograph-not-the-drone-9b2e71c4",
+            title: "The Asset Is the Photograph, Not the Drone",
+            source_type: "kernel",
+            source_status: "imported",
+            body: "# The Asset Is the Photograph, Not the Drone",
+            human_ratings: [],
+          },
+        ],
+        solutions: [],
+      },
+      ...preferredFixture.cases,
+    ];
+    vi.mocked(fetch).mockImplementation(
+      async (input: string | URL | Request) => {
+        const url = input.toString();
+        if (url === "/api/index")
+          return new Response(JSON.stringify(preferredFixture), {
+            status: 200,
+          });
+        return new Response("not found", { status: 404 });
+      },
+    );
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "The Asset Is the Photograph, Not the Drone",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Case study")).toHaveValue(
+      "jack-drone-privacy-fd080117",
+    );
+  });
+
   it("loads the single-column trace and disables submit until score is selected", async () => {
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();

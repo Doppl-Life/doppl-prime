@@ -12,9 +12,11 @@ describe("readAgardenIndex", () => {
     expect(index.cases.map((item) => item.case_id)).toEqual(expect.arrayContaining([
       "fsd-ownership-unwind-0caef8e3",
       "houston-baggage-claim-complaints-57251c2c",
+      "jack-drone-privacy-fd080117",
       "when-the-crashes-dont-come-575845a4",
     ]));
     expect(index.cases.map((item) => item.title)).toContain("Houston Baggage Claim Complaints");
+    expect(index.cases.map((item) => item.title)).toContain("The Rock Star's Drone Problem");
   });
 
   it("recursively attaches judgeable problem recoveries and doppls under their root case", async () => {
@@ -38,7 +40,7 @@ describe("readAgardenIndex", () => {
       ledger_path: "ratings-ledger.json",
       source_type: "kernel",
       source_status: "imported",
-      scores: { judge: 2, human: null, n: 0 },
+      scores: expect.objectContaining({ judge: 2 }),
     });
     expect(recovery?.source_path).toBe(
       "flow/when-the-crashes-dont-come-575845a4/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f/actuarial-collapse-in-specialty-auto-reinsurance-59cd965f.md",

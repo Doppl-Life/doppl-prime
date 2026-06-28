@@ -155,6 +155,86 @@ export const SKIN_VALIDATION_QUESTIONS: Record<
     "consumer-litigation-funds":
       "Which case-screening signal would show litigation funders can assess claims once evidence access is neutralized?",
   },
+  "behavioral-camouflage-protocol-b-cap-1477a1ac": {
+    "event-design-architects":
+      "Which deck-layout change or scheduled visual beat would keep the party feeling natural while denying a drone a stable, high-value shot?",
+    "behavioral-psychologists":
+      "Which guest-attention measure would show the camouflage protocol redirects behavior without making people feel surveilled or interrupted?",
+    "luxury-hospitality-operations":
+      "Which service cue could crew execute repeatedly without guests interpreting it as a security alarm or a ruined evening?",
+  },
+  "behavioral-flow-state-management-the-anti-spotlight-29d1d213": {
+    "behavioral-psychology-and-cognitive-load-theory":
+      "Which observable behavior would prove the ambient flow design prevents guests from congregating in predictable photo zones without increasing anxiety?",
+    "ambient-environmental-design-acoustics-scent":
+      "Which lighting, sound, or scent transition could move attention indoors without feeling like a defensive anti-drone maneuver?",
+    "event-choreography-and-pattern-generation-ai":
+      "Which non-repeating activity pattern would the choreography engine generate to make paparazzi timing models fail over a full night?",
+  },
+  "decentralized-visual-noise-protocol-14a13d27": {
+    "advanced-materials-scientists":
+      "Which reflectivity or durability test would prove the visual-noise panels confuse aerial imaging without becoming unsafe in saltwater conditions?",
+    "architectural-lighting-designers":
+      "Which lighting sequence would disrupt a drone's stable geometry cues while still looking intentional and elegant to guests on deck?",
+    "electrochromic-film-manufacturers":
+      "Which switching-speed, power, and marine-exposure data would show electrochromic films can sustain this effect through an actual party?",
+  },
+  "deep-learning-counter-profiling-dlcp-77a9fea0": {
+    "ai-ethics-and-monitoring-firms":
+      "Which consent, retention, and false-positive policy would make internal high-value-moment detection defensible for guests and crew?",
+    "behavioral-data-scientists":
+      "Which signal would distinguish a genuinely monetizable scandal moment from ordinary party movement without over-triggering interventions?",
+    "advanced-lighting-audio-engineers":
+      "Which localized light or sound intervention would interrupt the camera value of a moment without visibly manipulating the people involved?",
+  },
+  "distributed-data-fog-network-3599d2a9": {
+    "optical-physics-and-lens-aberration-theory":
+      "Which measurable aberration pattern would corrupt drone imagery enough to kill tabloid value without requiring illegal RF interference?",
+    "portable-targeted-low-energy-field-generation":
+      "Which energy, range, and safety envelope would prove the field can be aimed at cameras without affecting guests, crew, or nearby vessels?",
+    "drone-signature-analysis-high-frequency":
+      "Which drone-camera signature would let the system tune optical noise to the intruding device before it reaches usable filming range?",
+  },
+  "hydrodynamic-acoustic-masking-field-01ba2a27": {
+    "acoustic-ecology-and-bioacoustics":
+      "Which coastal sound profile would make the yacht's masking field blend into the environment rather than creating a detectable artificial signature?",
+    "distributed-low-frequency-transducer-network-design":
+      "Which placement map would show transducers can cover exposed decks without causing discomfort or interfering with vessel operations?",
+    "signal-separation-theory-source-localization":
+      "Which source-localization test would show outside listeners cannot isolate valuable conversations or activity from maritime background noise?",
+  },
+  "the-asset-is-the-photograph-not-the-drone-9b2e71c4": {
+    "talk-to-a-maritime-security-lead-about-what-a-crew-actually-does-in-the-seconds-after-a-drone-alert-and-whether-owner-and-guests-will-reliably-respond-to-a-subtle-cue-rather-than-a-klaxon":
+      "Which exact crew drill would prove a subtle cue moves exposed people out of identifiable sightlines before the drone reaches camera range?",
+    "price-the-real-cost-asymmetry-a-false-alarm-that-stops-the-party-every-time-a-dot-appears-versus-one-missed-identifiable-frame":
+      "Which cost comparison would show the owner prefers occasional discreet false cues over the expected damage of one clear identifiable photo?",
+    "run-the-cheapest-falsifying-check-first-measure-detection-range-and-drone-closing-speed-against-the-time-it-takes-exposed-people-to-clear-sightlines":
+      "Which timed field test would falsify the strategy by showing people cannot clear sightlines fast enough after passive detection?",
+  },
+  "the-encrypted-sensory-buffer-zone-f807c856": {
+    "virtual-reality-augmented-reality-projection-mapping":
+      "Which projection-mapping setup would make exterior footage read as an artificial set while preserving the party's private atmosphere inside?",
+    "acoustic-dampening-for-echo-cancellation":
+      "Which echo or voice-isolation measurement would show outside recordings cannot recover useful audio from the sensory buffer?",
+    "advanced-material-science-light-absorption":
+      "Which light-absorption material test would prove the buffer reduces identifiable imagery without making the deck look visibly fortified?",
+  },
+  "the-operational-misdirection-geo-fencing-the-scandal-db8f130f": {
+    "maritime-law-and-jurisdictional-mapping":
+      "Which charted route or permit boundary would make paparazzi surveillance legally risky without creating a new legal exposure for the yacht?",
+    "advanced-predictive-modeling-of-maritime-traffic":
+      "Which traffic forecast would show the yacht can move through low-surveillance windows while remaining safe in busy coastal waters?",
+    "high-frequency-operational-agility-training-crew":
+      "Which crew-response benchmark would show the yacht can change operating posture quickly without guests noticing a security maneuver?",
+  },
+  "the-stealth-deployment-vessel-the-false-flag-9881ae03": {
+    "maritime-sar-search-and-rescue-protocols":
+      "Which SAR communication or identification rule would keep the decoy vessel from being mistaken for a real distress or safety operation?",
+    "survey-mapping-technology":
+      "Which survey-track or sensor signature would make the support vessel plausibly more interesting to surveillance drones than the yacht?",
+    "logistics-of-controlled-misdirection":
+      "Which deployment timeline would prove the decoy can attract attention without revealing that it is protecting a celebrity party?",
+  },
 };
 
 export function skinValidationQuestion(

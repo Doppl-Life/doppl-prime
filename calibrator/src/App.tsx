@@ -271,8 +271,15 @@ function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
   );
 }
 
+const DEFAULT_CASE_ID = "jack-drone-privacy-fd080117";
+
 function firstReviewableCase(index: CalibratorIndex) {
-  return index.cases.find(hasRateableArtifacts);
+  return (
+    index.cases.find(
+      (caseItem) =>
+        caseItem.case_id === DEFAULT_CASE_ID && hasRateableArtifacts(caseItem),
+    ) ?? index.cases.find(hasRateableArtifacts)
+  );
 }
 
 function reviewQueueForCase(
