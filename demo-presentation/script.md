@@ -4,7 +4,7 @@
 
 ## 1 · Cold open — When the Crashes Don't Come
 
-> Title slide: "Great Question" Then: *Doppl — PSaaS, Idearganisms, and the Crash you **didn't** see.*
+> Existing Title slide: "Great Question" Then: *Doppl — PSaaS, Idearganisms, and the Crash you **didn't** see.*
 
 It is interesting to be in Austin, TX, right here and now. Ground zero for the robotaxi revolution.
 
@@ -33,7 +33,7 @@ Anybody got any ideas?
 
 ## 2 · Doppl
 
-> Maybe no new slide, maybe one of Cody's images.
+> Existing slide
 
 Let me put Doppl on your radar.
 
