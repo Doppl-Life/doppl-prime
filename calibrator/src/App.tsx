@@ -26,7 +26,9 @@ const ACCESS_CODE_STORAGE_KEY = "doppl-calibrator-access-code";
 const LOCAL_RATINGS_ENDPOINT = "/api/ratings";
 const SCORE_MIN = 0;
 const SCORE_MAX = 10;
-const DEFAULT_SCORE = 0;
+const DEFAULT_SCORE = 5;
+const DEFAULT_CASE_ID = "jack-drone-privacy-fd080117";
+const DEFAULT_CASE_TITLE = "The Rock Star's Drone Problem";
 type ReviewQueueItem =
   | {
       target: "problem_recovery";
@@ -279,13 +281,15 @@ function hasRateableArtifacts(caseItem: CalibratorIndex["cases"][number]) {
   );
 }
 
-const DEFAULT_CASE_ID = "jack-drone-privacy-fd080117";
-
 function firstReviewableCase(index: CalibratorIndex) {
   return (
     index.cases.find(
       (caseItem) =>
         caseItem.case_id === DEFAULT_CASE_ID && hasRateableArtifacts(caseItem),
+    ) ??
+    index.cases.find(
+      (caseItem) =>
+        caseItem.title === DEFAULT_CASE_TITLE && hasRateableArtifacts(caseItem),
     ) ?? index.cases.find(hasRateableArtifacts)
   );
 }
@@ -1051,7 +1055,7 @@ function hostedEndpointRequiresAccessCode(endpoint: string): boolean {
 export function App() {
   const isAgoraRoute = /\/agora\/?$/.test(window.location.pathname);
   const [index, setIndex] = useState<CalibratorIndex | null>(null);
-  const [selectedCaseId, setSelectedCaseId] = useState("fsd-accident-economy");
+  const [selectedCaseId, setSelectedCaseId] = useState(DEFAULT_CASE_ID);
   const [selectedProblemRecoveryId, setSelectedProblemRecoveryId] = useState<
     string | null
   >(null);

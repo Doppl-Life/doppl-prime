@@ -272,7 +272,7 @@ describe("App", () => {
     );
   });
 
-  it("loads the single-column trace with a zero-default 0 to 10 score", async () => {
+  it("loads the single-column trace with a neutral-default 0 to 10 score", async () => {
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(
@@ -586,7 +586,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("returns to a zero score when switching to a reviewer who has not rated the artifact", async () => {
+  it("returns to a neutral score when switching to a reviewer who has not rated the artifact", async () => {
     window.localStorage.setItem(
       "doppl-calibrator-reviewer-email",
       "cody.clayton@challenger.gauntletai.com",
@@ -622,7 +622,7 @@ describe("App", () => {
     expect(
       screen.getByText("You have not rated this item yet."),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/Score/)).toHaveValue("0");
+    expect(screen.getByLabelText(/Score/)).toHaveValue("5");
     expect(
       screen.getByRole("button", { name: "Submit problem recovery rating" }),
     ).toBeEnabled();
