@@ -10,31 +10,7 @@ done
 
 ## 3 · aGarden - The outside view
 
-> Slide (Run ahead of Time(?)), human transition to live view of the aGarden running.
-
-"When the Crashes Don't Come" is an example of a zeitgeist shift, the *unlock*. The pawn that frees the bishop.
-"What was true yesterday, that is Not true today, and Implies X for tomorrow?" This is Malcolm Gladwell/Howard Moskowitz's Perfect Pepsi v the Perfect Pepsis.
-
-Sometimes you need a *solution.*
-I have a friend in the superyacht world, told me a problem one of his clients was having.
-A celebrity on his superyacht, paparazzi drones circling to sell a scandal, and wants to have his fun without his wife finding out. Every obvious move is as much a headache as the footage:
-
-- Can't shoot it down, major liability issues
-- Can't jam it, because the rasberry can't tell the difference
-- Can't catch it, they have proximity sensors which trigger to automatically fly away with the footage
-- Don't want to disrupt the flow of the festivities
-
-So what do you do?
-
-Doppl's process is to seed the scenario, recover the real problem, and propose solutions.
-
-This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage — which idea came from which.
-A case study becomes a recovered problem.
-A recovered problem becomes a doppl.
-And at each new step, the path points out of the system, back to you - the human in the loop.
-
-The real probem was never "defeat the drone." It was "make the footage worthless."
-And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem a solve it. Move on.
+done
 
 ## 4 · The inside view — the kernel
 

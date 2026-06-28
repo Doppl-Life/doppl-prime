@@ -10,27 +10,7 @@ done
 
 ## 3 · aGarden - The outside view
 
-This is the aGarden — a living vault of real runs. What you're looking at is not a slide. It's the floor model.
-
-Every node grew from a single seed. A case study — a situation, stated plainly. "When the Crashes Don't Come" — the one we just walked through. Or, from a completely different world: a rock star on a superyacht, paparazzi drones circling overhead.
-
-The engine doesn't jump to answers. It recovers the actual problem first. Surface complaint, deleted assumption, hidden variable — until you see what's really load-bearing. That's **problem recovery**. Scored. Survives or doesn't.
-
-Then it branches into **doppls** — the unlocks, opportunities, and solutions that follow once you see the real constraint.
-
-And here's the distinction that matters.
-
-An **unlock** is when understanding something — robotaxi fleets at scale, say — opens a whole landscape. Divergent. Many fields, many consequences, many new problems to grow. One seed, many lineages.
-
-A **solution** is when you need one thing that works. Convergent. The Jack drone case: the yacht couldn't shoot the drone down, couldn't jam it without knocking out the port. The move wasn't defeating the drone. It was making the footage worthless — a private song cue through the yacht's sound system. Only the owner and the people he'd told knew what it meant. Song plays, everyone moves inside, drone films an empty deck. Problem gone. Night continues.
-
-Same engine. Different shape of search.
-
-What you're watching now is that growth — case study to problem recovery to doppl — node after node, scored on novelty and grounding, survivors breeding forward. It looks like life growing. Because structurally, it is.
-
----
-
-
+done
 
 ## 4 · The inside view — how the kernel operates
 

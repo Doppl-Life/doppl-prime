@@ -12,36 +12,7 @@ done
 
 ## 3 · aGarden - The outside view
 
-This is the outside view, the aGarden.
-
-A seed enters here and grows a lineage of nodes.
-
-The first node is the case study: what happened, stated plainly.
-The next is problem recovery: the surface complaint, the assumption we can delete, the hidden variable, and the actual problem.
-Then come the Doppls: solutions, opportunities, and unlocks that only become visible once the problem is framed correctly.
-
-That distinction between a solution and an unlock matters.
-
-One case starts with a rock star on a yacht and paparazzi drones approaching the open deck.
-The obvious question is: how do we stop the drone?
-
-Shoot it down, and something falls out of the sky.
-Jam it, and you may disrupt everything nearby while the drone flies home with the footage anyway.
-
-Problem recovery changes the target.
-The drone is not the valuable asset.
-The photograph is.
-
-The yacht can already detect the drone early.
-The winning response is a private song over the sound system.
-The people who know the cue move inside.
-The drone arrives, records the yacht perfectly, and goes home with nothing worth selling.
-
-That is a solution to one case.
-The unlock is broader: stop attacking the delivery mechanism and remove the value of what it captures.
-
-That unlock can be reseeded into new cases, branches, and Doppls.
-That is why the garden looks less like a list of answers and more like something alive.
+done
 
 ## The Inside View
 
