@@ -45,7 +45,7 @@
   --status-spent: #7e8aa3;
   --status-eligible: #5aa9ff; /* blue — eligible_parent */
   --status-reproduced: #b98cff; /* violet — fused (two-parent) */
-  --status-mutated: #f4b650; /* amber — mutation shimmer */
+  --status-mutated: #ef7e45; /* orange — mutation; distinct from the winner's yellow-gold (--status-selected) */
   --status-failed: #f2545b; /* red — dashed */
   --status-culled: #b23b43; /* deep "sunk" red — killed by selection (distinct from the bright failed red) */
 
@@ -92,7 +92,7 @@
   --edge-scored: #7fb2ff;
   --edge-culled: #c2454d; /* red — the cull edge, visible against the dark canvas */
   --edge-fused: #b98cff;
-  --edge-mutated: #f4b650;
+  --edge-mutated: #ef7e45;
   --edge-selected: #ffca3a;
 }
 
@@ -150,7 +150,7 @@
   --status-spent: #6e7a93;
   --status-eligible: #2e72d6; /* blue */
   --status-reproduced: #7c4deb; /* violet */
-  --status-mutated: #b5780c; /* amber */
+  --status-mutated: #c25d18; /* orange — distinct from the winner's gold (--status-selected) */
   --status-failed: #d7343b;
   --status-culled: #b23a41; /* deep "sunk" red — killed by selection (AA-legible on white) */
 
@@ -192,7 +192,7 @@
   --edge-scored: #3e72c9;
   --edge-culled: #c2454c; /* red — the cull edge */
   --edge-fused: #7c4deb;
-  --edge-mutated: #b5780c;
+  --edge-mutated: #c25d18;
   --edge-selected: #b07d08;
 
   /* depth: soft ink shadows; glows become crisp rings (halos muddy on white) */

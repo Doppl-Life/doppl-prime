@@ -62,20 +62,31 @@ const workingRow: CSSProperties = {
   fontSize: 'var(--text-caption)',
   color: 'var(--status-active)',
 };
-/** The column-header chip: a wide pill with a top accent, mono label — visually a header, not a card. */
+// The column header: a PLAIN centered label (no card box / border / handles), so it reads as a section
+// header for the column rather than a node. Its width matches a column's node width so the text centers
+// over the organisms below it.
 const headerChip: CSSProperties = {
-  background: 'var(--bg-surface-2)',
-  border: 'thin solid var(--border-subtle)',
-  borderTop: 'var(--space-1) solid var(--status-active)',
-  borderRadius: 'var(--radius-md)',
-  padding: 'var(--space-1) var(--space-3)',
+  width: 240,
+  padding: 'var(--space-1) 0',
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-label)',
   fontWeight: 700,
-  letterSpacing: '0.04em',
-  color: 'var(--fg-default)',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: 'var(--fg-muted)',
   textAlign: 'center',
-  minWidth: 'var(--space-9)',
+  background: 'transparent',
+};
+// The generation header's edge anchor — invisible (a header shouldn't show a connector dot).
+const hiddenHandle: CSSProperties = {
+  opacity: 0,
+  width: 1,
+  height: 1,
+  minWidth: 0,
+  minHeight: 0,
+  border: 'none',
+  background: 'transparent',
+  pointerEvents: 'none',
 };
 
 /**
@@ -113,6 +124,13 @@ function bodyStyle(data: LineageNodeData): CSSProperties {
   };
 }
 
+/** Trim a metric to a readable precision so a node card never prints a 17-digit float (which wraps to a
+ *  second line and inflates the card height → overlap). Sub-1 values (fitness/novelty ∈ [0,1]) → 3 dp. */
+function formatMetric(v: number): string {
+  if (!Number.isFinite(v)) return String(v);
+  return Math.abs(v) < 1 ? v.toFixed(3) : v.toFixed(2);
+}
+
 /** Presentational node card (no Handle / React Flow context) — directly unit-testable. */
 export function LineageNodeCard({ data }: { data: LineageNodeData }) {
   return (
@@ -134,7 +152,7 @@ export function LineageNodeCard({ data }: { data: LineageNodeData }) {
         <div style={metricsRow}>
           {Object.entries(data.metrics).map(([k, v]) => (
             <span key={k}>
-              {k} {v}
+              {k} {formatMetric(v)}
             </span>
           ))}
         </div>
@@ -156,13 +174,18 @@ export function GenerationHeaderCard({ data }: { data: LineageNodeData }) {
   return <div style={headerChip}>{text}</div>;
 }
 
-/** A custom node = source/target handles wrapping the presentational card (the React Flow contract). */
+/** A custom node = source/target handles wrapping the presentational card (the React Flow contract). Four
+ *  INVISIBLE anchors (no connector dots on a read-only graph): left/right carry the horizontal cross-
+ *  generation breeding edges; top/bottom carry the SHORT vertical agenome→candidate connector within a
+ *  column. Edges pick their anchor via sourceHandle/targetHandle (see lineageToFlow). */
 function withHandles(card: ReactNode) {
   return (
     <>
-      <Handle type="target" position={Position.Left} />
+      <Handle id="tl" type="target" position={Position.Left} style={hiddenHandle} />
+      <Handle id="tt" type="target" position={Position.Top} style={hiddenHandle} />
       {card}
-      <Handle type="source" position={Position.Right} />
+      <Handle id="sr" type="source" position={Position.Right} style={hiddenHandle} />
+      <Handle id="sb" type="source" position={Position.Bottom} style={hiddenHandle} />
     </>
   );
 }
@@ -184,9 +207,15 @@ export function ScoreNode({ data }: NodeProps) {
 export function SelectedWinnerNode({ data }: NodeProps) {
   return withHandles(<LineageNodeCard data={data as LineageNodeData} />);
 }
-/** The generation tier — a column-header chip. Still has the Handles so `spawned` edges resolve. */
+/** The generation tier — a plain column header. It only ever SOURCES the faint `spawned` edge to the
+ *  first agenome, anchored by a single invisible handle at its bottom-center (no visible connector dot). */
 export function GenerationNode({ data }: NodeProps) {
-  return withHandles(<GenerationHeaderCard data={data as LineageNodeData} />);
+  return (
+    <>
+      <GenerationHeaderCard data={data as LineageNodeData} />
+      <Handle type="source" position={Position.Bottom} style={hiddenHandle} />
+    </>
+  );
 }
 
 /** The stable nodeTypes map passed to <ReactFlow> (must be a module constant — RF warns otherwise). */
