@@ -178,6 +178,15 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(rail.querySelector('button')).toBeTruthy(); // the StopControl's stop button
   });
 
+  // spec: replay is a RECORDED run — the rail shows a static "replay only" indicator instead of the live
+  // Stop button / "Loading run state…" gate (a recorded run can't be stopped, and there's no state to load).
+  it('test_replay_rail_shows_recorded_indicator_not_stop_or_loading', async () => {
+    renderView('replay');
+    expect(await screen.findByText(/replay only/i)).toBeTruthy(); // recorded-run indicator
+    expect(screen.queryByText(/loading run state/i)).toBeNull(); // no live loading gate
+    expect(screen.queryByText(/^stop run$/i)).toBeNull(); // no stop affordance on a recorded run
+  });
+
   // spec(§12): the agent roster (from the fetched lineage's agenome nodes) renders in the LEFT rail.
   it('test_agent_roster_in_left_rail', async () => {
     renderView('live');

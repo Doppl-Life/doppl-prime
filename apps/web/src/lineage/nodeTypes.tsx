@@ -124,11 +124,11 @@ function bodyStyle(data: LineageNodeData): CSSProperties {
   };
 }
 
-/** Trim a metric to a readable precision so a node card never prints a 17-digit float (which wraps to a
- *  second line and inflates the card height → overlap). Sub-1 values (fitness/novelty ∈ [0,1]) → 3 dp. */
+/** Trim a metric to 2 decimals so a node card never prints a 17-digit float (which wraps to a second line
+ *  and inflates the card height → overlap), e.g. fitness/novelty 0.45 / 1.00. */
 function formatMetric(v: number): string {
   if (!Number.isFinite(v)) return String(v);
-  return Math.abs(v) < 1 ? v.toFixed(3) : v.toFixed(2);
+  return v.toFixed(2);
 }
 
 /** Presentational node card (no Handle / React Flow context) — directly unit-testable. */

@@ -26,6 +26,9 @@ export interface TickerEvent {
 export interface ActivityTickerProps {
   events: TickerEvent[];
   mode?: 'live' | 'replay';
+  /** Live-mode only: the run has reached a terminal event, so the feed is no longer streaming. The
+   *  header then reads "ended" (static dot, no pulse) instead of "live". Ignored in replay mode. */
+  isTerminal?: boolean;
   /** Soft DOM cap — only the last `maxRows` events render (bounds node count, NOT a truncation
    *  signal). Large by default so the full feed is visible; events are still ordered ascending. */
   maxRows?: number;
@@ -88,12 +91,22 @@ export function isAtBottom(
 export function ActivityTicker({
   events,
   mode = 'live',
+  isTerminal = false,
   maxRows = DEFAULT_MAX_ROWS,
   title = 'Activity',
 }: ActivityTickerProps) {
   // Ascending (oldest→newest): newest renders LAST so it sits at the bottom of the scroll feed.
   const rows = events.slice(-maxRows);
   const isReplay = mode === 'replay';
+  // Header status: replay → "replaying" (amber, static); a terminated live run → "ended" (muted, static —
+  // it isn't streaming anymore); an active live run → "live" (accent, pulsing).
+  const status = isReplay ? 'replaying' : isTerminal ? 'ended' : 'live';
+  const pulsing = !isReplay && !isTerminal;
+  const dotColor = isReplay
+    ? 'var(--warning)'
+    : isTerminal
+      ? 'var(--fg-muted)'
+      : 'var(--accent)';
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   // Init true: a fresh feed follows the newest event. Toggled off when the operator scrolls up.
@@ -153,21 +166,31 @@ export function ActivityTicker({
           color: 'var(--fg-faint)',
         }}
       >
+        {title ? <span>{title}</span> : null}
+        {/* The pulsing dot belongs WITH the live/replaying label — group them so they read as one
+            status indicator (right-aligned), not a dot orphaned at the far left. */}
         <span
           style={{
-            width: 'var(--space-2)',
-            height: 'var(--space-2)',
-            borderRadius: 'var(--radius-full)',
-            background: isReplay ? 'var(--warning)' : 'var(--accent)',
-            boxShadow: isReplay ? 'none' : 'var(--glow-active)',
-            animation: isReplay
-              ? 'none'
-              : 'doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite',
+            marginLeft: 'auto',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 'var(--space-2)',
+            fontFamily: 'var(--font-ui)',
           }}
-        />
-        <span>{title}</span>
-        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-ui)' }}>
-          {isReplay ? 'replaying' : 'live'}
+        >
+          <span
+            style={{
+              width: 'var(--space-2)',
+              height: 'var(--space-2)',
+              borderRadius: 'var(--radius-full)',
+              background: dotColor,
+              boxShadow: pulsing ? 'var(--glow-active)' : 'none',
+              animation: pulsing
+                ? 'doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite'
+                : 'none',
+            }}
+          />
+          <span>{status}</span>
         </span>
       </div>
       <div
@@ -195,31 +218,39 @@ export function ActivityTicker({
             <div
               key={`${e.sequence ?? i}:${i}`}
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'var(--space-5) auto 1fr auto',
-                alignItems: 'baseline',
+                display: 'flex',
+                alignItems: 'flex-start',
                 gap: 'var(--space-2)',
                 padding: 'var(--space-1) var(--space-3)',
                 fontSize: 'var(--text-mono-sm)',
                 animation: isNewest ? 'doppl-spawn var(--motion-fast) var(--ease-out)' : undefined,
               }}
             >
-              <span aria-hidden="true" style={{ color: `var(${spec.color})`, textAlign: 'center' }}>
+              <span
+                aria-hidden="true"
+                style={{ color: `var(${spec.color})`, textAlign: 'center', flex: 'none' }}
+              >
                 {spec.glyph}
               </span>
-              <span style={{ color: 'var(--fg-faint)' }}>#{e.sequence ?? '—'}</span>
-              <span
-                style={{
-                  color: 'var(--fg-default)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span style={{ color: 'var(--fg-muted)' }}>{e.actor ? `${e.actor} ` : ''}</span>
-                {e.phrase || e.label || e.type}
-              </span>
-              <span style={{ color: 'var(--fg-faint)' }}>{ago(e.occurredAt)}</span>
+              {/* A two-line row: a #seq + relative-time meta line, then the FULL event text wrapping
+                  below — so the narrow rail no longer truncates each event to "actor fu…". */}
+              <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: '2px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 'var(--space-2)',
+                    color: 'var(--fg-faint)',
+                  }}
+                >
+                  <span>#{e.sequence ?? '—'}</span>
+                  <span>{ago(e.occurredAt)}</span>
+                </div>
+                <div style={{ color: 'var(--fg-default)', overflowWrap: 'anywhere' }}>
+                  <span style={{ color: 'var(--fg-muted)' }}>{e.actor ? `${e.actor} ` : ''}</span>
+                  {e.phrase || e.label || e.type}
+                </div>
+              </div>
             </div>
           );
         })}
