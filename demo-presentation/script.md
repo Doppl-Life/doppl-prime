@@ -23,7 +23,7 @@ What about the loss of probable cause and the traffic stop, when the entire pret
 Auto parts. Body shops. Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
 The Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
 
-What happens when all that goes away? When the hit you don't see coming is the coming hit that never came?
+What happens when all that falls away? When the hit you don't see coming is the coming hit that never came?
 
 This all adds up to something. This **means** something.
 
