@@ -1448,6 +1448,70 @@ describe("App", () => {
     );
   });
 
+  it("keeps the current queue and advances after submit when hosted index refresh is stale", async () => {
+    window.DOPPL_CALIBRATOR_CONFIG = {
+      ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",
+      requiresAccessCode: false,
+    };
+    const staleIndex: CalibratorIndex = {
+      ...fixture,
+      cases: [],
+    };
+    let staticIndexReads = 0;
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = input.toString();
+        if (url === "/api/index") {
+          return new Response("not found", { status: 404 });
+        }
+        if (url.startsWith("calibration-index.json")) {
+          staticIndexReads += 1;
+          return new Response(
+            JSON.stringify(staticIndexReads === 1 ? fixture : staleIndex),
+            { status: 200 },
+          );
+        }
+        if (
+          url === "https://ratings.example.test/api/agarden/ratings" &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              ratingId: "hosted-rating",
+              relativePath: "ratings-ledger.json",
+            }),
+            { status: 201 },
+          );
+        }
+        return new Response("not found", { status: 404 });
+      },
+    );
+
+    render(<App />);
+    await waitForReviewWorkspace();
+    fireEvent.change(screen.getByLabelText(/Score/), {
+      target: { value: "8" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Submit problem recovery rating" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", {
+          name: "Accident-Economy Transition Ledger",
+        }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText("No rateable problem recoveries or doppls are available."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Doppl")).toHaveValue(
+      "dalton-fsd-accident-economy-001__solution",
+    );
+  });
+
   it("can still require a hosted access code when configured for a gated deployment", async () => {
     window.DOPPL_CALIBRATOR_CONFIG = {
       ratingsEndpoint: "https://ratings.example.test/api/agarden/ratings",

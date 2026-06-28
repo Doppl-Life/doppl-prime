@@ -1431,7 +1431,11 @@ export function App() {
       }
       let latestIndex = index;
       try {
-        latestIndex = await loadIndex();
+        const loadedIndex = await loadIndex();
+        const loadedCase = loadedIndex.cases
+          .filter(hasRateableArtifacts)
+          .find((caseItem) => caseItem.case_id === selectedCase.case_id);
+        latestIndex = loadedCase ? loadedIndex : index;
       } catch {
         latestIndex = index;
       }
