@@ -14,33 +14,11 @@ done
 
 done
 
-## The Inside View
+## 4 · The Inside View, the Kernel, and why this was technically difficult
 
-Under the microscope, the same process is generation under selective pressure.
+done
 
-The kernel generates candidates.
-It measures novelty and grounding separately, so a strange idea cannot hide that it is unsupported, and a well-supported idea cannot hide that it adds nothing.
-Critics test feasibility and falsifiability.
-Objective checks test what can be tested.
-A held-out judge applies a fixed rubric that the organism cannot rewrite.
-
-Weak lineages are culled.
-Survivors pass through conceptual mutagens, lenses that force the search into a new direction.
-Strong lineages survive, fuse, mutate, and produce the next generation.
-Every decision is recorded in an append-only event log, so the whole run can be inspected and replayed.
-
-At the application layer, that machinery follows a simple spine:
-
-Case study.
-Problem recovery.
-A nudge toward human validation.
-Doppl.
-A nudge toward human action.
-
-That is the mechanism.
-Now I am going to hand over the hard part: why this was technically difficult, and what we had to build to make it trustworthy.
-
-## Zero to One, Automated
+## 5 · The Zero-to-One Mindset, Automated
 
 They say ideas are cheap.
 
@@ -108,8 +86,6 @@ The opportunity is:
 
 Transition.
 
-## The Nudge
+## 9 · Close - the Call to Action
 
-So take Doppl and make it yours. Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.
-
-All YOU'll need...is a Great Question.
+done

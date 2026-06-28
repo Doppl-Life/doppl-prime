@@ -12,25 +12,11 @@ done
 
 done
 
-## 4 · The inside view — the kernel
+## 4 · The Inside View, the Kernel, and why this was technically difficult
 
-That's the garden from above. Now the microscope.
+done
 
-Underneath, there is one engine, doing one thing: generation under selective pressure. Generate. Score — novelty times grounding, never collapsed into a single number. Select the survivors. Breed. Again.
-
-And there is a floor it cannot move. A held-out judge, sitting outside the breeding loop, holding a fixed rubric the organisms are never allowed to touch. They can get better. They cannot cheat. So the proof the whole thing works is almost rude in how simple it is: generation N-plus-one beats generation N — graded by a judge it can't bribe.
-
-How do you actually build an organism that breeds its own ideas and *still* can't game its own report card? That part is genuinely hard.
-
-And for that —
-
-`[hand to teammate]`
-
-## 5 · Why this was technically difficult
-
-`[teammate — played dead straight. the load-bearing sincerity. not written here.]`
-
-## 6 · The zero-to-one mindset, automated
+## 5 · The Zero-to-One Mindset, Automated
 
 So — say the hard part is solved. Here's the part nobody says out loud.
 
@@ -44,7 +30,7 @@ Because the thing the world actually venerates was never the idea. It's the zero
 
 The marginal cost of a defensible idea, heading for zero.
 
-## 7 · The human in the loop
+## 6 · The Human in the Loop
 
 Which leaves you exactly two jobs.
 
@@ -54,7 +40,7 @@ That last arrow is the only one left with skin in the game. The machine did the 
 
 And the judgment — whether a given idea is *any good* — we don't keep that locked inside the machine either. This is the Agora. The team rates the doppls on a slider, from worthless to highly useful. The held-out judge calibrates against real human taste. The floor is fixed; the taste is crowdsourced.
 
-## 8 · Implications & opportunity
+### Implications & Opportunity
 
 So here's the category we're coining. Problem-Solving as a Service. PSaaS. Also known as —
 
@@ -68,16 +54,6 @@ Remember those dominoes from the cold open? That whole collapsing problem-econom
 
 And the opportunity is the cascade.
 
-## 9 · Call to action
+## 8 · Close - the Call to Action
 
-So take Doppl, and make it yours. Get out into the world and automate the ideate. Doppl unlocks the idea — the stake is still yours to take.
-
-*Finger up — sweep to the back of the room.* Anybody got any questions?
-
-## 10 · Close
-
-Don't worry about the answer.
-
-All you need...
-
-is a great question.
+done

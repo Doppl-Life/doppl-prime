@@ -12,51 +12,13 @@ done
 
 done
 
-## 4 · The inside view — how the kernel operates
+## 4 · The Inside View, the Kernel, and why this was technically difficult
 
-Under the microscope: one engine. **Generation under selective pressure.**
+done
 
-Each pass: generate candidates. Score them — novelty and grounding, kept separate, never collapsed into a single number. Select survivors. Apply mutagenic forces — breakthrough, blindside, first principles — lenses that steer the search without letting any one voice dominate.
+## 5 · The Zero-to-One Mindset, Automated
 
-The spine is simple.
-
-**Case study** → **problem recovery** — with a nudge toward human validation → **doppl** — with a nudge toward human action → out of the system. Into the world.
-
-Under the hood: a bounded population of agent genomes. A critic council. Objective checks. A held-out judge the evolving agents cannot move — the fitness floor they cannot lift. An append-only event log as the only source of truth. Everything on the dashboard is a projection of what actually happened. Live or replay. Same story.
-
----
-
-
-
-## 5 · Why this was technically difficult
-
-That's the organism. Now — why building the organism was hard.
-
-I'll hand the floor here. The engineering is real, and someone who actually fought with it should tell you.
-
----
-
-
-
-## 6 · The zero-to-one mindset, automated
-
-Thank you.
-
-There's a thing people say about startups. About founders. About the sacred founding mindset.
-
-They say ideas are cheap.
-
-We say… could be cheaper.
-
-Doppl automates the zero-to-one mindset. Stated plainly. As a product feature. No irony in the voice.
-
-You bring the question. The kernel breeds the candidates. The critics stress-test them. The lineage survives. The marginal cost of a defensible idea approaches zero — not because ideas were ever worthless, but because the work of finding, grounding, and pressure-testing them no longer has to be bespoke every single time.
-
----
-
-
-
-## 7 · The human in the loop
+## 6 · The Human in the Loop
 
 The pipeline does everything between the question and the action.
 
@@ -66,11 +28,8 @@ The machine took the research. It took the branching. It took the scoring. It po
 
 At problem recovery and at doppl, the system nudges toward real-world validation — not abstraction for its own sake. Judgment doesn't disappear into the model. The team calibrates through the **Agora** — human verdicts on what sprouted, what's worth keeping, what actually ships.
 
----
 
-
-
-## 8 · Implications & opportunity
+## 7 · Implications & Opportunity
 
 We're coining a category.
 
@@ -86,24 +45,6 @@ And the market? That whole collapsing problem-economy from the cold open — the
 
 The dominoes are the market. The opportunity is the vacuum.
 
----
+## 8 · Close - the Call to Action
 
-
-
-## 9 · Call to action — the nudge
-
-So take Doppl. Make it yours.
-
-Get out in the world. Automate the ideate. Doppl unlocks the idea — the stake is still yours.
-
-Which brings us back to where we started.
-
----
-
-
-
-## 10 · Close
-
-All you need…
-
-…is a great question.
+done

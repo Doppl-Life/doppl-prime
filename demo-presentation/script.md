@@ -71,25 +71,21 @@ And at each new step, the path points out of the system, back to you - the human
 The real probem was never "defeat the drone." It was "make the footage worthless."
 And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem and solve it.
 
-## 4 · The inside view — how the kernel operates
+## 4 · The inside view, the kernel, and why this was technically difficult
 
-> No slide, internal view of the kernel running.
+That's the garden from above. Now the microscope.
 
+Here to talk about Doppl's inner workings is our own Cody Clayton.
+`[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-
-## 5 · Why this was technically difficult
+## 5 · The Zero-to-One Mindset, automated
 
 > Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
-
-
 
 ## 6 · The human in the loop
 
 > No slide. Start back at outer vieview of the Agora.
->
-> Talk about judgement calibration, problem-recovery validation, and play-at your level 
-
-
+> Talk about judgement calibration, problem-recovery validation, and play-at-your-level
 
 ## 7 · The zero-to-one mindset, automated
 
@@ -102,15 +98,10 @@ And the actual fix - you can get it for a song. Passive RF detection flags incom
 > slide?
 
 
-
-## 9 · Call to action — the nudge
-
-> slide?
-
-
-
-## 10 · Close
+## 9 · Close - the Call to Action
 
 > Closing Slide: Same to similar as the initial title slide?
 
-All you need…is a great question.
+So take Doppl and make it yours. Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.
+
+All You'll need...is a Great Question.
