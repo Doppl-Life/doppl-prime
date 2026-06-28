@@ -27,15 +27,32 @@ export interface EdgeVisual {
   readonly animated?: boolean;
 }
 
-/** A violet (reproduced/fusion) closed arrowhead — co-colored with its stroke. */
+/** The gold connector from the producing agenome to the SELECTED WINNER in its right-hand lane — the one
+ *  line that traces the run's final result back into the lineage. Loud + gold so the winning path stands out. */
+export const WINNER_EDGE_VISUAL: EdgeVisual = {
+  style: { stroke: 'var(--status-selected)', strokeWidth: 2.5 },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: 'var(--status-selected)',
+    width: 22,
+    height: 22,
+  },
+};
+
+/** A violet (reproduced/fusion) closed arrowhead — co-colored with its stroke. Enlarged so the DESTINATION
+ *  end of a breeding line is obvious at a glance (a two-parent fusion converges several lines on a child). */
 const FUSION_MARKER: EdgeMarkerType = {
   type: MarkerType.ArrowClosed,
   color: 'var(--status-reproduced)',
+  width: 20,
+  height: 20,
 };
-/** An amber (mutation) closed arrowhead — co-colored with its stroke. */
+/** An orange (mutation) closed arrowhead — co-colored with its stroke. */
 const MUTATION_MARKER: EdgeMarkerType = {
   type: MarkerType.ArrowClosed,
   color: 'var(--status-mutated)',
+  width: 20,
+  height: 20,
 };
 
 export function edgeStyleFor(type: string): EdgeVisual {

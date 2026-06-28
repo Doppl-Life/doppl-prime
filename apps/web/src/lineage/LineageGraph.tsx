@@ -3,8 +3,8 @@ import type { CSSProperties } from 'react';
 import { Background, Controls, Panel, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { LineageGraphProjection, LineageNodeType, RunEventEnvelope } from '../data/contracts';
-import { lineageToFlow, pickFreshestProjection } from './lineageToFlow';
-import type { LineageNodeData } from './lineageToFlow';
+import { isRenderedEdge, lineageToFlow, pickFreshestProjection } from './lineageToFlow';
+import type { LineageNodeData, LineageRfEdge } from './lineageToFlow';
 import { layoutGraph } from './layout';
 import { deriveInFlight } from './inFlight';
 import { lineageNodeTypes } from './nodeTypes';
@@ -74,6 +74,38 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
     () => shown.nodes.filter((n) => n.type === 'generation').length,
     [shown.nodes],
   );
+  // Drawn edges: the breeding events (fusion + mutation) PLUS the short agenome→candidate provenance
+  // connector. The `generation→agenome` spawned plumbing stays hidden (it produced a crossing hairball).
+  // The LAYOUT still receives the full edge set (`flow.edges`) so it can detangle by lineage.
+  const renderedEdges = useMemo(
+    () => flow.edges.filter((e) => isRenderedEdge(e.data?.edgeType) || e.data?.winner === true),
+    [flow.edges],
+  );
+  // Trace-on-hover: hovering a NODE lights its incident lines (and an EDGE lights itself) while every
+  // other edge fades — so a single breeding line is followable end-to-end through the crossings. With
+  // nothing hovered, all edges render normally.
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [focusEdgeId, setFocusEdgeId] = useState<string | null>(null);
+  const displayEdges = useMemo(() => {
+    if (focusNodeId === null && focusEdgeId === null) return renderedEdges;
+    return renderedEdges.map((e): LineageRfEdge => {
+      const lit =
+        e.id === focusEdgeId ||
+        (focusNodeId !== null && (e.source === focusNodeId || e.target === focusNodeId));
+      return {
+        ...e,
+        // Freeze the faded lines so motion doesn't distract; lit lines keep their own animation.
+        ...(lit ? {} : { animated: false }),
+        zIndex: lit ? 1000 : 0,
+        style: {
+          ...e.style,
+          opacity: lit ? 1 : 0.06,
+          // Bump only the lit line's width; faded lines keep their original stroke.
+          ...(lit ? { strokeWidth: Number(e.style?.strokeWidth ?? 1.5) + 1 } : {}),
+        },
+      };
+    });
+  }, [renderedEdges, focusNodeId, focusEdgeId]);
   // Run Dagre layout asynchronously so the main thread can paint a loading indicator first and the
   // browser doesn't flag the tab as unresponsive on 1000+ node runs. We keep the previous laid-out
   // nodes visible while the new layout is being computed (no flash of empty graph). requestIdleCallback
@@ -118,7 +150,7 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
         <ReactFlowProvider>
           <ReactFlow
             nodes={nodes}
-            edges={flow.edges}
+            edges={displayEdges}
             nodeTypes={lineageNodeTypes}
             nodesDraggable={false}
             nodesConnectable={false}
@@ -134,6 +166,11 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
               const data = node.data as LineageNodeData;
               onNodeClick?.(node.id, data.dataRef, data.nodeType);
             }}
+            // Trace-on-hover: a hovered node lights its lineage lines; a hovered edge lights itself.
+            onNodeMouseEnter={(_, node) => setFocusNodeId(node.id)}
+            onNodeMouseLeave={() => setFocusNodeId(null)}
+            onEdgeMouseEnter={(_, edge) => setFocusEdgeId(edge.id)}
+            onEdgeMouseLeave={() => setFocusEdgeId(null)}
           >
             <Background />
             <Controls showInteractive={false} />
