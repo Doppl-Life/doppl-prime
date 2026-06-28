@@ -27,7 +27,7 @@ What happens when all that falls away? When the hit you don't see coming is the 
 
 This all adds up to something. This **means** something.
 
-What does this all **mean!**?
+What does this all **mean**!?
 
 Anybody got any ideas?<DD - title to Doppl headline slide>
 
