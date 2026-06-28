@@ -177,7 +177,7 @@ export function AppShell() {
             rel="noreferrer"
             style={navLinkBase}
           >
-            Calibrator
+            Agora
           </a>
         </nav>
         {/* Reserved ModeBanner slot — filled by the dedicated S2 organism view (FV.4). */}
