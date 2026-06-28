@@ -17,7 +17,7 @@ import {
   passesGate,
   type ScoredEntry,
 } from './discrimination';
-import { JUDGE_AXIS_CRITERIA_V4 } from './criteria-v4';
+import { JUDGE_AXIS_CRITERIA_MVP3_BASELINE } from '../../src/verifier/judge/judge-core';
 
 /**
  * Phase J — J2 LIVE discrimination harness (eval-tested, NOT a unit test; `.eval.ts` so the unit glob skips
@@ -127,23 +127,25 @@ describe.skipIf(!process.env.OPENROUTER_API_KEY)(
     test(
       'baseline_mvp3_is_characterized_not_asserted_to_pass',
       async () => {
-        const scored = await scoreCorpusAveraged(liveGateway());
-        logReport('mvp-3 BASELINE', scored);
-        // BASELINE: we capture mvp-3's behavior; it is EXPECTED to fail discrimination (flat). The only hard
+        // Inject the retained pre-flip mvp-3 criteria via the Slice-Js seam to characterize the BEFORE (the
+        // live default is now final-judge-v4). It is EXPECTED to fail discrimination (flat). The only hard
         // assertion is that the run actually produced scores for every candidate (none silently dropped).
+        const scored = await scoreCorpusAveraged(liveGateway(), JUDGE_AXIS_CRITERIA_MVP3_BASELINE);
+        logReport('mvp-3 BASELINE (pre-flip, injected)', scored);
         expect(scored.length).toBe(15);
       },
       EVAL_RUNS * 90_000,
     );
 
-    // J3 — the DRAFT v4 criteria injected via the Slice-Js `criteriaSource` seam (default NOT flipped). v4
-    // is EXPECTED to pass the robust discrimination gate (averaged over K runs; range-overlap separability).
-    // This is the AFTER to the mvp-3 baseline's BEFORE. If it fails, the failures name which gate check.
+    // The LIVE DEFAULT is now the flipped final-judge-v4 criteria (no injection — uses the boot default). It is
+    // EXPECTED to pass the SUBSTANTIVE discrimination gate (monotone means + spread ≥ MIN_SPREAD + mean-gap +
+    // gamed below the mediocre floor; range-overlap is a logged diagnostic, not gated). This is the AFTER to the
+    // mvp-3 baseline's BEFORE. If it fails, the failures name which gate check.
     test(
-      'v4_criteria_pass_the_discrimination_gate',
+      'live_default_v4_passes_the_discrimination_gate',
       async () => {
-        const scored = await scoreCorpusAveraged(liveGateway(), JUDGE_AXIS_CRITERIA_V4);
-        logReport('v4 (Slice-Js injected, default NOT flipped)', scored);
+        const scored = await scoreCorpusAveraged(liveGateway());
+        logReport('v4 (LIVE DEFAULT, flipped)', scored);
         const gate = passesGate(computeDiscrimination(scored));
         expect(gate.failures).toEqual([]);
         expect(gate.pass).toBe(true);

@@ -84,21 +84,43 @@ describe('computeDiscrimination — per-tier stats', () => {
   });
 });
 
-describe('range-overlap is the gated separability check (not within-tier band)', () => {
+describe('range-overlap is a reported DIAGNOSTIC, not gated (substantive bar, Phase J)', () => {
   test('test_clean_targets_have_no_overlap', () => {
     expect(computeDiscrimination(goldTargets()).adjacentOverlaps).toEqual([]);
   });
 
-  test('test_a_mediocre_outlier_into_good_range_overlaps_and_fails', () => {
-    // One mediocre candidate scores up into the good range (0.70 > good's 0.66) — ranges overlap.
-    const overlapping = goldTargets().map((s, i) =>
-      s.tier === 'mediocre' && i % 5 === 1 ? { ...s, acceptance: 0.7 } : s,
-    );
-    const report = computeDiscrimination(overlapping);
+  test('test_a_range_overlap_is_a_diagnostic_not_a_gate_failure', () => {
+    // Exactly one mediocre candidate (0.60) scores up into the good range (good.min 0.58) — ranges overlap, but
+    // the tier MEANS stay monotone + well-separated and gamed stays below the mediocre floor. Under the
+    // substantive bar this overlap is DETECTED (a logged diagnostic) and does NOT fail the gate — the judge
+    // still discriminates. (This is exactly the v4 live case: a cross-problem outlier touching a neighbor's
+    // range at one point, not a judge failure.)
+    const oneOverlap: ScoredEntry[] = [
+      { problemId: 'a', tier: 'weak', acceptance: 0.2 },
+      { problemId: 'b', tier: 'weak', acceptance: 0.22 },
+      { problemId: 'c', tier: 'weak', acceptance: 0.24 },
+      { problemId: 'a', tier: 'mediocre', acceptance: 0.42 },
+      { problemId: 'b', tier: 'mediocre', acceptance: 0.44 },
+      { problemId: 'c', tier: 'mediocre', acceptance: 0.6 }, // outlier into good's range
+      { problemId: 'a', tier: 'good', acceptance: 0.58 },
+      { problemId: 'b', tier: 'good', acceptance: 0.66 },
+      { problemId: 'c', tier: 'good', acceptance: 0.68 },
+      { problemId: 'a', tier: 'excellent', acceptance: 0.84 },
+      { problemId: 'b', tier: 'excellent', acceptance: 0.86 },
+      { problemId: 'c', tier: 'excellent', acceptance: 0.88 },
+      { problemId: 'a', tier: 'gamed', acceptance: 0.1 },
+      { problemId: 'b', tier: 'gamed', acceptance: 0.12 },
+      { problemId: 'c', tier: 'gamed', acceptance: 0.14 },
+    ];
+    const report = computeDiscrimination(oneOverlap);
+    expect(report.monotone).toBe(true); // means: 0.22 < 0.487 < 0.64 < 0.86
     expect(report.adjacentOverlaps.some((o) => o.lower === 'mediocre' && o.upper === 'good')).toBe(
       true,
     );
-    expect(passesGate(report).failures.some((f) => f.includes('overlap'))).toBe(true);
+    // overlap is NOT a gate failure...
+    expect(passesGate(report).failures.some((f) => f.includes('overlap'))).toBe(false);
+    // ...and with means still monotone/separated + gamed below floor, the gate PASSES.
+    expect(passesGate(report).pass).toBe(true);
   });
 
   test('test_a_wide_but_non_overlapping_tier_still_passes', () => {

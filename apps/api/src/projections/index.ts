@@ -15,3 +15,4 @@ export * from './replay-summary';
 export * from './run-list';
 export * from './run-summary';
 export * from './run-health';
+export * from './case-study-graph';

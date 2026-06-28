@@ -12,6 +12,12 @@ export interface ScoredSurvivor {
   readonly candidateId: string;
   readonly total: number;
   readonly sequence: number;
+  /**
+   * The held-out judge's normalized acceptance for this candidate, read from
+   * `FitnessScore.components.judge_acceptance` (rule #7 — persisted, never recomputed), or null when absent.
+   * The optional crowning FLOOR ({@link bestScoredSurvivors}) reads it (Islands pivot A2).
+   */
+  readonly judgeAcceptance: number | null;
 }
 
 /** The partial terminal summary persisted on a non-completed terminal (failed/stopped/cancelled/crash). */
@@ -70,27 +76,50 @@ export function scoredSurvivors(log: readonly RunEventRow[]): ScoredSurvivor[] {
     if (agenomeId !== undefined && culled.has(agenomeId)) continue; // agenome-keyed cull (the real form)
     const rawTotal = (row.payload as { total?: unknown }).total;
     const total = typeof rawTotal === 'number' ? rawTotal : Number.NEGATIVE_INFINITY;
-    survivors.push({ candidateId: row.candidateId, total, sequence: row.sequence });
+    const components = (row.payload as { components?: unknown }).components;
+    const rawAcc =
+      components !== null && typeof components === 'object' && !Array.isArray(components)
+        ? (components as Record<string, unknown>).judge_acceptance
+        : undefined;
+    const judgeAcceptance = typeof rawAcc === 'number' && Number.isFinite(rawAcc) ? rawAcc : null;
+    survivors.push({
+      candidateId: row.candidateId,
+      total,
+      sequence: row.sequence,
+      judgeAcceptance,
+    });
   }
   return survivors;
 }
 
 /**
- * The best-so-far scored survivor = the top-`total` survivor, tie-broken by LOWEST `sequence` (deterministic
- * → the same log always yields the same final idea, replay-stable rule #7). `null` when no scored survivor.
+ * The top-N scored survivors (Islands pivot A2 — many winners). Ranked by `total` (desc), tie-broken by
+ * LOWEST `sequence` (deterministic → the same log always yields the same winners, replay-stable rule #7),
+ * filtered to those clearing the optional judge-acceptance FLOOR (a candidate with no recorded acceptance is
+ * NOT excluded → the floor never spuriously empties the winner set on a judge-less run), then capped to
+ * `limit`. `limit` is the kernel-enforced max-winners ceiling (rule #1 — a cap, never prompt/judge-settable).
+ * Pure (no IO/clock/RNG).
+ */
+export function bestScoredSurvivors(
+  log: readonly RunEventRow[],
+  limit: number,
+  acceptanceFloor = 0,
+): ScoredSurvivor[] {
+  if (limit <= 0) return [];
+  const eligible = scoredSurvivors(log).filter(
+    (s) => s.judgeAcceptance === null || s.judgeAcceptance >= acceptanceFloor,
+  );
+  eligible.sort((a, b) => b.total - a.total || a.sequence - b.sequence);
+  return eligible.slice(0, limit);
+}
+
+/**
+ * The best-so-far scored survivor = the top-`total` survivor, tie-broken by LOWEST `sequence` (replay-stable
+ * rule #7). `null` when no scored survivor. Delegates to {@link bestScoredSurvivors} (limit 1, no floor) so
+ * the single-winner and multi-winner paths share one ranking — byte-identical to the prior top-1 selection.
  */
 export function bestScoredSurvivor(log: readonly RunEventRow[]): ScoredSurvivor | null {
-  let best: ScoredSurvivor | null = null;
-  for (const survivor of scoredSurvivors(log)) {
-    if (
-      best === null ||
-      survivor.total > best.total ||
-      (survivor.total === best.total && survivor.sequence < best.sequence)
-    ) {
-      best = survivor;
-    }
-  }
-  return best;
+  return bestScoredSurvivors(log, 1)[0] ?? null;
 }
 
 /**
