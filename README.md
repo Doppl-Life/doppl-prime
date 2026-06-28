@@ -125,7 +125,7 @@ Open:
 
 - `http://localhost:5173/runs` for the inner organism run observatory.
 - `http://localhost:5173/knowledge` for the knowledge graph.
-- `http://localhost:5173/agarden` for the outer Agarden map. The first `pnpm dev` run auto-seeds `The Rock Star's Drone Problem` and `When the Crashes Don't Come`; set `DOPPL_AUTO_SEED_AGARDEN=0` to skip this, or `AGARDEN_FLOW_DIR=/path/to/agarden/flow` to seed from a local Agarden checkout.
+- `http://localhost:5173/agarden` for the outer Agarden map. The first `pnpm dev` run auto-seeds `The Rock Star Drone Problem` and `When the Crashes Don't Come`; set `DOPPL_AUTO_SEED_AGARDEN=0` to skip this, or `AGARDEN_FLOW_DIR=/path/to/agarden/flow` to seed from a local Agarden checkout.
 
 Open the dashboard URL Vite prints. Whether it loads a seeded replay or boots live depends on your `.env`:
 

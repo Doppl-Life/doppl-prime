@@ -134,7 +134,7 @@ if [[ "${DOPPL_AUTO_SEED_AGARDEN:-1}" != "0" ]]; then
     pnpm -C apps/api seed-outer-bloom \
       "$AGARDEN_FLOW_ROOT/jack-drone-privacy-fd080117" \
       jack-drone-privacy-fd080117 >/dev/null || \
-      echo "⚠ Could not seed The Rock Star's Drone Problem."
+      echo "⚠ Could not seed The Rock Star Drone Problem."
     pnpm -C apps/api seed-outer-bloom \
       "$AGARDEN_FLOW_ROOT/when-the-crashes-dont-come-575845a4" \
       when-the-crashes-dont-come-575845a4 >/dev/null || \
