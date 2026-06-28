@@ -72,12 +72,12 @@ And the actual fix - you can get it for a song. Passive RF detection flags incom
 > Switch to inside view of the running kernel.
 > Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
 
-That's the garden from above. Now the microscope.
+That's the garden from above. Now the microscope.<DD - switch to inside view of the running kernel.>
 
 Here to talk about Doppl's inner workings is our own Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-<!-- <maybe a line for Cody> The held-out judge calibrates against real human taste. The floor is fixed; the taste is crowdsourced. -->
+<DD - on Cody fiinish, back to presentation, >
 
 ## 5 · The Zero-to-One Mindset, Automated
 
