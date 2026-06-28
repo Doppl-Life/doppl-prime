@@ -77,15 +77,15 @@ That's the garden from above. Now the microscope.<DD - switch to inside view of 
 Here to talk about Doppl's inner workings is our own Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-<DD - on Cody fiinish, back to presentation, >
+<DD - on Cody fiinish, back to presentation, transition to Ideas are cheap>
 
 ## 5 · The Zero-to-One Mindset, Automated
 
-> Slide: Could be cheaper.
+> Slide: Ideas are Cheap.
 
 They say ideas are cheap.
 
-*To the audience.* We say... could be cheaper.
+*To the audience.* We say...<DD - transition to could be cheaper>could be cheaper.
 
 *Let it sit.*
 
@@ -117,7 +117,7 @@ The Doppl is a doorway, not a destination. Behind every fix:
 > Existing PSaaS slide.
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
-But that time is over. We're automating it. Now, it's a scalable, reproducible, and replayable process.
+But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service. Or to those pressed for time *Pizzazz.* Now, it's a scalable, reproducible, and replayable process.
 
 ## 9 · Close - the Call to Action
 
