@@ -14,7 +14,7 @@ Drastic reduction in the cost per mile. Massive job loss in the ridehail and del
 
 But thats where they stop. The questions I'm not hearing are...
 
-What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
+<DD - title to first transition>What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
 
 Personal-injury lawyers. DUI defense. ER trauma units — nurses, paramedics. Admin all over.
 
@@ -29,19 +29,19 @@ This all adds up to something. This **means** something.
 
 What does this all **mean!**?
 
-Anybody got any ideas?
+Anybody got any ideas?<DD - title to Doppl headline slide>
+
+Let me put Doppl on your radar.
 
 ## 2 · Doppl
 
 > Existing slide
 
-Let me put Doppl on your radar.
-
 Doppl is an agental-evolution runtime.
 
 You seed it with a scenario, a case study — a situation worth exploring — and it breeds ideas under selective pressure. Not one agent guessing. A population. Generate, score, select, survive, mutate, fuse — generation after generation — until the ideas that remain are stronger than the ones that came before. Not simply research, but problem recovery and automated ideation.
 
-Each run produces a whole population of evolving idea organisms, or **Idearganisms**. A living lineage of recovered problems, and the solutions and opportunities that follow. Selective pressure, evidence, and score on every succeeding generation. Ideas don't just survive, they *breed*.
+Each run produces a whole population of evolving idea organisms, or **Idearganisms**. A living lineage of recovered problems, and the solutions and opportunities that follow. Selective pressure, evidence, and score on every succeeding generation. Ideas don't just survive, they *breed*.<DD - title to aGarden slide>
 
 ## 3 · aGarden - The outside view
 
