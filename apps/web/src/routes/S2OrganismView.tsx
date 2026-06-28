@@ -365,7 +365,12 @@ export function S2OrganismView({
             <span aria-hidden="true">⏮</span> Replay this run
           </Link>
         )}
-        <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
+        {/* The health indicator is a LIVE-run liveness gauge (the continue-vs-switch cue). A terminalized
+            run's lifecycle is already shown by the ModeBanner pill + the run controls, so showing it here
+            too would be redundant (and it has no live signal to read) — hide it once the run is terminal. */}
+        {!isTerminalRunStatus && (
+          <HealthIndicator health={healthSummary} status={healthStatus} mode={mode} />
+        )}
         <RunEnergyGauge spent={energy.spent} budget={energy.budget ?? 0} mode={mode} />
         <div style={tabsWrap}>
           <div role="tablist" aria-label="Left rail panels" style={tabHeader}>

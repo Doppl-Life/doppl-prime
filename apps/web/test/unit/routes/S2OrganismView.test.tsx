@@ -242,6 +242,36 @@ describe('S2OrganismView — the 3-pane organism shell (FV.4)', () => {
     expect(await screen.findByText('replaying')).toBeTruthy(); // ticker replay affordance
   });
 
+  // spec(no redundant lifecycle): the HealthIndicator is a LIVE liveness gauge. Once the run folds a
+  // terminal event, its lifecycle is already shown by the banner + run controls, so the gauge is hidden
+  // (no second "complete", and no stale "in-flight" on a finished run).
+  it('test_health_indicator_hidden_on_terminal_run', async () => {
+    const client = fakeClient();
+    const cap = captureStream();
+    const store = createRunStore({ runId: 'run_1', runClient: client, mode: 'live' });
+    render(
+      <MemoryRouter>
+        <S2OrganismView
+          runId="run_1"
+          mode="live"
+          runClient={client}
+          store={store}
+          baseUrl="/api"
+          eventSourceFactory={eventSourceFactory}
+          createStream={cap.make}
+          refetchDebounceMs={20}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/in-flight/i)).toBeTruthy(); // live: liveness gauge shown
+    await act(async () => {
+      cap.fire(makeEvent(9, 'run.completed')); // terminal
+      await Promise.resolve();
+    });
+    expect(await screen.findByText(/replay this run/i)).toBeTruthy(); // terminal affordance present
+    expect(screen.queryByText(/in-flight/i)).toBeNull(); // liveness gauge hidden — no redundant lifecycle
+  });
+
   // ── FV.8 replay scrubber ──────────────────────────────────────────────────────────────────────
   const replayEvents: RunEventEnvelope[] = [
     makeEvent(1, 'run.started'),
