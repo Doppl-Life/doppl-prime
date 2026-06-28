@@ -45,12 +45,8 @@ Each run produces a whole population of evolving idea organisms, or **Idearganis
 
 ## 3 · aGarden - The outside view
 
-> Slide (Run ahead of Time(?)), human transition to live view of the aGarden running.
+> No Slide
 
-"When the Crashes Don't Come" is an example of a zeitgeist shift, the *unlock*. The pawn that frees the bishop.
-"What was true yesterday, that is Not true today, and Implies X for tomorrow?" This is Malcolm Gladwell/Howard Moskowitz's Perfect Pepsi v the Perfect Pepsis.
-
-Sometimes you need a *solution.*
 I have a friend in the superyacht world, told me a problem one of his clients was having.
 A celebrity on his superyacht, paparazzi drones circling to sell a scandal, and wants to have his fun without his wife finding out. Every obvious move is as much a headache as the footage:
 
