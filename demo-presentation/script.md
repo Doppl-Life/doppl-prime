@@ -27,7 +27,7 @@ What happens when all that goes away? When the hit you don't see coming is the c
 
 This all adds up to something. This **means** something.
 
-What does this all **mean**?
+What does this all **mean!**?
 
 Anybody got any ideas?
 
@@ -47,29 +47,45 @@ Each run produces a whole population of evolving idea organisms, or **Idearganis
 
 > No slide, live view of the aGarden running.
 
+
+
 ## 4 · The inside view — how the kernel operates
 
 > No slide, internal view of the kernel running.
 
+
+
 ## 5 · Why this was technically difficult
 
+>  Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, , etc...
+
+
+
+## 6 · The human in the loop
+
+> No slide. Start back at outer vieview of the Agora.
+>
+> Talk about judgement calibration, problem-recovery validation, and play-at your level 
+
+
+
+## 7 · The zero-to-one mindset, automated
+
 > slide?
 
-## 6 · The zero-to-one mindset, automated
 
-> slide?
-
-## 7 · The human in the loop
-
-> slide?
 
 ## 8 · Implications & opportunity
 
 > slide?
 
+
+
 ## 9 · Call to action — the nudge
 
 > slide?
+
+
 
 ## 10 · Close
 
