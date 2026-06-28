@@ -73,6 +73,7 @@ const navButtonActive: CSSProperties = {
   border: 0,
   cursor: 'pointer',
 };
+const CALIBRATOR_URL = 'https://doppl-life.github.io/doppl-prime/calibrator/';
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -90,20 +91,25 @@ export function AppShell() {
   const navRunId = runId !== undefined && runId !== '' ? runId : agardenRunId;
   const styleFn = ({ isActive }: { isActive: boolean }) => (isActive ? navLinkActive : navLinkBase);
   const organismActive = runMatch !== null && !window.location.pathname.endsWith('/knowledge');
+  const knowledgeActive = runMatch !== null && window.location.pathname.endsWith('/knowledge');
 
-  const openLatestCompletedOrganism = async () => {
+  const openLatestCompletedRun = async (target: 'organism' | 'knowledge') => {
     if (isOpeningOrganism) return;
     setIsOpeningOrganism(true);
     try {
       const runs = await runClient.listRuns();
       const latestCompleted = findLatestCompletedRun(runs);
       if (latestCompleted) {
-        navigate(`/runs/${latestCompleted.runId}`);
+        navigate(
+          target === 'knowledge'
+            ? `/runs/${latestCompleted.runId}/knowledge`
+            : `/runs/${latestCompleted.runId}`,
+        );
       } else {
         navigate('/', {
           state: {
             preferredRunFilter: 'complete',
-            notice: 'No completed runs yet. Complete a run, then Organism will open the newest result.',
+            notice: `No completed runs yet. Complete a run, then ${target === 'knowledge' ? 'Knowledge' : 'Organism'} will open the newest result.`,
           },
         });
       }
@@ -116,6 +122,12 @@ export function AppShell() {
     } finally {
       setIsOpeningOrganism(false);
     }
+  };
+
+  const openOrganism = () => openLatestCompletedRun('organism');
+  const openKnowledge = () => {
+    if (navRunId !== null) navigate(`/runs/${navRunId}/knowledge`);
+    else void openLatestCompletedRun('knowledge');
   };
 
   useEffect(() => {
@@ -146,16 +158,27 @@ export function AppShell() {
           <button
             type="button"
             style={organismActive ? navButtonActive : navButton}
-            onClick={openLatestCompletedOrganism}
+            onClick={openOrganism}
             disabled={isOpeningOrganism}
           >
-            {isOpeningOrganism ? 'Organism…' : 'Organism'}
+            Organism
           </button>
-          {navRunId !== null && (
-            <NavLink to={`/runs/${navRunId}/knowledge`} style={styleFn}>
-              Knowledge
-            </NavLink>
-          )}
+          <button
+            type="button"
+            style={knowledgeActive ? navButtonActive : navButton}
+            onClick={openKnowledge}
+            disabled={isOpeningOrganism}
+          >
+            Knowledge
+          </button>
+          <a
+            href={CALIBRATOR_URL}
+            target="_blank"
+            rel="noreferrer"
+            style={navLinkBase}
+          >
+            Calibrator
+          </a>
         </nav>
         {/* Reserved ModeBanner slot — filled by the dedicated S2 organism view (FV.4). */}
         <div data-testid="mode-banner-slot" style={bannerSlot} />
