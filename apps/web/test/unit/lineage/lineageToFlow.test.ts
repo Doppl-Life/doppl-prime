@@ -231,6 +231,42 @@ describe('lineageToFlow — pure LineageGraphProjection → React Flow mapping',
     expect(e['e-win']!.style?.stroke).toBe('var(--status-selected)'); // gold winning-path connector
     expect(e['e-win']!.sourceHandle).toBe('sr'); // horizontal: parent right → winner left
     expect(e['e-win']!.targetHandle).toBe('tl');
+    expect(e['e-win']!.type).toBe('default'); // clean bezier curve (not the orthogonal smoothstep sweep)
+    // CORRECTNESS: the gold connector's source is the PRODUCING agenome (a0) — the only surviving edge
+    // into the winner is its provenance edge (critic/check/score detail nodes + edges are dropped), so the
+    // winning path can't be mis-attributed to another node.
+    expect(e['e-win']!.source).toBe('a0');
+    expect(e['e-win']!.target).toBe('w0');
+  });
+
+  // spec(§12 winning path): the GOLD thread follows the winner's WHOLE ancestry — the provenance hop into
+  // the winner PLUS every reproduction (mutation/fusion) edge back up to the seed — not just the last hop.
+  it('test_winning_path_is_gold_through_the_whole_ancestry', () => {
+    const proj = fullProjection({
+      nodes: [
+        { id: 'seed', type: 'agenome', label: 'Seed', status: 'spent', dataRef: 'agn_seed' },
+        { id: 'mid', type: 'agenome', label: 'Mid', status: 'spent', dataRef: 'agn_mid' },
+        { id: 'win-ag', type: 'agenome', label: 'WinAg', status: 'spent', dataRef: 'agn_win' },
+        { id: 'other', type: 'agenome', label: 'Other', status: 'active', dataRef: 'agn_other' },
+        { id: 'w0', type: 'candidate', label: 'Winner', status: 'selected', dataRef: 'cand_win' },
+      ],
+      edges: [
+        { id: 'e-seed-mid', source: 'seed', target: 'mid', type: 'mutation_only' }, // ancestry hop
+        { id: 'e-mid-win', source: 'mid', target: 'win-ag', type: 'fusion' }, // ancestry hop
+        { id: 'e-prov', source: 'win-ag', target: 'w0', type: 'generated' }, // provenance into winner
+        { id: 'e-unrelated', source: 'seed', target: 'other', type: 'mutation_only' }, // NOT on the path
+      ],
+    });
+    const e = Object.fromEntries(lineageToFlow(proj).edges.map((ed) => [ed.id, ed]));
+    const gold = 'var(--status-selected)';
+    // the full winning path is gold + flagged winner…
+    for (const id of ['e-prov', 'e-mid-win', 'e-seed-mid']) {
+      expect(e[id]!.style?.stroke, `${id} on winning path → gold`).toBe(gold);
+      expect(e[id]!.data?.winner, `${id} flagged winner`).toBe(true);
+    }
+    // …but an unrelated branch off the same seed is NOT gold.
+    expect(e['e-unrelated']!.style?.stroke).not.toBe(gold);
+    expect(e['e-unrelated']!.data?.winner).toBeUndefined();
   });
 
   // spec(§12 declutter): only the BREEDING-EVENT edges (mutation/fusion family) are drawn on the canvas;

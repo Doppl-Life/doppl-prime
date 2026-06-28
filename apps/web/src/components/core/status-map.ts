@@ -37,7 +37,10 @@ export const NEUTRAL_SPEC: StatusSpec = {
 
 export const STATUS_MAP: Record<StatusDomain, Record<string, StatusSpec>> = {
   agenome: {
-    seeded: { glyph: '◌', label: 'seeded', colorToken: 'var(--status-seeded)' },
+    // Display 'spawned' (not 'seeded') so the agenome's INITIAL lifecycle state doesn't read like the
+    // 'Seeded organism' PROVENANCE legend — every agenome (incl. mutation/fusion-born) enters here. The
+    // frozen AgenomeStatus enum value stays 'seeded'.
+    seeded: { glyph: '◌', label: 'spawned', colorToken: 'var(--status-seeded)' },
     active: { glyph: '◐', label: 'active', colorToken: 'var(--status-active)', pulse: true },
     spent: { glyph: '○', label: 'spent', colorToken: 'var(--status-spent)' },
     eligible_parent: { glyph: '★', label: 'eligible', colorToken: 'var(--status-eligible)' },
