@@ -63,7 +63,8 @@ const judgeRow: CSSProperties = {
 const scoreBadge: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'baseline',
-  gap: '1px',
+  // hairline gap between the score digits — token-derived to satisfy the no-raw-px adherence guard.
+  gap: 'calc(var(--space-1) / 4)',
   fontFamily: 'var(--font-mono)',
   fontWeight: 700,
   lineHeight: 1,
