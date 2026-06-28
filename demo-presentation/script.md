@@ -64,7 +64,7 @@ A case study becomes a recovered problem.
 A recovered problem becomes a doppl.
 And at each new step, the path points out of the system, back to you - the human in the loop.
 
-The real probem was never "defeat the drone." It was "make the footage worthless."
+Back to the drone problem: The *real* problem was never "defeat the drone." It was "make the footage worthless."
 And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home with nothing.
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
@@ -105,7 +105,7 @@ Once Doppl does the do, you gotta touch grass. You need to validate.
 
 We do that with "Skin in the Game", and Implications and Opportunities.
 
-With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk, what you could ask about.<DD - switch to Agora, Doppl, Implications and Opportunities>
+With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk to, what you could ask about.<DD - switch to Agora, Doppl, Implications and Opportunities>
 
 The Doppl is a doorway, not a destination. Behind every fix:
 
