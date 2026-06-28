@@ -58,10 +58,10 @@ function fakeClient(): RunClient {
     getRunHealth: vi.fn(() =>
       Promise.resolve({
         runId: 'run_1',
-        currentGeneration: 2,
+        generationCount: 2,
         candidatesInFlight: 1,
         lastEventAt: '2026-06-20T12:00:00.000Z',
-        capsConsumed: { maxGenerations: 2 },
+        capsConsumed: { generations: { consumed: 2, ceiling: 5 } },
       }),
     ),
     // PD.5b — the shell now mounts OperatorPromptPanel, which fetches the catalog on mount.

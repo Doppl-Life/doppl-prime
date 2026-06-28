@@ -64,10 +64,10 @@ const candidate = {
 
 const health = {
   runId: 'run_1',
-  currentGeneration: 0,
+  generationCount: 0,
   candidatesInFlight: 1,
   lastEventAt: '2026-06-20T12:00:05.000Z',
-  capsConsumed: { maxGenerations: 0 },
+  capsConsumed: { generations: { consumed: 0, ceiling: 5 } },
 };
 
 function envelope(id: string, sequence: number, type: string, extra: Record<string, unknown>) {

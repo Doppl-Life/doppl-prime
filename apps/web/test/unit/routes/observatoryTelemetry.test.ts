@@ -63,15 +63,18 @@ describe('deriveTickerEvents — pure event→ticker selector', () => {
 });
 
 describe('toHealthSummary — pure RunHealth→HealthSummary selector', () => {
-  // spec(§11): maps currentGeneration/candidatesInFlight/capsConsumed and computes
-  // lastEventAgeMs = nowMs − Date.parse(lastEventAt).
+  // spec(§11): maps generationCount→currentGeneration / candidatesInFlight, converts the API's
+  // {consumed, ceiling} caps to 0..1 fill fractions, and computes lastEventAgeMs = nowMs − Date.parse.
   it('test_health_summary_maps_run_health', () => {
     const health: RunHealth = {
       runId: 'run_1',
-      currentGeneration: 2,
+      generationCount: 2,
       candidatesInFlight: 3,
       lastEventAt: '2026-06-20T12:00:00.000Z',
-      capsConsumed: { maxGenerations: 0.5, energyBudget: 0.2 },
+      capsConsumed: {
+        generations: { consumed: 1, ceiling: 2 }, // → 0.5
+        energy: { consumed: 200, ceiling: 1000 }, // → 0.2
+      },
     };
     const nowMs = Date.parse('2026-06-20T12:00:05.000Z'); // 5s after lastEventAt
 
@@ -79,7 +82,7 @@ describe('toHealthSummary — pure RunHealth→HealthSummary selector', () => {
 
     expect(s.currentGeneration).toBe(2);
     expect(s.candidatesInFlight).toBe(3);
-    expect(s.capsConsumed).toEqual({ maxGenerations: 0.5, energyBudget: 0.2 });
+    expect(s.capsConsumed).toEqual({ generations: 0.5, energy: 0.2 });
     expect(s.lastEventAgeMs).toBe(5000);
   });
 
@@ -94,10 +97,10 @@ describe('toHealthSummary — pure RunHealth→HealthSummary selector', () => {
     const sBad = toHealthSummary(
       {
         runId: 'run_1',
-        currentGeneration: 0,
+        generationCount: 0,
         candidatesInFlight: 0,
         lastEventAt: 'not-a-date',
-        capsConsumed: {},
+        capsConsumed: null,
       },
       Date.parse('2026-06-20T12:00:05.000Z'),
     );

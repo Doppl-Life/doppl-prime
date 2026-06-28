@@ -80,6 +80,8 @@
   --winner-banner-accent: var(--winner-accent); /* label · glyph */
   --winner-banner-title: var(--fg-default);
   --winner-banner-cta: var(--fg-muted);
+  /* selected-winner lineage NODE fill — subtle gold tint in dark; LIGHT overrides to a vibrant yellow. */
+  --winner-node-bg: color-mix(in srgb, var(--winner-accent) 14%, var(--bg-surface-2));
   --status-rejected: #8a6a6a;
   --status-invalid: #f2545b;
 
@@ -202,6 +204,8 @@
   --winner-banner-accent: var(--fg-on-accent); /* label · glyph — dark on the yellow fill */
   --winner-banner-title: var(--fg-on-accent);
   --winner-banner-cta: color-mix(in srgb, var(--fg-on-accent) 75%, var(--winner-accent));
+  /* vibrant yellow winner-node fill in light so the winners pop on the bright canvas */
+  --winner-node-bg: color-mix(in srgb, var(--winner-accent) 60%, var(--bg-surface));
   --status-rejected: #8a6a6a;
   --status-invalid: #d7343b;
 
@@ -225,7 +229,7 @@
   --energy-full: #0e9e90;
   --energy-mid: #3e72c9;
   --energy-low: #b5780c;
-  --energy-empty: #d3dae6;
+  --energy-empty: #b7c2d6; /* visible empty-bar grey on the light surface (was too pale) */
 
   /* lineage edges */
   --edge-spawned: #97a1b5;

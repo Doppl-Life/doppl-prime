@@ -1,4 +1,4 @@
-import { EnergyEvent, RunConfig } from '../data/contracts';
+import { EnergyEvent } from '../data/contracts';
 import type { RunEventEnvelope } from '../data/contracts';
 
 /**
@@ -68,8 +68,13 @@ export function energyBudgetProgress(events: readonly RunEventEnvelope[]): Energ
   for (const e of events) {
     if (e.type === 'run.configured') {
       if (budget === null) {
-        const cfg = RunConfig.safeParse(e.payload);
-        if (cfg.success) budget = cfg.data.caps.energyBudget;
+        // Permissively pluck caps.energyBudget — strict RunConfig.safeParse rejects unknown payload
+        // keys (Islands `caseStudyId` added on the API side after the contract was last frozen here),
+        // which left budget=null + the gauge showing 0. We only need this one number; validate it
+        // by type, not the surrounding shape.
+        const caps = (e.payload as { caps?: { energyBudget?: unknown } }).caps;
+        const eb = caps?.energyBudget;
+        if (typeof eb === 'number' && Number.isFinite(eb) && eb > 0) budget = eb;
       }
     } else if (e.type === 'energy.spent') {
       const en = EnergyEvent.safeParse(e.payload);

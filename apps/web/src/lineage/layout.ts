@@ -41,7 +41,11 @@ function estimateHeight(data: LineageRfNode['data']): number {
   let rows = 1; // the single-line title row (always present)
   if (data.status !== undefined) rows += 1; // the StatusBadge row
   if (data.metrics !== undefined && Object.keys(data.metrics).length > 0) rows += 1; // metrics row
-  if (data.working) rows += 1; // "working…" row
+  // ALWAYS reserve the "working…" row. It's merged into nodes AFTER layout (LineageGraph keeps the working
+  // overlay out of the layout so the event stream doesn't thrash it), so the structural data here never has
+  // `working` set — yet a live node renders that extra row. Reserving it unconditionally keeps the reserved
+  // height ≥ the rendered height (no overlap) and keeps positions STABLE as working toggles on/off.
+  rows += 1;
   return CARD_PAD_Y + CARD_BORDER_Y + TEXT_ROW * rows + CARD_ROW_GAP * (rows - 1) + HEIGHT_SAFETY;
 }
 

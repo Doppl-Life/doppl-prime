@@ -68,12 +68,12 @@ export function RunHealthPanel({ health, now = () => Date.now() }: RunHealthPane
     <section aria-label="Run health" role="status" style={row}>
       {health && (
         <>
-          <span>generation {health.currentGeneration}</span>
+          <span>generation {health.generationCount}</span>
           <span>{health.candidatesInFlight} in flight</span>
           <span>last event {health.lastEventAt ?? '—'}</span>
-          {Object.entries(health.capsConsumed).map(([cap, used]) => (
+          {Object.entries(health.capsConsumed ?? {}).map(([cap, used]) => (
             <span key={cap}>
-              {cap} {used}
+              {cap} {used.consumed}/{used.ceiling}
             </span>
           ))}
         </>

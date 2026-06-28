@@ -143,7 +143,7 @@ function ReviewCard({ review }: { review: CriticReviewValue }) {
           style={{
             height: '100%',
             width: `${Math.round(clamped * 100)}%`,
-            background: 'var(--status-scored)',
+            background: 'var(--mode-replay)',
           }}
         />
       </div>

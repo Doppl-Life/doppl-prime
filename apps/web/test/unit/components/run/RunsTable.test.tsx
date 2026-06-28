@@ -141,6 +141,9 @@ describe('RunsTable', () => {
     fireEvent.click(screen.getByRole('button', { name: /expand detail for run r1/i }));
     expect(screen.getByText('repro')).toBeTruthy(); // peek activity breakdown is shown
     fireEvent.click(screen.getByRole('button', { name: /collapse detail for run r1/i }));
+    // the peek stays mounted through the collapse animation, then unmounts on animationend.
+    expect(screen.getByText('repro')).toBeTruthy();
+    fireEvent.animationEnd(screen.getByTestId('run-peek-r1'));
     expect(screen.queryByText('repro')).toBeNull(); // toggled closed again
   });
 
