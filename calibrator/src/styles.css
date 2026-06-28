@@ -920,6 +920,7 @@ textarea {
 
 .rating-dock {
   align-items: center;
+  align-content: center;
   background:
     radial-gradient(circle at 24% 0%, rgba(66, 216, 200, 0.16), transparent 42%),
     linear-gradient(180deg, #172236 0%, #101827 100%);
@@ -930,8 +931,9 @@ textarea {
   display: grid;
   gap: 14px;
   grid-template-columns: minmax(0, 1fr);
+  min-height: 112px;
   min-width: 0;
-  padding: 14px 16px 82px;
+  padding: 16px;
 }
 
 .rating-dock > * {
@@ -1231,7 +1233,8 @@ textarea {
 
   .rating-dock {
     grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
-    padding: 14px 18px 90px;
+    min-height: 116px;
+    padding: 18px;
   }
 
   .rating-dock .session-fields {
@@ -1366,9 +1369,11 @@ textarea {
 
   .rating-dock {
     align-items: center;
+    align-content: center;
     gap: 10px 12px;
     grid-template-columns: minmax(0, 1fr) minmax(120px, 0.78fr);
-    padding: 10px 12px calc(26px + env(safe-area-inset-bottom));
+    min-height: 112px;
+    padding: 12px;
   }
 
   .rating-dock .session-fields {
