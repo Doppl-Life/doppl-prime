@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useMatch } from 'react-router-dom';
+import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom';
+import { useRunClient } from '../../data/RunClientProvider';
+import type { RunSummary } from '../../data/runClient';
 import { ThemeToggle } from './ThemeToggle';
 
 const AGARDEN_RUN_CONTEXT_STORAGE_KEY = 'doppl.agarden.selectedRunId';
@@ -60,21 +62,73 @@ const navLinkActive: CSSProperties = {
   background: 'var(--accent-soft)',
   color: 'var(--fg-default)',
 };
+const navButton: CSSProperties = {
+  ...navLinkBase,
+  border: 0,
+  background: 'transparent',
+  cursor: 'pointer',
+};
+const navButtonActive: CSSProperties = {
+  ...navLinkActive,
+  border: 0,
+  cursor: 'pointer',
+};
+const CALIBRATOR_URL = 'https://doppl-life.github.io/doppl-prime/calibrator/';
 
 export function AppShell() {
-  // Organism/Knowledge are per-run views — only meaningful when we're actually viewing a run.
-  // Agarden is a global outer artifact view, but showing it here gives run-view users the same
-  // top-level switchboard without changing the inner Organism/Knowledge routes.
-  // On the runs list / launcher / etc. they'd be context-less and confusing, so we hide them.
-  // NavLink (vs Link) highlights the active tab so repeat clicks read as no-ops, not page reloads.
+  const navigate = useNavigate();
+  const runClient = useRunClient();
+  // Agarden and Organism are global top-level views: Agarden opens the outer artifact map, while
+  // Organism opens the newest completed inner run. Knowledge remains per-run, so it appears only
+  // after a run context is known.
   const runMatch = useMatch('/runs/:id/*');
   const agardenMatch = useMatch('/agarden');
   const runId = runMatch?.params.id;
   const [agardenRunId, setAgardenRunId] = useState<string | null>(() =>
     readAgardenRunContext(),
   );
+  const [isOpeningOrganism, setIsOpeningOrganism] = useState(false);
   const navRunId = runId !== undefined && runId !== '' ? runId : agardenRunId;
   const styleFn = ({ isActive }: { isActive: boolean }) => (isActive ? navLinkActive : navLinkBase);
+  const organismActive = runMatch !== null && !window.location.pathname.endsWith('/knowledge');
+  const knowledgeActive = runMatch !== null && window.location.pathname.endsWith('/knowledge');
+
+  const openLatestCompletedRun = async (target: 'organism' | 'knowledge') => {
+    if (isOpeningOrganism) return;
+    setIsOpeningOrganism(true);
+    try {
+      const runs = await runClient.listRuns();
+      const latestCompleted = findLatestCompletedRun(runs);
+      if (latestCompleted) {
+        navigate(
+          target === 'knowledge'
+            ? `/runs/${latestCompleted.runId}/knowledge`
+            : `/runs/${latestCompleted.runId}`,
+        );
+      } else {
+        navigate('/', {
+          state: {
+            preferredRunFilter: 'complete',
+            notice: `No completed runs yet. Complete a run, then ${target === 'knowledge' ? 'Knowledge' : 'Organism'} will open the newest result.`,
+          },
+        });
+      }
+    } catch {
+      navigate('/', {
+        state: {
+          notice: 'Could not load completed runs. Try refreshing the runs page.',
+        },
+      });
+    } finally {
+      setIsOpeningOrganism(false);
+    }
+  };
+
+  const openOrganism = () => openLatestCompletedRun('organism');
+  const openKnowledge = () => {
+    if (navRunId !== null) navigate(`/runs/${navRunId}/knowledge`);
+    else void openLatestCompletedRun('knowledge');
+  };
 
   useEffect(() => {
     const onAgardenRunContext = (event: Event) => {
@@ -97,19 +151,35 @@ export function AppShell() {
           </span>{' '}
           Doppl
         </Link>
-        {navRunId !== null && (
-          <nav style={runNav} aria-label="Run views">
-            <NavLink to={`/runs/${navRunId}`} end style={styleFn}>
-              Organism
-            </NavLink>
-            <NavLink to={`/runs/${navRunId}/knowledge`} style={styleFn}>
-              Knowledge
-            </NavLink>
-            <NavLink to="/agarden" style={agardenMatch === null ? styleFn : () => navLinkActive}>
-              Agarden
-            </NavLink>
-          </nav>
-        )}
+        <nav style={runNav} aria-label="Run views">
+          <NavLink to="/agarden" style={agardenMatch === null ? styleFn : () => navLinkActive}>
+            Agarden
+          </NavLink>
+          <button
+            type="button"
+            style={organismActive ? navButtonActive : navButton}
+            onClick={openOrganism}
+            disabled={isOpeningOrganism}
+          >
+            Organism
+          </button>
+          <button
+            type="button"
+            style={knowledgeActive ? navButtonActive : navButton}
+            onClick={openKnowledge}
+            disabled={isOpeningOrganism}
+          >
+            Knowledge
+          </button>
+          <a
+            href={CALIBRATOR_URL}
+            target="_blank"
+            rel="noreferrer"
+            style={navLinkBase}
+          >
+            Calibrator
+          </a>
+        </nav>
         {/* Reserved ModeBanner slot — filled by the dedicated S2 organism view (FV.4). */}
         <div data-testid="mode-banner-slot" style={bannerSlot} />
         <ThemeToggle />
@@ -126,4 +196,23 @@ function readAgardenRunContext(): string | null {
   } catch {
     return null;
   }
+}
+
+function findLatestCompletedRun(runs: readonly RunSummary[]): RunSummary | null {
+  return [...runs]
+    .filter((run) => run.status === 'completed')
+    .sort((a, b) => compareRunRecencyDesc(a, b))[0] ?? null;
+}
+
+function compareRunRecencyDesc(a: RunSummary, b: RunSummary): number {
+  const aTime = parseRunTime(a.createdAt);
+  const bTime = parseRunTime(b.createdAt);
+  if (aTime !== bTime) return bTime - aTime;
+  return b.sequenceThrough - a.sequenceThrough;
+}
+
+function parseRunTime(value: string | null | undefined): number {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import { RunsTable } from '../components/run/RunsTable';
 import { RunsKpiStrip } from '../components/run/RunsKpiStrip';
@@ -58,6 +58,14 @@ const noMatch: CSSProperties = {
   color: 'var(--fg-muted)',
   fontFamily: 'var(--font-ui)',
 };
+const noticeBox: CSSProperties = {
+  border: 'thin solid var(--accent)',
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--accent-soft)',
+  color: 'var(--fg-default)',
+  padding: 'var(--space-3) var(--space-4)',
+  fontWeight: 700,
+};
 
 // Persisted view preferences (filter · search · sort) so the table opens the way you left it.
 const VIEW_KEY = 'doppl.runs.view.v1';
@@ -94,12 +102,18 @@ function saveView(prefs: ViewPrefs): void {
 export function RunsHomeScreen() {
   const runClient = useRunClient();
   const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = readRunsRouteState(location.state);
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [reloadKey, setReloadKey] = useState(0);
   const initial = useRef(loadView()).current;
-  const [filter, setFilter] = useState<RunFilter>(initial.filter);
+  const [filter, setFilter] = useState<RunFilter>(routeState.preferredRunFilter ?? initial.filter);
   const [query, setQuery] = useState(initial.query);
   const [sort, setSort] = useState<SortState>(initial.sort);
+
+  useEffect(() => {
+    if (routeState.preferredRunFilter !== null) setFilter(routeState.preferredRunFilter);
+  }, [routeState.preferredRunFilter]);
 
   useEffect(() => {
     saveView({ filter, query, sort });
@@ -149,6 +163,12 @@ export function RunsHomeScreen() {
         <ErrorState title="Failed to load runs" detail="GET /runs failed" onRetry={reload} />
       )}
 
+      {routeState.notice !== null && (
+        <p style={noticeBox} role="status">
+          {routeState.notice}
+        </p>
+      )}
+
       {state.kind === 'ready' && state.runs.length === 0 && (
         <EmptyState
           icon="◌"
@@ -189,4 +209,24 @@ export function RunsHomeScreen() {
       )}
     </main>
   );
+}
+
+function readRunsRouteState(value: unknown): {
+  readonly preferredRunFilter: RunFilter | null;
+  readonly notice: string | null;
+} {
+  if (typeof value !== 'object' || value === null) {
+    return { preferredRunFilter: null, notice: null };
+  }
+  const state = value as { preferredRunFilter?: unknown; notice?: unknown };
+  return {
+    preferredRunFilter:
+      state.preferredRunFilter === 'complete' ||
+      state.preferredRunFilter === 'running' ||
+      state.preferredRunFilter === 'failed' ||
+      state.preferredRunFilter === 'all'
+        ? state.preferredRunFilter
+        : null,
+    notice: typeof state.notice === 'string' && state.notice.trim() !== '' ? state.notice : null,
+  };
 }
