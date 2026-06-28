@@ -93,7 +93,7 @@ What if we could massively increase the density of ideas in the world? <slight d
 Thats the world I want to swim in.
 
 Because its not just the idea. It's the *right* idea. The right *ideas*. Doppl Automates the Ideate — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
-It becomes a pre-solved solution-space, clustered and queried via vector database.
+It becomes a pre-solved solution-space, clustered and queried via vector database.<DD - switch to Agora, PR, Skin in the Game>
 
 ## 6 · The Human in the Loop
 
@@ -105,19 +105,19 @@ Once Doppl does the do, you gotta touch grass. You need to validate.
 
 We do that with "Skin in the Game", and Implications and Opportunities.
 
-With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk, what you could ask about.
+With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk, what you could ask about.<DD - switch to Agora, Doppl, Implications and Opportunities>
 
 The Doppl is a doorway, not a destination. Behind every fix:
 
 - Implications: if this is true, what does that mean?
-- Opportunities: Now that I know the implications, what are the levels that I could possibly play at?
+- Opportunities: Now that I know the implications, what are the levels that I could possibly play at?<DD - switch to presentation, PSaaS>
 
 ## 7 · Implications & opportunity
 
 > Existing PSaaS slide.
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
-But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service. Or to those pressed for time *Pizzazz.* Now, it's a scalable, reproducible, and replayable process.
+But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service. Or to those pressed for time<DD - transition to pizzazz>*Pizzazz.*  Now, it's a scalable, reproducible, replayable process.<DD - transition to Closer>
 
 ## 8 · Close - the Call to Action
 
@@ -125,4 +125,4 @@ But that time is over. We're automating it, into a new industry: PSaaS. Problem-
 
 So take Doppl and make it yours. Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.
 
-All you'll *really* need...is a Great Question.
+All you'll *really* need...<DD - last transition>...is a Great Question.
