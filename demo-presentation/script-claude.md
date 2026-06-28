@@ -29,10 +29,12 @@ So what do you do?
 Doppl's process is to seed the scenario, recover the real problem, and propose solutions.
 
 This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage — which idea came from which.
-The spine is simple. A case study becomes a recovered problem. A recovered problem becomes a doppl. And at each new step, the path points out of the system, back to you - the human in the loop.
+A case study becomes a recovered problem.
+A recovered problem becomes a doppl.
+And at each new step, the path points out of the system, back to you - the human in the loop.
 
 The real probem was never "defeat the drone." It was "make the footage worthless."
-And the actual fix - you can get it for a song. <The proximity mechanism> detects incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem a solve it. Move on.
+And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem a solve it. Move on.
 
 ## 4 · The inside view — the kernel
 
