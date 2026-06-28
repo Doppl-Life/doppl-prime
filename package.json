@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@11.5.2",
   "scripts": {
+    "start": "pnpm --filter @doppl/api start",
     "dev": "bash scripts/dev-local.sh",
     "db:down": "docker stop doppl-pg || true",
     "db:logs": "docker logs -f doppl-pg",

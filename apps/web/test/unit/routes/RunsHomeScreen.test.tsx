@@ -125,4 +125,11 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /new run/i }));
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/launch'));
   });
+
+  // spec(outer-view entry): the Agarden CTA → /agarden.
+  it('test_agarden_cta_navigates_to_outer_view', async () => {
+    renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([])) }));
+    fireEvent.click(await screen.findByRole('button', { name: /agarden/i }));
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/agarden'));
+  });
 });

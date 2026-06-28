@@ -1,0 +1,194 @@
+// Curated in the calibrator branch and reused here so Agarden inspectors can
+// show the same stakeholder validation prompts without depending on that route.
+export const SKIN_VALIDATION_QUESTIONS: Record<string, Record<string, string>> = {
+  'actuarial-collapse-in-specialty-auto-reinsurance-59cd965f': {
+    'specialty-auto-reinsurers':
+      'Which treaty attachment points or aggregate-limit clauses would show their auto book is mispriced as crash frequency drops?',
+    'captive-insurance-underwriters':
+      'Which captive reserve models would reveal that fleet autonomy is changing loss timing faster than premiums can be reset?',
+    'reinsurance-brokers':
+      'Which cedent renewal conversations or placement failures would show the market no longer trusts legacy auto risk curves?',
+    'fleet-risk-managers':
+      'Which fleet telemetry thresholds would they use to decide whether autonomy-specific tail risk needs a new backstop?',
+  },
+  'actuarial-frequency-collapse-and-capital-bcdbfdb8': {
+    'pandc-insurers':
+      'Which loss-ratio or premium-renewal signal would show P&C carriers are being hit before actuarial tables catch up?',
+    reinsurers:
+      'Which auto-line retrocession pricing change would show reinsurers are repricing crash-frequency collapse?',
+    'captive-insurance-programs':
+      'Which captive surplus or dividend constraint would show internal risk pools are absorbing the frequency shock?',
+    'auto-claims-adjusters':
+      'Which claim-volume or redeployment metric would show adjusters are exposed to the collapse of human-error work?',
+  },
+  'dynamic-escrow-via-fault-thresholds-89689582': {
+    insurers:
+      'Which payout rule would insurers trust enough to release provisional funds from sensor-verified fault thresholds?',
+    'oem-telemetry-teams':
+      'Which telemetry variance threshold would OEM teams expose to prove the escrow trigger is accurate and auditable?',
+    'regulatory-compliance-officers':
+      'Which exception log would compliance officers need before accepting automated payouts with manual override?',
+  },
+  'liquidity-bridge-via-mobility-backed-bonds-d3b01a15': {
+    'treasury-departments':
+      'Which cash-flow forecast would show the gap between collapsing legacy revenue and future mobility-backed repayment?',
+    'credit-rating-agencies':
+      'Which downgrade trigger or outlook note would show rating agencies are pricing the transition lag as insolvency risk?',
+    'av-investors':
+      'Which adoption milestone would investors require before treating future RUC streams as financeable collateral?',
+    bondholders:
+      'Which escrow covenant would convince bondholders that future mobility revenue can repay the bridge financing?',
+  },
+  'fiscal-recalibration-via-wear-based-ruc-cff16230': {
+    'city-finance-department':
+      'Which budget line would show enforcement revenue is being replaced by infrastructure-impact pricing?',
+    'autonomous-fleet-operators':
+      'Which axle-load, route, or congestion metric would operators accept as the basis for road-usage charges?',
+    'municipal-bondholders':
+      'Which covenant or debt-service coverage ratio would show bondholders are exposed to the RUC transition?',
+    'dot-engineers':
+      'Which pavement-wear model would DOT engineers trust to tie automated fleet miles to maintenance liability?',
+  },
+  'predictive-enforcement-abolition-and-compliance-5659161e': {
+    'city-attorneys':
+      'Which municipal code change would prove legal teams can retire traffic fines without losing compliance authority?',
+    'av-compliance-officers':
+      'Which API audit event would show AV compliance can replace citation-by-citation enforcement?',
+    'civil-rights-groups':
+      'Which enforcement-disparity metric would show abolition of fines removes rather than hides the public harm?',
+    'finance-department':
+      'Which operating-budget comparison would show the city saves more from compliance APIs than it loses from fines?',
+  },
+  'cryptographic-data-splitting-at-ingestion-46cc6495': {
+    'consumer-insurers':
+      'Which split-custody evidence record would let insurers contest OEM-controlled liability outcomes?',
+    'third-party-forensic-auditors':
+      'Which shard reconciliation check would prove independent auditors can reconstruct incidents without OEM permission?',
+    'regulatory-compliance-officers':
+      'Which custody-control checklist would show compliance officers can verify split ingestion across OEM, consumer, and municipal nodes?',
+  },
+  'mandatory-public-hashing-of-incident-telemetry-da3ebf3e': {
+    'independent-forensic-analysts':
+      'Which public hash timestamp would show analysts can verify incident evidence before the OEM frames the narrative?',
+    'consumer-advocacy-groups':
+      "Which public hash receipt would advocacy groups use to prove a consumer's incident evidence was preserved on time?",
+    'municipal-traffic-safety-boards':
+      'Which incident telemetry publication log would let safety boards audit crashes without waiting for manufacturer disclosure?',
+  },
+  'neutral-evidentiary-escrow-with-conditional-key-108c5210': {
+    'escrow-operators':
+      'Which key-release workflow would prove a neutral custodian can protect data while honoring valid legal requests?',
+    'independent-forensic-auditors':
+      'Which escrow access log would show auditors can verify chain of custody without taking permanent possession of the data?',
+    'consumer-litigation-funds':
+      'Which case-screening signal would show litigation funders can assess claims once evidence access is neutralized?',
+  },
+  'behavioral-camouflage-protocol-b-cap-1477a1ac': {
+    'event-design-architects':
+      'Which deck-layout change or scheduled visual beat would keep the party feeling natural while denying a drone a stable, high-value shot?',
+    'behavioral-psychologists':
+      'Which guest-attention measure would show the camouflage protocol redirects behavior without making people feel surveilled or interrupted?',
+    'luxury-hospitality-operations':
+      'Which service cue could crew execute repeatedly without guests interpreting it as a security alarm or a ruined evening?',
+  },
+  'behavioral-flow-state-management-the-anti-spotlight-29d1d213': {
+    'behavioral-psychology-and-cognitive-load-theory':
+      'Which observable behavior would prove the ambient flow design prevents guests from congregating in predictable photo zones without increasing anxiety?',
+    'ambient-environmental-design-acoustics-scent':
+      'Which lighting, sound, or scent transition could move attention indoors without feeling like a defensive anti-drone maneuver?',
+    'event-choreography-and-pattern-generation-ai':
+      'Which non-repeating activity pattern would the choreography engine generate to make paparazzi timing models fail over a full night?',
+  },
+  'decentralized-visual-noise-protocol-14a13d27': {
+    'advanced-materials-scientists':
+      'Which reflectivity or durability test would prove the visual-noise panels confuse aerial imaging without becoming unsafe in saltwater conditions?',
+    'architectural-lighting-designers':
+      "Which lighting sequence would disrupt a drone's stable geometry cues while still looking intentional and elegant to guests on deck?",
+    'electrochromic-film-manufacturers':
+      'Which switching-speed, power, and marine-exposure data would show electrochromic films can sustain this effect through an actual party?',
+  },
+  'deep-learning-counter-profiling-dlcp-77a9fea0': {
+    'ai-ethics-and-monitoring-firms':
+      'Which consent, retention, and false-positive policy would make internal high-value-moment detection defensible for guests and crew?',
+    'behavioral-data-scientists':
+      'Which signal would distinguish a genuinely monetizable scandal moment from ordinary party movement without over-triggering interventions?',
+    'advanced-lighting-audio-engineers':
+      'Which localized light or sound intervention would interrupt the camera value of a moment without visibly manipulating the people involved?',
+  },
+  'distributed-data-fog-network-3599d2a9': {
+    'optical-physics-and-lens-aberration-theory':
+      'Which measurable aberration pattern would corrupt drone imagery enough to kill tabloid value without requiring illegal RF interference?',
+    'portable-targeted-low-energy-field-generation':
+      'Which energy, range, and safety envelope would prove the field can be aimed at cameras without affecting guests, crew, or nearby vessels?',
+    'drone-signature-analysis-high-frequency':
+      'Which drone-camera signature would let the system tune optical noise to the intruding device before it reaches usable filming range?',
+  },
+  'hydrodynamic-acoustic-masking-field-01ba2a27': {
+    'acoustic-ecology-and-bioacoustics':
+      "Which coastal sound profile would make the yacht's masking field blend into the environment rather than creating a detectable artificial signature?",
+    'distributed-low-frequency-transducer-network-design':
+      'Which placement map would show transducers can cover exposed decks without causing discomfort or interfering with vessel operations?',
+    'signal-separation-theory-source-localization':
+      'Which source-localization test would show outside listeners cannot isolate valuable conversations or activity from maritime background noise?',
+  },
+  'the-asset-is-the-photograph-not-the-drone-9b2e71c4': {
+    'talk-to-a-maritime-security-lead-about-what-a-crew-actually-does-in-the-seconds-after-a-drone-alert-and-whether-owner-and-guests-will-reliably-respond-to-a-subtle-cue-rather-than-a-klaxon':
+      'Which exact crew drill would prove a subtle cue moves exposed people out of identifiable sightlines before the drone reaches camera range?',
+    'price-the-real-cost-asymmetry-a-false-alarm-that-stops-the-party-every-time-a-dot-appears-versus-one-missed-identifiable-frame':
+      'Which cost comparison would show the owner prefers occasional discreet false cues over the expected damage of one clear identifiable photo?',
+    'run-the-cheapest-falsifying-check-first-measure-detection-range-and-drone-closing-speed-against-the-time-it-takes-exposed-people-to-clear-sightlines':
+      'Which timed field test would falsify the strategy by showing people cannot clear sightlines fast enough after passive detection?',
+  },
+  'the-encrypted-sensory-buffer-zone-f807c856': {
+    'virtual-reality-augmented-reality-projection-mapping':
+      "Which projection-mapping setup would make exterior footage read as an artificial set while preserving the party's private atmosphere inside?",
+    'acoustic-dampening-for-echo-cancellation':
+      'Which echo or voice-isolation measurement would show outside recordings cannot recover useful audio from the sensory buffer?',
+    'advanced-material-science-light-absorption':
+      'Which light-absorption material test would prove the buffer reduces identifiable imagery without making the deck look visibly fortified?',
+  },
+  'the-operational-misdirection-geo-fencing-the-scandal-db8f130f': {
+    'maritime-law-and-jurisdictional-mapping':
+      'Which charted route or permit boundary would make paparazzi surveillance legally risky without creating a new legal exposure for the yacht?',
+    'advanced-predictive-modeling-of-maritime-traffic':
+      'Which traffic forecast would show the yacht can move through low-surveillance windows while remaining safe in busy coastal waters?',
+    'high-frequency-operational-agility-training-crew':
+      'Which crew-response benchmark would show the yacht can change operating posture quickly without guests noticing a security maneuver?',
+  },
+  'the-stealth-deployment-vessel-the-false-flag-9881ae03': {
+    'maritime-sar-search-and-rescue-protocols':
+      'Which SAR communication or identification rule would keep the decoy vessel from being mistaken for a real distress or safety operation?',
+    'survey-mapping-technology':
+      'Which survey-track or sensor signature would make the support vessel plausibly more interesting to surveillance drones than the yacht?',
+    'logistics-of-controlled-misdirection':
+      'Which deployment timeline would prove the decoy can attract attention without revealing that it is protecting a celebrity party?',
+  },
+};
+
+export function skinValidationQuestion(
+  artifactId: string | undefined,
+  label: string,
+): string | null {
+  if (artifactId === undefined || artifactId.length === 0) return null;
+  const labelKey = normalizedSkinKey(label);
+  const compactLabelKey = label
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return (
+    SKIN_VALIDATION_QUESTIONS[artifactId]?.[labelKey] ??
+    SKIN_VALIDATION_QUESTIONS[artifactId]?.[compactLabelKey] ??
+    null
+  );
+}
+
+export function normalizedSkinKey(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}

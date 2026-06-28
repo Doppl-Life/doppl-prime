@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useMatch } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
+
+const AGARDEN_RUN_CONTEXT_STORAGE_KEY = 'doppl.agarden.selectedRunId';
+const AGARDEN_RUN_CONTEXT_EVENT = 'doppl:agarden-run-context';
 
 /**
  * AppShell — the global chrome wrapping every route (FV.1, ARCHITECTURE.md §12): the ◆ Doppl wordmark
@@ -59,12 +63,30 @@ const navLinkActive: CSSProperties = {
 
 export function AppShell() {
   // Organism/Knowledge are per-run views — only meaningful when we're actually viewing a run.
+  // Agarden is a global outer artifact view, but showing it here gives run-view users the same
+  // top-level switchboard without changing the inner Organism/Knowledge routes.
   // On the runs list / launcher / etc. they'd be context-less and confusing, so we hide them.
   // NavLink (vs Link) highlights the active tab so repeat clicks read as no-ops, not page reloads.
   const runMatch = useMatch('/runs/:id/*');
+  const agardenMatch = useMatch('/agarden');
   const runId = runMatch?.params.id;
-  const styleFn = ({ isActive }: { isActive: boolean }) =>
-    isActive ? navLinkActive : navLinkBase;
+  const [agardenRunId, setAgardenRunId] = useState<string | null>(() =>
+    readAgardenRunContext(),
+  );
+  const navRunId = runId !== undefined && runId !== '' ? runId : agardenRunId;
+  const styleFn = ({ isActive }: { isActive: boolean }) => (isActive ? navLinkActive : navLinkBase);
+
+  useEffect(() => {
+    const onAgardenRunContext = (event: Event) => {
+      const runId =
+        event instanceof CustomEvent && typeof event.detail?.runId === 'string'
+          ? event.detail.runId
+          : readAgardenRunContext();
+      setAgardenRunId(runId);
+    };
+    window.addEventListener(AGARDEN_RUN_CONTEXT_EVENT, onAgardenRunContext);
+    return () => window.removeEventListener(AGARDEN_RUN_CONTEXT_EVENT, onAgardenRunContext);
+  }, []);
 
   return (
     <div style={shell}>
@@ -75,13 +97,16 @@ export function AppShell() {
           </span>{' '}
           Doppl
         </Link>
-        {runId !== undefined && runId !== '' && (
+        {navRunId !== null && (
           <nav style={runNav} aria-label="Run views">
-            <NavLink to={`/runs/${runId}`} end style={styleFn}>
+            <NavLink to={`/runs/${navRunId}`} end style={styleFn}>
               Organism
             </NavLink>
-            <NavLink to={`/runs/${runId}/knowledge`} style={styleFn}>
+            <NavLink to={`/runs/${navRunId}/knowledge`} style={styleFn}>
               Knowledge
+            </NavLink>
+            <NavLink to="/agarden" style={agardenMatch === null ? styleFn : () => navLinkActive}>
+              Agarden
             </NavLink>
           </nav>
         )}
@@ -92,4 +117,13 @@ export function AppShell() {
       <Outlet />
     </div>
   );
+}
+
+function readAgardenRunContext(): string | null {
+  try {
+    const runId = window.localStorage.getItem(AGARDEN_RUN_CONTEXT_STORAGE_KEY);
+    return runId === null || runId.trim() === '' ? null : runId;
+  } catch {
+    return null;
+  }
 }

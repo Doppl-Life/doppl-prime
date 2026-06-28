@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-do
 import { AppShell } from '../components/app/AppShell';
 import { S1LauncherScreen } from '../routes/S1LauncherScreen';
 import { RunsHomeScreen } from '../routes/RunsHomeScreen';
+import { OuterBloomScreen } from '../routes/OuterBloomScreen';
 import { S2OrganismView } from '../routes/S2OrganismView';
 import { S5FinalIdeaScreen } from '../routes/S5FinalIdeaScreen';
 import { KnowledgeView } from '../routes/KnowledgeView';
@@ -14,6 +15,7 @@ import type { RunMode } from '../state/reducer';
  *   /                  → S0 RunsHomeScreen (listRuns → cards; FV.2)
  *   /launch            → S1 Run Launcher (prompt-source picker + the RunConfigPanel with the FB
  *                        run-controls: mutagen-operator picker + diverge/converge dial; FV.3)
+ *   /agarden           → Agarden outer artifact map (case-study → problem-recovery → Doppl)
  *   /runs/:id          → S2 Organism View, LIVE (3-pane; FV.4)
  *   /runs/:id/replay   → S2 Organism View, REPLAY (FV.4)
  *   /runs/:id/final    → S5 Final-Idea / payoff screen (winner card + generational climb; FV.7)
@@ -28,6 +30,11 @@ function LaunchRoute() {
   return (
     <S1LauncherScreen runClient={runClient} onStarted={(run) => navigate(`/runs/${run.runId}`)} />
   );
+}
+
+function OuterBloomRoute() {
+  const runClient = useRunClient();
+  return <OuterBloomScreen runClient={runClient} />;
 }
 
 /** S2 Organism View (FV.4). key by (mode,id) so it remounts when the URL changes. */
@@ -73,6 +80,8 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<RunsHomeScreen />} />
+        <Route path="agarden" element={<OuterBloomRoute />} />
+        <Route path="bloom" element={<Navigate to="/agarden" replace />} />
         <Route path="launch" element={<LaunchRoute />} />
         <Route path="runs/:id" element={<OrganismRoute mode="live" />} />
         <Route path="runs/:id/replay" element={<OrganismRoute mode="replay" />} />

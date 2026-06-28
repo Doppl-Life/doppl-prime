@@ -75,9 +75,32 @@ describe('KnowledgeView — fetch + render the knowledge graph', () => {
     const client = fakeClient(() => Promise.reject(new Error('boom')));
     render(
       <MemoryRouter>
-        <KnowledgeView runId="run_1" runClient={client} refreshMs={0} />
+        <KnowledgeView
+          runId="run_1"
+          runClient={client}
+          refreshMs={0}
+          staticKnowledgeLoader={() => Promise.resolve(null)}
+        />
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/boom/));
+  });
+
+  it('uses static repo-derived knowledge when the API is unavailable', async () => {
+    const client = fakeClient(() => Promise.reject(new Error('api unavailable')));
+    render(
+      <MemoryRouter>
+        <KnowledgeView
+          runId="run_1"
+          runClient={client}
+          refreshMs={0}
+          staticKnowledgeLoader={() => Promise.resolve(graph)}
+        />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('knowledge-summary').textContent).toMatch(/1 research notes/),
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

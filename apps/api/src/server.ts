@@ -12,6 +12,8 @@ import { registerDemoLadderRoutes } from './routes/demo-ladder';
 import { registerCapMaximaRoutes } from './routes/cap-maxima';
 import { registerRunHealthRoutes } from './routes/run-health';
 import { registerRunStreamRoutes } from './routes/run-stream';
+import { registerOuterBloomRoutes } from './routes/outer-bloom';
+import { registerOuterCampaignRoutes } from './routes/outer-campaigns';
 import type { EventBridgeOptions } from './sse/event-bridge';
 import { DEFAULT_CAPS, type ProblemSets } from './runtime/config/configSchema';
 
@@ -80,10 +82,13 @@ export interface BuildServerDeps {
   /** PD.3 — latch an operator stop (the boot `operatorStopRegistry.request`); `POST /runs/:id/stop` signals
    *  the in-flight worker through it. Absent → a no-op default (the route still 202s; nothing drains). */
   requestStop?: (runId: string) => void;
+  /** Optional browser origins allowed to call read APIs from static hosts such as GitHub Pages. */
+  corsAllowedOrigins?: readonly string[];
 }
 
 export function buildServer(deps: BuildServerDeps): FastifyInstance {
   const app = Fastify({ bodyLimit: deps.bodyLimit ?? DEFAULT_BODY_LIMIT });
+  installCors(app, deps.corsAllowedOrigins ?? []);
   // Boundary error hygiene: a 5xx (e.g. an unexpected ProjectionError from reading a foreign-producer
   // log with an unsupported schemaVersion) must never leak an internal error message at the trust
   // boundary. 4xx (validation / bodyLimit-413) pass through with their code. The route handlers send
@@ -112,6 +117,22 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     store: deps.store,
     ...(deps.sse !== undefined ? { sse: deps.sse } : {}),
   });
+  registerOuterBloomRoutes(app, {
+    store: deps.store,
+    db: deps.db,
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    modelRouteOverrideAllowlist: deps.modelRouteOverrideAllowlist ?? {},
+    newId: deps.newId,
+    ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
+  });
+  registerOuterCampaignRoutes(app, {
+    store: deps.store,
+    db: deps.db,
+    defaultConfig: deps.defaultConfig ?? DEFAULT_RUN_CONFIG,
+    modelRouteOverrideAllowlist: deps.modelRouteOverrideAllowlist ?? {},
+    newId: deps.newId,
+    ...(deps.onRunConfigured !== undefined ? { onRunConfigured: deps.onRunConfigured } : {}),
+  });
   registerModelRoutes(app, { modelRoutes: deps.modelRoutes ?? [] });
   registerProblemSetsRoutes(app, { problemSets: deps.problemSets ?? [] });
   registerDemoLadderRoutes(app, {
@@ -128,4 +149,23 @@ export function buildServer(deps: BuildServerDeps): FastifyInstance {
     allowlist: deps.modelRouteOverrideAllowlist ?? {},
   });
   return app;
+}
+
+function installCors(app: FastifyInstance, allowedOrigins: readonly string[]): void {
+  const allowed = new Set(allowedOrigins.map((origin) => origin.trim()).filter(Boolean));
+  if (allowed.size === 0) return;
+
+  app.addHook('onRequest', async (request, reply) => {
+    const origin = request.headers.origin;
+    if (origin === undefined || !allowed.has(origin)) return;
+
+    reply.header('Access-Control-Allow-Origin', origin);
+    reply.header('Vary', 'Origin');
+    reply.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    reply.header('Access-Control-Allow-Headers', 'Content-Type,Idempotency-Key,Last-Event-ID');
+
+    if (request.method === 'OPTIONS') {
+      return reply.status(204).send();
+    }
+  });
 }

@@ -1,18 +1,15 @@
 import type { FastifyInstance } from 'fastify';
-import {
-  CURRENT_SCHEMA_VERSION,
-  validateRunConfig,
-  type RunCaps,
-  type RunConfig,
-} from '@doppl/contracts';
+import { type RunCaps, type RunConfig } from '@doppl/contracts';
 import type { EventStore } from '../event-store';
 import { buildCurrentState } from '../projections';
 import { createIdempotencyStore } from '../middleware/idempotency';
 import { applyDemoCapOverride } from '../runtime/demo';
+import { type ModelRouteOverrideAllowlist } from '../model-gateway/model-route-override';
 import {
-  modelRouteOverrideViolation,
-  type ModelRouteOverrideAllowlist,
-} from '../model-gateway/model-route-override';
+  appendAndStartInnerRun,
+  overCapField,
+  validateRunConfigForStart,
+} from '../runs/start-inner-run';
 import { deriveCaseStudyId } from './_support/deriveCaseStudyId';
 
 /**
@@ -60,13 +57,7 @@ export interface RunRoutesDeps {
   requestStop: (runId: string) => void;
 }
 
-/** The cap field that exceeds its maximum (lowering-only rule), or null if every cap is within ceiling. */
-export function overCapField(caps: RunCaps, maxima: RunCaps): keyof RunCaps | null {
-  for (const key of Object.keys(maxima) as (keyof RunCaps)[]) {
-    if (caps[key] > maxima[key]) return key;
-  }
-  return null;
-}
+export { overCapField } from '../runs/start-inner-run';
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -120,16 +111,9 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
     const { demoOverride, caseStudyId, ...runConfigBody } = asRecord(request.body);
 
     // Fail-fast config validation (§15) — an invalid config appends NO run.configured.
-    let config: RunConfig;
-    try {
-      config = validateRunConfig({
-        defaults: deps.defaultConfig as unknown as Record<string, unknown>,
-        file: runConfigBody,
-        env: {},
-      });
-    } catch (error) {
-      return reply.status(400).send({ error: 'invalid_config', message: (error as Error).message });
-    }
+    const validated = validateRunConfigForStart(runConfigBody, deps);
+    if (!validated.ok) return reply.status(validated.statusCode).send(validated.body);
+    let config: RunConfig = validated.config;
 
     // Demo cap-override (PD.12, §17/§5) — when present, the caps come ENTIRELY from
     // `applyDemoCapOverride(maxima, override)`: every overridden field is LOWERED, every other field is
@@ -156,53 +140,26 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
       return reply.status(422).send({ error: 'cap_override_exceeds_max', field: over });
     }
 
-    // Model-route-override rejection (FB.2, §11/§6) — a per-run override naming a model NOT in the role's
-    // frozen allowlist (or targeting `final_judge`, rule #6) is refused 422 BEFORE the append (rule #2 —
-    // never persist an invalid override). The loud primary gate; the per-run registry overlay re-clamps
-    // as the kernel-bound fail-safe (rule #1). An absent override skips the check.
-    if (config.modelRouteOverride !== undefined) {
-      const violation = modelRouteOverrideViolation(
-        config.modelRouteOverride,
-        deps.modelRouteOverrideAllowlist,
-      );
-      if (violation !== null) {
-        return reply
-          .status(422)
-          .send({ error: 'model_route_override_not_permitted', ...violation });
-      }
-    }
-
     // Concurrency (§15) — refuse a new run while one is non-terminal (not silently queued).
     if (activeRunId !== null && (await isActive(activeRunId))) {
       return reply.status(409).send({ error: 'run_already_active', activeRunId });
     }
 
     // Append run.configured — the sole authoritative write (rule #2). Operator-initiated.
-    const runId = deps.newId();
-    await deps.store.append({
-      id: deps.newId(),
-      runId,
-      type: 'run.configured',
-      actor: 'operator',
-      // caseStudyId rides the generic run.configured payload as run-level metadata (NOT a RunConfig field
-      // — readRecordedConfig's extractRunConfig tolerates it). Islands pivot A4: EVERY run is tagged — the
-      // operator's explicit id (a chosen prepared problem) when given, else one DERIVED from the seed so a
-      // freeform run still lands in a bloom and re-running the same prompt groups those runs under one case
-      // study (the growing network). Deterministic → replay-safe (rule #7).
-      payload: {
-        ...config,
-        caseStudyId:
-          typeof caseStudyId === 'string' && caseStudyId.length > 0
-            ? caseStudyId
-            : deriveCaseStudyId(config.seed),
-      } as Record<string, unknown>,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
+    // caseStudyId rides the generic run.configured payload as run-level metadata (NOT a RunConfig field
+    // — readRecordedConfig's extractRunConfig tolerates it). Islands pivot A4: EVERY run is tagged — the
+    // operator's explicit id (a chosen prepared problem) when given, else one DERIVED from the seed so a
+    // freeform run still lands in a bloom and re-running the same prompt groups those runs under one case
+    // study (the growing network). Deterministic → replay-safe (rule #7).
+    const effectiveCaseStudyId =
+      typeof caseStudyId === 'string' && caseStudyId.length > 0
+        ? caseStudyId
+        : deriveCaseStudyId(config.seed);
+    const runId = await appendAndStartInnerRun(config, deps, {
+      payloadExtras: { caseStudyId: effectiveCaseStudyId },
     });
     activeRunId = runId;
     if (idemKey !== null) idempotency.set(idemKey, runId);
-    // P5.11 — fire the execution trigger AFTER the authoritative run.configured append (fire-and-forget;
-    // the 201 does not block on the run). Absent → no execution (append-only, today's behavior).
-    deps.onRunConfigured?.(runId);
     return reply.status(201).send({ runId });
   });
 

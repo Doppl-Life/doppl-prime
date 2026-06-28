@@ -142,6 +142,9 @@ export function RunsHomeScreen() {
       <header style={headerRow}>
         <h1 style={title}>Runs</h1>
         <span style={{ marginLeft: 'auto' }}>
+          <Button variant="secondary" glyph="✺" onClick={() => navigate('/agarden')}>
+            Agarden
+          </Button>{' '}
           <Button variant="primary" glyph="◆" onClick={newRun}>
             New Run
           </Button>

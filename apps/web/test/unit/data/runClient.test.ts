@@ -73,6 +73,7 @@ describe('runClient — read-only REST seam', () => {
         'getKnowledge',
         'getLineage',
         'getModelRouteOverrides',
+        'getOuterBloom',
         'getProblemSets',
         'getReplay',
         'getRun',
@@ -80,8 +81,10 @@ describe('runClient — read-only REST seam', () => {
         'listModelRoutes',
         'listRuns',
         'startDemoRun',
+        'startOuterCampaign',
         'startRun',
         'stopRun',
+        'deleteOuterBloomNode',
       ].sort(),
     );
   });
@@ -198,6 +201,15 @@ describe('runClient — read-only REST seam', () => {
     const client = createRunClient({ baseUrl: BASE, fetch });
     await client.getCandidate('a/b?c', 'x/y');
     expect(fetch.calls[0]?.url).toBe(`${BASE}/runs/a%2Fb%3Fc/candidates/x%2Fy`);
+  });
+
+  it('test_delete_outer_bloom_node_uses_delete_and_encodes_id', async () => {
+    const fetch = fakeFetch({ nodeId: 'case/a?b', deleted: 3, nodeIds: ['case/a?b', 'child'] });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const result = await client.deleteOuterBloomNode('case/a?b');
+    expect(result.deleted).toBe(3);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/bloom/nodes/case%2Fa%3Fb`);
+    expect(fetch.calls[0]?.init?.method).toBe('DELETE');
   });
 
   // spec(rule #9)/forbidden #6: the data layer imports NOTHING from apps/api.

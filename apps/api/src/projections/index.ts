@@ -9,6 +9,7 @@ export * from './projection-builder';
 export * from './watermark';
 export * from './current-state';
 export * from './lineage-graph';
+export * from './outer-bloom';
 export * from './research-notes';
 export * from './replay-reader';
 export * from './replay-summary';

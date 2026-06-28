@@ -12,3 +12,33 @@
 @import './tokens/base.css';
 @import './reactflow-controls.css';
 @import './clickable-affordance.css';
+
+@media (max-width: 1180px) {
+  .outer-bloom-header {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+
+  .outer-bloom-body {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+
+  .outer-bloom-graph-panel {
+    height: 560px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .outer-bloom-svg {
+    min-height: 460px !important;
+  }
+
+  .outer-bloom-proof-content {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .outer-bloom-proof-content > div:first-child {
+    grid-column: 1 / -1 !important;
+  }
+}

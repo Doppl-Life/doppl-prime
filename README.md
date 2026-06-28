@@ -107,7 +107,6 @@ docker run --rm -d --name doppl-pg -p 5432:5432 -e POSTGRES_PASSWORD=doppl postg
 
 ```bash
 pnpm install          # from the repo root
-cp .env.example .env  # fill in values (see the two paths below)
 ```
 
 `.env.example` lists every env var the boot reads (each marked REQUIRED/OPTIONAL); it's single-sourced from the code allowlist and drift-guard-tested. Migrations run automatically at boot (`migrate → seed → start`). The API's `start` script loads the root `.env` for you (via `tsx --env-file`), and `pnpm dev` sources it too — no manual `export` needed.
@@ -118,7 +117,15 @@ cp .env.example .env  # fill in values (see the two paths below)
 pnpm dev
 ```
 
-This runs `scripts/dev-local.sh`, which: brings up a local Postgres in Docker matching your `.env` `DATABASE_URL` (only when the DB host is local; skipped if you point at your own/remote Postgres), waits for it to be ready, then boots the **API on `:3000`** (`migrate → seed → start`) and the **web dashboard** (Vite, proxying `/api` → `:3000`) together. Ctrl-C stops both; the Postgres container is left running for next time (`pnpm db:down` to stop it, `pnpm db:logs` to tail it).
+This runs `scripts/dev-local.sh`, which: brings up a local Postgres in Docker matching your `.env` `DATABASE_URL` (only when the DB host is local; skipped if you point at your own/remote Postgres), waits for it to be ready, fetches the public Agarden demo data into `.cache/agarden`, seeds the curated `/agarden` maps, then boots the **API on `:3000`** (`migrate → seed → start`) and the **web dashboard** (Vite, proxying `/api` → `:3000`) together. Ctrl-C stops both; the Postgres container is left running for next time (`pnpm db:down` to stop it, `pnpm db:logs` to tail it).
+
+If `.env` does not exist, `pnpm dev` creates it from `.env.example`. The default is the creds-free recorded path, so teammates do not need provider keys to inspect the local UI.
+
+Open:
+
+- `http://localhost:5173/runs` for the inner organism run observatory.
+- `http://localhost:5173/knowledge` for the knowledge graph.
+- `http://localhost:5173/agarden` for the outer Agarden map. The first `pnpm dev` run auto-seeds `The Rock Star's Drone Problem` and `When the Crashes Don't Come`; set `DOPPL_AUTO_SEED_AGARDEN=0` to skip this, or `AGARDEN_FLOW_DIR=/path/to/agarden/flow` to seed from a local Agarden checkout.
 
 Open the dashboard URL Vite prints. Whether it loads a seeded replay or boots live depends on your `.env`:
 
