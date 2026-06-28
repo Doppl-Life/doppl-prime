@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>DOPPL — Great Question</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================== TOKENS */
+:root{
+  --bg:#070a0f;
+  --bg-1:#0a0e15;
+  --bg-2:#0e131c;
+  --bg-elev:#121826;
+  --ink:#e9eef6;
+  --ink-dim:#94a2b6;
+  --ink-faint:#566075;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.04);
+  --teal:#2dd4bf;
+  --teal-2:#5eead4;
+  --purple:#a78bfa;
+  --green:#34d399;
+  --amber:#fbbf24;
+  --rose:#fb7185;
+  --teal-glow:rgba(45,212,191,.30);
+  --purple-glow:rgba(167,139,250,.25);
+
+  --serif:"Fraunces",Georgia,serif;
+  --sans:"Space Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+
+  --pad: clamp(28px, 6vw, 110px);
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--ink);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  position:fixed; inset:0;
+}
+
+/* layered backdrop: deep radial + faint grid */
+#backdrop{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(120% 90% at 78% -10%, rgba(45,212,191,.10), transparent 55%),
+    radial-gradient(100% 80% at 12% 110%, rgba(167,139,250,.10), transparent 55%),
+    radial-gradient(140% 120% at 50% 50%, var(--bg-1), var(--bg) 75%);
+}
+#grid{
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+  background-image:
+    linear-gradient(var(--line-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-2) 1px, transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(120% 100% at 50% 40%, #000 30%, transparent 88%);
+  mask-image:radial-gradient(120% 100% at 50% 40%, #000 30%, transparent 88%);
+}
+#net{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+#vignette{
+  position:fixed; inset:0; z-index:2; pointer-events:none;
+  box-shadow:inset 0 0 240px 40px rgba(0,0,0,.6);
+}
+
+/* ============================================================== DECK */
+#deck{ position:fixed; inset:0; z-index:3; }
+.slide{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:var(--pad);
+  opacity:0; visibility:hidden;
+  transform:translateY(26px) scale(.992);
+  transition:opacity .6s var(--ease), transform .7s var(--ease), visibility .6s;
+  will-change:opacity,transform;
+}
+.slide.active{ opacity:1; visibility:visible; transform:none; transition-delay:.05s; }
+.slide.past{ transform:translateY(-26px) scale(.992); }
+
+.wrap{ width:min(1180px, 100%); margin:0 auto; }
+
+/* presenter-only script payload — never shown on the slide itself */
+.pnote{ display:none; }
+
+/* fragments */
+.fragment{ opacity:0; transform:translateY(10px); transition:opacity .55s var(--ease-out), transform .55s var(--ease-out); }
+.fragment.in{ opacity:1; transform:none; }
+
+/* ============================================================== TYPE */
+.kicker{
+  font-family:var(--mono); font-size:.74rem; letter-spacing:.42em; text-transform:uppercase;
+  color:var(--teal); display:flex; align-items:center; gap:.9em; margin-bottom:clamp(18px,2.4vw,30px);
+}
+.kicker::before{ content:""; width:34px; height:1px; background:linear-gradient(90deg,var(--teal),transparent); }
+.kicker.muted{ color:var(--ink-faint); }
+.kicker.muted::before{ background:linear-gradient(90deg,var(--ink-faint),transparent); }
+
+h1.display{
+  font-family:var(--serif); font-weight:340; font-optical-sizing:auto;
+  font-size:clamp(2.6rem,8.2vw,7rem); line-height:.98; letter-spacing:-.02em;
+}
+h2.head{
+  font-family:var(--serif); font-weight:360;
+  font-size:clamp(2.1rem,5.4vw,4.4rem); line-height:1.02; letter-spacing:-.018em;
+}
+.lede{
+  font-size:clamp(1.05rem,1.7vw,1.5rem); line-height:1.5; color:var(--ink-dim);
+  max-width:40ch; font-weight:300; margin-top:clamp(20px,2.6vw,34px);
+}
+.lede strong{ color:var(--ink); font-weight:500; }
+.em-teal{ color:var(--teal-2); }
+.em-purple{ color:var(--purple); }
+.em-amber{ color:var(--amber); }
+
+/* ============================================================== TITLE SLIDE */
+.title-slide{ align-items:center; text-align:center; }
+.title-slide .wrap{ display:flex; flex-direction:column; align-items:center; }
+.brandmark{
+  font-family:var(--serif); font-weight:300; letter-spacing:-.04em;
+  font-size:clamp(5rem,20vw,16rem); line-height:.86; position:relative;
+  background:linear-gradient(180deg,#fff, #c7d2de 60%, #7e8aa0);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.brandmark .pp{ position:relative;
+  background:linear-gradient(180deg,#fff, #c7d2de 60%, #7e8aa0);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.brandmark .pp::after{
+  content:""; position:absolute; right:-.04em; top:50%; width:.5em; height:.5em;
+  transform:translateY(-50%); border-radius:50%;
+  background:var(--teal); box-shadow:0 0 26px 6px var(--teal-glow);
+  opacity:0; animation:blip 3.4s var(--ease) infinite 1.2s;
+}
+@keyframes blip{ 0%,100%{opacity:0;transform:translateY(-50%) scale(.4)} 8%{opacity:1;transform:translateY(-50%) scale(1)} 40%{opacity:0} }
+.title-tag{
+  font-family:var(--mono); font-size:clamp(.78rem,1.5vw,1.05rem); letter-spacing:.12em;
+  color:var(--ink-dim); margin-top:clamp(22px,3vw,40px);
+}
+.title-tag .dot{ color:var(--teal); }
+.title-sub{ margin-top:14px; color:var(--ink-faint); font-size:.85rem; letter-spacing:.04em; }
+
+/* ============================================================== CASCADE */
+.cascade{ display:grid; grid-template-columns:1fr; gap:0; margin-top:6px;
+  border-top:1px solid var(--line); list-style:none; }
+.domino{
+  display:grid; grid-template-columns:1.6em 1fr auto; align-items:baseline; gap:1em;
+  padding:clamp(8px,1.1vw,15px) 4px; border-bottom:1px solid var(--line-2);
+  opacity:0; transform:translateX(-14px);
+  transition:opacity .5s var(--ease-out), transform .5s var(--ease-out);
+}
+.domino.in{ opacity:1; transform:none; }
+.domino .idx{ font-family:var(--mono); font-size:.7rem; color:var(--ink-faint); }
+.domino .what{ font-size:clamp(1rem,2vw,1.55rem); font-weight:400; letter-spacing:-.01em;
+  position:relative; transition:color .5s ease; }
+.domino .what::after{
+  content:""; position:absolute; left:-2px; right:-2px; top:54%; height:1.5px;
+  background:var(--rose); transform:scaleX(0); transform-origin:left; transition:transform .55s var(--ease-out) .12s;
+}
+.domino.struck .what{ color:var(--ink-faint); }
+.domino.struck .what::after{ transform:scaleX(1); }
+.domino .gone{ font-family:var(--mono); font-size:.66rem; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--rose); opacity:0; transition:opacity .4s ease .35s; }
+.domino.struck .gone{ opacity:.8; }
+
+.probleconomy{ font-family:var(--mono); font-size:.7rem; letter-spacing:.3em; text-transform:uppercase;
+  color:var(--ink-faint); margin-top:18px; }
+.probleconomy b{ color:var(--amber); font-weight:500; letter-spacing:.18em; }
+
+.beat{ font-family:var(--serif); font-size:clamp(1.4rem,3.4vw,2.6rem); font-weight:360; line-height:1.12; }
+.beat .means{ color:var(--teal-2); font-style:italic; }
+.ask{ margin-top:clamp(14px,2vw,26px); color:var(--ink-dim); display:flex; align-items:center; gap:.7em;
+  font-size:clamp(1rem,1.7vw,1.4rem); flex-wrap:wrap; }
+.ask .finger{ color:var(--teal); }
+
+/* ============================================================== TWO COLUMN */
+.cols{ display:grid; grid-template-columns:1.05fr 1fr; gap:clamp(28px,5vw,72px); align-items:center; }
+.cols.rev{ grid-template-columns:1fr 1.05fr; }
+@media (max-width:880px){ .cols,.cols.rev{ grid-template-columns:1fr; gap:26px; } }
+
+.bullets{ list-style:none; display:flex; flex-direction:column; gap:clamp(12px,1.6vw,20px); margin-top:8px; }
+.bullets li{ display:grid; grid-template-columns:auto 1fr; gap:1em; align-items:start;
+  font-size:clamp(.98rem,1.5vw,1.28rem); line-height:1.45; color:var(--ink-dim); font-weight:300; }
+.bullets li b{ color:var(--ink); font-weight:500; }
+.bullets .mk{ font-family:var(--mono); font-size:.78rem; color:var(--teal); padding-top:.28em; white-space:nowrap; }
+.bullets .mk.p{ color:var(--purple); }
+.bullets .mk.g{ color:var(--green); }
+
+/* app window chrome for screenshots */
+.appwin{
+  position:relative; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  background:var(--bg-2);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.02),
+             0 0 70px -10px var(--teal-glow);
+}
+.appwin .bar{ display:flex; align-items:center; gap:7px; padding:9px 12px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(255,255,255,.03), transparent); }
+.appwin .bar i{ width:9px; height:9px; border-radius:50%; background:var(--ink-faint); opacity:.5; }
+.appwin .bar i:nth-child(1){ background:#fb7185; opacity:.6; }
+.appwin .bar i:nth-child(2){ background:#fbbf24; opacity:.6; }
+.appwin .bar i:nth-child(3){ background:#34d399; opacity:.6; }
+.appwin .bar .url{ font-family:var(--mono); font-size:.66rem; color:var(--ink-faint); margin-left:10px;
+  letter-spacing:.04em; }
+.appwin .bar .live{ margin-left:auto; font-family:var(--mono); font-size:.6rem; letter-spacing:.2em;
+  color:var(--green); display:flex; align-items:center; gap:.5em; }
+.appwin .bar .live::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--green);
+  box-shadow:0 0 8px var(--green); animation:pulse 1.6s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.3} }
+.appwin img{ display:block; width:100%; height:auto; }
+.appwin .scan{ position:absolute; inset:33px 0 0; pointer-events:none;
+  background:linear-gradient(180deg, transparent, var(--teal-glow) 50%, transparent);
+  height:60px; opacity:.5; mix-blend-mode:screen; animation:scan 5.5s linear infinite; }
+@keyframes scan{ 0%{transform:translateY(-60px); opacity:0} 10%{opacity:.5} 90%{opacity:.5} 100%{transform:translateY(70vh); opacity:0} }
+
+/* ============================================================== SPINE */
+.spine{ display:flex; align-items:center; flex-wrap:wrap; gap:.55em; margin-top:clamp(22px,3vw,38px);
+  font-family:var(--mono); font-size:clamp(.7rem,1.25vw,.95rem); }
+.spine .node{ padding:.55em .85em; border:1px solid var(--line); border-radius:7px; color:var(--ink-dim);
+  background:var(--bg-elev); letter-spacing:.02em; white-space:nowrap; position:relative; }
+.spine .node.lit{ color:var(--ink); border-color:rgba(45,212,191,.5); box-shadow:0 0 24px -6px var(--teal-glow); }
+.spine .node.you{ color:#04130f; background:var(--teal); border-color:var(--teal); font-weight:600; }
+.spine .arrow{ color:var(--ink-faint); }
+.spine .nudge{ color:var(--purple); font-size:.78em; letter-spacing:.06em; }
+
+/* ============================================================== GENSTRIP (kernel) */
+.genstrip{ display:flex; gap:6px; margin:clamp(18px,2.4vw,30px) 0; }
+.gen{ display:grid; grid-template-rows:repeat(5,1fr); gap:3px; }
+.gen i{ width:clamp(7px,1vw,11px); height:clamp(7px,1vw,11px); border-radius:2px;
+  background:var(--bg-elev); border:1px solid var(--line-2); }
+.score-line{ display:flex; align-items:center; gap:1.2em; flex-wrap:wrap; font-family:var(--mono);
+  font-size:clamp(.8rem,1.3vw,1.05rem); margin-top:6px; }
+.score-line .x{ color:var(--ink-faint); }
+.tag-novelty{ color:var(--purple); } .tag-ground{ color:var(--green); }
+.judge-card{ margin-top:clamp(20px,2.6vw,32px); border:1px solid var(--line); border-left:2px solid var(--teal);
+  border-radius:10px; padding:clamp(16px,2vw,24px); background:linear-gradient(120deg, rgba(45,212,191,.06), transparent 70%); }
+.judge-card .t{ font-family:var(--mono); font-size:.66rem; letter-spacing:.26em; text-transform:uppercase; color:var(--teal); margin-bottom:.8em; }
+.judge-card p{ font-size:clamp(1rem,1.6vw,1.35rem); line-height:1.4; font-weight:300; color:var(--ink-dim); }
+.judge-card p b{ color:var(--ink); font-weight:500; }
+
+/* ============================================================== BIG MOMENTS */
+.center-stage{ align-items:center; text-align:center; }
+.cheap-line{ font-family:var(--serif); font-weight:330; line-height:1.08; }
+.cheap-1{ font-size:clamp(2rem,6vw,5rem); color:var(--ink-dim); }
+.cheap-2{ font-size:clamp(2.4rem,8vw,6.4rem); margin-top:.18em; letter-spacing:-.02em; }
+.cheap-2 em{ color:var(--teal-2); font-style:italic; }
+.afterthought{ margin-top:clamp(26px,4vw,52px); font-size:clamp(1rem,1.7vw,1.5rem); color:var(--ink-dim);
+  max-width:46ch; margin-left:auto; margin-right:auto; line-height:1.5; font-weight:300; }
+.afterthought b{ color:var(--ink); font-weight:500; }
+.cost0{ font-family:var(--mono); margin-top:clamp(22px,3vw,40px); font-size:clamp(.85rem,1.5vw,1.15rem);
+  color:var(--ink-faint); letter-spacing:.04em; }
+.cost0 b{ color:var(--teal); }
+
+/* PSaaS / pizzazz */
+.psaas{ font-family:var(--serif); font-size:clamp(2rem,6vw,4.6rem); font-weight:340; line-height:1.12; }
+.pizzazz{ position:relative; color:var(--amber); font-style:italic; white-space:nowrap; }
+.pizzazz .hands{ position:absolute; inset:-.2em -1.4em; pointer-events:none; }
+.pizzazz .hands span{ position:absolute; width:3px; height:18px; background:var(--amber); border-radius:2px;
+  top:50%; opacity:0; transform-origin:bottom center; }
+.psaas.in .pizzazz .hands span{ animation:jazz 1.2s var(--ease-out) forwards; }
+@keyframes jazz{ 0%{opacity:0;transform:scaleY(.2) rotate(var(--r))} 40%{opacity:1} 70%{transform:scaleY(1) rotate(var(--r))} 100%{opacity:.9;transform:scaleY(.9) rotate(var(--r))} }
+
+.market-callback{ margin-top:clamp(22px,3vw,40px); font-size:clamp(1.05rem,1.8vw,1.55rem); line-height:1.45;
+  color:var(--ink-dim); font-weight:300; max-width:48ch; margin-left:auto; margin-right:auto; }
+.market-callback b{ color:var(--ink); font-weight:500; }
+.market-callback .cascade-word{ color:var(--amber); font-weight:500; }
+
+/* teammate handoff */
+.handoff{ align-items:center; text-align:center; }
+.handoff .q{ font-family:var(--serif); font-style:italic; font-size:clamp(1.5rem,4vw,3rem); font-weight:340;
+  line-height:1.18; max-width:24ch; margin:0 auto; }
+.handoff .pass{ margin-top:clamp(34px,5vw,64px); font-family:var(--mono); font-size:.74rem; letter-spacing:.3em;
+  text-transform:uppercase; color:var(--ink-faint); display:inline-flex; align-items:center; gap:1em;
+  border:1px dashed var(--line); padding:14px 24px; border-radius:100px; }
+.handoff .pass b{ color:var(--teal); font-weight:500; }
+
+/* ASK / ENACT */
+.two-jobs{ display:flex; gap:clamp(14px,2vw,28px); margin:clamp(8px,1.4vw,18px) 0 clamp(20px,2.6vw,32px); }
+.job{ flex:1; border:1px solid var(--line); border-radius:12px; padding:clamp(18px,2.4vw,30px); background:var(--bg-2);
+  position:relative; overflow:hidden; }
+.job .n{ font-family:var(--mono); font-size:.64rem; letter-spacing:.26em; color:var(--ink-faint); }
+.job h3{ font-family:var(--serif); font-weight:400; font-size:clamp(1.6rem,3.2vw,2.6rem); margin-top:.3em; }
+.job p{ color:var(--ink-dim); font-weight:300; font-size:.95rem; margin-top:.6em; line-height:1.45; }
+.job.act{ border-color:rgba(45,212,191,.4); box-shadow:0 0 50px -16px var(--teal-glow); }
+.job.act h3{ color:var(--teal-2); }
+.skin{ font-size:clamp(1rem,1.6vw,1.35rem); color:var(--ink-dim); font-weight:300; line-height:1.5; max-width:52ch; }
+.skin b{ color:var(--ink); font-weight:500; }
+
+/* close */
+.close-slide{ align-items:center; text-align:center; }
+.close-line{ font-family:var(--serif); font-weight:330; line-height:1.1; font-size:clamp(2.2rem,7vw,5.6rem); letter-spacing:-.015em; }
+.close-2{ color:var(--teal-2); font-style:italic; }
+.fin{ font-family:var(--mono); margin-top:clamp(30px,5vw,60px); font-size:.66rem; letter-spacing:.5em;
+  text-transform:uppercase; color:var(--ink-faint); }
+
+/* ============================================================== CHROME / UI */
+#progress{ position:fixed; top:0; left:0; height:2px; background:linear-gradient(90deg,var(--teal),var(--teal-2));
+  z-index:30; width:0; transition:width .5s var(--ease); box-shadow:0 0 12px var(--teal-glow); }
+.corner{ position:fixed; z-index:20; font-family:var(--mono); color:var(--ink-faint); font-size:.66rem;
+  letter-spacing:.18em; user-select:none; }
+#wm{ top:24px; left:var(--pad); display:flex; align-items:center; gap:.7em; }
+#wm .dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); box-shadow:0 0 10px var(--teal-glow); }
+#wm b{ color:var(--ink-dim); font-weight:500; letter-spacing:.2em; }
+#counter{ top:24px; right:var(--pad); }
+#counter b{ color:var(--ink); }
+#hint{ bottom:24px; left:var(--pad); opacity:.7; }
+#hint kbd{ font-family:var(--mono); border:1px solid var(--line); border-radius:4px; padding:1px 6px; color:var(--ink-dim); }
+
+#dots{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:20; display:flex; gap:9px; }
+#dots button{ width:8px; height:8px; border-radius:50%; border:0; background:rgba(255,255,255,.16); cursor:pointer;
+  padding:0; transition:.3s; }
+#dots button:hover{ background:rgba(255,255,255,.4); transform:scale(1.2); }
+#dots button.on{ background:var(--teal); box-shadow:0 0 10px var(--teal-glow); width:22px; border-radius:5px; }
+
+#sectName{ bottom:24px; right:var(--pad); color:var(--ink-faint); }
+
+/* presenter notes */
+#notes{ position:fixed; left:0; right:0; bottom:0; z-index:40; transform:translateY(101%);
+  transition:transform .45s var(--ease); background:rgba(8,11,17,.96); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+  border-top:1px solid var(--line); padding:22px var(--pad) 30px; max-height:46vh; overflow:auto; }
+#notes.open{ transform:none; }
+#notes .nh{ font-family:var(--mono); font-size:.64rem; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--teal); margin-bottom:12px; display:flex; gap:1.4em; align-items:center; flex-wrap:wrap; }
+#notes .nh span{ color:var(--ink-faint); }
+#notes .body{ font-size:clamp(.95rem,1.5vw,1.18rem); line-height:1.6; color:var(--ink); max-width:80ch; font-weight:300; }
+#notes .body em{ color:var(--teal-2); font-style:italic; }
+#notes .body .stage{ color:var(--purple); font-family:var(--mono); font-size:.85em; }
+
+/* help overlay */
+#help{ position:fixed; inset:0; z-index:50; background:rgba(5,7,11,.86); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  display:none; align-items:center; justify-content:center; }
+#help.open{ display:flex; }
+#help .card{ width:min(560px,90vw); border:1px solid var(--line); border-radius:16px; background:var(--bg-elev);
+  padding:34px 38px; }
+#help h4{ font-family:var(--serif); font-weight:400; font-size:1.7rem; margin-bottom:20px; }
+#help dl{ display:grid; grid-template-columns:auto 1fr; gap:12px 22px; font-size:.95rem; color:var(--ink-dim); }
+#help dt{ font-family:var(--mono); color:var(--teal); }
+#help .close{ margin-top:24px; font-size:.8rem; color:var(--ink-faint); font-family:var(--mono); }
+
+@media (max-width:680px){
+  #hint,#sectName{ display:none; }
+  #dots{ bottom:18px; }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms!important; animation-iteration-count:1!important; }
+  .slide{ transition:opacity .2s; }
+  #net,.scan{ display:none; }
+}
+</style>
+</head>
+<body>
+<div id="backdrop"></div>
+<div id="grid"></div>
+<canvas id="net"></canvas>
+<div id="vignette"></div>
+<div id="progress"></div>
+
+<div class="corner" id="wm"><span class="dot"></span><b>DOPPL</b></div>
+<div class="corner" id="counter"><b id="cur">01</b> / <span id="tot">13</span></div>
+<div class="corner" id="hint"><kbd>→</kbd> next · <kbd>N</kbd> notes · <kbd>?</kbd> keys</div>
+<div class="corner" id="sectName"></div>
+
+<main id="deck">
+
+  <!-- 0 · TITLE -->
+  <section class="slide title-slide" data-name="Title" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker">✦ Great Question</div>
+      <div class="brandmark">DO<span class="pp">PP</span>L</div>
+      <div class="title-tag">PSaaS, Idearganisms, and the Crash you Didn't see</div>
+      <div class="title-sub">live from Austin, TX — ground zero for the robotaxi rollout</div>
+    </div>
+    <div class="pnote">
+      <span class="stage">(Title card holds. We open cold — no slide change, just talk.)</span>
+      It's interesting to be in Austin, right now. Ground zero for the robotaxi rollout.
+      Accept the premise: full self-driving is solved, and it's about to scale wide. Press → when you're ready to drop the first domino.
+    </div>
+  </section>
+
+  <!-- 1 · COLD OPEN PREMISE -->
+  <section class="slide" data-name="Cold open" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker">Cold open</div>
+      <h2 class="head">When the Crashes<br>Don't Come</h2>
+      <p class="lede">Cost per mile collapses. Fewer wrecks, fewer injuries, fewer lives lost. They're right — that part is real, and it matters.</p>
+      <p class="fragment beat" style="margin-top:clamp(28px,4vw,52px)">But that's where they stop.<br><span class="means">The question I don't hear is —</span></p>
+      <p class="fragment beat" style="margin-top:.4em">What happens <em style="color:var(--teal-2)">when the crashes don't come?</em></p>
+    </div>
+    <div class="pnote">
+      Tesla's the only one with a real shot — not geo-fenced, builds its own cars and cameras, no LiDAR-cost albatross. Cost per mile drops. Crashes drop. Fewer people hurt. That's the surface discourse, and it's true.
+      <br><br>But the pundits stop there. <em>Follow it all the way down.</em> What happens when America's accident economy collapses?
+    </div>
+  </section>
+
+  <!-- 2 · CASCADE -->
+  <section class="slide" data-name="The dominoes" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker muted">The dominoes</div>
+      <ul class="cascade" id="cascade">
+        <li class="domino"><span class="idx">01</span><span class="what">Personal-injury &amp; DUI law</span><span class="gone">no more cases</span></li>
+        <li class="domino"><span class="idx">02</span><span class="what">ER trauma units · nurses · paramedics</span><span class="gone">gone</span></li>
+        <li class="domino"><span class="idx">03</span><span class="what">The traffic stop · probable cause · the pretext</span><span class="gone">falls away</span></li>
+        <li class="domino"><span class="idx">04</span><span class="what">Red-light cams · speed-trap towns · municipal budgets</span><span class="gone">gone</span></li>
+        <li class="domino"><span class="idx">05</span><span class="what">Long-haul trucking · the truck stops · the towns built on them</span><span class="gone">gone</span></li>
+        <li class="domino"><span class="idx">06</span><span class="what">Auto parts · body shops · salvage yards · whole supply lines</span><span class="gone">reshuffled</span></li>
+        <li class="domino"><span class="idx">07</span><span class="what">Insurers · adjusters · actuaries · claims orgs</span><span class="gone">gone</span></li>
+      </ul>
+      <div class="probleconomy fragment">when reckless driving becomes <em style="font-style:italic;color:var(--ink-dim)">wreckless</em> driving — the <b>Probleconomy</b> comes apart</div>
+      <p class="fragment beat" style="margin-top:clamp(18px,2.4vw,30px)">This all adds up to something. This <span class="means">means</span> something.</p>
+      <div class="fragment ask">
+        <span class="finger">☝</span> So what does it all <em style="font-style:italic;color:var(--teal-2)">mean?</em> &nbsp;— &nbsp;Anybody got any ideas?
+      </div>
+    </div>
+    <div class="pnote">
+      <span class="stage">(Rattle these off wide and fast — fragments, no expansion. The list piles into weight.)</span>
+      Personal-injury lawyers. DUI defense. ERs and trauma units. The cop loses the traffic stop — probable cause, the pretext, gone. Red-light tickets, speed-trap towns. Truckers. Auto parts, body shops, salvage. Insurers, adjusters, actuaries.
+      <br><br>This is coming. All this adds up to something. This <em>means</em> something. <span class="stage">(finger up)</span> What does it all mean? <span class="stage">(sweep the finger across the room, land on the screen)</span> Anybody got any ideas?
+    </div>
+  </section>
+
+  <!-- 3 · REVEAL / RADAR -->
+  <section class="slide" data-name="The reveal" data-fx="radar">
+    <div class="wrap">
+      <div class="radar-stage" style="display:grid;grid-template-columns:auto 1fr;gap:clamp(30px,5vw,64px);align-items:center">
+        <div class="radar-wrap" style="position:relative;width:clamp(220px,32vw,380px);aspect-ratio:1">
+          <canvas id="radar" style="width:100%;height:100%;display:block"></canvas>
+          <div style="position:absolute;bottom:6%;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.6rem;letter-spacing:.3em;color:var(--ink-faint);text-transform:uppercase">incoming</div>
+        </div>
+        <div>
+          <div class="kicker">The reveal</div>
+          <h2 class="head">Let me put Doppl<br>on your radar.</h2>
+          <p class="lede"><strong>Doppl ≈ Doppler</strong> — the thing you hear before it arrives. The cascade was the shift. Doppl is the source.</p>
+          <p class="fragment lede" style="margin-top:22px">Seed it with a case study and it <strong>breeds ideas under selective pressure.</strong> Generate · score · select · survive · mutate · fuse — generation after generation.</p>
+          <p class="fragment lede" style="margin-top:14px">Each run grows a population of evolving idea-organisms. <span class="em-teal">Idearganisms.</span></p>
+        </div>
+      </div>
+    </div>
+    <div class="pnote">
+      Well... let me put Doppl on your radar. <span class="stage">(The name's been on screen this whole time — it was the thing that was "coming.")</span>
+      <br><br>Doppl is an agentic-evolution runtime. You seed it with a scenario worth exploring, and it breeds ideas under selective pressure. Not one agent guessing — a population. Generate, score, select, survive, mutate, fuse. Until what remains is stronger than what came before. Each run grows a living lineage of idea-organisms. <em>Idearganisms.</em>
+    </div>
+  </section>
+
+  <!-- 4 · AGARDEN -->
+  <section class="slide" data-name="Outside view" data-fx="garden">
+    <div class="wrap">
+      <div class="cols">
+        <div>
+          <div class="kicker">Outside view — the aGarden</div>
+          <h2 class="head">It looks like life<br>growing. Because<br>structurally, it is.</h2>
+          <p class="lede">Every dot is an idea. Every line is a lineage — which idea came from which. One seed becomes a population; the strong fuse and breed, the weak get culled.</p>
+          <div class="spine fragment">
+            <span class="node lit">case study</span><span class="arrow">→</span>
+            <span class="node">problem recovery</span><span class="nudge">↳ nudge</span><span class="arrow">→</span>
+            <span class="node">doppl</span><span class="nudge">↳ nudge</span><span class="arrow">→</span>
+            <span class="node you">you</span>
+          </div>
+        </div>
+        <div class="fragment">
+          <div class="appwin">
+            <div class="bar"><i></i><i></i><i></i><span class="url">doppl-life.github.io / agarden</span><span class="live">live</span></div>
+            <img src="outside-view-agarden.png" alt="The aGarden — a network of idea lineages growing from a single seed" loading="lazy" />
+            <div class="scan"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pnote">
+      This is the aGarden. What's growing is real output. Every dot is an idea, every line a lineage. It starts with one seed — one case study — and the system spawns a population, scoring each candidate on two axes it never lets collapse: <em>novelty</em>, how far it reaches, and <em>grounding</em>, how hard it lands on something true. The strong survive, fuse, breed. The weak get culled.
+      <br><br>The spine is simple: a case study becomes a recovered problem, a recovered problem becomes a doppl — and after the doppl, the path points out of the system, to you.
+    </div>
+  </section>
+
+  <!-- 5 · SOLUTION vs UNLOCK -->
+  <section class="slide" data-name="Solution / Unlock" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker">Two kinds of answer</div>
+      <div class="cols" style="align-items:start;margin-top:10px">
+        <div>
+          <h2 class="head" style="font-size:clamp(1.7rem,3.6vw,2.8rem)">A <span class="em-teal">solution.</span></h2>
+          <div class="title-tag" style="margin-top:6px">convergent · one problem, one move</div>
+          <p class="lede" style="max-width:46ch">A rock star, a superyacht, paparazzi drones circling the deck. Every obvious move — shoot it down, jam it — is a worse problem than the photo. So Doppl recovers the <strong>real</strong> problem: not "defeat the drone," but <strong>"make the footage worthless."</strong></p>
+          <p class="fragment lede" style="max-width:46ch;margin-top:14px">The fix is a song. A private cue over the speakers. Everyone drifts inside. The drone films an empty deck and goes home with nothing.</p>
+        </div>
+        <div class="fragment">
+          <h2 class="head" style="font-size:clamp(1.7rem,3.6vw,2.8rem)">An <span class="em-purple">unlock.</span></h2>
+          <div class="title-tag" style="margin-top:6px">divergent · one key, a hundred doors</div>
+          <p class="lede" style="max-width:46ch">"Self-driving works." That isn't an answer to a question — it's a <strong>key.</strong> It opens insurance. Freight. Policing. Municipal budgets. What land is even for.</p>
+          <p class="lede" style="max-width:46ch;margin-top:14px"><span class="em-purple">One understanding, and a hundred fields move at once.</span> That's the cold open you just sat through — Doppl, run ahead of time.</p>
+        </div>
+      </div>
+    </div>
+    <div class="pnote">
+      Watch the difference between two kinds of answer. Sometimes you need a <em>solution</em> — the yacht and the drone. The real problem was never "defeat the drone," it was "make the footage worthless." The fix is a song cue; the deck empties; the drone films nothing. One problem, one move. Convergence.
+      <br><br>And sometimes you don't get a solution, you get an <em>unlock.</em> "Self-driving works" isn't an answer — it's a key. Insurance, freight, policing, what land is for. One understanding, a hundred fields move. Divergence. That's the entire cold open — that was Doppl, run ahead of time.
+    </div>
+  </section>
+
+  <!-- 6 · INSIDE / KERNEL -->
+  <section class="slide" data-name="Inside view" data-fx="kernel">
+    <div class="wrap">
+      <div class="cols rev">
+        <div class="fragment">
+          <div class="appwin">
+            <div class="bar"><i></i><i></i><i></i><span class="url">localhost:5173 / kernel · replay</span><span class="live">replay</span></div>
+            <img src="inside-view-kernel.png" alt="The kernel — generations of agent genomes breeding under selective pressure" loading="lazy" />
+            <div class="scan"></div>
+          </div>
+        </div>
+        <div>
+          <div class="kicker">Inside view — the kernel</div>
+          <h2 class="head" style="font-size:clamp(1.8rem,4vw,3.2rem)">One engine.<br>One thing.</h2>
+          <div class="genstrip" id="genstrip"></div>
+          <div class="score-line">
+            <span><span class="tag-novelty">novelty</span> <span class="x">×</span> <span class="tag-ground">grounding</span></span>
+            <span class="x">— never collapsed into one number</span>
+          </div>
+          <div class="judge-card fragment">
+            <div class="t">the floor it cannot move</div>
+            <p>A <b>held-out judge</b> with a fixed rubric the organisms can't touch. They can get better. They cannot cheat. <b>Gen N+1 beats Gen N</b> — graded by a judge it can't bribe.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pnote">
+      That's the garden from above. Now the microscope. Underneath, there's one engine doing one thing: generation under selective pressure. Generate. Score — novelty times grounding, never collapsed. Select survivors. Breed. Again.
+      <br><br>And there's a floor it cannot move: a held-out judge, outside the breeding loop, holding a rubric the organisms are never allowed to touch. They can get better; they cannot cheat. So the proof is almost rude in how simple it is — generation N+1 beats generation N, graded by a judge it can't bribe.
+    </div>
+  </section>
+
+  <!-- 7 · WHY HARD (teammate) -->
+  <section class="slide handoff" data-name="Why it was hard" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker" style="justify-content:center">The load-bearing part</div>
+      <p class="q">How do you build an organism that breeds its own ideas — and <em style="color:var(--teal-2)">still</em> can't game its own report card?</p>
+      <div class="fragment" style="margin-top:0">
+        <div class="pass">handing the floor <b>→</b> the engineering</div>
+      </div>
+    </div>
+    <div class="pnote">
+      <span class="stage">(Played dead straight. This is the load-bearing sincerity that makes the satire land instead of reading as a stunt. Do not undercut it.)</span>
+      How do you actually build an organism that breeds its own ideas and still can't game its own report card? That part is genuinely hard. And for that — <span class="stage">[hand to teammate, who explains the engineering]</span>
+    </div>
+  </section>
+
+  <!-- 8 · ZERO TO ONE -->
+  <section class="slide center-stage" data-name="Zero to one" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker" style="justify-content:center">Zero-to-one, automated</div>
+      <div class="cheap-line">
+        <div class="cheap-1">They say ideas are cheap.</div>
+        <div class="cheap-2 fragment">We say — <em>could be cheaper.</em></div>
+      </div>
+      <p class="afterthought fragment">The thing the world venerates was never the idea. It's the <b>zero-to-one mindset</b> — the taste to know which idea is real, and the work to prove it. We're automating the discipline. Not the dreaming.</p>
+      <div class="cost0 fragment">marginal cost of a defensible idea <b>→ 0</b></div>
+    </div>
+    <div class="pnote">
+      Say the hard part is solved. Here's the part nobody says out loud. They say ideas are cheap. <span class="stage">(to the audience)</span> We say... could be cheaper. <span class="stage">(let it sit, in silence)</span>
+      <br><br>Because the thing the world actually venerates was never the idea. It's the zero-to-one mindset — the taste to know which idea is real, and the work to prove it out. <em>That</em> was supposed to be the rare part. We're automating it. Not the dreaming — the discipline. The marginal cost of a defensible idea, heading for zero.
+    </div>
+  </section>
+
+  <!-- 9 · HUMAN IN THE LOOP / AGORA -->
+  <section class="slide" data-name="Human in the loop" data-fx="idle">
+    <div class="wrap">
+      <div class="cols">
+        <div>
+          <div class="kicker">The human in the loop</div>
+          <div class="two-jobs">
+            <div class="job"><div class="n">01 · YOU</div><h3>Ask.</h3><p>Bring the question worth exploring.</p></div>
+            <div class="job act"><div class="n">02 · YOU</div><h3>Enact.</h3><p>The only arrow left with skin in the game.</p></div>
+          </div>
+          <p class="skin">The pipeline does everything in the middle. The machine took the thinking and <b>politely left you the consequence.</b> At the recovered problem and the finished doppl, it stops and nudges you toward a real move in the real world.</p>
+        </div>
+        <div class="fragment">
+          <div class="appwin">
+            <div class="bar"><i></i><i></i><i></i><span class="url">doppl-prime / calibrator · the Agora</span><span class="live">live</span></div>
+            <img src="Agora.png" alt="The Agora — the team rates each doppl on a slider, calibrating the judge against human taste" loading="lazy" />
+            <div class="scan"></div>
+          </div>
+          <p class="lede" style="margin-top:16px;max-width:none">The team rates doppls on a slider — worthless to highly useful. <strong>The floor is fixed; the taste is crowdsourced.</strong></p>
+        </div>
+      </div>
+    </div>
+    <div class="pnote">
+      Which leaves you exactly two jobs. The pipeline does everything in the middle — recovering, generating, scoring, breeding. You keep the two ends. You <em>ask</em>, and you <em>act.</em>
+      <br><br>That last arrow is the only one with skin in the game. The machine did the thinking; it politely left you the consequence — and we treat that as a feature. And the judgment of whether an idea is any good, we don't lock inside the machine either. This is the Agora: the team rates doppls on a slider, and the held-out judge calibrates against real human taste. The floor is fixed; the taste is crowdsourced.
+    </div>
+  </section>
+
+  <!-- 10 · IMPLICATIONS / PSAAS -->
+  <section class="slide center-stage" data-name="The opportunity" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker" style="justify-content:center">Implications &amp; opportunity</div>
+      <div class="psaas">
+        Problem-Solving as a Service.<br>
+        <span style="color:var(--ink-dim)">PSaaS — also known as…</span><br>
+        <span class="pizzazz fragment">Pizzazz.<span class="hands">
+          <span style="--r:-32deg;left:-6px"></span><span style="--r:-16deg;left:0"></span><span style="--r:0deg;left:6px"></span>
+          <span style="--r:32deg;right:-6px"></span><span style="--r:16deg;right:0"></span><span style="--r:0deg;right:6px"></span>
+        </span></span>
+      </div>
+      <p class="market-callback fragment">The oldest market there is. McKinsey, the consultancies — they always sold exactly this. The one thing they never had was a way to make it <b>scalable and reproducible.</b> That's us.</p>
+      <p class="market-callback fragment" style="margin-top:18px">Remember the dominoes? That whole collapsing Probleconomy isn't the bad news. <b>It's the map. The dominoes are the market.</b> And the opportunity is the <span class="cascade-word">cascade.</span></p>
+    </div>
+    <div class="pnote">
+      So here's the category we're coining. Problem-Solving as a Service. PSaaS. Also known as — <span class="stage">(jazz hands — commit to them fully)</span> Pizzazz. <span class="stage">(snap straight back to earnest)</span>
+      <br><br>And it's a real market — the oldest one there is. McKinsey, the consultancies have always sold exactly this. The only thing they never had was a way to make it scalable and reproducible. That's the part that was missing. That's us.
+      <br><br>Remember those dominoes from the cold open? That whole collapsing problem-economy — the Probleconomy — isn't the bad news. That's the map. The dominoes are the market. And the opportunity is the cascade.
+    </div>
+  </section>
+
+  <!-- 11 · CALL TO ACTION -->
+  <section class="slide" data-name="The nudge" data-fx="idle">
+    <div class="wrap">
+      <div class="kicker">The nudge</div>
+      <h2 class="head">Take Doppl.<br>Make it yours.</h2>
+      <p class="lede" style="max-width:42ch">Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.</p>
+      <div class="fragment ask" style="margin-top:clamp(26px,4vw,46px);font-size:clamp(1.1rem,2vw,1.6rem)">
+        <span class="finger">☝</span> Anybody got any questions?
+      </div>
+    </div>
+    <div class="pnote">
+      So take Doppl, and make it yours. Get out into the world and automate the ideate. Doppl unlocks the idea — the stake is still yours to take.
+      <br><br><span class="stage">(finger up — sweep to the back of the room)</span> Anybody got any questions?
+    </div>
+  </section>
+
+  <!-- 12 · CLOSE -->
+  <section class="slide close-slide" data-name="Close" data-fx="bloom">
+    <div class="wrap">
+      <p class="close-line">All you need…</p>
+      <p class="close-line fragment"><span class="close-2">is a great question.</span></p>
+      <div class="fin fragment">✦ Doppl</div>
+    </div>
+    <div class="pnote">
+      <span class="stage">(Don't worry about the answer.)</span> All you need... <span class="stage">(let it breathe)</span> ...is a great question. <span class="stage">(Lights down on it. Do not add anything after.)</span>
+    </div>
+  </section>
+
+</main>
+
+<div id="dots"></div>
+
+<aside id="notes">
+  <div class="nh">Presenter notes <span id="nNum"></span><span>·  press N to hide</span></div>
+  <div class="body" id="nBody"></div>
+</aside>
+
+<div id="help">
+  <div class="card">
+    <h4>Driving the deck</h4>
+    <dl>
+      <dt>→ / Space</dt><dd>next (reveals build steps, then advances)</dd>
+      <dt>←</dt><dd>back</dd>
+      <dt>N / S</dt><dd>presenter notes</dd>
+      <dt>F</dt><dd>fullscreen</dd>
+      <dt>Home / End</dt><dd>first / last slide</dd>
+      <dt>1–9, 0</dt><dd>jump to slide</dd>
+      <dt>?</dt><dd>this panel</dd>
+    </dl>
+    <div class="close">press any key to close</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* ===================================================== SLIDE CONTROLLER */
+const slides = [...document.querySelectorAll('.slide')];
+const dotsWrap = document.getElementById('dots');
+const progress = document.getElementById('progress');
+const curEl = document.getElementById('cur');
+const totEl = document.getElementById('tot');
+const sectName = document.getElementById('sectName');
+let cur = 0, step = 0;
+
+totEl.textContent = String(slides.length).padStart(2,'0');
+
+slides.forEach((s,i)=>{
+  const b = document.createElement('button');
+  b.setAttribute('aria-label','Slide '+(i+1));
+  b.addEventListener('click',()=>go(i));
+  dotsWrap.appendChild(b);
+});
+const dots = [...dotsWrap.children];
+
+function frags(i){ return [...slides[i].querySelectorAll('.fragment')]; }
+
+function render(){
+  slides.forEach((s,i)=>{
+    s.classList.toggle('active', i===cur);
+    s.classList.toggle('past', i<cur);
+  });
+  dots.forEach((d,i)=>d.classList.toggle('on', i===cur));
+  curEl.textContent = String(cur+1).padStart(2,'0');
+  progress.style.width = (slides.length<2?100:(cur/(slides.length-1))*100)+'%';
+  sectName.textContent = slides[cur].dataset.name || '';
+  location.hash = cur+1;
+  updateNotes();
+  fx.enter(slides[cur].dataset.fx);
+}
+
+function go(i, fromEnd=false){
+  i = Math.max(0, Math.min(slides.length-1, i));
+  if(i===cur && !fromEnd){ return; }
+  fx.leave(slides[cur].dataset.fx);
+  cur = i;
+  const f = frags(cur);
+  if(fromEnd){ f.forEach(el=>el.classList.add('in')); step=f.length; }
+  else { f.forEach(el=>el.classList.remove('in')); step=0; }
+  slides[cur].querySelectorAll('.psaas').forEach(p=>p.classList.toggle('in', fromEnd));
+  // cascade auto-runs on enter (not gated by fragments)
+  if(slides[cur].id==='cascade-host'){}
+  runCascade(cur);
+  render();
+}
+
+function next(){
+  const f = frags(cur);
+  if(step < f.length){
+    f[step].classList.add('in');
+    if(f[step].classList.contains('pizzazz')) f[step].closest('.psaas').classList.add('in');
+    step++;
+  } else if(cur < slides.length-1){
+    go(cur+1);
+  }
+}
+function prev(){
+  if(step > 0){
+    step--;
+    const f = frags(cur);
+    f[step].classList.remove('in');
+    if(f[step].classList.contains('pizzazz')) f[step].closest('.psaas').classList.remove('in');
+  } else if(cur > 0){
+    go(cur-1, true);
+  }
+}
+
+/* cascade: stagger the dominoes, then strike them out one by one */
+let cascadeTimers=[];
+function runCascade(i){
+  cascadeTimers.forEach(clearTimeout); cascadeTimers=[];
+  const host = slides[i].querySelector('#cascade');
+  if(!host) return;
+  const items=[...host.children];
+  items.forEach(el=>{ el.classList.remove('in','struck'); });
+  items.forEach((el,k)=>{
+    cascadeTimers.push(setTimeout(()=>el.classList.add('in'), 120+k*160));
+    cascadeTimers.push(setTimeout(()=>el.classList.add('struck'), 120+k*160+700));
+  });
+}
+
+/* ===================================================== PRESENTER NOTES */
+const notes = document.getElementById('notes');
+const nBody = document.getElementById('nBody');
+const nNum = document.getElementById('nNum');
+function updateNotes(){
+  const n = slides[cur].querySelector('.pnote');
+  nBody.innerHTML = n ? n.innerHTML : '';
+  nNum.textContent = (slides[cur].dataset.name||'') + '  ·  ' + (cur+1) + '/' + slides.length;
+}
+
+/* ===================================================== INPUT */
+const help = document.getElementById('help');
+addEventListener('keydown',e=>{
+  if(help.classList.contains('open')){ help.classList.remove('open'); e.preventDefault(); return; }
+  const k = e.key;
+  if(k==='ArrowRight'||k===' '||k==='PageDown'||k==='l'||k==='j'){ e.preventDefault(); next(); }
+  else if(k==='ArrowLeft'||k==='PageUp'||k==='h'||k==='k'){ e.preventDefault(); prev(); }
+  else if(k==='Home'){ e.preventDefault(); go(0); }
+  else if(k==='End'){ e.preventDefault(); go(slides.length-1, true); }
+  else if(k==='n'||k==='N'||k==='s'||k==='S'){ notes.classList.toggle('open'); }
+  else if(k==='f'||k==='F'){ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  else if(k==='?'||k==='/'){ help.classList.add('open'); }
+  else if(/^[0-9]$/.test(k)){ const idx = k==='0'?9:parseInt(k)-1; go(idx); }
+});
+
+// touch swipe
+let tx=0, ty=0;
+addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
+},{passive:true});
+
+// click zones (right area = next, left area = prev) — ignore on interactive/screenshots
+addEventListener('click',e=>{
+  if(e.target.closest('a,button,#notes,#help,.appwin')) return;
+  if(e.clientX > innerWidth*0.62) next();
+  else if(e.clientX < innerWidth*0.30) prev();
+});
+
+/* ===================================================== KERNEL GENSTRIP */
+(function(){
+  const strip = document.getElementById('genstrip');
+  if(!strip) return;
+  const GENS=10, ROWS=5;
+  for(let g=0; g<GENS; g++){
+    const col=document.createElement('div'); col.className='gen';
+    for(let r=0;r<ROWS;r++){ col.appendChild(document.createElement('i')); }
+    strip.appendChild(col);
+  }
+})();
+
+/* ===================================================== AMBIENT NODE NET */
+const net = (function(){
+  const cv=document.getElementById('net'); const ctx=cv.getContext('2d');
+  let W,H,dpr,pts=[],mode='idle',raf=0, target=40;
+  const palette=['45,212,191','167,139,250','52,211,153'];
+  function resize(){
+    dpr=Math.min(devicePixelRatio||1,2);
+    W=innerWidth; H=innerHeight;
+    cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function mk(){
+    return {x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*0.16,vy:(Math.random()-.5)*0.16,
+      r:Math.random()*1.6+0.6,c:palette[(Math.random()*palette.length)|0],
+      ph:Math.random()*6.28};
+  }
+  function seed(n){ pts=[]; for(let i=0;i<n;i++) pts.push(mk()); }
+  function setMode(m){
+    mode=m;
+    target = m==='garden'?72 : m==='bloom'?96 : m==='kernel'?54 : 40;
+    while(pts.length<target) pts.push(mk());
+  }
+  let t=0;
+  function frame(){
+    t+=0.01;
+    if(pts.length>target && Math.random()<0.05) pts.pop();
+    ctx.clearRect(0,0,W,H);
+    const linkDist = mode==='bloom'?170:mode==='garden'?150:120;
+    const baseAlpha = mode==='idle'?0.4:0.8;
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i];
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<-20)p.x=W+20; if(p.x>W+20)p.x=-20;
+      if(p.y<-20)p.y=H+20; if(p.y>H+20)p.y=-20;
+      for(let j=i+1;j<pts.length;j++){
+        const q=pts[j], dx=p.x-q.x, dy=p.y-q.y, d=Math.hypot(dx,dy);
+        if(d<linkDist){
+          const a=(1-d/linkDist)*0.5*baseAlpha;
+          ctx.strokeStyle='rgba('+p.c+','+a+')'; ctx.lineWidth=0.6;
+          ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+        }
+      }
+      const pulse=0.6+0.4*Math.sin(t*2+p.ph);
+      ctx.fillStyle='rgba('+p.c+','+(baseAlpha*pulse)+')';
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
+      if(mode!=='idle'){
+        ctx.fillStyle='rgba('+p.c+','+(0.10*pulse)+')';
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*4,0,7); ctx.fill();
+      }
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  resize(); seed(40);
+  if(!reduce) frame();
+  return { setMode, resize };
+})();
+
+/* ===================================================== FX REGISTRY (radar) */
+const fx = (function(){
+  const radar = document.getElementById('radar');
+  let rctx, rsize=0, rangle=-1.2, blips=[], rraf=0;
+  function sizeRadar(){
+    if(!radar) return;
+    const dpr=Math.min(devicePixelRatio||1,2);
+    const r=radar.getBoundingClientRect();
+    rsize=r.width;
+    radar.width=r.width*dpr; radar.height=r.height*dpr;
+    rctx=radar.getContext('2d'); rctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function seedBlips(){
+    blips=[
+      {a:-0.6,d:0.34,r:4,c:'167,139,250',lit:0},
+      {a:1.2,d:0.62,r:3,c:'52,211,153',lit:0},
+      {a:2.5,d:0.5,r:3,c:'167,139,250',lit:0},
+      {a:3.9,d:0.7,r:2.5,c:'52,211,153',lit:0},
+      {a:0.4,d:0.46,r:7,c:'45,212,191',lit:0,main:true}
+    ];
+  }
+  function drawRadar(){
+    if(!rctx){ rraf=requestAnimationFrame(drawRadar); return; }
+    const s=rsize, c=s/2, R=s*0.46, TAU=Math.PI*2;
+    rctx.clearRect(0,0,s,s);
+    const g=rctx.createRadialGradient(c,c,0,c,c,R);
+    g.addColorStop(0,'rgba(45,212,191,.07)'); g.addColorStop(1,'rgba(8,12,18,0)');
+    rctx.fillStyle=g; rctx.beginPath(); rctx.arc(c,c,R,0,TAU); rctx.fill();
+    rctx.strokeStyle='rgba(45,212,191,.16)'; rctx.lineWidth=1;
+    for(let i=1;i<=4;i++){ rctx.beginPath(); rctx.arc(c,c,R*i/4,0,TAU); rctx.stroke(); }
+    rctx.beginPath(); rctx.moveTo(c-R,c); rctx.lineTo(c+R,c); rctx.moveTo(c,c-R); rctx.lineTo(c,c+R); rctx.stroke();
+    const seg=26;
+    for(let i=0;i<seg;i++){
+      const a=rangle - i*0.05;
+      rctx.beginPath(); rctx.moveTo(c,c); rctx.arc(c,c,R,a-0.04,a); rctx.closePath();
+      rctx.fillStyle='rgba(45,212,191,'+(0.10*(1-i/seg))+')'; rctx.fill();
+    }
+    rctx.strokeStyle='rgba(94,234,212,.7)'; rctx.lineWidth=1.5;
+    rctx.beginPath(); rctx.moveTo(c,c); rctx.lineTo(c+Math.cos(rangle)*R, c+Math.sin(rangle)*R); rctx.stroke();
+    blips.forEach(b=>{
+      let diff=((rangle-b.a)%TAU+TAU)%TAU;
+      if(diff>Math.PI) diff=TAU-diff;
+      if(diff<0.06) b.lit=1;
+      b.lit*=0.965;
+      const x=c+Math.cos(b.a)*R*b.d, y=c+Math.sin(b.a)*R*b.d;
+      const alpha=0.25+0.75*b.lit;
+      rctx.fillStyle='rgba('+b.c+','+alpha+')';
+      rctx.beginPath(); rctx.arc(x,y,b.r*(b.main?1+b.lit*0.4:1),0,TAU); rctx.fill();
+      if(b.lit>0.2){
+        rctx.strokeStyle='rgba('+b.c+','+(b.lit*0.5)+')'; rctx.lineWidth=1;
+        rctx.beginPath(); rctx.arc(x,y,b.r+(1-b.lit)*14,0,TAU); rctx.stroke();
+      }
+    });
+    rangle += reduce?0:0.018;
+    rraf=requestAnimationFrame(drawRadar);
+  }
+  return {
+    enter(kind){
+      net.setMode(kind==='garden'?'garden':kind==='bloom'?'bloom':kind==='kernel'?'kernel':'idle');
+      if(kind==='radar' && radar){ sizeRadar(); seedBlips(); rangle=-1.2; if(!rraf) drawRadar(); }
+    },
+    leave(kind){ if(kind==='radar'){ cancelAnimationFrame(rraf); rraf=0; } },
+    resize(){ if(rraf) sizeRadar(); }
+  };
+})();
+
+/* ===================================================== RESIZE / BOOT */
+let rt=0;
+addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ net.resize(); fx.resize(); },120); });
+
+const start = Math.max(0, Math.min(slides.length-1, (parseInt(location.hash.slice(1))||1)-1));
+cur = start; step = 0;
+render();
+runCascade(cur);
+</script>
+</body>
+</html>
