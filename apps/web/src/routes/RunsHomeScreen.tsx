@@ -127,15 +127,7 @@ export function RunsHomeScreen() {
 
   const newRun = () => navigate('/launch');
   const reload = () => setReloadKey((k) => k + 1);
-  // Default destination when clicking a row: the primary view for that run's status.
-  // running/completing → live observatory; completed/stopped/failed/cancelled → replay;
-  // anything else (e.g. configured) → the same generic observe URL.
-  const openCard = (id: string, status: string | null) => {
-    if (status === 'running' || status === 'completing') navigate(`/runs/${id}`);
-    else if (status === 'completed' || status === 'stopped') navigate(`/runs/${id}/replay`);
-    else if (status === 'failed' || status === 'cancelled') navigate(`/runs/${id}/replay`);
-    else navigate(`/runs/${id}`);
-  };
+  // Row click expands the inline peek; opening a run happens via its Replay / Open live action button.
 
   return (
     <main aria-label="Doppl runs home" style={shell}>
@@ -180,8 +172,7 @@ export function RunsHomeScreen() {
               <div style={tablePanel}>
                 <RunsTable
                   runs={visibleRuns}
-                  onOpen={openCard}
-                  onReplay={(id) => navigate(`/runs/${id}/replay`)}
+                  onReplay={(id) => navigate(`/runs/${id}`)}
                   onOpenLive={(id) => navigate(`/runs/${id}`)}
                   sort={sort}
                   onSort={onSort}

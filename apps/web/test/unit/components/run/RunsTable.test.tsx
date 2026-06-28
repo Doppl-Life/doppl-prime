@@ -32,7 +32,7 @@ describe('RunsTable', () => {
       run({ runId: 'aaa-newest' }),
       run({ runId: 'bbb-older', finalIdeaTitle: 'Other idea' }),
     ];
-    render(<RunsTable runs={runs} onOpen={vi.fn()} onReplay={vi.fn()} onOpenLive={vi.fn()} />);
+    render(<RunsTable runs={runs} onReplay={vi.fn()} onOpenLive={vi.fn()} />);
     expect(screen.getAllByText('Smooth ER patient flow').length).toBe(2);
     expect(screen.getByText('Yield-managed triage')).toBeTruthy();
     expect(screen.getByText('Other idea')).toBeTruthy();
@@ -50,7 +50,6 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ runId: 'r1', status: 'completed' })]}
-        onOpen={vi.fn()}
         onReplay={onReplay}
         onOpenLive={vi.fn()}
       />,
@@ -64,7 +63,6 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ runId: 'r2', status: 'running' })]}
-        onOpen={vi.fn()}
         onReplay={vi.fn()}
         onOpenLive={onOpenLive}
       />,
@@ -78,7 +76,6 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ status: 'failed', problem: null, finalIdeaTitle: null, createdAt: null })]}
-        onOpen={vi.fn()}
         onReplay={vi.fn()}
         onOpenLive={vi.fn()}
       />,
@@ -90,18 +87,17 @@ describe('RunsTable', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('opens a run when its id is clicked', () => {
-    const onOpen = vi.fn();
+  it('expands the inline peek when the row itself is clicked', () => {
     render(
       <RunsTable
-        runs={[run({ runId: 'r3', status: 'completed' })]}
-        onOpen={onOpen}
+        runs={[run({ runId: 'r3', status: 'completed', reproductions: 7 })]}
         onReplay={vi.fn()}
         onOpenLive={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /open run r3/i }));
-    expect(onOpen).toHaveBeenCalledWith('r3', 'completed');
+    expect(screen.queryByText('repro')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /expand detail for run r3/i }));
+    expect(screen.getByText('repro')).toBeTruthy();
   });
 
   it('fires onSort when a sortable column header is clicked', () => {
@@ -109,7 +105,6 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ runId: 'r1' })]}
-        onOpen={vi.fn()}
         onReplay={vi.fn()}
         onOpenLive={vi.fn()}
         onSort={onSort}
@@ -123,14 +118,13 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ runId: 'r1', createdAt: '2026-06-26T10:00:00.000Z' })]}
-        onOpen={vi.fn()}
         onReplay={vi.fn()}
         onOpenLive={vi.fn()}
         grouped={false}
       />,
     );
     // The row is still there…
-    expect(screen.getByRole('button', { name: /open run r1/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /expand detail for run r1/i })).toBeTruthy();
     // …but no Today/Yesterday/date bucket header is rendered.
     expect(screen.queryByText(/today|yesterday/i)).toBeNull();
   });
@@ -139,7 +133,6 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         runs={[run({ runId: 'r1', reproductions: 7 })]}
-        onOpen={vi.fn()}
         onReplay={vi.fn()}
         onOpenLive={vi.fn()}
       />,

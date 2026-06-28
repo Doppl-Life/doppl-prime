@@ -164,11 +164,13 @@ const winnerCard: CSSProperties = {
   alignItems: 'center',
   gap: 'var(--space-3)',
   padding: 'var(--space-3) var(--space-4)',
-  background: 'var(--bg-surface)',
-  border: 'thin solid var(--status-selected)',
-  borderLeft: 'var(--space-1) solid var(--status-selected)',
+  // Theme-aware winner banner: DARK is outlined (gold border, gold "WINNING IDEA", white title); LIGHT is
+  // a filled yellow banner with dark text. Both driven by the --winner-banner-* treatment tokens + glow.
+  background: 'var(--winner-banner-bg)',
+  border: 'thin solid var(--winner-banner-border)',
   borderRadius: 'var(--radius-md)',
-  color: 'var(--fg-default)',
+  boxShadow: 'var(--glow-winner)',
+  color: 'var(--winner-banner-title)',
   cursor: 'pointer',
   textAlign: 'left',
   fontFamily: 'var(--font-ui)',
@@ -179,13 +181,14 @@ const winnerLabel: CSSProperties = {
   fontSize: 'var(--text-caption)',
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
-  color: 'var(--status-selected)',
+  fontWeight: 700,
+  color: 'var(--winner-banner-accent)',
   flexShrink: 0,
 };
 const winnerTitle: CSSProperties = {
   fontSize: 'var(--text-label)',
   fontWeight: 600,
-  color: 'var(--fg-default)',
+  color: 'var(--winner-banner-title)',
   minWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -194,7 +197,7 @@ const winnerTitle: CSSProperties = {
 };
 const winnerGlyph: CSSProperties = {
   fontSize: 'var(--text-h3)',
-  color: 'var(--status-selected)',
+  color: 'var(--winner-banner-accent)',
   flexShrink: 0,
 };
 // "View details →" affordance at the right edge of the winner banner — the arrow translates on hover
@@ -205,7 +208,8 @@ const winnerCta: CSSProperties = {
   gap: 'var(--space-1)',
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
-  color: 'var(--fg-muted)',
+  // theme-aware: muted on dark, dark-on-yellow in light.
+  color: 'var(--winner-banner-cta)',
   flexShrink: 0,
 };
 // "Click any node to inspect" — small persistent hint near the canvas so first-time operators don't

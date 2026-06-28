@@ -87,23 +87,24 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
     await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_live'));
   });
 
-  // spec(nav): a completed run's Replay action → /runs/:id/replay. (The final idea is a table COLUMN now,
-  // not a separate button — its summary shows inline.)
+  // spec(nav): a completed run's Replay action → /runs/:id (the organism view detects the terminal run).
   it('test_replay_navigates', async () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
     fireEvent.click(await screen.findByRole('button', { name: /replay/i }));
-    await waitFor(() =>
-      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/replay'),
-    );
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done'));
   });
 
-  // spec(nav): clicking a run's id opens its primary view (completed → replay).
-  it('test_clicking_run_id_opens_run', async () => {
+  // spec(interaction): clicking a row anywhere expands its inline detail and does NOT navigate (opening a
+  // run is done via its Replay / Open live action button).
+  it('test_clicking_row_expands_inline_detail', async () => {
     renderScreen(fakeClient({ listRuns: vi.fn(() => Promise.resolve([RUNS[1]!])) })); // completed
-    fireEvent.click(await screen.findByRole('button', { name: /open run run_done/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /expand detail for run run_done/i }));
     await waitFor(() =>
-      expect(screen.getByTestId('loc').textContent).toBe('/runs/run_done/replay'),
+      expect(
+        screen.getByRole('button', { name: /collapse detail for run run_done/i }),
+      ).toBeTruthy(),
     );
+    expect(screen.getByTestId('loc').textContent).toBe('/'); // no navigation
   });
 
   // spec(status-derived action set): a failed run offers Replay (partial), no Final idea.
@@ -116,7 +117,7 @@ describe('RunsHomeScreen — S0 runs home (FV.2)', () => {
       }),
     );
     fireEvent.click(await screen.findByRole('button', { name: /replay/i }));
-    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_x/replay'));
+    await waitFor(() => expect(screen.getByTestId('loc').textContent).toBe('/runs/run_x'));
   });
 
   // spec(start-a-run entry): the New Run CTA → /launch.

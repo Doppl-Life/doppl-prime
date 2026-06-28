@@ -66,11 +66,11 @@ const BASE: CSSProperties = {
   zIndex: 'var(--z-banner)',
 };
 
-// Blue hatch via a token (color-mix over --info) + spacing-token stops — no raw rgba/px.
-// --info reads as "neutral, historical, not actionable" and stays clear of the gold winner banner +
-// the live/active accent without adding a new palette hue.
+// Muted-teal hatch via a token (color-mix over --mode-replay) + spacing-token stops — no raw rgba/px.
+// --mode-replay reads as "neutral, historical, not actionable", calmer than the blue --info and clearly
+// desaturated vs. the bright live/active --accent + the gold winner banner.
 const REPLAY_HATCH =
-  'repeating-linear-gradient(45deg, color-mix(in oklab, var(--info) 16%, transparent) 0 var(--space-2), color-mix(in oklab, var(--info) 5%, transparent) var(--space-2) var(--space-4))';
+  'repeating-linear-gradient(45deg, color-mix(in oklab, var(--mode-replay) 16%, transparent) 0 var(--space-2), color-mix(in oklab, var(--mode-replay) 5%, transparent) var(--space-2) var(--space-4))';
 
 export function ModeBanner({
   mode = 'live',
@@ -82,8 +82,8 @@ export function ModeBanner({
     const style: CSSProperties = {
       ...BASE,
       borderRadius: 'var(--radius-sm)',
-      color: 'var(--info)',
-      border: 'thin solid var(--info)',
+      color: 'var(--mode-replay)',
+      border: 'thin solid var(--mode-replay)',
       background: REPLAY_HATCH,
     };
     if (fullWidth) {
