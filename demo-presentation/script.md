@@ -112,14 +112,14 @@ The Doppl is a doorway, not a destination. Behind every fix:
 - Implications: if this is true, what does that mean?
 - Opportunities: Now that I know the implications, what are the levels that I could possibly play at?
 
-## 8 · Implications & opportunity
+## 7 · Implications & opportunity
 
 > Existing PSaaS slide.
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
 But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service. Or to those pressed for time *Pizzazz.* Now, it's a scalable, reproducible, and replayable process.
 
-## 9 · Close - the Call to Action
+## 8 · Close - the Call to Action
 
 > Existing Closing Slide
 
