@@ -1,96 +1,26 @@
-name: Deploy Published Preview
+name: Request Published Preview Deploy
 
 on:
   workflow_dispatch:
   push:
     branches:
       - calibration
-      - dalton-outer-view
     paths:
       - "published/**"
-      - "apps/web/**"
-      - "packages/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
       - ".github/workflows/deploy-published-preview.yml"
 
 permissions:
+  actions: write
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  request-deploy:
     runs-on: ubuntu-latest
-    env:
-      OUTER_BLOOM_API_BASE: ${{ vars.OUTER_BLOOM_API_BASE }}
     steps:
-      - name: Checkout calibration branch
-        uses: actions/checkout@v4
-        with:
-          ref: calibration
-          path: calibration-branch
-
-      - name: Checkout Agarden branch
-        uses: actions/checkout@v4
-        with:
-          ref: dalton-outer-view
-          path: agarden-branch
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.2
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-          cache-dependency-path: agarden-branch/pnpm-lock.yaml
-
-      - name: Install Agarden dependencies
-        working-directory: agarden-branch
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Agarden app
-        working-directory: agarden-branch
+      - name: Dispatch canonical Pages composer
         env:
-          VITE_API_BASE: ${{ env.OUTER_BLOOM_API_BASE }}
-          VITE_BASE_PATH: /doppl-prime/
-        run: pnpm --filter @doppl/web build
-
-      - name: Compose Pages artifact
-        run: |
-          mkdir -p pages-artifact
-          cp -R agarden-branch/apps/web/dist/. pages-artifact/
-          mkdir -p pages-artifact/agarden
-          cp pages-artifact/index.html pages-artifact/agarden/index.html
-          mkdir -p pages-artifact/bloom
-          cp pages-artifact/index.html pages-artifact/bloom/index.html
-          mkdir -p pages-artifact/runs/when-the-crashes-dont-come-575845a4/knowledge
-          cp pages-artifact/index.html pages-artifact/runs/when-the-crashes-dont-come-575845a4/knowledge/index.html
-          cp pages-artifact/index.html pages-artifact/404.html
-          cp -R calibration-branch/published/calibrator pages-artifact/calibrator
-          touch pages-artifact/.nojekyll
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload published preview
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: pages-artifact
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh workflow run deploy-published-preview.yml
+          --repo Doppl-Life/doppl-prime
+          --ref dalton-outer-view
