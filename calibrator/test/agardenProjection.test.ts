@@ -81,7 +81,7 @@ describe("materializeAgardenProjection", () => {
     await expect(
       materializeAgardenProjection({
         nodePath,
-        projection: { human: 6, n: 1 },
+        projection: { human: 11, n: 1 },
       }),
     ).rejects.toThrow("human");
     await expect(

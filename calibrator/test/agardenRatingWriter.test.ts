@@ -68,15 +68,15 @@ describe("upsertAgardenRating", () => {
       agardenRoot,
       nodeId: "node-a",
       raterId: "melissa.hargis@challenger.gauntletai.com",
-      score: -1,
+      score: 8,
       now: new Date("2026-06-24T15:00:00.000Z"),
     });
 
-    expect(result.projection).toEqual({ human: 2, n: 2 });
+    expect(result.projection).toEqual({ human: 6.5, n: 2 });
     expect(result.entry.ratings).toEqual([
       {
         rater_id: "melissa.hargis@challenger.gauntletai.com",
-        score: -1,
+        score: 8,
         rate_date: "2026-06-24T15:00:00.000Z",
       },
       {
@@ -104,7 +104,16 @@ describe("upsertAgardenRating", () => {
         agardenRoot,
         nodeId: "node-a",
         raterId: "melissa.hargis@challenger.gauntletai.com",
-        score: 6,
+        score: -1,
+      }),
+    ).rejects.toThrow("score");
+
+    await expect(
+      upsertAgardenRating({
+        agardenRoot,
+        nodeId: "node-a",
+        raterId: "melissa.hargis@challenger.gauntletai.com",
+        score: 11,
       }),
     ).rejects.toThrow("score");
   });

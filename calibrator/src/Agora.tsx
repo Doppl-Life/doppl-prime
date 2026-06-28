@@ -45,7 +45,7 @@ function targetId(artifact: CalibratorProblemRecovery | CalibratorSolution, targ
 
 function boundedScore(value: unknown): number | null {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
-  if (value < -5 || value > 5) return null;
+  if (value < -5 || value > 10) return null;
   return value;
 }
 
@@ -189,7 +189,7 @@ function cleanExcerpt(text: string): string {
 
 function ratingDistribution(ratings: CalibratorRating[]): Array<{ score: number; count: number }> {
   const counts = new Map<number, number>();
-  for (let score = -5; score <= 5; score += 1) counts.set(score, 0);
+  for (let score = 0; score <= 10; score += 1) counts.set(score, 0);
   for (const rating of ratings) counts.set(rating.score, (counts.get(rating.score) ?? 0) + 1);
   return Array.from(counts, ([score, count]) => ({ score, count }));
 }

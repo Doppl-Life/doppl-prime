@@ -272,7 +272,7 @@ describe("App", () => {
     );
   });
 
-  it("loads the single-column trace and disables submit until score is selected", async () => {
+  it("loads the single-column trace with a zero-default 0 to 10 score", async () => {
     render(<App />);
     expect(await waitForReviewWorkspace()).toBeInTheDocument();
     expect(
@@ -286,16 +286,16 @@ describe("App", () => {
     expect(screen.getByText("Choose a case")).toBeInTheDocument();
     expect(screen.getByText("Read the problem recovery")).toBeInTheDocument();
     expect(
-      screen.getByText("Score usefulness from -5 to +5"),
+      screen.getByText("Score usefulness from 0 to 10"),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Problem recoveries are judged on whether they frame the important hidden problem clearly and usefully.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("-5 misleading")).toBeInTheDocument();
-    expect(screen.getByText("0 neutral")).toBeInTheDocument();
-    expect(screen.getByText("+5 highly useful")).toBeInTheDocument();
+    expect(screen.getByText("0 misleading")).toBeInTheDocument();
+    expect(screen.getByText("5 neutral")).toBeInTheDocument();
+    expect(screen.getByText("10 highly useful")).toBeInTheDocument();
     expect(screen.getByLabelText("Problem recovery")).toHaveTextContent(
       "Crash-Volume Revenue Dependency",
     );
@@ -349,12 +349,6 @@ describe("App", () => {
     expect(
       screen.queryByRole("heading", { name: "Calibrator" }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Submit problem recovery rating" }),
-    ).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(/Score/), {
-      target: { value: "4" },
-    });
     expect(
       screen.getByRole("button", { name: "Submit problem recovery rating" }),
     ).toBeEnabled();
@@ -567,7 +561,7 @@ describe("App", () => {
     await waitForReviewWorkspace();
 
     expect(
-      screen.getByText("Your current rating for this item is +3."),
+      screen.getByText("Your current rating for this item is 3."),
     ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Score/), {
       target: { value: "3" },
@@ -592,7 +586,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears a hydrated score when switching to a reviewer who has not rated the artifact", async () => {
+  it("returns to a zero score when switching to a reviewer who has not rated the artifact", async () => {
     window.localStorage.setItem(
       "doppl-calibrator-reviewer-email",
       "cody.clayton@challenger.gauntletai.com",
@@ -628,10 +622,10 @@ describe("App", () => {
     expect(
       screen.getByText("You have not rated this item yet."),
     ).toBeInTheDocument();
-    expect(screen.getByText("No score selected")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Score/)).toHaveValue("0");
     expect(
       screen.getByRole("button", { name: "Submit problem recovery rating" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
   });
 
   it("formats compressed aGarden artifact markdown as readable sections", async () => {
@@ -1141,7 +1135,7 @@ describe("App", () => {
     expect(
       screen.getByText("Your current rating for this item is -2."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("-2");
+    expect(screen.getByRole("slider", { name: /Score/ })).toHaveValue("0");
     expect(
       screen.getByRole("button", { name: "Update problem recovery rating" }),
     ).toBeInTheDocument();

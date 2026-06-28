@@ -7,7 +7,7 @@ import { RatingSubmission, type RatingSubmission as RatingSubmissionType } from 
 
 const AgardenLedgerRating = z.object({
   rater_id: z.string().min(1),
-  score: z.number().int().min(-5).max(5),
+  score: z.number().int().min(-5).max(10),
   rate_date: z.string().min(1),
 });
 

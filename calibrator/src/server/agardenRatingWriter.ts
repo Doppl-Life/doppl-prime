@@ -5,7 +5,7 @@ import { isAllowedRater, normalizeRaterEmail } from "../raters";
 
 const AgardenLedgerRating = z.object({
   rater_id: z.string().min(1),
-  score: z.number().int().min(-5).max(5),
+  score: z.number().int().min(-5).max(10),
   rate_date: z.string().min(1),
 });
 
@@ -59,8 +59,8 @@ function projectionFor(entry: AgardenLedgerEntry): UpsertAgardenRatingResult["pr
 
 export async function upsertAgardenRating(input: UpsertAgardenRatingInput): Promise<UpsertAgardenRatingResult> {
   if (!input.nodeId.trim()) throw new Error("node_id is required");
-  if (!Number.isInteger(input.score) || input.score < -5 || input.score > 5) {
-    throw new Error("score must be an integer from -5 to 5");
+  if (!Number.isInteger(input.score) || input.score < 0 || input.score > 10) {
+    throw new Error("score must be an integer from 0 to 10");
   }
 
   const raterId = normalizeRaterEmail(input.raterId);

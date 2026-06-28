@@ -12,8 +12,8 @@ const SourceType = z.enum(["kernel", "manual", "unknown"]);
 const SourceStatus = z.enum(["fixture", "imported", "live_run", "pending", "unavailable"]);
 const ScoresProjection = z
   .object({
-    judge: z.number().min(-5).max(5).optional(),
-    human: z.number().min(-5).max(5).optional(),
+    judge: z.number().min(-5).max(10).optional(),
+    human: z.number().min(-5).max(10).optional(),
     n: z.number().int().min(0).optional(),
   })
   .optional();
@@ -132,7 +132,7 @@ export const RatingSubmission = z
     solution_id: z.string().min(1).optional(),
     problem_recovery_id: z.string().min(1).optional(),
     node_id: z.string().min(1).optional(),
-    score: z.number().int().min(-5).max(5),
+    score: z.number().int().min(0).max(10),
     notes: z.string().default(""),
     reviewer_email: ReviewerEmail,
     reviewer_name: z.string().optional(),
@@ -162,12 +162,12 @@ export const RatingFrontmatter = z
     case_id: z.string().min(1),
     solution_id: z.string().min(1).optional(),
     problem_recovery_id: z.string().min(1).optional(),
-    score: z.number().int().min(-5).max(5),
+    score: z.number().int().min(-5).max(10),
     verdict: Verdict.optional(),
     phase: z.enum(["problem_discovery", "solution_discovery"]).optional(),
     target_kind: RatingTarget.optional(),
-    scale_min: z.literal(-5),
-    scale_max: z.literal(5),
+    scale_min: z.union([z.literal(-5), z.literal(0)]),
+    scale_max: z.union([z.literal(5), z.literal(10)]),
     reviewer_email: z.string().optional(),
     reviewer_name: z.string().optional(),
     submitted_at: IsoDateString,

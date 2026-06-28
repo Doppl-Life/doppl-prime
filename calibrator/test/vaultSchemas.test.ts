@@ -38,13 +38,22 @@ describe("vault schemas", () => {
     });
   });
 
-  it("rejects ratings outside the -5 to +5 range", () => {
+  it("rejects rating submissions outside the 0 to 10 range", () => {
     expect(() =>
       RatingSubmission.parse({
         case_id: "fsd-accident-economy",
         rating_target: "solution",
         solution_id: "cody-accident-economy-map",
-        score: 6,
+        score: -1,
+        notes: "",
+      }),
+    ).toThrow();
+    expect(() =>
+      RatingSubmission.parse({
+        case_id: "fsd-accident-economy",
+        rating_target: "solution",
+        solution_id: "cody-accident-economy-map",
+        score: 11,
         notes: "",
       }),
     ).toThrow();
@@ -102,9 +111,9 @@ describe("vault schemas", () => {
         rating_target: "problem_recovery",
         case_id: "fsd-accident-economy",
         problem_recovery_id: "pr_fsd_accident_economy",
-        score: 5,
-        scale_min: -5,
-        scale_max: 5,
+        score: 10,
+        scale_min: 0,
+        scale_max: 10,
         submitted_at: "2026-06-22T00:00:00.000Z",
         app_version: "calibrator-v0",
       }),

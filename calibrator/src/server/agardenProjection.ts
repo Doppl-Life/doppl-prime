@@ -3,7 +3,7 @@ import matter from "gray-matter";
 import { z } from "zod";
 
 const AgardenHumanProjection = z.object({
-  human: z.number().min(-5).max(5).nullable(),
+  human: z.number().min(-5).max(10).nullable(),
   n: z.number().int().min(0),
 });
 

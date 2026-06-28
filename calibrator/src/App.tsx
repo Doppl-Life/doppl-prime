@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type {
   CalibratorIndex,
   CalibratorRating,
@@ -23,6 +24,9 @@ type RatingTarget = "problem_recovery" | "solution";
 const REVIEWER_STORAGE_KEY = "doppl-calibrator-reviewer-email";
 const ACCESS_CODE_STORAGE_KEY = "doppl-calibrator-access-code";
 const LOCAL_RATINGS_ENDPOINT = "/api/ratings";
+const SCORE_MIN = 0;
+const SCORE_MAX = 10;
+const DEFAULT_SCORE = 0;
 type ReviewQueueItem =
   | {
       target: "problem_recovery";
@@ -61,7 +65,11 @@ interface AgardenLedgerEntry {
 }
 
 function scoreLabel(score: number): string {
-  return score > 0 ? `+${score}` : String(score);
+  return String(score);
+}
+
+function sliderScore(score: number): number {
+  return Math.min(SCORE_MAX, Math.max(SCORE_MIN, score));
 }
 
 function ratingReviewerEmail(rating: CalibratorRating): string {
@@ -1054,7 +1062,7 @@ export function App() {
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [score, setScore] = useState<number | null>(null);
+  const [score, setScore] = useState(DEFAULT_SCORE);
   const [reviewerEmail, setReviewerEmail] = useState(() => {
     try {
       return window.localStorage.getItem(REVIEWER_STORAGE_KEY) ?? "";
@@ -1339,20 +1347,20 @@ export function App() {
     lastScoreReviewer.current = normalizedReviewerEmail;
 
     if (!activeReviewArtifact) {
-      setScore(null);
+      setScore(DEFAULT_SCORE);
       lastScoreWasHydrated.current = false;
       return;
     }
 
     if (activeReviewerRating) {
-      setScore(activeReviewerRating.score);
+      setScore(sliderScore(activeReviewerRating.score));
       lastScoreWasHydrated.current = true;
       return;
     }
 
     lastScoreWasHydrated.current = false;
     if (artifactChanged || (reviewerChanged && previousScoreWasHydrated)) {
-      setScore(null);
+      setScore(DEFAULT_SCORE);
     }
   }, [
     activeReviewerRating?.rating_id,
@@ -1364,8 +1372,7 @@ export function App() {
   ]);
 
   async function submitRating() {
-    if (!index || !selectedCase || !activeReviewArtifact || score === null)
-      return;
+    if (!index || !selectedCase || !activeReviewArtifact) return;
     if (!reviewerIsAllowed) {
       setError("Enter a valid reviewer email before submitting.");
       return;
@@ -1489,7 +1496,7 @@ export function App() {
     setReviewerEmail("");
     setLoginEmail("");
     setLoginError("");
-    setScore(null);
+    setScore(DEFAULT_SCORE);
     setSavedPath("");
     setError("");
     try {
@@ -1734,7 +1741,7 @@ export function App() {
           <ol className="guide-steps" aria-label="Rating steps">
             <li>Choose a case</li>
             <li>Read the {ratingObjectLabel}</li>
-            <li>Score usefulness from -5 to +5</li>
+            <li>Score usefulness from 0 to 10</li>
           </ol>
           <p className="mode-explainer">{ratingModeDescription}</p>
         </section>
@@ -1829,38 +1836,39 @@ export function App() {
         <div className="slider-row">
           <label htmlFor="score-slider">
             <span>Score</span>
-            <strong>
-              {score === null ? "No score selected" : scoreLabel(score)}
-            </strong>
+            <strong>{scoreLabel(score)}</strong>
           </label>
           <input
             id="score-slider"
             type="range"
-            min="-5"
-            max="5"
+            min={SCORE_MIN}
+            max={SCORE_MAX}
             step="1"
-            value={score ?? 0}
+            value={score}
             onChange={(event) => setScore(Number(event.target.value))}
+            style={{
+              "--score-percent": `${((score - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100}%`,
+            } as CSSProperties}
           />
           <div className="slider-scale" aria-hidden="true">
             <span>
-              <span className="scale-label-full">-5 misleading</span>
+              <span className="scale-label-full">0 misleading</span>
               <span className="scale-label-short">
-                <span>-5</span>
+                <span>0</span>
                 <span>bad</span>
               </span>
             </span>
             <span>
-              <span className="scale-label-full">0 neutral</span>
+              <span className="scale-label-full">5 neutral</span>
               <span className="scale-label-short">
-                <span>0</span>
+                <span>5</span>
                 <span>neutral</span>
               </span>
             </span>
             <span>
-              <span className="scale-label-full">+5 highly useful</span>
+              <span className="scale-label-full">10 highly useful</span>
               <span className="scale-label-short">
-                <span>+5</span>
+                <span>10</span>
                 <span>useful</span>
               </span>
             </span>
@@ -1877,7 +1885,6 @@ export function App() {
           className="submit-button"
           type="button"
           disabled={
-            score === null ||
             isSubmitting ||
             !isWritable ||
             !activeIsSubmittable ||
