@@ -2,7 +2,7 @@ import type { Edge, Node } from '@xyflow/react';
 import type { LineageGraphProjection, LineageNode, LineageNodeType } from '../data/contracts';
 import { resolveStatus } from '../components/core/status-map';
 import type { StatusDomain, StatusSpec } from '../components/core/status-map';
-import { edgeStyleFor } from './edgeStyles';
+import { WINNER_EDGE_VISUAL, edgeStyleFor } from './edgeStyles';
 
 /**
  * lineageToFlow — the PURE `LineageGraphProjection` → React Flow `{nodes, edges}` mapping (the §10/§12
@@ -17,6 +17,31 @@ import { edgeStyleFor } from './edgeStyles';
 
 /** The fusion-family reproduction modes (the §8/§3 two-parent breeding modes). */
 const FUSION_MODES: ReadonlySet<string> = new Set(['fusion', 'crossover', 'output_synthesis']);
+
+/** The reproduction (breeding-event) edge types — the ONLY edges drawn on the decluttered canvas. The
+ *  routine plumbing (`generated` agenome→candidate, `spawned` generation→agenome) is implied by column
+ *  position and is NOT rendered (it added a dense crossing hairball). Layout still uses the full edge set. */
+export const REPRODUCTION_EDGE_TYPES: ReadonlySet<string> = new Set([
+  'mutation_only',
+  'fusion',
+  'crossover',
+  'output_synthesis',
+]);
+
+/** True iff an edge's projection type is a breeding event (mutation/fusion). */
+export function isReproductionEdge(edgeType: string | undefined): boolean {
+  return edgeType !== undefined && REPRODUCTION_EDGE_TYPES.has(edgeType);
+}
+
+/**
+ * The edges actually DRAWN on the canvas: the breeding events (cross-generation, horizontal) PLUS the
+ * short `generated` agenome→candidate connector (vertical, within a column — the provenance link that
+ * makes "this organism produced this idea" explicit). The `spawned` generation→agenome plumbing stays
+ * hidden (implied by the header + column). Non-rendered edges still feed the layout's detangle.
+ */
+export function isRenderedEdge(edgeType: string | undefined): boolean {
+  return isReproductionEdge(edgeType) || edgeType === 'generated';
+}
 
 /** The five custom React Flow node types + the `generation` backbone (6th, minimal tier marker). */
 export type LineageRfNodeType =
@@ -54,7 +79,7 @@ export type LineageNodeData = {
 };
 
 export type LineageRfNode = Node<LineageNodeData, LineageRfNodeType>;
-export type LineageRfEdge = Edge<{ edgeType: string }>;
+export type LineageRfEdge = Edge<{ edgeType: string; winner?: boolean }>;
 
 /**
  * Derive an agenome's `bornBy` from the projection edges (NOT the kept/filtered set — a reproduction
@@ -120,6 +145,13 @@ export function lineageToFlow(
   // dangling edges AND edges incident to a dropped node in one pass.
   const keptNodes = projection.nodes.filter((n) => !dropTypes.has(n.type));
   const nodeIds = new Set(keptNodes.map((n) => n.id));
+  // The selected winner sits in its own lane to the RIGHT of the last generation (see layout). It KEEPS
+  // its provenance edge — the gold connector from the agenome that produced it — so the final result
+  // traces back into the lineage; that edge is anchored horizontally (winner is to the right, not below)
+  // and styled gold (see the edge mapping below).
+  const winnerIds = new Set(
+    keptNodes.filter((n) => n.type === 'candidate' && n.status === 'selected').map((n) => n.id),
+  );
 
   const nodes: LineageRfNode[] = keptNodes.map((n) => {
     const statusDomain = TYPE_TO_DOMAIN[n.type];
@@ -151,18 +183,27 @@ export function lineageToFlow(
   // reproduction edges (fusion violet · mutation dashed-amber) stand out from the plumbing backbone.
   // B5 declutter: NO per-edge text label (every edge previously printed its type — "fusion"/"generated"/
   // "spawned" — scattering text boxes across the graph; the legend + the per-type stroke/dash/marker
-  // already convey type), and `smoothstep` orthogonal routing (far less tangled than overlapping béziers
-  // in the per-generation column layout). The carried `data.edgeType` still drives any downstream styling.
+  // already convey type). Edges route as `smoothstep` (orthogonal) — straight diagonals turn this dense
+  // per-generation DAG into a crossing hairball, whereas orthogonal segments hug the grid. The carried
+  // `data.edgeType` still drives any downstream styling.
   const edges: LineageRfEdge[] = projection.edges
     .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
     .map((e) => {
-      const visual = edgeStyleFor(e.type);
+      // The winner's incoming provenance edge gets the loud GOLD treatment and HORIZONTAL anchors (the
+      // winner sits in a lane to the RIGHT of its producing agenome, not below it).
+      const targetIsWinner = winnerIds.has(e.target);
+      const visual = targetIsWinner ? WINNER_EDGE_VISUAL : edgeStyleFor(e.type);
+      // The `generated` agenome→candidate link is a SHORT vertical drop (bottom→top anchors); breeding
+      // events + the winner connector run horizontally (right→left anchors).
+      const vertical = e.type === 'generated' && !targetIsWinner;
       return {
         id: e.id,
         source: e.source,
         target: e.target,
+        sourceHandle: vertical ? 'sb' : 'sr',
+        targetHandle: vertical ? 'tt' : 'tl',
         type: 'smoothstep',
-        data: { edgeType: e.type },
+        data: targetIsWinner ? { edgeType: e.type, winner: true } : { edgeType: e.type },
         style: visual.style,
         ...(visual.markerEnd !== undefined ? { markerEnd: visual.markerEnd } : {}),
         ...(visual.animated !== undefined ? { animated: visual.animated } : {}),

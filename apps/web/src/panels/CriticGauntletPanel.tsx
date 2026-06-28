@@ -35,11 +35,12 @@ const empty: CSSProperties = {
   color: 'var(--fg-muted)',
   padding: 'var(--space-4)',
 };
+// Match the candidate inspector's section labels (CandidateInspector `fieldLabel`): mono, caption-sized,
+// muted, normal weight — so the critic mandate headers read as the same kind of label.
 const mandateHead: CSSProperties = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-label)',
-  fontWeight: 600,
-  color: 'var(--fg-default)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
 };
 const notReviewed: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -54,23 +55,89 @@ const reviewCard: CSSProperties = {
   borderRadius: 'var(--radius-sm)',
   padding: 'var(--space-2)',
 };
-const meta: CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-caption)',
-  color: 'var(--fg-muted)',
-};
 const track: CSSProperties = {
-  height: 'var(--space-1)',
+  height: 'var(--space-2)',
+  // Narrower than full width, centered, with breathing room above/below.
+  width: '92%',
+  margin: 'var(--space-2) auto',
   background: 'var(--meter-track)',
   borderRadius: 'var(--radius-full)',
   overflow: 'hidden',
 };
+// The score channel is the prominent anchor of each review (numeric, not color alone — rule #4).
+// confidence + per-axis scores share one header row; the meter sits on its own line below.
+const scoreHeader: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: 'var(--space-2) var(--space-3)',
+};
+const confidenceLine: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: 'var(--space-2)',
+};
+const confidenceLabel: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+const confidenceValue: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontWeight: 700,
+  fontSize: 'var(--text-body)',
+  lineHeight: 1,
+  color: 'var(--fg-default)',
+};
+const scoresRow: CSSProperties = {
+  display: 'inline-flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: 'var(--space-2)',
+};
+const scoreStat: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: 'var(--space-1)',
+  padding: 'calc(var(--space-1) / 2) var(--space-2)',
+  background: 'var(--accent-soft)',
+  borderRadius: 'var(--radius-sm)',
+};
+const scoreStatValue: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontWeight: 700,
+  fontSize: 'var(--text-body)',
+  lineHeight: 1,
+  color: 'var(--accent)',
+};
+const scoreStatKey: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--text-caption)',
+  color: 'var(--fg-muted)',
+};
 
-function ConfidenceMeter({ confidence }: { confidence: number }) {
-  const clamped = Math.max(0, Math.min(1, confidence));
+function ReviewCard({ review }: { review: CriticReviewValue }) {
+  const clamped = Math.max(0, Math.min(1, review.confidence));
   return (
-    <div style={meta}>
-      <span>confidence {confidence}</span>
+    <div style={reviewCard}>
+      <div style={scoreHeader}>
+        <span style={confidenceLine}>
+          <span style={confidenceLabel}>confidence</span>
+          <span style={confidenceValue}>{review.confidence}</span>
+        </span>
+        {Object.keys(review.scores).length > 0 && (
+          <span style={scoresRow}>
+            {Object.entries(review.scores).map(([k, v]) => (
+              <span key={k} style={scoreStat} aria-label={`${k} ${v}`}>
+                <span style={scoreStatKey}>{k}</span>
+                <span style={scoreStatValue}>{v}</span>
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
       <div style={track} role="progressbar" aria-valuenow={Math.round(clamped * 100)}>
         <div
           style={{
@@ -79,21 +146,6 @@ function ConfidenceMeter({ confidence }: { confidence: number }) {
             background: 'var(--status-scored)',
           }}
         />
-      </div>
-    </div>
-  );
-}
-
-function ReviewCard({ review }: { review: CriticReviewValue }) {
-  return (
-    <div style={reviewCard}>
-      <ConfidenceMeter confidence={review.confidence} />
-      <div style={meta}>
-        {Object.entries(review.scores).map(([k, v]) => (
-          <span key={k}>
-            {k} {v}{' '}
-          </span>
-        ))}
       </div>
       <p style={{ margin: 0 }}>{review.critique}</p>
       {review.evidenceRefs.length > 0 && (

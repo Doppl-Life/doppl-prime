@@ -74,7 +74,7 @@ describe('RunsTable', () => {
     expect(onOpenLive).toHaveBeenCalledWith('r2');
   });
 
-  it('renders a status badge (label, not color alone) and em-dashes missing metadata', () => {
+  it('renders a status badge (label, not color alone) and a clear failure note for missing metadata', () => {
     render(
       <RunsTable
         runs={[run({ status: 'failed', problem: null, finalIdeaTitle: null, createdAt: null })]}
@@ -83,8 +83,11 @@ describe('RunsTable', () => {
         onOpenLive={vi.fn()}
       />,
     );
-    expect(screen.getByText(/failed/i)).toBeTruthy(); // StatusBadge label channel (rule #4)
-    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3); // date + problem + final idea
+    expect(screen.getAllByText(/failed/i).length).toBeGreaterThanOrEqual(1); // StatusBadge label (rule #4)
+    // A failed run with no winner reads "Failed before generating" rather than a bare em-dash.
+    expect(screen.getByText('Failed before generating')).toBeTruthy();
+    // The remaining missing metadata (time + problem) still renders as em-dashes.
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
   });
 
   it('opens a run when its id is clicked', () => {
@@ -99,6 +102,53 @@ describe('RunsTable', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /open run r3/i }));
     expect(onOpen).toHaveBeenCalledWith('r3', 'completed');
+  });
+
+  it('fires onSort when a sortable column header is clicked', () => {
+    const onSort = vi.fn();
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1' })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+        onSort={onSort}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /sort by progress/i }));
+    expect(onSort).toHaveBeenCalledWith('cands');
+  });
+
+  it('omits the day-group header when rendered flat (grouped=false)', () => {
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1', createdAt: '2026-06-26T10:00:00.000Z' })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+        grouped={false}
+      />,
+    );
+    // The row is still there…
+    expect(screen.getByRole('button', { name: /open run r1/i })).toBeTruthy();
+    // …but no Today/Yesterday/date bucket header is rendered.
+    expect(screen.queryByText(/today|yesterday/i)).toBeNull();
+  });
+
+  it('expands an inline peek with the run detail when the chevron is toggled', () => {
+    render(
+      <RunsTable
+        runs={[run({ runId: 'r1', reproductions: 7 })]}
+        onOpen={vi.fn()}
+        onReplay={vi.fn()}
+        onOpenLive={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('repro')).toBeNull(); // collapsed: no peek
+    fireEvent.click(screen.getByRole('button', { name: /expand detail for run r1/i }));
+    expect(screen.getByText('repro')).toBeTruthy(); // peek activity breakdown is shown
+    fireEvent.click(screen.getByRole('button', { name: /collapse detail for run r1/i }));
+    expect(screen.queryByText('repro')).toBeNull(); // toggled closed again
   });
 
   it('styling uses var() tokens — no raw hex / no raw px', () => {

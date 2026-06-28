@@ -1,6 +1,6 @@
 # Doppl — Design System
 
-> **An agent-evolution runtime you _watch_.** A human seeds a run; a bounded population of agent genomes (**agenomes**) breeds candidate ideas; an adversarial **critic council + held-out judge + objective checks** score them; weak lineages are **culled**; strong pairs **fuse** and **mutate** into later generations that *measurably beat* earlier ones. The product **is the process** — *"it's not the agent, it's the kernel that breeds the agents."* This design system makes a digital ecosystem getting smarter in real time **legible, unforgettable, and defensible** on a projector in a 10-minute showcase.
+> **An agental-evolution runtime you _watch_.** A human seeds a run; a bounded population of agent genomes (**agenomes**) breeds candidate ideas; an adversarial **critic council + held-out judge + objective checks** score them; weak lineages are **culled**; strong pairs **fuse** and **mutate** into later generations that *measurably beat* earlier ones. The product **is the process** — *"it's not the agent, it's the kernel that breeds the agents."* This design system makes a digital ecosystem getting smarter in real time **legible, unforgettable, and defensible** on a projector in a 10-minute showcase.
 
 This project is the reusable design-system kit for Doppl's dashboard: tokens, the status-encoding primitive, reusable React components, the real-time observatory telemetry, and full-screen UI-kit recreations. It compiles to a runtime bundle (`_ds_bundle.js`) that the cards and UI kits mount.
 

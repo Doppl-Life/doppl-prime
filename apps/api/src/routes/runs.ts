@@ -103,10 +103,11 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
         .send({ error: 'invalid_config', message: 'request body must be a JSON object' });
     }
 
-    // Separate the PD.12 demo cap-override from the RunConfig body BEFORE validation — RunConfig is
-    // strict, so an unknown `demoOverride` key would 400. It's a demo cap-LOWERING convenience (a route-
-    // body field, NOT part of the frozen RunConfig — zero new contract surface).
-    const { demoOverride, ...runConfigBody } = asRecord(request.body);
+    // Separate the PD.12 demo cap-override AND the Islands-pivot `caseStudyId` from the RunConfig body
+    // BEFORE validation — RunConfig is strict, so an unknown `demoOverride`/`caseStudyId` key would 400.
+    // demoOverride is a demo cap-LOWERING convenience; caseStudyId is the case study this run executes
+    // (Increment A: rides the run.configured payload, zero contract bump §107; formalized in Increment B).
+    const { demoOverride, caseStudyId, ...runConfigBody } = asRecord(request.body);
 
     // Fail-fast config validation (§15) — an invalid config appends NO run.configured.
     const validated = validateRunConfigForStart(runConfigBody, deps);
@@ -144,7 +145,14 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
     }
 
     // Append run.configured — the sole authoritative write (rule #2). Operator-initiated.
-    const runId = await appendAndStartInnerRun(config, deps);
+    // caseStudyId rides the generic run.configured payload as run-level metadata (NOT a RunConfig field
+    // — readRecordedConfig's extractRunConfig tolerates it). Added only when a non-empty string is given,
+    // so an absent caseStudyId leaves the payload byte-identical to today.
+    const runOptions =
+      typeof caseStudyId === 'string' && caseStudyId.length > 0
+        ? { payloadExtras: { caseStudyId } }
+        : {};
+    const runId = await appendAndStartInnerRun(config, deps, runOptions);
     activeRunId = runId;
     if (idemKey !== null) idempotency.set(idemKey, runId);
     return reply.status(201).send({ runId });

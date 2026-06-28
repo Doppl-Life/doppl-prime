@@ -9,6 +9,7 @@ import {
 import type { RunConfig } from './contracts';
 import { RunHealth } from './health';
 import { KnowledgeGraph } from './knowledge';
+import { CaseStudyGraph } from './caseStudy';
 import { ProblemSetsResponse, type ProblemSet } from './operatorPromptClient';
 import { FallbackLadderResponse, type RungDescriptor } from './fallbackLadderClient';
 import { DeleteOuterBloomNodeResult, OuterBloomProjection } from './outerBloom';
@@ -60,7 +61,10 @@ export interface RunClient {
   getReplay(runId: string): Promise<RunStateView>;
   getCandidate(runId: string, candidateId: string): Promise<CandidateIdea>;
   listModelRoutes(): Promise<ModelRoute[]>;
-  startRun(config: RunConfig, opts?: { idempotencyKey?: string }): Promise<StartRunResult>;
+  startRun(
+    config: RunConfig,
+    opts?: { idempotencyKey?: string; caseStudyId?: string },
+  ): Promise<StartRunResult>;
   stopRun(runId: string): Promise<StopRunResult>;
   /**
    * GET /runs/:id/health (P6.8) — validated through the WEB-LOCAL `RunHealth` schema (no frozen
@@ -112,6 +116,12 @@ export interface RunClient {
    * shape (no frozen contract); the POST /runs validation + kernel overlay stay the real enforcers.
    */
   getModelRouteOverrides(): Promise<ModelRouteOverrideAllowlist>;
+  /**
+   * GET /case-studies/:id/graph (Islands pivot A3) — the cross-run case-study graph (case study → runs →
+   * doppels), validated through the WEB-LOCAL `CaseStudyGraph` schema (no frozen contract — parallel to
+   * KnowledgeGraph). Backs the bloom view.
+   */
+  getCaseStudyGraph(caseStudyId: string): Promise<CaseStudyGraph>;
 }
 
 const RunEventEnvelopeArray = z.array(RunEventEnvelope);
@@ -144,6 +154,9 @@ export const RunSummary = z.object({
   // no winner / no recorded creation time); the counts default to 0 in the view when absent.
   createdAt: z.string().nullable().optional(),
   problem: z.string().nullable().optional(),
+  // The case study this run executes (Islands pivot A1) — the join key to its bloom; nullable/optional so a
+  // run launched without one (or a pre-pivot api) still parses.
+  caseStudyId: z.string().nullable().optional(),
   finalIdeaTitle: z.string().nullable().optional(),
   finalIdeaSummary: z.string().nullable().optional(),
   generations: z.number().optional(),
@@ -151,6 +164,10 @@ export const RunSummary = z.object({
   reproductions: z.number().optional(),
   culls: z.number().optional(),
   mutations: z.number().optional(),
+  // Best candidate fitness per generation (the evolutionary climb the runs-table sparkline draws) and
+  // the selected winner's fitness. Optional so a pre-enrichment api still parses.
+  fitnessByGeneration: z.array(z.number()).optional(),
+  winnerFitness: z.number().nullable().optional(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;
 const RunSummariesResponse = z.object({ runs: z.array(RunSummary) });
@@ -252,7 +269,16 @@ export function createRunClient(options: RunClientOptions): RunClient {
       getJson(`/runs/${enc(runId)}/candidates/${enc(candidateId)}`, CandidateIdea),
     listModelRoutes: () => getJson('/model-routes', ModelRouteArray),
     startRun: (config, opts) =>
-      getJson('/runs', StartRunResult, postInit(config, opts?.idempotencyKey)),
+      getJson(
+        '/runs',
+        StartRunResult,
+        // caseStudyId (Islands pivot A1) rides the POST body alongside the config — the api strips it before
+        // the strict validateRunConfig. Omitted when absent → byte-identical to a pre-pivot start body.
+        postInit(
+          opts?.caseStudyId !== undefined ? { ...config, caseStudyId: opts.caseStudyId } : config,
+          opts?.idempotencyKey,
+        ),
+      ),
     stopRun: (runId) => getJson(`/runs/${enc(runId)}/stop`, StopRunResult, postInit()),
     getRunHealth: (runId) => getJson(`/runs/${enc(runId)}/health`, RunHealth),
     getKnowledge: (runId) => getJson(`/runs/${enc(runId)}/knowledge`, KnowledgeGraph),
@@ -269,5 +295,7 @@ export function createRunClient(options: RunClientOptions): RunClient {
       getJson(`/bloom/nodes/${enc(nodeId)}`, DeleteOuterBloomNodeResult, { method: 'DELETE' }),
     getModelRouteOverrides: async () =>
       (await getJson('/config/model-route-overrides', ModelRouteOverridesResponse)).allowlist,
+    getCaseStudyGraph: (caseStudyId) =>
+      getJson(`/case-studies/${enc(caseStudyId)}/graph`, CaseStudyGraph),
   };
 }

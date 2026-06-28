@@ -17,6 +17,7 @@ export const OuterBloomNode = z.object({
   judgeAcceptance: z.number().nullable(),
   sourceId: z.string().nullable(),
   agenomeId: z.string().nullable(),
+  body: z.string().optional(),
 });
 export type OuterBloomNode = z.infer<typeof OuterBloomNode>;
 

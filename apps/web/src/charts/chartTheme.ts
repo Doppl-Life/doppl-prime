@@ -27,14 +27,18 @@ export interface SeriesStyle {
   readonly label: string;
 }
 
+// Best vs mean were both blue (--status-scored / --status-checked) — near-indistinguishable. They now use
+// a warm/cool pair (cyan peak vs amber average) so they separate on color too, not just dash + marker.
+// Cyan↔amber is maximally distinct under the common colorblindness types (the color is still the 4th
+// channel after dash + marker glyph + label, per rule #4). Cyan stays clear of the violet novelty series.
 export const BEST_FITNESS_SERIES: SeriesStyle = {
-  colorToken: 'var(--status-scored)',
+  colorToken: 'var(--accent)',
   dash: '0',
   marker: 'circle',
   label: 'Fitness (best)',
 };
 export const MEAN_FITNESS_SERIES: SeriesStyle = {
-  colorToken: 'var(--status-checked)',
+  colorToken: 'var(--warning)',
   dash: '6 4',
   marker: 'square',
   label: 'Fitness (mean)',

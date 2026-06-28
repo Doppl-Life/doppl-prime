@@ -178,6 +178,13 @@ function fakeClient(): RunClient {
     ),
     getProblemSets: vi.fn(() => Promise.resolve([])),
     startDemoRun: vi.fn(() => Promise.resolve({ runId: 'run_demo' })),
+    startOuterCampaign: vi.fn(() =>
+      Promise.resolve({
+        campaignId: 'campaign_test',
+        rootArtifactId: 'case',
+        activeRunIds: ['run_outer_live'],
+      }),
+    ),
     getFallbackLadder: vi.fn(() => Promise.resolve([])),
     getCapMaxima: vi.fn(() => Promise.reject(new Error('test: no maxima'))),
     getOuterBloom: vi.fn(() => Promise.resolve(bloomProjection)),
@@ -242,26 +249,38 @@ describe('app router — route table + nav wiring (FV.1)', () => {
 
   it('test_bloom_grow_tab_starts_run_with_existing_runconfig_contract', async () => {
     const client = fakeClient();
-    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    client.startOuterCampaign = vi.fn(() =>
+      Promise.resolve({
+        campaignId: 'campaign_test',
+        rootArtifactId: 'case',
+        activeRunIds: ['run_outer_live'],
+      }),
+    );
     renderAt('/agarden', client);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Grow' }));
     expect(await screen.findByLabelText('Grow Agarden')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /run agarden/i }));
 
-    await waitFor(() => expect(client.startRun).toHaveBeenCalledTimes(1));
-    const [config, options] = vi.mocked(client.startRun).mock.calls[0]!;
-    expect(config.seed).toContain("Title: When the Crashes Don't Come");
-    expect(config.enabledSubtypes).toEqual(['cross_domain_transfer', 'zeitgeist_synthesis']);
-    expect(config.caps).toMatchObject({
+    await waitFor(() => expect(client.startOuterCampaign).toHaveBeenCalledTimes(1));
+    const [request, options] = vi.mocked(client.startOuterCampaign).mock.calls[0]!;
+    const runConfig = request.runConfig as {
+      enabledSubtypes: readonly string[];
+      caps: Record<string, number>;
+      generationOperators: readonly string[];
+    };
+    expect(request.title).toBe("When the Crashes Don't Come");
+    expect(request.seedText).toContain('Autonomy lowers crash frequency.');
+    expect(runConfig.enabledSubtypes).toEqual(['cross_domain_transfer', 'zeitgeist_synthesis']);
+    expect(runConfig.caps).toMatchObject({
       maxPopulation: 8,
       maxGenerations: 4,
       maxSpawnDepth: 3,
       energyBudget: 12000,
       maxToolCalls: 240,
     });
-    expect(config.generationOperators).toEqual(['first_principles', 'polymath', 'blindside']);
-    expect(options?.idempotencyKey).toMatch(/^outer-bloom-/);
+    expect(runConfig.generationOperators).toEqual(['first_principles', 'polymath', 'blindside']);
+    expect(options?.idempotencyKey).toMatch(/^outer-campaign-/);
     expect(await screen.findByText(/run_outer_live/i)).toBeTruthy();
   });
 
@@ -282,14 +301,20 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     expect(screen.getByText(/add a title and seed material to enable run agarden/i)).toBeTruthy();
 
     fireEvent.click(runButton);
-    expect(client.startRun).not.toHaveBeenCalled();
+    expect(client.startOuterCampaign).not.toHaveBeenCalled();
   });
 
   it('test_bloom_map_refetches_and_follows_new_outer_nodes_from_live_stream', async () => {
     CapturingEventSource.instances = [];
     globalThis.EventSource = CapturingEventSource as unknown as typeof EventSource;
     const client = fakeClient();
-    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    client.startOuterCampaign = vi.fn(() =>
+      Promise.resolve({
+        campaignId: 'campaign_test',
+        rootArtifactId: 'case',
+        activeRunIds: ['run_outer_live'],
+      }),
+    );
     client.getOuterBloom = vi
       .fn()
       .mockResolvedValue(bloomProjectionWithCompletedNode)
@@ -320,7 +345,13 @@ describe('app router — route table + nav wiring (FV.1)', () => {
     CapturingEventSource.instances = [];
     globalThis.EventSource = CapturingEventSource as unknown as typeof EventSource;
     const client = fakeClient();
-    client.startRun = vi.fn(() => Promise.resolve({ runId: 'run_outer_live' }));
+    client.startOuterCampaign = vi.fn(() =>
+      Promise.resolve({
+        campaignId: 'campaign_test',
+        rootArtifactId: 'case',
+        activeRunIds: ['run_outer_live'],
+      }),
+    );
     client.getOuterBloom = vi.fn().mockResolvedValue(bloomProjection);
     renderAt('/agarden', client);
 

@@ -52,7 +52,7 @@ If the user provides an `IMPLEMENTATION_PLAN.md` template, read it only after th
 
 ## Locked Decisions To Preserve
 
-- Doppl is an agent-evolution runtime plus verifier council plus observable demo dashboard.
+- Doppl is an agental-evolution runtime plus verifier council plus observable demo dashboard.
 - The canonical unit of work is `CandidateIdea`.
 - MVP supports both `cross_domain_transfer` and `zeitgeist_synthesis`.
 - Both idea types share a lifecycle with subtype-specific checks.

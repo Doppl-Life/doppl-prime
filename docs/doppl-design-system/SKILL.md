@@ -15,7 +15,7 @@ questions, and act as an expert designer who outputs HTML artifacts _or_ product
 
 ## What Doppl is (one paragraph)
 
-Doppl is an **agent-evolution runtime you watch**: a seed prompt breeds a population of *agenomes* that produce
+Doppl is an **agental-evolution runtime you watch**: a seed prompt breeds a population of *agenomes* that produce
 candidate ideas, which face an adversarial **critic gauntlet** + executable checks and a **held-out judge the
 agents cannot influence**; survivors reproduce across generations. The product is the **projector-legible
 dashboard** you stand in front of while this happens. The thesis behind every pixel: *it's not the agent — it's

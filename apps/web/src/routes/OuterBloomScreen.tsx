@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, CSSProperties, PointerEvent, WheelEvent } from 'react';
+import type { ChangeEvent, CSSProperties, PointerEvent, ReactNode, WheelEvent } from 'react';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import type { RunClient } from '../data/runClient';
 import type { StartRunResult } from '../data/runClient';
 import type { OuterBloomIsland, OuterBloomNode, OuterBloomProjection } from '../data/outerBloom';
+import { skinValidationQuestion } from '../data/skinValidationQuestions';
 import { resolveApiBaseUrl } from '../data/apiBase';
 import { createSseStream } from '../data/sseStream';
 import type { RunEventEnvelope } from '../data/contracts';
@@ -111,6 +112,7 @@ const BLOOM_REPLAY_ROOT_DELAY_RANGE_MS = [4_000, 6_000] as const;
 const BLOOM_REPLAY_SECOND_DELAY_RANGE_MS = [8_000, 10_000] as const;
 const BLOOM_REPLAY_DEEP_DELAY_RANGE_MS = [10_000, 20_000] as const;
 const WHEN_CRASHES_ROOT_ID = 'when-the-crashes-dont-come-575845a4';
+const ROCK_STAR_ROOT_ID = 'jack-drone-privacy-fd080117';
 
 const shell: CSSProperties = {
   minHeight: 'calc(100vh - 56px)',
@@ -189,6 +191,11 @@ const panelTitle: CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
 };
+const inspectorSectionTitle: CSSProperties = {
+  ...panelTitle,
+  color: 'var(--fg-default)',
+  marginBottom: 'var(--space-2)',
+};
 const islandList: CSSProperties = {
   display: 'grid',
   gap: 'var(--space-2)',
@@ -231,6 +238,20 @@ const badge: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   color: 'var(--fg-muted)',
+};
+const inspectorInfoCard: CSSProperties = {
+  border: 'thin solid var(--border-subtle)',
+  borderRadius: 'var(--radius-sm)',
+  padding: 'var(--space-2)',
+  background: 'var(--bg-surface-2)',
+};
+const inspectorList: CSSProperties = {
+  margin: 0,
+  paddingLeft: '1.15rem',
+  color: 'var(--fg-muted)',
+  lineHeight: 1.45,
+  display: 'grid',
+  gap: 'var(--space-1)',
 };
 const fieldLabel: CSSProperties = {
   display: 'block',
@@ -287,6 +308,7 @@ const compactMetaStrong: CSSProperties = {
 export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>('browse');
   const [stageFilter, setStageFilter] = useState<StageFilter>('all');
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all');
@@ -296,6 +318,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
   const [launchState, setLaunchState] = useState<LaunchState>({ kind: 'idle' });
   const [liveEvents, setLiveEvents] = useState<RunEventEnvelope[]>([]);
   const [replayState, setReplayState] = useState<BloomReplayState>({ kind: 'idle' });
+  const [showFullGraph, setShowFullGraph] = useState(false);
   const liveNodeCountsRef = useRef<Map<string, number>>(new Map());
   const replayTimersRef = useRef<number[]>([]);
   const replayTokenRef = useRef(0);
@@ -308,7 +331,23 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
       .then((bloom) => {
         if (!active) return;
         setState({ kind: 'ready', bloom });
-        setSelectedId((current) => current ?? defaultBloomSelection(bloom));
+        const defaultIsland = preferredDefaultIsland(bloom);
+        setActiveRunId((current) =>
+          current !== null && bloom.islands.some((island) => island.runId === current)
+            ? current
+            : (defaultIsland?.runId ?? null),
+        );
+        setSelectedId((current) => {
+          if (
+            current !== null &&
+            bloom.islands.some((island) => island.nodes.some((node) => node.id === current))
+          ) {
+            return current;
+          }
+          return defaultIsland === null
+            ? defaultBloomSelection(bloom)
+            : defaultIslandSelection(defaultIsland);
+        });
       })
       .catch(() => active && setState({ kind: 'error' }));
     return () => {
@@ -380,10 +419,11 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     replayTimersRef.current = [];
   };
 
-  const stopBloomReplay = () => {
+  const stopBloomReplay = (nextShowFullGraph = true) => {
     clearReplayTimers();
     replayTokenRef.current += 1;
     setReplayState({ kind: 'idle' });
+    setShowFullGraph(nextShowFullGraph);
   };
 
   const scheduleReplayNode = (
@@ -443,13 +483,14 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     replayTimersRef.current.push(timer);
   };
 
-  const startBloomReplay = (bloom: OuterBloomProjection) => {
-    const island = replayIslandForBloom(bloom);
+  const startBloomReplay = (bloom: OuterBloomProjection, preferredRunId: string | null) => {
+    const island = replayIslandForBloom(bloom, preferredRunId);
     if (island === null) return;
     const root = replayRootForIsland(island);
     if (root === null) return;
 
     clearReplayTimers();
+    setShowFullGraph(false);
     const token = replayTokenRef.current + 1;
     replayTokenRef.current = token;
     const hasChildren = childrenForReplayNode(island, root.id).length > 0;
@@ -479,6 +520,7 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
           ? { kind: 'idle' }
           : current,
       );
+      setShowFullGraph(true);
     }, 900);
     return () => window.clearTimeout(timer);
   }, [replayState]);
@@ -503,13 +545,30 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
     );
   }
 
-  const visibleBloom = filterBloom(state.bloom, stageFilter, scoreFilter, query);
-  const allNodes = state.bloom.islands.flatMap((island) => island.nodes);
+  const liveRunId = launchState.kind === 'streaming' ? launchState.runId : null;
+  const browseBloom = buildVisibleProjection(
+    state.bloom.islands.filter((island) => isBrowsableAgardenIsland(island, liveRunId)),
+  );
+  const preferredIsland = preferredDefaultIsland(browseBloom);
+  const activeIsland =
+    browseBloom.islands.find((island) => island.runId === activeRunId) ?? preferredIsland;
+  const activeBloom = buildVisibleProjection(activeIsland === null ? [] : [activeIsland]);
+  const visibleBloom = filterBloom(activeBloom, stageFilter, scoreFilter, query);
+  const seedOnlyBloom = activeIsland === null ? activeBloom : seedOnlyProjection(activeIsland);
+  const allNodes = activeBloom.islands.flatMap((island) => island.nodes);
   const selected =
-    allNodes.find((node) => node.id === selectedId) ?? state.bloom.islands[0]?.nodes[0] ?? null;
-  const selectedIsland =
-    state.bloom.islands.find((island) => island.nodes.some((node) => node.id === selected?.id)) ??
-    null;
+    allNodes.find((node) => node.id === selectedId) ??
+    (activeIsland === null ? null : defaultSelectionNode(activeIsland));
+  const selectedIsland = activeIsland?.nodes.some((node) => node.id === selected?.id)
+    ? activeIsland
+    : null;
+
+  const handleActiveIslandChange = (runId: string) => {
+    const island = browseBloom.islands.find((candidate) => candidate.runId === runId) ?? null;
+    setActiveRunId(runId);
+    setSelectedId(island === null ? null : defaultIslandSelection(island));
+    stopBloomReplay(false);
+  };
 
   return (
     <main aria-label="Agarden view" style={shell}>
@@ -520,7 +579,9 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
             type="button"
             style={runReplayButton}
             onClick={() =>
-              replayState.kind === 'running' ? stopBloomReplay() : startBloomReplay(state.bloom)
+              replayState.kind === 'running'
+                ? stopBloomReplay()
+                : startBloomReplay(browseBloom, activeIsland?.runId ?? activeRunId)
             }
             title={
               replayState.kind === 'running'
@@ -537,24 +598,24 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
           aria-label="Agarden totals"
         >
           <span>
-            <span style={compactMetaStrong}>{state.bloom.totals.runs}</span> runs
+            <span style={compactMetaStrong}>{browseBloom.totals.runs}</span> runs
           </span>
           <span>·</span>
           <span>
-            <span style={compactMetaStrong}>{state.bloom.totals.problemRecoveries}</span> recoveries
+            <span style={compactMetaStrong}>{browseBloom.totals.problemRecoveries}</span> recoveries
           </span>
           <span>·</span>
           <span>
-            <span style={compactMetaStrong}>{state.bloom.totals.doppls}</span> Doppls
+            <span style={compactMetaStrong}>{browseBloom.totals.doppls}</span> Doppls
           </span>
           <span>·</span>
           <span>
-            <span style={compactMetaStrong}>{state.bloom.totals.selected}</span> selected
+            <span style={compactMetaStrong}>{browseBloom.totals.selected}</span> selected
           </span>
         </div>
       </header>
 
-      {state.bloom.islands.length === 0 ? (
+      {browseBloom.islands.length === 0 ? (
         <section style={{ padding: 'var(--space-5)' }}>
           <EmptyState
             icon="◌"
@@ -578,15 +639,17 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
             </div>
             {sidebarMode === 'browse' ? (
               <BloomLibrary
-                bloom={state.bloom}
+                bloom={browseBloom}
                 visibleBloom={visibleBloom}
                 selectedId={selected?.id ?? null}
+                activeRunId={activeIsland?.runId ?? null}
                 stageFilter={stageFilter}
                 scoreFilter={scoreFilter}
                 sortMode={sortMode}
                 query={query}
                 launchState={launchState}
                 liveEvents={liveEvents}
+                onActiveIslandChange={handleActiveIslandChange}
                 onStageFilterChange={setStageFilter}
                 onScoreFilterChange={setScoreFilter}
                 onSortModeChange={setSortMode}
@@ -606,7 +669,13 @@ export function OuterBloomScreen({ runClient }: OuterBloomScreenProps) {
 
           <div style={centerColumn}>
             <BloomGraph
-              bloom={replayState.kind === 'running' ? state.bloom : visibleBloom}
+              bloom={
+                replayState.kind === 'running'
+                  ? activeBloom
+                  : showFullGraph
+                    ? visibleBloom
+                    : seedOnlyBloom
+              }
               selectedId={selected?.id ?? null}
               replayState={replayState}
               onSelect={setSelectedId}
@@ -625,12 +694,14 @@ function BloomLibrary({
   bloom,
   visibleBloom,
   selectedId,
+  activeRunId,
   stageFilter,
   scoreFilter,
   sortMode,
   query,
   launchState,
   liveEvents,
+  onActiveIslandChange,
   onStageFilterChange,
   onScoreFilterChange,
   onSortModeChange,
@@ -640,12 +711,14 @@ function BloomLibrary({
   bloom: OuterBloomProjection;
   visibleBloom: OuterBloomProjection;
   selectedId: string | null;
+  activeRunId: string | null;
   stageFilter: StageFilter;
   scoreFilter: ScoreFilter;
   sortMode: SortMode;
   query: string;
   launchState: LaunchState;
   liveEvents: readonly RunEventEnvelope[];
+  onActiveIslandChange: (runId: string) => void;
   onStageFilterChange: (filter: StageFilter) => void;
   onScoreFilterChange: (filter: ScoreFilter) => void;
   onSortModeChange: (mode: SortMode) => void;
@@ -671,6 +744,20 @@ function BloomLibrary({
         </p>
       </div>
       <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
+        <label>
+          <span style={fieldLabel}>Case study</span>
+          <select
+            value={activeRunId ?? ''}
+            onChange={(event) => onActiveIslandChange(event.target.value)}
+            style={inputStyle}
+          >
+            {bloom.islands.map((island) => (
+              <option key={island.runId} value={island.runId}>
+                {islandTitle(island)}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           <span style={fieldLabel}>Search</span>
           <input
@@ -1190,7 +1277,16 @@ function uniqueNonEmpty(values: readonly (string | undefined)[]): string[] {
   return result;
 }
 
-function replayIslandForBloom(bloom: OuterBloomProjection): OuterBloomIsland | null {
+function replayIslandForBloom(
+  bloom: OuterBloomProjection,
+  preferredRunId: string | null,
+): OuterBloomIsland | null {
+  if (preferredRunId !== null) {
+    const preferred = bloom.islands.find((island) => island.runId === preferredRunId);
+    if (preferred !== undefined) return preferred;
+  }
+  const defaultIsland = preferredDefaultIsland(bloom);
+  if (defaultIsland !== null) return defaultIsland;
   return (
     bloom.islands.find((island) =>
       island.nodes.some(
@@ -1206,7 +1302,9 @@ function replayIslandForBloom(bloom: OuterBloomProjection): OuterBloomIsland | n
 
 function replayRootForIsland(island: OuterBloomIsland): OuterBloomNode | null {
   return (
-    island.nodes.find((node) => node.id === WHEN_CRASHES_ROOT_ID) ??
+    island.nodes.find(
+      (node) => node.id === ROCK_STAR_ROOT_ID || node.id === WHEN_CRASHES_ROOT_ID,
+    ) ??
     island.nodes.find((node) => node.parentId === null) ??
     island.nodes.find((node) => node.stage === 'case_study') ??
     island.nodes[0] ??
@@ -1269,6 +1367,7 @@ function BloomGraph({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStateRef = useRef<BloomDragState | null>(null);
   const suppressNodeClickRef = useRef(false);
+  const cameraAnimationRef = useRef<number | null>(null);
   const visibleBounds = scaledBounds(layout.bounds, zoom, pan);
   const viewBox = `${visibleBounds.minX} ${visibleBounds.minY} ${visibleBounds.width} ${visibleBounds.height}`;
 
@@ -1287,6 +1386,59 @@ function BloomGraph({
       return Object.keys(next).length === Object.keys(current).length ? current : next;
     });
   }, [bloom]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraAnimationRef.current !== null) {
+        window.cancelAnimationFrame(cameraAnimationRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (replayState.kind !== 'running') return;
+    const root =
+      layout.nodes.find((node) => node.parentId === null) ??
+      layout.nodes.find((node) => node.stage === 'case_study') ??
+      layout.nodes[0] ??
+      null;
+    if (root === null) return;
+
+    if (cameraAnimationRef.current !== null) {
+      window.cancelAnimationFrame(cameraAnimationRef.current);
+      cameraAnimationRef.current = null;
+    }
+
+    const centerX = layout.bounds.minX + layout.bounds.width / 2;
+    const centerY = layout.bounds.minY + layout.bounds.height / 2;
+    const startZoom = 2.12;
+    const startPan = { x: root.x - centerX, y: root.y - centerY };
+    const endZoom = 1;
+    const endPan = { x: 0, y: 0 };
+    const durationMs = 1500;
+    let startedAt: number | null = null;
+
+    setZoom(startZoom);
+    setPan(startPan);
+
+    const tick = (now: number) => {
+      if (startedAt === null) startedAt = now;
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setZoom(Number((startZoom + (endZoom - startZoom) * eased).toFixed(3)));
+      setPan({
+        x: startPan.x + (endPan.x - startPan.x) * eased,
+        y: startPan.y + (endPan.y - startPan.y) * eased,
+      });
+      if (progress < 1) {
+        cameraAnimationRef.current = window.requestAnimationFrame(tick);
+      } else {
+        cameraAnimationRef.current = null;
+      }
+    };
+
+    cameraAnimationRef.current = window.requestAnimationFrame(tick);
+  }, [replayState.kind === 'running' ? replayState.token : null, layout.bounds, layout.nodes]);
 
   const zoomBy = (delta: number) => {
     setZoom((current) => clampZoom(current + delta));
@@ -1414,14 +1566,6 @@ function BloomGraph({
     const activation = nodeActivationAt(event.clientX, event.clientY);
     if (activation === null) return;
     onSelect(activation.nodeId);
-  };
-  const panBy = (direction: 'left' | 'right' | 'up' | 'down') => {
-    const stepX = (layout.bounds.width * 0.1) / zoom;
-    const stepY = (layout.bounds.height * 0.1) / zoom;
-    setPan((current) => ({
-      x: current.x + (direction === 'left' ? -stepX : direction === 'right' ? stepX : 0),
-      y: current.y + (direction === 'up' ? -stepY : direction === 'down' ? stepY : 0),
-    }));
   };
   const fitBloom = () => {
     setZoom(1);
@@ -1654,46 +1798,6 @@ function BloomGraph({
             Focus
           </GraphControl>
         </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 30px)',
-            gap: 4,
-            padding: 'var(--space-1)',
-            border: 'thin solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            background: 'color-mix(in srgb, var(--bg-surface) 86%, transparent)',
-          }}
-          aria-label="Agarden pan controls"
-        >
-          <span />
-          <GraphControl label="Pan up" onClick={() => panBy('up')}>
-            ↑
-          </GraphControl>
-          <span />
-          <GraphControl label="Pan left" onClick={() => panBy('left')}>
-            ←
-          </GraphControl>
-          <span
-            style={{
-              display: 'grid',
-              placeItems: 'center',
-              color: 'var(--fg-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-caption)',
-            }}
-          >
-            {Math.round(zoom * 100)}
-          </span>
-          <GraphControl label="Pan right" onClick={() => panBy('right')}>
-            →
-          </GraphControl>
-          <span />
-          <GraphControl label="Pan down" onClick={() => panBy('down')}>
-            ↓
-          </GraphControl>
-          <span />
-        </div>
       </div>
       <div
         style={{
@@ -1878,6 +1982,18 @@ function Inspector({
 }) {
   const children = island?.nodes.filter((childNode) => childNode.parentId === node?.id) ?? [];
   const lineage = node === null || island === null ? [] : lineageForNode(node, island.nodes);
+  const parentLineage = lineage.slice(0, -1);
+  const artifactSections =
+    node === null ? emptyArtifactSections() : parseArtifactSections(node.body);
+  const skinQuestions =
+    node === null ? [] : skinQuestionsForNode(node, artifactSections.skinInTheGame);
+  const dopplHighlights =
+    node?.stage === 'doppl'
+      ? [
+          { label: 'Implications', items: artifactSections.implications },
+          { label: 'Opportunities', items: artifactSections.opportunities },
+        ].filter((section) => section.items.length > 0)
+      : [];
   return (
     <aside style={panel} aria-label="Agarden inspector">
       <div style={panelHeader}>
@@ -1903,37 +2019,50 @@ function Inspector({
             <Metric label="judge" value={formatScore(node.judgeAcceptance)} />
             <Metric label="children" value={String(children.length)} />
           </div>
-          {lineage.length > 1 && (
-            <div
-              style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}
-            >
-              <h3 style={panelTitle}>Lineage</h3>
-              <ol
-                style={{
-                  margin: 'var(--space-2) 0 0',
-                  paddingLeft: '1.2rem',
-                  color: 'var(--fg-muted)',
-                  display: 'grid',
-                  gap: 'var(--space-1)',
-                }}
-              >
-                {lineage.map((lineageNode) => (
-                  <li key={lineageNode.id}>
-                    <span style={{ color: colorForBloomNode(lineageNode) }}>
-                      {labelForStage(lineageNode.stage)}
+          {parentLineage.map((lineageNode) => (
+            <InspectorSection key={lineageNode.id} title={titleForStage(lineageNode.stage)}>
+              <p style={{ margin: 0, color: 'var(--fg-muted)', lineHeight: 1.45 }}>
+                {lineageNode.label}
+              </p>
+            </InspectorSection>
+          ))}
+          {skinQuestions.length > 0 && (
+            <InspectorSection title="Skin in the Game">
+              <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+                {skinQuestions.map((item) => (
+                  <div key={item.party} style={inspectorInfoCard}>
+                    <strong style={{ display: 'block', color: 'var(--fg-default)' }}>
+                      {item.party}
+                    </strong>
+                    <span
+                      style={{
+                        display: 'block',
+                        color: 'var(--fg-muted)',
+                        lineHeight: 1.45,
+                        marginTop: 'var(--space-1)',
+                      }}
+                    >
+                      "{item.question}"
                     </span>
-                    {' · '}
-                    {truncate(lineageNode.label, 52)}
-                  </li>
+                  </div>
                 ))}
-              </ol>
-            </div>
+              </div>
+            </InspectorSection>
           )}
+          {dopplHighlights.map((section) => (
+            <InspectorSection key={section.label} title={section.label}>
+              <ul style={inspectorList}>
+                {section.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </InspectorSection>
+          ))}
           {children.length > 0 && (
             <div
               style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}
             >
-              <h3 style={panelTitle}>Children</h3>
+              <h3 style={inspectorSectionTitle}>Children</h3>
               <div style={{ display: 'grid', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                 {children.slice(0, 5).map((child) => (
                   <div
@@ -2053,6 +2182,15 @@ function DeleteBloomNodeButton({
           {status}
         </span>
       )}
+    </div>
+  );
+}
+
+function InspectorSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div style={{ borderTop: 'thin solid var(--border-subtle)', paddingTop: 'var(--space-3)' }}>
+      <h3 style={inspectorSectionTitle}>{title}</h3>
+      {children}
     </div>
   );
 }
@@ -2429,6 +2567,12 @@ function labelForStage(stage: OuterBloomNode['stage']): string {
   return 'doppl';
 }
 
+function titleForStage(stage: OuterBloomNode['stage']): string {
+  if (stage === 'case_study') return 'Case Study';
+  if (stage === 'problem_recovery') return 'Problem Recovery';
+  return 'Doppl';
+}
+
 function labelPlacement(node: LayoutNode): {
   dx: number;
   dy: number;
@@ -2451,15 +2595,57 @@ function formatScore(value: number | null): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
-function defaultBloomSelection(bloom: OuterBloomProjection): string | null {
-  const nodes = bloom.islands.flatMap((island) => island.nodes);
+function preferredDefaultIsland(bloom: OuterBloomProjection): OuterBloomIsland | null {
   return (
-    nodes.find((node) => node.stage === 'doppl' && node.status === 'selected')?.id ??
-    nodes.find((node) => node.stage === 'doppl')?.id ??
-    nodes.find((node) => node.stage === 'problem_recovery')?.id ??
-    nodes[0]?.id ??
+    bloom.islands.find((island) => islandContainsRoot(island, ROCK_STAR_ROOT_ID)) ??
+    bloom.islands.find((island) => islandContainsRoot(island, WHEN_CRASHES_ROOT_ID)) ??
+    bloom.islands[0] ??
     null
   );
+}
+
+function islandContainsRoot(island: OuterBloomIsland, rootId: string): boolean {
+  return island.runId === rootId || island.nodes.some((node) => node.id === rootId);
+}
+
+function islandRoot(island: OuterBloomIsland): OuterBloomNode | null {
+  return (
+    island.nodes.find((node) => node.parentId === null) ??
+    island.nodes.find((node) => node.stage === 'case_study') ??
+    island.nodes[0] ??
+    null
+  );
+}
+
+function islandTitle(island: OuterBloomIsland): string {
+  return islandRoot(island)?.label ?? island.runId;
+}
+
+function isBrowsableAgardenIsland(island: OuterBloomIsland, liveRunId: string | null): boolean {
+  if (liveRunId !== null && island.runId === liveRunId) return true;
+  return (
+    islandContainsRoot(island, ROCK_STAR_ROOT_ID) ||
+    islandContainsRoot(island, WHEN_CRASHES_ROOT_ID)
+  );
+}
+
+function defaultSelectionNode(island: OuterBloomIsland): OuterBloomNode | null {
+  return islandRoot(island);
+}
+
+function defaultIslandSelection(island: OuterBloomIsland): string | null {
+  return defaultSelectionNode(island)?.id ?? null;
+}
+
+function defaultBloomSelection(bloom: OuterBloomProjection): string | null {
+  const island = preferredDefaultIsland(bloom);
+  return island === null ? null : defaultIslandSelection(island);
+}
+
+function seedOnlyProjection(island: OuterBloomIsland): OuterBloomProjection {
+  const root = replayRootForIsland(island) ?? islandRoot(island);
+  const nodes = root === null ? [] : [root];
+  return buildVisibleProjection([{ ...island, nodes, edges: [] }]);
 }
 
 function preferredLiveBloomNode(island: OuterBloomIsland): OuterBloomNode | null {
@@ -2475,6 +2661,92 @@ function preferredLiveBloomNode(island: OuterBloomIsland): OuterBloomNode | null
 
 function lastOf<T>(values: readonly T[]): T | null {
   return values.length === 0 ? null : values[values.length - 1]!;
+}
+
+interface ArtifactSections {
+  skinInTheGame: readonly string[];
+  implications: readonly string[];
+  opportunities: readonly string[];
+}
+
+function emptyArtifactSections(): ArtifactSections {
+  return { skinInTheGame: [], implications: [], opportunities: [] };
+}
+
+function parseArtifactSections(body: string | undefined): ArtifactSections {
+  if (body === undefined || body.trim().length === 0) return emptyArtifactSections();
+  return {
+    skinInTheGame: markdownSectionItems(body, 'Skin in the Game'),
+    implications: markdownSectionItems(body, 'Implications'),
+    opportunities: markdownSectionItems(body, 'Opportunities'),
+  };
+}
+
+function markdownSectionItems(body: string, heading: string): string[] {
+  const raw = markdownSectionText(body, heading);
+  if (raw === null) return [];
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const listItems = lines
+    .filter((line) => /^[-*]\s+/.test(line))
+    .map((line) => cleanMarkdownInline(line.replace(/^[-*]\s+/, '')));
+  if (listItems.length > 0) return uniqueNonEmpty(listItems);
+
+  const compact = cleanMarkdownInline(raw);
+  const headingPrefix = new RegExp(`^${escapeRegExp(heading)}\\s*[-:]\\s*`, 'i');
+  return uniqueNonEmpty(
+    compact
+      .replace(headingPrefix, '')
+      .split(/\s+-\s+/)
+      .map((item) => item.trim()),
+  );
+}
+
+function markdownSectionText(body: string, heading: string): string | null {
+  const lines = body.split(/\r?\n/);
+  const start = lines.findIndex((line) => {
+    const match = /^(#{2,6})\s+(.+?)\s*$/.exec(line.trim());
+    return normalizeHeading(match?.[2] ?? '') === normalizeHeading(heading);
+  });
+  if (start === -1) return null;
+
+  const collected: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^#{2,6}\s+/.test(line.trim())) break;
+    collected.push(line);
+  }
+  const result = collected.join('\n').trim();
+  return result.length > 0 ? result : null;
+}
+
+function skinQuestionsForNode(
+  node: OuterBloomNode,
+  parties: readonly string[],
+): readonly { party: string; question: string }[] {
+  return parties
+    .map((party) => {
+      const question = skinValidationQuestion(node.id, party);
+      return question === null ? null : { party, question };
+    })
+    .filter((item): item is { party: string; question: string } => item !== null);
+}
+
+function normalizeHeading(value: string): string {
+  return value.trim().toLowerCase().replace(/[—–-]/g, '-').replace(/\s+/g, ' ');
+}
+
+function cleanMarkdownInline(value: string): string {
+  return value
+    .replace(/\[\[([^\]#|]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 const stageFilterOptions: readonly { value: StageFilter; label: string }[] = [

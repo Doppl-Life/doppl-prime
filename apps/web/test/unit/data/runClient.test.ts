@@ -67,6 +67,7 @@ describe('runClient — read-only REST seam', () => {
       [
         'getCandidate',
         'getCapMaxima',
+        'getCaseStudyGraph',
         'getEvents',
         'getFallbackLadder',
         'getKnowledge',
@@ -80,11 +81,52 @@ describe('runClient — read-only REST seam', () => {
         'listModelRoutes',
         'listRuns',
         'startDemoRun',
+        'startOuterCampaign',
         'startRun',
         'stopRun',
         'deleteOuterBloomNode',
       ].sort(),
     );
+  });
+
+  // Islands pivot A3 — getCaseStudyGraph fetches /case-studies/:id/graph and validates the cross-run graph.
+  it('test_get_case_study_graph_parses_and_encodes_id', async () => {
+    const graph = {
+      caseStudyId: 'cs er/flow',
+      runs: [
+        {
+          runId: 'run_a',
+          status: 'completed',
+          problem: 'smooth ER patient flow',
+          createdAt: '2026-06-26T10:00:00.000Z',
+          doppels: [{ candidateId: 'run_a-c1', title: 'A doppel', summary: 'a summary' }],
+        },
+      ],
+    };
+    const fetch = fakeFetch(graph);
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    const result = await client.getCaseStudyGraph('cs er/flow');
+    expect(result).toEqual(graph);
+    expect(fetch.calls[0]?.url).toBe(`${BASE}/case-studies/cs%20er%2Fflow/graph`); // id percent-encoded
+  });
+
+  // Islands pivot A1 — startRun threads caseStudyId into the POST body (the api strips it before validation).
+  it('test_start_run_carries_case_study_id_in_body', async () => {
+    const fetch = fakeFetch({ runId: 'run_new' });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    await client.startRun(validRunConfig, { caseStudyId: 'cs_demo' });
+    const body = JSON.parse(fetch.calls[0]?.init?.body ?? '{}') as Record<string, unknown>;
+    expect(body.caseStudyId).toBe('cs_demo');
+    expect(body.seed).toBe(validRunConfig.seed); // the config still rides along
+  });
+
+  // Without caseStudyId the body is the bare config (byte-identical to the pre-pivot start).
+  it('test_start_run_without_case_study_id_omits_it', async () => {
+    const fetch = fakeFetch({ runId: 'run_new' });
+    const client = createRunClient({ baseUrl: BASE, fetch });
+    await client.startRun(validRunConfig);
+    const body = JSON.parse(fetch.calls[0]?.init?.body ?? '{}') as Record<string, unknown>;
+    expect(body).not.toHaveProperty('caseStudyId');
   });
 
   // KB slice 2 — getKnowledge fetches /runs/:id/knowledge and validates the watermarked ResearchNote graph.

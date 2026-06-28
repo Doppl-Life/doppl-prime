@@ -29,6 +29,7 @@ export interface AppendAndStartInnerRunDeps {
 export interface AppendAndStartInnerRunOptions {
   runId?: string;
   actor?: ActorRole;
+  payloadExtras?: Record<string, unknown>;
 }
 
 /** The cap field that exceeds its maximum (lowering-only rule), or null if every cap is within ceiling. */
@@ -91,7 +92,7 @@ export async function appendAndStartInnerRun(
     runId,
     type: 'run.configured',
     actor: options.actor ?? 'operator',
-    payload: { ...config } as Record<string, unknown>,
+    payload: { ...config, ...(options.payloadExtras ?? {}) } as Record<string, unknown>,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   });
   deps.onRunConfigured?.(runId);

@@ -52,6 +52,26 @@ function fitnessScored(candidateId: string, total: number, sequence?: number): R
     ...(sequence !== undefined ? { sequence } : {}),
   });
 }
+// A scored survivor carrying a judge-acceptance component (Islands pivot A2 — the crowning floor reads it).
+function fitnessScoredAcc(
+  candidateId: string,
+  total: number,
+  judgeAcceptance: number,
+  sequence?: number,
+): RunEventRow {
+  return row({
+    type: 'fitness.scored',
+    generationId: 'run_t-gen0',
+    candidateId,
+    payload: {
+      id: `fit-${candidateId}`,
+      candidateId,
+      total,
+      components: { judge_acceptance: judgeAcceptance },
+    },
+    ...(sequence !== undefined ? { sequence } : {}),
+  });
+}
 function culled(candidateId: string, sequence?: number): RunEventRow {
   return row({
     type: 'lineage.culled',
@@ -134,6 +154,70 @@ describe('classifyRunTerminal (P3.11 — pure run-terminal verdict over the pers
     const verdict = classifyRunTerminal({ log });
     expect(verdict.status).toBe('completed');
     expect(verdict.finalIdeaRef).toBe('c3');
+  });
+
+  // Islands pivot A2 — multi-winner. maxWinners=2 crowns the top-2 by total (tie-break lowest sequence) as
+  // finalIdeaRefs[]; finalIdeaRef stays the top one (backward compat).
+  test('multi_winner_crowns_top_N_when_maxWinners_2', () => {
+    const log = [
+      fitnessScored('c1', 0.9, 1),
+      fitnessScored('c2', 0.7, 2),
+      fitnessScored('c3', 0.5, 3),
+    ];
+    const verdict = classifyRunTerminal({ log, maxWinners: 2 });
+    expect(verdict.status).toBe('completed');
+    expect(verdict.finalIdeaRefs).toEqual(['c1', 'c2']);
+    expect(verdict.finalIdeaRef).toBe('c1'); // the top winner, preserved
+  });
+
+  // The default (no maxWinners) crowns the top-2 (DEFAULT_MAX_WINNERS = 2, the Islands-pivot activation).
+  test('default_maxWinners_crowns_top_2', () => {
+    const log = [
+      fitnessScored('c1', 0.9, 1),
+      fitnessScored('c2', 0.7, 2),
+      fitnessScored('c3', 0.5, 3),
+    ];
+    const verdict = classifyRunTerminal({ log });
+    expect(verdict.finalIdeaRefs).toEqual(['c1', 'c2']); // top-2 by total
+    expect(verdict.finalIdeaRef).toBe('c1'); // the top winner, preserved
+  });
+
+  // A single scored survivor → exactly one winner even at the default cap of 2 (slice <= length).
+  test('default_with_one_survivor_crowns_one', () => {
+    const verdict = classifyRunTerminal({ log: [fitnessScored('c1', 0.9, 1)] });
+    expect(verdict.finalIdeaRefs).toEqual(['c1']);
+    expect(verdict.finalIdeaRef).toBe('c1');
+  });
+
+  // The acceptance floor excludes a high-TOTAL candidate whose judge acceptance is below the floor (rule #1
+  // cap on crowning) — even though it ranks first by total.
+  test('acceptance_floor_excludes_low_acceptance_high_total', () => {
+    const log = [
+      fitnessScoredAcc('c1', 0.9, 0.2, 1), // top total but acceptance below floor → excluded
+      fitnessScoredAcc('c2', 0.7, 0.6, 2), // clears the floor → crowned
+    ];
+    const verdict = classifyRunTerminal({ log, maxWinners: 2, acceptanceFloor: 0.5 });
+    expect(verdict.status).toBe('completed');
+    expect(verdict.finalIdeaRefs).toEqual(['c2']);
+  });
+
+  // Survivors exist but NONE clear the floor → completed with finalIdeaRefs:[] (an island with no doppel),
+  // NOT failed (failed is reserved for no scored survivor at all).
+  test('floor_can_yield_zero_winners_still_completed', () => {
+    const log = [fitnessScoredAcc('c1', 0.9, 0.2, 1), fitnessScoredAcc('c2', 0.7, 0.3, 2)];
+    const verdict = classifyRunTerminal({ log, maxWinners: 2, acceptanceFloor: 0.5 });
+    expect(verdict.status).toBe('completed');
+    expect(verdict.terminalEvent).toBe('run.completed');
+    expect(verdict.finalIdeaRefs).toEqual([]);
+    expect(verdict.finalIdeaRef).toBeUndefined();
+  });
+
+  // A survivor with NO recorded judge acceptance is NOT excluded by the floor (a judge-less run still crowns).
+  test('floor_does_not_exclude_a_survivor_without_acceptance', () => {
+    const log = [fitnessScored('c1', 0.8, 1)]; // no components.judge_acceptance
+    const verdict = classifyRunTerminal({ log, maxWinners: 2, acceptanceFloor: 0.9 });
+    expect(verdict.status).toBe('completed');
+    expect(verdict.finalIdeaRefs).toEqual(['c1']);
   });
 
   // spec(§3) + LESSONS §54/§63 — selected = scored ∧ ¬culled; a scored-then-culled candidate is excluded.

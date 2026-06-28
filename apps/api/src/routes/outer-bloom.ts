@@ -252,10 +252,7 @@ function campaignRowsToIsland(
             ? 'reseeded'
             : 'solved_by',
     }));
-  const maxSequence = Math.max(
-    0,
-    ...rows.map((row) => row.sourceSequenceThrough ?? 0),
-  );
+  const maxSequence = Math.max(0, ...rows.map((row) => row.sourceSequenceThrough ?? 0));
   return {
     runId: campaign.id,
     seed: campaign.synopsis || campaign.title,
@@ -331,5 +328,6 @@ function importedRowToNode(row: ImportedOuterBloomRow): OuterBloomNode {
     judgeAcceptance: row.judgeAcceptance,
     sourceId: row.sourceId,
     agenomeId: row.agenomeId,
+    body: row.body,
   };
 }

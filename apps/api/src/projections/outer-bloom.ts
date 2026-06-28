@@ -18,6 +18,7 @@ export interface OuterBloomNode {
   judgeAcceptance: number | null;
   sourceId: string | null;
   agenomeId: string | null;
+  body?: string;
 }
 
 export interface OuterBloomEdge {
@@ -107,9 +108,7 @@ export function buildOuterBloomForRun(events: readonly RunEventRow[]): OuterBloo
 
   for (const candidate of doppls) {
     const parentAgenomeId = parentAgenomeByChildAgenome.get(candidate.agenomeId) ?? null;
-    const parentDoppl = parentAgenomeId
-      ? (firstDopplByAgenome.get(parentAgenomeId) ?? null)
-      : null;
+    const parentDoppl = parentAgenomeId ? (firstDopplByAgenome.get(parentAgenomeId) ?? null) : null;
     const parentId = parentDoppl?.id ?? recoveryId;
     const score = scoresBySource.get(candidate.id)?.total ?? null;
     const novelty = noveltyBySource.get(candidate.id)?.score ?? null;
@@ -155,12 +154,14 @@ export function buildOuterBloom(islands: readonly OuterBloomIsland[]): OuterBloo
     0,
   );
   const problemRecoveries = sorted.reduce(
-    (count, island) => count + island.nodes.filter((node) => node.stage === 'problem_recovery').length,
+    (count, island) =>
+      count + island.nodes.filter((node) => node.stage === 'problem_recovery').length,
     0,
   );
   const selected = sorted.reduce(
     (count, island) =>
-      count + island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length,
+      count +
+      island.nodes.filter((node) => node.stage === 'doppl' && node.status === 'selected').length,
     0,
   );
   return {
@@ -192,7 +193,10 @@ function readSeed(events: readonly RunEventRow[]): string | null {
 }
 
 function labelFromSeed(seed: string): string {
-  const firstLine = seed.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
+  const firstLine = seed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean);
   if (firstLine === undefined) return 'Untitled case study';
   return firstLine.length > 72 ? `${firstLine.slice(0, 69)}...` : firstLine;
 }

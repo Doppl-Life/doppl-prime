@@ -1,6 +1,6 @@
 {
   "name": "doppl",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,6 +9,9 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "start": "pnpm --filter @doppl/api start",
+    "dev": "bash scripts/dev-local.sh",
+    "db:down": "docker stop doppl-pg || true",
+    "db:logs": "docker logs -f doppl-pg",
     "lint": "pnpm -r --if-present lint",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",

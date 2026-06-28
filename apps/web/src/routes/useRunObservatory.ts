@@ -63,6 +63,9 @@ interface CachedObservatory {
   readonly fold: FoldState;
   readonly lineage: LineageGraphProjection | null;
   readonly health: RunHealth | null;
+  /** The run's latest run-level status, persisted so a return visit resolves the Stop/loading gate
+   *  instantly instead of flashing "Loading run state…" while the store re-syncs. */
+  readonly runStatus?: ReturnType<typeof selectRunStatus>;
 }
 const OBSERVATORY_CACHE_MAX = 8;
 const observatoryCache = new Map<string, CachedObservatory>();
@@ -79,6 +82,7 @@ function readCache(runId: string): CachedObservatory | undefined {
  *  the next test's hook state. Not for production use. */
 export function __clearObservatoryCache(): void {
   observatoryCache.clear();
+  storeCache.clear();
 }
 function writeCache(runId: string, patch: Partial<CachedObservatory>): void {
   const prev = observatoryCache.get(runId) ?? {
@@ -95,6 +99,31 @@ function writeCache(runId: string, patch: Partial<CachedObservatory>): void {
   }
 }
 
+/** Module-level cache of the RunStore itself, keyed by `${mode}:${runId}`. The store holds the SSE-folded
+ *  ViewState (the run's status, entities, energy) that drives `runStatus` + the Stop/Run-completed control.
+ *  Recreating it on every navigation reset that state → a "Loading run state…" flash on every return visit
+ *  to the Organism view. Reusing the SAME store across sibling-route navigations (Organism ↔ Knowledge ↔
+ *  Final) means the folded state survives, so a return visit renders the run state instantly (the effect
+ *  still re-wires the SSE stream + resync to catch any events that arrived while away). LRU-capped. */
+const storeCache = new Map<string, RunStore>();
+function getOrCreateStore(runId: string, mode: RunMode, runClient: RunClient): RunStore {
+  const key = `${mode}:${runId}`;
+  const existing = storeCache.get(key);
+  if (existing !== undefined) {
+    storeCache.delete(key); // LRU bump
+    storeCache.set(key, existing);
+    return existing;
+  }
+  const created = createRunStore({ runId, runClient, mode });
+  storeCache.set(key, created);
+  while (storeCache.size > OBSERVATORY_CACHE_MAX) {
+    const oldest = storeCache.keys().next().value;
+    if (oldest === undefined) break;
+    storeCache.delete(oldest);
+  }
+  return created;
+}
+
 export function useRunObservatory({
   runId,
   mode,
@@ -105,8 +134,11 @@ export function useRunObservatory({
   store: injectedStore,
   refetchDebounceMs = 600,
 }: UseRunObservatoryOptions): RunObservatory {
+  // Reuse a cached store across sibling-route navigations so the folded run state (and thus the run
+  // status + Stop control) survives Knowledge ↔ Organism without a "Loading run state…" reload. Tests
+  // inject their own store and bypass the cache.
   const store = useMemo(
-    () => injectedStore ?? createRunStore({ runId, runClient, mode }),
+    () => injectedStore ?? getOrCreateStore(runId, mode, runClient),
     [injectedStore, runId, runClient, mode],
   );
 
@@ -192,7 +224,13 @@ export function useRunObservatory({
     };
   }, [runId, store, runClient, baseUrl, eventSourceFactory, createStream, refetchDebounceMs]);
 
-  const runStatus = selectRunStatus(state, runId);
+  // The store-derived status is authoritative when known; persist it so a navigation away-and-back
+  // resolves instantly from the cache rather than flashing "Loading run state…" while the store resyncs.
+  const liveRunStatus = selectRunStatus(state, runId);
+  useEffect(() => {
+    if (liveRunStatus !== undefined) writeCache(runId, { runStatus: liveRunStatus });
+  }, [runId, liveRunStatus]);
+  const runStatus = liveRunStatus ?? cached?.runStatus;
 
   return {
     store,
