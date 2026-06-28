@@ -294,6 +294,15 @@ function firstReviewableCase(index: CalibratorIndex) {
   );
 }
 
+function hasDefaultReviewableCase(index: CalibratorIndex) {
+  return index.cases.some(
+    (caseItem) =>
+      (caseItem.case_id === DEFAULT_CASE_ID ||
+        caseItem.title === DEFAULT_CASE_TITLE) &&
+      hasRateableArtifacts(caseItem),
+  );
+}
+
 function reviewQueueForCase(
   caseItem: CalibratorIndex["cases"][number] | null,
 ): ReviewQueueItem[] {
@@ -1113,6 +1122,19 @@ export function App() {
   }
 
   async function loadIndex() {
+    async function loadStaticIndex() {
+      const staticIndexPath = isAgoraRoute
+        ? "../calibration-index.json"
+        : "calibration-index.json";
+      const staticResponse = await fetch(`${staticIndexPath}?v=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (!staticResponse.ok) throw new Error("Failed to load vault index");
+      return mergeHostedRatingsLedger(
+        (await staticResponse.json()) as CalibratorIndex,
+      );
+    }
+
     try {
       const apiResponse = await fetch("/api/index", { cache: "no-store" });
       if (apiResponse.ok) {
@@ -1133,9 +1155,14 @@ export function App() {
     const githubConfig = hostedAgardenConfig();
     if (githubConfig) {
       try {
-        return mergeHostedRatingsLedger(
+        const liveIndex = await mergeHostedRatingsLedger(
           await readGitHubAgardenIndex(githubConfig),
         );
+        if (hasDefaultReviewableCase(liveIndex)) return liveIndex;
+        console.warn(
+          "Falling back to static calibration index because the live aGarden read did not include the default reviewable case.",
+        );
+        return loadStaticIndex();
       } catch (err) {
         console.warn(
           "Falling back to static calibration index after GitHub aGarden read failed.",
@@ -1144,16 +1171,7 @@ export function App() {
       }
     }
 
-    const staticIndexPath = isAgoraRoute
-      ? "../calibration-index.json"
-      : "calibration-index.json";
-    const staticResponse = await fetch(`${staticIndexPath}?v=${Date.now()}`, {
-      cache: "no-store",
-    });
-    if (!staticResponse.ok) throw new Error("Failed to load vault index");
-    return mergeHostedRatingsLedger(
-      (await staticResponse.json()) as CalibratorIndex,
-    );
+    return loadStaticIndex();
   }
 
   useEffect(() => {

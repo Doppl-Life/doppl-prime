@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-28T15:15:58.740Z",
+  "generated_at": "2026-06-28T19:36:16.233Z",
   "source_kind": "agarden",
   "comparison_sets": [],
   "cases": [
@@ -103,226 +103,6 @@
         "source": "agarden"
       },
       "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "chrono-scrambled-optics-coating-8b93eb72",
-      "case_id": "chrono-scrambled-optics-coating-8b93eb72",
-      "title": "Chrono-Scrambled Optics Coating",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/chrono-scrambled-optics-coating-8b93eb72/chrono-scrambled-optics-coating-8b93eb72.md"
-      ],
-      "body": "# Chrono-Scrambled Optics Coating\n\nprev_id: [[chrono-scrambled-optics-coating-12073e6d]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nApplying ultra-thin, programmable metamaterial coatings to key visible surfaces (balcony railings, pillars) that actively randomize light reflection across specific temporal intervals (milliseconds), causing rapid 'flicker ghosting' when filmed by persistent optical recording devices.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "cognitive-overload-signal-bloom-3d89de02",
-      "case_id": "cognitive-overload-signal-bloom-3d89de02",
-      "title": "Cognitive Overload Signal Bloom",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/cognitive-overload-signal-bloom-3d89de02/cognitive-overload-signal-bloom-3d89de02.md"
-      ],
-      "body": "# Cognitive Overload Signal Bloom\n\nprev_id: [[cognitive-overload-signal-bloom-0c92c6e8]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nImplementing synchronized, low-intensity visual stimuli across the yacht's open deck that are designed not to be distracting, but to maintain a constant baseline state of high cognitive load for any human observer (or simulated input processing unit). This forces observers into a perpetual sub-conscious filtering state.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "controlled-data-garbage-release-protocol-a8b22a49",
-      "case_id": "controlled-data-garbage-release-protocol-a8b22a49",
-      "title": "Controlled 'Data Garbage' Release Protocol",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/controlled-data-garbage-release-protocol-a8b22a49/controlled-data-garbage-release-protocol-a8b22a49.md"
-      ],
-      "body": "# Controlled 'Data Garbage' Release Protocol\n\nprev_id: [[controlled-data-garbage-release-protocol-4b723875]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "breakout-the-meta-narrative-data-injection-95a7cf0f",
-          "case_id": "controlled-data-garbage-release-protocol-a8b22a49",
-          "problem_recovery_id": "breakout-the-meta-narrative-data-injection-95a7cf0f",
-          "title": "Breakout: The Meta-Narrative Data Injection",
-          "parent_ids": [
-            "controlled-data-garbage-release-protocol-a8b22a49"
-          ],
-          "child_ids": [],
-          "source_path": "flow/controlled-data-garbage-release-protocol-a8b22a49/breakout-the-meta-narrative-data-injection-95a7cf0f/breakout-the-meta-narrative-data-injection-95a7cf0f.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Breakout: The Meta-Narrative Data Injection\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nAnalysis of how media coverage cycles prioritize dramatic theory over dry facts. → [[conspiracy-theory-structure-and-61d93ec6#^breakout-the-meta-narrative]]\n\n### Finding 2\n\nThe psychological appeal of structured speculation. → [[conspiracy-theory-structure-and-61d93ec6#^breakout-the-meta-narrative]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat the media treats leaked data as primary evidence.\n### Hidden variable\nThe public's susceptibility to highly dramatic, but ultimately meaningless, 'conspiracy theory' framing devices.\n### Actual problem\nBypassing factual analysis entirely by flooding the information space with structured *misinterpretation* frameworks.\n### Candidate response\nWe will leak data that is technically accurate but only when viewed through a series of hyper-dramatic, pseudo-scientific 'interpretive lenses' (e.g., linking fuel burn to deep-sea geothermal activity; correlating minor shifts in GPS coordinates with predicted geopolitical resource conflict zones). The sheer volume of these speculative connections creates an overwhelming meta-narrative that exhausts the media into repeating the theory itself.\n### Skin in the Game\n- A dedicated team of 'Narrative Theorists' (not scientists) to generate plausible, dramatic links.\n- Sophisticated automated tools for generating pseudo-academic sounding reports.\n### Sprouts\n- Creating a public 'Theory Compendium' that is intentionally overblown and theatrical.\n- Using the meta-narrative as the primary defense: 'It's not about the data; it's about the theory.' \n### Evaluation\n#### Novelty +4\n89% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 1 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "breakthrough-the-self-correcting-data-feed-loop-b7beb25c",
-          "case_id": "controlled-data-garbage-release-protocol-a8b22a49",
-          "problem_recovery_id": "breakthrough-the-self-correcting-data-feed-loop-b7beb25c",
-          "title": "Breakthrough: The Self-Correcting Data Feed Loop",
-          "parent_ids": [
-            "controlled-data-garbage-release-protocol-a8b22a49"
-          ],
-          "child_ids": [],
-          "source_path": "flow/controlled-data-garbage-release-protocol-a8b22a49/breakthrough-the-self-correcting-data-feed-loop-b7beb25c/breakthrough-the-self-correcting-data-feed-loop-b7beb25c.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Breakthrough: The Self-Correcting Data Feed Loop\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nBehavioral patterns in social media trending topics (citation needed). → [[cybernetics-and-feedback-loop-3b790779#^breakthrough-the-self-correcting]]\n\n### Finding 2\n\nSystem design principles for stable, self-updating systems. → [[cybernetics-and-feedback-loop-3b790779#^breakthrough-the-self-correcting]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat the leaked data will remain static and external.\n### Hidden variable\nThe media's inherent tendency toward self-correction, requiring continuous input to maintain narrative momentum.\n### Actual problem\nCreating an artificial, self-sustaining ecosystem of 'benign updates' that requires constant community/media engagement to keep alive, thereby consuming their capacity for deep investigation.\n### Candidate response\nWe will leak data feeds that are designed not just to be benign, but to *predict* the next piece of benign data (e.g., Data Point A is always followed by a minor environmental shift B; this triggers an expected procedural adjustment C). This creates a closed-loop narrative where the media's job becomes simply predicting the next predictable step, making them active participants in generating noise rather than independent investigators.\n### Skin in the Game\n- A public-facing 'Predictive Feed' interface.\n- A network of controlled data sources that feed into each other sequentially.\n### Sprouts\n- Gamifying the information leak for media consumption ('Guess the Next Data Point').\n- Treating the media cycle as a predictable, iterative process we can control.\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "polymath-the-behavioral-economics-leak-efd5bac8",
-          "case_id": "controlled-data-garbage-release-protocol-a8b22a49",
-          "problem_recovery_id": "polymath-the-behavioral-economics-leak-efd5bac8",
-          "title": "Polymath: The Behavioral Economics Leak",
-          "parent_ids": [
-            "controlled-data-garbage-release-protocol-a8b22a49"
-          ],
-          "child_ids": [],
-          "source_path": "flow/controlled-data-garbage-release-protocol-a8b22a49/polymath-the-behavioral-economics-leak-efd5bac8/polymath-the-behavioral-economics-leak-efd5bac8.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Polymath: The Behavioral Economics Leak\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nStudies on financial market panic triggered by ambiguous signals (cite behavioral finance). → [[behavioral-economics-loss-aversion-88fc68f1#^polymath-the-behavioral-economics]]\n\n### Finding 2\n\nThe viral nature of alarmist social media posts. → [[behavioral-economics-loss-aversion-88fc68f1#^polymath-the-behavioral-economics]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat media attention is driven by objective truth or technical complexity.\n### Hidden variable\nThe predictable human reaction to perceived scarcity, risk, and social confirmation bias (FOMO/FOGO).\n### Actual problem\nManipulating the public's emotional response to data leaks, making them interpret neutral facts through a lens of manufactured alarm.\n### Candidate response\nWe will leak data that is entirely benign but strategically formatted to mimic signals of *risk* or *scarcity*. For example, releasing consumption rates paired with highly sensitive-sounding metrics (e.g., 'Resource X depletion rate approaching T-minus 72 hours') without ever defining Resource X. This triggers alarmist behavior and speculation in the public domain before any scandal can take root.\n### Skin in the Game\n- A behavioral economist consultant for leak framing.\n- Data visualizations that use color, urgency markers, and 'critical' language.\n### Sprouts\n- Developing a library of high-impact, low-specificity warning metrics.\n- Targeting social media influencers who specialize in alarming predictions.\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
-      "solutions": []
-    },
-    {
-      "node_id": "directed-atmospheric-particle-veil-b6eeece7",
-      "case_id": "directed-atmospheric-particle-veil-b6eeece7",
-      "title": "Directed Atmospheric Particle Veil",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/directed-atmospheric-particle-veil-b6eeece7/directed-atmospheric-particle-veil-b6eeece7.md"
-      ],
-      "body": "# Directed Atmospheric Particle Veil\n\nprev_id: [[directed-atmospheric-particle-veil-a68efb08]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "information-entropy-scatter-field-62cae3f2",
-          "case_id": "directed-atmospheric-particle-veil-b6eeece7",
-          "problem_recovery_id": "information-entropy-scatter-field-62cae3f2",
-          "title": "Information Entropy Scatter Field",
-          "parent_ids": [
-            "directed-atmospheric-particle-veil-b6eeece7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/directed-atmospheric-particle-veil-b6eeece7/information-entropy-scatter-field-62cae3f2/information-entropy-scatter-field-62cae3f2.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Information Entropy Scatter Field\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nTheoretical limits of data compression and information theory. → [[air-boundary-layer-electromagnetic-conce-0a2e6874#^information-entropy-scatter-field]]\n\n### Finding 2\n\nThe complexity required to simulate chaotic systems accurately. → [[air-boundary-layer-electromagnetic-conce-0a2e6874#^information-entropy-scatter-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nThe data captured is too organized and usable.\n### Deleted assumption\nThat the goal is simply to block light/data (lowering Signal-to-Noise Ratio).\n### Hidden variable\nThe computational capacity required for accurate reconstruction of a scene.\n### Actual problem\nOverwhelming remote sensing systems with maximum, non-repeating informational noise.\n### Candidate response\nInstead of physical scattering, deploy an active field generator that emits highly complex, pseudo-random patterns across the visible and near-infrared spectrum. This pattern is not designed to *block* light but to maximize the Shannon entropy of every photon hitting a sensor, ensuring that any captured image contains maximum informational noise density, making forensic reconstruction impossible.\n### Skin in the Game\n- Information theory (Shannon Entropy)\n- Active camouflage/pattern generation\n- Computational signal processing\n### Sprouts\n- Creating a field that shifts its entropy signature relative to the observed ambient background.\n- Integrating the pattern generator with real-time environmental data feeds.\n### Evaluation\n#### Novelty +4\n96% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "metadata-poisoning-payload-5f7d8d30",
-          "case_id": "directed-atmospheric-particle-veil-b6eeece7",
-          "problem_recovery_id": "metadata-poisoning-payload-5f7d8d30",
-          "title": "Metadata Poisoning Payload",
-          "parent_ids": [
-            "directed-atmospheric-particle-veil-b6eeece7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/directed-atmospheric-particle-veil-b6eeece7/metadata-poisoning-payload-5f7d8d30/metadata-poisoning-payload-5f7d8d30.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Metadata Poisoning Payload\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nKnown vulnerabilities in GPS/time-stamping synchronization across multiple platforms. → [[air-boundary-layer-electronic-conceptual-f264416c#^metadata-poisoning-payload]]\n\n### Finding 2\n\nThe reliance of AI surveillance on structured metadata inputs. → [[air-boundary-layer-electronic-conceptual-f264416c#^metadata-poisoning-payload]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos/videos are taken of us.\n### Deleted assumption\nThat the physical event (the veil) needs to be present at capture time.\n### Hidden variable\nThe post-processing and data interpretation pipeline of surveillance systems.\n### Actual problem\nCompromise of the digital record, regardless of visual clarity.\n### Candidate response\nInstead of a visible/physical veil, introduce an aerosolized, non-toxic payload that contains inert metallic nanoparticles designed to interact with camera sensors' electronic components. These particles induce highly specific, subtle electromagnetic interference (EMI) when captured data is processed, causing the sensor firmware to automatically append corrupted or misleading metadata tags (GPS drift, timestamp skew, artificial focal length shifts).\n### Skin in the Game\n- Electromagnetic compatibility (EMC)\n- Sensor physics and electronics\n- Digital forensics/Metadata analysis\n### Sprouts\n- Developing a 'signature' that only affects specific, high-value sensor models.\n- Creating payloads that corrupt the internal clock synchronization of captured data.\n### Evaluation\n#### Novelty +4\n95% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "operational-tempo-nullification-field-1da6f1c5",
-          "case_id": "directed-atmospheric-particle-veil-b6eeece7",
-          "problem_recovery_id": "operational-tempo-nullification-field-1da6f1c5",
-          "title": "Operational Tempo Nullification Field",
-          "parent_ids": [
-            "directed-atmospheric-particle-veil-b6eeece7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/directed-atmospheric-particle-veil-b6eeece7/operational-tempo-nullification-field-1da6f1c5/operational-tempo-nullification-field-1da6f1c5.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Operational Tempo Nullification Field\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nStudies on cognitive load and decision fatigue in combat environments. → [[air-boundary-layer-thermo-psychological-0f36ebb6#^operational-tempo-nullification-field]]\n\n### Finding 2\n\nThe known reliance of intelligence analysis on pattern recognition heuristics. → [[air-boundary-layer-thermo-psychological-0f36ebb6#^operational-tempo-nullification-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe are being tracked by drones.\n### Deleted assumption\nThat the surveillance system requires continuous, uninterrupted data flow.\n### Hidden variable\nThe cognitive load and decision-making capacity of the human operator receiving the feed.\n### Actual problem\nForcing the opposing force into a state of operational paralysis via information overload.\n### Candidate response\nDeploy a low-power atmospheric field that generates subtle, non-physical sensory disturbances (e.g., localized, patterned changes in ambient temperature gradients or minute air pressure fluctuations). These patterns are specifically designed to trigger 'cognitive dissonance' alerts and force the drone operator/analyst to constantly recalibrate their assumptions about reality, leading to decision fatigue and mission abandonment.\n### Skin in the Game\n- Human factors engineering\n- Psychoacoustics (sub-audible frequencies)\n- Atmospheric physics modeling\n### Sprouts\n- Targeting the human operator's specific fatigue points (e.g., requiring constant cross-referencing of multiple, conflicting data streams).\n- Integrating the field with psychological profiles of known opposing forces.\n### Evaluation\n#### Novelty +4\n94% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
       "solutions": []
     },
     {
@@ -705,6 +485,81 @@
           "human_ratings": []
         },
         {
+          "node_id": "information-entropy-scatter-field-62cae3f2",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "information-entropy-scatter-field-62cae3f2",
+          "title": "Information Entropy Scatter Field",
+          "parent_ids": [
+            "directed-atmospheric-particle-veil-b6eeece7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/directed-atmospheric-particle-veil-a68efb08/directed-atmospheric-particle-veil-b6eeece7/information-entropy-scatter-field-62cae3f2/information-entropy-scatter-field-62cae3f2.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Information Entropy Scatter Field\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nTheoretical limits of data compression and information theory. → [[air-boundary-layer-electromagnetic-conce-0a2e6874#^information-entropy-scatter-field]]\n\n### Finding 2\n\nThe complexity required to simulate chaotic systems accurately. → [[air-boundary-layer-electromagnetic-conce-0a2e6874#^information-entropy-scatter-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nThe data captured is too organized and usable.\n### Deleted assumption\nThat the goal is simply to block light/data (lowering Signal-to-Noise Ratio).\n### Hidden variable\nThe computational capacity required for accurate reconstruction of a scene.\n### Actual problem\nOverwhelming remote sensing systems with maximum, non-repeating informational noise.\n### Candidate response\nInstead of physical scattering, deploy an active field generator that emits highly complex, pseudo-random patterns across the visible and near-infrared spectrum. This pattern is not designed to *block* light but to maximize the Shannon entropy of every photon hitting a sensor, ensuring that any captured image contains maximum informational noise density, making forensic reconstruction impossible.\n### Skin in the Game\n- Information theory (Shannon Entropy)\n- Active camouflage/pattern generation\n- Computational signal processing\n### Sprouts\n- Creating a field that shifts its entropy signature relative to the observed ambient background.\n- Integrating the pattern generator with real-time environmental data feeds.\n### Evaluation\n#### Novelty +4\n96% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 0 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "metadata-poisoning-payload-5f7d8d30",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "metadata-poisoning-payload-5f7d8d30",
+          "title": "Metadata Poisoning Payload",
+          "parent_ids": [
+            "directed-atmospheric-particle-veil-b6eeece7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/directed-atmospheric-particle-veil-a68efb08/directed-atmospheric-particle-veil-b6eeece7/metadata-poisoning-payload-5f7d8d30/metadata-poisoning-payload-5f7d8d30.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Metadata Poisoning Payload\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nKnown vulnerabilities in GPS/time-stamping synchronization across multiple platforms. → [[air-boundary-layer-electronic-conceptual-f264416c#^metadata-poisoning-payload]]\n\n### Finding 2\n\nThe reliance of AI surveillance on structured metadata inputs. → [[air-boundary-layer-electronic-conceptual-f264416c#^metadata-poisoning-payload]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos/videos are taken of us.\n### Deleted assumption\nThat the physical event (the veil) needs to be present at capture time.\n### Hidden variable\nThe post-processing and data interpretation pipeline of surveillance systems.\n### Actual problem\nCompromise of the digital record, regardless of visual clarity.\n### Candidate response\nInstead of a visible/physical veil, introduce an aerosolized, non-toxic payload that contains inert metallic nanoparticles designed to interact with camera sensors' electronic components. These particles induce highly specific, subtle electromagnetic interference (EMI) when captured data is processed, causing the sensor firmware to automatically append corrupted or misleading metadata tags (GPS drift, timestamp skew, artificial focal length shifts).\n### Skin in the Game\n- Electromagnetic compatibility (EMC)\n- Sensor physics and electronics\n- Digital forensics/Metadata analysis\n### Sprouts\n- Developing a 'signature' that only affects specific, high-value sensor models.\n- Creating payloads that corrupt the internal clock synchronization of captured data.\n### Evaluation\n#### Novelty +4\n95% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "operational-tempo-nullification-field-1da6f1c5",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "operational-tempo-nullification-field-1da6f1c5",
+          "title": "Operational Tempo Nullification Field",
+          "parent_ids": [
+            "directed-atmospheric-particle-veil-b6eeece7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/directed-atmospheric-particle-veil-a68efb08/directed-atmospheric-particle-veil-b6eeece7/operational-tempo-nullification-field-1da6f1c5/operational-tempo-nullification-field-1da6f1c5.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Operational Tempo Nullification Field\n\nprev_id: [[directed-atmospheric-particle-veil-b6eeece7]]\n\n## Trace\n### Case study · synopsis\n\nGenerating a localized plume of non-toxic, micro-particulate matter (e.g., tailored bio-luminescent dust or colloidal silica) at the air-yacht boundary layer that is invisible to the naked eye but achieves two things: 1) It destabilizes airborne photo/video capture; and 2) It creates a randomized diffraction pattern specifically designed to corrupt geometric depth mapping for drones.\n\n## Discovery\n### Finding 1\n\nStudies on cognitive load and decision fatigue in combat environments. → [[air-boundary-layer-thermo-psychological-0f36ebb6#^operational-tempo-nullification-field]]\n\n### Finding 2\n\nThe known reliance of intelligence analysis on pattern recognition heuristics. → [[air-boundary-layer-thermo-psychological-0f36ebb6#^operational-tempo-nullification-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe are being tracked by drones.\n### Deleted assumption\nThat the surveillance system requires continuous, uninterrupted data flow.\n### Hidden variable\nThe cognitive load and decision-making capacity of the human operator receiving the feed.\n### Actual problem\nForcing the opposing force into a state of operational paralysis via information overload.\n### Candidate response\nDeploy a low-power atmospheric field that generates subtle, non-physical sensory disturbances (e.g., localized, patterned changes in ambient temperature gradients or minute air pressure fluctuations). These patterns are specifically designed to trigger 'cognitive dissonance' alerts and force the drone operator/analyst to constantly recalibrate their assumptions about reality, leading to decision fatigue and mission abandonment.\n### Skin in the Game\n- Human factors engineering\n- Psychoacoustics (sub-audible frequencies)\n- Atmospheric physics modeling\n### Sprouts\n- Targeting the human operator's specific fatigue points (e.g., requiring constant cross-referencing of multiple, conflicting data streams).\n- Integrating the field with psychological profiles of known opposing forces.\n### Evaluation\n#### Novelty +4\n94% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
           "node_id": "the-encrypted-sensory-buffer-zone-f807c856",
           "case_id": "jack-drone-privacy-fd080117",
           "problem_recovery_id": "the-encrypted-sensory-buffer-zone-f807c856",
@@ -734,6 +589,156 @@
           "human_ratings": []
         },
         {
+          "node_id": "cognitive-overload-visual-field-covf-1669e6b6",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "cognitive-overload-visual-field-covf-1669e6b6",
+          "title": "Cognitive Overload Visual Field (COVF)",
+          "parent_ids": [
+            "localized-atmospheric-event-horizon-field-b1e6b9a2"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/localized-atmospheric-event-horizon-field-9d6db9d8/localized-atmospheric-event-horizon-field-b1e6b9a2/cognitive-overload-visual-field-covf-1669e6b6/cognitive-overload-visual-field-covf-1669e6b6.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Cognitive Overload Visual Field (COVF)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nStudies on prolonged exposure to flickering light sources and subsequent visual artifacts. → [[the-limits-of-sustained-c0b5ed04#^cognitive-overload-visual-field]]\n\n### Finding 2\n\nCognitive load metrics in real-time observation tasks. → [[the-limits-of-sustained-c0b5ed04#^cognitive-overload-visual-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nThe observer/camera system is an objective recorder.\n### Hidden variable\nHuman perceptual bandwidth and attention allocation limits.\n### Actual problem\nManipulating the subject's ability to maintain sustained, focused observation over time.\n### Candidate response\nAn atmospheric deployment utilizing low-frequency strobing particulates and localized ionization pulses designed not to distort light, but to induce transient visual artifacts (e.g., phosphenes or geometric moiré patterns) that force the observer's cognitive resources into constant state re-evaluation, making sustained attention impossible.\n### Skin in the Game\n- Neuroscience of pattern recognition\n- Optic nerve stimulation via ambient light modulation\n- Pattern generators for visual stress testing\n### Sprouts\n- Non-lethal distraction/disorientation tools\n- Targeted attention management in high-stakes environments\n- Optimizing information filtering processes.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "material-boundary-obfuscation-field-mbof-5ebdc707",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "material-boundary-obfuscation-field-mbof-5ebdc707",
+          "title": "Material Boundary Obfuscation Field (MBOF)",
+          "parent_ids": [
+            "localized-atmospheric-event-horizon-field-b1e6b9a2"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/localized-atmospheric-event-horizon-field-9d6db9d8/localized-atmospheric-event-horizon-field-b1e6b9a2/material-boundary-obfuscation-field-mbof-5ebdc707/material-boundary-obfuscation-field-mbof-5ebdc707.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 1,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Material Boundary Obfuscation Field (MBOF)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nKnown effects of atmospheric haze and fog on object delineation. → [[the-visual-distinction-between-f7529fb3#^material-boundary-obfuscation-field]]\n\n### Finding 2\n\nPrinciples of electrostatic adhesion and localized plasma generation. → [[the-visual-distinction-between-f7529fb3#^material-boundary-obfuscation-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nObjects maintain a consistent, discernible boundary in the air.\n### Hidden variable\nThe definition and integrity of object edges and boundaries within the medium.\n### Actual problem\nMaking it impossible to delineate where one physical object ends and another begins (boundary blurring).\n### Candidate response\nA deployment using highly specialized particulates that adhere electrostatically to surfaces and are charged by controlled ionization. These particles create a localized, semi-translucent 'halo' or fringe around all edges—yacht railings, people, objects—causing the perceived boundaries of every object to shimmer and blur continuously.\n### Skin in the Game\n- Electrostatic particle deposition\n- Edge detection algorithms in computer vision\n- Surface charge manipulation.\n### Sprouts\n- Anti-tracking systems for physical assets (e.g., containers, vehicles)\n- Tactical camouflage by boundary dissolution\n- Enhanced sensor fusion through edge mapping.\n### Evaluation\n#### Novelty +3\n72% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "stochastic-data-degradation-field-sdd-6dac76b9",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "stochastic-data-degradation-field-sdd-6dac76b9",
+          "title": "Stochastic Data Degradation Field (SDD)",
+          "parent_ids": [
+            "localized-atmospheric-event-horizon-field-b1e6b9a2"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/localized-atmospheric-event-horizon-field-9d6db9d8/localized-atmospheric-event-horizon-field-b1e6b9a2/stochastic-data-degradation-field-sdd-6dac76b9/stochastic-data-degradation-field-sdd-6dac76b9.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Stochastic Data Degradation Field (SDD)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nSignal processing degradation observed in high-speed video capture near thermal anomalies. → [[atmospheric-refractive-index-stability-2c5229c3#^stochastic-data-degradation-field]]\n\n### Finding 2\n\nComputational limits of real-time data stream stabilization. → [[atmospheric-refractive-index-stability-2c5229c3#^stochastic-data-degradation-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nThe camera sensor is the limiting factor in image quality.\n### Hidden variable\nInformation entropy rate within a localized volume.\n### Actual problem\nThe inability to stabilize and transmit high-fidelity, time-locked spatial datasets from dynamic environments.\n### Candidate response\nA targeted atmospheric deployment that uses micro-plasma jets and frequency-tuned particulates to induce random phase shifts in the refractive index gradient. This raises local information entropy, causing continuous data streams (video/LiDAR) to fail at predictable intervals of high noise floor or visual discontinuity.\n### Skin in the Game\n- Advanced computational fluid dynamics modeling\n- Non-linear optics research\n- High-speed sensor array calibration\n### Sprouts\n- Anti-forensic documentation countermeasures\n- Dynamic camouflage for data streams\n- Sensor overload testing protocols\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "cognitive-state-mapping-predictive-avoidance-516add7c",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "cognitive-state-mapping-predictive-avoidance-516add7c",
+          "title": "Cognitive State Mapping & Predictive Avoidance",
+          "parent_ids": [
+            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/psycho-acoustic-broadcast-frequency-interference-66e240ea/psycho-acoustic-broadcast-frequency-interference-324a95a7/cognitive-state-mapping-predictive-avoidance-516add7c/cognitive-state-mapping-predictive-avoidance-516add7c.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Cognitive State Mapping &amp; Predictive Avoidance\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nStudies on human performance degradation due to fatigue and sensory deprivation. → [[cognitive-science-hci-1ff1e1f5#^cognitive-state-mapping-predictive]]\n\n### Finding 2\n\nMilitary training simulations incorporating cognitive stressors. → [[cognitive-science-hci-1ff1e1f5#^cognitive-state-mapping-predictive]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat technical fixes (sensors, algorithms) are sufficient; the human element remains a variable.\n### Hidden variable\nThe synergistic interaction between observed physical instability and the operator's cognitive load/fatigue state.\n### Actual problem\nSystem failure due to poor operational decision-making under low-level psycho-acoustic stress, leading to critical error rates.\n### Candidate response\nIntegrate a module that continuously monitors human operators (via heart rate variability, eye tracking, and voice analysis) for signs of disorientation or cognitive strain correlated with the interference. When a high risk score is reached, the system autonomously mandates operational pauses, suggests mission profile changes, or takes temporary manual control to maintain safety.\n### Skin in the Game\n- Advanced physiological monitoring hardware (wearables)\n- AI-driven cognitive load assessment models\n- Human factors engineering protocols for high-stress environments.\n### Sprouts\n- Automated crew resource management in complex machinery.\n- Preemptive warning systems for human operators entering dangerous zones.\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "full-spectrum-data-entropy-analysis-47929e08",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "full-spectrum-data-entropy-analysis-47929e08",
+          "title": "Full Spectrum Data Entropy Analysis",
+          "parent_ids": [
+            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/psycho-acoustic-broadcast-frequency-interference-66e240ea/psycho-acoustic-broadcast-frequency-interference-324a95a7/full-spectrum-data-entropy-analysis-47929e08/full-spectrum-data-entropy-analysis-47929e08.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Full Spectrum Data Entropy Analysis\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nInformation theory applications in pattern recognition. → [[information-theory-computing-6b7afb36#^full-spectrum-data-entropy]]\n\n### Finding 2\n\nReal-world examples of sensor data corruption analysis. → [[information-theory-computing-6b7afb36#^full-spectrum-data-entropy]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat the system must maintain a continuous, low-entropy (stable) data stream to function optimally.\n### Hidden variable\nThe sudden increase in informational entropy within the sensor data packet due to external perturbation.\n### Actual problem\nThe inability of the processing pipeline to distinguish between genuinely chaotic environmental noise and engineered information corruption.\n### Candidate response\nInstead of attempting stabilization, the system should calculate a real-time 'Data Entropy Score' across all available data streams (visual, acoustic, inertial). A sudden, localized spike in entropy above a learned threshold immediately triggers an alert state and switches processing to predictive modeling based on prior stable states.\n### Skin in the Game\n- Advanced information theory metrics (e.g., Shannon Entropy)\n- Machine learning models trained on 'normal' operational data profiles\n- State-space prediction algorithms\n### Sprouts\n- Detecting intentional jamming across multiple communication bands.\n- Identifying system degradation before hardware failure.\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "non-visual-inertial-odometry-redundancy-125f7d99",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "non-visual-inertial-odometry-redundancy-125f7d99",
+          "title": "Non-Visual Inertial Odometry Redundancy",
+          "parent_ids": [
+            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/psycho-acoustic-broadcast-frequency-interference-66e240ea/psycho-acoustic-broadcast-frequency-interference-324a95a7/non-visual-inertial-odometry-redundancy-125f7d99/non-visual-inertial-odometry-redundancy-125f7d99.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Non-Visual Inertial Odometry Redundancy\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nMilitary-grade Inertial Navigation System (INS) principles. → [[physics-inertial-navigation-0c3b4f4a#^non-visual-inertial-odometry]]\n\n### Finding 2\n\nAerodynamics research on low-frequency air resistance. → [[physics-inertial-navigation-0c3b4f4a#^non-visual-inertial-odometry]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat the primary source of positional data must be the camera's visual input (VIO).\n### Hidden variable\nThe inherent coupling between low-frequency atmospheric disturbances and inertial measurement unit (IMU) drift rates.\n### Actual problem\nOver-reliance on Visual Inertial Odometry (VIO), which is highly susceptible to environmental noise that mimics positional change.\n### Candidate response\nImplement a redundant, self-contained navigation system based solely on relative inertial measurements (accelerometers and gyroscopes) calibrated against known atmospheric models. This 'Blind IMU' would track position changes independent of optical confirmation, using differential pressure readings to correct for drift caused by external forces like the infrasound.\n### Skin in the Game\n- High-grade Fiber Optic Gyroscopes (FOG)\n- Atmospheric drag modeling\n- Differential pressure correction loops\n### Sprouts\n- Navigation in complete GPS denial environments.\n- Improved stability for deep submersible applications.\n### Evaluation\n#### Novelty +4\n89% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
           "node_id": "the-operational-misdirection-geo-fencing-the-scandal-db8f130f",
           "case_id": "jack-drone-privacy-fd080117",
           "problem_recovery_id": "the-operational-misdirection-geo-fencing-the-scandal-db8f130f",
@@ -760,6 +765,306 @@
           "source_status": "imported",
           "kernel": "prime",
           "body": "# The Operational Misdirection (Geo-Fencing the Scandal)\n\nprev_id: [[jack-drone-privacy-fd080117]]\n\n## Trace\n### Case study · synopsis\n\nA celebrity's offshore yacht relied on being out of ordinary sight; that privacy assumption fails from above as paparazzi deploy drones.\n\n## Discovery\n### Finding 1\n\nHistory of maritime treaty law enforcement → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n### Finding 2\n\nIncreased regulatory scrutiny in busy ports (Signal: Increased port fees/permits) → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n### Finding 3\n\nAdoption of dynamic exclusion zones by militaries → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones photograph open decks before anyone can react.\n### Deleted assumption\nThat the yacht must remain in a single, fixed location for privacy to be maintained.\n### Hidden variable\nThe legal and logistical vulnerability of operating in specific, high-profile zones.\n### Actual problem\nCreating an operational profile that is legally ambiguous or logistically difficult for non-authorized commercial surveillance assets (drones/vessels) to track or operate within.\n### Candidate response\nEstablish a pre-approved, highly mobile 'operational zone' far from typical tourist paths and in waters requiring specialized permits (e.g., adjacent to military training areas or scientific monitoring zones). The yacht must maintain constant movement patterns that are difficult to predict and require continuous re-permitting/reporting, forcing surveillance assets into legal gray zones.\n### Skin in the Game\n- Maritime law and jurisdictional mapping\n- Advanced predictive modeling of maritime traffic\n- High-frequency operational agility training (crew)\n### Sprouts\n- Disaster zone triage/response protocols\n- Deep-sea scientific research vessel deployment\n- Autonomous, shifting commercial pipelines\n### Evaluation\n#### Novelty +4\n82% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "the-decompression-protocol-post-event-value-capture-54b8b21b",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "the-decompression-protocol-post-event-value-capture-54b8b21b",
+          "title": "The Decompression Protocol (Post-Event Value Capture)",
+          "parent_ids": [
+            "the-time-warp-event-protocol-5b0de374"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/the-time-warp-event-protocol-23e80476/the-time-warp-event-protocol-5b0de374/the-decompression-protocol-post-event-value-capture-54b8b21b/the-decompression-protocol-post-event-value-capture-54b8b21b.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# The Decompression Protocol (Post-Event Value Capture)\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nThe success of virtual reality memory reconstruction experiences. → [[digital-memory-technology-and-f214d552#^the-decompression-protocol-post]]\n\n### Finding 2\n\nSubscription models based on continuous content delivery (Spotify, Netflix). → [[digital-memory-technology-and-f214d552#^the-decompression-protocol-post]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat the primary value of the event must be realized *during* the physical gathering itself.\n### Hidden variable\nThe post-event memory encoding and social sharing mechanism, which is often more valuable than the raw moment.\n### Actual problem\nThe current model fails to capitalize on the emotional residue or 'afterglow' of the experience, allowing the event’s value proposition to dissipate immediately upon departure.\n### Candidate response\nStructure a mandatory post-event digital decompression period. Instead of just sending photos, deliver curated, hyper-personalized content packages (e.g., an AI-generated montage emphasizing moments *of transition* or shared laughter identified by body language analysis) that are designed for slow consumption over the next 48 hours, extending the emotional value curve.\n### Skin in the Game\n- Data Scientists\n- Post-Event Marketing Team\n### Sprouts\n- AI-driven 'Best Moment' curation based on biometric data (if available).\n- Interactive digital photo albums that require collaborative input.\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "the-dynamic-stasis-protocol-6d237e1c",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "the-dynamic-stasis-protocol-6d237e1c",
+          "title": "The Dynamic Stasis Protocol",
+          "parent_ids": [
+            "the-time-warp-event-protocol-5b0de374"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/the-time-warp-event-protocol-23e80476/the-time-warp-event-protocol-5b0de374/the-dynamic-stasis-protocol-6d237e1c/the-dynamic-stasis-protocol-6d237e1c.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# The Dynamic Stasis Protocol\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nViral content based on unexpected, rapid changes of scene or rule. → [[behavioral-psychology-and-shock-a0554865#^the-dynamic-stasis-protocol]]\n\n### Finding 2\n\nThe use of short, high-intensity 'jolt' marketing campaigns. → [[behavioral-psychology-and-shock-a0554865#^the-dynamic-stasis-protocol]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat all periods of low activity must be uniform, passive, and identical in structure.\n### Hidden variable\nThe novelty derived from the *variability* of constraint itself.\n### Actual problem\nThe 'Protocol Window' is too monolithic; its predictability leads to boredom and content fatigue, even if it successfully stops action.\n### Candidate response\nReplace single 15-minute windows with a sequence of rapidly alternating, micro-constrained periods (e.g., 3 minutes: mandated silence/sound recording; 2 minutes: mandatory eye contact with stranger; 4 minutes: observing only one color). The high variability increases the perceived novelty and difficulty of compliance.\n### Skin in the Game\n- Event Flow Directors\n- Sound Engineers\n### Sprouts\n- Micro-challenges requiring immediate behavioral shifts.\n- Content focused on rapid emotional/physical transitions.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "the-micro-sponsorship-opportunity-structural-integration-31c6d1b1",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "the-micro-sponsorship-opportunity-structural-integration-31c6d1b1",
+          "title": "The Micro-Sponsorship Opportunity (Structural Integration)",
+          "parent_ids": [
+            "the-time-warp-event-protocol-5b0de374"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/the-time-warp-event-protocol-23e80476/the-time-warp-event-protocol-5b0de374/the-micro-sponsorship-opportunity-structural-integration-31c6d1b1/the-micro-sponsorship-opportunity-structural-integration-31c6d1b1.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# The Micro-Sponsorship Opportunity (Structural Integration)\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nHigh cost of dedicated activation space at major festivals. → [[high-end-brand-activation-and-73eb9adc#^the-micro-sponsorship-opportunity]]\n\n### Finding 2\n\nThe rise of 'experience marketing' over simple banner ads. → [[high-end-brand-activation-and-73eb9adc#^the-micro-sponsorship-opportunity]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat the event experience must be perceived as purely organic or non-commercial to maintain authenticity.\n### Hidden variable\nThe willingness of premium brands to sponsor specific, controlled *moments* of low activity because those moments offer unique focus/attention metrics.\n### Actual problem\nThe current structure treats all sponsorship as a generalized 'fee,' failing to surgically integrate commercial value into the precise structural gaps (the windows) where attention is guaranteed but currently unstructured.\n### Candidate response\nDesign Protocol Windows specifically around micro-sponsorship activation. Example: The beverage sponsor owns the 15 minutes and provides guided sensory pairings that require guests to pause, observe, and interact with the product in a non-transactional way (e.g., 'Observe how the ambient light changes when paired with this specific flavor profile').\n### Skin in the Game\n- Corporate Sponsorship Sales Team\n- Experiential Marketing Agencies\n### Sprouts\n- Branded, highly controlled sensory stations.\n- Metrics for measuring focused interaction (dwell time, physical touchpoints).\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "breakout-the-meta-narrative-data-injection-95a7cf0f",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "breakout-the-meta-narrative-data-injection-95a7cf0f",
+          "title": "Breakout: The Meta-Narrative Data Injection",
+          "parent_ids": [
+            "controlled-data-garbage-release-protocol-a8b22a49"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/controlled-data-garbage-release-protocol-4b723875/controlled-data-garbage-release-protocol-a8b22a49/breakout-the-meta-narrative-data-injection-95a7cf0f/breakout-the-meta-narrative-data-injection-95a7cf0f.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Breakout: The Meta-Narrative Data Injection\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nAnalysis of how media coverage cycles prioritize dramatic theory over dry facts. → [[conspiracy-theory-structure-and-61d93ec6#^breakout-the-meta-narrative]]\n\n### Finding 2\n\nThe psychological appeal of structured speculation. → [[conspiracy-theory-structure-and-61d93ec6#^breakout-the-meta-narrative]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat the media treats leaked data as primary evidence.\n### Hidden variable\nThe public's susceptibility to highly dramatic, but ultimately meaningless, 'conspiracy theory' framing devices.\n### Actual problem\nBypassing factual analysis entirely by flooding the information space with structured *misinterpretation* frameworks.\n### Candidate response\nWe will leak data that is technically accurate but only when viewed through a series of hyper-dramatic, pseudo-scientific 'interpretive lenses' (e.g., linking fuel burn to deep-sea geothermal activity; correlating minor shifts in GPS coordinates with predicted geopolitical resource conflict zones). The sheer volume of these speculative connections creates an overwhelming meta-narrative that exhausts the media into repeating the theory itself.\n### Skin in the Game\n- A dedicated team of 'Narrative Theorists' (not scientists) to generate plausible, dramatic links.\n- Sophisticated automated tools for generating pseudo-academic sounding reports.\n### Sprouts\n- Creating a public 'Theory Compendium' that is intentionally overblown and theatrical.\n- Using the meta-narrative as the primary defense: 'It's not about the data; it's about the theory.' \n### Evaluation\n#### Novelty +4\n89% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 1 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "breakthrough-the-self-correcting-data-feed-loop-b7beb25c",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "breakthrough-the-self-correcting-data-feed-loop-b7beb25c",
+          "title": "Breakthrough: The Self-Correcting Data Feed Loop",
+          "parent_ids": [
+            "controlled-data-garbage-release-protocol-a8b22a49"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/controlled-data-garbage-release-protocol-4b723875/controlled-data-garbage-release-protocol-a8b22a49/breakthrough-the-self-correcting-data-feed-loop-b7beb25c/breakthrough-the-self-correcting-data-feed-loop-b7beb25c.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Breakthrough: The Self-Correcting Data Feed Loop\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nBehavioral patterns in social media trending topics (citation needed). → [[cybernetics-and-feedback-loop-3b790779#^breakthrough-the-self-correcting]]\n\n### Finding 2\n\nSystem design principles for stable, self-updating systems. → [[cybernetics-and-feedback-loop-3b790779#^breakthrough-the-self-correcting]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat the leaked data will remain static and external.\n### Hidden variable\nThe media's inherent tendency toward self-correction, requiring continuous input to maintain narrative momentum.\n### Actual problem\nCreating an artificial, self-sustaining ecosystem of 'benign updates' that requires constant community/media engagement to keep alive, thereby consuming their capacity for deep investigation.\n### Candidate response\nWe will leak data feeds that are designed not just to be benign, but to *predict* the next piece of benign data (e.g., Data Point A is always followed by a minor environmental shift B; this triggers an expected procedural adjustment C). This creates a closed-loop narrative where the media's job becomes simply predicting the next predictable step, making them active participants in generating noise rather than independent investigators.\n### Skin in the Game\n- A public-facing 'Predictive Feed' interface.\n- A network of controlled data sources that feed into each other sequentially.\n### Sprouts\n- Gamifying the information leak for media consumption ('Guess the Next Data Point').\n- Treating the media cycle as a predictable, iterative process we can control.\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 3 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "polymath-the-behavioral-economics-leak-efd5bac8",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "polymath-the-behavioral-economics-leak-efd5bac8",
+          "title": "Polymath: The Behavioral Economics Leak",
+          "parent_ids": [
+            "controlled-data-garbage-release-protocol-a8b22a49"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/controlled-data-garbage-release-protocol-4b723875/controlled-data-garbage-release-protocol-a8b22a49/polymath-the-behavioral-economics-leak-efd5bac8/polymath-the-behavioral-economics-leak-efd5bac8.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Polymath: The Behavioral Economics Leak\n\nprev_id: [[controlled-data-garbage-release-protocol-a8b22a49]]\n\n## Trace\n### Case study · synopsis\n\nIn preparation for the party, the yacht strategically leaks large volumes of highly benign, but identifiable, operational data onto secure (but non-secure) public data feeds/forums and local media channels. This data pertains to generalized maritime operations that are either overly detailed or slightly inaccurate, creating a persistent, low-level digital background narrative about the yacht's activities that is constantly being analyzed by *other* people (media, reporters). The goal is to generate so much predictable, trivial 'data noise' about the boat that any single scandalous photo becomes statistically irrelevant.\n\n## Discovery\n### Finding 1\n\nStudies on financial market panic triggered by ambiguous signals (cite behavioral finance). → [[behavioral-economics-loss-aversion-88fc68f1#^polymath-the-behavioral-economics]]\n\n### Finding 2\n\nThe viral nature of alarmist social media posts. → [[behavioral-economics-loss-aversion-88fc68f1#^polymath-the-behavioral-economics]]\n\n## Growth — Problem recovery\n### Surface complaint\nWe need to leak so much benign data that a scandal becomes noise.\n### Deleted assumption\nThat media attention is driven by objective truth or technical complexity.\n### Hidden variable\nThe predictable human reaction to perceived scarcity, risk, and social confirmation bias (FOMO/FOGO).\n### Actual problem\nManipulating the public's emotional response to data leaks, making them interpret neutral facts through a lens of manufactured alarm.\n### Candidate response\nWe will leak data that is entirely benign but strategically formatted to mimic signals of *risk* or *scarcity*. For example, releasing consumption rates paired with highly sensitive-sounding metrics (e.g., 'Resource X depletion rate approaching T-minus 72 hours') without ever defining Resource X. This triggers alarmist behavior and speculation in the public domain before any scandal can take root.\n### Skin in the Game\n- A behavioral economist consultant for leak framing.\n- Data visualizations that use color, urgency markers, and 'critical' language.\n### Sprouts\n- Developing a library of high-impact, low-specificity warning metrics.\n- Targeting social media influencers who specialize in alarming predictions.\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "blindside-the-metadata-corruption-backdoor-5054d980",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "blindside-the-metadata-corruption-backdoor-5054d980",
+          "title": "Blindside: The Metadata Corruption Backdoor",
+          "parent_ids": [
+            "subliminal-luminous-anti-camera-system-642cb93f"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/subliminal-luminous-anti-camera-system-3c3f6024/subliminal-luminous-anti-camera-system-642cb93f/blindside-the-metadata-corruption-backdoor-5054d980/blindside-the-metadata-corruption-backdoor-5054d980.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Blindside: The Metadata Corruption Backdoor\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nAnalysis of common camera firmware vulnerabilities. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n### Finding 2\n\nEmpirical testing showing metadata drift under controlled RF noise. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n### Finding 3\n\nUnderstanding the data flow path from sensor to memory chip. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos are blurry or corrupted.\n### Deleted assumption\nThat the physical image data (pixels) is the only point of failure.\n### Hidden variable\nThe dependency of modern digital images on accurate, unadulterated metadata (EXIF/IPTC) for processing and interpretation.\n### Actual problem\nExploiting a systemic vulnerability where external energy fields or specific low-frequency RF pulses interfere not with the photons themselves, but with the sensor’s internal clocking mechanism responsible for writing time stamps, GPS coordinates, and exposure metrics, rendering the image legally/computationally useless regardless of visual quality.\n### Candidate response\nDeploy a highly focused, ultra-low frequency (ULF) electromagnetic emitter array that pulses specific patterns designed to induce transient errors in the sensor's internal memory registers or processor handling the EXIF data packet. The resulting images are visually perfect but contain fundamentally corrupted time/location tags.\n### Skin in the Game\n- Digital forensics\n- Embedded systems security\n- Low-frequency RF communication theory\n### Sprouts\n- Developing a library of target camera firmware vulnerabilities.\n- Implementing variable corruption patterns (e.g., time drift, location jump).\n- Testing against non-standard metadata formats.\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "breakout-hyper-spectral-time-distortion-field-2e8a3fe3",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "breakout-hyper-spectral-time-distortion-field-2e8a3fe3",
+          "title": "Breakout: Hyper-Spectral Time Distortion Field",
+          "parent_ids": [
+            "subliminal-luminous-anti-camera-system-642cb93f"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/subliminal-luminous-anti-camera-system-3c3f6024/subliminal-luminous-anti-camera-system-642cb93f/breakout-hyper-spectral-time-distortion-field-2e8a3fe3/breakout-hyper-spectral-time-distortion-field-2e8a3fe3.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Breakout: Hyper-Spectral Time Distortion Field\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nTheoretical predictions of Casimir force manipulation. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n### Finding 2\n\nObserved extreme energy density phenomena. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n### Finding 3\n\nComputational modeling validating time-space curvature effects on photons. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos are blurry or corrupted.\n### Deleted assumption\nThat time, as perceived by a camera shutter, is instantaneous and linear.\n### Hidden variable\nThe ability to locally manipulate the effective duration of photon interaction with the sensor material (time dilation effect on photons).\n### Actual problem\nCreating a localized temporal field that artificially extends or compresses the apparent exposure window for captured light wavelengths other than visible spectrum, resulting in non-linear data capture.\n### Candidate response\nDeploy emitters generating exotic, high-energy Casimir force fields tuned to locally perturb the vacuum energy density within the immediate vicinity of the sensor. This creates a measurable temporal distortion bubble that alters the photon's perceived arrival rate during exposure.\n### Skin in the Game\n- Quantum Field Theory\n- Vacuum physics\n- High-energy plasma generation\n### Sprouts\n- Energy containment and dissipation modeling.\n- Testing feasibility at macro scale.\n- Developing a safety shutdown sequence based on field decay.\n### Evaluation\n#### Novelty +4\n91% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "temporal-sensor-desynchronization-array-74a9a8c1",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "temporal-sensor-desynchronization-array-74a9a8c1",
+          "title": "Temporal Sensor Desynchronization Array",
+          "parent_ids": [
+            "subliminal-luminous-anti-camera-system-642cb93f"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/subliminal-luminous-anti-camera-system-3c3f6024/subliminal-luminous-anti-camera-system-642cb93f/temporal-sensor-desynchronization-array-74a9a8c1/temporal-sensor-desynchronization-array-74a9a8c1.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Temporal Sensor Desynchronization Array\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nCamera manual specifications citing shutter speed limitations. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n### Finding 2\n\nPublished academic papers on EMI effects on image sensors. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n### Finding 3\n\nObserved data corruption patterns (streaks, moiré) under controlled test conditions. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos taken in this area are consistently blurry or corrupted.\n### Deleted assumption\nThat a digital camera sensor can capture light signals at an arbitrary rate, regardless of external interference.\n### Hidden variable\nThe specific temporal bandwidth and refresh cycle required for coherent pixel data acquisition (CCD/CMOS clock rates).\n### Actual problem\nThe lack of guaranteed spectral immunity in consumer-grade image sensors to controlled, high-frequency electromagnetic pulse patterns.\n### Candidate response\nInstall phased array emitters tuned precisely to the common capture frequency ranges (e.g., 120Hz - 500Hz) of major sensor manufacturers, emitting rapid, phase-shifted burst pulses in the near-UV band. This forces systematic pixel desynchronization and data packet loss during exposure.\n### Skin in the Game\n- Optical physics knowledge\n- RF engineering\n- Sensor datasheet analysis\n### Sprouts\n- Adaptive frequency hopping system (anti-countermeasure)\n- Spectral fingerprinting of target cameras\n- Low-power, high-density pulse generators\n### Evaluation\n#### Novelty +4\n81% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "emergency-scientific-deployment-zone-esdz-b91710cd",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "emergency-scientific-deployment-zone-esdz-b91710cd",
+          "title": "Emergency Scientific Deployment Zone (ESDZ)",
+          "parent_ids": [
+            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/emergency-scientific-deployment-zone-esdz-b91710cd/emergency-scientific-deployment-zone-esdz-b91710cd.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Emergency Scientific Deployment Zone (ESDZ)\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nInternational standards for defining exclusion zones during natural disasters (e.g., oil spills). → [[emergency-management-disaster-beab641a#^emergency-scientific-deployment-zone]]\n\n### Finding 2\n\nMilitary guidelines for establishing temporary danger areas at sea. → [[emergency-management-disaster-beab641a#^emergency-scientific-deployment-zone]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat 'unannounced testing' implies a stable, planned activity; that emergencies are always predictable.\n### Hidden variable\nThe ability to manufacture or simulate an acute, time-sensitive emergency requiring immediate and total exclusion of non-essential traffic.\n### Actual problem\nLack of a plausible, high-stakes pretext for instantaneous, unilateral zone declaration that cannot be challenged as merely 'convenient' timing.\n### Candidate response\nPreemptively equip the yacht with equipment capable of simulating a dangerous environmental or scientific anomaly (e.g., simulated methane seepage requiring immediate deep-sea monitoring, or a minor seismic event). The protocol is then declared an 'Emergency Scientific Deployment Zone,' legally mandating exclusion until the threat level passes verifiable stress tests. This shifts all attention to safety compliance.\n### Skin in the Game\n- Geotechnical engineers\n- Environmental hazard simulation specialists\n- Immediate, on-site technical assessment capability.\n### Sprouts\n- Using the simulated threat to justify the need for specialized, restricted personnel boarding.\n- Creating a detailed 'Incident Command Structure' that dictates all rules of engagement during the emergency period.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "media-immunity-treaty-protocol-mitp-9415e1f7",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "media-immunity-treaty-protocol-mitp-9415e1f7",
+          "title": "Media Immunity Treaty Protocol (MITP)",
+          "parent_ids": [
+            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/media-immunity-treaty-protocol-mitp-9415e1f7/media-immunity-treaty-protocol-mitp-9415e1f7.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": false,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Media Immunity Treaty Protocol (MITP)\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nCase law demonstrating defamation and invasion of privacy penalties in international courts. → [[international-media-law-3bd6843b#^media-immunity-treaty-protocol]]\n\n### Finding 2\n\nAnalysis of media coverage cycles showing rapid loss of interest after initial high-profile stories. → [[international-media-law-3bd6843b#^media-immunity-treaty-protocol]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat local law enforcement is the primary enforcer of boundaries; that media actors fear legal action more than public backlash.\n### Hidden variable\nThe leverage of reputation damage via pre-emptive contractual agreements with third parties (media/PR firms).\n### Actual problem\nLack of a mechanism to make unauthorized surveillance legally and financially toxic *before* the event occurs, making it irrational for the media to attempt intrusion.\n### Candidate response\nBefore arrival, engage specialized legal counsel to draft and pre-circulate a non-disclosure/non-intrusion agreement framework. This is not presented to authorities, but offered as an 'operational warning' to key press agencies and drone service providers: any violation will result in immediate, verifiable civil litigation for defamation, economic damage, and breach of contract on the part of the media entity itself.\n### Skin in the Game\n- High-profile legal defense team\n- Access to global PR crisis management firms\n- Pre-drafted boilerplate litigation documents.\n### Sprouts\n- Creating tiered penalty structures for different levels of intrusion (warning, drone flight, physical boarding).\n- Using the threat of legal action to enforce 'self-censorship' among media outlets.\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
+          "human_ratings": []
+        },
+        {
+          "node_id": "operational-necessity-pre-commitment-f02b3e85",
+          "case_id": "jack-drone-privacy-fd080117",
+          "problem_recovery_id": "operational-necessity-pre-commitment-f02b3e85",
+          "title": "Operational Necessity Pre-Commitment",
+          "parent_ids": [
+            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
+          ],
+          "child_ids": [],
+          "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/operational-necessity-pre-commitment-f02b3e85/operational-necessity-pre-commitment-f02b3e85.md",
+          "ledger_path": "ratings-ledger.json",
+          "stage": "problem_recovery",
+          "temporal": true,
+          "next": "doppl",
+          "scores": {
+            "judge": 2,
+            "human": null,
+            "n": 0
+          },
+          "source_type": "kernel",
+          "source_status": "imported",
+          "kernel": "prime",
+          "body": "# Operational Necessity Pre-Commitment\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nFunding structures for large international scientific collaborations (e.g., deep-sea mapping projects). → [[project-management-scientific-ee8b8c74#^operational-necessity-pre-commitment]]\n\n### Finding 2\n\nRegulatory requirements for handling sensitive environmental data. → [[project-management-scientific-ee8b8c74#^operational-necessity-pre-commitment]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat the authorities will care about *why* the research is happening; they only care that it *is* happening.\n### Hidden variable\nThe establishment of an unassailable, highly complex, and time-sensitive operational mandate that requires total isolation for completion.\n### Actual problem\nDifficulty in convincing external regulatory bodies that the activity being conducted is so mission-critical that any interruption would constitute a catastrophic failure (a 'need to fail' scenario).\n### Candidate response\nThe captain does not file an advisory; they submit a comprehensive, time-bound operational plan (e.g., deep ocean current mapping for climate modeling) requiring the presence of specialized, unaccredited international scientific personnel whose work is classified/hypothetical. The protocol then becomes: 'We must maintain total isolation until X data point is achieved, after which we resume normal operations.' This creates a measurable, non-negotiable deadline.\n### Skin in the Game\n- Scientific modeling expertise (climatology/oceanography)\n- Access to specialized scientific equipment (e.g., ADCPs)\n- A credible timeline with clear 'Go/No Go' decision points.\n### Sprouts\n- Creating a public-facing, highly technical data dashboard that justifies the isolation.\n- Structuring the mission to require multiple phases of increasing isolation severity.\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
           "human_ratings": []
         },
         {
@@ -826,7 +1131,9 @@
           "parent_ids": [
             "the-encrypted-sensory-buffer-zone-f807c856"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "chrono-scrambled-optics-coating-8b93eb72"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/chrono-scrambled-optics-coating-12073e6d/chrono-scrambled-optics-coating-12073e6d.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -851,7 +1158,9 @@
           "parent_ids": [
             "the-encrypted-sensory-buffer-zone-f807c856"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "cognitive-overload-signal-bloom-3d89de02"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/cognitive-overload-signal-bloom-0c92c6e8/cognitive-overload-signal-bloom-0c92c6e8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -876,7 +1185,9 @@
           "parent_ids": [
             "the-encrypted-sensory-buffer-zone-f807c856"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "directed-atmospheric-particle-veil-b6eeece7"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-encrypted-sensory-buffer-zone-f807c856/directed-atmospheric-particle-veil-a68efb08/directed-atmospheric-particle-veil-a68efb08.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -901,7 +1212,9 @@
           "parent_ids": [
             "the-operational-misdirection-geo-fencing-the-scandal-db8f130f"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "localized-atmospheric-event-horizon-field-b1e6b9a2"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/localized-atmospheric-event-horizon-field-9d6db9d8/localized-atmospheric-event-horizon-field-9d6db9d8.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -926,7 +1239,9 @@
           "parent_ids": [
             "the-operational-misdirection-geo-fencing-the-scandal-db8f130f"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/psycho-acoustic-broadcast-frequency-interference-66e240ea/psycho-acoustic-broadcast-frequency-interference-66e240ea.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -951,7 +1266,9 @@
           "parent_ids": [
             "the-operational-misdirection-geo-fencing-the-scandal-db8f130f"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "the-time-warp-event-protocol-5b0de374"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-operational-misdirection-geo-fencing-the-scandal-db8f130f/the-time-warp-event-protocol-23e80476/the-time-warp-event-protocol-23e80476.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -976,7 +1293,9 @@
           "parent_ids": [
             "the-stealth-deployment-vessel-the-false-flag-9881ae03"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "controlled-data-garbage-release-protocol-a8b22a49"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/controlled-data-garbage-release-protocol-4b723875/controlled-data-garbage-release-protocol-4b723875.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -1001,7 +1320,9 @@
           "parent_ids": [
             "the-stealth-deployment-vessel-the-false-flag-9881ae03"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "subliminal-luminous-anti-camera-system-642cb93f"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/subliminal-luminous-anti-camera-system-3c3f6024/subliminal-luminous-anti-camera-system-3c3f6024.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -1026,7 +1347,9 @@
           "parent_ids": [
             "the-stealth-deployment-vessel-the-false-flag-9881ae03"
           ],
-          "child_ids": [],
+          "child_ids": [
+            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
+          ],
           "source_path": "flow/jack-drone-privacy-fd080117/the-stealth-deployment-vessel-the-false-flag-9881ae03/the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab/the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab.md",
           "ledger_path": "ratings-ledger.json",
           "stage": "doppl",
@@ -1077,99 +1400,6 @@
         "source": "agarden"
       },
       "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "localized-atmospheric-event-horizon-field-b1e6b9a2",
-      "case_id": "localized-atmospheric-event-horizon-field-b1e6b9a2",
-      "title": "Localized Atmospheric 'Event Horizon' Field",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/localized-atmospheric-event-horizon-field-b1e6b9a2/localized-atmospheric-event-horizon-field-b1e6b9a2.md"
-      ],
-      "body": "# Localized Atmospheric 'Event Horizon' Field\n\nprev_id: [[localized-atmospheric-event-horizon-field-9d6db9d8]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "cognitive-overload-visual-field-covf-1669e6b6",
-          "case_id": "localized-atmospheric-event-horizon-field-b1e6b9a2",
-          "problem_recovery_id": "cognitive-overload-visual-field-covf-1669e6b6",
-          "title": "Cognitive Overload Visual Field (COVF)",
-          "parent_ids": [
-            "localized-atmospheric-event-horizon-field-b1e6b9a2"
-          ],
-          "child_ids": [],
-          "source_path": "flow/localized-atmospheric-event-horizon-field-b1e6b9a2/cognitive-overload-visual-field-covf-1669e6b6/cognitive-overload-visual-field-covf-1669e6b6.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Cognitive Overload Visual Field (COVF)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nStudies on prolonged exposure to flickering light sources and subsequent visual artifacts. → [[the-limits-of-sustained-c0b5ed04#^cognitive-overload-visual-field]]\n\n### Finding 2\n\nCognitive load metrics in real-time observation tasks. → [[the-limits-of-sustained-c0b5ed04#^cognitive-overload-visual-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nThe observer/camera system is an objective recorder.\n### Hidden variable\nHuman perceptual bandwidth and attention allocation limits.\n### Actual problem\nManipulating the subject's ability to maintain sustained, focused observation over time.\n### Candidate response\nAn atmospheric deployment utilizing low-frequency strobing particulates and localized ionization pulses designed not to distort light, but to induce transient visual artifacts (e.g., phosphenes or geometric moiré patterns) that force the observer's cognitive resources into constant state re-evaluation, making sustained attention impossible.\n### Skin in the Game\n- Neuroscience of pattern recognition\n- Optic nerve stimulation via ambient light modulation\n- Pattern generators for visual stress testing\n### Sprouts\n- Non-lethal distraction/disorientation tools\n- Targeted attention management in high-stakes environments\n- Optimizing information filtering processes.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "material-boundary-obfuscation-field-mbof-5ebdc707",
-          "case_id": "localized-atmospheric-event-horizon-field-b1e6b9a2",
-          "problem_recovery_id": "material-boundary-obfuscation-field-mbof-5ebdc707",
-          "title": "Material Boundary Obfuscation Field (MBOF)",
-          "parent_ids": [
-            "localized-atmospheric-event-horizon-field-b1e6b9a2"
-          ],
-          "child_ids": [],
-          "source_path": "flow/localized-atmospheric-event-horizon-field-b1e6b9a2/material-boundary-obfuscation-field-mbof-5ebdc707/material-boundary-obfuscation-field-mbof-5ebdc707.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 1,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Material Boundary Obfuscation Field (MBOF)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nKnown effects of atmospheric haze and fog on object delineation. → [[the-visual-distinction-between-f7529fb3#^material-boundary-obfuscation-field]]\n\n### Finding 2\n\nPrinciples of electrostatic adhesion and localized plasma generation. → [[the-visual-distinction-between-f7529fb3#^material-boundary-obfuscation-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nObjects maintain a consistent, discernible boundary in the air.\n### Hidden variable\nThe definition and integrity of object edges and boundaries within the medium.\n### Actual problem\nMaking it impossible to delineate where one physical object ends and another begins (boundary blurring).\n### Candidate response\nA deployment using highly specialized particulates that adhere electrostatically to surfaces and are charged by controlled ionization. These particles create a localized, semi-translucent 'halo' or fringe around all edges—yacht railings, people, objects—causing the perceived boundaries of every object to shimmer and blur continuously.\n### Skin in the Game\n- Electrostatic particle deposition\n- Edge detection algorithms in computer vision\n- Surface charge manipulation.\n### Sprouts\n- Anti-tracking systems for physical assets (e.g., containers, vehicles)\n- Tactical camouflage by boundary dissolution\n- Enhanced sensor fusion through edge mapping.\n### Evaluation\n#### Novelty +3\n72% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "stochastic-data-degradation-field-sdd-6dac76b9",
-          "case_id": "localized-atmospheric-event-horizon-field-b1e6b9a2",
-          "problem_recovery_id": "stochastic-data-degradation-field-sdd-6dac76b9",
-          "title": "Stochastic Data Degradation Field (SDD)",
-          "parent_ids": [
-            "localized-atmospheric-event-horizon-field-b1e6b9a2"
-          ],
-          "child_ids": [],
-          "source_path": "flow/localized-atmospheric-event-horizon-field-b1e6b9a2/stochastic-data-degradation-field-sdd-6dac76b9/stochastic-data-degradation-field-sdd-6dac76b9.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Stochastic Data Degradation Field (SDD)\n\nprev_id: [[localized-atmospheric-event-horizon-field-b1e6b9a2]]\n\n## Trace\n### Case study · synopsis\n\nA localized atmospheric deployment that utilizes a combination of highly directional, extremely low-energy particulates and carefully controlled air ionization to create a momentary visual lensing effect. This doesn't block the image; instead, it causes transient optical distortion (miniature mirages or heat shimmer), making the exact perceived boundaries and objects on the yacht temporarily unstable or difficult for continuous capture.\n\n## Discovery\n### Finding 1\n\nSignal processing degradation observed in high-speed video capture near thermal anomalies. → [[atmospheric-refractive-index-stability-2c5229c3#^stochastic-data-degradation-field]]\n\n### Finding 2\n\nComputational limits of real-time data stream stabilization. → [[atmospheric-refractive-index-stability-2c5229c3#^stochastic-data-degradation-field]]\n\n## Growth — Problem recovery\n### Surface complaint\nDifficulty for continuous capture of stable visual data.\n### Deleted assumption\nThe camera sensor is the limiting factor in image quality.\n### Hidden variable\nInformation entropy rate within a localized volume.\n### Actual problem\nThe inability to stabilize and transmit high-fidelity, time-locked spatial datasets from dynamic environments.\n### Candidate response\nA targeted atmospheric deployment that uses micro-plasma jets and frequency-tuned particulates to induce random phase shifts in the refractive index gradient. This raises local information entropy, causing continuous data streams (video/LiDAR) to fail at predictable intervals of high noise floor or visual discontinuity.\n### Skin in the Game\n- Advanced computational fluid dynamics modeling\n- Non-linear optics research\n- High-speed sensor array calibration\n### Sprouts\n- Anti-forensic documentation countermeasures\n- Dynamic camouflage for data streams\n- Sensor overload testing protocols\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
       "solutions": []
     },
     {
@@ -1258,99 +1488,6 @@
       "solutions": []
     },
     {
-      "node_id": "psycho-acoustic-broadcast-frequency-interference-324a95a7",
-      "case_id": "psycho-acoustic-broadcast-frequency-interference-324a95a7",
-      "title": "Psycho-Acoustic Broadcast Frequency Interference",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/psycho-acoustic-broadcast-frequency-interference-324a95a7/psycho-acoustic-broadcast-frequency-interference-324a95a7.md"
-      ],
-      "body": "# Psycho-Acoustic Broadcast Frequency Interference\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-66e240ea]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "cognitive-state-mapping-predictive-avoidance-516add7c",
-          "case_id": "psycho-acoustic-broadcast-frequency-interference-324a95a7",
-          "problem_recovery_id": "cognitive-state-mapping-predictive-avoidance-516add7c",
-          "title": "Cognitive State Mapping & Predictive Avoidance",
-          "parent_ids": [
-            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/psycho-acoustic-broadcast-frequency-interference-324a95a7/cognitive-state-mapping-predictive-avoidance-516add7c/cognitive-state-mapping-predictive-avoidance-516add7c.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Cognitive State Mapping &amp; Predictive Avoidance\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nStudies on human performance degradation due to fatigue and sensory deprivation. → [[cognitive-science-hci-1ff1e1f5#^cognitive-state-mapping-predictive]]\n\n### Finding 2\n\nMilitary training simulations incorporating cognitive stressors. → [[cognitive-science-hci-1ff1e1f5#^cognitive-state-mapping-predictive]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat technical fixes (sensors, algorithms) are sufficient; the human element remains a variable.\n### Hidden variable\nThe synergistic interaction between observed physical instability and the operator's cognitive load/fatigue state.\n### Actual problem\nSystem failure due to poor operational decision-making under low-level psycho-acoustic stress, leading to critical error rates.\n### Candidate response\nIntegrate a module that continuously monitors human operators (via heart rate variability, eye tracking, and voice analysis) for signs of disorientation or cognitive strain correlated with the interference. When a high risk score is reached, the system autonomously mandates operational pauses, suggests mission profile changes, or takes temporary manual control to maintain safety.\n### Skin in the Game\n- Advanced physiological monitoring hardware (wearables)\n- AI-driven cognitive load assessment models\n- Human factors engineering protocols for high-stress environments.\n### Sprouts\n- Automated crew resource management in complex machinery.\n- Preemptive warning systems for human operators entering dangerous zones.\n### Evaluation\n#### Novelty +4\n86% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "full-spectrum-data-entropy-analysis-47929e08",
-          "case_id": "psycho-acoustic-broadcast-frequency-interference-324a95a7",
-          "problem_recovery_id": "full-spectrum-data-entropy-analysis-47929e08",
-          "title": "Full Spectrum Data Entropy Analysis",
-          "parent_ids": [
-            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/psycho-acoustic-broadcast-frequency-interference-324a95a7/full-spectrum-data-entropy-analysis-47929e08/full-spectrum-data-entropy-analysis-47929e08.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Full Spectrum Data Entropy Analysis\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nInformation theory applications in pattern recognition. → [[information-theory-computing-6b7afb36#^full-spectrum-data-entropy]]\n\n### Finding 2\n\nReal-world examples of sensor data corruption analysis. → [[information-theory-computing-6b7afb36#^full-spectrum-data-entropy]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat the system must maintain a continuous, low-entropy (stable) data stream to function optimally.\n### Hidden variable\nThe sudden increase in informational entropy within the sensor data packet due to external perturbation.\n### Actual problem\nThe inability of the processing pipeline to distinguish between genuinely chaotic environmental noise and engineered information corruption.\n### Candidate response\nInstead of attempting stabilization, the system should calculate a real-time 'Data Entropy Score' across all available data streams (visual, acoustic, inertial). A sudden, localized spike in entropy above a learned threshold immediately triggers an alert state and switches processing to predictive modeling based on prior stable states.\n### Skin in the Game\n- Advanced information theory metrics (e.g., Shannon Entropy)\n- Machine learning models trained on 'normal' operational data profiles\n- State-space prediction algorithms\n### Sprouts\n- Detecting intentional jamming across multiple communication bands.\n- Identifying system degradation before hardware failure.\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "non-visual-inertial-odometry-redundancy-125f7d99",
-          "case_id": "psycho-acoustic-broadcast-frequency-interference-324a95a7",
-          "problem_recovery_id": "non-visual-inertial-odometry-redundancy-125f7d99",
-          "title": "Non-Visual Inertial Odometry Redundancy",
-          "parent_ids": [
-            "psycho-acoustic-broadcast-frequency-interference-324a95a7"
-          ],
-          "child_ids": [],
-          "source_path": "flow/psycho-acoustic-broadcast-frequency-interference-324a95a7/non-visual-inertial-odometry-redundancy-125f7d99/non-visual-inertial-odometry-redundancy-125f7d99.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Non-Visual Inertial Odometry Redundancy\n\nprev_id: [[psycho-acoustic-broadcast-frequency-interference-324a95a7]]\n\n## Trace\n### Case study · synopsis\n\nUtilizing a low-power, directional acoustic transmitter that broadcasts specific, ultra-low frequency (infrasound) tones below the threshold of conscious hearing but known to affect human equilibrium and peripheral vision. This causes subtle disorientation or 'visual flicker' in drone camera lenses operating on optical stabilization algorithms.\n\n## Discovery\n### Finding 1\n\nMilitary-grade Inertial Navigation System (INS) principles. → [[physics-inertial-navigation-0c3b4f4a#^non-visual-inertial-odometry]]\n\n### Finding 2\n\nAerodynamics research on low-frequency air resistance. → [[physics-inertial-navigation-0c3b4f4a#^non-visual-inertial-odometry]]\n\n## Growth — Problem recovery\n### Surface complaint\nInfrasound causes visual flicker in drone optical stabilization.\n### Deleted assumption\nThat the primary source of positional data must be the camera's visual input (VIO).\n### Hidden variable\nThe inherent coupling between low-frequency atmospheric disturbances and inertial measurement unit (IMU) drift rates.\n### Actual problem\nOver-reliance on Visual Inertial Odometry (VIO), which is highly susceptible to environmental noise that mimics positional change.\n### Candidate response\nImplement a redundant, self-contained navigation system based solely on relative inertial measurements (accelerometers and gyroscopes) calibrated against known atmospheric models. This 'Blind IMU' would track position changes independent of optical confirmation, using differential pressure readings to correct for drift caused by external forces like the infrasound.\n### Skin in the Game\n- High-grade Fiber Optic Gyroscopes (FOG)\n- Atmospheric drag modeling\n- Differential pressure correction loops\n### Sprouts\n- Navigation in complete GPS denial environments.\n- Improved stability for deep submersible applications.\n### Evaluation\n#### Novelty +4\n89% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
-      "solutions": []
-    },
-    {
       "node_id": "review-at-agent-speed-d68163b9",
       "case_id": "review-at-agent-speed-d68163b9",
       "title": "The Pull Request No One Has Time To Read",
@@ -1436,99 +1573,6 @@
       "solutions": []
     },
     {
-      "node_id": "subliminal-luminous-anti-camera-system-642cb93f",
-      "case_id": "subliminal-luminous-anti-camera-system-642cb93f",
-      "title": "Subliminal Luminous Anti-Camera System",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/subliminal-luminous-anti-camera-system-642cb93f/subliminal-luminous-anti-camera-system-642cb93f.md"
-      ],
-      "body": "# Subliminal Luminous Anti-Camera System\n\nprev_id: [[subliminal-luminous-anti-camera-system-3c3f6024]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "blindside-the-metadata-corruption-backdoor-5054d980",
-          "case_id": "subliminal-luminous-anti-camera-system-642cb93f",
-          "problem_recovery_id": "blindside-the-metadata-corruption-backdoor-5054d980",
-          "title": "Blindside: The Metadata Corruption Backdoor",
-          "parent_ids": [
-            "subliminal-luminous-anti-camera-system-642cb93f"
-          ],
-          "child_ids": [],
-          "source_path": "flow/subliminal-luminous-anti-camera-system-642cb93f/blindside-the-metadata-corruption-backdoor-5054d980/blindside-the-metadata-corruption-backdoor-5054d980.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Blindside: The Metadata Corruption Backdoor\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nAnalysis of common camera firmware vulnerabilities. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n### Finding 2\n\nEmpirical testing showing metadata drift under controlled RF noise. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n### Finding 3\n\nUnderstanding the data flow path from sensor to memory chip. → [[digital-signal-processing-and-c69bd5d8#^blindside-the-metadata-corruption]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos are blurry or corrupted.\n### Deleted assumption\nThat the physical image data (pixels) is the only point of failure.\n### Hidden variable\nThe dependency of modern digital images on accurate, unadulterated metadata (EXIF/IPTC) for processing and interpretation.\n### Actual problem\nExploiting a systemic vulnerability where external energy fields or specific low-frequency RF pulses interfere not with the photons themselves, but with the sensor’s internal clocking mechanism responsible for writing time stamps, GPS coordinates, and exposure metrics, rendering the image legally/computationally useless regardless of visual quality.\n### Candidate response\nDeploy a highly focused, ultra-low frequency (ULF) electromagnetic emitter array that pulses specific patterns designed to induce transient errors in the sensor's internal memory registers or processor handling the EXIF data packet. The resulting images are visually perfect but contain fundamentally corrupted time/location tags.\n### Skin in the Game\n- Digital forensics\n- Embedded systems security\n- Low-frequency RF communication theory\n### Sprouts\n- Developing a library of target camera firmware vulnerabilities.\n- Implementing variable corruption patterns (e.g., time drift, location jump).\n- Testing against non-standard metadata formats.\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 2 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "breakout-hyper-spectral-time-distortion-field-2e8a3fe3",
-          "case_id": "subliminal-luminous-anti-camera-system-642cb93f",
-          "problem_recovery_id": "breakout-hyper-spectral-time-distortion-field-2e8a3fe3",
-          "title": "Breakout: Hyper-Spectral Time Distortion Field",
-          "parent_ids": [
-            "subliminal-luminous-anti-camera-system-642cb93f"
-          ],
-          "child_ids": [],
-          "source_path": "flow/subliminal-luminous-anti-camera-system-642cb93f/breakout-hyper-spectral-time-distortion-field-2e8a3fe3/breakout-hyper-spectral-time-distortion-field-2e8a3fe3.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Breakout: Hyper-Spectral Time Distortion Field\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nTheoretical predictions of Casimir force manipulation. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n### Finding 2\n\nObserved extreme energy density phenomena. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n### Finding 3\n\nComputational modeling validating time-space curvature effects on photons. → [[quantum-electrodynamics-qed-eae3be4a#^breakout-hyper-spectral-time]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos are blurry or corrupted.\n### Deleted assumption\nThat time, as perceived by a camera shutter, is instantaneous and linear.\n### Hidden variable\nThe ability to locally manipulate the effective duration of photon interaction with the sensor material (time dilation effect on photons).\n### Actual problem\nCreating a localized temporal field that artificially extends or compresses the apparent exposure window for captured light wavelengths other than visible spectrum, resulting in non-linear data capture.\n### Candidate response\nDeploy emitters generating exotic, high-energy Casimir force fields tuned to locally perturb the vacuum energy density within the immediate vicinity of the sensor. This creates a measurable temporal distortion bubble that alters the photon's perceived arrival rate during exposure.\n### Skin in the Game\n- Quantum Field Theory\n- Vacuum physics\n- High-energy plasma generation\n### Sprouts\n- Energy containment and dissipation modeling.\n- Testing feasibility at macro scale.\n- Developing a safety shutdown sequence based on field decay.\n### Evaluation\n#### Novelty +4\n91% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "temporal-sensor-desynchronization-array-74a9a8c1",
-          "case_id": "subliminal-luminous-anti-camera-system-642cb93f",
-          "problem_recovery_id": "temporal-sensor-desynchronization-array-74a9a8c1",
-          "title": "Temporal Sensor Desynchronization Array",
-          "parent_ids": [
-            "subliminal-luminous-anti-camera-system-642cb93f"
-          ],
-          "child_ids": [],
-          "source_path": "flow/subliminal-luminous-anti-camera-system-642cb93f/temporal-sensor-desynchronization-array-74a9a8c1/temporal-sensor-desynchronization-array-74a9a8c1.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Temporal Sensor Desynchronization Array\n\nprev_id: [[subliminal-luminous-anti-camera-system-642cb93f]]\n\n## Trace\n### Case study · synopsis\n\nInstall specialized external lighting arrays (under the decks and along railings) that emit rapid, low-intensity, rapidly shifting patterns of non-visible spectrum light (e.g., infrared or UV) coupled with specific stroboscopic frequencies designed to interfere specifically with image sensor CCD/CMOS capture rates, rendering the photos blurry, overexposed, or corrupted in a way that is undetectable by human eye.\n\n## Discovery\n### Finding 1\n\nCamera manual specifications citing shutter speed limitations. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n### Finding 2\n\nPublished academic papers on EMI effects on image sensors. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n### Finding 3\n\nObserved data corruption patterns (streaks, moiré) under controlled test conditions. → [[electromagnetic-interference-emi-princip-ec7831cc#^temporal-sensor-desynchronization-array]]\n\n## Growth — Problem recovery\n### Surface complaint\nPhotos taken in this area are consistently blurry or corrupted.\n### Deleted assumption\nThat a digital camera sensor can capture light signals at an arbitrary rate, regardless of external interference.\n### Hidden variable\nThe specific temporal bandwidth and refresh cycle required for coherent pixel data acquisition (CCD/CMOS clock rates).\n### Actual problem\nThe lack of guaranteed spectral immunity in consumer-grade image sensors to controlled, high-frequency electromagnetic pulse patterns.\n### Candidate response\nInstall phased array emitters tuned precisely to the common capture frequency ranges (e.g., 120Hz - 500Hz) of major sensor manufacturers, emitting rapid, phase-shifted burst pulses in the near-UV band. This forces systematic pixel desynchronization and data packet loss during exposure.\n### Skin in the Game\n- Optical physics knowledge\n- RF engineering\n- Sensor datasheet analysis\n### Sprouts\n- Adaptive frequency hopping system (anti-countermeasure)\n- Spectral fingerprinting of target cameras\n- Low-power, high-density pulse generators\n### Evaluation\n#### Novelty +4\n81% of language absent from the seed; 1 dependency markers.\n#### Grounding +3\n3 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
-      "solutions": []
-    },
-    {
       "node_id": "synced-dev-state-086db5ce",
       "case_id": "synced-dev-state-086db5ce",
       "title": "The Development Folder That Is Not A Folder",
@@ -1560,99 +1604,6 @@
         "source": "agarden"
       },
       "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582",
-      "case_id": "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582",
-      "title": "The Induced 'Pre-Emptive Privacy Zone' Protocol",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582.md"
-      ],
-      "body": "# The Induced 'Pre-Emptive Privacy Zone' Protocol\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-3f7e9dab]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "emergency-scientific-deployment-zone-esdz-b91710cd",
-          "case_id": "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582",
-          "problem_recovery_id": "emergency-scientific-deployment-zone-esdz-b91710cd",
-          "title": "Emergency Scientific Deployment Zone (ESDZ)",
-          "parent_ids": [
-            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/emergency-scientific-deployment-zone-esdz-b91710cd/emergency-scientific-deployment-zone-esdz-b91710cd.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Emergency Scientific Deployment Zone (ESDZ)\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nInternational standards for defining exclusion zones during natural disasters (e.g., oil spills). → [[emergency-management-disaster-beab641a#^emergency-scientific-deployment-zone]]\n\n### Finding 2\n\nMilitary guidelines for establishing temporary danger areas at sea. → [[emergency-management-disaster-beab641a#^emergency-scientific-deployment-zone]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat 'unannounced testing' implies a stable, planned activity; that emergencies are always predictable.\n### Hidden variable\nThe ability to manufacture or simulate an acute, time-sensitive emergency requiring immediate and total exclusion of non-essential traffic.\n### Actual problem\nLack of a plausible, high-stakes pretext for instantaneous, unilateral zone declaration that cannot be challenged as merely 'convenient' timing.\n### Candidate response\nPreemptively equip the yacht with equipment capable of simulating a dangerous environmental or scientific anomaly (e.g., simulated methane seepage requiring immediate deep-sea monitoring, or a minor seismic event). The protocol is then declared an 'Emergency Scientific Deployment Zone,' legally mandating exclusion until the threat level passes verifiable stress tests. This shifts all attention to safety compliance.\n### Skin in the Game\n- Geotechnical engineers\n- Environmental hazard simulation specialists\n- Immediate, on-site technical assessment capability.\n### Sprouts\n- Using the simulated threat to justify the need for specialized, restricted personnel boarding.\n- Creating a detailed 'Incident Command Structure' that dictates all rules of engagement during the emergency period.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "media-immunity-treaty-protocol-mitp-9415e1f7",
-          "case_id": "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582",
-          "problem_recovery_id": "media-immunity-treaty-protocol-mitp-9415e1f7",
-          "title": "Media Immunity Treaty Protocol (MITP)",
-          "parent_ids": [
-            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/media-immunity-treaty-protocol-mitp-9415e1f7/media-immunity-treaty-protocol-mitp-9415e1f7.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Media Immunity Treaty Protocol (MITP)\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nCase law demonstrating defamation and invasion of privacy penalties in international courts. → [[international-media-law-3bd6843b#^media-immunity-treaty-protocol]]\n\n### Finding 2\n\nAnalysis of media coverage cycles showing rapid loss of interest after initial high-profile stories. → [[international-media-law-3bd6843b#^media-immunity-treaty-protocol]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat local law enforcement is the primary enforcer of boundaries; that media actors fear legal action more than public backlash.\n### Hidden variable\nThe leverage of reputation damage via pre-emptive contractual agreements with third parties (media/PR firms).\n### Actual problem\nLack of a mechanism to make unauthorized surveillance legally and financially toxic *before* the event occurs, making it irrational for the media to attempt intrusion.\n### Candidate response\nBefore arrival, engage specialized legal counsel to draft and pre-circulate a non-disclosure/non-intrusion agreement framework. This is not presented to authorities, but offered as an 'operational warning' to key press agencies and drone service providers: any violation will result in immediate, verifiable civil litigation for defamation, economic damage, and breach of contract on the part of the media entity itself.\n### Skin in the Game\n- High-profile legal defense team\n- Access to global PR crisis management firms\n- Pre-drafted boilerplate litigation documents.\n### Sprouts\n- Creating tiered penalty structures for different levels of intrusion (warning, drone flight, physical boarding).\n- Using the threat of legal action to enforce 'self-censorship' among media outlets.\n### Evaluation\n#### Novelty +4\n87% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "operational-necessity-pre-commitment-f02b3e85",
-          "case_id": "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582",
-          "problem_recovery_id": "operational-necessity-pre-commitment-f02b3e85",
-          "title": "Operational Necessity Pre-Commitment",
-          "parent_ids": [
-            "the-induced-pre-emptive-privacy-zone-protocol-b6ce1582"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-induced-pre-emptive-privacy-zone-protocol-b6ce1582/operational-necessity-pre-commitment-f02b3e85/operational-necessity-pre-commitment-f02b3e85.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# Operational Necessity Pre-Commitment\n\nprev_id: [[the-induced-pre-emptive-privacy-zone-protocol-b6ce1582]]\n\n## Trace\n### Case study · synopsis\n\nBefore guests arrive, the captain files an advisory with local authorities and private patrol services declaring the yacht's temporary location as a mandatory 'Research/Monitoring Isolation Zone' due to unannounced scientific testing or filming. This grants legitimate, immediate grounds for requiring non-essential vessels (and therefore paparazzi drones) to maintain extreme distance.\n\n## Discovery\n### Finding 1\n\nFunding structures for large international scientific collaborations (e.g., deep-sea mapping projects). → [[project-management-scientific-ee8b8c74#^operational-necessity-pre-commitment]]\n\n### Finding 2\n\nRegulatory requirements for handling sensitive environmental data. → [[project-management-scientific-ee8b8c74#^operational-necessity-pre-commitment]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones and non-essential vessels infringe upon the yacht's private space, disrupting privacy.\n### Deleted assumption\nThat the authorities will care about *why* the research is happening; they only care that it *is* happening.\n### Hidden variable\nThe establishment of an unassailable, highly complex, and time-sensitive operational mandate that requires total isolation for completion.\n### Actual problem\nDifficulty in convincing external regulatory bodies that the activity being conducted is so mission-critical that any interruption would constitute a catastrophic failure (a 'need to fail' scenario).\n### Candidate response\nThe captain does not file an advisory; they submit a comprehensive, time-bound operational plan (e.g., deep ocean current mapping for climate modeling) requiring the presence of specialized, unaccredited international scientific personnel whose work is classified/hypothetical. The protocol then becomes: 'We must maintain total isolation until X data point is achieved, after which we resume normal operations.' This creates a measurable, non-negotiable deadline.\n### Skin in the Game\n- Scientific modeling expertise (climatology/oceanography)\n- Access to specialized scientific equipment (e.g., ADCPs)\n- A credible timeline with clear 'Go/No Go' decision points.\n### Sprouts\n- Creating a public-facing, highly technical data dashboard that justifies the isolation.\n- Structuring the mission to require multiple phases of increasing isolation severity.\n### Evaluation\n#### Novelty +4\n84% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
       "solutions": []
     },
     {
@@ -1704,99 +1655,6 @@
         "source": "agarden"
       },
       "problem_recoveries": [],
-      "solutions": []
-    },
-    {
-      "node_id": "the-time-warp-event-protocol-5b0de374",
-      "case_id": "the-time-warp-event-protocol-5b0de374",
-      "title": "The Time-Warp Event Protocol",
-      "source_kind": "agarden",
-      "visibility": "internal",
-      "source_paths": [
-        "flow/the-time-warp-event-protocol-5b0de374/the-time-warp-event-protocol-5b0de374.md"
-      ],
-      "body": "# The Time-Warp Event Protocol\n\nprev_id: [[the-time-warp-event-protocol-23e80476]]\n\n## Context\n\nReseeded from a doppl leaf — the unlock becomes the seed of a new island.\n\n## Synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.",
-      "problem": {
-        "body": "Reseeded from a doppl leaf — the unlock becomes the seed of a new island.",
-        "source": "agarden"
-      },
-      "problem_recoveries": [
-        {
-          "node_id": "the-decompression-protocol-post-event-value-capture-54b8b21b",
-          "case_id": "the-time-warp-event-protocol-5b0de374",
-          "problem_recovery_id": "the-decompression-protocol-post-event-value-capture-54b8b21b",
-          "title": "The Decompression Protocol (Post-Event Value Capture)",
-          "parent_ids": [
-            "the-time-warp-event-protocol-5b0de374"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-time-warp-event-protocol-5b0de374/the-decompression-protocol-post-event-value-capture-54b8b21b/the-decompression-protocol-post-event-value-capture-54b8b21b.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": false,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# The Decompression Protocol (Post-Event Value Capture)\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nThe success of virtual reality memory reconstruction experiences. → [[digital-memory-technology-and-f214d552#^the-decompression-protocol-post]]\n\n### Finding 2\n\nSubscription models based on continuous content delivery (Spotify, Netflix). → [[digital-memory-technology-and-f214d552#^the-decompression-protocol-post]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat the primary value of the event must be realized *during* the physical gathering itself.\n### Hidden variable\nThe post-event memory encoding and social sharing mechanism, which is often more valuable than the raw moment.\n### Actual problem\nThe current model fails to capitalize on the emotional residue or 'afterglow' of the experience, allowing the event’s value proposition to dissipate immediately upon departure.\n### Candidate response\nStructure a mandatory post-event digital decompression period. Instead of just sending photos, deliver curated, hyper-personalized content packages (e.g., an AI-generated montage emphasizing moments *of transition* or shared laughter identified by body language analysis) that are designed for slow consumption over the next 48 hours, extending the emotional value curve.\n### Skin in the Game\n- Data Scientists\n- Post-Event Marketing Team\n### Sprouts\n- AI-driven 'Best Moment' curation based on biometric data (if available).\n- Interactive digital photo albums that require collaborative input.\n### Evaluation\n#### Novelty +4\n88% of language absent from the seed; 0 dependency markers.\n#### Grounding +2\n2 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "the-dynamic-stasis-protocol-6d237e1c",
-          "case_id": "the-time-warp-event-protocol-5b0de374",
-          "problem_recovery_id": "the-dynamic-stasis-protocol-6d237e1c",
-          "title": "The Dynamic Stasis Protocol",
-          "parent_ids": [
-            "the-time-warp-event-protocol-5b0de374"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-time-warp-event-protocol-5b0de374/the-dynamic-stasis-protocol-6d237e1c/the-dynamic-stasis-protocol-6d237e1c.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# The Dynamic Stasis Protocol\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nViral content based on unexpected, rapid changes of scene or rule. → [[behavioral-psychology-and-shock-a0554865#^the-dynamic-stasis-protocol]]\n\n### Finding 2\n\nThe use of short, high-intensity 'jolt' marketing campaigns. → [[behavioral-psychology-and-shock-a0554865#^the-dynamic-stasis-protocol]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat all periods of low activity must be uniform, passive, and identical in structure.\n### Hidden variable\nThe novelty derived from the *variability* of constraint itself.\n### Actual problem\nThe 'Protocol Window' is too monolithic; its predictability leads to boredom and content fatigue, even if it successfully stops action.\n### Candidate response\nReplace single 15-minute windows with a sequence of rapidly alternating, micro-constrained periods (e.g., 3 minutes: mandated silence/sound recording; 2 minutes: mandatory eye contact with stranger; 4 minutes: observing only one color). The high variability increases the perceived novelty and difficulty of compliance.\n### Skin in the Game\n- Event Flow Directors\n- Sound Engineers\n### Sprouts\n- Micro-challenges requiring immediate behavioral shifts.\n- Content focused on rapid emotional/physical transitions.\n### Evaluation\n#### Novelty +4\n83% of language absent from the seed; 1 dependency markers.\n#### Grounding +2\n2 evidence item(s); 2 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        },
-        {
-          "node_id": "the-micro-sponsorship-opportunity-structural-integration-31c6d1b1",
-          "case_id": "the-time-warp-event-protocol-5b0de374",
-          "problem_recovery_id": "the-micro-sponsorship-opportunity-structural-integration-31c6d1b1",
-          "title": "The Micro-Sponsorship Opportunity (Structural Integration)",
-          "parent_ids": [
-            "the-time-warp-event-protocol-5b0de374"
-          ],
-          "child_ids": [],
-          "source_path": "flow/the-time-warp-event-protocol-5b0de374/the-micro-sponsorship-opportunity-structural-integration-31c6d1b1/the-micro-sponsorship-opportunity-structural-integration-31c6d1b1.md",
-          "ledger_path": "ratings-ledger.json",
-          "stage": "problem_recovery",
-          "temporal": true,
-          "next": "doppl",
-          "scores": {
-            "judge": 2,
-            "human": null,
-            "n": 0
-          },
-          "source_type": "kernel",
-          "source_status": "imported",
-          "kernel": "prime",
-          "body": "# The Micro-Sponsorship Opportunity (Structural Integration)\n\nprev_id: [[the-time-warp-event-protocol-5b0de374]]\n\n## Trace\n### Case study · synopsis\n\nImplementing a party schedule that incorporates highly regulated, visible 'Protocol Windows' where *all* activity is deliberately paused for 15-minute periods. These windows are marketed as unique experiences (e.g., astronomical viewing, mandatory collective relaxation) and function by establishing an expected pattern of total low-activity stillness, rendering the drone’s primary value—capturing candid high-action moments—null by making the target asset *unphotographable* in bursts.\n\n## Discovery\n### Finding 1\n\nHigh cost of dedicated activation space at major festivals. → [[high-end-brand-activation-and-73eb9adc#^the-micro-sponsorship-opportunity]]\n\n### Finding 2\n\nThe rise of 'experience marketing' over simple banner ads. → [[high-end-brand-activation-and-73eb9adc#^the-micro-sponsorship-opportunity]]\n\n## Growth — Problem recovery\n### Surface complaint\nMandatory Protocol Windows nullify high-action candid moments by enforcing stillness.\n### Deleted assumption\nThat the event experience must be perceived as purely organic or non-commercial to maintain authenticity.\n### Hidden variable\nThe willingness of premium brands to sponsor specific, controlled *moments* of low activity because those moments offer unique focus/attention metrics.\n### Actual problem\nThe current structure treats all sponsorship as a generalized 'fee,' failing to surgically integrate commercial value into the precise structural gaps (the windows) where attention is guaranteed but currently unstructured.\n### Candidate response\nDesign Protocol Windows specifically around micro-sponsorship activation. Example: The beverage sponsor owns the 15 minutes and provides guided sensory pairings that require guests to pause, observe, and interact with the product in a non-transactional way (e.g., 'Observe how the ambient light changes when paired with this specific flavor profile').\n### Skin in the Game\n- Corporate Sponsorship Sales Team\n- Experiential Marketing Agencies\n### Sprouts\n- Branded, highly controlled sensory stations.\n- Metrics for measuring focused interaction (dwell time, physical touchpoints).\n### Evaluation\n#### Novelty +4\n85% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n2 evidence item(s); 3 causal markers; 0 hedge(s).\n#### Falsifiability +3\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
-        }
-      ],
       "solutions": []
     },
     {
