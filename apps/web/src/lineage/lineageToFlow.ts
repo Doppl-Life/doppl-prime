@@ -79,7 +79,13 @@ export type LineageNodeData = {
 };
 
 export type LineageRfNode = Node<LineageNodeData, LineageRfNodeType>;
-export type LineageRfEdge = Edge<{ edgeType: string; winner?: boolean }>;
+export type LineageRfEdge = Edge<{
+  edgeType: string;
+  winner?: boolean;
+  /** The selected-winner candidate id(s) whose lineage path this edge lies on — lets the hover-trace
+   *  isolate ONE winner's path (shared ancestors carry multiple ids). */
+  winnerIds?: readonly string[];
+}>;
 
 /**
  * Derive an agenome's `bornBy` from the projection edges (NOT the kept/filtered set — a reproduction
@@ -97,6 +103,54 @@ function bornByFor(
     if (e.type === 'mutation_only') return 'mutation';
   }
   return 'seed';
+}
+
+/**
+ * Map each WINNING-PATH edge id → the set of selected-winner candidate ids whose lineage it lies on. The
+ * golden thread for a winner is: every provenance edge INTO it, PLUS the chain of reproduction
+ * (mutation/fusion) edges up its producing agenome's ancestry to the seed. Walking PER winner (not as one
+ * union) lets the hover-trace isolate a single winner's path; an edge on two winners' shared ancestry
+ * carries both ids. Pure + terminating (a per-winner `visited` set handles fusion branching + cycles).
+ */
+function winningPathEdgeWinners(
+  winnerCandidateIds: ReadonlySet<string>,
+  edges: LineageGraphProjection['edges'],
+): Map<string, Set<string>> {
+  const byEdge = new Map<string, Set<string>>();
+  const tag = (edgeId: string, winnerId: string): void => {
+    const set = byEdge.get(edgeId) ?? new Set<string>();
+    set.add(winnerId);
+    byEdge.set(edgeId, set);
+  };
+  // child agenome id → its incoming reproduction edges (each from a parent agenome).
+  const reproByChild = new Map<string, LineageGraphProjection['edges'][number][]>();
+  for (const e of edges) {
+    if (!isReproductionEdge(e.type)) continue;
+    const list = reproByChild.get(e.target) ?? [];
+    list.push(e);
+    reproByChild.set(e.target, list);
+  }
+  for (const winnerId of winnerCandidateIds) {
+    // Seed with the provenance edge(s) into THIS winner; queue its producing agenome(s).
+    const queue: string[] = [];
+    for (const e of edges) {
+      if (e.target !== winnerId) continue;
+      tag(e.id, winnerId);
+      queue.push(e.source);
+    }
+    // Walk this winner's agenome ancestry up the reproduction edges to the seed.
+    const visited = new Set<string>();
+    while (queue.length > 0) {
+      const agenome = queue.pop();
+      if (agenome === undefined || visited.has(agenome)) continue;
+      visited.add(agenome);
+      for (const e of reproByChild.get(agenome) ?? []) {
+        tag(e.id, winnerId);
+        queue.push(e.source);
+      }
+    }
+  }
+  return byEdge;
 }
 
 export interface FlowGraph {
@@ -186,13 +240,19 @@ export function lineageToFlow(
   // already convey type). Edges route as `smoothstep` (orthogonal) — straight diagonals turn this dense
   // per-generation DAG into a crossing hairball, whereas orthogonal segments hug the grid. The carried
   // `data.edgeType` still drives any downstream styling.
+  // The whole winning lineage path (winner ← producing agenome ← … ← seed) is painted GOLD, so the user can
+  // follow the entire thread that led to the winning idea — not just the final hop. Tagged per winner so a
+  // hover can isolate one winner's path even when two winners share ancestors.
+  const winnerPath = winningPathEdgeWinners(winnerIds, projection.edges);
   const edges: LineageRfEdge[] = projection.edges
     .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
     .map((e) => {
-      // The winner's incoming provenance edge gets the loud GOLD treatment and HORIZONTAL anchors (the
-      // winner sits in a lane to the RIGHT of its producing agenome, not below it).
       const targetIsWinner = winnerIds.has(e.target);
-      const visual = targetIsWinner ? WINNER_EDGE_VISUAL : edgeStyleFor(e.type);
+      // Every edge ON a winning path gets the loud GOLD treatment + the `winner` flag (so the render
+      // filter always draws it, even the otherwise-hidden provenance hop into the winner lane).
+      const winnersForEdge = winnerPath.get(e.id);
+      const onWinnerPath = winnersForEdge !== undefined;
+      const visual = onWinnerPath ? WINNER_EDGE_VISUAL : edgeStyleFor(e.type);
       // The `generated` agenome→candidate link is a SHORT vertical drop (bottom→top anchors); breeding
       // events + the winner connector run horizontally (right→left anchors).
       const vertical = e.type === 'generated' && !targetIsWinner;
@@ -202,8 +262,12 @@ export function lineageToFlow(
         target: e.target,
         sourceHandle: vertical ? 'sb' : 'sr',
         targetHandle: vertical ? 'tt' : 'tl',
-        type: 'smoothstep',
-        data: targetIsWinner ? { edgeType: e.type, winner: true } : { edgeType: e.type },
+        // The final hop into the winner's right-hand lane routes as a clean bezier; the rest of the path
+        // (agenome→agenome breeding edges) keeps the orthogonal smoothstep that hugs the column grid.
+        type: targetIsWinner ? 'default' : 'smoothstep',
+        data: onWinnerPath
+          ? { edgeType: e.type, winner: true, winnerIds: [...winnersForEdge] }
+          : { edgeType: e.type },
         style: visual.style,
         ...(visual.markerEnd !== undefined ? { markerEnd: visual.markerEnd } : {}),
         ...(visual.animated !== undefined ? { animated: visual.animated } : {}),

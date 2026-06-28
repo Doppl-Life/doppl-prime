@@ -57,13 +57,21 @@ const metricsRow: CSSProperties = {
   fontSize: 'var(--text-caption)',
   color: 'var(--fg-muted)',
 };
-const workingRow: CSSProperties = {
+// The status row carries the live "working" beat INLINE (a pulsing ◐ beside the StatusBadge) rather than on
+// its own line — so a working node is no height taller than an idle one. That keeps the layout's height
+// estimate exact (no reserved "working" row, no overlap when it appears) and lets a node sit tight under
+// its producer. (The working flag is merged post-layout — LineageGraph — so it MUST NOT change card height.)
+const statusRow: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 'var(--space-1)',
+  gap: 'var(--space-2)',
+};
+const workingMark: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   color: 'var(--status-active)',
+  lineHeight: 1,
+  animation: 'doppl-pulse var(--motion-pulse-ms) var(--ease-in-out) infinite',
 };
 // The column header: a PLAIN centered label (no card box / border / handles), so it reads as a section
 // header for the column rather than a node. Its width matches a column's node width so the text centers
@@ -147,12 +155,19 @@ export function LineageNodeCard({ data }: { data: LineageNodeData }) {
         </span>
       </div>
       {data.status !== undefined && (
-        // pass `domain` only when defined (exactOptionalPropertyTypes); StatusBadge defaults otherwise.
-        <StatusBadge
-          {...(data.statusDomain !== undefined ? { domain: data.statusDomain } : {})}
-          status={data.status}
-          size="sm"
-        />
+        <div style={statusRow}>
+          {/* pass `domain` only when defined (exactOptionalPropertyTypes); StatusBadge defaults otherwise. */}
+          <StatusBadge
+            {...(data.statusDomain !== undefined ? { domain: data.statusDomain } : {})}
+            status={data.status}
+            size="sm"
+          />
+          {data.working && (
+            <span role="status" aria-label="working" title="working…" style={workingMark}>
+              ◐
+            </span>
+          )}
+        </div>
       )}
       {data.metrics !== undefined && (
         <div style={metricsRow}>
@@ -161,11 +176,6 @@ export function LineageNodeCard({ data }: { data: LineageNodeData }) {
               {k} {formatMetric(v)}
             </span>
           ))}
-        </div>
-      )}
-      {data.working && (
-        <div role="status" style={workingRow}>
-          <span aria-hidden="true">◐</span> working…
         </div>
       )}
     </div>

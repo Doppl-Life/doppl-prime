@@ -109,11 +109,31 @@ export function LineageGraph({ projection, events, onNodeClick, loading }: Linea
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [focusEdgeId, setFocusEdgeId] = useState<string | null>(null);
   const displayEdges = useMemo(() => {
-    if (focusNodeId === null && focusEdgeId === null) return renderedEdges;
+    // Only trace when there's actually something to trace: a hovered edge, or a hovered node that HAS
+    // incident lineage edges. Hovering a node with no edges (e.g. a SEEDED organism — it has no producer)
+    // leaves the graph normal instead of fading every line to nothing (which read as "broken").
+    const nodeHasIncident =
+      focusNodeId !== null &&
+      renderedEdges.some((e) => e.source === focusNodeId || e.target === focusNodeId);
+    if (focusEdgeId === null && !nodeHasIncident) return renderedEdges;
+    // The winning lineage is always drawn gold; when you hover a node ON a winning path, light THAT
+    // winner's whole thread end-to-end (not just the hovered hop) while everything else fades. Which
+    // winner(s) the hovered node belongs to = the winnerIds on the gold edges incident to it — so two
+    // separate winners' paths don't both light (a shared ancestor lights both, which is correct).
+    const focusWinners = new Set<string>();
+    if (focusNodeId !== null) {
+      for (const e of renderedEdges) {
+        if (e.source !== focusNodeId && e.target !== focusNodeId) continue;
+        for (const w of e.data?.winnerIds ?? []) focusWinners.add(w);
+      }
+    }
     return renderedEdges.map((e): LineageRfEdge => {
+      const onFocusWinnerPath =
+        focusWinners.size > 0 && (e.data?.winnerIds ?? []).some((w) => focusWinners.has(w));
       const lit =
         e.id === focusEdgeId ||
-        (focusNodeId !== null && (e.source === focusNodeId || e.target === focusNodeId));
+        (focusNodeId !== null && (e.source === focusNodeId || e.target === focusNodeId)) ||
+        onFocusWinnerPath;
       return {
         ...e,
         // Freeze the faded lines so motion doesn't distract; lit lines keep their own animation.

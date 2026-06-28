@@ -16,7 +16,7 @@ const COL_X0 = 24; // left margin of column 0
 const ROW_Y0 = 72; // top margin (leaves room for the generation-header label)
 // Gestalt grouping: a connected agenome→candidate group is packed TIGHT, with a larger gap separating
 // one group from the next, so the provenance pairing reads at a glance.
-const INTRA_GAP = 12; // within a group (agenome ↔ its candidate, candidate ↔ candidate)
+const INTRA_GAP = 4; // within a group (agenome ↔ its candidate) — packed tight, just clear of touching
 const GROUP_GAP = 48; // between groups (before a new agenome / leftover) + below the header
 
 /**
@@ -41,11 +41,9 @@ function estimateHeight(data: LineageRfNode['data']): number {
   let rows = 1; // the single-line title row (always present)
   if (data.status !== undefined) rows += 1; // the StatusBadge row
   if (data.metrics !== undefined && Object.keys(data.metrics).length > 0) rows += 1; // metrics row
-  // ALWAYS reserve the "working…" row. It's merged into nodes AFTER layout (LineageGraph keeps the working
-  // overlay out of the layout so the event stream doesn't thrash it), so the structural data here never has
-  // `working` set — yet a live node renders that extra row. Reserving it unconditionally keeps the reserved
-  // height ≥ the rendered height (no overlap) and keeps positions STABLE as working toggles on/off.
-  rows += 1;
+  // NOTE: the live "working" beat is rendered INLINE in the status row (nodeTypes), so it adds NO height —
+  // a working node is exactly as tall as an idle one. So there's nothing to reserve here, and the estimate
+  // stays exact whether or not a node is currently working (no overlap, no slack).
   return CARD_PAD_Y + CARD_BORDER_Y + TEXT_ROW * rows + CARD_ROW_GAP * (rows - 1) + HEIGHT_SAFETY;
 }
 
