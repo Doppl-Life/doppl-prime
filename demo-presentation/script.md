@@ -65,7 +65,7 @@ A recovered problem becomes a doppl.
 And at each new step, the path points out of the system, back to you - the human in the loop.
 
 The real probem was never "defeat the drone." It was "make the footage worthless."
-And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone films an empty deck and goes home with nothing. That's convergence. Domain transfer. Find the real problem and solve it.
+And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home with nothing.
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
 
@@ -77,7 +77,7 @@ That's the garden from above. Now the microscope.<DD - switch to inside view of 
 Here to talk about Doppl's inner workings is our own Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-
+<DD - transition to presentation: Ideas are cheap>
 
 ## 5 · The Zero-to-One Mindset, Automated
 
