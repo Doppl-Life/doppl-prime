@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, PointerEvent, ReactNode, WheelEvent } from 'react';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ds';
 import type { RunClient } from '../data/runClient';
@@ -1365,16 +1365,33 @@ function BloomGraph({
   const [pan, setPan] = useState<BloomPan>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const cameraLayerRef = useRef<SVGGElement | null>(null);
+  const cameraAnimationRef = useRef<number | null>(null);
   const dragStateRef = useRef<BloomDragState | null>(null);
   const suppressNodeClickRef = useRef(false);
-  const cameraAnimationRef = useRef<number | null>(null);
   const visibleBounds = scaledBounds(layout.bounds, zoom, pan);
   const viewBox = `${visibleBounds.minX} ${visibleBounds.minY} ${visibleBounds.width} ${visibleBounds.height}`;
+  const replayCameraRoot =
+    replayState.kind === 'running'
+      ? (layout.nodes.find(
+          (node) =>
+            replayState.visibleIds.has(node.id) &&
+            node.parentId === null &&
+            node.stage === 'case_study',
+        ) ?? null)
+      : null;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (replayState.kind === 'running') return;
     setZoom(1);
     setPan({ x: 0, y: 0 });
-  }, [layout.bounds.minX, layout.bounds.minY, layout.bounds.width, layout.bounds.height]);
+  }, [
+    replayState.kind,
+    layout.bounds.minX,
+    layout.bounds.minY,
+    layout.bounds.width,
+    layout.bounds.height,
+  ]);
 
   useEffect(() => {
     const liveIds = new Set(bloom.islands.flatMap((island) => island.nodes.map((node) => node.id)));
@@ -1395,50 +1412,62 @@ function BloomGraph({
     };
   }, []);
 
-  useEffect(() => {
-    if (replayState.kind !== 'running') return;
-    const root =
-      layout.nodes.find((node) => node.parentId === null) ??
-      layout.nodes.find((node) => node.stage === 'case_study') ??
-      layout.nodes[0] ??
-      null;
-    if (root === null) return;
-
+  useLayoutEffect(() => {
+    const layer = cameraLayerRef.current;
     if (cameraAnimationRef.current !== null) {
       window.cancelAnimationFrame(cameraAnimationRef.current);
       cameraAnimationRef.current = null;
     }
 
-    const centerX = layout.bounds.minX + layout.bounds.width / 2;
-    const centerY = layout.bounds.minY + layout.bounds.height / 2;
-    const startZoom = 2.12;
-    const startPan = { x: root.x - centerX, y: root.y - centerY };
-    const endZoom = 1;
-    const endPan = { x: 0, y: 0 };
+    if (layer === null || replayState.kind !== 'running' || replayCameraRoot === null) {
+      layer?.removeAttribute('transform');
+      return;
+    }
+
+    const rootX = replayCameraRoot.x;
+    const rootY = replayCameraRoot.y;
+    const startScale = 2.12;
     const durationMs = 1500;
+    const setLayerScale = (scale: number) => {
+      layer.setAttribute(
+        'transform',
+        `translate(${rootX} ${rootY}) scale(${scale}) translate(${-rootX} ${-rootY})`,
+      );
+    };
     let startedAt: number | null = null;
 
-    setZoom(startZoom);
-    setPan(startPan);
+    setLayerScale(startScale);
 
     const tick = (now: number) => {
       if (startedAt === null) startedAt = now;
       const progress = Math.min(1, (now - startedAt) / durationMs);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setZoom(Number((startZoom + (endZoom - startZoom) * eased).toFixed(3)));
-      setPan({
-        x: startPan.x + (endPan.x - startPan.x) * eased,
-        y: startPan.y + (endPan.y - startPan.y) * eased,
-      });
+      const scale = startScale + (1 - startScale) * eased;
+      setLayerScale(Number(scale.toFixed(4)));
+
       if (progress < 1) {
         cameraAnimationRef.current = window.requestAnimationFrame(tick);
-      } else {
-        cameraAnimationRef.current = null;
+        return;
       }
+
+      cameraAnimationRef.current = null;
+      layer.removeAttribute('transform');
     };
 
     cameraAnimationRef.current = window.requestAnimationFrame(tick);
-  }, [replayState.kind === 'running' ? replayState.token : null, layout.bounds, layout.nodes]);
+
+    return () => {
+      if (cameraAnimationRef.current !== null) {
+        window.cancelAnimationFrame(cameraAnimationRef.current);
+        cameraAnimationRef.current = null;
+      }
+      layer.removeAttribute('transform');
+    };
+  }, [
+    replayState.kind === 'running' ? replayState.token : null,
+    replayCameraRoot?.x,
+    replayCameraRoot?.y,
+  ]);
 
   const zoomBy = (delta: number) => {
     setZoom((current) => clampZoom(current + delta));
@@ -1621,144 +1650,149 @@ function BloomGraph({
           fill="transparent"
         />
 
-        {renderedEdges.map((edge) => {
-          const isPathEdge = selectedPath.has(edge.source.id) && selectedPath.has(edge.target.id);
-          return (
-            <path
-              key={edge.id}
-              d={edgePath(edge)}
-              fill="none"
-              stroke={isPathEdge ? 'var(--accent)' : edgeStroke(edge)}
-              strokeWidth={isPathEdge ? 3.2 : edge.type === 'recovered' ? 1.8 : 1.15}
-              strokeOpacity={selected === null ? 0.46 : isPathEdge ? 0.9 : 0.28}
-              strokeDasharray={edge.type === 'descended' ? '7 7' : undefined}
-              strokeLinecap="round"
-            />
-          );
-        })}
+        <g
+          ref={cameraLayerRef}
+          key={replayState.kind === 'running' ? `replay-camera-${replayState.token}` : 'idle'}
+        >
+          {renderedEdges.map((edge) => {
+            const isPathEdge = selectedPath.has(edge.source.id) && selectedPath.has(edge.target.id);
+            return (
+              <path
+                key={edge.id}
+                d={edgePath(edge)}
+                fill="none"
+                stroke={isPathEdge ? 'var(--accent)' : edgeStroke(edge)}
+                strokeWidth={isPathEdge ? 3.2 : edge.type === 'recovered' ? 1.8 : 1.15}
+                strokeOpacity={selected === null ? 0.46 : isPathEdge ? 0.9 : 0.28}
+                strokeDasharray={edge.type === 'descended' ? '7 7' : undefined}
+                strokeLinecap="round"
+              />
+            );
+          })}
 
-        {renderedNodes.map((node) => {
-          const isSelected = node.id === selected?.id;
-          const isPathNode = selectedPath.has(node.id);
-          const isDimmed = selected !== null && !isPathNode;
-          const fill = colorForBloomNode(node);
-          const label = labelPlacement(node);
-          const showLabel = node.stage !== 'doppl' || isSelected || layout.nodes.length <= 3;
-          const haloOpacity = haloOpacityForNode(node, isSelected, isPathNode);
-          const isProcessing = replayProcessingIds.has(node.id);
-          const revealedAt = replayRevealedAt.get(node.id);
-          const revealParentId = replayRevealParents.get(node.id);
-          const revealParent =
-            revealParentId === undefined
-              ? null
-              : (layout.nodes.find((candidate) => candidate.id === revealParentId) ?? null);
-          const revealStyle =
-            replayState.kind === 'running' && revealedAt !== undefined && revealParent !== null
-              ? ({
-                  cursor: isDragging ? 'grabbing' : 'pointer',
-                  animation: 'doppl-map-spring-out 760ms var(--ease-out) both',
-                  transformBox: 'fill-box',
-                  transformOrigin: 'center',
-                  '--doppl-map-from-x': `${revealParent.x - node.x}px`,
-                  '--doppl-map-from-y': `${revealParent.y - node.y}px`,
-                } as CSSProperties)
-              : ({ cursor: isDragging ? 'grabbing' : 'pointer' } as CSSProperties);
-          return (
-            <g
-              key={node.id}
-              role="button"
-              tabIndex={0}
-              data-bloom-node-id={node.id}
-              data-bloom-run-id={node.runId}
-              aria-label={node.label}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
-                if (event.key === 'Enter' && event.metaKey) openInnerRun(node.runId);
-              }}
-              style={revealStyle}
-              opacity={isDimmed ? 0.84 : 1}
-              data-replay-processing={isProcessing ? 'true' : undefined}
-            >
-              {isProcessing && (
+          {renderedNodes.map((node) => {
+            const isSelected = node.id === selected?.id;
+            const isPathNode = selectedPath.has(node.id);
+            const isDimmed = selected !== null && !isPathNode;
+            const fill = colorForBloomNode(node);
+            const label = labelPlacement(node);
+            const showLabel = node.stage !== 'doppl' || isSelected || layout.nodes.length <= 3;
+            const haloOpacity = haloOpacityForNode(node, isSelected, isPathNode);
+            const isProcessing = replayProcessingIds.has(node.id);
+            const revealedAt = replayRevealedAt.get(node.id);
+            const revealParentId = replayRevealParents.get(node.id);
+            const revealParent =
+              revealParentId === undefined
+                ? null
+                : (layout.nodes.find((candidate) => candidate.id === revealParentId) ?? null);
+            const revealStyle =
+              replayState.kind === 'running' && revealedAt !== undefined && revealParent !== null
+                ? ({
+                    cursor: isDragging ? 'grabbing' : 'pointer',
+                    animation: 'doppl-map-spring-out 760ms var(--ease-out) both',
+                    transformBox: 'fill-box',
+                    transformOrigin: 'center',
+                    '--doppl-map-from-x': `${revealParent.x - node.x}px`,
+                    '--doppl-map-from-y': `${revealParent.y - node.y}px`,
+                  } as CSSProperties)
+                : ({ cursor: isDragging ? 'grabbing' : 'pointer' } as CSSProperties);
+            return (
+              <g
+                key={node.id}
+                role="button"
+                tabIndex={0}
+                data-bloom-node-id={node.id}
+                data-bloom-run-id={node.runId}
+                aria-label={node.label}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') onSelect(node.id);
+                  if (event.key === 'Enter' && event.metaKey) openInnerRun(node.runId);
+                }}
+                style={revealStyle}
+                opacity={isDimmed ? 0.84 : 1}
+                data-replay-processing={isProcessing ? 'true' : undefined}
+              >
+                {isProcessing && (
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.radius * 3.8}
+                    fill="none"
+                    stroke="var(--accent)"
+                    strokeWidth="2.2"
+                    strokeOpacity="0.72"
+                    style={{
+                      animation: 'doppl-map-pulse 1.6s var(--ease-in-out) infinite',
+                      transformBox: 'fill-box',
+                      transformOrigin: 'center',
+                    }}
+                  />
+                )}
                 <circle
                   cx={node.x}
                   cy={node.y}
-                  r={node.radius * 3.8}
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth="2.2"
-                  strokeOpacity="0.72"
+                  r={node.radius * (3.1 + haloOpacity)}
+                  fill="url(#bloom-halo)"
+                  opacity={haloOpacity}
+                />
+                {node.novelty !== null && (
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.radius + 5 + Math.max(0, Math.min(6, node.novelty * 6))}
+                    fill="none"
+                    stroke="color-mix(in srgb, var(--accent) 70%, white)"
+                    strokeOpacity={0.26 + Math.min(0.42, node.novelty * 0.42)}
+                    strokeWidth="1.6"
+                  />
+                )}
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.radius}
+                  fill={fill}
+                  filter={isSelected ? 'url(#bloom-glow)' : undefined}
                   style={{
-                    animation: 'doppl-map-pulse 1.6s var(--ease-in-out) infinite',
+                    animation:
+                      replayState.kind === 'running' &&
+                      revealedAt !== undefined &&
+                      revealParent === null
+                        ? 'doppl-map-pop 420ms var(--ease-out)'
+                        : undefined,
                     transformBox: 'fill-box',
                     transformOrigin: 'center',
                   }}
+                  stroke={
+                    isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'
+                  }
+                  strokeWidth={isSelected ? 3 : 1.2}
                 />
-              )}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={node.radius * (3.1 + haloOpacity)}
-                fill="url(#bloom-halo)"
-                opacity={haloOpacity}
-              />
-              {node.novelty !== null && (
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={node.radius + 5 + Math.max(0, Math.min(6, node.novelty * 6))}
-                  fill="none"
-                  stroke="color-mix(in srgb, var(--accent) 70%, white)"
-                  strokeOpacity={0.26 + Math.min(0.42, node.novelty * 0.42)}
-                  strokeWidth="1.6"
-                />
-              )}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={node.radius}
-                fill={fill}
-                filter={isSelected ? 'url(#bloom-glow)' : undefined}
-                style={{
-                  animation:
-                    replayState.kind === 'running' &&
-                    revealedAt !== undefined &&
-                    revealParent === null
-                      ? 'doppl-map-pop 420ms var(--ease-out)'
-                      : undefined,
-                  transformBox: 'fill-box',
-                  transformOrigin: 'center',
-                }}
-                stroke={
-                  isSelected ? 'var(--fg-default)' : 'color-mix(in srgb, white 42%, transparent)'
-                }
-                strokeWidth={isSelected ? 3 : 1.2}
-              />
-              {node.status === 'selected' && (
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={node.radius * 0.42}
-                  fill="var(--fg-default)"
-                  opacity="0.86"
-                />
-              )}
-              {showLabel && (
-                <text
-                  x={node.x + label.dx}
-                  y={node.y + label.dy}
-                  textAnchor={label.anchor}
-                  fill={isSelected ? 'var(--fg-default)' : 'var(--fg-muted)'}
-                  fontFamily="var(--font-mono)"
-                  fontSize={isSelected || node.stage !== 'doppl' ? 12 : 11}
-                  fontWeight={isSelected ? 700 : 500}
-                >
-                  {truncate(node.label, isSelected ? 44 : label.max)}
-                </text>
-              )}
-            </g>
-          );
-        })}
+                {node.status === 'selected' && (
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.radius * 0.42}
+                    fill="var(--fg-default)"
+                    opacity="0.86"
+                  />
+                )}
+                {showLabel && (
+                  <text
+                    x={node.x + label.dx}
+                    y={node.y + label.dy}
+                    textAnchor={label.anchor}
+                    fill={isSelected ? 'var(--fg-default)' : 'var(--fg-muted)'}
+                    fontFamily="var(--font-mono)"
+                    fontSize={isSelected || node.stage !== 'doppl' ? 12 : 11}
+                    fontWeight={isSelected ? 700 : 500}
+                  >
+                    {truncate(node.label, isSelected ? 44 : label.max)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
       </svg>
       <div
         style={{
