@@ -135,7 +135,7 @@ Reviewers first choose a case study, then use the vertical `Problem recoveries` 
 
 The review surface shows full-width case context, supplemental discovery context when it is not a duplicate of the case text, the selected artifact, and hidden source details for provenance.
 
-Problem recovery and doppl artifacts both use the same bottom-docked `-5` to `+5` score slider. The active reviewer should be able to move through a calibration session without managing verdict categories, notes fields, audit filters, or provenance/debug artifacts.
+Problem recovery and doppl artifacts both use the same bottom-docked `0` to `10` score slider. The active reviewer should be able to move through a calibration session without managing verdict categories, notes fields, audit filters, or provenance/debug artifacts.
 
 Source details are collapsed by default and can be revealed for the selected artifact when reviewers need traceability.
 
@@ -178,6 +178,6 @@ The `michael` branch frames calibration as an outcome assay over kernel branches
 
 - Michael's `fsd-accident-economy` assay fixture is represented as a third solution artifact.
 - Solution artifacts can declare `output_class`, `phase`, and `subtype` fields so candidates can later become Pepsis, many-Pepsis packets, or solution-discovery records.
-- Human ratings focus on a shared `-5` to `+5` scale so kernels can be compared across recovered problems and proposed solutions.
+- Human ratings focus on a shared `0` to `10` scale so kernels can be compared across recovered problems and proposed solutions.
 
 The score says how strong the artifact is. Notes capture the reviewer rationale without forcing a second categorical decision.

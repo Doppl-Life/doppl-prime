@@ -53,8 +53,8 @@ function smokePayload(target: SmokeTarget) {
   const score = Number(env("CALIBRATOR_SMOKE_SCORE") || "0");
   const nodeId = target.artifact.node_id;
   if (!nodeId) fail("selected artifact has no node_id");
-  if (!Number.isInteger(score) || score < -5 || score > 5) {
-    fail("CALIBRATOR_SMOKE_SCORE must be an integer from -5 to +5");
+  if (!Number.isInteger(score) || score < 0 || score > 10) {
+    fail("CALIBRATOR_SMOKE_SCORE must be an integer from 0 to 10");
   }
 
   const base = {

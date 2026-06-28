@@ -133,4 +133,143 @@ describe("createProductionHostedAgardenRatingHandler", () => {
     expect(calls.some((call) => call.url.includes("/app/installations/"))).toBe(false);
     expect(calls.every((call) => call.authorization === "Bearer pat-token")).toBe(true);
   });
+
+  it("builds a live aGarden index by default and accepts a 0 to 10 Jack Drone solution rating", async () => {
+    vi.stubEnv("CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES", "true");
+    vi.stubEnv("AGARDEN_GITHUB_TOKEN", "pat-token");
+    vi.stubEnv("AGARDEN_BRANCH", "main");
+    vi.stubEnv("AGARDEN_INDEX_SOURCE", "github");
+    vi.stubEnv("AGARDEN_API_BASE_URL", "https://example.test");
+
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url, init });
+        if (url.startsWith("https://example.test/repos/Doppl-Life/agarden/contents/flow?")) {
+          return jsonResponse([{ name: "jack-drone-privacy-fd080117", path: "flow/jack-drone-privacy-fd080117", type: "dir" }]);
+        }
+        if (url.startsWith("https://example.test/repos/Doppl-Life/agarden/contents/flow/jack-drone-privacy-fd080117?")) {
+          return jsonResponse([
+            {
+              name: "jack-drone-privacy-fd080117.md",
+              path: "flow/jack-drone-privacy-fd080117/jack-drone-privacy-fd080117.md",
+              type: "file",
+              download_url: "https://raw.test/flow/jack-drone-privacy-fd080117/jack-drone-privacy-fd080117.md",
+            },
+            { name: "private-zone-pr", path: "flow/jack-drone-privacy-fd080117/private-zone-pr", type: "dir" },
+          ]);
+        }
+        if (url.startsWith("https://example.test/repos/Doppl-Life/agarden/contents/flow/jack-drone-privacy-fd080117/private-zone-pr?")) {
+          return jsonResponse([
+            {
+              name: "private-zone-pr.md",
+              path: "flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-pr.md",
+              type: "file",
+              download_url: "https://raw.test/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-pr.md",
+            },
+            {
+              name: "private-zone-doppl",
+              path: "flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl",
+              type: "dir",
+            },
+          ]);
+        }
+        if (url.startsWith("https://example.test/repos/Doppl-Life/agarden/contents/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl?")) {
+          return jsonResponse([
+            {
+              name: "private-zone-doppl.md",
+              path: "flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md",
+              type: "file",
+              download_url:
+                "https://raw.test/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md",
+            },
+          ]);
+        }
+        if (url.startsWith("https://raw.test/flow/jack-drone-privacy-fd080117/jack-drone-privacy-fd080117.md")) {
+          return new Response(`---
+id: jack-drone-privacy-fd080117
+stage: case_study
+---
+# Jack Drone Privacy
+
+## Context
+
+Jack wants drone privacy.`, { status: 200 });
+        }
+        if (url.startsWith("https://raw.test/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-pr.md")) {
+          return new Response(`---
+id: private-zone-pr
+stage: problem_recovery
+kernel: dalton
+next: doppl
+---
+# Private Zone PR
+
+prev_id: [[jack-drone-privacy-fd080117]]`, { status: 200 });
+        }
+        if (url.startsWith("https://raw.test/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md")) {
+          return new Response(`---
+id: private-zone-doppl
+stage: doppl
+kernel: dalton
+next: terminal
+scores:
+  judge: 5
+  human: null
+  n: 0
+---
+# Private Zone Doppl
+
+prev_id: [[private-zone-pr]]`, { status: 200 });
+        }
+        if (url.includes("/contents/ratings-ledger.json")) {
+          return jsonResponse({
+            path: "ratings-ledger.json",
+            sha: "ledger-sha",
+            encoding: "base64",
+            content: Buffer.from("[]\n", "utf8").toString("base64"),
+          });
+        }
+        if (url.includes("/contents/flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md")) {
+          return jsonResponse({
+            path: "flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md",
+            sha: "node-sha",
+            encoding: "base64",
+            content: Buffer.from("---\nid: private-zone-doppl\nscores: { human: null, n: 0 }\n---\n# Node\n", "utf8").toString("base64"),
+          });
+        }
+        if (url.endsWith("/git/ref/heads/main")) return jsonResponse({ object: { sha: "head-sha" } });
+        if (url.endsWith("/git/commits/head-sha")) return jsonResponse({ sha: "head-sha", tree: { sha: "tree-sha" } });
+        if (url.endsWith("/git/blobs")) return jsonResponse({ sha: `blob-${calls.filter((call) => call.url.endsWith("/git/blobs")).length}` });
+        if (url.endsWith("/git/trees")) return jsonResponse({ sha: "tree-sha-next" });
+        if (url.endsWith("/git/commits")) return jsonResponse({ sha: "commit-sha", tree: { sha: "tree-sha-next" } });
+        if (url.endsWith("/git/refs/heads/main")) return jsonResponse({ object: { sha: "commit-sha" } });
+        return jsonResponse({ message: `unexpected ${url}` }, 404);
+      }) as unknown as typeof fetch,
+    );
+
+    const response = await createProductionHostedAgardenRatingHandler()(
+      new Request("https://ratings.example.test/api/agarden/ratings", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://doppl-life.github.io" },
+        body: JSON.stringify({
+          case_id: "jack-drone-privacy-fd080117",
+          rating_target: "solution",
+          solution_id: "private-zone-doppl",
+          node_id: "private-zone-doppl",
+          score: 10,
+          reviewer_email: "new.reviewer@challenger.gauntletai.com",
+        }),
+      }),
+    );
+
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body).toMatchObject({
+      ratingId: "private-zone-doppl:new.reviewer@challenger.gauntletai.com",
+      scores: { human: 10, n: 1 },
+      nodePath: "flow/jack-drone-privacy-fd080117/private-zone-pr/private-zone-doppl/private-zone-doppl.md",
+    });
+  });
 });

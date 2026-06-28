@@ -1,11 +1,10 @@
 import { createServer, type IncomingMessage } from "node:http";
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import { join } from "node:path";
 import type { CalibratorIndex } from "../types";
+import { readGitHubAgardenIndex } from "../githubAgardenIndex";
 import { createGitHubAgardenClient, createGitHubAgardenClientFromApp } from "./githubAgardenClient";
 import { createHostedAgardenRatingHandler } from "./hostedAgardenRatingApi";
-import { repoRoot } from "./vaultPaths";
 
 const DEFAULT_ALLOWED_ORIGINS = ["https://doppl-life.github.io", "http://127.0.0.1:5178"];
 
@@ -62,22 +61,31 @@ async function sendResponse(res: import("node:http").ServerResponse, response: R
 }
 
 export function createProductionHostedAgardenRatingHandler() {
-  const indexPath = optionalEnv(
-    "CALIBRATOR_INDEX_PATH",
-    join(repoRoot, "calibrator/public/calibration-index.json"),
-  );
+  const indexPath = envValue("CALIBRATOR_INDEX_PATH");
+  const owner = optionalEnv("AGARDEN_OWNER", "Doppl-Life");
+  const repo = optionalEnv("AGARDEN_REPO", "agarden");
+  const branch = optionalEnv("AGARDEN_BRANCH", "main");
 
   return createHostedAgardenRatingHandler({
     allowedOrigins: allowedOrigins(),
     authToken: envValue("CALIBRATOR_WRITE_TOKEN"),
     requireAuth: process.env.CALIBRATOR_ALLOW_UNAUTHENTICATED_WRITES !== "true",
     async readIndex(): Promise<CalibratorIndex> {
-      return JSON.parse(await readFile(indexPath, "utf8")) as CalibratorIndex;
+      if (indexPath) {
+        return JSON.parse(await readFile(indexPath, "utf8")) as CalibratorIndex;
+      }
+      return readGitHubAgardenIndex({
+        owner,
+        repo,
+        branch,
+        source: (envValue("AGARDEN_INDEX_SOURCE") as "github" | "jsdelivr" | undefined) ?? "jsdelivr",
+        apiBaseUrl: envValue("AGARDEN_API_BASE_URL"),
+        rawBaseUrl: envValue("AGARDEN_RAW_BASE_URL"),
+        cdnBaseUrl: envValue("AGARDEN_CDN_BASE_URL"),
+        packageApiBaseUrl: envValue("AGARDEN_PACKAGE_API_BASE_URL"),
+      });
     },
     createClient() {
-      const owner = optionalEnv("AGARDEN_OWNER", "Doppl-Life");
-      const repo = optionalEnv("AGARDEN_REPO", "agarden");
-      const branch = optionalEnv("AGARDEN_BRANCH", "main");
       const token = envValue("AGARDEN_GITHUB_TOKEN");
       if (token) {
         return createGitHubAgardenClient({
