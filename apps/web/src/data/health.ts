@@ -11,16 +11,24 @@ import { z } from 'zod';
  * response AND decide whether to PROMOTE RunHealth to a shared frozen contract (a lead/contract-
  * coordinated amendment, not a demo slice).
  */
+/** Per-cap usage as the API reports it: a consumed total against the enforced ceiling. */
+export const CapUsage = z.object({
+  consumed: z.number(),
+  ceiling: z.number(),
+});
+
 export const RunHealth = z.object({
   runId: z.string().min(1),
-  /** The current generation index (0-based). */
-  currentGeneration: z.number().int().nonnegative(),
-  /** Candidates currently in flight (unpaired generation-started markers). */
+  /** Number of generations seen so far (the API's `generationCount`). */
+  generationCount: z.number().int().nonnegative(),
+  /** Candidates currently in flight (non-terminal candidate ideas). */
   candidatesInFlight: z.number().int().nonnegative(),
   /** ISO-8601 last-event time, or null when no events have folded yet. */
   lastEventAt: z.string().min(1).nullable(),
-  /** Per-cap consumed totals (cap name → consumed); open record (the cap set is RunCaps'). */
-  capsConsumed: z.record(z.string(), z.number()),
+  /** Per-cap usage (cap name → {consumed, ceiling}); null until a run.configured cap set is known. The
+   *  object is non-strict, so the API's extra fields (status, operationsInFlight, sequenceThrough) pass
+   *  through without rejecting — fixing the integration carry-forward that left health permanently null. */
+  capsConsumed: z.record(z.string(), CapUsage).nullable(),
 });
 
 export type RunHealth = z.infer<typeof RunHealth>;

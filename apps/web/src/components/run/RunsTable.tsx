@@ -94,7 +94,23 @@ const sortArrow: CSSProperties = { fontSize: 'var(--text-mono)', color: 'var(--a
 // the expanded peek fills its whole cell with the LIGHTEST raised surface (--bg-overlay is lighter than the
 // table panel in dark, and white in light) so the detail reads as its own lighter band, not a bleed of the
 // row above it.
-const peekTd: CSSProperties = {
+const peekTd: CSSProperties = { padding: 0 };
+// the expand animation: a 1-row grid whose track grows 0fr→1fr (animates the exact content height) while
+// the clipped child fades in — so the row slides open instead of snapping.
+const peekGrid: CSSProperties = {
+  display: 'grid',
+  gridTemplateRows: '1fr',
+  animationDuration: 'var(--motion-slow)',
+  animationTimingFunction: 'var(--ease-out)',
+};
+// the clipped grid item must be BARE (no padding/border) so the 0fr track collapses it to a true 0 —
+// padding/border on this element can't shrink and would leave a residual that snaps away on unmount.
+const peekClip: CSSProperties = {
+  overflow: 'hidden',
+  minHeight: 0,
+};
+// the actual visible band: bg + border + padding live here, on a normal block that gets clipped.
+const peekContent: CSSProperties = {
   padding: 'var(--space-4)',
   background: 'var(--bg-overlay)',
   borderBottom: 'thin solid var(--border-subtle)',
@@ -176,13 +192,35 @@ export function RunsTable({
 }: RunsTableProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const toggle = (id: string) =>
+  // Rows mid-collapse stay rendered (still in `expanded`) so the collapse animation can play; they're
+  // dropped on its animationend (finishCollapse).
+  const [collapsing, setCollapsing] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (id: string) => {
+    if (collapsing.has(id)) {
+      // clicked again mid-collapse → cancel it and stay open
+      setCollapsing((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } else if (expanded.has(id)) {
+      setCollapsing((prev) => new Set(prev).add(id)); // begin the collapse animation
+    } else {
+      setExpanded((prev) => new Set(prev).add(id)); // open (expand animation)
+    }
+  };
+  const finishCollapse = (id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.delete(id);
       return next;
     });
+    setCollapsing((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
   const stop = (cb: () => void) => (e: MouseEvent) => {
     e.stopPropagation();
     cb();
@@ -249,7 +287,9 @@ export function RunsTable({
             hovered={hovered}
             setHovered={setHovered}
             expanded={expanded}
+            collapsing={collapsing}
             onToggle={toggle}
+            onFinishCollapse={finishCollapse}
             onReplay={onReplay}
             onOpenLive={onOpenLive}
             stop={stop}
@@ -266,7 +306,9 @@ function RunGroupRows({
   hovered,
   setHovered,
   expanded,
+  collapsing,
   onToggle,
+  onFinishCollapse,
   onReplay,
   onOpenLive,
   stop,
@@ -276,7 +318,9 @@ function RunGroupRows({
   hovered: string | null;
   setHovered: (id: string | null) => void;
   expanded: ReadonlySet<string>;
+  collapsing: ReadonlySet<string>;
   onToggle: (id: string) => void;
+  onFinishCollapse: (id: string) => void;
   onReplay: (runId: string) => void;
   onOpenLive: (runId: string) => void;
   stop: (cb: () => void) => (e: MouseEvent) => void;
@@ -305,16 +349,18 @@ function RunGroupRows({
         const fitness = run.fitnessByGeneration ?? [];
         const lastFromSeries = fitness.length > 0 ? fitness[fitness.length - 1] : undefined;
         const lastFit = run.winnerFitness ?? lastFromSeries ?? null;
-        const isExpanded = expanded.has(run.runId);
+        const isExpanded = expanded.has(run.runId); // peek is rendered (incl. while collapsing)
+        const isClosing = collapsing.has(run.runId);
+        const isOpen = isExpanded && !isClosing; // the intended open state (drives the aria toggle)
         return (
           <Fragment key={run.runId}>
             <tr
               style={rowStyle}
               role="button"
               tabIndex={0}
-              aria-expanded={isExpanded}
+              aria-expanded={isOpen}
               aria-label={
-                isExpanded
+                isOpen
                   ? `Collapse detail for run ${run.runId}`
                   : `Expand detail for run ${run.runId}`
               }
@@ -405,6 +451,11 @@ function RunGroupRows({
                     variant="secondary"
                     glyph="⏮"
                     onClick={stop(() => onReplay(run.runId))}
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--mode-replay)',
+                      border: 'thin solid var(--mode-replay)',
+                    }}
                   >
                     Replay
                   </Button>
@@ -425,7 +476,32 @@ function RunGroupRows({
             {isExpanded && (
               <tr>
                 <td colSpan={COL_COUNT} style={peekTd}>
-                  <RunPeek run={run} />
+                  <div
+                    data-testid={`run-peek-${run.runId}`}
+                    style={{
+                      ...peekGrid,
+                      animationName: isClosing ? 'doppl-row-collapse' : 'doppl-row-expand',
+                      // close uses an ease-IN curve (accelerates to a quick finish) so the table's
+                      // per-frame reflow doesn't crawl/step at the very end; open keeps peekGrid's ease-out.
+                      ...(isClosing
+                        ? {
+                            animationName: 'doppl-row-collapse',
+                            animationDuration: 'var(--motion-base)',
+                            animationTimingFunction: 'linear',
+                            animationFillMode: 'forwards',
+                          }
+                        : {}),
+                    }}
+                    onAnimationEnd={() => {
+                      if (isClosing) onFinishCollapse(run.runId);
+                    }}
+                  >
+                    <div style={peekClip}>
+                      <div style={peekContent}>
+                        <RunPeek run={run} />
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
             )}

@@ -76,10 +76,10 @@ function fakeClient(opts?: {
     getRunHealth: vi.fn(() =>
       Promise.resolve({
         runId: 'run_1',
-        currentGeneration: 2,
+        generationCount: 2,
         candidatesInFlight: 0,
         lastEventAt: '2026-06-20T12:00:00.000Z',
-        capsConsumed: { maxGenerations: 2 },
+        capsConsumed: { generations: { consumed: 2, ceiling: 5 } },
       }),
     ),
     getProblemSets: vi.fn(() => Promise.resolve([])),

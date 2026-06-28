@@ -37,10 +37,10 @@ const lineage = {
 // A STALE health signal — lastEventAt far in the past (well beyond the ~10s threshold).
 const staleHealth = {
   runId: 'run_1',
-  currentGeneration: 2,
+  generationCount: 2,
   candidatesInFlight: 1,
   lastEventAt: '2020-01-01T00:00:00.000Z',
-  capsConsumed: { maxGenerations: 2 },
+  capsConsumed: { generations: { consumed: 2, ceiling: 5 } },
 };
 
 test('run-health panel surfaces the stale continue-vs-switch flag', async ({ page }) => {

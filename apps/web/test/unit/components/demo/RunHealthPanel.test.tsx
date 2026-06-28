@@ -14,10 +14,10 @@ import type { RunHealth } from '../../../../src/data/health';
 const NOW = 1_700_000_000_000;
 const freshHealth: RunHealth = {
   runId: 'run_1',
-  currentGeneration: 2,
+  generationCount: 2,
   candidatesInFlight: 1,
   lastEventAt: new Date(NOW - 1_000).toISOString(),
-  capsConsumed: { maxGenerations: 2 },
+  capsConsumed: { generations: { consumed: 2, ceiling: 5 } },
 };
 
 afterEach(() => cleanup());

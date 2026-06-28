@@ -29,6 +29,9 @@ const card: CSSProperties = {
   // B5 declutter: bound the node footprint so a long candidate title can't stretch the card across the
   // column gap (the layout strides a wider distance between columns — bare numeric geometry, token-exempt).
   maxWidth: 260,
+  // a new node blooms in (scale + fade, slight overshoot) when it mounts — so live additions read as the
+  // organism growing. Honors prefers-reduced-motion via the global base.css gate.
+  animation: 'doppl-spawn var(--motion-spawn-ms) var(--ease-overshoot)',
 };
 const labelRow: CSSProperties = {
   display: 'flex',
@@ -117,8 +120,11 @@ function bodyStyle(data: LineageNodeData): CSSProperties {
     borderLeft: `var(--space-1) solid ${color}`,
     // Culled lineages get a STRONGER red wash + a full red outline, only lightly de-emphasized — so a
     // non-expert can SEE selection killing the weak (culling is half the evolutionary signal, and the
-    // old faint gray fade was too easy to miss). Live nodes keep the subtle 12% tint.
-    background: `color-mix(in srgb, ${color} ${isCulled ? '24%' : '12%'}, var(--bg-surface-2))`,
+    // old faint gray fade was too easy to miss). Live nodes keep the subtle 12% tint. The selected winner
+    // gets its theme-aware fill (vibrant yellow in light) so it reads as the hero on the canvas.
+    background: isWinner
+      ? 'var(--winner-node-bg)'
+      : `color-mix(in srgb, ${color} ${isCulled ? '24%' : '12%'}, var(--bg-surface-2))`,
     ...(isWinner ? { boxShadow: 'var(--glow-winner)' } : {}),
     ...(isCulled ? { opacity: 0.82, borderColor: color } : {}),
   };

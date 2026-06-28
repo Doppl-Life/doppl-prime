@@ -37,10 +37,17 @@ export function deriveTickerEvents(events: readonly RunEventEnvelope[]): TickerE
 export function toHealthSummary(health: RunHealth | null, nowMs: number): HealthSummary {
   if (health === null) return {};
   const summary: HealthSummary = {
-    currentGeneration: health.currentGeneration,
+    currentGeneration: health.generationCount,
     candidatesInFlight: health.candidatesInFlight,
-    capsConsumed: health.capsConsumed,
   };
+  // The API reports caps as {consumed, ceiling}; the gauge wants a 0..1 fill fraction per cap.
+  if (health.capsConsumed !== null) {
+    const fractions: Record<string, number> = {};
+    for (const [cap, { consumed, ceiling }] of Object.entries(health.capsConsumed)) {
+      fractions[cap] = ceiling > 0 ? Math.min(1, Math.max(0, consumed / ceiling)) : 0;
+    }
+    summary.capsConsumed = fractions;
+  }
   if (health.lastEventAt !== null) {
     const t = Date.parse(health.lastEventAt);
     if (!Number.isNaN(t)) summary.lastEventAgeMs = Math.max(0, nowMs - t);

@@ -147,6 +147,29 @@ body {
   }
 }
 
+/* Row expand — the runs-table inline detail grows (grid-rows 0fr→1fr, animates the exact content height)
+   + fades in when a row is opened. */
+@keyframes doppl-row-expand {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+@keyframes doppl-row-collapse {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+
 /* Reduced motion — meaning must survive without motion. Pulses become a
    static glow ring; everything else snaps to its end state. */
 @media (prefers-reduced-motion: reduce) {

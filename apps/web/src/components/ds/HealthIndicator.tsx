@@ -121,10 +121,12 @@ export function HealthIndicator({
           {s.glyph}
         </span>
         <span style={{ color: `var(${s.color})`, fontWeight: 600 }}>{s.label}</span>
-        <span style={{ color: 'var(--fg-muted)' }}>
-          gen {health.currentGeneration ?? '—'} · {health.candidatesInFlight ?? 0} in-flight · last
-          evt {age}
-        </span>
+      </div>
+      {/* details on their OWN line so the row doesn't bounce between 1 and 2 lines as the last-event age
+          grows/shrinks. */}
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-muted)' }}>
+        gen {health.currentGeneration ?? '—'} · {health.candidatesInFlight ?? '—'} in-flight · last evt{' '}
+        {age}
       </div>
       {showCaps && Object.keys(caps).length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
