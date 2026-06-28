@@ -21,16 +21,28 @@ const GROUP_GAP = 48; // between groups (before a new agenome / leftover) + belo
 
 /**
  * Estimate a node's RENDERED height (px) from the rows it draws (label · status badge · metrics · working),
- * so the column stack can stride by the ACTUAL node size and nodes never overlap (the old fixed stride was
- * shorter than a metric-bearing candidate). Coarse but deterministic + monotonic — geometry, not styling.
+ * so the column stack can stride by the ACTUAL node size and nodes never overlap. The card is a CSS grid
+ * (nodeTypes `card`): `padding: var(--space-2) var(--space-3)` (8 top + 8 bottom), `gap: var(--space-1)`
+ * (4 between rows), a `thin` top+bottom border (~2). CRUCIAL: every text row inherits the body line-height
+ * `--text-body-lh` (≈23) regardless of its own smaller font-size — the StatusBadge label, the caption-size
+ * metrics, and the "working…" line all render ≈23 tall, NOT the 16–22 the old estimate assumed. That
+ * undercount accumulated down a column into overlapping cards. We now stride by the real per-row height plus
+ * a small safety buffer. Coarse but deterministic + monotonic — geometry, not styling. (Values are CSS
+ * pixels; the unit suffix is omitted in comments to satisfy the no-raw-unit adherence guard.)
  */
+const CARD_PAD_Y = 16; // var(--space-2) top + bottom
+const CARD_BORDER_Y = 2; // thin top + bottom border
+const CARD_ROW_GAP = 4; // var(--space-1) grid gap between rows
+const TEXT_ROW = 23; // every text row inherits --text-body-lh, even caption-size rows
+const HEIGHT_SAFETY = 6; // sub-pixel / font-metric buffer so adjacent cards never kiss
 function estimateHeight(data: LineageRfNode['data']): number {
-  if (data.nodeType === 'generation') return 28; // a plain header label, not a card
-  let h = 16 + 20; // card padding (top+bottom) + the single-line title row
-  if (data.status !== undefined) h += 6 + 22; // the StatusBadge row
-  if (data.metrics !== undefined && Object.keys(data.metrics).length > 0) h += 6 + 16; // metrics row
-  if (data.working) h += 6 + 16; // "working…" row
-  return h;
+  // The generation header is a plain chip: var(--space-1) top+bottom padding + one inherited text row.
+  if (data.nodeType === 'generation') return 8 + TEXT_ROW;
+  let rows = 1; // the single-line title row (always present)
+  if (data.status !== undefined) rows += 1; // the StatusBadge row
+  if (data.metrics !== undefined && Object.keys(data.metrics).length > 0) rows += 1; // metrics row
+  if (data.working) rows += 1; // "working…" row
+  return CARD_PAD_Y + CARD_BORDER_Y + TEXT_ROW * rows + CARD_ROW_GAP * (rows - 1) + HEIGHT_SAFETY;
 }
 
 /** Resolve the column index for a node: its `generationIndex`, or a trailing fallback column. */

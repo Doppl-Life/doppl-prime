@@ -43,6 +43,15 @@ const headerRow: CSSProperties = {
 };
 const title: CSSProperties = { fontSize: 'var(--text-h2)', margin: 0 };
 const controls: CSSProperties = { display: 'grid', gap: 'var(--space-4)' };
+// the runs table sits on its own light panel (the input-background tone) so it isn't a big expanse of
+// the navy page background; hovered rows (bg-surface) still pop against it.
+const tablePanel: CSSProperties = {
+  // a hair lighter than the input tone — nudged toward the white card surface (works in both themes).
+  background: 'color-mix(in srgb, var(--bg-surface) 35%, var(--bg-surface-2))',
+  border: 'thin solid var(--border-subtle)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 'var(--space-2) var(--space-3)',
+};
 const noMatch: CSSProperties = {
   padding: 'var(--space-6)',
   textAlign: 'center',
@@ -168,15 +177,17 @@ export function RunsHomeScreen() {
               onSearch={setQuery}
             />
             {visibleRuns.length > 0 ? (
-              <RunsTable
-                runs={visibleRuns}
-                onOpen={openCard}
-                onReplay={(id) => navigate(`/runs/${id}/replay`)}
-                onOpenLive={(id) => navigate(`/runs/${id}`)}
-                sort={sort}
-                onSort={onSort}
-                grouped={isDefaultSort(sort)}
-              />
+              <div style={tablePanel}>
+                <RunsTable
+                  runs={visibleRuns}
+                  onOpen={openCard}
+                  onReplay={(id) => navigate(`/runs/${id}/replay`)}
+                  onOpenLive={(id) => navigate(`/runs/${id}`)}
+                  sort={sort}
+                  onSort={onSort}
+                  grouped={isDefaultSort(sort)}
+                />
+              </div>
             ) : (
               <p style={noMatch} role="status">
                 No runs match the current filter.
