@@ -61,7 +61,7 @@ Doppl's process is to seed the scenario, recover the real problem, and propose s
 
 This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage, queryable by vector database.
 A case study becomes a recovered problem.
-A recovered problem becomes a doppl.
+A recovered problem becomes a proposed solution, or "doppl".
 And at each new step, the path points out of the system, back to you - the human in the loop.
 
 Back to the drone problem: The *real* problem was never "defeat the drone." It was "make the footage worthless."
