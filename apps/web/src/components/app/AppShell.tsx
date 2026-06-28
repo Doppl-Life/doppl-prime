@@ -99,14 +99,14 @@ export function AppShell() {
         </Link>
         {navRunId !== null && (
           <nav style={runNav} aria-label="Run views">
+            <NavLink to="/agarden" style={agardenMatch === null ? styleFn : () => navLinkActive}>
+              Agarden
+            </NavLink>
             <NavLink to={`/runs/${navRunId}`} end style={styleFn}>
               Organism
             </NavLink>
             <NavLink to={`/runs/${navRunId}/knowledge`} style={styleFn}>
               Knowledge
-            </NavLink>
-            <NavLink to="/agarden" style={agardenMatch === null ? styleFn : () => navLinkActive}>
-              Agarden
             </NavLink>
           </nav>
         )}

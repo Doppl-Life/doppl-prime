@@ -262,6 +262,10 @@ const fieldLabel: CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
 };
+const sidebarSectionLabel: CSSProperties = {
+  ...fieldLabel,
+  color: 'var(--fg-default)',
+};
 const inputStyle: CSSProperties = {
   width: '100%',
   minHeight: 38,
@@ -745,7 +749,7 @@ function BloomLibrary({
       </div>
       <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
         <label>
-          <span style={fieldLabel}>Case study</span>
+          <span style={sidebarSectionLabel}>Case study</span>
           <select
             value={activeRunId ?? ''}
             onChange={(event) => onActiveIslandChange(event.target.value)}
@@ -759,7 +763,7 @@ function BloomLibrary({
           </select>
         </label>
         <label>
-          <span style={fieldLabel}>Search</span>
+          <span style={sidebarSectionLabel}>Search</span>
           <input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
@@ -768,7 +772,7 @@ function BloomLibrary({
           />
         </label>
         <div>
-          <span style={fieldLabel}>Stage</span>
+          <span style={sidebarSectionLabel}>Stage</span>
           <div
             style={{
               display: 'grid',
@@ -789,7 +793,7 @@ function BloomLibrary({
           </div>
         </div>
         <div>
-          <span style={fieldLabel}>Signal</span>
+          <span style={sidebarSectionLabel}>Signal</span>
           <div
             style={{
               display: 'grid',
@@ -810,7 +814,7 @@ function BloomLibrary({
           </div>
         </div>
         <label>
-          <span style={fieldLabel}>Sort</span>
+          <span style={sidebarSectionLabel}>Sort</span>
           <select
             value={sortMode}
             onChange={(event) => onSortModeChange(event.target.value as SortMode)}
@@ -996,7 +1000,7 @@ function BloomGrowPanel({
       </div>
       <div style={{ padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-3)' }}>
         <label>
-          <span style={fieldLabel}>Case study file</span>
+          <span style={sidebarSectionLabel}>Case study file</span>
           <input
             type="file"
             accept=".md,.markdown,.txt,text/markdown,text/plain"
@@ -1037,7 +1041,7 @@ function BloomGrowPanel({
           )}
         </div>
         <label>
-          <span style={fieldLabel}>Title</span>
+          <span style={sidebarSectionLabel}>Title</span>
           <input
             value={form.title}
             onChange={(event) => update('title', event.target.value)}
@@ -1048,7 +1052,7 @@ function BloomGrowPanel({
           {errors.title !== undefined && <FieldError>{errors.title}</FieldError>}
         </label>
         <label>
-          <span style={fieldLabel}>Synopsis</span>
+          <span style={sidebarSectionLabel}>Synopsis</span>
           <input
             value={form.synopsis}
             onChange={(event) => update('synopsis', event.target.value)}
@@ -1057,7 +1061,7 @@ function BloomGrowPanel({
           />
         </label>
         <label>
-          <span style={fieldLabel}>Seed material</span>
+          <span style={sidebarSectionLabel}>Seed material</span>
           <textarea
             value={form.seedText}
             onChange={(event) => update('seedText', event.target.value)}
@@ -1088,7 +1092,7 @@ function BloomGrowPanel({
           onChange={(value) => update('direction', value)}
         />
         <div>
-          <span style={fieldLabel}>Operators</span>
+          <span style={sidebarSectionLabel}>Operators</span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
             {generationOperatorOptions.map((operator) => {
               const active = form.operators.includes(operator);
@@ -1164,7 +1168,7 @@ function SegmentedControl<Value extends BloomGrowthMode | BloomGrowthDirection>(
 }) {
   return (
     <div>
-      <span style={fieldLabel}>{label}</span>
+      <span style={sidebarSectionLabel}>{label}</span>
       <div
         style={{
           display: 'grid',
@@ -1198,7 +1202,7 @@ function NumberField({
 }) {
   return (
     <label>
-      <span style={fieldLabel}>{label}</span>
+      <span style={sidebarSectionLabel}>{label}</span>
       <input
         type="number"
         min={1}
@@ -1236,7 +1240,7 @@ function LiveRunSummary({
         background: 'var(--bg-surface-2)',
       }}
     >
-      <span style={fieldLabel}>Live Agarden</span>
+      <span style={sidebarSectionLabel}>Live Agarden</span>
       <strong style={{ display: 'block' }}>
         {launchState.kind === 'starting'
           ? 'Starting run'
