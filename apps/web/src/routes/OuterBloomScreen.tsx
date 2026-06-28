@@ -128,7 +128,8 @@ const header: CSSProperties = {
   gap: 'var(--space-2)',
   alignItems: 'center',
   padding: '0.55rem var(--space-4)',
-  borderBottom: 'thin solid var(--border-subtle)',
+  borderBottom: '1px solid color-mix(in srgb, var(--accent) 32%, var(--border-strong))',
+  boxShadow: '0 1px 0 color-mix(in srgb, var(--bg-void) 72%, transparent)',
 };
 const title: CSSProperties = {
   margin: 0,
