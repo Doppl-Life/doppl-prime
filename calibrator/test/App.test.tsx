@@ -235,6 +235,16 @@ describe("App", () => {
         problem_recoveries: [
           {
             case_id: "jack-drone-privacy-fd080117",
+            problem_recovery_id: "earlier_problem_recovery",
+            node_id: "earlier_problem_recovery",
+            title: "Earlier Problem Recovery",
+            source_type: "kernel",
+            source_status: "imported",
+            body: "# Earlier Problem Recovery",
+            human_ratings: [],
+          },
+          {
+            case_id: "jack-drone-privacy-fd080117",
             problem_recovery_id:
               "the-asset-is-the-photograph-not-the-drone-9b2e71c4",
             node_id: "the-asset-is-the-photograph-not-the-drone-9b2e71c4",
@@ -269,6 +279,9 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Case study")).toHaveValue(
       "jack-drone-privacy-fd080117",
+    );
+    expect(screen.getByLabelText("Problem recovery")).toHaveValue(
+      "the-asset-is-the-photograph-not-the-drone-9b2e71c4",
     );
   });
 

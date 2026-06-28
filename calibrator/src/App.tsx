@@ -29,6 +29,10 @@ const SCORE_MAX = 10;
 const DEFAULT_SCORE = 5;
 const DEFAULT_CASE_ID = "jack-drone-privacy-fd080117";
 const DEFAULT_CASE_TITLE = "The Rock Star Drone Problem";
+const DEFAULT_PROBLEM_RECOVERY_ID =
+  "the-asset-is-the-photograph-not-the-drone-9b2e71c4";
+const DEFAULT_PROBLEM_RECOVERY_TITLE =
+  "The Asset Is the Photograph, Not the Drone";
 type ReviewQueueItem =
   | {
       target: "problem_recovery";
@@ -242,6 +246,30 @@ function firstRateableProblemRecovery(
   return caseItem.problem_recoveries.find(
     (artifact) => reviewMode(artifact) === "primary",
   );
+}
+
+function preferredRateableProblemRecovery(
+  caseItem: CalibratorIndex["cases"][number],
+) {
+  const rateable = caseItem.problem_recoveries.filter(
+    (artifact) => reviewMode(artifact) === "primary",
+  );
+  if (
+    caseItem.case_id === DEFAULT_CASE_ID ||
+    caseItem.title === DEFAULT_CASE_TITLE
+  ) {
+    return (
+      rateable.find(
+        (artifact) =>
+          artifact.problem_recovery_id === DEFAULT_PROBLEM_RECOVERY_ID ||
+          artifact.node_id === DEFAULT_PROBLEM_RECOVERY_ID ||
+          artifact.title === DEFAULT_PROBLEM_RECOVERY_TITLE,
+      ) ??
+      rateable[0] ??
+      null
+    );
+  }
+  return rateable[0] ?? null;
 }
 
 function firstRateableSolution(caseItem: CalibratorIndex["cases"][number]) {
@@ -1071,7 +1099,8 @@ export function App() {
   const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(
     null,
   );
-  const [ratingTarget, setRatingTarget] = useState<RatingTarget>("solution");
+  const [ratingTarget, setRatingTarget] =
+    useState<RatingTarget>("problem_recovery");
   const [sourceDetailsOpen, setSourceDetailsOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -1181,7 +1210,7 @@ export function App() {
         const firstCase = firstReviewableCase(data);
         if (firstCase) {
           const firstPrimaryProblemRecovery =
-            firstRateableProblemRecovery(firstCase);
+            preferredRateableProblemRecovery(firstCase);
           const firstPrimarySolution = firstRateableSolution(firstCase);
           setSelectedCaseId(firstCase.case_id);
           setSelectedProblemRecoveryId(
@@ -1648,7 +1677,7 @@ export function App() {
                 (item) => item.case_id === event.target.value,
               );
               const nextPrimaryProblemRecovery = nextCase
-                ? firstRateableProblemRecovery(nextCase)
+                ? preferredRateableProblemRecovery(nextCase)
                 : undefined;
               const nextPrimarySolution = nextCase
                 ? firstRateableSolution(nextCase)

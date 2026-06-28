@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-28T20:02:39.629Z",
+  "generated_at": "2026-06-28T20:45:58.474Z",
   "source_kind": "agarden",
   "comparison_sets": [],
   "cases": [
@@ -758,14 +758,26 @@
           "next": "doppl",
           "scores": {
             "judge": 2,
-            "human": null,
-            "n": 0
+            "human": 7,
+            "n": 1
           },
           "source_type": "kernel",
           "source_status": "imported",
           "kernel": "prime",
           "body": "# The Operational Misdirection (Geo-Fencing the Scandal)\n\nprev_id: [[jack-drone-privacy-fd080117]]\n\n## Trace\n### Case study · synopsis\n\nA celebrity's offshore yacht relied on being out of ordinary sight; that privacy assumption fails from above as paparazzi deploy drones.\n\n## Discovery\n### Finding 1\n\nHistory of maritime treaty law enforcement → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n### Finding 2\n\nIncreased regulatory scrutiny in busy ports (Signal: Increased port fees/permits) → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n### Finding 3\n\nAdoption of dynamic exclusion zones by militaries → [[international-law-and-predictive-474a314a#^the-operational-misdirection-geo]]\n\n## Growth — Problem recovery\n### Surface complaint\nPaparazzi drones photograph open decks before anyone can react.\n### Deleted assumption\nThat the yacht must remain in a single, fixed location for privacy to be maintained.\n### Hidden variable\nThe legal and logistical vulnerability of operating in specific, high-profile zones.\n### Actual problem\nCreating an operational profile that is legally ambiguous or logistically difficult for non-authorized commercial surveillance assets (drones/vessels) to track or operate within.\n### Candidate response\nEstablish a pre-approved, highly mobile 'operational zone' far from typical tourist paths and in waters requiring specialized permits (e.g., adjacent to military training areas or scientific monitoring zones). The yacht must maintain constant movement patterns that are difficult to predict and require continuous re-permitting/reporting, forcing surveillance assets into legal gray zones.\n### Skin in the Game\n- Maritime law and jurisdictional mapping\n- Advanced predictive modeling of maritime traffic\n- High-frequency operational agility training (crew)\n### Sprouts\n- Disaster zone triage/response protocols\n- Deep-sea scientific research vessel deployment\n- Autonomous, shifting commercial pipelines\n### Evaluation\n#### Novelty +4\n82% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +4\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: doppl",
-          "human_ratings": []
+          "human_ratings": [
+            {
+              "rating_id": "rating_the-operational-misdirection-geo-fencing-the-scandal-db8f130f_dalton_dinderman_challenger_gauntletai_com",
+              "rating_target": "problem_recovery",
+              "case_id": "jack-drone-privacy-fd080117",
+              "problem_recovery_id": "the-operational-misdirection-geo-fencing-the-scandal-db8f130f",
+              "score": 7,
+              "reviewer_email": "dalton.dinderman@challenger.gauntletai.com",
+              "submitted_at": "2026-06-28T16:08:09.422Z",
+              "app_version": "calibrator-v0",
+              "body": ""
+            }
+          ]
         },
         {
           "node_id": "the-decompression-protocol-post-event-value-capture-54b8b21b",
@@ -2683,14 +2695,26 @@
           "next": null,
           "scores": {
             "judge": 2,
-            "human": null,
-            "n": 0
+            "human": 2,
+            "n": 1
           },
           "source_type": "kernel",
           "source_status": "imported",
           "kernel": "prime",
           "body": "# Open Telemetry Compacts\n\nprev_id: [[insurance-telematics-verification-layer-2c58dfef]]\n## Trace\n### Case study · synopsis\n\nAutomated fleet deployment collapses municipal revenue streams derived from crash frequency, traffic enforcement, and fuel taxes, triggering emergency structural transitions to road usage charges and data tolling.\n\n### Problem recovery · synopsis\n\nMunicipalities are reinventing telemetry infrastructure instead of leveraging existing commercial data layers, creating unnecessary cost and delay\n\n## Discovery\n### Finding 1\n\nNHTSA latency comparison showing insurer dominance enables consolidation → field: data-privacy\n\n### Finding 2\n\nKPMG audit findings highlighting commercial data dependency → field: data-privacy\n\n### Finding 3\n\nEmerging state telematics privacy bills restricting insurer data sharing → field: data-privacy\n\n## Growth — Doppl\n### Claim\nMunicipalities must mandate open-source telemetry clearinghouses instead of relying on proprietary insurer networks to prevent regulatory capture and preserve competitive neutrality in road pricing.\n### Implications\n- Insurers lose monopoly control over fleet compliance data\n- AV fleets face higher data standardization costs but avoid vendor lock-in\n- Municipalities retain sovereign oversight of road metrics\n### Opportunities\n- Decentralized road-usage ledgers\n- Municipal data cooperatives for telematic verification\n- Privacy-preserving zero-knowledge compliance proofs\n### Sprouts\n- Open API standards for municipal RUC integration\n- Public-interest data broker models\n- Cross-state telemetry interoperability protocols\n### Evaluation\n#### Novelty +3\n81% of language absent from the seed; 0 dependency markers.\n#### Grounding +3\n3 evidence item(s); 1 causal markers; 0 hedge(s).\n#### Falsifiability +2\nBridged from the falsifiability measurement (checkable markers, claims, evidence).\n#### Cost-efficiency +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n#### Relevance +0\nJudge-only axis — defaults to 0 under the deterministic bridge.\n## Path\nnext: null",
-          "human_ratings": []
+          "human_ratings": [
+            {
+              "rating_id": "rating_open-telemetry-compacts-6bc0961c_dalton_dinderman_challenger_gauntletai_com",
+              "rating_target": "solution",
+              "case_id": "when-the-crashes-dont-come-575845a4",
+              "solution_id": "open-telemetry-compacts-6bc0961c",
+              "score": 2,
+              "reviewer_email": "dalton.dinderman@challenger.gauntletai.com",
+              "submitted_at": "2026-06-28T15:52:20.685Z",
+              "app_version": "calibrator-v0",
+              "body": ""
+            }
+          ]
         },
         {
           "node_id": "road-rights-derivatives-6ca9eb63",
