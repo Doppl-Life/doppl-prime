@@ -84,12 +84,31 @@ export const DEFAULT_RUN_CONFIG: Record<string, unknown> = {
   rngSeed: 42,
 };
 
-/** Default demo problem set. */
+/** Default demo problem set — prepared case studies (pick one in the launcher to tag a run with its id, then
+ *  re-run it to grow its bloom). Each id is a stable caseStudyId the cross-run bloom groups on. */
 export const DEFAULT_PROBLEM_SETS: ProblemSets = [
   {
     id: 'demo-1',
     title: 'Cross-domain transfer demo',
     prompt: 'Find a technique from one domain that solves a problem in another.',
+  },
+  {
+    id: 'readmissions',
+    title: 'Reduce hospital readmissions',
+    prompt:
+      'Reduce 30-day hospital readmissions for heart-failure patients via a cross-domain transfer from a proven technique in another field.',
+  },
+  {
+    id: 'recycling',
+    title: 'Cut recycling contamination',
+    prompt:
+      'Reduce contamination in residential curbside recycling via a cross-domain transfer from a proven technique in another field.',
+  },
+  {
+    id: 'education-assessment',
+    title: 'Rethink educational assessment',
+    prompt:
+      'Reframe how schools assess learning to better measure durable understanding, grounded in a technique transferred from another domain.',
   },
 ];
 

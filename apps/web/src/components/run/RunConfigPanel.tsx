@@ -33,6 +33,9 @@ export interface RunConfigPanelProps {
   runClient: Pick<RunClient, 'startRun' | 'getCapMaxima' | 'getModelRouteOverrides'>;
   onStarted?: (run: StartRunResult) => void;
   initialValues?: RunConfigFormValues;
+  /** Islands pivot A4 — the case study this run executes (from the chosen prepared problem); tags the run so
+   *  it joins that case study's bloom. Undefined for a freeform seed (an untagged run). */
+  caseStudyId?: string | undefined;
 }
 
 const CAP_FIELDS: { key: CapKey; label: string; help: string }[] = [
@@ -298,7 +301,12 @@ function Section({
   );
 }
 
-export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfigPanelProps) {
+export function RunConfigPanel({
+  runClient,
+  onStarted,
+  initialValues,
+  caseStudyId,
+}: RunConfigPanelProps) {
   const [form, setForm] = useState<RunConfigFormValues>(initialValues ?? DEFAULT_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [starting, setStarting] = useState(false);
@@ -395,7 +403,10 @@ export function RunConfigPanel({ runClient, onStarted, initialValues }: RunConfi
     setStarting(true);
     const idempotencyKey = crypto.randomUUID();
     runClient
-      .startRun(result.config, { idempotencyKey })
+      .startRun(result.config, {
+        idempotencyKey,
+        ...(caseStudyId !== undefined ? { caseStudyId } : {}),
+      })
       .then((run) => {
         setStartedRun(run);
         onStarted?.(run);

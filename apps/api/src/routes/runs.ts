@@ -10,6 +10,7 @@ import {
   overCapField,
   validateRunConfigForStart,
 } from '../runs/start-inner-run';
+import { deriveCaseStudyId } from './_support/deriveCaseStudyId';
 
 /**
  * The REST write path (ARCHITECTURE.md §11/§14/§15). POST /runs + POST /runs/:id/stop append
@@ -146,13 +147,17 @@ export function registerRunRoutes(app: FastifyInstance, deps: RunRoutesDeps): vo
 
     // Append run.configured — the sole authoritative write (rule #2). Operator-initiated.
     // caseStudyId rides the generic run.configured payload as run-level metadata (NOT a RunConfig field
-    // — readRecordedConfig's extractRunConfig tolerates it). Added only when a non-empty string is given,
-    // so an absent caseStudyId leaves the payload byte-identical to today.
-    const runOptions =
+    // — readRecordedConfig's extractRunConfig tolerates it). Islands pivot A4: EVERY run is tagged — the
+    // operator's explicit id (a chosen prepared problem) when given, else one DERIVED from the seed so a
+    // freeform run still lands in a bloom and re-running the same prompt groups those runs under one case
+    // study (the growing network). Deterministic → replay-safe (rule #7).
+    const effectiveCaseStudyId =
       typeof caseStudyId === 'string' && caseStudyId.length > 0
-        ? { payloadExtras: { caseStudyId } }
-        : {};
-    const runId = await appendAndStartInnerRun(config, deps, runOptions);
+        ? caseStudyId
+        : deriveCaseStudyId(config.seed);
+    const runId = await appendAndStartInnerRun(config, deps, {
+      payloadExtras: { caseStudyId: effectiveCaseStudyId },
+    });
     activeRunId = runId;
     if (idemKey !== null) idempotency.set(idemKey, runId);
     return reply.status(201).send({ runId });

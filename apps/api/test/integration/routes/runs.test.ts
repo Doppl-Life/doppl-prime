@@ -102,14 +102,18 @@ describe('POST /runs + /runs/:id/stop — REST write path (spec §11/§14/§15)'
     }
   });
 
-  test('test_post_runs_without_caseStudyId_omits_the_key', async () => {
+  // Islands pivot A4 — without an explicit caseStudyId the route DERIVES one from the seed (every run lands
+  // in a bloom; re-running the same prompt groups them). Deterministic: two runs of the same seed share it.
+  test('test_post_runs_derives_caseStudyId_from_seed_when_absent', async () => {
     const app = makeApp();
     await app.ready();
     try {
-      const res = await app.inject({ method: 'POST', url: '/runs', payload: validBody });
-      const { runId } = res.json() as { runId: string };
-      const configured = (await store.readByRun(runId)).find((e) => e.type === 'run.configured');
-      expect(configured!.payload).not.toHaveProperty('caseStudyId');
+      const res1 = await app.inject({ method: 'POST', url: '/runs', payload: validBody });
+      const id1 = (res1.json() as { runId: string }).runId;
+      const cfg1 = (await store.readByRun(id1)).find((e) => e.type === 'run.configured');
+      const derived = (cfg1!.payload as Record<string, unknown>).caseStudyId;
+      expect(typeof derived).toBe('string');
+      expect(derived as string).toMatch(/^cs-/); // a derived id, not omitted
     } finally {
       await app.close();
     }

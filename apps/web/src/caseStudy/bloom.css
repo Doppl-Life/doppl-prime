@@ -1,0 +1,64 @@
+/*
+ * Bloom view animations — the "growing network" wow factor. Colors come from design tokens (var()); only
+ * opacity/transform/box-shadow geometry is literal (animation geometry, token-exempt like the graph layouts).
+ */
+
+@keyframes bloom-grow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* every bloom node pops in, staggered by an inline animation-delay (growOrder) → the network "grows" */
+.bloom-node {
+  animation: bloom-grow-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* the case-study root breathes after it grows in — a living center the network blooms from */
+@keyframes bloom-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px var(--accent-hover),
+      0 0 34px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+.bloom-root {
+  animation:
+    bloom-grow-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    bloom-pulse 3.2s ease-in-out 0.5s infinite;
+}
+
+/* the doppel petals shimmer a touch — the gold winners catch the eye */
+@keyframes bloom-petal-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 16px color-mix(in srgb, var(--status-selected) 28%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 26px color-mix(in srgb, var(--status-selected) 50%, transparent);
+  }
+}
+.bloom-petal {
+  animation:
+    bloom-grow-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    bloom-petal-glow 4s ease-in-out 0.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bloom-node,
+  .bloom-root,
+  .bloom-petal {
+    animation: none;
+  }
+}
