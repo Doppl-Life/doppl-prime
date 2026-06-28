@@ -48,6 +48,10 @@
   --warning: #f4b650;
   --danger: #f2545b;
   --danger-soft: rgba(242, 84, 91, 0.15);
+  /* replay mode — a MUTED teal: reads as "historical, not actionable", calmer than the blue --info and
+     clearly desaturated vs. the bright live/active --accent. */
+  --mode-replay: #5fa49a;
+  --mode-replay-soft: rgba(95, 164, 154, 0.14);
 
   /* ---- STATUS palette — colorblind-safe core (always paired w/ shape+icon+label) ---- */
   /* Agenome */
@@ -66,6 +70,16 @@
   --status-checked: #5aa9ff;
   --status-scored: #7fb2ff;
   --status-selected: #ffca3a; /* gold — the winner */
+  /* dark keeps the original gold winner (the new bright yellow is LIGHT-mode only — see :root.light) */
+  --winner-accent: #ffca3a;
+  /* winner banner treatment — DARK is OUTLINED (gold border + gold text on a faint tint, readable on the
+     dark surface); LIGHT overrides to a filled treatment (see :root.light) since yellow text on a light
+     page wouldn't be legible. */
+  --winner-banner-bg: color-mix(in srgb, var(--winner-accent) 12%, var(--bg-surface));
+  --winner-banner-border: var(--winner-accent);
+  --winner-banner-accent: var(--winner-accent); /* label · glyph */
+  --winner-banner-title: var(--fg-default);
+  --winner-banner-cta: var(--fg-muted);
   --status-rejected: #8a6a6a;
   --status-invalid: #f2545b;
 
@@ -162,6 +176,9 @@
   --warning: #b5780c;
   --danger: #d7343b;
   --danger-soft: rgba(215, 52, 59, 0.1);
+  /* replay mode — muted teal, darkened for AA on white */
+  --mode-replay: #3c7d74;
+  --mode-replay-soft: rgba(60, 125, 116, 0.12);
 
   /* status — same families, AA-legible stops on light */
   --status-seeded: #6b7790;
@@ -178,6 +195,13 @@
   --status-checked: #2e72d6;
   --status-scored: #3e72c9;
   --status-selected: #b07d08; /* gold, darkened for white */
+  --winner-accent: #f2cf36; /* winner banner — bright clean yellow filled treatment (dark text on it) */
+  /* LIGHT winner banner — FILLED yellow with dark text (yellow text on a light page wouldn't be legible). */
+  --winner-banner-bg: var(--winner-accent);
+  --winner-banner-border: color-mix(in srgb, var(--winner-accent) 72%, var(--fg-on-accent));
+  --winner-banner-accent: var(--fg-on-accent); /* label · glyph — dark on the yellow fill */
+  --winner-banner-title: var(--fg-on-accent);
+  --winner-banner-cta: color-mix(in srgb, var(--fg-on-accent) 75%, var(--winner-accent));
   --status-rejected: #8a6a6a;
   --status-invalid: #d7343b;
 

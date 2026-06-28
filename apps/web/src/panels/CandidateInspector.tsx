@@ -45,15 +45,16 @@ const winnerPill: CSSProperties = {
   gap: 'var(--space-2)',
   alignSelf: 'flex-start',
   padding: 'var(--space-1) var(--space-3)',
-  background: 'var(--accent-soft)',
-  border: 'thin solid var(--status-selected)',
+  // matches the winning-idea banner treatment: outlined gold in dark, filled yellow in light.
+  background: 'var(--winner-banner-bg)',
+  border: 'thin solid var(--winner-banner-border)',
   borderRadius: 'var(--radius-full)',
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-caption)',
   fontWeight: 700,
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
-  color: 'var(--status-selected)',
+  color: 'var(--winner-banner-accent)',
 };
 const fieldLabel: CSSProperties = {
   fontFamily: 'var(--font-mono)',

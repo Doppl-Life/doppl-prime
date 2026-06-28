@@ -25,7 +25,7 @@ const wrap: CSSProperties = {
   color: 'var(--fg-muted)',
   width: '100%',
 };
-const slider: CSSProperties = { flex: 1, accentColor: 'var(--info)' };
+const slider: CSSProperties = { flex: 1, accentColor: 'var(--mode-replay)' };
 const readout: CSSProperties = { whiteSpace: 'nowrap', color: 'var(--fg-default)' };
 
 export function ReplayScrubber({ totalSteps, value, onChange }: ReplayScrubberProps) {

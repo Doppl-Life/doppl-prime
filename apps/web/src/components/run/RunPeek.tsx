@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { resolveStatus } from '../core/status-map';
 import type { RunSummary } from '../../data/runClient';
 import { Sparkline } from './Sparkline';
 import { runFitness } from './runsSummary';
@@ -20,9 +19,8 @@ const wrap: CSSProperties = {
   gap: 'var(--space-5)',
   flexWrap: 'wrap',
   alignItems: 'flex-start',
-  padding: 'var(--space-3) var(--space-4)',
-  background: 'var(--bg-surface-2)',
-  borderRadius: 'var(--radius-md)',
+  // no background/box of its own — it inherits the expanded cell's lighter surface so the whole area is
+  // one uniform band (the cell provides the padding).
   fontFamily: 'var(--font-ui)',
 };
 const colMain: CSSProperties = { flex: '2 1 22rem', display: 'grid', gap: 'var(--space-3)' };
@@ -81,7 +79,6 @@ function Stat({ value, name }: { value: number; name: string }) {
 }
 
 export function RunPeek({ run }: RunPeekProps) {
-  const spec = resolveStatus('run', run.status ?? 'unknown');
   const fitness = run.fitnessByGeneration ?? [];
   const fit = runFitness(run);
   return (
@@ -113,7 +110,7 @@ export function RunPeek({ run }: RunPeekProps) {
             <div style={label}>Fitness climb{fit !== null ? ` · best ${fit.toFixed(2)}` : ''}</div>
             <Sparkline
               values={fitness}
-              color={spec.colorToken}
+              color="var(--mode-replay)"
               height={40}
               ariaLabel={`best fitness across ${fitness.length} generation${
                 fitness.length === 1 ? '' : 's'

@@ -95,7 +95,7 @@ const hiddenHandle: CSSProperties = {
  *     other candidates → the scored accent. (Never the sole channel — the StatusBadge glyph+label stay.)
  */
 function bodyColorFor(data: LineageNodeData): string {
-  if (data.nodeType === 'candidate' && data.status === 'selected') return 'var(--status-selected)';
+  if (data.nodeType === 'candidate' && data.status === 'selected') return 'var(--winner-accent)';
   if (data.status === 'culled') return 'var(--status-culled)';
   if (data.nodeType === 'agenome') {
     if (data.bornBy === 'mutation') return 'var(--status-mutated)';

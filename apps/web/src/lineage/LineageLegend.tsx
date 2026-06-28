@@ -59,7 +59,7 @@ const NODE_ROWS: readonly NodeRow[] = [
   { color: 'var(--status-reproduced)', glyph: '⚇', label: 'Fused organism' },
   { color: 'var(--status-scored)', glyph: '◉', label: 'Candidate idea' },
   { color: 'var(--status-culled)', glyph: '✕', label: 'Culled' },
-  { color: 'var(--status-selected)', glyph: '♔', label: 'Selected winner' },
+  { color: 'var(--winner-accent)', glyph: '♔', label: 'Selected winner' },
 ];
 
 /** A tiny inline edge sample (a colored line, optionally dashed) — the edge-style channel + label. */

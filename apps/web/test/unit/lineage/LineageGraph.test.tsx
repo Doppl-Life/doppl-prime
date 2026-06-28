@@ -147,7 +147,7 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
       }),
     ).toContain('var(--status-reproduced)');
 
-    // the selected winner → the selected (gold) hue.
+    // the selected winner → the bright-yellow winner-accent hue.
     expect(
       cardLeftBorder({
         label: 'W',
@@ -156,7 +156,7 @@ describe('LineageNodeCard — accessible custom node rendering', () => {
         dataRef: 'cand_w',
         working: false,
       }),
-    ).toContain('var(--status-selected)');
+    ).toContain('var(--winner-accent)');
 
     // a culled candidate → the culled (red) hue.
     expect(

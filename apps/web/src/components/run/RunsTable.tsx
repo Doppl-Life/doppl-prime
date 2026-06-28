@@ -20,8 +20,6 @@ import { RunPeek } from './RunPeek';
  */
 export interface RunsTableProps {
   runs: readonly RunSummary[];
-  /** Open the run's primary view (live vs replay derived by the caller from status). */
-  onOpen: (runId: string, status: string | null) => void;
   onReplay: (runId: string) => void;
   onOpenLive: (runId: string) => void;
   /** Current sort + a click handler for the sortable headers. Defaults to the natural newest-first order. */
@@ -93,28 +91,14 @@ const sortBtn: CSSProperties = {
   gap: 'var(--space-1)',
 };
 const sortArrow: CSSProperties = { fontSize: 'var(--text-mono)', color: 'var(--accent)' };
-const runCell: CSSProperties = { display: 'flex', alignItems: 'center', gap: 'var(--space-2)' };
-const chevronBtn: CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  padding: 0,
-  color: 'var(--fg-muted)',
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-};
+// the expanded peek fills its whole cell with the LIGHTEST raised surface (--bg-overlay is lighter than the
+// table panel in dark, and white in light) so the detail reads as its own lighter band, not a bleed of the
+// row above it.
 const peekTd: CSSProperties = {
-  padding: '0 var(--space-3) var(--space-3)',
+  padding: 'var(--space-4)',
+  background: 'var(--bg-overlay)',
   borderBottom: 'thin solid var(--border-subtle)',
 };
-function chevronStyle(open: boolean): CSSProperties {
-  return {
-    display: 'inline-block',
-    fontSize: 'var(--text-mono)',
-    transition: 'transform var(--motion-fast) var(--ease-out)',
-    transform: open ? 'rotate(90deg)' : 'none',
-  };
-}
 const td: CSSProperties = {
   padding: 'var(--space-2) var(--space-3)',
   borderBottom: 'thin solid var(--border-subtle)',
@@ -128,15 +112,10 @@ const tdNum: CSSProperties = {
 };
 const tdMuted: CSSProperties = { ...td, color: 'var(--fg-muted)', whiteSpace: 'nowrap' };
 const accentTd: CSSProperties = { ...td, padding: 0 };
-const idButton: CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  padding: 0,
+const idText: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--text-mono)',
-  color: 'var(--accent)',
-  cursor: 'pointer',
-  textAlign: 'left',
+  color: 'var(--fg-muted)',
 };
 /** Two-line clamp for the Problem / Final-idea title — the column is wide; the rest is on hover. */
 const clamp: CSSProperties = {
@@ -189,7 +168,6 @@ const fitVal: CSSProperties = {
 
 export function RunsTable({
   runs,
-  onOpen,
   onReplay,
   onOpenLive,
   sort = DEFAULT_SORT,
@@ -272,7 +250,6 @@ export function RunsTable({
             setHovered={setHovered}
             expanded={expanded}
             onToggle={toggle}
-            onOpen={onOpen}
             onReplay={onReplay}
             onOpenLive={onOpenLive}
             stop={stop}
@@ -290,7 +267,6 @@ function RunGroupRows({
   setHovered,
   expanded,
   onToggle,
-  onOpen,
   onReplay,
   onOpenLive,
   stop,
@@ -301,7 +277,6 @@ function RunGroupRows({
   setHovered: (id: string | null) => void;
   expanded: ReadonlySet<string>;
   onToggle: (id: string) => void;
-  onOpen: (runId: string, status: string | null) => void;
   onReplay: (runId: string) => void;
   onOpenLive: (runId: string) => void;
   stop: (cb: () => void) => (e: MouseEvent) => void;
@@ -335,9 +310,23 @@ function RunGroupRows({
           <Fragment key={run.runId}>
             <tr
               style={rowStyle}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
+              aria-label={
+                isExpanded
+                  ? `Collapse detail for run ${run.runId}`
+                  : `Expand detail for run ${run.runId}`
+              }
               onMouseEnter={() => setHovered(run.runId)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => onOpen(run.runId, run.status)}
+              onClick={() => onToggle(run.runId)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onToggle(run.runId);
+                }
+              }}
             >
               <td style={accentTd}>
                 <div
@@ -353,32 +342,9 @@ function RunGroupRows({
               </td>
               <td style={tdNum}>{index}</td>
               <td style={td}>
-                <div style={runCell}>
-                  <button
-                    type="button"
-                    aria-label={
-                      isExpanded
-                        ? `Collapse detail for run ${run.runId}`
-                        : `Expand detail for run ${run.runId}`
-                    }
-                    aria-expanded={isExpanded}
-                    style={chevronBtn}
-                    onClick={stop(() => onToggle(run.runId))}
-                  >
-                    <span aria-hidden="true" style={chevronStyle(isExpanded)}>
-                      ▸
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Open run ${run.runId}`}
-                    title={run.runId}
-                    style={idButton}
-                    onClick={stop(() => onOpen(run.runId, run.status))}
-                  >
-                    {shortId(run.runId)}
-                  </button>
-                </div>
+                <span style={idText} title={run.runId}>
+                  {shortId(run.runId)}
+                </span>
               </td>
               <td style={tdMuted}>{timeOfDay(run.createdAt)}</td>
               <td style={td}>
@@ -414,7 +380,7 @@ function RunGroupRows({
                   <div style={sparkRow}>
                     <Sparkline
                       values={fitness}
-                      color={spec.colorToken}
+                      color="var(--mode-replay)"
                       ariaLabel={`best fitness across ${fitness.length} generation${
                         fitness.length === 1 ? '' : 's'
                       }, latest ${lastFit !== null ? lastFit.toFixed(2) : 'unavailable'}`}
