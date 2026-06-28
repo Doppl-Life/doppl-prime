@@ -1,4 +1,4 @@
-# Case Study: The Rock Star's Drone Problem
+# Case Study: The Rock Star Drone Problem
 
 A famous rock star owned a superyacht and used it the way very rich, very famous
 people sometimes use superyachts: as a private world offshore, away from hotel

@@ -1,4 +1,4 @@
-# Solution: The Rock Star's Drone Problem
+# Solution: The Rock Star Drone Problem
 
 This was solved in the real world.
 

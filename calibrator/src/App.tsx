@@ -28,7 +28,7 @@ const SCORE_MIN = 0;
 const SCORE_MAX = 10;
 const DEFAULT_SCORE = 5;
 const DEFAULT_CASE_ID = "jack-drone-privacy-fd080117";
-const DEFAULT_CASE_TITLE = "The Rock Star's Drone Problem";
+const DEFAULT_CASE_TITLE = "The Rock Star Drone Problem";
 type ReviewQueueItem =
   | {
       target: "problem_recovery";

@@ -16,7 +16,7 @@ describe("readAgardenIndex", () => {
       "when-the-crashes-dont-come-575845a4",
     ]));
     expect(index.cases.map((item) => item.title)).toContain("Houston Baggage Claim Complaints");
-    expect(index.cases.map((item) => item.title)).toContain("The Rock Star's Drone Problem");
+    expect(index.cases.map((item) => item.title)).toContain("The Rock Star Drone Problem");
   });
 
   it("recursively attaches judgeable problem recoveries and doppls under their root case", async () => {

@@ -219,17 +219,17 @@ describe("App", () => {
     expect(screen.getAllByText("+3.5").length).toBeGreaterThan(1);
   });
 
-  it("prefers The Rock Star's Drone Problem when it is present in the index", async () => {
+  it("prefers The Rock Star Drone Problem when it is present in the index", async () => {
     const preferredFixture: CalibratorIndex = structuredClone(fixture);
     preferredFixture.cases = [
       {
         case_id: "jack-drone-privacy-fd080117",
-        title: "The Rock Star's Drone Problem",
+        title: "The Rock Star Drone Problem",
         visibility: "internal",
         source_paths: [],
-        body: "# The Rock Star's Drone Problem",
+        body: "# The Rock Star Drone Problem",
         problem: {
-          body: "# The Rock Star's Drone Problem",
+          body: "# The Rock Star Drone Problem",
           source: "case-study",
         },
         problem_recoveries: [
