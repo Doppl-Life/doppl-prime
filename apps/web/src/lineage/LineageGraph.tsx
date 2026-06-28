@@ -68,6 +68,12 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
     () => lineageToFlow(shown, inflight.workingEntityIds),
     [shown, inflight.workingEntityIds],
   );
+  // Generation headers (`type: 'generation'`) are kept in the rendered graph; their count is the run's
+  // generation depth — a figure that means something to the user (unlike the raw event-log watermark).
+  const generationCount = useMemo(
+    () => shown.nodes.filter((n) => n.type === 'generation').length,
+    [shown.nodes],
+  );
   // Run Dagre layout asynchronously so the main thread can paint a loading indicator first and the
   // browser doesn't flag the tab as unresponsive on 1000+ node runs. We keep the previous laid-out
   // nodes visible while the new layout is being computed (no flash of empty graph). requestIdleCallback
@@ -133,8 +139,19 @@ export function LineageGraph({ projection, events, onNodeClick }: LineageGraphPr
             <Controls showInteractive={false} />
             {/* Watermark summary overlay — sits over the graph (doesn't reserve layout height). */}
             <Panel position="top-left">
-              <div data-testid="lineage-summary" style={summary}>
-                {shown.nodes.length} nodes · sequence {shown.sequenceThrough}
+              {/* Count the RENDERED backbone (flow.nodes) — agenomes + candidates + generation headers —
+                  NOT shown.nodes (the full projection, which includes the critic/check/score detail nodes
+                  filtered out at lineageToFlow and moved to the inspector). The label should match what's
+                  on screen, and pairs the node count with the generation depth (both meaningful to the
+                  user). The event-log watermark (`shown.sequenceThrough`) has no user-facing meaning, so
+                  it's NOT displayed — retained only as a non-visible `data-` attr for debugging + tests. */}
+              <div
+                data-testid="lineage-summary"
+                data-sequence-through={shown.sequenceThrough}
+                style={summary}
+              >
+                {flow.nodes.length} nodes · {generationCount} generation
+                {generationCount === 1 ? '' : 's'}
                 {layingOut && nodes.length === 0 && ' · laying out…'}
               </div>
             </Panel>

@@ -21,9 +21,13 @@ export interface FitnessOverTimeProps {
 }
 
 const W = 320;
-const H = 160;
-const PAD_X = 28;
-const PAD_Y = 20;
+const H = 210;
+const PAD_X = 34; // left/right gutter — also holds the y-axis scale labels
+const PAD_TOP = 16;
+const PAD_BOTTOM = 26; // room for the per-generation x-axis labels
+// Y gridline fractions of the axis max — give the plot a readable scale (0 / mid / max) instead of a
+// bare floating line. Fitness ∈ [0,1] so the axis tops out at 1.0.
+const GRID_FRACTIONS = [0, 0.5, 1];
 
 const wrap: CSSProperties = {
   display: 'grid',
@@ -74,8 +78,15 @@ export function FitnessOverTime({ events, showComponents = false }: FitnessOverT
   const n = series.length;
   const maxY = Math.max(1, ...series.map((p) => p.best));
   const xAt = (i: number) => (n === 1 ? W / 2 : PAD_X + (i * (W - 2 * PAD_X)) / (n - 1));
-  const yAt = (v: number) => H - PAD_Y - (v / maxY) * (H - 2 * PAD_Y);
+  const yAt = (v: number) => PAD_TOP + (1 - v / maxY) * (H - PAD_TOP - PAD_BOTTOM);
+  const baselineY = yAt(0);
   const bestPoints = series.map((p, i) => `${xAt(i)},${yAt(p.best)}`).join(' ');
+  // Filled area under the best line (the headline series) — a soft cyan wash that anchors the eye and
+  // makes the gen-over-gen trend read at a glance, without competing with the mean line above it.
+  const bestArea = `M ${xAt(0)},${baselineY} ${bestPoints
+    .split(' ')
+    .map((pt) => `L ${pt}`)
+    .join(' ')} L ${xAt(n - 1)},${baselineY} Z`;
   // The per-generation MEAN fitness, alongside the peak (FV.6 — closes the P7 mean-defined-but-unrendered
   // reachability finding). mean ≤ best, so maxY (best-bounded) already contains it; a distinct dash +
   // square marker + label is a non-color channel (rule #4 / §12).
@@ -95,6 +106,40 @@ export function FitnessOverTime({ events, showComponents = false }: FitnessOverT
   return (
     <section aria-label="Fitness over time" style={wrap}>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Fitness over generations" width="100%">
+        {/* Y gridlines + scale labels — give the plot a readable 0 / mid / max reference. */}
+        {GRID_FRACTIONS.map((f) => {
+          const gy = yAt(f * maxY);
+          return (
+            <g key={`grid-${f}`} aria-hidden="true">
+              <line
+                x1={PAD_X}
+                y1={gy}
+                x2={W - PAD_X}
+                y2={gy}
+                stroke="var(--border-subtle)"
+                strokeWidth={1}
+              />
+              <text x={PAD_X - 6} y={gy + 3} fill="var(--fg-faint)" fontSize={9} textAnchor="end">
+                {(f * maxY).toFixed(1)}
+              </text>
+            </g>
+          );
+        })}
+        {/* Per-generation x-axis labels (G0, G1, …) so the horizontal axis isn't unlabeled. */}
+        {series.map((p, i) => (
+          <text
+            key={`xlabel-${p.generationId}`}
+            x={xAt(i)}
+            y={H - PAD_BOTTOM + 16}
+            fill="var(--fg-faint)"
+            fontSize={9}
+            textAnchor="middle"
+          >
+            {`G${p.index}`}
+          </text>
+        ))}
+        {/* Soft cyan wash under the best line. */}
+        <path d={bestArea} fill={BEST_FITNESS_SERIES.colorToken} fillOpacity={0.1} stroke="none" />
         <polyline
           points={bestPoints}
           fill="none"

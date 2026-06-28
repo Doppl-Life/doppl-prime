@@ -51,6 +51,37 @@ const label: CSSProperties = {
 };
 const muted: CSSProperties = { color: 'var(--fg-muted)' };
 const monoId: CSSProperties = { fontFamily: 'var(--font-mono)', fontWeight: 600 };
+// FV.5b — per-axis judge row: the score is the prominent anchor (a filled badge), axis name + rationale beside it.
+const judgeRow: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'auto 1fr',
+  gap: 'var(--space-3)',
+  alignItems: 'start',
+  padding: 'var(--space-2) 0',
+  borderTop: 'thin solid var(--border-subtle)',
+};
+const scoreBadge: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: '1px',
+  fontFamily: 'var(--font-mono)',
+  fontWeight: 700,
+  lineHeight: 1,
+  color: 'var(--fg-on-accent)',
+  background: 'var(--accent)',
+  borderRadius: 'var(--radius-md)',
+  padding: 'var(--space-2) var(--space-3)',
+  minWidth: '2.75rem',
+  justifyContent: 'center',
+};
+const scoreNum: CSSProperties = { fontSize: 'var(--text-h2)' };
+const scoreDenom: CSSProperties = { fontSize: 'var(--text-mono-sm)', opacity: 0.8 };
+const judgeAxisName: CSSProperties = { fontFamily: 'var(--font-mono)', fontWeight: 600 };
+const judgeRationale: CSSProperties = {
+  color: 'var(--fg-muted)',
+  fontSize: 'var(--text-body)',
+  marginTop: 'var(--space-1)',
+};
 // FV.5b — a scrollable raw-capture block (the persisted text is already scrubbed + truncated-with-marker).
 const pre: CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -112,12 +143,21 @@ export function NodeInspectorContent({
           <section aria-label="Held-out judge rationale" style={subsection}>
             <span style={label}>held-out judge — per-axis rationale (FB.8)</span>
             {judgeAxes.map((axis) => (
-              <div key={axis}>
-                <span style={monoId}>{axis}</span>
-                {judge.axisScores[axis] !== undefined && (
-                  <span style={muted}> ({judge.axisScores[axis]}/5)</span>
+              <div key={axis} style={judgeRow}>
+                {judge.axisScores[axis] !== undefined ? (
+                  <span style={scoreBadge} aria-label={`${axis} score ${judge.axisScores[axis]} out of 5`}>
+                    <span style={scoreNum}>{judge.axisScores[axis]}</span>
+                    <span style={scoreDenom}>/5</span>
+                  </span>
+                ) : (
+                  <span style={scoreBadge} aria-label={`${axis} score not available`}>
+                    <span style={scoreNum}>—</span>
+                  </span>
                 )}
-                <span> — {judge.axisRationales[axis]}</span>
+                <div>
+                  <span style={judgeAxisName}>{axis}</span>
+                  <div style={judgeRationale}>{judge.axisRationales[axis]}</div>
+                </div>
               </div>
             ))}
           </section>
