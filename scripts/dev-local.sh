@@ -16,11 +16,26 @@ cd "$ROOT"
 ENV_FILE="$ROOT/.env"
 CONTAINER="doppl-pg"
 PG_IMAGE="postgres:16"
+AGARDEN_REPO_URL="${AGARDEN_REPO_URL:-https://github.com/Doppl-Life/agarden.git}"
+AGARDEN_CACHE_DIR="${AGARDEN_CACHE_DIR:-$ROOT/.cache/agarden}"
+
+# --- verify local runtime -----------------------------------------------------------
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo unknown)"
+if [[ "$NODE_MAJOR" != "22" ]]; then
+  echo "✗ Doppl local dev expects Node 22 LTS; found Node $(node -v 2>/dev/null || echo unknown)." >&2
+  echo "  Try: nvm install 22 && nvm use 22" >&2
+  exit 1
+fi
 
 # --- load .env (the API also loads it via tsx; we need DATABASE_URL here too) -------
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "✗ No .env found at repo root. Run:  cp .env.example .env  and fill it in." >&2
-  exit 1
+  if [[ -f "$ROOT/.env.example" ]]; then
+    echo "• No .env found; creating one from .env.example."
+    cp "$ROOT/.env.example" "$ENV_FILE"
+  else
+    echo "✗ No .env found at repo root, and .env.example is missing." >&2
+    exit 1
+  fi
 fi
 set -a
 # shellcheck disable=SC1090
@@ -90,6 +105,43 @@ if [[ "$is_local" == 1 ]]; then
   done
 else
   echo "ℹ DATABASE_URL host is '$DB_HOST' (not local) — skipping Docker, using it as-is."
+fi
+
+# --- seed curated Agarden islands used by /agarden ---------------------------------
+# Keep this best-effort: the inner organism view can still run without the imported
+# Agarden demo data, but a fresh checkout should show the outer map with one command.
+if [[ "${DOPPL_AUTO_SEED_AGARDEN:-1}" != "0" ]]; then
+  if [[ -n "${AGARDEN_FLOW_DIR:-}" ]]; then
+    AGARDEN_FLOW_ROOT="$AGARDEN_FLOW_DIR"
+  else
+    AGARDEN_FLOW_ROOT="$AGARDEN_CACHE_DIR/flow"
+    if [[ -d "$AGARDEN_CACHE_DIR/.git" ]]; then
+      echo "↻ Updating cached Agarden data…"
+      git -C "$AGARDEN_CACHE_DIR" pull --ff-only >/dev/null || \
+        echo "⚠ Could not update cached Agarden data; using the local cache."
+    elif command -v git >/dev/null 2>&1; then
+      echo "↓ Fetching Agarden data into .cache/agarden…"
+      mkdir -p "$(dirname "$AGARDEN_CACHE_DIR")"
+      git clone --depth 1 "$AGARDEN_REPO_URL" "$AGARDEN_CACHE_DIR" >/dev/null || \
+        echo "⚠ Could not fetch Agarden data; /agarden will show only database-local runs."
+    else
+      echo "⚠ git is not installed; skipping Agarden demo-data fetch."
+    fi
+  fi
+
+  if [[ -d "$AGARDEN_FLOW_ROOT" ]]; then
+    echo "🌱 Seeding Agarden maps…"
+    pnpm -C apps/api seed-outer-bloom \
+      "$AGARDEN_FLOW_ROOT/jack-drone-privacy-fd080117" \
+      jack-drone-privacy-fd080117 >/dev/null || \
+      echo "⚠ Could not seed The Rock Star's Drone Problem."
+    pnpm -C apps/api seed-outer-bloom \
+      "$AGARDEN_FLOW_ROOT/when-the-crashes-dont-come-575845a4" \
+      when-the-crashes-dont-come-575845a4 >/dev/null || \
+      echo "⚠ Could not seed When the Crashes Don't Come."
+  fi
+else
+  echo "ℹ DOPPL_AUTO_SEED_AGARDEN=0 — skipping Agarden demo-data seed."
 fi
 
 # --- run API + web together, clean shutdown on Ctrl-C -------------------------------
