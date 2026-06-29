@@ -57,7 +57,7 @@ So what do you do?
 
 Doppl's process is to seed the scenario, recover the real problem, and propose solutions.
 
-This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage, queryable by vector database.
+This is the aGarden, where Zero-to-One automates to mostly a graph problem, tracing each lineage.
 A case study becomes a recovered problem.
 A recovered problem becomes a proposed solution, or "doppl".
 And at each new step, the path points out of the system, back to you - the human in the loop.
@@ -90,25 +90,32 @@ It becomes a pre-solved solution-space, clustered and queried via vector databas
 
 ## 6 · The Human in the Loop
 
-A key point of the Zero-to-One mindset is to get out of your head. Doppl helps you do just that.
-Once Doppl does the do, you gotta touch grass. You need to validate.
+A key point of the Zero-to-One mindset is to get out of your head, and get into the world. Do the Simple Hard thing.
+Doppl helps you do just that.
+'Cuz once Doppl does the do, you gotta touch grass. You need to validate.
 
-We do that with "Skin in the Game", and Implications and Opportunities.
+We do that with "Skin in the Game", and "Implications and Opportunities."
 
 With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk to, what you could ask about.<DD - switch to Agora, Doppl, Implications and Opportunities>
 
-The Doppl is a doorway, not a destination. Behind every fix:
+And the Doppl is a doorway, not a destination. Behind every fix:
 
-- Implications: if this is true, what does that mean?
-- Opportunities: Now that I know the implications, what are the levels that I could possibly play at?<DD - switch to presentation, PSaaS>
+- Implications: If this is true, what does that imply?
+- Opportunities: Now that I know the implications, what are the levels that I could possibly play at?
 
-## 7 · Implications & opportunity
+If it's true that battery supply feuls the future, which means lithium becomes a constrained resource, how does that help me?
+Maybe I can't finance a refinery, or expand a mine...but I can play in the commodity markets.<DD - switch to presentation, PSaaS>
+
+## 7 · PSaaS - Problem-Solving as a Service
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
-But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service. Or to those pressed for time<DD - transition to pizzazz>*Pizzazz.*  Now, it's a scalable, reproducible, replayable process.<DD - transition to Closer>
+But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service.
+Or to those pressed for time<DD - transition to pizzazz>*Pizzazz.*
+Now, it's a scalable, reproducible, replayable process.<DD - transition to Closer>
 
 ## 8 · Close - the Call to Action
 
-So take Doppl and make it yours. Automate the ideate; get busy getting out in the world. With Doppl on your radar, you won't need to worry about the answer.
+So take Doppl and make it your own. Automate the ideate; get busy getting out in the world.
+With Doppl on your radar, you won't need to worry about the answer.
 
 All you'll *really* need...<DD - last transition>...is a Great Question.
