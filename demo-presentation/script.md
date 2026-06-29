@@ -89,21 +89,31 @@ They say ideas are cheap.
 
 We say...<DD - transition to could be cheaper>could be cheaper.
 
-What if we could massively increase the density of good ideas in the world? What if we could *drown* in it?
+What if we could massively increase the density of good ideas in the world?
+**What if we could *drown* in it?**
 Thats the world I wanna swim in.
 
-Because its not just the idea. It's the *right* idea. The right *ideas*. Doppl Automates the Ideate — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
+Because its not just the idea. It's the *right* idea. The right *ideas*.
+**Doppl Automates the Ideate** — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
 It becomes a pre-solved solution-space, clustered and queried via vector database.<DD - switch to Agora, PR, Skin in the Game>
 
 ## 6 · The Human in the Loop
 
-A key point of the Zero-to-One mindset is to get out of your head, and get into the world. Do the Simple Hard thing.
+A key point of the Zero-to-One mindset is to get out of your head, and get into the world.
+**Do the Simple Hard thing.**
+
 Doppl helps you do just that.
 'Cuz once Doppl does the do, you gotta touch grass. You need to validate.
 
-We do that with "Skin in the Game", and "Implications and Opportunities."
+**We do that with *Skin in the Game*, and *Implications and Opportunities.***
 
-With the Problem Recovery comes "Skin in the Game." Here, we don't *just* hand you an answer. We hand you a dare — the one cheap test that could prove the whole thing wrong. Who you could to talk to, what you could ask about.<DD - switch to Agora, Doppl, Implications and Opportunities>
+With the Problem Recovery comes "Skin in the Game."
+
+Here, we don't *just* hand you an answer.
+
+We hand you a dare — cheap tests that could prove the whole thing wrong.
+Who you could to talk to, what you could ask about.
+<DD - switch to Agora, Doppl, Implications and Opportunities>
 
 And the Doppl is a doorway, not a destination. Behind every fix:
 
@@ -111,20 +121,24 @@ And the Doppl is a doorway, not a destination. Behind every fix:
 - Opportunities: Now that I know the implications, what are the levels that I could possibly play at?
 
 If it's true that battery supply feuls the future, which means lithium becomes a constrained resource, how does that help me?
-Maybe I can't finance a refinery, or expand a mine...but I can play in the commodity markets.<DD - switch to presentation, PSaaS>
+Maybe I can't finance a refinery, or expand a mine...but I can play in the commodity markets.
+Maybe I could kill it on Kalshi.
+<DD - switch to presentation, PSaaS>
 
 ## 7 · PSaaS - Problem-Solving as a Service
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
 
-But that time is over. We're automating it, into a new industry: **PSaaS. Problem-Solving as a Service.**
+But that time is over. We're automating it, into a new industry:
+**PSaaS. Problem-Solving as a Service.**
 Or to those pressed for time<DD - transition to pizzazz>*Pizzazz.*
 
-Now, it's a scalable, reproducible, replayable process.<DD - transition to Closer>
+Now, it's a scalable, reproducible, replayable process.
+<DD - transition to Closer>
 
 ## 8 · Close - the Call to Action
 
 So take Doppl and make it your own. Automate the ideate; get busy getting out in the world.
 With Doppl on your radar, you won't need to worry about the answer.
 
-All you'll *really* need...<DD - last transition>...is a Great Question.
+**All you'll *really* need...<DD - last transition>...is a Great Question.**
