@@ -22,7 +22,9 @@ Red-light runs, traffic cameras, Speed traps — whole towns live on those ticke
 
 What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
 
-Auto parts. Body shops. Dealerships, Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone. The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
+Auto parts. Body shops. Dealerships, Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
+
+The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
 
 What happens when the inciting incident falls away? When the hit you didn't see coming is the coming hit that never came?
 
