@@ -21,7 +21,7 @@ ER trauma units — nurses, paramedics. Admin all over.
 **What about the loss of probable cause** and the traffic stop, when the entire pretext just falls away?
 Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets.<DD - reckless>
 
-What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
+**What happens when reckless driving becomes...<DD - wreckless reveal>*Wreckless* driving?**
 
 Auto parts. Body shops. Dealerships, Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
 
@@ -35,9 +35,10 @@ All this adds up to something. This **means** something.
 What does this all **mean**!?
 ...And how do we make some money off it?
 
-Anybody got any ideas?<DD - title to Doppl headline slide>
+**Anybody got any ideas?**
+<DD - title to Doppl headline slide>
 
-Let me put Doppl on your radar.
+**Let me put Doppl on your radar.**
 
 ## 2 · Doppl
 
@@ -49,7 +50,7 @@ Each run produces a whole population of evolving idea organisms, or **Idearganis
 
 ## 3 · aGarden - The Outside View
 
-I have a friend in the superyacht tech world, who told me a problem one of his clients was having.
+**I have a friend in the superyacht tech world, who told me a problem one of his clients was having.**
 
 A celebrity on his superyacht wants to have his fun, paparazzi drones circling to sell a scandal.
 He doesn't want to stop the party, but he also doesn't want his wife to find out what kind of fun he's having.
@@ -138,7 +139,7 @@ Now, it's a scalable, reproducible, replayable process.
 
 ## 8 · Close - the Call to Action
 
-So take Doppl and make it your own. Automate the ideate; get busy getting out in the world.
+So take Doppl and make it your own. **Automate the Ideate**; get busy getting out in the world.
 With Doppl on your radar, you won't need to worry about the answer.
 
 **All you'll *really* need...<DD - last transition>...is a Great Question.**
