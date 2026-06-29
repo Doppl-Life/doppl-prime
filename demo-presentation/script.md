@@ -51,7 +51,7 @@ A celebrity on his superyacht wants to have his fun, paparazzi drones circling t
 - Can't shoot it down, major liability issues
 - Can't jam it, because the rasberry can't tell the difference
 - Can't catch it, they have proximity sensors which trigger to automatically fly away with the footage
-- Don't want to disrupt the flow of the festivities
+- And on top of all that, he doesn't want to disrupt the flow of the festivities
 
 So what do you do?
 
@@ -69,7 +69,7 @@ And the actual fix - you can get it for a song. Passive RF detection flags incom
 
 > Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
 
-That's the garden from above. Now the microscope.<DD - switch to inside view of the running kernel.>
+That's the agarden from above. Now the microscope.<DD - switch to inside view of the running kernel.>
 
 Here to talk about Doppl's inner workings is our own Doctor Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
