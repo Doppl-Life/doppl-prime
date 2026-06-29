@@ -14,7 +14,7 @@ But thats where the questions stop. The questions I'm not hearing are...
 
 What happens when the crashes don't come? What happens, when America's National Accident Ecomomy - Collapses?
 
-Personal-injury lawyers. DUIs. Wrongful death, vehicular homicide, civil suits.
+Personal-injury lawyers. DUIs. Wrongful death, vehicular manslaughter, civil suits.
 ER trauma units — nurses, paramedics. Admin all over.
 
 What about the loss of probable cause and the traffic stop, when the entire pretext just falls away?
@@ -68,8 +68,6 @@ Back to the drone problem: The *real* problem was never "defeat the drone." It w
 And the actual fix - you can get it for a song. When passive RF detection Flags incoming drones from a few kilometers away, a specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home having failed its mission. The party continues.
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
-
-> Slide: show all the biological, evolutionary, and technical concepts implimented and considered Ex. r / K selection strategies, skills as mutagens, Perfect Pepsi vs the Perfect Pepsis, fintess metrics, etc...
 
 That's the agarden from above. Now the microscope.<DD - switch to inside view of the running kernel.>
 
