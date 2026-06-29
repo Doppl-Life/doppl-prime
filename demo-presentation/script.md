@@ -2,7 +2,7 @@
 
 ## 1 · Cold open — When the Crashes Don't Come
 
-It is interesting to be in Austin, TX, right here and now. Ground zero for the robotaxi revolution.
+It is interesting to be in Austin, TX, right here and now. Ground zero for the Robotaxi Revolution.
 
 Accept the premise that FSD is a solved problem, and its about to scale wide.
 
@@ -10,11 +10,11 @@ Drastic reduction in the cost per mile. Massive job loss in the ridehail and del
 Less accidents, fewer injuries, and less loss of life.
 And they're right — that's real, and it matters.
 
-But thats where they stop. The questions I'm not hearing are...
+But thats where the questions stop. The questions I'm not hearing are...
 
 What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
 
-Personal-injury lawyers. DUI defense. Wrongful death, vehicular homicide, civil suits.
+Personal-injury lawyers. DUIs. Wrongful death, vehicular homicide, civil suits.
 ER trauma units — nurses, paramedics. Admin all over.
 
 What about the loss of probable cause and the traffic stop, when the entire pretext just falls away.
