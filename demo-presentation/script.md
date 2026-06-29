@@ -10,7 +10,7 @@ Drastic reduction in the cost per mile. Massive job loss in the ridehail and del
 Less accidents, fewer injuries, and less loss of life.
 And they're right — that's real, and it matters.
 
-But thats where the questions stop. The questions I'm not hearing are...
+But that's where the questions stop. The questions I'm not hearing are...
 
 What happens when the crashes don't come? What happens, when America's National Accident Ecomomy - Collapses?
 
