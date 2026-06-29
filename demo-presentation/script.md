@@ -22,8 +22,7 @@ Red-light runs, traffic cameras, Speed traps — whole towns live on those ticke
 
 What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
 
-Auto parts. Body shops. Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
-The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
+Auto parts. Body shops. Dealerships, Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone. The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
 
 What happens when the inciting incident falls away? When the hit you didn't see coming is the coming hit that never came?
 
@@ -74,7 +73,7 @@ That's the agarden from above. Now the microscope.<DD - switch to inside view of
 Here to talk about Doppl's inner workings is our own Doctor Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
-<DD - transition to presentation: Ideas are cheap>
+
 
 ## 5 · The Zero-to-One Mindset, Automated
 
