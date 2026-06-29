@@ -18,7 +18,8 @@ What happens when the crashes don't come? What happens, when the National Accide
 
 Personal-injury lawyers. DUI defense. Wrongful death, civil suits. ER trauma units — nurses, paramedics. Admin all over.
 
-What about the loss of probable cause and the traffic stop, when the entire pretext just falls away. Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets. What happens when reckless driving becomes...wreckless driving?
+What about the loss of probable cause and the traffic stop, when the entire pretext just falls away. Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets.<DD - reckless>
+What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
 
 Auto parts. Body shops. Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
 The Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
@@ -65,7 +66,7 @@ A recovered problem becomes a proposed solution, or "doppl".
 And at each new step, the path points out of the system, back to you - the human in the loop.
 
 Back to the drone problem: The *real* problem was never "defeat the drone." It was "make the footage worthless."
-And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home with nothing.
+And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home having failed its mission. The party continues.
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
 
@@ -89,7 +90,7 @@ They say ideas are cheap.
 
 *Let it sit.*
 
-What if we could massively increase the density of ideas in the world? What if we could *drown* in it?
+What if we could massively increase the density of good ideas in the world? What if we could *drown* in it?
 Thats the world I want to swim in.
 
 Because its not just the idea. It's the *right* idea. The right *ideas*. Doppl Automates the Ideate — As the marginal cost of a defensible idea approaches zero, a question stops being a meeting prompt.
