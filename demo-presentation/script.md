@@ -14,6 +14,7 @@ But that's where the questions stop. **The questions I'm not hearing are...**
 
 **What happens when the crashes don't come?** What happens, when America's National Accident Ecomomy - Collapses?
 
+**NOTES**
 Personal-injury lawyers. DUIs. Wrongful death, vehicular manslaughter, civil suits.
 ER trauma units — nurses, paramedics. Admin all over.
 
@@ -27,7 +28,7 @@ Auto parts. Body shops. Dealerships, Inspections, Emissions, Salvage yards? Whol
 The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
 
 What **happens** when the inciting incident falls away?
-**When the hit you Didn't see coming is the coming Hit that never Came?**
+**When the hit you DIDN'T see coming is the coming Hit that never Came?**
 
 All this adds up to something. This **means** something.
 
@@ -77,7 +78,7 @@ And the actual fix - you can get it for a song. When passive RF detection Flags 
 
 That's the agarden from above. Now the microscope.<DD - switch to inside view of the running kernel.>
 
-Here to talk about Doppl's inner workings is our own Doctor Cody Clayton.
+Here to talk about Doppl's inner workings is our own **Doctor** Cody Clayton.
 `[teammate — played dead straight. the load-bearing sincerity. not written here.]`
 
 
@@ -115,8 +116,10 @@ Maybe I can't finance a refinery, or expand a mine...but I can play in the commo
 ## 7 · PSaaS - Problem-Solving as a Service
 
 Until now, consulting has always been a bespoke botique industry. The McKinseys of the world, telling you what to do, no real skin in the game, just take the money and run.
-But that time is over. We're automating it, into a new industry: PSaaS. Problem-Solving as a Service.
+
+But that time is over. We're automating it, into a new industry: **PSaaS. Problem-Solving as a Service.**
 Or to those pressed for time<DD - transition to pizzazz>*Pizzazz.*
+
 Now, it's a scalable, reproducible, replayable process.<DD - transition to Closer>
 
 ## 8 · Close - the Call to Action
