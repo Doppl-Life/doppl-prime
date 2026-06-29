@@ -12,13 +12,14 @@ And they're right — that's real, and it matters.
 
 But thats where the questions stop. The questions I'm not hearing are...
 
-What happens when the crashes don't come? What happens, when the National Accident Ecomomy - Collapses?
+What happens when the crashes don't come? What happens, when America's National Accident Ecomomy - Collapses?
 
 Personal-injury lawyers. DUIs. Wrongful death, vehicular homicide, civil suits.
 ER trauma units — nurses, paramedics. Admin all over.
 
 What about the loss of probable cause and the traffic stop, when the entire pretext just falls away.
 Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets.<DD - reckless>
+
 What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
 
 Auto parts. Body shops. Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
