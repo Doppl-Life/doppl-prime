@@ -17,15 +17,15 @@ What happens when the crashes don't come? What happens, when America's National 
 Personal-injury lawyers. DUIs. Wrongful death, vehicular homicide, civil suits.
 ER trauma units — nurses, paramedics. Admin all over.
 
-What about the loss of probable cause and the traffic stop, when the entire pretext just falls away.
+What about the loss of probable cause and the traffic stop, when the entire pretext just falls away?
 Red-light runs, traffic cameras, Speed traps — whole towns live on those tickets.<DD - reckless>
 
 What happens when reckless driving becomes...<DD - wreckless reveal>wreckless driving?
 
 Auto parts. Body shops. Inspections, Emissions, Salvage yards? Whole supply lines — reshuffled, or gone.
-The Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
+The Auto-adjacent Insurance economy: Insurers, Adjusters, Actuaries. Claims organizations.
 
-What happens when all that falls away? When the hit you don't see coming is the coming hit that never came?
+What happens when the inciting incident falls away? When the hit you didn't see coming is the coming hit that never came?
 
 All this adds up to something. This **means** something.
 
@@ -40,19 +40,20 @@ Let me put Doppl on your radar.
 
 Doppl is an agental-evolution runtime.
 
-You seed it with a scenario, a case study — a situation worth exploring — and it breeds ideas under selective pressure. Not one agent guessing. A population. Generate, score, select, and survive — generation after generation — until the ideas that remain are demonstrably stronger than the ones that came before. Not simply research, but problem recovery and automated ideation.
+You seed it with a scenario, a case study — a situation worth exploring — and it breeds ideas under selective, generational pressure. Not one agent guessing. A population. Generate, score, select, and survive — until the ideas that remain are demonstrably stronger than the ones that came before. Not simply research, but problem recovery and automated ideation.
 
-Each run produces a whole population of evolving idea organisms, or **Idearganisms**. A living lineage of recovered problems, and the solutions and opportunities that follow. Ideas don't just survive, they *breed*.<DD - title to aGarden slide>
+Each run produces a whole population of evolving idea organisms, or **Idearganisms**. A living lineage of recovered problems, plus the solutions and opportunities that follow.<DD - title to aGarden slide>
 
 ## 3 · aGarden - The outside view
 
-I have a friend in the superyacht world, told me a problem one of his clients was having.
-A celebrity on his superyacht wants to have his fun, paparazzi drones circling to sell a scandal, and doesn't want his wife to find out. Every obvious move is as much a headache as the footage:
+I have a friend in the superyacht tech world, who told me a problem one of his clients was having.
+A celebrity on his superyacht wants to have his fun, paparazzi drones circling to sell a scandal.
+He doesn't want to stop the party, but he also doesn't want his wife to find out what kind of fun he's having.
+Every obvious move is as much a headache as the footage itself:
 
 - Can't shoot it down, major liability issues
-- Can't jam it, because the rasberry can't tell the difference
+- Can't jam it, because the Rasberry can't tell the difference
 - Can't catch it, they have proximity sensors which trigger to automatically fly away with the footage
-- And on top of all that, he doesn't want to disrupt the flow of the festivities
 
 So what do you do?
 
@@ -63,8 +64,8 @@ A case study becomes a recovered problem.
 A recovered problem becomes a proposed solution, or "doppl".
 And at each new step, the path points out of the system, back to you - the human in the loop.
 
-Back to the drone problem: The *real* problem was never "defeat the drone." It was "make the footage worthless."
-And the actual fix - you can get it for a song. Passive RF detection flags incoming drones from a few kilometers away. A specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home having failed its mission. The party continues.
+Back to the drone problem: The *real* problem was never "defeat the drone." It was "how to make the footage worthless."
+And the actual fix - you can get it for a song. When passive RF detection Flags incoming drones from a few kilometers away, a specific song automatically plays over the sound system, known only to the owner and selected others. It plays, they drift inside, the drone can film all it wants, but it goes home having failed its mission. The party continues.
 
 ## 4 · The inside view, the kernel, and why this was technically difficult
 
